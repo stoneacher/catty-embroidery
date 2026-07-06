@@ -64,3 +64,6 @@ fastlane/test_output
 
 # Mac Specific
 .DS_Store
+# Claude Code local files (machine-specific settings, session snapshots)
+.claude/settings.local.json
+.claude/snapshot.md
