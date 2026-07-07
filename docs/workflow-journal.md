@@ -35,3 +35,10 @@ Entry template:
   - Xcode template files (snake_case type names) failed lint as errors; renamed types/files to CamelCase — safe because all three targets are synchronized folder groups (verified in `project.pbxproj` before renaming).
   - `gh` CLI absent; CI runs watched via unauthenticated GitHub REST API polling in background tasks instead (repo is public).
 - **Adjustment**: none needed beyond the `.swiftformat` comma setting; existing hooks behaved as designed.
+
+## 2026-07-07 — Fixture trust check: "empty" renders were correct (Claude Code + manual)
+
+- **Task**: US-101's last criterion — verify the Catty golden fixtures render correctly in a named embroidery viewer (manual, Sebastian) with Claude Code diagnosing the results.
+- **Outcome**: worked, but not as the criterion imagined. Every viewer showed *nothing*: EmbroideryViewer.xyz exported an all-transparent PNG (and a 0-byte PNG for the 50×0 mm design), Ink/Stitch found "no objects it knows how to work with". Diagnosis: the fixtures contain **no sewn segments** — only anchor stitches joined by jump records (moves > 12.1 mm interpolate to jumps), which viewers legitimately draw as nothing. Confirmed by decoding the record bytes with the inverse of Catroid's `CONVERSION_TABLE` (matches ADR-012's interpolation pattern and every header field) and cross-checked with pyembroidery 1.5.1, the parser inside Ink/Stitch. Verification recorded in the fixtures' `PROVENANCE.md`.
+- **Agent failure worth noting**: the first quick decode used a DST bit table recalled from model memory — wrong — and produced a phantom "header/record mismatch" that looked exactly like the Catty bugs ADR-012 warns about. Deriving the decoder from the reference implementation's own table (instead of memory) dissolved it. Rule of thumb reinforced: for byte-level formats, never trust remembered tables; port the arbiter's.
+- **Adjustment**: acceptance criteria phrased as "renders correctly in a viewer" need a fallback for degenerate test data; structural verification against the canonical encoder is the stronger form and is now the documented precedent.
