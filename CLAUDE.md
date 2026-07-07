@@ -23,9 +23,18 @@ A standalone native iOS app bringing Catrobat's embroidery functionality (the An
 
 ## Build & test
 
-No Xcode project yet (arrives in M3). Once targets exist, record the canonical commands here:
-- Engine: `cd Packages/EmbroideryEngine && swift test`
-- App (expected shape): `xcodebuild -scheme <Scheme> -destination 'platform=iOS Simulator,name=iPhone 17' test`
+- Engine (once `Packages/EmbroideryEngine` exists): `cd Packages/EmbroideryEngine && swift test` — fast, no simulator.
+- App: `xcodebuild -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj -scheme catrobat_embroidery_ios -destination 'platform=iOS Simulator,name=iPhone 17' test` (or `build`).
+- Prefer the XcodeBuildMCP tools (`build_sim`, `test_sim`, simulator/screenshot tools) over raw `xcodebuild` — they return structured errors and per-test results.
+
+## Agentic workflow rules
+
+- **Prove red before green**: after writing a story's tests, run them and show the failures before writing any implementation. A test never seen failing proves nothing.
+- **Never commit red**: a PreToolUse hook in `.claude/settings.json` runs the engine tests before any `git commit` and blocks if they fail. Red is fine while working, never in a commit.
+- **Never edit `*.pbxproj`** (permission rule asks first): app sources use synchronized folder groups, so Swift files created on disk under `catrobat_embroidery_ios/catrobat_embroidery_ios/` are picked up automatically. Target/package-dependency changes are done by the human in Xcode.
+- Edited Swift files are auto-formatted by a PostToolUse SwiftFormat hook (no-ops if `swiftformat` is missing).
+- **UI stories**: definition of done includes building, running on the simulator, and capturing a screenshot via XcodeBuildMCP for visual review.
+- After notable workflow events (delegation wins/failures, new hooks or rules, tool comparisons), append a short entry to `docs/workflow-journal.md` — it is thesis data.
 
 ## Reference repositories
 

@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(swift test*)",
+      "Bash(swift build*)",
+      "Bash(xcodebuild *)",
+      "Bash(xcrun simctl *)",
+      "Bash(swiftformat *)",
+      "Bash(swiftlint *)"
+    ],
+    "ask": [
+      "Edit(**/*.pbxproj)",
+      "Write(**/*.pbxproj)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *.swift) if command -v swiftformat >/dev/null; then swiftformat \"$f\" --quiet; fi ;; esac; } || true",
+            "timeout": 30,
+            "statusMessage": "swiftformat"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(jq -r '.tool_input.command // empty'); case \"$CMD\" in *'git commit'*) ENG=\"$CLAUDE_PROJECT_DIR/Packages/EmbroideryEngine\"; if [ -d \"$ENG\" ]; then OUT=$(cd \"$ENG\" && swift test 2>&1) || { echo 'Engine tests are red — commit blocked. Never commit failing engine tests (fix or finish the green phase first).' >&2; echo \"$OUT\" | tail -30 >&2; exit 2; }; fi ;; esac",
+            "timeout": 300,
+            "statusMessage": "engine test gate (git commit)"
+          }
+        ]
+      }
+    ]
+  }
+}
