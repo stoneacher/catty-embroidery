@@ -12,7 +12,12 @@ let package = Package(
     ],
     targets: [
         .target(name: "EmbroideryEngine"),
-        .testTarget(name: "EmbroideryEngineTests", dependencies: ["EmbroideryEngine"])
+        .testTarget(
+            name: "EmbroideryEngineTests",
+            dependencies: ["EmbroideryEngine"],
+            // .copy keeps the DST fixtures byte-identical (golden tests diff them byte by byte).
+            resources: [.copy("Resources")]
+        )
     ],
     swiftLanguageModes: [.v6]
 )
