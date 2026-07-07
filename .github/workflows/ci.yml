@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine-tests:
+    name: Engine tests (swift test)
+    runs-on: macos-26
+    env:
+      # Pin the toolchain: runner-default Xcode drifts and breaks Swift 6.x builds.
+      # Xcode 26.6 (Swift 6.3.3) matches the local development toolchain.
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+      - name: Show toolchain
+        run: swift --version
+      - name: Run engine tests
+        run: swift test --package-path Packages/EmbroideryEngine
+
+  lint:
+    name: SwiftLint
+    runs-on: ubuntu-latest
+    container: ghcr.io/realm/swiftlint:0.65.0
+    steps:
+      - uses: actions/checkout@v5
+      - name: Lint
+        run: swiftlint --strict --reporter github-actions-logging
