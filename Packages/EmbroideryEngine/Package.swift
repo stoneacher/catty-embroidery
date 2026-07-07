@@ -5,14 +5,14 @@ let package = Package(
     name: "EmbroideryEngine",
     platforms: [
         .iOS(.v17),
-        .macOS(.v14),
+        .macOS(.v14)
     ],
     products: [
-        .library(name: "EmbroideryEngine", targets: ["EmbroideryEngine"]),
+        .library(name: "EmbroideryEngine", targets: ["EmbroideryEngine"])
     ],
     targets: [
         .target(name: "EmbroideryEngine"),
-        .testTarget(name: "EmbroideryEngineTests", dependencies: ["EmbroideryEngine"]),
+        .testTarget(name: "EmbroideryEngineTests", dependencies: ["EmbroideryEngine"])
     ],
     swiftLanguageModes: [.v6]
 )

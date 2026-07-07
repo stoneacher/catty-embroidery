@@ -1,0 +1,24 @@
+# SwiftLint: current default rules plus Catrobat's non-style rules.
+# Baseline reference: Catty src/.swiftlint.yml (an only_rules list predating
+# Swift 6/SwiftUI). Its style-only rules are left to SwiftFormat (.swiftformat),
+# and its XCTest-, Interface-Builder- and Quick/Nimble-specific rules do not
+# apply to this codebase (Swift Testing, SwiftUI), so neither was carried over.
+
+opt_in_rules:
+  - contains_over_first_not_nil
+  - discarded_notification_center_observer
+  - discouraged_optional_boolean
+  - empty_count
+  - empty_string
+  - fatal_error_message
+  - function_default_parameter_at_end
+  - joined_default_parameter
+  - prohibited_super_call
+  - sorted_first_last
+  - untyped_error_in_catch
+  - weak_delegate
+  - yoda_condition
+
+excluded:
+  - "**/.build"
+  - "**/DerivedData"
