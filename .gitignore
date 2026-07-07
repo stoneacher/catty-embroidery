@@ -67,3 +67,22 @@ fastlane/test_output
 # Claude Code local files (machine-specific settings, session snapshots)
 .claude/settings.local.json
 .claude/snapshot.md
+
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+
+# SwiftPM
+.swiftpm/
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Signing / local secrets
+*.mobileprovision
+*.p12
