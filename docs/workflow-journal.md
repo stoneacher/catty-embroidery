@@ -56,3 +56,9 @@ Entry template:
 
 - **New rule from Sebastian**: push to remote after every commit and watch CI, so problems surface immediately. The post-push hook gained a sibling: `git commit` now injects a "push now and watch CI" reminder (same PostToolUse hook, command-position match, verified by pipe-tests for commit-only / push-only / commit-and-push / unrelated).
 - **Branch protection**: Sebastian set up a GitHub ruleset on the default branch (PR required before merging, block force pushes, restrict deletions). Review notes passed back before saving: "Restrict updates" with an empty bypass list would block even PR merges into main; "Require status checks to pass" (SwiftLint + engine tests) is the setting that actually gates merges on CI; "Require code quality results" blocks merges unless GitHub's code-quality analysis actually runs on PRs.
+
+## 2026-07-08 — /finish session-close command added (Claude Code)
+
+- **Task**: Sebastian asked for a `/finish` slash command that verifies session-end hygiene: DECISIONS.md / ROADMAP.md / workflow-journal.md reflect the session, and the current story's acceptance criteria are verified-then-ticked with a Done status line. Created as `.claude/commands/finish.md` (committed, transfers with the repo).
+- **Design guardrail**: the command's checklist is verify-then-update — criteria may only be ticked against evidence (tests/CI), ADRs only for genuine decisions, no content invented to satisfy the checklist.
+- **Outcome**: dry-ran the checklist on this session: US-102 marked Done (all criteria evidenced, PR #2 CI green); no ADR or roadmap change warranted; journal was already current.

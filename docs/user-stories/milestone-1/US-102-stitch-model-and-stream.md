@@ -2,6 +2,8 @@
 
 **Epic**: E2 Engine | **Estimate**: ~3 h | **Depends on**: US-101
 
+**Status**: Done — 2026-07-08, PR #2
+
 **Story**: As the engine, I need a stitch domain model and an ordered stitch stream, so that all pattern generators and the DST writer operate on one shared representation.
 
 ## Acceptance criteria
