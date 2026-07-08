@@ -19,16 +19,30 @@ enum DSTRecordDecoder {
         var isColorChange: Bool
     }
 
+    private struct BitContribution {
+        var byte: Int
+        var bit: Int
+        var dx: Int
+        var dy: Int
+
+        init(_ byte: Int, _ bit: Int, _ dx: Int, _ dy: Int) {
+            self.byte = byte
+            self.bit = bit
+            self.dx = dx
+            self.dy = dy
+        }
+    }
+
+    private static let contributions: [BitContribution] = [
+        .init(0, 0, 1, 0), .init(0, 1, -1, 0), .init(0, 2, 9, 0), .init(0, 3, -9, 0),
+        .init(0, 4, 0, -9), .init(0, 5, 0, 9), .init(0, 6, 0, -1), .init(0, 7, 0, 1),
+        .init(1, 0, 3, 0), .init(1, 1, -3, 0), .init(1, 2, 27, 0), .init(1, 3, -27, 0),
+        .init(1, 4, 0, -27), .init(1, 5, 0, 27), .init(1, 6, 0, -3), .init(1, 7, 0, 3),
+        .init(2, 2, 81, 0), .init(2, 3, -81, 0), .init(2, 4, 0, -81), .init(2, 5, 0, 81)
+    ]
+
     static func decode(_ bytes: [UInt8]) -> DecodedRecord {
         precondition(bytes.count == 3, "a DST stitch record is exactly 3 bytes")
-        let contributions: [(byte: Int, bit: Int, dx: Int, dy: Int)] = [
-            (0, 0, 1, 0), (0, 1, -1, 0), (0, 2, 9, 0), (0, 3, -9, 0),
-            (0, 4, 0, -9), (0, 5, 0, 9), (0, 6, 0, -1), (0, 7, 0, 1),
-            (1, 0, 3, 0), (1, 1, -3, 0), (1, 2, 27, 0), (1, 3, -27, 0),
-            (1, 4, 0, -27), (1, 5, 0, 27), (1, 6, 0, -3), (1, 7, 0, 3),
-            (2, 2, 81, 0), (2, 3, -81, 0), (2, 4, 0, -81), (2, 5, 0, 81)
-        ]
-
         var dx = 0
         var dy = 0
         for contribution in contributions where bytes[contribution.byte] & (1 << contribution.bit) != 0 {
