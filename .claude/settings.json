@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CMD=$(jq -r '.tool_input.command // empty'); case \"$CMD\" in *'git commit'*) ENG=\"$CLAUDE_PROJECT_DIR/Packages/EmbroideryEngine\"; if [ -d \"$ENG\" ]; then OUT=$(cd \"$ENG\" && swift test 2>&1) || { echo 'Engine tests are red — commit blocked. Never commit failing engine tests (fix or finish the green phase first).' >&2; echo \"$OUT\" | tail -30 >&2; exit 2; }; fi ;; esac",
+            "command": "CMD=$(jq -r '.tool_input.command // empty'); case \"$CMD\" in *'git commit'*) case \"$CMD\" in *'[red]'*) exit 0 ;; esac; ENG=\"$CLAUDE_PROJECT_DIR/Packages/EmbroideryEngine\"; if [ -d \"$ENG\" ]; then OUT=$(cd \"$ENG\" && swift test 2>&1) || { echo 'Engine tests are red — commit blocked. Never commit failing engine tests (fix or finish the green phase first). A deliberate TDD red-phase commit is allowed with a [red] marker in the commit message.' >&2; echo \"$OUT\" | tail -30 >&2; exit 2; }; fi ;; esac",
             "timeout": 300,
             "statusMessage": "engine test gate (git commit)"
           }

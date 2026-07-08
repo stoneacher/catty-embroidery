@@ -20,9 +20,11 @@ opt_in_rules:
   - yoda_condition
 
 identifier_name:
-  excluded: # canonical coordinate component names (CGPoint precedent)
+  excluded: # canonical coordinate component and delta names (CGPoint precedent)
     - x
     - y
+    - dx
+    - dy
 
 excluded:
   - "**/.build"
