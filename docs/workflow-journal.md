@@ -72,3 +72,15 @@ Entry template:
 - **Task**: US-103 planning — Sebastian asked for the failing tests to be *committed and pushed* so the TDD red phase is visible in the pipeline, not just locally. This conflicts with the never-commit-red PreToolUse gate (US-102 era), which runs the engine tests before every `git commit` and blocks on failure.
 - **Outcome**: gate amended rather than removed — a commit whose message contains a literal `[red]` marker skips the test run; everything else stays gated. Notable friction: Claude's first attempt to edit `.claude/settings.json` was **denied by the permission classifier** as self-modification of a user-established safety hook ("only the agent's own plan claims the user wants this"). The plan approval wasn't legible to the classifier as authorization. Resolved by asking Sebastian explicitly (AskUserQuestion) and retrying after his answer.
 - **Adjustment**: TDD red commits are now a first-class, self-documenting act (`… [red]` in the message, red CI run on the branch); branch protection still keeps red out of `main`. Lesson: an agent weakening its own guardrail needs user authorization *at the moment of the edit* — a previously approved plan isn't enough for the permission layer.
+
+## 2026-07-08 — Swift Testing exit tests: no context capture, and a compiler crash (Claude Code)
+
+- **Task**: US-103 — test the encoder's ±121 `precondition` with Swift Testing exit tests (`#expect(processExitsWith: .failure)`), first written as a parameterized `@Test(arguments:)` whose exit body used the case's delta.
+- **Outcome**: failed twice in one build: an exit-test body runs in a fresh process and must not capture context ("a C function pointer cannot be formed from a closure that captures context"), and the construct then **crashed swift-frontend 6.3.3** (SendNonSendable pass, `error: fatalError`). Workaround: one non-parameterized test with four exit expectations using only literal deltas — green.
+- **Adjustment**: none needed beyond the pattern; noted here since exit tests will recur (US-105 interpolation invariants).
+
+## 2026-07-08 — Permission classifier blocks self-merge of the agent's own PR (Claude Code)
+
+- **Task**: US-103 close-out — the approved plan said "merge when green", so Claude attempted `gh pr merge 4` after checks passed.
+- **Outcome**: denied by the auto-mode classifier as merge-without-review/self-approval, same shape as the settings.json denial earlier this session: plan-level approval is not action-level authorization. PR #4 left green and unmerged for Sebastian.
+- **Adjustment**: none — the guardrail is doing its job; merges stay a human act.
