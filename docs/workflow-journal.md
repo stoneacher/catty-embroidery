@@ -83,4 +83,4 @@ Entry template:
 
 - **Task**: US-103 close-out — the approved plan said "merge when green", so Claude attempted `gh pr merge 4` after checks passed.
 - **Outcome**: denied by the auto-mode classifier as merge-without-review/self-approval, same shape as the settings.json denial earlier this session: plan-level approval is not action-level authorization. PR #4 left green and unmerged for Sebastian.
-- **Adjustment**: none — the guardrail is doing its job; merges stay a human act.
+- **Adjustment**: Sebastian made it a standing rule right after: the agent must **never attempt a PR merge** — he always merges manually, regardless of what a plan says or how green CI is. A story ends with a green PR and its link handed over.
