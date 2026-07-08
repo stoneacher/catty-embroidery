@@ -66,3 +66,9 @@ Entry template:
 ## 2026-07-08 — /finish gains an explicit Ink/Stitch manual-check callout (Sebastian + Claude Code)
 
 - **New rule from Sebastian** (after merging PR #2): story completion must state explicitly whether a manual check with the Inkscape embroidery plugin (Ink/Stitch) is needed — automated green isn't proof of what a machine will sew (the US-101 "empty fixtures" episode is the precedent). Added as step 5 of `/finish`: name the file/design to open and what to look for, or state explicitly that no check is warranted.
+
+## 2026-07-08 — Red-phase commits made visible in CI via a [red] marker; classifier blocked the agent's hook edit (Sebastian + Claude Code)
+
+- **Task**: US-103 planning — Sebastian asked for the failing tests to be *committed and pushed* so the TDD red phase is visible in the pipeline, not just locally. This conflicts with the never-commit-red PreToolUse gate (US-102 era), which runs the engine tests before every `git commit` and blocks on failure.
+- **Outcome**: gate amended rather than removed — a commit whose message contains a literal `[red]` marker skips the test run; everything else stays gated. Notable friction: Claude's first attempt to edit `.claude/settings.json` was **denied by the permission classifier** as self-modification of a user-established safety hook ("only the agent's own plan claims the user wants this"). The plan approval wasn't legible to the classifier as authorization. Resolved by asking Sebastian explicitly (AskUserQuestion) and retrying after his answer.
+- **Adjustment**: TDD red commits are now a first-class, self-documenting act (`… [red]` in the message, red CI run on the branch); branch protection still keeps red out of `main`. Lesson: an agent weakening its own guardrail needs user authorization *at the moment of the edit* — a previously approved plan isn't enough for the permission layer.
