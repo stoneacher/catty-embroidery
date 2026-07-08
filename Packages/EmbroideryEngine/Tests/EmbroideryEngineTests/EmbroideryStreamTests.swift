@@ -6,7 +6,7 @@ struct EmbroideryStreamTests {
     @Test("Empty stream has no stitches, no color changes, no extents")
     func emptyStream() {
         let stream = EmbroideryStream()
-        #expect(stream.count == 0)
+        #expect(stream.stitches.isEmpty)
         #expect(stream.colorChangeCount == 0)
         #expect(stream.boundingBox == nil)
         #expect(stream.firstStitchPosition == nil)
@@ -18,7 +18,7 @@ struct EmbroideryStreamTests {
         let stagePoints = [
             StagePoint(x: 0, y: 0),
             StagePoint(x: 5, y: -5),
-            StagePoint(x: 10.5, y: -3),
+            StagePoint(x: 10.5, y: -3)
         ]
         var stream = EmbroideryStream()
         for point in stagePoints {
@@ -29,7 +29,7 @@ struct EmbroideryStreamTests {
         #expect(stream.stitches.map(\.position) == [
             EmbroideryPoint(x: 0, y: 0),
             EmbroideryPoint(x: 10, y: -10),
-            EmbroideryPoint(x: 21, y: -6),
+            EmbroideryPoint(x: 21, y: -6)
         ])
         #expect(stream.firstStitchPosition == EmbroideryPoint(x: 0, y: 0))
         #expect(stream.lastStitchPosition == EmbroideryPoint(x: 21, y: -6))

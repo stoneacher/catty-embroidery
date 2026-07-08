@@ -22,10 +22,17 @@ public struct EmbroideryStream: Hashable, Sendable {
 
     public init() {}
 
-    public var count: Int { stitches.count }
+    public var count: Int {
+        stitches.count
+    }
 
-    public var firstStitchPosition: EmbroideryPoint? { stitches.first?.position }
-    public var lastStitchPosition: EmbroideryPoint? { stitches.last?.position }
+    public var firstStitchPosition: EmbroideryPoint? {
+        stitches.first?.position
+    }
+
+    public var lastStitchPosition: EmbroideryPoint? {
+        stitches.last?.position
+    }
 
     /// Spans every stitch including jumps — Catroid updates its header
     /// extents for each appended point regardless of flags.
