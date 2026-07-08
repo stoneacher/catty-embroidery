@@ -62,3 +62,7 @@ Entry template:
 - **Task**: Sebastian asked for a `/finish` slash command that verifies session-end hygiene: DECISIONS.md / ROADMAP.md / workflow-journal.md reflect the session, and the current story's acceptance criteria are verified-then-ticked with a Done status line. Created as `.claude/commands/finish.md` (committed, transfers with the repo).
 - **Design guardrail**: the command's checklist is verify-then-update — criteria may only be ticked against evidence (tests/CI), ADRs only for genuine decisions, no content invented to satisfy the checklist.
 - **Outcome**: dry-ran the checklist on this session: US-102 marked Done (all criteria evidenced, PR #2 CI green); no ADR or roadmap change warranted; journal was already current.
+
+## 2026-07-08 — /finish gains an explicit Ink/Stitch manual-check callout (Sebastian + Claude Code)
+
+- **New rule from Sebastian** (after merging PR #2): story completion must state explicitly whether a manual check with the Inkscape embroidery plugin (Ink/Stitch) is needed — automated green isn't proof of what a machine will sew (the US-101 "empty fixtures" episode is the precedent). Added as step 5 of `/finish`: name the file/design to open and what to look for, or state explicitly that no check is warranted.
