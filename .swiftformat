@@ -3,5 +3,5 @@
 --indent 4
 --maxwidth 120
 # SwiftLint's default trailing_comma rule forbids trailing commas; keep SwiftFormat from re-adding them.
---commas inline-only
+--commas never
 --exclude **/.build, **/DerivedData

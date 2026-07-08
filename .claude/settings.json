@@ -25,6 +25,17 @@
             "statusMessage": "swiftformat"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(jq -r '.tool_input.command // empty'); if printf '%s\\n' \"$CMD\" | grep -qE '(^|[;&|][[:space:]]*)git push'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"A git push just ran. Before treating this work as done: check the CI result for the pushed commit (gh run watch --exit-status <run-id>, or gh pr checks <pr> --watch) and report the outcome. If CI is red, investigate and fix before moving on.\"}}'; elif printf '%s\\n' \"$CMD\" | grep -qE '(^|[;&|][[:space:]]*)git commit'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"A git commit just ran. Project rule: push this commit to the remote now (git push) and watch the CI result, so problems surface immediately instead of piling up.\"}}'; fi",
+            "timeout": 10,
+            "statusMessage": "push/CI reminder (git commit/push)"
+          }
+        ]
       }
     ],
     "PreToolUse": [

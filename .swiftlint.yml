@@ -19,6 +19,11 @@ opt_in_rules:
   - weak_delegate
   - yoda_condition
 
+identifier_name:
+  excluded: # canonical coordinate component names (CGPoint precedent)
+    - x
+    - y
+
 excluded:
   - "**/.build"
   - "**/DerivedData"
