@@ -29,6 +29,7 @@ A standalone native iOS app bringing Catrobat's embroidery functionality (the An
 
 ## Agentic workflow rules
 
+- **Use the swift-engineering plugin agents at their phases** — `swift-architect` during story planning (before any plan is presented), `swift-code-reviewer` after implementation and before close-out. Generic exploration/planning agents complement them but never replace them.
 - **Prove red before green**: after writing a story's tests, run them and show the failures before writing any implementation. A test never seen failing proves nothing.
 - **Never commit red** — except the deliberate TDD red phase: a PreToolUse hook in `.claude/settings.json` runs the engine tests before any `git commit` and blocks if they fail. A story's failing-tests-first commit is marked with a literal `[red]` in the commit message, which skips the gate so CI shows the red baseline; every other commit stays gated, and branch protection keeps red out of `main`.
 - **Never edit `*.pbxproj`** (permission rule asks first): app sources use synchronized folder groups, so Swift files created on disk under `catrobat_embroidery_ios/catrobat_embroidery_ios/` are picked up automatically. Target/package-dependency changes are done by the human in Xcode.
