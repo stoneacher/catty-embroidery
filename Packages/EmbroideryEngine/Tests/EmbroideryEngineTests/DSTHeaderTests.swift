@@ -178,7 +178,7 @@ struct DSTHeaderTests {
         var result: [String: [UInt8]] = [:]
         var index = 0
         while index < 124 {
-            let tag = String(decoding: header[index ..< index + 2], as: UTF8.self)
+            let tag = try #require(String(bytes: header[index ..< index + 2], encoding: .utf8))
             try #require(header[index + 2] == UInt8(ascii: ":"))
             var end = index + 3
             while end < 124, header[end] != 0x0A {
