@@ -7,33 +7,25 @@ struct DSTHeaderTests {
     // MARK: - Golden tests (fixtures are the byte-level arbiter, ADR-012)
 
     /// Metadata matches the stitch.dst fixture: ST=8, CO=1, +X=500,
-    /// −X/+Y/−Y=0, AX=500, AY=0 — eight stitches zigzagging between stage
-    /// x=0 and x=250 (embroidery x=500), name "stitch".
+    /// −X/+Y/−Y=0, AX=500, AY=0 — the fixture's actual program since US-105:
+    /// one 500-unit move, interpolated to 6 jumps + plain target.
     @Test("reproduces the stitch.dst fixture header byte-for-byte")
     func goldenStitchHeader() throws {
-        let stream = Self.makeStream([
-            (0, 0), (250, 0), (0, 0), (250, 0),
-            (0, 0), (250, 0), (0, 0), (250, 0)
-        ])
+        let stream = Self.makeStream([(0, 0), (250, 0)])
         let header = DSTHeader(stream: stream, name: "stitch")
         #expect(try header.bytes == (Self.fixtureHeaderBytes("stitch")))
     }
 
     /// Metadata matches the color_change.dst fixture: ST=22, CO=2, +X=500,
-    /// +Y=500, AX=0, AY=500 — and the >15-char name must truncate to
-    /// "EmbroideryStitc" exactly as in the fixture.
+    /// +Y=500, AX=0, AY=500 — three interpolated 500-unit moves with a color
+    /// change before the second (8 + 7 + 7 stitches since US-105), and the
+    /// >15-char name must truncate to "EmbroideryStitc" as in the fixture.
     @Test("reproduces the color_change.dst fixture header byte-for-byte")
     func goldenColorChangeHeader() throws {
-        var points: [(x: Double, y: Double)] = []
-        for _ in 0 ..< 5 {
-            points += [(0, 0), (250, 0)]
-        }
-        points.append((0, 0)) // 11 zigzag stitches in the first color block
-        for step in 1 ... 10 {
-            points.append((0, Double(step) * 25))
-        }
-        points.append((0, 250)) // 11 climbing stitches after the color change
-        let stream = Self.makeStream(points, colorChangeBefore: 11)
+        let stream = Self.makeStream(
+            [(0, 0), (250, 0), (0, 0), (0, 250)],
+            colorChangeBefore: 2
+        )
         let header = DSTHeader(stream: stream, name: "EmbroideryStitchColorChange")
         #expect(try header.bytes == (Self.fixtureHeaderBytes("color_change")))
     }
@@ -79,20 +71,21 @@ struct DSTHeaderTests {
         #expect(fields["AY"] == Self.ascii("40", paddedTo: 5, with: 0x00))
     }
 
-    /// Stage (50,25), (0,0), (150,100), (100,50) → embroidery (100,50),
-    /// (0,0), (300,200), (200,100): extents and AX/AY are relative to the
-    /// first stitch (ADR-012), which origin-start fixtures cannot exercise.
+    /// Stage (10,5), (0,0), (60,50), (20,45) → embroidery (20,10), (0,0),
+    /// (120,100), (40,90): extents and AX/AY are relative to the first
+    /// stitch (ADR-012), which origin-start fixtures cannot exercise. Every
+    /// move stays within ±121 units so ST stays uninterpolated.
     @Test("extents and AX/AY are relative to the first stitch")
     func nonOriginFirstStitch() throws {
-        let stream = Self.makeStream([(50, 25), (0, 0), (150, 100), (100, 50)])
+        let stream = Self.makeStream([(10, 5), (0, 0), (60, 50), (20, 45)])
         let fields = try Self.fields(in: DSTHeader(stream: stream, name: "rel").bytes)
         #expect(fields["ST"] == Self.ascii("4", paddedTo: 6, with: 0x00))
-        #expect(fields["+X"] == Self.ascii("200", paddedTo: 4, with: 0x00))
-        #expect(fields["-X"] == Self.ascii("100", paddedTo: 4, with: 0x00))
-        #expect(fields["+Y"] == Self.ascii("150", paddedTo: 4, with: 0x00))
-        #expect(fields["-Y"] == Self.ascii("50", paddedTo: 4, with: 0x00))
-        #expect(fields["AX"] == Self.ascii("100", paddedTo: 5, with: 0x00))
-        #expect(fields["AY"] == Self.ascii("50", paddedTo: 5, with: 0x00))
+        #expect(fields["+X"] == Self.ascii("100", paddedTo: 4, with: 0x00))
+        #expect(fields["-X"] == Self.ascii("20", paddedTo: 4, with: 0x00))
+        #expect(fields["+Y"] == Self.ascii("90", paddedTo: 4, with: 0x00))
+        #expect(fields["-Y"] == Self.ascii("10", paddedTo: 4, with: 0x00))
+        #expect(fields["AX"] == Self.ascii("20", paddedTo: 5, with: 0x00))
+        #expect(fields["AY"] == Self.ascii("80", paddedTo: 5, with: 0x00))
     }
 
     @Test("an empty stream produces a zeroed header with CO:1")
