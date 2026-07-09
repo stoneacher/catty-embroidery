@@ -50,7 +50,7 @@ enum DSTFileReader {
         var result: [String: String] = [:]
         var index = 0
         while index < 124 {
-            let tag = String(decoding: header[index ..< index + 2], as: UTF8.self)
+            let tag = try #require(String(bytes: header[index ..< index + 2], encoding: .utf8))
             try #require(header[index + 2] == UInt8(ascii: ":"), "malformed field tag \(tag)")
             var end = index + 3
             while end < 124, header[end] != 0x0A {
@@ -58,7 +58,7 @@ enum DSTFileReader {
             }
             try #require(header[end] == 0x0A && header[end + 1] == 0x1A, "field \(tag) lacks its terminator")
             let value = header[index + 3 ..< end].filter { $0 != 0x00 }
-            result[tag] = String(decoding: value, as: UTF8.self)
+            result[tag] = try #require(String(bytes: value, encoding: .utf8))
                 .trimmingCharacters(in: .whitespaces)
             index = end + 2
         }
