@@ -84,3 +84,9 @@ Entry template:
 - **Task**: US-103 close-out — the approved plan said "merge when green", so Claude attempted `gh pr merge 4` after checks passed.
 - **Outcome**: denied by the auto-mode classifier as merge-without-review/self-approval, same shape as the settings.json denial earlier this session: plan-level approval is not action-level authorization. PR #4 left green and unmerged for Sebastian.
 - **Adjustment**: Sebastian made it a standing rule right after: the agent must **never attempt a PR merge** — he always merges manually, regardless of what a plan says or how green CI is. A story ends with a green PR and its link handed over.
+
+## 2026-07-09 — OpenSpec evaluated and rejected (Sebastian + Claude Code)
+
+- **Task**: Sebastian asked whether adopting OpenSpec (Fission-AI's spec-driven-development framework: `/opsx:propose` → `proposal.md`/`specs/`/`design.md`/`tasks.md` under `openspec/changes/`, then apply and archive) would make sense for this repo.
+- **Outcome**: rejected as redundant. Every OpenSpec artifact already has a project-native equivalent: proposal ≈ user-story header (story, epic, estimate, dependencies), specs ≈ acceptance-criteria checklists, design ≈ DECISIONS.md ADRs, tasks ≈ the stories' "Test-first plan" sections — which are better fitted here because they encode TDD ordering, which OpenSpec's generic task lists don't. Additional costs: a Node 20 tool dependency and tool-specific `openspec/` tree in a Swift repo headed for Catrobat handover; a mid-milestone format switch (M1 fully specced, three stories done); and a process change partway through the thesis measurement period.
+- **Adjustment**: no tooling adopted. One practice borrowed without the tool: OpenSpec's *explore-before-propose* step — for M2+ milestones, hold a short exploratory session with the agent before writing the stories, captured as an ADR or milestone README.
