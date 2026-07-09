@@ -15,13 +15,14 @@ Run OpenAI Codex as the second, independent reviewer of the current story branch
 
 Run from the repo root against the branch's diff vs `main`. Use the Bash tool's background mode — a review takes minutes; watch for the completion notification instead of polling.
 
-Note the flag placement: `-s`/`-C`/`-o` are `exec` options and must come **before** the `review` subcommand.
+Use plain `codex exec` (not the `review` subcommand — it rejects a custom prompt combined with `--base`) and put the diff scope in the prompt:
 
 ```
 codex exec -s read-only -C "$PWD" -o /tmp/codex-review-verdict.md \
-  review --base main \
-  "You are the independent cross-vendor reviewer for a Swift 6 embroidery engine that emits Tajima DST files. Byte-level semantics are pinned in docs/DECISIONS.md (ADR-012 and ADR-013) — read them first; they are the arbiter, not your priors. Focus adversarially on semantics and correctness: try to construct concrete inputs (stage coordinates, color changes, jumps, boundary values) where the changed code produces wrong DST bytes, diverges from the pinned Catroid semantics, or violates an ADR. Also name test blind spots: real failure modes the suite cannot catch. Do NOT comment on style, formatting, naming, or architecture taste — a separate reviewer covers those. For each finding: severity, file:line, a concrete reproducing input, and why the ADRs say it is wrong."
+  "Review the changes shown by \`git diff main...HEAD\` (run it yourself; also read the touched files for context). You are the independent cross-vendor reviewer for a Swift 6 embroidery engine that emits Tajima DST files. Byte-level semantics are pinned in docs/DECISIONS.md (ADR-012 and ADR-013) — read them first; they are the arbiter, not your priors. Focus adversarially on semantics and correctness: try to construct concrete inputs (stage coordinates, color changes, jumps, boundary values) where the changed code produces wrong DST bytes, diverges from the pinned Catroid semantics, or violates an ADR. Also name test blind spots: real failure modes the suite cannot catch. Do NOT comment on style, formatting, naming, or architecture taste — a separate reviewer covers those. For each finding: severity, file:line, a concrete reproducing input, and why the ADRs say it is wrong."
 ```
+
+For a workflow/tooling-only diff (no engine code), swap the rubric focus to the automation itself: hook shell-quoting/JSON-escaping bugs, matcher false positives/negatives, documented-command invocation errors, and contradictions with existing project docs.
 
 ## 3. Triage — the ADRs are the arbiter
 
