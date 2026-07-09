@@ -20,7 +20,7 @@ func firstByteDifference(actual: [UInt8], expected: [UInt8]) -> String? {
     }
     lines.append(
         String(format: "first mismatch at offset %d (0x%X): ", offset, offset)
-            + "\(byteDescription(actual, at: offset)) vs \(byteDescription(expected, at: offset)) expected"
+            + "actual \(byteDescription(actual, at: offset)), expected \(byteDescription(expected, at: offset))"
     )
     lines.append("actual   " + hexWindow(actual, around: offset))
     lines.append("expected " + hexWindow(expected, around: offset))

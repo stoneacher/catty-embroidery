@@ -19,6 +19,27 @@ struct InterpolationTests {
         return stride(from: 0, to: body.count, by: 3).map { Array(body[$0 ..< $0 + 3]) }
     }
 
+    /// Clean-failure guard (US-105 journal lesson): checks encodability
+    /// with direct position math, never touching the production encoder —
+    /// an interpolation regression fails here as an expectation instead of
+    /// tripping `DSTFile`'s precondition and killing the test process.
+    @Test("Interpolated streams keep every consecutive delta encodable")
+    func deltasStayEncodable() {
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 0, y: 0))
+        stream.addStitch(at: StagePoint(x: 250, y: 0))
+        stream.addStitch(at: StagePoint(x: -123.4, y: 250.1))
+
+        var previous: EmbroideryPoint?
+        for stitch in stream.stitches {
+            let dx = stitch.position.x - (previous ?? stitch.position).x
+            let dy = stitch.position.y - (previous ?? stitch.position).y
+            #expect(abs(dx) <= DSTStitchRecord.maxDelta, "unencodable dx \(dx)")
+            #expect(abs(dy) <= DSTStitchRecord.maxDelta, "unencodable dy \(dy)")
+            previous = stitch.position
+        }
+    }
+
     @Test("Delta of exactly 121 units passes through uninterpolated")
     func boundaryPassthrough() {
         var stream = EmbroideryStream()

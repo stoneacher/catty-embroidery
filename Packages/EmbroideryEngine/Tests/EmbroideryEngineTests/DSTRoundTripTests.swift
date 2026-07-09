@@ -36,7 +36,9 @@ struct DSTRoundTripTests {
 
     /// Asserts the decoded file against the stream: ST, record count,
     /// flags, positions, and the four extents plus AX/AY relative to the
-    /// first stitch.
+    /// first stitch. The extent formulas mirror `DSTHeader`'s on purpose —
+    /// this property checks writer/reader agreement; the US-104 fixture
+    /// goldens are the independent anchor for the semantics.
     private static func expectMatches(_ decoded: DecodedDSTFile, _ stream: EmbroideryStream) throws {
         #expect(decoded.headerValue("ST") == stream.count)
         #expect(decoded.records.count == stream.count)

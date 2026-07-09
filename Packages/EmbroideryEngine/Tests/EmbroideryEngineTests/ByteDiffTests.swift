@@ -14,8 +14,7 @@ struct ByteDiffTests {
         actual[18] = 0xC3
         let message = try #require(firstByteDifference(actual: actual, expected: Array(UInt8(0) ..< 40)))
         #expect(message.contains("offset 18 (0x12)"))
-        #expect(message.contains("0xC3"))
-        #expect(message.contains("0x12 expected"))
+        #expect(message.contains("actual 0xC3, expected 0x12"))
         #expect(!message.contains("length mismatch"))
     }
 
@@ -34,7 +33,7 @@ struct ByteDiffTests {
         let message = try #require(firstByteDifference(actual: [1, 2, 3, 4], expected: [1, 2, 3]))
         #expect(message.contains("length mismatch: actual 4 bytes, expected 3 bytes"))
         #expect(message.contains("offset 3 (0x3)"))
-        #expect(message.contains("end of data expected"))
+        #expect(message.contains("actual 0x04, expected end of data"))
     }
 
     @Test("a shorter actual reports the length mismatch and where it ends")
@@ -42,6 +41,6 @@ struct ByteDiffTests {
         let message = try #require(firstByteDifference(actual: [1, 2], expected: [1, 2, 3]))
         #expect(message.contains("length mismatch: actual 2 bytes, expected 3 bytes"))
         #expect(message.contains("offset 2 (0x2)"))
-        #expect(message.contains("end of data vs 0x03 expected"))
+        #expect(message.contains("actual end of data, expected 0x03"))
     }
 }

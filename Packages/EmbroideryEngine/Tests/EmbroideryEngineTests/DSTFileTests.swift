@@ -21,9 +21,10 @@ struct DSTFileTests {
     /// ADR-013: Catroid flag placement wins (Catroweb: same program, same
     /// bytes as Android), so the expected bytes are the fixture with the
     /// color-change flag moved off Catty's placement — from the second
-    /// move's duplicate jump (record 9) onto its final plain stitch
-    /// (record 15). The `#require`s pin that the transposition still
-    /// touches the fixture bytes it was derived from.
+    /// move's duplicate jump (record 9, 1-based; zero-based index 8 below)
+    /// onto its final plain stitch (record 15; index 14). The `#require`s
+    /// pin that the transposition still touches the fixture bytes it was
+    /// derived from.
     @Test("reproduces color_change.dst through the ADR-013 flag transposition")
     func goldenColorChange() throws {
         let stream = Self.makeStream([(0, 0), (250, 0), (0, 0), (0, 250)], colorChangeBefore: 2)
