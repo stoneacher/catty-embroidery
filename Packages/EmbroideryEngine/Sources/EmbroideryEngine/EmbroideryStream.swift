@@ -19,6 +19,10 @@ public struct EmbroideryStream: Hashable, Sendable {
 
     private var nextIsJump = false
     private var nextIsColorChange = false
+    /// Stage-space position of the last appended stitch. Interpolation must
+    /// compute and round intermediates in stage coordinates *before* the ×2
+    /// unit conversion (ADR-012), and `Stitch` only keeps converted units.
+    private var lastStagePosition: StagePoint?
 
     public init() {}
 
@@ -61,15 +65,64 @@ public struct EmbroideryStream: Hashable, Sendable {
     }
 
     /// Appends a stitch at a stage-space position, converting to embroidery
-    /// units and consuming any pending jump/color-change flags.
+    /// units and consuming any pending jump/color-change flags. Moves longer
+    /// than ±121 units on either axis are first split into jump stitches
+    /// (US-105); the pending flags are captured before interpolation runs and
+    /// land on the final stitch, as in Catroid `DSTStream.addStitchPoint`.
     public mutating func addStitch(at stagePoint: StagePoint, color: ThreadColor = .black) {
+        let isJump = nextIsJump
+        let isColorChange = nextIsColorChange
+        nextIsJump = false
+        nextIsColorChange = false
+
+        if let previous = lastStagePosition {
+            addInterpolatedStitches(from: previous, to: stagePoint, color: color)
+        }
         stitches.append(Stitch(
             position: EmbroideryPoint(converting: stagePoint),
             color: color,
-            isJump: nextIsJump,
-            isColorChange: nextIsColorChange
+            isJump: isJump,
+            isColorChange: isColorChange
         ))
-        nextIsJump = false
-        nextIsColorChange = false
+        lastStagePosition = stagePoint
+    }
+
+    /// Port of Catroid `DSTStream.addInterpolatedPoints` (ADR-012, byte-pinned
+    /// for the US-106 golden test): when the move exceeds ±121 units, emit a
+    /// duplicate of the previous point, `splitCount − 1` evenly spaced
+    /// intermediates (rounded in stage coordinates), and the target — all as
+    /// jumps — before the caller appends the target again as a plain stitch.
+    /// Emission recurses through `addStitch` exactly like the reference, so
+    /// each emitted point re-checks its own distance. The duplicate and the
+    /// intermediates keep the previous stitch's color; the target jump
+    /// already carries the new one.
+    private mutating func addInterpolatedStitches(
+        from previous: StagePoint,
+        to target: StagePoint,
+        color: ThreadColor
+    ) {
+        let distance = max(
+            abs(EmbroideryPoint.embroideryUnits(fromStageValue: target.x - previous.x)),
+            abs(EmbroideryPoint.embroideryUnits(fromStageValue: target.y - previous.y))
+        )
+        guard distance > DSTStitchRecord.maxDelta else { return }
+        let splitCount = Int((Double(distance) / Double(DSTStitchRecord.maxDelta)).rounded(.up))
+        let previousColor = stitches.last?.color ?? color
+
+        addJump()
+        addStitch(at: previous, color: previousColor)
+
+        for count in 1 ..< splitCount {
+            let factor = Double(count) / Double(splitCount)
+            let intermediate = StagePoint(
+                x: javaRound(previous.x + factor * (target.x - previous.x)),
+                y: javaRound(previous.y + factor * (target.y - previous.y))
+            )
+            addJump()
+            addStitch(at: intermediate, color: previousColor)
+        }
+
+        addJump()
+        addStitch(at: target, color: color)
     }
 }

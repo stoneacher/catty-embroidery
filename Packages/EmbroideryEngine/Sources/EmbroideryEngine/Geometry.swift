@@ -10,6 +10,13 @@ public struct StagePoint: Hashable, Sendable {
     }
 }
 
+/// The ADR-012 rounding rule: Java `Math.round` = `floor(x + 0.5)`, which
+/// differs from Swift `.rounded()` on negative halves (−6.5 → −6, not −7).
+/// Every stage-space rounding in the engine goes through this.
+func javaRound(_ value: Double) -> Double {
+    (value + 0.5).rounded(.down)
+}
+
 /// A point in embroidery units (0.1 mm, the DST coordinate grid).
 public struct EmbroideryPoint: Hashable, Sendable {
     public var x: Int
@@ -21,9 +28,8 @@ public struct EmbroideryPoint: Hashable, Sendable {
     }
 
     /// Converts a stage point to embroidery units: factor 2.0, then
-    /// `floor(v + 0.5)` per axis — Java `Math.round` semantics, which differ
-    /// from Swift `.rounded()` on negative halves (−6.5 → −6, not −7).
-    /// No y-flip: stage y-up maps straight to DST +Y (ADR-007/ADR-012).
+    /// `javaRound` per axis. No y-flip: stage y-up maps straight to DST +Y
+    /// (ADR-007/ADR-012).
     public init(converting stagePoint: StagePoint) {
         self.init(
             x: Self.embroideryUnits(fromStageValue: stagePoint.x),
@@ -34,7 +40,10 @@ public struct EmbroideryPoint: Hashable, Sendable {
     /// Stage points → embroidery units factor (Catroid `STITCH_POINT_UNIT_FACTOR`).
     public static let stitchPointUnitFactor = 2.0
 
-    private static func embroideryUnits(fromStageValue value: Double) -> Int {
-        Int((value * stitchPointUnitFactor + 0.5).rounded(.down))
+    /// Internal so the interpolation split decision can convert a stage
+    /// *difference* (Catroid `toEmbroideryUnit` in `getMaxDistanceBetweenPoints`)
+    /// — the one place ADR-012 allows converting a difference, decision only.
+    static func embroideryUnits(fromStageValue value: Double) -> Int {
+        Int(javaRound(value * stitchPointUnitFactor))
     }
 }
