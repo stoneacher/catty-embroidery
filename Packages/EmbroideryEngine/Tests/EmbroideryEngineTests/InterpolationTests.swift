@@ -10,28 +10,13 @@ import Testing
 /// conversion), target as jump, then target again as a plain stitch.
 @Suite("Long-move interpolation and jumps")
 struct InterpolationTests {
-    /// Encodes a stream's stitches as DST records the way the US-106 file
-    /// generator will: the first record moves nowhere, every later record
-    /// is the delta between consecutive absolute positions. Requires every
-    /// delta to be encodable — interpolation's core guarantee — instead of
-    /// letting the encoder's precondition kill the test process.
-    private func records(for stream: EmbroideryStream) throws -> [DSTStitchRecord] {
-        var previous: EmbroideryPoint?
-        return try stream.stitches.map { stitch in
-            let dx = stitch.position.x - (previous ?? stitch.position).x
-            let dy = stitch.position.y - (previous ?? stitch.position).y
-            previous = stitch.position
-            try #require(
-                abs(dx) <= DSTStitchRecord.maxDelta && abs(dy) <= DSTStitchRecord.maxDelta,
-                "stream emitted an unencodable delta (\(dx), \(dy))"
-            )
-            return DSTStitchRecord(
-                dx: dx,
-                dy: dy,
-                isJump: stitch.isJump,
-                isColorChange: stitch.isColorChange
-            )
-        }
+    /// Encodes a stream through the production US-106 file generator and
+    /// returns its 3-byte records (header and end-of-file record stripped).
+    /// Replaced the pre-US-106 hand-rolled record sequence so these tests
+    /// exercise the real serialization path.
+    private func records(for stream: EmbroideryStream) -> [[UInt8]] {
+        let body = Array(DSTFile(stream: stream, name: "test").data.dropFirst(512).dropLast(3))
+        return stride(from: 0, to: body.count, by: 3).map { Array(body[$0 ..< $0 + 3]) }
     }
 
     @Test("Delta of exactly 121 units passes through uninterpolated")
@@ -104,18 +89,16 @@ struct InterpolationTests {
         ))
         let fixture = try Data(contentsOf: url)
         let fixtureRecords = fixture.dropFirst(512).dropLast(3)
-        #expect(try records(for: stream).flatMap(\.bytes) == Array(fixtureRecords))
+        expectBytesEqual(records(for: stream).flatMap(\.self), fixtureRecords)
     }
 
     @Test("Emitted deltas telescope to the exact converted target and stay encodable")
-    func accumulatedRounding() throws {
+    func accumulatedRounding() {
         var stream = EmbroideryStream()
         stream.addStitch(at: StagePoint(x: 0, y: 0))
         stream.addStitch(at: StagePoint(x: 123.4, y: -250.1))
 
-        let deltas = try records(for: stream).map {
-            DSTRecordDecoder.decode($0.bytes)
-        }
+        let deltas = records(for: stream).map(DSTRecordDecoder.decode)
         let target = EmbroideryPoint(converting: StagePoint(x: 123.4, y: -250.1))
         #expect(deltas.reduce(0) { $0 + $1.dx } == target.x)
         #expect(deltas.reduce(0) { $0 + $1.dy } == target.y)
