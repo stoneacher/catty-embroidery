@@ -14,6 +14,7 @@ A standalone native iOS app bringing Catrobat's embroidery functionality (the An
 2. **Small iterations**: one user story (≤ ~5 h) at a time; many small, coherent, buildable commits. Never commit with failing engine tests.
 3. Where the Catroid and Catty references disagree, **ADR-012 is the arbiter** — never "fix" a red golden test by consulting the other reference.
 4. **Two-layer review before handover**: every PR gets an in-loop code review during the session plus an independent cross-vendor review (rubric in `.claude/commands/codex-review.md`), with the verdict recorded in the PR description before it is handed over for merge. PRs created outside Claude Code must satisfy the same rule.
+5. **`docs/workflow-journal.md` is append-only** (thesis data): never edit an existing entry; corrections are new dated entries referencing the old one.
 
 ## Stack & standards
 

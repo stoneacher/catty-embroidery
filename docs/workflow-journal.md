@@ -2,6 +2,8 @@
 
 Running log of how AI coding agents are used in this project: what was delegated, to which tool, what worked, what failed, and which guardrail (hook, CLAUDE.md rule, permission) was added in response. Raw data for the thesis methodology chapter — entries are short and dated; polish happens in the thesis, not here.
 
+**Append-only** (rule from Sebastian, 2026-07-10): existing entries are never edited or amended — the unrevised record, including mistakes and wrong first attempts, is the data. To correct something an earlier entry got wrong, append a new dated entry referencing it.
+
 Entry template:
 
 ```
@@ -148,3 +150,8 @@ Entry template:
 - **Task**: first live run of `/codex-review`, dogfooded on its own PR (#9). Two invocation failures first: `codex exec review` rejects `-s` (exec options must precede the subcommand), then rejects a custom prompt combined with `--base` — final form is plain `codex exec -s read-only` with the diff scope (`git diff main...HEAD`) inside the prompt. Correction to the 2026-07-09 automation entry: it recorded the never-working `codex exec review --base main -s read-only` form (that entry stands as written — this journal is append-only, per Sebastian: editing entries kills the file's purpose as raw thesis data).
 - **Outcome**: 5 findings, all triaged valid, all fixed. The standout: **AGENTS.md exists, claims to mirror CLAUDE.md, and was never synced** with any of this week's rule changes — Claude had missed the file's existence across every session; a cross-vendor reviewer reading the repo fresh caught it immediately. Also valid: the hook's if/elif chain let `git push && gh pr create` suppress the push→CI reminder (both reminders now emitted, built via `jq --arg`); env-prefixed `VAR=x gh pr create` escaped the matcher (regex hardened); `gh pr create --help` false-fired (guarded); plus the invocation record above. Fixes pipe-tested against ten payload shapes.
 - **Adjustment**: AGENTS.md now carries the two-layer-review handover rule (agent-agnostic phrasing) and the ADR-001…013 range, and "sync AGENTS.md with CLAUDE.md changes" is recorded as part of the rule. Thesis data point: the cross-vendor reviewer's first outing justified the independence argument — its unique catch (AGENTS.md) is exactly the fresh-eyes class of finding the same-family in-loop reviewer structurally can't make, since the omission lived in the context it inherited.
+
+## 2026-07-10 — Journal declared append-only (Sebastian + Claude Code)
+
+- **New rule from Sebastian**: entries in this journal are never edited or amended — editing kills its purpose as the unrevised raw record for the thesis; corrections are new dated entries referencing the old one. Triggered when Claude tried to fix the 2026-07-09 automation entry's invalid `codex exec review` invocation in place.
+- **Adjustment**: rule pinned in this file's header, CLAUDE.md ("Agentic workflow rules"), AGENTS.md (process rules), and agent memory.

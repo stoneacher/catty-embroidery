@@ -37,7 +37,7 @@ A standalone native iOS app bringing Catrobat's embroidery functionality (the An
 - **Never edit `*.pbxproj`** (permission rule asks first): app sources use synchronized folder groups, so Swift files created on disk under `catrobat_embroidery_ios/catrobat_embroidery_ios/` are picked up automatically. Target/package-dependency changes are done by the human in Xcode.
 - Edited Swift files are auto-formatted by a PostToolUse SwiftFormat hook (no-ops if `swiftformat` is missing).
 - **UI stories**: definition of done includes building, running on the simulator, and capturing a screenshot via XcodeBuildMCP for visual review.
-- After notable workflow events (delegation wins/failures, new hooks or rules, tool comparisons), append a short entry to `docs/workflow-journal.md` — it is thesis data.
+- After notable workflow events (delegation wins/failures, new hooks or rules, tool comparisons), append a short entry to `docs/workflow-journal.md` — it is thesis data. The journal is **append-only**: never edit an existing entry; corrections are new dated entries referencing the old one.
 
 ## Reference repositories
 
