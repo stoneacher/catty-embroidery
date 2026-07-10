@@ -103,6 +103,30 @@ struct RunningStitchPatternTests {
         ], "4 units from the (2,0) anchor yield two stitches")
     }
 
+    @Test("Zero and negative lengths emit nothing instead of trapping")
+    func degenerateLengths() {
+        // Catroid's brick falls back to length 0 on formula errors and
+        // interpretInteger accepts negatives; Java survives by NaN-poisoning
+        // its anchor and going dead. We guard instead of porting the
+        // accident: emit nothing, don't crash.
+        var zero = RunningStitchPattern(length: 0, start: StagePoint(x: 0, y: 0))
+        #expect(update(&zero, to: 5, 0).isEmpty)
+        var negative = RunningStitchPattern(length: -2, start: StagePoint(x: 0, y: 0))
+        #expect(update(&negative, to: 5, 0).isEmpty)
+    }
+
+    @Test("Non-finite needle positions emit nothing and leave the pattern alive")
+    func nonFinitePositions() {
+        var pattern = RunningStitchPattern(length: 2, start: StagePoint(x: 0, y: 0))
+        #expect(update(&pattern, to: .infinity, 0).isEmpty)
+        #expect(update(&pattern, to: Double.nan, 0).isEmpty)
+        #expect(update(&pattern, to: 4, 0) == [
+            StagePoint(x: 0, y: 0),
+            StagePoint(x: 2, y: 0),
+            StagePoint(x: 4, y: 0)
+        ], "the anchor survives the rejected updates untouched")
+    }
+
     @Test("Interpolated positions use javaRound: -2.5 rounds to -2, not -3")
     func javaRoundNegativeHalves() {
         // Midpoint of (0,0)→(-5,0) at length 2.5 lands on exactly -2.5;

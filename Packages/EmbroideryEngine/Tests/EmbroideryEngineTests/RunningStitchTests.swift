@@ -81,6 +81,17 @@ struct RunningStitchTests {
         #expect(wrapper.update(needle(20, 0)).isEmpty)
     }
 
+    @Test("Copies are independent values — pattern state does not alias")
+    func valueSemantics() {
+        // The pattern is stored as a boxed existential; this pins the
+        // copy-on-write value semantics against a future class refactor.
+        var original = activatedRunningStitch()
+        var copy = original
+        #expect(original.update(needle(2, 0)) == [StagePoint(x: 0, y: 0), StagePoint(x: 2, y: 0)])
+        #expect(copy.update(needle(2, 0)) == [StagePoint(x: 0, y: 0), StagePoint(x: 2, y: 0)],
+                "the copy's anchor and first flag are unaffected by the original's update")
+    }
+
     @Test("setStartPosition before activate is a harmless no-op")
     func setStartBeforeActivate() {
         // Port of Catroid testInvalidSetStartCoordinates.
