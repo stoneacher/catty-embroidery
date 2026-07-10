@@ -32,11 +32,15 @@ Work through this checklist against what actually happened in this session and t
 - If yes, tell Sebastian **explicitly and prominently** that a manual check with the Inkscape embroidery plugin (Ink/Stitch) is needed: name the exact file or design to generate/open, and what to look for (e.g. stitch count, colors, physical size in mm, visual shape). Precedent: US-101's "empty" fixture renders — automated tests were green while only a viewer could confirm what a machine would actually sew.
 - If no manual check is warranted, state that explicitly too ("no Ink/Stitch verification needed for this story — no DST/geometry output changed"). Never leave it unaddressed.
 
-## 6. Ship it
+## 6. Cross-vendor Codex review
+
+- Verify `/codex-review` ran for this branch and its verdict is recorded in the PR description (a "Codex review" section). If it hasn't run, run it now — the PR is not ready for handover without it. (The gh-pr-create hook reminds at creation time; this step catches branches whose PR predates the rule or where the reminder was missed.)
+
+## 7. Ship it
 
 - Engine tests green: `swift test` in `Packages/EmbroideryEngine`.
 - Working tree clean: commit any doc updates (concise imperative message, no trailers), push, and watch CI to green (`gh pr checks <pr> --watch`).
 
-## 7. Report
+## 8. Report
 
-End with a short summary: per file — updated / already correct / nothing to record; story status; CI state; the Ink/Stitch verdict from step 5; anything left open for the next session.
+End with a short summary: per file — updated / already correct / nothing to record; story status; CI state; the Ink/Stitch verdict from step 5; the Codex review verdict from step 6; anything left open for the next session.
