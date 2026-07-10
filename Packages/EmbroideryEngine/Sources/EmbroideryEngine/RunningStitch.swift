@@ -14,22 +14,36 @@ public struct RunningStitch: Sendable {
     /// Catroid `activateStitching`: installs a pattern and starts. A
     /// non-optional parameter makes the reference's null-type case
     /// unrepresentable.
-    public mutating func activate(_: any StitchPattern) {}
+    public mutating func activate(_ pattern: any StitchPattern) {
+        self.pattern = pattern
+        isRunning = true
+    }
 
     /// Catroid `update()`: delegates to the pattern while running,
     /// otherwise emits nothing.
-    public mutating func update(_: NeedleUpdate) -> [StagePoint] {
-        []
+    public mutating func update(_ needle: NeedleUpdate) -> [StagePoint] {
+        guard isRunning else { return [] }
+        return pattern?.update(needle) ?? []
     }
 
     /// Catroid `setStartCoordinates`: delegates when a pattern is set.
-    public mutating func setStartPosition(_: StagePoint) {}
+    public mutating func setStartPosition(_ position: StagePoint) {
+        pattern?.setStartPosition(position)
+    }
 
-    public mutating func pause() {}
+    public mutating func pause() {
+        isRunning = false
+    }
 
     /// Resumes only while a pattern is installed (Catroid `resume`).
-    public mutating func resume() {}
+    public mutating func resume() {
+        guard pattern != nil else { return }
+        isRunning = true
+    }
 
     /// Catroid `deactivate`: stops and discards the pattern.
-    public mutating func stop() {}
+    public mutating func stop() {
+        isRunning = false
+        pattern = nil
+    }
 }
