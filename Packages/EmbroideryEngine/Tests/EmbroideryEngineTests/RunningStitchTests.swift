@@ -64,8 +64,9 @@ struct RunningStitchTests {
         paused.pause()
         paused.resume()
         #expect(paused.isRunning)
-        #expect(paused.update(needle(4, 0)) == control.update(needle(4, 0)))
-        #expect(paused.update(needle(4, 0)) == [StagePoint(x: 4, y: 0)])
+        let resumed = paused.update(needle(4, 0))
+        #expect(resumed == control.update(needle(4, 0)))
+        #expect(resumed == [StagePoint(x: 4, y: 0)])
     }
 
     @Test("stop clears the pattern: updates stay empty and resume cannot restart")
