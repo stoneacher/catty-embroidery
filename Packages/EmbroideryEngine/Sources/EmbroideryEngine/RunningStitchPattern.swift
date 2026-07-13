@@ -44,7 +44,12 @@ public struct RunningStitchPattern: StitchPattern {
         // surplus (Catroid `surplusPercentage`).
         let surplus = (distance - remainder) / distance
         let clamped = StagePoint(x: anchor.x + surplus * dx, y: anchor.y + surplus * dy)
-        let count = Int(((distance - remainder) / length).rounded(.down))
+        let wholeLengths = ((distance - remainder) / length).rounded(.down)
+        // Astronomical counts (needle at 1e19, subnormal lengths) pass the
+        // finiteness guards but would trap the Int conversion; rejected per
+        // ADR-014 rather than porting Java's saturate-and-hang.
+        guard wholeLengths <= maxStitchesPerUpdate else { return [] }
+        let count = Int(wholeLengths)
 
         var stitches: [StagePoint] = []
         if first {
