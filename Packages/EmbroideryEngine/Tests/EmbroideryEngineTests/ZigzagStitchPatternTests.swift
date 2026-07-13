@@ -224,6 +224,21 @@ struct ZigzagStitchPatternTests {
         ], "the anchor was not advanced by the rejected updates")
     }
 
+    @Test("Astronomical stitch counts are rejected — Java saturates its int cast and hangs; Swift would trap")
+    func astronomicalStitchCount() {
+        // length 1 with a needle at 1e19 passes every finiteness guard, and
+        // Int(1e19) traps (> Int.max). Catroid's `(int) Math.floor` saturates
+        // to Integer.MAX_VALUE and Android hangs materializing the stitches —
+        // neither accident is ported (ADR-014): the update emits nothing.
+        var pattern = ZigzagStitchPattern(length: 1, width: 2, start: StagePoint(x: 0, y: 0))
+        #expect(update(&pattern, to: 1e19, 0, heading: 90).isEmpty)
+        // A subnormal length drives the ratio to infinity — same rejection.
+        var subnormal = ZigzagStitchPattern(
+            length: .leastNonzeroMagnitude, width: 2, start: StagePoint(x: 0, y: 0)
+        )
+        #expect(update(&subnormal, to: 10, 0, heading: 90).isEmpty)
+    }
+
     @Test("A non-finite width emits nothing — NaN offsets would trap at unit conversion")
     func nonFiniteWidth() {
         var nan = ZigzagStitchPattern(length: 2, width: .nan, start: StagePoint(x: 0, y: 0))

@@ -115,6 +115,19 @@ struct RunningStitchPatternTests {
         #expect(update(&negative, to: 5, 0).isEmpty)
     }
 
+    @Test("Astronomical stitch counts are rejected — Java saturates its int cast and hangs; Swift would trap")
+    func astronomicalStitchCount() {
+        // Found by US-108's review: length 1 with a needle at 1e19 passes
+        // every finiteness guard, and Int(1e19) traps (> Int.max). Catroid's
+        // `(int) Math.floor` saturates to Integer.MAX_VALUE and Android hangs
+        // materializing the stitches — neither accident is ported (ADR-014).
+        var pattern = RunningStitchPattern(length: 1, start: StagePoint(x: 0, y: 0))
+        #expect(update(&pattern, to: 1e19, 0).isEmpty)
+        // A subnormal length drives the ratio to infinity — same rejection.
+        var subnormal = RunningStitchPattern(length: .leastNonzeroMagnitude, start: StagePoint(x: 0, y: 0))
+        #expect(update(&subnormal, to: 10, 0).isEmpty)
+    }
+
     @Test("Non-finite needle positions emit nothing and leave the pattern alive")
     func nonFinitePositions() {
         var pattern = RunningStitchPattern(length: 2, start: StagePoint(x: 0, y: 0))
