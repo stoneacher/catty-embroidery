@@ -105,14 +105,28 @@ struct RunningStitchPatternTests {
 
     @Test("Zero and negative lengths emit nothing instead of trapping")
     func degenerateLengths() {
-        // Catroid's brick falls back to length 0 on formula errors and
-        // interpretInteger accepts negatives; Java survives by NaN-poisoning
-        // its anchor and going dead. We guard instead of porting the
-        // accident: emit nothing, don't crash.
+        // Catroid's brick falls back to length 0 on formula errors, where
+        // Java survives by NaN-poisoning its anchor and going dead; a
+        // negative length (interpretInteger accepts them) instead emits
+        // degenerate duplicate spam every update (ADR-014, corrected by the
+        // US-108 Codex review). We guard both: emit nothing, don't crash.
         var zero = RunningStitchPattern(length: 0, start: StagePoint(x: 0, y: 0))
         #expect(update(&zero, to: 5, 0).isEmpty)
         var negative = RunningStitchPattern(length: -2, start: StagePoint(x: 0, y: 0))
         #expect(update(&negative, to: 5, 0).isEmpty)
+    }
+
+    @Test("Astronomical stitch counts are rejected — Java saturates its int cast and hangs; Swift would trap")
+    func astronomicalStitchCount() {
+        // Found by US-108's review: length 1 with a needle at 1e19 passes
+        // every finiteness guard, and Int(1e19) traps (> Int.max). Catroid's
+        // `(int) Math.floor` saturates to Integer.MAX_VALUE and Android hangs
+        // materializing the stitches — neither accident is ported (ADR-014).
+        var pattern = RunningStitchPattern(length: 1, start: StagePoint(x: 0, y: 0))
+        #expect(update(&pattern, to: 1e19, 0).isEmpty)
+        // A subnormal length drives the ratio to infinity — same rejection.
+        var subnormal = RunningStitchPattern(length: .leastNonzeroMagnitude, start: StagePoint(x: 0, y: 0))
+        #expect(update(&subnormal, to: 10, 0).isEmpty)
     }
 
     @Test("Non-finite needle positions emit nothing and leave the pattern alive")

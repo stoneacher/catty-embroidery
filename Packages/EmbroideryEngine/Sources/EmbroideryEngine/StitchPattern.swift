@@ -13,6 +13,16 @@ public struct NeedleUpdate: Hashable, Sendable {
     }
 }
 
+/// Upper bound on the *whole-length count* of a single needle update
+/// (ADR-014); a boundary update can emit one point more (the lazy anchor).
+/// The count is compared against this before the `Int` conversion:
+/// Catroid's `(int)` cast saturates to `Integer.MAX_VALUE` and Android hangs
+/// materializing the stitches, while Swift's `Int(_:)` would trap — neither
+/// accident is ported; the update is rejected outright. A million stitches is
+/// two orders of magnitude past any legitimate design (DST's stitch-count
+/// header field itself caps at seven digits).
+let maxStitchesPerUpdate = 1_000_000.0
+
 /// A pure stitch-generating state machine (Catroid `RunningStitchType`).
 /// Patterns return stage-space stitch positions and never touch the
 /// `EmbroideryStream` — the stream stays the single writer, owning unit
