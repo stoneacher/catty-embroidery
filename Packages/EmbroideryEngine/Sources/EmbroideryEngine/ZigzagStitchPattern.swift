@@ -109,7 +109,12 @@ public struct ZigzagStitchPattern: StitchPattern {
     /// alternation is the pattern's defining invariant, so every emitted
     /// point must pass through here exactly once.
     private mutating func offsetPoint(_ base: StagePoint, heading: Double) -> StagePoint {
-        let radians = (heading + 90) * .pi / 180
+        // Normalized mod 360 before scaling (exact under IEEE remainder):
+        // degrees are periodic, and for headings near .greatestFiniteMagnitude
+        // the raw `(heading + 90) * .pi` would overflow to infinity, whose
+        // sin/cos is NaN — finite input, NaN output, downstream trap (Codex
+        // US-108 find).
+        let radians = (heading + 90).truncatingRemainder(dividingBy: 360) * .pi / 180
         let half = width / 2
         let point = StagePoint(
             x: base.x - half * sin(radians) * direction,

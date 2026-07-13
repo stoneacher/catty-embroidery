@@ -105,10 +105,11 @@ struct RunningStitchPatternTests {
 
     @Test("Zero and negative lengths emit nothing instead of trapping")
     func degenerateLengths() {
-        // Catroid's brick falls back to length 0 on formula errors and
-        // interpretInteger accepts negatives; Java survives by NaN-poisoning
-        // its anchor and going dead. We guard instead of porting the
-        // accident: emit nothing, don't crash.
+        // Catroid's brick falls back to length 0 on formula errors, where
+        // Java survives by NaN-poisoning its anchor and going dead; a
+        // negative length (interpretInteger accepts them) instead emits
+        // degenerate duplicate spam every update (ADR-014, corrected by the
+        // US-108 Codex review). We guard both: emit nothing, don't crash.
         var zero = RunningStitchPattern(length: 0, start: StagePoint(x: 0, y: 0))
         #expect(update(&zero, to: 5, 0).isEmpty)
         var negative = RunningStitchPattern(length: -2, start: StagePoint(x: 0, y: 0))
