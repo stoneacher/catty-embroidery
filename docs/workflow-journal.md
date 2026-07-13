@@ -191,3 +191,8 @@ Entry template:
 
 - **Observation**: Sebastian switched the Claude Code session model to **Claude Fable 5** at the start of the US-108 session (previous stories ran on earlier models); US-108 and the verification-round workflow change are the first work produced under it. Subagent models are configured per agent definition and did not necessarily change with the session model.
 - **Why it's here**: cross-story comparisons of delegation outcomes (e.g. swift-architect's transient failures, green-phase one-shot rates, review-layer catch rates) are only apples-to-apples within a model generation; the thesis should treat 2026-07-13 as a boundary when aggregating.
+
+## 2026-07-13 — Correction: no model boundary at US-108 (Sebastian + Claude Code)
+
+- **Corrects the previous entry** ("Methodology note: US-108 was the first story on a new orchestrating model"): wrong. All prior stories were also run on Fable; Sebastian had merely switched the session model back after unrelated work, and the agent over-read the `/model` confirmation ("saved as your default") as evidence of a first-time switch. There is no 2026-07-13 model boundary; cross-story delegation comparisons need no split here.
+- **Thesis data in its own right**: the agent inferred a methodology-relevant "fact" from ambiguous CLI output and journaled it without asking — caught by Sebastian within minutes. Inference-from-tooling-output goes into the journal only when confirmed.
