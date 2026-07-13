@@ -214,6 +214,20 @@ struct ZigzagStitchPatternTests {
         ], "anchor, first flag, and direction all survive the rejected updates")
     }
 
+    @Test("Headings beyond Catroid's normalized (−180, 180] domain extend by exact periodicity")
+    func headingPeriodicity() {
+        // Catroid's sprite layer normalizes motion direction before the
+        // pattern samples it, so out-of-range headings have no reference
+        // semantics; the engine pins the periodic extension (ADR-014).
+        var base = ZigzagStitchPattern(length: 10, width: 5, start: StagePoint(x: 10, y: 0))
+        var wrapped = ZigzagStitchPattern(length: 10, width: 5, start: StagePoint(x: 10, y: 0))
+        expect(
+            update(&wrapped, to: 30, 0, heading: 450),
+            approximates: update(&base, to: 30, 0, heading: 90),
+            "one full turn apart must emit identical points"
+        )
+    }
+
     @Test("A finite but astronomically large heading still yields finite points")
     func hugeFiniteHeading() {
         // Codex US-108 find: .greatestFiniteMagnitude passes heading.isFinite,

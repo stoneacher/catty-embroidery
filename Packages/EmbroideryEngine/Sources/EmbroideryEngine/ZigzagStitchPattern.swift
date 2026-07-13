@@ -6,11 +6,14 @@ import Foundation
 ///
 /// Deliberate divergences from the reference:
 /// - `Double` throughout where Catroid computes in `float` (ADR-014) — the
-///   sub-resolution drift is absorbed by `javaRound` at unit conversion.
+///   drift is sub-resolution, though threshold crossings and `javaRound`
+///   boundaries can flip in adversarial cases (accepted, see the ADR).
 /// - The anchor arrives via the explicit `start` parameter instead of a
 ///   sprite-position read (platform-independent engine).
 /// - Degenerate inputs (length <= 0, non-finite width/heading/positions)
-///   emit nothing instead of NaN-poisoning the anchor as Catroid does.
+///   emit nothing. In Catroid a zero length NaN-poisons the anchor and the
+///   pattern goes dead; a negative length emits degenerate duplicate spam —
+///   the no-op is an intentional semantic change for negatives (ADR-014).
 ///   Width 0 and negative widths are *not* guarded: both are well-defined
 ///   in the reference (zero offset / phase-flipped zigzag) and preserved.
 public struct ZigzagStitchPattern: StitchPattern {
@@ -110,10 +113,13 @@ public struct ZigzagStitchPattern: StitchPattern {
     /// point must pass through here exactly once.
     private mutating func offsetPoint(_ base: StagePoint, heading: Double) -> StagePoint {
         // Normalized mod 360 before scaling (exact under IEEE remainder):
-        // degrees are periodic, and for headings near .greatestFiniteMagnitude
-        // the raw `(heading + 90) * .pi` would overflow to infinity, whose
-        // sin/cos is NaN — finite input, NaN output, downstream trap (Codex
-        // US-108 find).
+        // for headings near .greatestFiniteMagnitude the raw
+        // `(heading + 90) * .pi` would overflow to infinity, whose sin/cos
+        // is NaN — finite input, NaN output, downstream trap (Codex US-108
+        // find). Catroid never normalizes, but also never sees such values:
+        // its sprites report motion direction pre-normalized to (−180, 180],
+        // so headings outside that domain have no reference semantics and
+        // the engine extends them by exact periodicity (ADR-014).
         let radians = (heading + 90).truncatingRemainder(dividingBy: 360) * .pi / 180
         let half = width / 2
         let point = StagePoint(

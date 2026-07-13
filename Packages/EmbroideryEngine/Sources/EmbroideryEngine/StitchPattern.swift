@@ -13,8 +13,9 @@ public struct NeedleUpdate: Hashable, Sendable {
     }
 }
 
-/// Upper bound on stitches a single needle update may emit (ADR-014). The
-/// whole-length count is compared against this before the `Int` conversion:
+/// Upper bound on the *whole-length count* of a single needle update
+/// (ADR-014); a boundary update can emit one point more (the lazy anchor).
+/// The count is compared against this before the `Int` conversion:
 /// Catroid's `(int)` cast saturates to `Integer.MAX_VALUE` and Android hangs
 /// materializing the stitches, while Swift's `Int(_:)` would trap — neither
 /// accident is ported; the update is rejected outright. A million stitches is
