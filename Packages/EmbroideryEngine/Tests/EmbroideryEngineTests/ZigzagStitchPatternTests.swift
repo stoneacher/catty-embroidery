@@ -214,6 +214,22 @@ struct ZigzagStitchPatternTests {
         ], "anchor, first flag, and direction all survive the rejected updates")
     }
 
+    @Test("A finite but astronomically large heading still yields finite points")
+    func hugeFiniteHeading() {
+        // Codex US-108 find: .greatestFiniteMagnitude passes heading.isFinite,
+        // but (heading + 90) * .pi overflows to infinity before the division
+        // by 180, and sin(.infinity) is NaN — NaN points trap downstream at
+        // Int(javaRound(NaN)) in unit conversion. Degrees are periodic, so
+        // the conversion must normalize mod 360 before scaling.
+        var pattern = ZigzagStitchPattern(length: 5, width: 2, start: StagePoint(x: 0, y: 0))
+        let points = update(&pattern, to: 10, 0, heading: .greatestFiniteMagnitude)
+        #expect(!points.isEmpty)
+        #expect(
+            points.allSatisfy { $0.x.isFinite && $0.y.isFinite },
+            "every emitted coordinate must be finite for any finite heading"
+        )
+    }
+
     @Test("A non-finite heading emits nothing — NaN offsets would trap at unit conversion")
     func nonFiniteHeading() {
         var pattern = ZigzagStitchPattern(length: 2, width: 2, start: StagePoint(x: 0, y: 0))
@@ -237,6 +253,12 @@ struct ZigzagStitchPatternTests {
             length: .leastNonzeroMagnitude, width: 2, start: StagePoint(x: 0, y: 0)
         )
         #expect(update(&subnormal, to: 10, 0, heading: 90).isEmpty)
+        // Codex-named blind spot: the rejection must leave state untouched,
+        // like every other guard — a later sane update starts from scratch.
+        expect(update(&pattern, to: 4, 0, heading: 90), approximates: [
+            StagePoint(x: 0, y: 1), StagePoint(x: 1, y: -1), StagePoint(x: 2, y: 1),
+            StagePoint(x: 3, y: -1), StagePoint(x: 4, y: 1)
+        ], "anchor, first flag, and direction all survive the rejected update")
     }
 
     @Test("A non-finite width emits nothing — NaN offsets would trap at unit conversion")
