@@ -142,6 +142,34 @@ struct EmbroideryStreamTests {
         #expect(stream.stitches.map(\.isJump) == [false, true])
     }
 
+    @Test("Dedup, an armed color change, and long-move interpolation compose")
+    func droppedDuplicateThenInterpolatedColorChange() {
+        // Codex US-109 blind spot: the mechanisms were only tested pairwise.
+        // The flag must ride out both the dropped duplicate and the
+        // interpolation, landing on the final plain stitch (ADR-013), while
+        // the interpolants stay jumps in the previous color.
+        let red = ThreadColor(red: 255, green: 0, blue: 0)
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 0, y: 0))
+        stream.addColorChange()
+        stream.addStitch(at: StagePoint(x: 0, y: 0))
+        stream.addStitch(at: StagePoint(x: 100, y: 0), color: red)
+
+        // 200 units → splitCount 2: duplicate-of-previous jump, one
+        // intermediate jump, target jump, then the plain target.
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 0, y: 0),
+            EmbroideryPoint(x: 0, y: 0),
+            EmbroideryPoint(x: 100, y: 0),
+            EmbroideryPoint(x: 200, y: 0),
+            EmbroideryPoint(x: 200, y: 0)
+        ])
+        #expect(stream.stitches.map(\.isJump) == [false, true, true, true, false])
+        #expect(stream.stitches.map(\.isColorChange) == [false, false, false, false, true])
+        #expect(stream.stitches.map(\.color) == [.black, .black, .black, red, red])
+        #expect(stream.colorChangeCount == 1)
+    }
+
     @Test("A dropped duplicate leaves a pending color change armed, count unchanged")
     func droppedDuplicateKeepsPendingColorChange() {
         var stream = EmbroideryStream()

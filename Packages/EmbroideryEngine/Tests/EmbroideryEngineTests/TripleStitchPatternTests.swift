@@ -88,6 +88,18 @@ struct TripleStitchPatternTests {
         ])
     }
 
+    @Test("Negative halves round toward positive infinity, Java-style")
+    func negativeHalfJavaRound() {
+        // javaRound(-2.5) = floor(-2.0) = -2 where Swift's .rounded() gives
+        // -3 — the ADR-012 signature divergence (Codex US-109 blind spot).
+        var pattern = TripleStitchPattern(length: 2.5, start: StagePoint(x: 0, y: 0))
+        #expect(update(&pattern, to: -6, 0) == [
+            StagePoint(x: 0, y: 0),
+            StagePoint(x: -2, y: 0), StagePoint(x: 0, y: 0), StagePoint(x: -2, y: 0),
+            StagePoint(x: -5, y: 0), StagePoint(x: -2, y: 0), StagePoint(x: -5, y: 0)
+        ])
+    }
+
     @Test("The heading is ignored — the triple stitch follows the movement vector")
     func headingIgnored() {
         var straight = TripleStitchPattern(length: 10, start: StagePoint(x: 0, y: 0))
