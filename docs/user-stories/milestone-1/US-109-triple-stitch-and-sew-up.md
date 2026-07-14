@@ -2,6 +2,8 @@
 
 **Epic**: E2 Engine | **Estimate**: ~3 h | **Depends on**: US-107
 
+**Status**: Done — 2026-07-14, PR #13
+
 **Story**: As a program, I want a reinforced triple stitch pattern and a sew-up primitive, so that seams are durable and thread ends are secured.
 
 ## Acceptance criteria
