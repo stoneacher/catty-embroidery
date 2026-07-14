@@ -81,4 +81,105 @@ struct EmbroideryStreamTests {
 
         #expect(stream.stitches.map(\.color) == [.black, red])
     }
+
+    // MARK: - Workspace dedup, single-actor slice (US-109; ADR-012)
+
+    // Catroid `DSTStitchCommand.act` drops a command whose coordinates equal
+    // the workspace's current position for the same sprite. The engine's
+    // single-actor stream makes the sprite clause trivially true; US-110
+    // adds the actor/layer/color dimensions.
+
+    @Test("A stitch identical to the previous one is dropped")
+    func consecutiveDuplicateDropped() {
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 6, y: 6))
+
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 10, y: 10),
+            EmbroideryPoint(x: 12, y: 12)
+        ])
+    }
+
+    @Test("Dedup compares raw stage coordinates — unit-identical points both survive")
+    func dedupComparesStageSpaceNotUnits() {
+        // Catroid compares raw workspace floats, not converted units: (5,5)
+        // and (5.2,5.2) both round to unit (10,10), yet the second is a real
+        // record (a zero-delta stitch the machine executes). Deduping on
+        // converted units would silently drop it and break byte identity.
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 5.2, y: 5.2))
+
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 10, y: 10),
+            EmbroideryPoint(x: 10, y: 10)
+        ])
+    }
+
+    @Test("A non-consecutive return to an earlier position is not deduped")
+    func nonConsecutiveReturnNotDeduped() {
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 6, y: 6))
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+
+        #expect(stream.count == 3)
+    }
+
+    @Test("A dropped duplicate leaves a pending jump armed for the next stitch")
+    func droppedDuplicateKeepsPendingJump() {
+        // Catroid's dedup early-returns before any flag is consumed, so the
+        // armed flag lands on the next surviving stitch.
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addJump()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 6, y: 6))
+
+        #expect(stream.count == 2)
+        #expect(stream.stitches.map(\.isJump) == [false, true])
+    }
+
+    @Test("Dedup, an armed color change, and long-move interpolation compose")
+    func droppedDuplicateThenInterpolatedColorChange() {
+        // Codex US-109 blind spot: the mechanisms were only tested pairwise.
+        // The flag must ride out both the dropped duplicate and the
+        // interpolation, landing on the final plain stitch (ADR-013), while
+        // the interpolants stay jumps in the previous color.
+        let red = ThreadColor(red: 255, green: 0, blue: 0)
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 0, y: 0))
+        stream.addColorChange()
+        stream.addStitch(at: StagePoint(x: 0, y: 0))
+        stream.addStitch(at: StagePoint(x: 100, y: 0), color: red)
+
+        // 200 units → splitCount 2: duplicate-of-previous jump, one
+        // intermediate jump, target jump, then the plain target.
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 0, y: 0),
+            EmbroideryPoint(x: 0, y: 0),
+            EmbroideryPoint(x: 100, y: 0),
+            EmbroideryPoint(x: 200, y: 0),
+            EmbroideryPoint(x: 200, y: 0)
+        ])
+        #expect(stream.stitches.map(\.isJump) == [false, true, true, true, false])
+        #expect(stream.stitches.map(\.isColorChange) == [false, false, false, false, true])
+        #expect(stream.stitches.map(\.color) == [.black, .black, .black, red, red])
+        #expect(stream.colorChangeCount == 1)
+    }
+
+    @Test("A dropped duplicate leaves a pending color change armed, count unchanged")
+    func droppedDuplicateKeepsPendingColorChange() {
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addColorChange()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 6, y: 6))
+
+        #expect(stream.count == 2)
+        #expect(stream.stitches.map(\.isColorChange) == [false, true])
+        #expect(stream.colorChangeCount == 1)
+    }
 }

@@ -69,7 +69,24 @@ public struct EmbroideryStream: Hashable, Sendable {
     /// than ±121 units on either axis are first split into jump stitches
     /// (US-105); the pending flags are captured before interpolation runs and
     /// land on the final stitch, as in Catroid `DSTStream.addStitchPoint`.
+    ///
+    /// Workspace dedup, single-actor slice (ADR-012; US-110 owns the actor,
+    /// layer, and color dimensions): a stitch at the last appended stage
+    /// position is dropped before flags are consumed or interpolation runs,
+    /// like Catroid `DSTStitchCommand.act`'s early return — armed flags stay
+    /// pending for the next surviving stitch. Compared in stage space on raw
+    /// `Double`s (the reference compares raw floats), so two distinct stage
+    /// points that round to the same embroidery unit both survive. Only this
+    /// public seam dedups: interpolation appends through `append(stitchAt:)`
+    /// because its duplicate-of-previous jump emission is byte-pinned.
     public mutating func addStitch(at stagePoint: StagePoint, color: ThreadColor = .black) {
+        if let last = lastStagePosition, stagePoint == last {
+            return
+        }
+        append(stitchAt: stagePoint, color: color)
+    }
+
+    private mutating func append(stitchAt stagePoint: StagePoint, color: ThreadColor) {
         let isJump = nextIsJump
         let isColorChange = nextIsColorChange
         nextIsJump = false
@@ -92,10 +109,11 @@ public struct EmbroideryStream: Hashable, Sendable {
     /// duplicate of the previous point, `splitCount − 1` evenly spaced
     /// intermediates (rounded in stage coordinates), and the target — all as
     /// jumps — before the caller appends the target again as a plain stitch.
-    /// Emission recurses through `addStitch` exactly like the reference, so
-    /// each emitted point re-checks its own distance. The duplicate and the
-    /// intermediates keep the previous stitch's color; the target jump
-    /// already carries the new one.
+    /// Emission recurses through `append(stitchAt:)` exactly like the
+    /// reference, so each emitted point re-checks its own distance — not
+    /// through `addStitch`, whose dedup would swallow the duplicate-of-
+    /// previous emission. The duplicate and the intermediates keep the
+    /// previous stitch's color; the target jump already carries the new one.
     private mutating func addInterpolatedStitches(
         from previous: StagePoint,
         to target: StagePoint,
@@ -110,7 +128,7 @@ public struct EmbroideryStream: Hashable, Sendable {
         let previousColor = stitches.last?.color ?? color
 
         addJump()
-        addStitch(at: previous, color: previousColor)
+        append(stitchAt: previous, color: previousColor)
 
         for count in 1 ..< splitCount {
             let factor = Double(count) / Double(splitCount)
@@ -119,10 +137,10 @@ public struct EmbroideryStream: Hashable, Sendable {
                 y: javaRound(previous.y + factor * (target.y - previous.y))
             )
             addJump()
-            addStitch(at: intermediate, color: previousColor)
+            append(stitchAt: intermediate, color: previousColor)
         }
 
         addJump()
-        addStitch(at: target, color: color)
+        append(stitchAt: target, color: color)
     }
 }
