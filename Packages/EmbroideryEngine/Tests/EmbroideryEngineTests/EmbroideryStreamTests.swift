@@ -102,6 +102,22 @@ struct EmbroideryStreamTests {
         ])
     }
 
+    @Test("Dedup compares raw stage coordinates — unit-identical points both survive")
+    func dedupComparesStageSpaceNotUnits() {
+        // Catroid compares raw workspace floats, not converted units: (5,5)
+        // and (5.2,5.2) both round to unit (10,10), yet the second is a real
+        // record (a zero-delta stitch the machine executes). Deduping on
+        // converted units would silently drop it and break byte identity.
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 5.2, y: 5.2))
+
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 10, y: 10),
+            EmbroideryPoint(x: 10, y: 10)
+        ])
+    }
+
     @Test("A non-consecutive return to an earlier position is not deduped")
     func nonConsecutiveReturnNotDeduped() {
         var stream = EmbroideryStream()

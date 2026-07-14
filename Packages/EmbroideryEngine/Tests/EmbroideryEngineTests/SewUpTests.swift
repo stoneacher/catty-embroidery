@@ -217,6 +217,19 @@ struct SewUpTests {
         #expect(points.allSatisfy { $0.x.isFinite && $0.y.isFinite })
     }
 
+    @Test("Negative headings normalize sign-preservingly: −90° ≈ 270°")
+    func negativeHeading() {
+        // Catroid's motion direction domain is (−180, 180]; the sew-up's
+        // truncatingRemainder keeps −90 at −90, which must land where 270°
+        // does. Pins the signed branch of the normalization.
+        var first = activatedRunningStitch()
+        var second = activatedRunningStitch()
+        expect(
+            SewUp.perform(at: StagePoint(x: 0, y: 0), heading: -90, runningStitch: &first),
+            approximates: SewUp.perform(at: StagePoint(x: 0, y: 0), heading: 270, runningStitch: &second)
+        )
+    }
+
     @Test("Heading is periodic: 360° ≈ 0°, 497° ≈ 137°")
     func headingPeriodicity() {
         var first = activatedRunningStitch()

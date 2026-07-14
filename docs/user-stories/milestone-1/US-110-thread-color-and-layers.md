@@ -7,7 +7,7 @@
 ## Acceptance criteria
 - [ ] Thread color settable on the workspace (hex string → color, default black), carried on each stitch — mirroring `Sprite.embroideryThreadColor` / `SetThreadColorAction`.
 - [ ] Setting a color that **differs** from the current thread color emits a DST color-change record (deliberate divergence from Android, where the brick never emits machine-level changes — ADR-012); setting the same color is a no-op.
-- [ ] **Workspace dedup rule (this story owns it)**: an identical consecutive stitch command from the same actor at the same position emits nothing, matching `DSTStitchCommand.act` (affects US-109's sew-up interplay).
+- [ ] **Workspace dedup rule (this story owns it)**: an identical consecutive stitch command from the same actor at the same position emits nothing, matching `DSTStitchCommand.act` (affects US-109's sew-up interplay). *(US-109 landed the single-actor slice at the public `EmbroideryStream.addStitch` seam; this story adds the actor/layer/color dimensions. ⚠️ Catroid's sprite-change path emits the workspace position twice consecutively at stream level — below the dedup. That emission must go through the stream's private dedup-free `append(stitchAt:)` seam, not public `addStitch`, or the second point is silently swallowed; do not weaken the public dedup to compensate.)*
 - [ ] Layer manager assembling multiple streams in z-order with color changes inserted between layers, matching `DSTPatternManager`'s TreeMap-of-layers behavior. (In M1 "layers" are engine-level; multiple objects arrive with the interpreter in M2.)
 
 ## Test-first plan

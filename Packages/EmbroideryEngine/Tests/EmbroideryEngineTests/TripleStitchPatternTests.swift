@@ -88,6 +88,16 @@ struct TripleStitchPatternTests {
         ])
     }
 
+    @Test("The heading is ignored — the triple stitch follows the movement vector")
+    func headingIgnored() {
+        var straight = TripleStitchPattern(length: 10, start: StagePoint(x: 0, y: 0))
+        var rotated = TripleStitchPattern(length: 10, start: StagePoint(x: 0, y: 0))
+        let expected = update(&straight, to: 10, 10)
+        #expect(rotated.update(
+            NeedleUpdate(position: StagePoint(x: 10, y: 10), heading: 137)
+        ) == expected)
+    }
+
     // MARK: - Degenerate inputs (ADR-014 guard policy)
 
     @Test("Zero and negative lengths emit nothing instead of trapping")
