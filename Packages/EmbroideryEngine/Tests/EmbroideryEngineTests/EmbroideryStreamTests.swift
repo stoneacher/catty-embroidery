@@ -81,4 +81,61 @@ struct EmbroideryStreamTests {
 
         #expect(stream.stitches.map(\.color) == [.black, red])
     }
+
+    // MARK: - Workspace dedup, single-actor slice (US-109; ADR-012)
+
+    // Catroid `DSTStitchCommand.act` drops a command whose coordinates equal
+    // the workspace's current position for the same sprite. The engine's
+    // single-actor stream makes the sprite clause trivially true; US-110
+    // adds the actor/layer/color dimensions.
+
+    @Test("A stitch identical to the previous one is dropped")
+    func consecutiveDuplicateDropped() {
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 6, y: 6))
+
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 10, y: 10),
+            EmbroideryPoint(x: 12, y: 12)
+        ])
+    }
+
+    @Test("A non-consecutive return to an earlier position is not deduped")
+    func nonConsecutiveReturnNotDeduped() {
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 6, y: 6))
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+
+        #expect(stream.count == 3)
+    }
+
+    @Test("A dropped duplicate leaves a pending jump armed for the next stitch")
+    func droppedDuplicateKeepsPendingJump() {
+        // Catroid's dedup early-returns before any flag is consumed, so the
+        // armed flag lands on the next surviving stitch.
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addJump()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 6, y: 6))
+
+        #expect(stream.count == 2)
+        #expect(stream.stitches.map(\.isJump) == [false, true])
+    }
+
+    @Test("A dropped duplicate leaves a pending color change armed, count unchanged")
+    func droppedDuplicateKeepsPendingColorChange() {
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addColorChange()
+        stream.addStitch(at: StagePoint(x: 5, y: 5))
+        stream.addStitch(at: StagePoint(x: 6, y: 6))
+
+        #expect(stream.count == 2)
+        #expect(stream.stitches.map(\.isColorChange) == [false, true])
+        #expect(stream.colorChangeCount == 1)
+    }
 }
