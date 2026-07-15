@@ -86,7 +86,11 @@ public struct EmbroideryStream: Hashable, Sendable {
         append(stitchAt: stagePoint, color: color)
     }
 
-    private mutating func append(stitchAt stagePoint: StagePoint, color: ThreadColor) {
+    /// Dedup-free append seam: consumes the armed flags, interpolates long
+    /// moves, and records the stage position. Internal so the pattern
+    /// manager's layer replay (US-110) can emit its byte-pinned consecutive
+    /// duplicates — like interpolation, it must bypass `addStitch`'s dedup.
+    mutating func append(stitchAt stagePoint: StagePoint, color: ThreadColor) {
         let isJump = nextIsJump
         let isColorChange = nextIsColorChange
         nextIsJump = false
