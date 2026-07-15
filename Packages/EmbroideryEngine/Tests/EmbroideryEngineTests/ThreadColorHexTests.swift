@@ -29,6 +29,17 @@ struct ThreadColorHexTests {
         #expect(ThreadColor(hexString: "xFF0000") == ThreadColor(red: 255, green: 0, blue: 0))
     }
 
+    @Test("indexing is by UTF-16 code units, matching Java String.substring")
+    func utf16Indexing() {
+        // swift-code-reviewer US-110 find: Java's substring counts UTF-16
+        // code units, not bytes. "€" is one unit (three UTF-8 bytes), so
+        // Android parses "€FF0000" to red; a surrogate half or a non-ASCII
+        // unit inside the pair region is never a hex digit and no-ops.
+        #expect(ThreadColor(hexString: "€FF0000") == ThreadColor(red: 255, green: 0, blue: 0))
+        #expect(ThreadColor(hexString: "😀FF0000") == nil) // low surrogate lands at index 1
+        #expect(ThreadColor(hexString: "#€F0000") == nil)
+    }
+
     @Test("characters beyond index 7 are ignored — alpha is discarded")
     func trailingIgnored() {
         #expect(ThreadColor(hexString: "#11223344") == ThreadColor(red: 0x11, green: 0x22, blue: 0x33))

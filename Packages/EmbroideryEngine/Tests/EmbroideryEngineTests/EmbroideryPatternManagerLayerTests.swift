@@ -69,6 +69,73 @@ struct EmbroideryPatternManagerLayerTests {
         #expect(stream.colorChangeCount == 2)
     }
 
+    @Test("A +60.75-stage layer-switch gap is near — clause distance rounds previous minus target")
+    func layerSwitchPositiveHalfUnitGapIsNear() {
+        // swift-code-reviewer US-110 find: Catroid's act clauses compute
+        // `getMaxDistanceBetweenPoints(prev, target)` = round((prev − target)
+        // × 2), and `javaRound` is asymmetric at negative halves — so a
+        // +60.75 stage gap is round(−121.5) = −121 → near (clause C ties
+        // off, D skips), while the *stream's* interpolation check rounds
+        // target − previous = 122 → the tie-off is followed by an
+        // interpolated move. Rounding target − previous in the clauses
+        // would misclassify this as far.
+        var manager = EmbroideryPatternManager()
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 1, actor: actor)
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
+        manager.addStitch(at: StagePoint(x: 60.75, y: 0), layer: 1, actor: actor)
+
+        let stream = manager.assembled()
+        let origin = EmbroideryPoint(x: 0, y: 0)
+        #expect(stream.stitches.map(\.position) == [
+            origin, origin, // layer 0: clause D + E
+            origin, // boundary color change
+            origin, // join jump
+            origin, // layer 1: first command
+            origin, origin, // clause C tie-off: prev (change), prev (jump)
+            origin, // interpolation: duplicate-of-previous
+            EmbroideryPoint(x: 60, y: 0), // interpolation: intermediate (stage 30.375 javaRounds to 30)
+            EmbroideryPoint(x: 122, y: 0), // interpolation: target as jump
+            EmbroideryPoint(x: 122, y: 0) // plain target
+        ])
+        #expect(stream.stitches.map(\.isColorChange) == [
+            false, false, true, false, false, true, false, false, false, false, false
+        ])
+        #expect(stream.stitches.map(\.isJump) == [
+            false, false, false, true, false, false, true, true, true, true, false
+        ])
+        #expect(stream.colorChangeCount == 2)
+    }
+
+    @Test("A −60.75-stage layer-switch gap is far — the mirror direction classifies asymmetrically")
+    func layerSwitchNegativeHalfUnitGapIsFar() {
+        // Mirror of the +60.75 case: prev − target = +121.5 rounds to 122 →
+        // far (clause C emits the target with the change, E repeats it),
+        // while the stream's interpolation check rounds −121.5 to −121 →
+        // no interpolation. The two directions must not behave alike.
+        var manager = EmbroideryPatternManager()
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 1, actor: actor)
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
+        manager.addStitch(at: StagePoint(x: -60.75, y: 0), layer: 1, actor: actor)
+
+        let stream = manager.assembled()
+        let origin = EmbroideryPoint(x: 0, y: 0)
+        #expect(stream.stitches.map(\.position) == [
+            origin, origin, // layer 0: clause D + E
+            origin, // boundary color change
+            origin, // join jump
+            origin, // layer 1: first command
+            EmbroideryPoint(x: -121, y: 0), // clause C far branch: target with the change
+            EmbroideryPoint(x: -121, y: 0) // clause E duplicate
+        ])
+        #expect(stream.stitches.map(\.isColorChange) == [
+            false, false, true, false, false, true, false
+        ])
+        #expect(stream.stitches.map(\.isJump) == [
+            false, false, false, true, false, false, false
+        ])
+        #expect(stream.colorChangeCount == 2)
+    }
+
     // MARK: - Layer assembly (US-110; port of DSTPatternManager)
 
     @Test("An empty manager assembles to an empty stream")
