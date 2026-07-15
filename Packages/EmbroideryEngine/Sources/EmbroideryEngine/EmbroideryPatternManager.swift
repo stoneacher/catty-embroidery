@@ -169,9 +169,10 @@ public struct EmbroideryPatternManager: Sendable {
 
         // Clause D — not chained to B/C in the reference; strict <, so a
         // 121-unit gap emits nothing here.
-        if let previous, previous.layer != layer,
-           distanceInUnits(from: previous.stage, to: point) < DSTStitchRecord.maxDelta
-        {
+        let connectsNearbyLayerSwitch = previous.map {
+            $0.layer != layer && distanceInUnits(from: $0.stage, to: point) < DSTStitchRecord.maxDelta
+        } ?? false
+        if let previous, connectsNearbyLayerSwitch {
             layerOps[layer, default: []].append(
                 EmittedPoint(stage: previous.stage, color: previous.color)
             )
@@ -208,15 +209,15 @@ public struct EmbroideryPatternManager: Sendable {
                 stream.addJump()
                 stream.append(stitchAt: lastStage!, color: lastColor)
             }
-            for op in ops {
-                if op.armColorChange {
+            for emission in ops {
+                if emission.armColorChange {
                     stream.addColorChange()
-                } else if op.armJump {
+                } else if emission.armJump {
                     stream.addJump()
                 }
-                stream.append(stitchAt: op.stage, color: op.color)
-                lastStage = op.stage
-                lastColor = op.color
+                stream.append(stitchAt: emission.stage, color: emission.color)
+                lastStage = emission.stage
+                lastColor = emission.color
             }
             let hasLaterOps = sortedLayers[(index + 1)...]
                 .contains { !(layerOps[$0] ?? []).isEmpty }
