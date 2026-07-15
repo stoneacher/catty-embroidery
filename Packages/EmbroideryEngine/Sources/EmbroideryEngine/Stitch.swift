@@ -13,6 +13,11 @@ public struct ThreadColor: Hashable, Sendable {
 
     /// Default thread color, matching both references.
     public static let black = ThreadColor(red: 0, green: 0, blue: 0)
+
+    /// Stub for the US-110 red phase — parsing lands with the green phase.
+    public init?(hexString _: String) {
+        nil
+    }
 }
 
 /// One needle penetration in embroidery coordinates, with the DST record
