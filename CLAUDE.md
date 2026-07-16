@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A standalone native iOS app bringing Catrobat's embroidery functionality (the Android "Embroidery Designer" flavor) to iOS: users program embroidery designs with Pocket Code-style visual blocks, watch the live stitch preview, and export machine-readable Tajima DST files. Developed as a bachelor-thesis open-source contribution; to be transferred to the Catrobat organization after sign-off. License: AGPL-3.0.
 
-**Read before working**: `docs/ROADMAP.md` (epics, milestones, engineering standards), `docs/DECISIONS.md` (ADR-001…013 — ADR-012 pins the byte-level DST semantics and lists known reference bugs never to port; ADR-013 pins color-change flag placement), and the current milestone's stories in `docs/user-stories/`.
+**Read before working**: `docs/ROADMAP.md` (epics, milestones, engineering standards), `docs/DECISIONS.md` (ADR-001…015 — ADR-012 pins the byte-level DST semantics and lists known reference bugs never to port; ADR-013 pins color-change flag placement; ADR-015 pins thread-color emission semantics), and the current milestone's stories in `docs/user-stories/`.
 
 ## Non-negotiable process rules
 
