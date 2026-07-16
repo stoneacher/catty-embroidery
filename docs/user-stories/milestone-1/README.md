@@ -1,5 +1,7 @@
 # Milestone 1 — Engine core
 
+**Status**: Done — 2026-07-16. All ten stories merged (PRs #1–#15); exit criterion met (US-106 golden-file tests green in CI; generated DST verified in Ink/Stitch, workflow journal 2026-07-09).
+
 Goal: a pure Swift package (`EmbroideryEngine`) that turns needle movements into a valid Tajima DST file, byte-verified against reference fixtures. No UI. See [ROADMAP.md](../../ROADMAP.md).
 
 Every story is developed test-first: the tests listed in its "Test-first plan" are written and red before implementation starts.
