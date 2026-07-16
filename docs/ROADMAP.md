@@ -39,7 +39,11 @@ A pure Swift package that turns a programmatic sequence of needle movements into
 Detailed stories: [`user-stories/milestone-1/`](user-stories/milestone-1/)
 
 ### M2 — Interpreter MVP (E3)
-Program model (project → scene → object → scripts → bricks) plus a minimal interpreter executing headlessly: when-started script, move/turn/goto, repeat/wait, the eight embroidery bricks, and a formula subset (literals, arithmetic, variables). Executing a program yields an `EmbroideryStream`. Scripts are flat brick lists with paired control bricks; the move-a-pair-as-a-unit invariant is model logic with tests (ADR-008). The virtual needle operates in the ADR-007 stage space. The interpreter ships as a **sibling target in the same package** (`ProgramModel`/interpreter depending on the engine target, never the reverse) so M4's editor and M5's persistence can import the program model without dragging DST I/O along.
+**Status**: In progress — stories planned 2026-07-16.
+
+Program model (project → scene → object → scripts → bricks) plus a minimal interpreter executing headlessly: when-started script, move/turn/goto, repeat/wait, the eight embroidery bricks, and a formula subset (literals, arithmetic, variables). Executing a program yields an `EmbroideryStream`. Scripts are flat brick lists with paired control bricks; the move-a-pair-as-a-unit invariant is model logic with tests (ADR-008). The virtual needle operates in the ADR-007 stage space. The program model and interpreter ship as **two sibling targets in the same package** (ADR-016): `ProgramModel` (pure value graph, no engine dependency) and `Interpreter` (depends on `ProgramModel` + the engine target, never the reverse) so M4's editor and M5's persistence can import the program model without dragging the engine or DST I/O along.
+
+Detailed stories: [`user-stories/milestone-2/`](user-stories/milestone-2/)
 
 **Exit criterion**: a hardcoded "stitch a square/star" program produces the expected stitch stream in unit tests — still no UI — and the interpreter is **incrementally consumable**: execution advances step-by-step, emits ordered needle/stitch/color events, is deterministic (golden stitch-stream tests), and takes an injected clock for time-based bricks. Unit test: consuming events one at a time yields the same stream as batch execution.
 
