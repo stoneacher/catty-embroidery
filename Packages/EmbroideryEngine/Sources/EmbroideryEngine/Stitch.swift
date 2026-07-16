@@ -22,11 +22,10 @@ public struct ThreadColor: Hashable, Sendable {
     /// substrings from index 1 regardless of prefix) and everything past
     /// offset 7 is ignored — alpha is discarded. Any malformed input returns
     /// nil so the caller keeps the current color, matching Android's
-    /// swallowed parse exception (ADR-015). Each of the six digits must be
-    /// 0-9/a-f/A-F: Java's `Integer.decode` rejects signs and spaces inside
-    /// the pairs, unlike Swift's lenient `UInt8(_:radix:)`, so validation is
-    /// per code unit; surrogate halves and non-ASCII units in the pair
-    /// region never match, exactly as they throw in Java.
+    /// swallowed parse exception (ADR-015). Java's `Integer.decode` rejects
+    /// signs and spaces inside the pairs, unlike Swift's lenient
+    /// `UInt8(_:radix:)`, so each of the six digits is validated per code
+    /// unit through a port of `Character.digit(char, 16)` — see `hexDigit`.
     public init?(hexString: String) {
         let units = Array(hexString.utf16.prefix(7))
         guard units.count == 7,
@@ -44,17 +43,33 @@ public struct ThreadColor: Hashable, Sendable {
         return high << 4 | low
     }
 
+    /// Java `Character.digit(char, 16)` for one UTF-16 code unit: Latin
+    /// letters (ASCII and fullwidth) map to 10…35, any Unicode decimal
+    /// digit (Nd) to its value, everything else — including lone
+    /// surrogates — to nil; values ≥ 16 are not hex digits.
     private static func hexDigit(_ unit: UInt16) -> UInt8? {
-        switch unit {
-        case UInt16(UInt8(ascii: "0")) ... UInt16(UInt8(ascii: "9")):
-            UInt8(unit) - UInt8(ascii: "0")
-        case UInt16(UInt8(ascii: "a")) ... UInt16(UInt8(ascii: "f")):
-            UInt8(unit) - UInt8(ascii: "a") + 10
-        case UInt16(UInt8(ascii: "A")) ... UInt16(UInt8(ascii: "F")):
-            UInt8(unit) - UInt8(ascii: "A") + 10
+        guard let scalar = Unicode.Scalar(unit) else { return nil }
+        let value: Int
+        switch scalar {
+        case "a" ... "z":
+            value = Int(unit) - Int(UInt8(ascii: "a")) + 10
+        case "A" ... "Z":
+            value = Int(unit) - Int(UInt8(ascii: "A")) + 10
+        case "\u{FF41}" ... "\u{FF5A}": // fullwidth a…z
+            value = Int(unit) - 0xFF41 + 10
+        case "\u{FF21}" ... "\u{FF3A}": // fullwidth A…Z
+            value = Int(unit) - 0xFF21 + 10
         default:
-            nil
+            let properties = scalar.properties
+            guard properties.numericType == .decimal,
+                  let numericValue = properties.numericValue
+            else {
+                return nil
+            }
+            value = Int(numericValue)
         }
+        guard value < 16 else { return nil }
+        return UInt8(value)
     }
 }
 
