@@ -14,7 +14,7 @@
 - [ ] Step-by-step == batch; two runs identical.
 
 ## Test-first plan
-1. Star geometry golden: five sides, closing exactly at the start point, heading back to 0°.
+1. Star geometry golden: five sides; the path closes at the start point **within the ADR-014 tolerance** (sin/cos accumulation leaves ~1e-16 residue — closure is not exact in `Double`), while the heading returns to exactly 0° (mod-360 normalization is exact).
 2. The pattern's per-side stitch geometry matches its US-108/US-109 oracle.
 3. Exactly one color change in the assembled stream; first set is silent (ADR-015).
 4. Step-vs-batch equivalence and re-run determinism on the star program.
