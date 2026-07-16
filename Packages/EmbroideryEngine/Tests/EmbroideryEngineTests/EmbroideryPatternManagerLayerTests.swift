@@ -4,6 +4,95 @@ import Testing
 @Suite("EmbroideryPatternManager layer switching and assembly")
 struct EmbroideryPatternManagerLayerTests {
     private let actor = ActorID(0)
+    private let otherActor = ActorID(1)
+
+    // MARK: - Clause thresholds (US-110; clauses B, C, and D)
+
+    @Test("Clause B at a +60.75-stage gap arms no jump, yet the replay interpolates")
+    func actorChangeAtPositiveHalfUnitGap() {
+        // Codex US-110 round-1 blind spot: the ±60.75 asymmetry was pinned
+        // only through clauses C/D. Clause B rounds prev − target =
+        // round(−121.5) = −121 → not far, so no jump between its two
+        // workspace emissions — while the stream's replay rounds target −
+        // previous = 122 and interpolates the move to the target.
+        var manager = EmbroideryPatternManager()
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
+        manager.addStitch(at: StagePoint(x: 60.75, y: 0), layer: 0, actor: otherActor)
+
+        let stream = manager.assembled()
+        let origin = EmbroideryPoint(x: 0, y: 0)
+        #expect(stream.stitches.map(\.position) == [
+            origin,
+            origin, // clause B, color change
+            origin, // clause B, no jump — the gap is clause-near
+            origin, // interpolation: duplicate-of-previous
+            EmbroideryPoint(x: 60, y: 0), // interpolation: intermediate
+            EmbroideryPoint(x: 122, y: 0), // interpolation: target as jump
+            EmbroideryPoint(x: 122, y: 0) // plain target
+        ])
+        #expect(stream.stitches.map(\.isColorChange) == [
+            false, true, false, false, false, false, false
+        ])
+        #expect(stream.stitches.map(\.isJump) == [
+            false, false, false, true, true, true, false
+        ])
+        #expect(stream.colorChangeCount == 1)
+    }
+
+    @Test("Clause B at a −60.75-stage gap arms the jump, yet the replay does not interpolate")
+    func actorChangeAtNegativeHalfUnitGap() {
+        // Mirror direction: prev − target = round(121.5) = 122 → far, the
+        // second workspace emission is a jump — while the replay rounds
+        // −121.5 to −121 and appends the target without interpolation.
+        var manager = EmbroideryPatternManager()
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
+        manager.addStitch(at: StagePoint(x: -60.75, y: 0), layer: 0, actor: otherActor)
+
+        let stream = manager.assembled()
+        let origin = EmbroideryPoint(x: 0, y: 0)
+        #expect(stream.stitches.map(\.position) == [
+            origin,
+            origin, // clause B, color change
+            origin, // clause B, jump — the gap is clause-far
+            EmbroideryPoint(x: -121, y: 0) // plain target, no interpolation
+        ])
+        #expect(stream.stitches.map(\.isColorChange) == [false, true, false, false])
+        #expect(stream.stitches.map(\.isJump) == [false, false, true, false])
+        #expect(stream.colorChangeCount == 1)
+    }
+
+    @Test("An actor change and the actor's own layer switch compose — clauses B and D together")
+    func actorChangeComposesWithLayerEntry() {
+        // Codex US-110 round-1 blind spot: actor B stitched on layer 1,
+        // actor A stitched on layer 0, then B enters layer 0. Catroid runs
+        // both the actor-change transition (B: change + workspace point
+        // twice) and B's previous-layer connecting emission (D), before the
+        // target (E).
+        var manager = EmbroideryPatternManager()
+        manager.addStitch(at: StagePoint(x: 5, y: 5), layer: 1, actor: otherActor)
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
+        manager.addStitch(at: StagePoint(x: 6, y: 6), layer: 0, actor: otherActor)
+
+        let stream = manager.assembled()
+        let origin = EmbroideryPoint(x: 0, y: 0)
+        #expect(stream.stitches.map(\.position) == [
+            origin, // layer 0: actor A
+            origin, // clause B, color change
+            origin, // clause B, emitted again
+            EmbroideryPoint(x: 10, y: 10), // clause D: B's previous-layer point
+            EmbroideryPoint(x: 12, y: 12), // clause E target
+            EmbroideryPoint(x: 12, y: 12), // boundary color change
+            EmbroideryPoint(x: 12, y: 12), // join jump
+            EmbroideryPoint(x: 10, y: 10) // layer 1: B's first command
+        ])
+        #expect(stream.stitches.map(\.isColorChange) == [
+            false, true, false, false, false, true, false, false
+        ])
+        #expect(stream.stitches.map(\.isJump) == [
+            false, false, false, false, false, false, true, false
+        ])
+        #expect(stream.colorChangeCount == 2)
+    }
 
     // MARK: - Layer-switch thresholds (US-110; clauses C and D)
 

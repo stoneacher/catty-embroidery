@@ -40,6 +40,28 @@ struct DSTFileTests {
         expectBytesEqual(file.data, expected)
     }
 
+    /// Codex US-110 round-1 blind spot: the manager tests assert positions
+    /// and flags, which cannot catch an integration error between manager
+    /// flags and record encoding. All five golden points sit at (0,0), so
+    /// the records are pure flag bytes.
+    @Test("a manager's five-point golden serializes to the expected records")
+    func managerFivePointGoldenBytes() {
+        var manager = EmbroideryPatternManager()
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: ActorID(0))
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 1, actor: ActorID(0))
+
+        let data = DSTFile(stream: manager.assembled(), name: "layers").data
+        #expect(data.count == 512 + 5 * 3 + 3)
+        #expect(Array(data.dropFirst(512)) == [
+            0x00, 0x00, 0x03, // plain
+            0x00, 0x00, 0xC3, // color change
+            0x00, 0x00, 0x83, // jump
+            0x00, 0x00, 0x03, // plain
+            0x00, 0x00, 0x03, // plain
+            0x00, 0x00, 0xF3 // end of file
+        ])
+    }
+
     // MARK: - Structure
 
     @Test("an empty stream produces header + end-of-file record only")
