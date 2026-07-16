@@ -107,6 +107,46 @@ struct EmbroideryPatternManagerTests {
         #expect(stream.colorChangeCount == 1)
     }
 
+    @Test("An invalid hex set after arming keeps the pending change and the color")
+    func invalidHexAfterArmingKeepsPending() {
+        // The full no-op (ADR-015) must hold from any state: garbage after a
+        // differing set neither clears the armed change nor the new color.
+        var manager = EmbroideryPatternManager()
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
+        manager.setThreadColor(red, for: actor)
+        manager.setThreadColor(hexString: "#gg0000", for: actor)
+        manager.addStitch(at: StagePoint(x: 5, y: 5), layer: 0, actor: actor)
+
+        let stream = manager.assembled()
+        #expect(stream.stitches.map(\.isColorChange) == [false, true])
+        #expect(stream.stitches.map(\.color) == [.black, red])
+        #expect(stream.colorChangeCount == 1)
+    }
+
+    @Test("An actor-change transition and a pending change meet in one command")
+    func actorChangeMeetsPendingChange() {
+        // The only place two color-change sources compose: actor B sets a
+        // color after actor A emitted (arming counts manager-wide, ADR-015 —
+        // B itself never stitched), then stitches onto A's layer. Clause B
+        // contributes the black transition pair with one change; clause E's
+        // target carries B's pending change — two changes total.
+        var manager = EmbroideryPatternManager()
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
+        manager.setThreadColor(red, for: otherActor)
+        manager.addStitch(at: StagePoint(x: 5, y: 5), layer: 0, actor: otherActor)
+
+        let stream = manager.assembled()
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 0, y: 0),
+            EmbroideryPoint(x: 0, y: 0), // clause B, color change
+            EmbroideryPoint(x: 0, y: 0), // clause B, emitted again
+            EmbroideryPoint(x: 10, y: 10) // clause E, pending change
+        ])
+        #expect(stream.stitches.map(\.isColorChange) == [false, true, false, true])
+        #expect(stream.stitches.map(\.color) == [.black, .black, .black, red])
+        #expect(stream.colorChangeCount == 2)
+    }
+
     @Test("In-layer changes and a layer boundary sum into one CO count")
     func changesAndBoundarySumInCO() {
         // Layer 0: black → red → blue (two armed changes), then a stitch on

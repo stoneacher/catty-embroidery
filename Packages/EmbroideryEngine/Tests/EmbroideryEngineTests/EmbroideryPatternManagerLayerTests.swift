@@ -196,6 +196,7 @@ struct EmbroideryPatternManagerLayerTests {
         ])
         #expect(stream.stitches.map(\.isColorChange) == [false, false, true, false, false])
         #expect(stream.stitches.map(\.isJump) == [false, false, false, true, false])
+        #expect(stream.stitches.map(\.color) == Array(repeating: .black, count: 5))
     }
 
     @Test("A single-layer manager assembles identically to a direct stream")
