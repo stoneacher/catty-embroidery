@@ -13,7 +13,10 @@ Work through this checklist against what actually happened in this session and t
 - For every acceptance criterion, verify it is actually met (tests, code, CI evidence) before ticking `[x]`. Leave unmet criteria unchecked and call them out in the report.
 - If all criteria are met, mark the story done with a status line directly under the metadata line at the top:
   `**Status**: Done — YYYY-MM-DD, PR #<n>`
-- **Prove it**: after editing, run `grep -n 'Status.*Done\|- \[' <story file>` and quote the Status line and ticked criteria verbatim in the step-8 report. A report without the quoted Status line is an incomplete /finish (US-110 was handed over unclosed on 2026-07-16 because this step left no visible trace — see the journal entry of that date).
+- **Prove it**: after editing, run both checks and include their output in the step-8 report:
+  - `grep -n '^\*\*Status\*\*: Done' <story file>` — must print the Status line; quote it verbatim.
+  - `grep -n '^- \[ \]' <story file>` — must print **nothing**; any hit is an unmet criterion and the story is not done.
+  A report without the quoted Status line and the clean unchecked-criteria check is an incomplete /finish (US-110 was handed over unclosed on 2026-07-16 because this step left no visible trace — see the journal entry of that date).
 
 ## 2. docs/DECISIONS.md
 
@@ -44,4 +47,4 @@ Work through this checklist against what actually happened in this session and t
 
 ## 8. Report
 
-End with a short summary: per file — updated / already correct / nothing to record; the story's Status line **quoted verbatim from the file** (step 1's proof — not paraphrased); CI state; the Ink/Stitch verdict from step 5; the Codex review verdict from step 6; anything left open for the next session.
+End with a short summary: per file — updated / already correct / nothing to record; step 1's proof — the story's Status line **quoted verbatim from the file** plus the clean unchecked-criteria check output (not paraphrased); CI state; the Ink/Stitch verdict from step 5; the Codex review verdict from step 6; anything left open for the next session.
