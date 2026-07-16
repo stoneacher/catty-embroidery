@@ -46,6 +46,18 @@ struct ThreadColorHexTests {
         #expect(ThreadColor(hexString: "#000000 with trailing junk") == .black)
     }
 
+    @Test("Java's Unicode digit set: fullwidth hex letters and Nd decimals parse")
+    func unicodeDigits() {
+        // Codex US-110 round-2 find: `Integer.decode` delegates to
+        // `Character.digit`, which accepts the fullwidth Latin letters and
+        // any Unicode decimal digit (category Nd) — subject to the digit
+        // value being below the radix, so fullwidth Ｇ (16) still fails.
+        #expect(ThreadColor(hexString: "#ＦＦ0000") == ThreadColor(red: 255, green: 0, blue: 0))
+        #expect(ThreadColor(hexString: "#１２3456") == ThreadColor(red: 0x12, green: 0x34, blue: 0x56))
+        #expect(ThreadColor(hexString: "#١٢3456") == ThreadColor(red: 0x12, green: 0x34, blue: 0x56))
+        #expect(ThreadColor(hexString: "#ＧＧ0000") == nil)
+    }
+
     /// "#+12345"/"#-12345" pin Java semantics: `Integer.decode("0x+1")`
     /// throws (sign only allowed before the radix prefix), while Swift's
     /// `UInt8("+1", radix:)` would accept it — the parser must reject signs.
