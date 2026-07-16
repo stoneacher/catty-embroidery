@@ -38,14 +38,14 @@ Decided in the M2 planning session (2026-07-16; explored per the explore-before-
 
 ## Documented deviations from Catroid
 
-Deliberate, geometry-preserving deviations (everything stitch-visible stays Catroid-faithful):
+Deliberate deviations — geometry-preserving except where a row states otherwise:
 
 | Deviation | Why |
 |---|---|
 | Idle once-per-tick `runningStitch.update()` omitted | With instant bricks, an update at an unchanged position crosses no threshold and moves no anchor — a geometric no-op. |
-| Wall-clock waits replaced by injected logical clock | Determinism and no I/O in the package; geometry is time-independent, so the stream is identical. |
+| Wall-clock waits replaced by injected logical clock | Determinism and no I/O in the package. Single-script geometry is identical; where waits and concurrent scripts interact, geometry legitimately depends on the injected `tickDelta` — the deterministic counterpart of Catroid's wall-clock frame dependence (see design summary). |
 | 20 ms loop-delay throttle omitted | Pure timing throttle, zero geometric effect, and Catroid disables it while stitching anyway (`LoopAction.isLoopDelayNeeded`). |
 | GoTo touch/random/other-sprite excluded | Stage-input/RNG/multi-sprite resolution has no headless meaning; parity target for M6. `placeAt`/`setX`/`setY`/`changeXBy`/`changeYBy` cover deterministic placement. |
 | `WriteEmbroideryToFile` executes as a finalize marker event, no file I/O | The package performs no implicit I/O; the assembled stream is always available via `assembledStream()`, and DST materialization is the app's concern (M3/E7). The brick stays in the model for M4/M5 fidelity. |
 | Zero/negative/non-finite pattern parameters are no-ops | Already pinned in ADR-014 (avoids porting Java's NaN-poison and spam behaviors). |
-| Formula arithmetic in native `Double`, not Catroid's `BigDecimal`/DECIMAL128 | Catroid evaluates PLUS/MINUS/MULT/DIVIDE in decimal128 (`0.1 + 0.2` is exactly 0.3 there); the binary-vs-decimal difference is orders of magnitude below embroidery resolution — same acceptance rationale as ADR-014's float-vs-Double decision, extended by the ADR pinned in US-202. |
+| Formula arithmetic in native `Double` for **finite** operands, not Catroid's `BigDecimal`/DECIMAL128 | Catroid evaluates PLUS/MINUS/MULT/DIVIDE in decimal128 (`0.1 + 0.2` is exactly 0.3 there); at embroidery-relevant magnitudes the rounding difference is far below resolution — ADR-014's acceptance rationale, scope pinned by the US-202 ADR. Catroid's stitch-visible **coercion of non-finite operands to 0** (`pow(1e308,2) + 1` = 1) is mirrored, not diverged from (US-202). |
