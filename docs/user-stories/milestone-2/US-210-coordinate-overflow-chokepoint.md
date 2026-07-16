@@ -1,22 +1,26 @@
 # US-210 — Coordinate overflow/±121 chokepoint
 
-**Epic**: E3 Program model & interpreter | **Estimate**: ~3 h | **Depends on**: US-206
+**Epic**: E3 Program model & interpreter | **Estimate**: ~4 h | **Depends on**: US-206
 
 **Status**: Planned
 
-**Story**: As the engine boundary, I want finite-but-huge needle coordinates from bad or extreme formulas guarded at a single documented chokepoint, so an adversarial program can never crash the interpreter — closing the journal carry-forward from US-108/US-109/US-110 (the round-then-subtract delta trap and the `EmbroideryPoint(converting:)` `Int(_:)` trap on huge Doubles).
+**Story**: As the engine boundary, I want the two carried-forward coordinate traps closed **inside the engine**, so no caller — interpreter, manager, or direct stream user — can crash it: (a) the exact-boundary disagreement where the interpolation decision rounds the *difference* (`EmbroideryStream.swift`) while record encoding subtracts *individually rounded positions* (`DSTStitchRecord.swift`), so at half-unit stage fractions a move the decision sees as 121 encodes as delta 122 and traps (journal repro: x = 0.125 → 60.75); and (b) finite-but-huge coordinates whose stage→embroidery-unit conversion overflows `Int` at `EmbroideryPoint(converting:)`.
+
+These are engine-side chokepoints — an interpreter-side guard cannot reach (a) at all and would leave direct engine callers exposed to both.
 
 ## Acceptance criteria
-- [ ] One documented chokepoint at the interpreter → manager seam (stage → embroidery-unit conversion) guards: non-finite coordinates (NaN/±Inf) → the update is a no-op; finite coordinates whose unit conversion would overflow `Int` → guarded no-op (extending the ADR-014 `maxStitchesPerUpdate` finiteness discipline from per-update deltas to absolute positions). Chosen semantics (no-op vs clamp) are pinned as an ADR in this story's close-out.
-- [ ] `moveNSteps` with an astronomically large formula result, and `placeAt` at extreme coordinates, both leave the stream valid and the program running — no `fatalError`, no `Int(_:)` trap.
-- [ ] The guard is not over-eager: legal near-boundary coordinates still stitch normally, and the ±121-unit interpolation/tie-off behavior at ordinary magnitudes is untouched (ADR-015 boundary semantics unchanged).
+- [ ] **Boundary trap (a)**: the stream's interpolation decision and the record encoder agree at every input — pinned by making the decision and the encoded delta derive from the same computation (or by an explicit guard at the record seam). Chosen semantics are pinned as an ADR in this story's close-out; at this boundary Catroid itself produces an out-of-range delta (the same rounding mismatch without Swift's trap) — a reference accident, not semantics to port (ADR-012 discipline). ADR-013/015 byte behavior at all ordinary magnitudes is unchanged — the existing golden and boundary tests stay green untouched.
+- [ ] **Overflow trap (b)**: `EmbroideryPoint(converting:)` (or its single call seam) guards finite stage coordinates whose ×2 conversion exceeds `Int` range (|stage| > ~`Int.max`/2) — guarded no-op or clamp, pinned in the same ADR; non-finite coordinates are already rejected upstream by the ADR-014 pattern guards, and the chokepoint documents that division of labor.
+- [ ] The interpreter inherits the safety for free: an adversarial program reaching the manager with extreme coordinates leaves the stream valid and the program running — no `fatalError`, no `Int(_:)` trap.
+- [ ] The guard is not over-eager: ordinary >121-unit moves still interpolate per ADR-012, and the ADR-015 ==121 layer-switch behavior is untouched.
 
 ## Test-first plan
-1. `moveNSteps(1e12)` while a running stitch is active → guarded (no crash), program continues, stream stays valid.
-2. `placeAt(1e18, 1e18)` → overflow guard fires at the conversion chokepoint; no trap.
-3. NaN-producing coordinate path → no stitch emitted, needle and pattern anchor unchanged.
-4. A legal near-boundary move (just under the guard limit) stitches normally; an ordinary >121-unit move still interpolates per ADR-012.
+1. Journal repro at the stream level: previous x = 0.125, target x = 60.75 (decision distance 121, encoded delta 122) → no trap; the pinned semantics hold; the mirrored negative-half case likewise.
+2. Direct `EmbroideryStream.addStitch`/`EmbroideryPatternManager.addStitch` at |stage| > `Int.max`/2 (e.g. 5e18) → conversion guard fires, stream stays valid.
+3. Interpreter-level smoke test through a path that actually reaches the manager (pattern moves are suppressed earlier by the ADR-14 `maxStitchesPerUpdate` guard): `placeAt(5e18, 5e18)` followed by a `stitch` brick → guarded, program continues.
+4. Not-over-eager: a legal near-boundary conversion (just under `Int.max`/2) still stitches; an ordinary long move still interpolates; the ADR-015 ==121 tie-off tests stay green.
 
 ## References
-- `docs/workflow-journal.md` 2026-07-13 / 2026-07-14 / 2026-07-16 (carry-forward: ±121 round-then-subtract delta trap, finite-but-huge conversion trap, with minimal repro)
+- `docs/workflow-journal.md` 2026-07-13 / 2026-07-14 / 2026-07-16 (carry-forward with minimal repro: decision rounds 121, positions round 0→122)
+- `EmbroideryEngine`: `EmbroideryStream.swift` (interpolation decision), `DSTStitchRecord.swift` (delta from rounded positions), `DSTFile.swift` (documented known trap), `Geometry.swift` (`EmbroideryPoint(converting:)`)
 - ADR-012 (interpolation), ADR-014 (finiteness guards), ADR-015 (±121 boundary) in `docs/DECISIONS.md`

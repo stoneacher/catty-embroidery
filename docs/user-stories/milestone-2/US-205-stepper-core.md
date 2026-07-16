@@ -1,6 +1,6 @@
 # US-205 — Stepper core: compile, scheduler, events, injected clock, wait
 
-**Epic**: E3 Program model & interpreter | **Estimate**: ~5 h | **Depends on**: US-202, US-204
+**Epic**: E3 Program model & interpreter | **Estimate**: ~5 h | **Depends on**: US-203, US-204
 
 **Status**: Planned
 
@@ -14,8 +14,8 @@ This is the milestone's tightest story (scheduler + clock + events + compilation
 - [ ] `InterpreterEvent`: `needleMoved`, `stitch`, `colorArmed`, `waited`, `finalizeRequested` — ordered, `Equatable` (embroidery cases are produced from US-206 on; the enum lands here).
 - [ ] One tick = round-robin over every runnable `whenStarted` script (all objects, creation order): each script executes instant bricks until it finishes or blocks on an unelapsed `wait` (Catroid/libgdx: instant actions complete within one `act`; many bricks per tick; multiple start scripts interleave per tick).
 - [ ] `wait(seconds:)` uses the injected `InterpreterClock { tickDelta }`: the interpreter advances a logical clock by `tickDelta` per tick; a wait occupies `ceil(seconds / tickDelta)` ticks. No wall-clock anywhere in the package. **Pin the tick/clock semantics as an ADR in this story's close-out.**
-- [ ] `setVariable`/`changeVariableBy` mutate the interpreter's variable store, visible to later formula evaluation (scoping per US-203).
-- [ ] Error semantics: a throwing formula in any brick falls back to that brick's Catroid default and execution continues — a bad formula never halts the program (Catroid catches `InterpretationException` per action).
+- [ ] `setVariable`/`changeVariableBy` mutate the interpreter's variable store, visible to later formula evaluation (scoping per US-202).
+- [ ] Error semantics: a throwing formula in any brick applies that brick's **per-brick Catroid action fallback** (US-204's table; e.g. `moveNSteps` catch-and-skip, `placeAt` zero-substitution; the `wait` and `repeatLoop` fallbacks are verified against `WaitAction`/`RepeatAction` and pinned in this story) and execution continues — a bad formula never halts the program (Catroid catches `InterpretationException` per action).
 
 ## Test-first plan
 1. Empty program: first `step()` returns `.finished`; `run()` returns `[]`.

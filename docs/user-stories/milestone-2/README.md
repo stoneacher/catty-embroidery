@@ -11,17 +11,17 @@ Where the Catroid and Catty references disagree, **ADR-012 in [DECISIONS.md](../
 | Story | Title | Est. | Depends on |
 |-------|-------|------|------------|
 | [US-201](US-201-program-model-and-targets.md) | Program model value types and sibling targets | ~4 h | — |
-| [US-202](US-202-brick-enum-and-paired-control.md) | Brick enum and flat script with paired-control invariant | ~4 h | US-201 |
-| [US-203](US-203-formula-tree-and-evaluator.md) | Formula tree and evaluator | ~5 h | US-201 |
-| [US-204](US-204-virtual-needle-and-motion-bricks.md) | Virtual needle and motion bricks | ~4 h | US-203 |
-| [US-205](US-205-stepper-core.md) | Stepper core: compile, scheduler, events, injected clock, wait | ~5 h | US-202, US-204 |
+| [US-202](US-202-formula-tree-and-evaluator.md) | Formula tree and evaluator | ~5 h | US-201 |
+| [US-203](US-203-brick-enum-and-paired-control.md) | Brick enum and flat script with paired-control invariant | ~4 h | US-201, US-202 |
+| [US-204](US-204-virtual-needle-and-motion-bricks.md) | Virtual needle and motion bricks | ~4 h | US-202, US-203 |
+| [US-205](US-205-stepper-core.md) | Stepper core: compile, scheduler, events, injected clock, wait | ~5 h | US-203, US-204 |
 | [US-206](US-206-embroidery-bricks-wired.md) | Embroidery bricks wired into the interpreter | ~5 h | US-205 |
 | [US-207](US-207-golden-program-square.md) | Golden program: stitch a square | ~3 h | US-206 |
 | [US-208](US-208-golden-program-star.md) | Golden program: stitch a star | ~3 h | US-207 |
 | [US-209](US-209-pattern-to-bytes-differential.md) | Pattern→stream→bytes differential test | ~3 h | US-207 |
-| [US-210](US-210-coordinate-overflow-chokepoint.md) | Coordinate overflow/±121 chokepoint | ~3 h | US-206 |
+| [US-210](US-210-coordinate-overflow-chokepoint.md) | Coordinate overflow/±121 chokepoint | ~4 h | US-206 |
 
-**Total: ~39 h.** Suggested order: 201 → 202 → 203 → 204 → 205 → 206 → 207 (exit criterion reachable here) → 208 → 209/210 in any order (202 and 203 may swap).
+**Total: ~40 h.** Suggested order: 201 → 202 → 203 → 204 → 205 → 206 → 207 (exit criterion reachable here) → 208 → 209/210 in any order. Each story is independently buildable at its place in this order (the formula story precedes the brick enum that carries `Formula` payloads).
 
 **Milestone exit criterion**: a hardcoded "stitch a square/star" program produces the expected stitch stream in unit tests, and the interpreter is incrementally consumable — execution advances step-by-step, emits ordered needle/stitch/color events, is deterministic (golden stitch-stream tests), and takes an injected clock for time-based bricks; consuming events one tick at a time yields the same stream as batch execution. Reached at US-207, demonstrated fully at US-208.
 
@@ -34,7 +34,7 @@ Decided in the M2 planning session (2026-07-16; explored per the explore-before-
 - **Scripts stay flat with paired control bricks** (ADR-008): `repeatLoop`/`forever` pair with a `loopEnd` marker that is never dropped from the model (M4 editor and `.catrobat` interop depend on it). The interpreter compiles the flat list internally to a linear instruction array with jump offsets (Catty `CBBackend` precedent) — an implementation detail, not model structure.
 - **The needle is the object** (Catroid: the needle is the sprite): motion bricks mutate a virtual needle in ADR-007 stage space; every position change feeds the object's active stitch pattern via the engine's `RunningStitch` wrapper, and emitted points go to `EmbroideryPatternManager.addStitch(at:layer:actor:)` with `layer = zIndex`, one `ActorID` per object.
 - **Deterministic time**: an injected `InterpreterClock` with a fixed logical `tickDelta`; a `wait` occupies `ceil(seconds/tickDelta)` ticks. All motion is instant, so embroidery geometry is time-independent — waits affect only event timing and multi-script interleaving. Pinned as an ADR in US-205.
-- **Formulas** mirror Catroid's `FormulaElement` tree, restricted to numbers, arithmetic operators (PLUS/MINUS/MULT/DIVIDE/MOD/POW, unary minus), and user variables with object-scope-shadows-project-scope resolution. Invalid/NaN formulas throw internally; every brick catches and falls back to its Catroid default — a bad formula never halts the program.
+- **Formulas** mirror Catroid's `FormulaElement` tree, restricted to numbers, arithmetic operators (PLUS/MINUS/MULT/DIVIDE/POW, unary minus — no MOD: Catroid's `Operators.MOD` is declared but never interpreted; its working modulo is a *function*, outside the M2 subset), and user variables with object-scope-shadows-project-scope resolution. NaN-producing formulas throw internally (±∞ propagates, matching Catroid's `assertNotNaN`); every brick catches and applies its **per-brick Catroid action fallback** (most catch-and-skip; `placeAt` substitutes 0 for the failed coordinate) — a bad formula never halts the program.
 
 ## Documented deviations from Catroid
 
