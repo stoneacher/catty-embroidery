@@ -1,6 +1,6 @@
 # EmbroideryEngine
 
-A platform-independent Swift package for translating programmatic needle movements into machine-readable Tajima DST embroidery files. The engine turns stitch commands into byte-verified DST exports, with no I/O, no dependencies, and strict concurrency compliance.
+A platform-independent Swift package for translating programmatic needle movements into machine-readable Tajima DST embroidery files. The engine turns stitch commands into byte-verified DST exports as in-memory `Data`, with no dependencies and strict concurrency compliance.
 
 EmbroideryEngine powers the embroidery functionality of the Catrobat iOS app, porting the byte-level semantics of Catroid's `org.catrobat.catroid.embroidery` module while maintaining compatibility with the Catty reference fixtures. It is deliberately synchronous, uses only Sendable value types, and runs Swift 6 strict concurrency—the app layer controls async boundaries and actor placement.
 
@@ -121,7 +121,7 @@ See [ADR-014](../../docs/DECISIONS.md) for pattern arithmetic and tolerances.
 var manager = EmbroideryPatternManager()
 
 // Set actor color (if different, arms a DST color change on next stitch)
-manager.setThreadColor(.red, for: actor0)
+manager.setThreadColor(ThreadColor(red: 255, green: 0, blue: 0), for: actor0)
 manager.setThreadColor(hexString: "#FF0000", for: actor0)  // Also supports hex
 
 // Record commands (workspace position, layer, actor)
@@ -182,7 +182,7 @@ let header = DSTHeader(stream: stream, name: "Design")
 let headerBytes = header.bytes
 ```
 
-Fields include: design name (LA), stitch count (ST), color blocks (CO), extent magnitudes (+X, −X, +Y, −Y), last stitch delta (AX, AY), and padding.
+Fields include: design name (LA), stitch count (ST), color blocks (CO), extent magnitudes (+X, −X, +Y, −Y), net displacement from first to last stitch (AX, AY), and padding.
 
 **DSTStitchRecord** — One 3-byte Tajima DST record: a relative movement up to ±121 units per axis, plus jump / color-change flags.
 
@@ -201,14 +201,14 @@ The engine is deliberately **synchronous** — no async/await — so the app lay
 - The app layer to wrap the engine in an actor if needed for actor isolation.
 - Deterministic behavior unaffected by scheduling.
 
-### No I/O
-The engine performs no file system or network I/O. `DSTFile.data` is the primary export; `write(to:)` is a convenience wrapper around `Data.write(to:options:)` for the app layer's use.
+### No Implicit I/O
+The engine performs no I/O of its own — `DSTFile.data` is the primary export, and building a file touches no file system. The single exception is the explicit `DSTFile.write(to:)` convenience, a thin wrapper around `Data.write(to:options:)` provided for the app layer.
 
 ### No Dependencies
 The package depends only on Foundation (for `Data`, `URL`). It is usable from any Swift platform (iOS 17+, macOS 14+).
 
 ### Strict Concurrency
-Compiled with `swiftLanguageModes: [.v6]` to enforce Swift 6 strict concurrency at compile time, guaranteeing no data races at runtime.
+Compiled with `swiftLanguageModes: [.v6]`, enforcing Swift 6 data-race safety at compile time.
 
 ## Running Tests
 
