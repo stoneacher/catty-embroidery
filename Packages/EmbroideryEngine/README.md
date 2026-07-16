@@ -24,6 +24,7 @@ let stream = manager.assembled()
 let file = DSTFile(stream: stream, name: "MyDesign")
 
 // Write to disk or compare bytes
+let designURL = URL.temporaryDirectory.appending(path: "MyDesign.dst")
 try file.write(to: designURL)
 // Or inspect: let bytes = file.data
 ```
@@ -53,7 +54,7 @@ let red = ThreadColor(red: 255, green: 0, blue: 0)
 let parsed = ThreadColor(hexString: "#FF0000")  // Returns nil if malformed
 ```
 
-**Stitch** — One needle penetration, carrying position, color, and DST record flags.
+**Stitch** — One stitch record — a needle penetration or a jump movement (`isJump`) — carrying position, color, and DST record flags.
 ```swift
 let stitch = Stitch(
     position: EmbroideryPoint(x: 100, y: 200),
@@ -120,7 +121,9 @@ See [ADR-014](../../docs/DECISIONS.md) for pattern arithmetic and tolerances.
 ```swift
 var manager = EmbroideryPatternManager()
 
-// Set actor color (if different, arms a DST color change on next stitch)
+// Set actor color: the first set (before any emission) silently picks the
+// starting color; a later differing set arms a DST color change on the
+// actor's next surviving stitch (ADR-015)
 manager.setThreadColor(ThreadColor(red: 255, green: 0, blue: 0), for: actor0)
 manager.setThreadColor(hexString: "#FF0000", for: actor0)  // Also supports hex
 
@@ -157,7 +160,7 @@ let bounds = stream.boundingBox
 let first = stream.firstStitchPosition
 ```
 
-Long moves (exceeding ±121 embroidery units on either axis) are automatically interpolated into jump stitches per US-105. Dedup removes stitches at the last recorded stage position.
+Long moves (exceeding ±121 embroidery units on either axis) are automatically interpolated into jump stitches per US-105 — with one known edge: at an exact ±121-unit boundary, the guard's difference rounding and the record's position rounding can disagree by one unit and encoding traps (a tracked ADR-012 follow-up; Catroid shares the asymmetry and silently emits a corrupt record instead). Dedup removes stitches at the last recorded stage position.
 
 See [ADR-012](../../docs/DECISIONS.md) for interpolation, rounding, and byte-level semantics.
 
