@@ -234,11 +234,17 @@ public struct EmbroideryPatternManager: Sendable {
     /// Catroid `DSTFileConstants.getMaxDistanceBetweenPoints`: Chebyshev
     /// distance with each stage-space axis difference converted to
     /// embroidery units first (the ADR-012 decision-only difference
-    /// conversion), compared against `MAX_DISTANCE` = ±121.
+    /// conversion), compared against `MAX_DISTANCE` = ±121. Argument order
+    /// matters (swift-code-reviewer US-110 find, ADR-015): every `act`
+    /// clause passes the previous/workspace point first and the reference
+    /// rounds `previous − target`, while `javaRound` is asymmetric at
+    /// negative halves — the opposite order misclassifies half-unit gaps
+    /// like ±60.75 stage points. The stream's interpolation check rounds
+    /// `target − previous` and must stay that way (`DSTStream`).
     private func distanceInUnits(from start: StagePoint, to end: StagePoint) -> Int {
         max(
-            abs(EmbroideryPoint.embroideryUnits(fromStageValue: end.x - start.x)),
-            abs(EmbroideryPoint.embroideryUnits(fromStageValue: end.y - start.y))
+            abs(EmbroideryPoint.embroideryUnits(fromStageValue: start.x - end.x)),
+            abs(EmbroideryPoint.embroideryUnits(fromStageValue: start.y - end.y))
         )
     }
 }
