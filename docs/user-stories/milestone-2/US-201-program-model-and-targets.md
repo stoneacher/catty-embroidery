@@ -2,7 +2,7 @@
 
 **Epic**: E3 Program model & interpreter | **Estimate**: ~4 h | **Depends on**: — (M1 complete)
 
-**Status**: Planned
+**Status**: Done — PR #19
 
 **Story**: As the codebase, I want a `ProgramModel` target and an `Interpreter` target wired into the package so the program tree lives beside the engine without the engine depending on it.
 
