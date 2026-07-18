@@ -1,4 +1,5 @@
 import EmbroideryEngine
+import Interpreter
 import ProgramModel
 import Testing
 

@@ -5,7 +5,7 @@
 public struct Program: Sendable, Equatable, Codable {
     /// Version of the serialized format (ADR-003), stamped so later milestones
     /// can migrate old files.
-    public static let currentFormatVersion = 1
+    public static let currentFormatVersion: Int = 1
 
     public var formatVersion: Int
     public var name: String

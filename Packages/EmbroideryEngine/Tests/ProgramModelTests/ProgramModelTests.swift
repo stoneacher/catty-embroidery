@@ -57,7 +57,8 @@ struct ProgramModelTests {
 
     @Test("Program carries the current format version by default")
     func formatVersionDefault() {
-        // ADR-003: versioned own format.
+        // ADR-003: versioned own format; v1 is the pinned initial contract.
+        #expect(Program.currentFormatVersion == 1)
         #expect(Program().formatVersion == Program.currentFormatVersion)
     }
 
