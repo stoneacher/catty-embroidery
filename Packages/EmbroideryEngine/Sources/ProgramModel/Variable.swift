@@ -17,10 +17,8 @@ public struct Variable: Sendable, Equatable, Codable {
 
     /// NaN-valued variables compare equal, keeping whole-`Program` equality
     /// reflexive for ADR-006 assertions (Catroid parity: `UserVariable.equals`
-    /// is identity-true and Java `Double.equals` treats NaN as equal). Unlike
-    /// Java, +0.0 and -0.0 stay equal — Swift `==` semantics.
+    /// is identity-true and Java `Double.equals` treats NaN as equal).
     public static func == (lhs: Variable, rhs: Variable) -> Bool {
-        lhs.name == rhs.name
-            && (lhs.value == rhs.value || (lhs.value.isNaN && rhs.value.isNaN))
+        lhs.name == rhs.name && lhs.value.isSameValue(as: rhs.value)
     }
 }

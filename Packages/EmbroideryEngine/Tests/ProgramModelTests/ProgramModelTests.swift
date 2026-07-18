@@ -104,6 +104,14 @@ struct ProgramModelTests {
         #expect(Variable(name: "x", value: .nan) != Variable(name: "x", value: 0))
     }
 
+    @Test("NaN object start fields keep program equality reflexive")
+    func nanObjectFieldsKeepEqualityReflexive() {
+        let object = Object(startX: .nan, startY: .nan, startHeading: .nan)
+        let program = Program(scenes: [Scene(objects: [object])])
+        #expect(program == program)
+        #expect(Object(startX: .nan) != Object())
+    }
+
     @Test("non-finite variable values do not encode with the default JSONEncoder")
     func nonFiniteValueFailsToEncode() {
         let program = Program(variables: [Variable(name: "overflow", value: .infinity)])

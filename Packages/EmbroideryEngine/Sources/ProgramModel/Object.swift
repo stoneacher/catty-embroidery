@@ -27,4 +27,15 @@ public struct Object: Sendable, Equatable, Codable {
         self.zIndex = zIndex
         self.variables = variables
     }
+
+    /// NaN-aware on the `Double` fields for the same reflexivity guarantee as
+    /// `Variable.==` — every `Double` reachable from `Program` compares NaN-equal.
+    public static func == (lhs: Object, rhs: Object) -> Bool {
+        lhs.name == rhs.name
+            && lhs.startX.isSameValue(as: rhs.startX)
+            && lhs.startY.isSameValue(as: rhs.startY)
+            && lhs.startHeading.isSameValue(as: rhs.startHeading)
+            && lhs.zIndex == rhs.zIndex
+            && lhs.variables == rhs.variables
+    }
 }
