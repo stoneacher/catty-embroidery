@@ -82,12 +82,26 @@ struct ProgramModelTests {
     // (Codex review, US-201) so the M5 persistence story changes them
     // deliberately rather than discovering them as crashes.
 
-    @Test("v1 decoding requires every key — synthesized Codable ignores init defaults")
-    func missingKeyFailsToDecode() {
-        let json = Data(#"{"formatVersion":1,"name":"P","scenes":[]}"#.utf8)
+    @Test(
+        "v1 decoding requires every Program key — synthesized Codable ignores init defaults",
+        arguments: ["formatVersion", "name", "scenes", "variables"]
+    )
+    func missingKeyFailsToDecode(missing: String) throws {
+        let encoded = try JSONEncoder().encode(Program())
+        var dict = try #require(try JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        #expect(dict.removeValue(forKey: missing) != nil, "fixture must contain the key it removes")
+        let json = try JSONSerialization.data(withJSONObject: dict)
         #expect(throws: DecodingError.self) {
             _ = try JSONDecoder().decode(Program.self, from: json)
         }
+    }
+
+    @Test("NaN-valued variables keep program equality reflexive")
+    func nanEqualityIsReflexive() {
+        // Catroid parity: UserVariable.equals / Java Double.equals treat NaN as equal.
+        let program = Program(variables: [Variable(name: "x", value: .nan)])
+        #expect(program == program)
+        #expect(Variable(name: "x", value: .nan) != Variable(name: "x", value: 0))
     }
 
     @Test("non-finite variable values do not encode with the default JSONEncoder")
