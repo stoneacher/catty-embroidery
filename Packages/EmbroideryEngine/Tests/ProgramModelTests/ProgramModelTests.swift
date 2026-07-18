@@ -77,4 +77,24 @@ struct ProgramModelTests {
     func variableDefaultValue() {
         #expect(Variable(name: "x").value == 0)
     }
+
+    // The two tests below characterize the v1 Codable contract as shipped
+    // (Codex review, US-201) so the M5 persistence story changes them
+    // deliberately rather than discovering them as crashes.
+
+    @Test("v1 decoding requires every key — synthesized Codable ignores init defaults")
+    func missingKeyFailsToDecode() {
+        let json = Data(#"{"formatVersion":1,"name":"P","scenes":[]}"#.utf8)
+        #expect(throws: DecodingError.self) {
+            _ = try JSONDecoder().decode(Program.self, from: json)
+        }
+    }
+
+    @Test("non-finite variable values do not encode with the default JSONEncoder")
+    func nonFiniteValueFailsToEncode() {
+        let program = Program(variables: [Variable(name: "overflow", value: .infinity)])
+        #expect(throws: EncodingError.self) {
+            _ = try JSONEncoder().encode(program)
+        }
+    }
 }
