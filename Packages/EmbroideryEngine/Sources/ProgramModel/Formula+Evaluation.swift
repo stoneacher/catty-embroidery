@@ -99,11 +99,16 @@ extension BinaryOperator {
     /// `atLeastOneIsNaN` guard. `divide` returns NaN for a zero divisor
     /// (Catroid DIVIDE; BigDecimal `equals` treats -0.0 == 0.0 there, and Swift
     /// `rhs == 0` is likewise true for -0.0; a NaN divisor fails the comparison
-    /// and flows through `lhs / rhs` to NaN). `pow` needs the explicit NaN
-    /// guard: IEEE `pow(1, NaN)` and `pow(NaN, 0)` are 1, but Catroid checks
+    /// and flows through `lhs / rhs` to NaN). `pow` needs two explicit guards:
+    /// IEEE `pow(1, NaN)` and `pow(NaN, 0)` are 1, but Catroid checks
     /// `atLeastOneIsNaN` before `Math.pow` (`FormulaElement.java:856-860`), so
-    /// a NaN operand always yields NaN; for non-NaN, ∞-free operands
-    /// `Foundation.pow` and `Math.pow` agree everywhere.
+    /// a NaN operand always yields NaN; and Catroid round-trips both POW
+    /// operands through `BigDecimal.valueOf` (`:820-830`), which has no signed
+    /// zero — `pow(-0.0, -3)` is `Math.pow(+0.0, -3)` = +∞ there, where IEEE
+    /// gives −∞ (a maximum-magnitude sign flip after normalization; Codex
+    /// US-202 round 1, ADR-017). Zero operands are therefore canonicalized to
+    /// +0.0. For non-NaN, ∞-free, canonicalized operands `Foundation.pow` and
+    /// `Math.pow` agree everywhere.
     func apply(_ lhs: Double, _ rhs: Double) -> Double {
         switch self {
         case .plus:
@@ -115,7 +120,11 @@ extension BinaryOperator {
         case .divide:
             rhs == 0 ? .nan : lhs / rhs
         case .pow:
-            lhs.isNaN || rhs.isNaN ? .nan : Foundation.pow(lhs, rhs)
+            if lhs.isNaN || rhs.isNaN {
+                .nan
+            } else {
+                Foundation.pow(lhs.isZero ? 0 : lhs, rhs.isZero ? 0 : rhs)
+            }
         }
     }
 }

@@ -100,6 +100,8 @@ struct FormulaTests {
         // not diverged from.
         let max = try Formula.number(.greatestFiniteMagnitude).interpretFloat(scope: emptyScope)
         #expect(max == .infinity)
+        let min = try Formula.number(-.greatestFiniteMagnitude).interpretFloat(scope: emptyScope)
+        #expect(min == -.infinity)
     }
 
     // MARK: - Test plan 4: NaN throws at the root; ∞ never survives a node
@@ -151,6 +153,70 @@ struct FormulaTests {
         }
     }
 
+    @Test(
+        "NaN is sticky through every binary operator on either side",
+        arguments: BinaryOperator.allCases
+    )
+    func nanStickyThroughEveryOperator(binaryOperator: BinaryOperator) {
+        let nanSubtree = Formula.binary(.divide, .number(0), .number(0))
+        #expect(throws: FormulaError.notANumber) {
+            _ = try Formula.binary(binaryOperator, nanSubtree, .number(2))
+                .interpretDouble(scope: emptyScope)
+        }
+        #expect(throws: FormulaError.notANumber) {
+            _ = try Formula.binary(binaryOperator, .number(2), nanSubtree)
+                .interpretDouble(scope: emptyScope)
+        }
+    }
+
+    @Test("pow outside the real domain yields NaN and throws")
+    func powDomainErrorThrows() {
+        // Math.pow(-1, 0.5) and IEEE pow agree: NaN — normalized unchanged,
+        // rejected at the root.
+        #expect(throws: FormulaError.notANumber) {
+            _ = try Formula.binary(.pow, .number(-1), .number(0.5))
+                .interpretDouble(scope: emptyScope)
+        }
+    }
+
+    @Test("pow loses the zero sign like Catroid's BigDecimal operand round-trip")
+    func powZeroSignParity() throws {
+        // Catroid converts POW operands through BigDecimal.valueOf before
+        // Math.pow (FormulaElement.java:820-830, 856-860), and BigDecimal has no
+        // signed zero: pow(-0.0, -3) is Math.pow(+0.0, -3) = +∞ → +MAX_VALUE.
+        // IEEE pow(-0.0, -3) is -∞ — the sign of a maximum-magnitude result
+        // flips without zero canonicalization (Codex US-202 round 1, ADR-017).
+        #expect(try Formula.binary(.pow, .number(-0.0), .number(-3))
+            .interpretDouble(scope: emptyScope) == .greatestFiniteMagnitude)
+        // Reachable without a -0.0 literal: unary minus negates a zero.
+        #expect(try Formula.binary(.pow, .unaryMinus(.number(0)), .number(-3))
+            .interpretDouble(scope: emptyScope) == .greatestFiniteMagnitude)
+        // The finite-result case keeps Catroid's positive zero.
+        let zero = try Formula.binary(.pow, .number(-0.0), .number(3))
+            .interpretDouble(scope: emptyScope)
+        #expect(zero == 0 && zero.sign == .plus)
+    }
+
+    @Test(
+        "overflow in every binary operator normalizes to ±greatestFiniteMagnitude",
+        arguments: [
+            (Formula.binary(.plus, .number(.greatestFiniteMagnitude), .number(.greatestFiniteMagnitude)),
+             Double.greatestFiniteMagnitude),
+            (.binary(.minus, .number(-.greatestFiniteMagnitude), .number(.greatestFiniteMagnitude)),
+             -.greatestFiniteMagnitude),
+            (.binary(.mult, .number(.greatestFiniteMagnitude), .number(2)),
+             .greatestFiniteMagnitude),
+            (.binary(.divide, .number(.greatestFiniteMagnitude), .number(.leastNonzeroMagnitude)),
+             .greatestFiniteMagnitude)
+        ] as [(Formula, Double)]
+    )
+    func overflowNormalizesInEveryOperator(formula: Formula, expected: Double) throws {
+        // Catroid's decimal128 intermediate is exact here, but .doubleValue()
+        // overflows to ±∞ and the per-node normalization caps it — same
+        // observable result as native Double arithmetic.
+        #expect(try formula.interpretDouble(scope: emptyScope) == expected)
+    }
+
     @Test("pow overflow normalizes to greatestFiniteMagnitude instead of ∞")
     func powOverflowNormalizes() throws {
         // Catroid normalizes every node's result (normalizeDegeneratedDoubleValues):
@@ -174,6 +240,11 @@ struct FormulaTests {
 
     @Test("infinity literals normalize at the leaf")
     func infinityLiteralsNormalize() throws {
+        // Pinned divergence (ADR-017): Catroid NUMBER nodes are strings, which
+        // skip normalization — a crafted NUMBER("Infinity") root survives as +∞
+        // there and coerces to 0 as a BigDecimal operand. Our literal is
+        // Double-typed, no editor can produce an ∞ literal, and it normalizes
+        // uniformly like every computed value.
         #expect(try Formula.number(.infinity).interpretDouble(scope: emptyScope)
             == .greatestFiniteMagnitude)
         #expect(try Formula.number(-.infinity).interpretDouble(scope: emptyScope)
@@ -222,6 +293,20 @@ struct FormulaTests {
             == .greatestFiniteMagnitude)
         #expect(throws: FormulaError.notANumber) {
             _ = try Formula.variable("invalid").interpretDouble(scope: scope)
+        }
+    }
+
+    @Test("a NaN object variable shadows a finite project variable and throws")
+    func nanShadowingThrows() {
+        // Shadowing resolves by name before the value is inspected: the object's
+        // NaN wins over the project's finite value and poisons the evaluation —
+        // no silent fallback to the project variable.
+        let scope = VariableScope(
+            objectVariables: [Variable(name: "x", value: .nan)],
+            projectVariables: [Variable(name: "x", value: 1)]
+        )
+        #expect(throws: FormulaError.notANumber) {
+            _ = try Formula.variable("x").interpretDouble(scope: scope)
         }
     }
 
