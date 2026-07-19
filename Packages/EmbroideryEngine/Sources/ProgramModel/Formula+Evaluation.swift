@@ -94,7 +94,7 @@ extension Formula {
 extension BinaryOperator {
     /// Catroid operator semantics (`FormulaElement.interpretBinaryOperator`) on
     /// operands the caller has already normalized. `plus`/`minus`/`mult` run in
-    /// native `Double` — the pinned ADR-014 divergence from Catroid's
+    /// native `Double` — the pinned ADR-017 divergence from Catroid's
     /// decimal128; for those, IEEE NaN propagation is equivalent to Catroid's
     /// `atLeastOneIsNaN` guard. `divide` returns NaN for a zero divisor
     /// (Catroid DIVIDE; BigDecimal `equals` treats -0.0 == 0.0 there, and Swift

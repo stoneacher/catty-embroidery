@@ -4,10 +4,11 @@ import Testing
 
 @Suite("Formula evaluation")
 struct FormulaTests {
-    /// ADR-014: formula arithmetic runs in native `Double` while Catroid computes
+    /// ADR-017: formula arithmetic runs in native `Double` while Catroid computes
     /// PLUS/MINUS/MULT/DIVIDE in decimal128. Assertions where the two
-    /// representations differ use an absolute tolerance far above binary/decimal
-    /// noise and far below stitch resolution.
+    /// representations differ use an ADR-014-style absolute tolerance, valid for
+    /// this suite's near-unity inputs (not universally — see ADR-017's
+    /// cancellation/conditioning caveat).
     private func expect(
         _ value: Double,
         approximates expected: Double,
@@ -40,11 +41,11 @@ struct FormulaTests {
         ] as [(Formula, Double)]
     )
     func exactEvaluation(formula: Formula, expected: Double) throws {
-        // Exactly representable operands and results: no ADR-014 tolerance needed.
+        // Exactly representable operands and results: no ADR-017 tolerance needed.
         #expect(try formula.interpretDouble(scope: emptyScope) == expected)
     }
 
-    @Test("0.1 + 0.2 approximates 0.3 within the ADR-014 tolerance")
+    @Test("0.1 + 0.2 approximates 0.3 within the ADR-017 tolerance")
     func binaryDoubleDivergenceFromDecimal128() throws {
         // Catroid's decimal128 yields exactly 0.3; native Double yields
         // 0.30000000000000004 — the pinned, accepted divergence.
