@@ -249,6 +249,11 @@ struct FormulaTests {
             == .greatestFiniteMagnitude)
         #expect(try Formula.number(-.infinity).interpretDouble(scope: emptyScope)
             == -.greatestFiniteMagnitude)
+        // Nested case of the same pinned divergence: Catroid's string operand
+        // "Infinity" coerces to 0 inside PLUS (result 1); our Double literal is
+        // already MAX_VALUE when it enters the operator.
+        #expect(try Formula.binary(.plus, .number(.infinity), .number(1))
+            .interpretDouble(scope: emptyScope) == .greatestFiniteMagnitude)
     }
 
     @Test("evaluation errors are catchable as a plain Error (US-205 fallback-and-continue)")
