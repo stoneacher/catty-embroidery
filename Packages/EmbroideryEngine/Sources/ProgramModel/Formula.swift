@@ -27,6 +27,8 @@ public indirect enum Formula: Sendable, Equatable {
         case let (.unaryMinus(left), .unaryMinus(right)):
             left == right
         default:
+            // Mismatched cases only. When adding a Formula case, add its
+            // same-case comparison above — falling in here breaks reflexivity.
             false
         }
     }

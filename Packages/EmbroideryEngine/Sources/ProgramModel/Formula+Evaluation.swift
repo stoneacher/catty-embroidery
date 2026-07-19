@@ -17,7 +17,9 @@ public extension Formula {
     /// `interpretDouble` narrowed with Java `Double.intValue()` semantics:
     /// truncate toward zero, saturate to the Int32 bounds. Java's `(int)` cast
     /// saturates where Swift's `Int32(_:)` traps — the same platform difference
-    /// ADR-014 documents for the stitch-count guard.
+    /// ADR-014 documents for the stitch-count guard. The result is always
+    /// within `Int32.min...Int32.max` (Catroid returns a 32-bit `int`);
+    /// callers never need to re-clamp.
     func interpretInteger(scope: some Scope) throws -> Int {
         try Self.saturatedInt32(interpretDouble(scope: scope))
     }
@@ -75,11 +77,13 @@ extension Formula {
             return 0
         }
         let truncated = x.rounded(.towardZero)
-        if truncated >= 2_147_483_647 {
-            return 2_147_483_647
+        // Both bounds are exactly representable as Double, so the comparisons
+        // are exact.
+        if truncated >= Double(Int32.max) {
+            return Int(Int32.max)
         }
-        if truncated <= -2_147_483_648 {
-            return -2_147_483_648
+        if truncated <= Double(Int32.min) {
+            return Int(Int32.min)
         }
         return Int(truncated) // strictly in range: cannot trap
     }
@@ -88,15 +92,18 @@ extension Formula {
 // MARK: - Operator semantics
 
 extension BinaryOperator {
-    /// Catroid `FormulaElementOperations.kt` operator semantics on operands the
-    /// caller has already normalized. `plus`/`minus`/`mult` run in native
-    /// `Double` — the pinned ADR-014 divergence from Catroid's decimal128.
-    /// `divide` returns NaN for a zero divisor (Catroid DIVIDE; BigDecimal
-    /// `equals` treats -0.0 == 0.0 there, and Swift `rhs == 0` is likewise true
-    /// for -0.0; a NaN divisor fails the comparison and flows through
-    /// `lhs / rhs` to NaN). `pow` is `Foundation.pow` — exact parity with
-    /// Catroid's `Math.pow` on doubles. NaN stickiness is plain IEEE behavior,
-    /// never special-cased.
+    /// Catroid operator semantics (`FormulaElement.interpretBinaryOperator`) on
+    /// operands the caller has already normalized. `plus`/`minus`/`mult` run in
+    /// native `Double` — the pinned ADR-014 divergence from Catroid's
+    /// decimal128; for those, IEEE NaN propagation is equivalent to Catroid's
+    /// `atLeastOneIsNaN` guard. `divide` returns NaN for a zero divisor
+    /// (Catroid DIVIDE; BigDecimal `equals` treats -0.0 == 0.0 there, and Swift
+    /// `rhs == 0` is likewise true for -0.0; a NaN divisor fails the comparison
+    /// and flows through `lhs / rhs` to NaN). `pow` needs the explicit NaN
+    /// guard: IEEE `pow(1, NaN)` and `pow(NaN, 0)` are 1, but Catroid checks
+    /// `atLeastOneIsNaN` before `Math.pow` (`FormulaElement.java:856-860`), so
+    /// a NaN operand always yields NaN; for non-NaN, ∞-free operands
+    /// `Foundation.pow` and `Math.pow` agree everywhere.
     func apply(_ lhs: Double, _ rhs: Double) -> Double {
         switch self {
         case .plus:
@@ -108,7 +115,7 @@ extension BinaryOperator {
         case .divide:
             rhs == 0 ? .nan : lhs / rhs
         case .pow:
-            Foundation.pow(lhs, rhs)
+            lhs.isNaN || rhs.isNaN ? .nan : Foundation.pow(lhs, rhs)
         }
     }
 }

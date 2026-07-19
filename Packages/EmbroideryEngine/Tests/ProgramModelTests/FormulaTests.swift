@@ -73,6 +73,11 @@ struct FormulaTests {
             (2.9, 2),
             (-2.9, -2),
             (2.0, 2),
+            (2_147_483_646.9, 2_147_483_646),
+            (2_147_483_647.0, 2_147_483_647),
+            (2_147_483_647.9, 2_147_483_647),
+            (-2_147_483_648.0, -2_147_483_648),
+            (-2_147_483_648.9, -2_147_483_648),
             (1e19, 2_147_483_647),
             (-1e19, -2_147_483_648),
             (.infinity, 2_147_483_647),
@@ -127,6 +132,22 @@ struct FormulaTests {
         }
         #expect(throws: FormulaError.notANumber) {
             _ = try Formula.number(.nan).interpretDouble(scope: emptyScope)
+        }
+    }
+
+    @Test("NaN is sticky through pow even where IEEE pow is not")
+    func nanStickinessThroughPow() {
+        // IEEE 754 pow(1, NaN) == 1 and pow(NaN, 0) == 1; Catroid guards POW
+        // with atLeastOneIsNaN (FormulaElement.java:856-860) so a NaN operand
+        // always yields NaN and throws at the root — mirrored, not IEEE.
+        let nanSubtree = Formula.binary(.divide, .number(0), .number(0))
+        #expect(throws: FormulaError.notANumber) {
+            _ = try Formula.binary(.pow, .number(1), nanSubtree)
+                .interpretDouble(scope: emptyScope)
+        }
+        #expect(throws: FormulaError.notANumber) {
+            _ = try Formula.binary(.pow, nanSubtree, .number(0))
+                .interpretDouble(scope: emptyScope)
         }
     }
 
@@ -186,6 +207,22 @@ struct FormulaTests {
             projectVariables: [Variable(name: "speed", value: 1)]
         )
         #expect(try Formula.variable("speed").interpretDouble(scope: scope) == 3)
+    }
+
+    @Test("a variable value is normalized like any other node")
+    func variableValueIsNormalized() throws {
+        // Variables can hold non-finite values at runtime (Variable.swift); the
+        // .variable node passes through the same per-node normalization as
+        // literals and operator results.
+        let scope = VariableScope(projectVariables: [
+            Variable(name: "overflow", value: .infinity),
+            Variable(name: "invalid", value: .nan)
+        ])
+        #expect(try Formula.variable("overflow").interpretDouble(scope: scope)
+            == .greatestFiniteMagnitude)
+        #expect(throws: FormulaError.notANumber) {
+            _ = try Formula.variable("invalid").interpretDouble(scope: scope)
+        }
     }
 
     @Test("an unknown variable evaluates to 0")
