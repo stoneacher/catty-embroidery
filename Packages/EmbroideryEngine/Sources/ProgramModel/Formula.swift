@@ -3,7 +3,9 @@
 /// binary operators, and unary minus. Precedence is structural — the editor/
 /// parser builds the tree; evaluation never re-parses. `Codable` (synthesized:
 /// every associated value is itself `Codable`) lands in US-203, where formulas
-/// ship embedded under `Program`.
+/// ship embedded under `Program`. Like `Variable.value`, a non-finite `.number`
+/// payload throws under the default `JSONEncoder` (`.throw` non-conforming-float
+/// strategy) — the M5 persistence layer pins the policy for the save path.
 public indirect enum Formula: Sendable, Equatable, Codable {
     case number(Double)
     case variable(String)

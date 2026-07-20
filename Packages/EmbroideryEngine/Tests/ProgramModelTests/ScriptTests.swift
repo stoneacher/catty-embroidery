@@ -119,6 +119,81 @@ struct ScriptTests {
         }
     }
 
+    /// A shared fixture for the move edge cases: a leaf, pair P1 [1…3], pair P2 [4…6].
+    private func twoPairScript() -> Script {
+        Script(bricks: [
+            .moveNSteps(.number(10)), // 0
+            .repeatLoop(times: .number(3)), // 1  P1 opener
+            .stitch, // 2  enclosed
+            .loopEnd, // 3  P1 end
+            .forever, // 4  P2 opener
+            .sewUp, // 5
+            .loopEnd // 6  P2 end
+        ])
+    }
+
+    @Test("moving a pair back to its own location returns the original value")
+    func moveToOwnLocationIsIdentity() throws {
+        // After removing P1 [1…3], reinserting at index 1 restores the original —
+        // exercising the "insert immediately before another opener is allowed" edge.
+        let script = twoPairScript()
+        #expect(try script.movingPair(at: 1, to: 1) == script)
+    }
+
+    @Test("moving a pair to the front prepends the whole block, order preserved")
+    func moveToFront() throws {
+        let moved = try twoPairScript().movingPair(at: 1, to: 0)
+        #expect(moved.bricks == [
+            .repeatLoop(times: .number(3)),
+            .stitch,
+            .loopEnd,
+            .moveNSteps(.number(10)),
+            .forever,
+            .sewUp,
+            .loopEnd
+        ])
+    }
+
+    @Test("a destination outside the post-removal range is rejected", arguments: [-1, 5])
+    func moveDestinationOutOfBounds(destination: Int) {
+        // Removing P1 [1…3] leaves 4 bricks; valid insertion indices are 0…4.
+        #expect(throws: ScriptMoveError.destinationOutOfBounds(index: destination)) {
+            _ = try twoPairScript().movingPair(at: 1, to: destination)
+        }
+    }
+
+    @Test("moving from an out-of-bounds source is rejected")
+    func moveSourceOutOfBounds() {
+        #expect(throws: ScriptMoveError.sourceOutOfBounds(index: 0)) {
+            _ = try Script().movingPair(at: 0, to: 0)
+        }
+    }
+
+    // MARK: - Empty and unbalanced scripts
+
+    @Test("an empty script is balanced and resolves no pairs")
+    func emptyScript() throws {
+        let script = Script()
+        #expect(script.matchingEnd(ofBrickAt: 0) == nil)
+        #expect(script.range(ofPairAt: 0) == nil)
+        try script.validate() // an empty list is balanced
+    }
+
+    @Test("matchingEnd is nil for an opener that is never closed")
+    func matchingEndUnbalancedOpener() {
+        let script = Script(bricks: [.repeatLoop(times: .number(3)), .stitch])
+        #expect(script.matchingEnd(ofBrickAt: 0) == nil)
+    }
+
+    @Test("validate flags a forever without a loopEnd")
+    func validateUnmatchedForever() {
+        // forever shares the opensLoop path with repeatLoop; assert it directly.
+        let script = Script(bricks: [.forever, .stitch])
+        #expect(throws: ScriptValidationError.unmatchedLoopOpener(index: 0)) {
+            try script.validate()
+        }
+    }
+
     // MARK: - Test plan 4: retained markers and whole-value Codable round-trip
 
     @Test("loopEnd markers are retained in the model, never dropped")

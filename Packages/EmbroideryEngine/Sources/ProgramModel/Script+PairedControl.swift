@@ -35,6 +35,8 @@ public enum ScriptValidationError: Error, Equatable {
 
 /// Why a move-a-pair-as-a-unit request was rejected.
 public enum ScriptMoveError: Error, Equatable {
+    /// The source `index` is outside the brick list.
+    case sourceOutOfBounds(index: Int)
     /// The brick at `index` is not a loop opener, so there is no pair to move.
     case sourceIsNotLoopOpener(index: Int)
     /// The opener at `index` has no matching `loopEnd` (unbalanced script).
@@ -77,7 +79,8 @@ public extension Script {
     }
 
     /// Throws the first balance error found: a `loopEnd` with no open loop, or,
-    /// once the list is scanned, a loop opener that was never closed.
+    /// once the list is scanned, a loop opener that was never closed — reporting
+    /// the innermost (last-opened) unclosed opener when several remain.
     func validate() throws {
         var openerStack: [Int] = []
         for (index, brick) in bricks.enumerated() {
@@ -102,7 +105,10 @@ public extension Script {
     /// split another pair, or whose source is not a resolvable opener, is
     /// rejected (ADR-008: the invariant the M4 editor's drag builds on).
     func movingPair(at sourceIndex: Int, to destination: Int) throws -> Script {
-        guard bricks.indices.contains(sourceIndex), bricks[sourceIndex].opensLoop else {
+        guard bricks.indices.contains(sourceIndex) else {
+            throw ScriptMoveError.sourceOutOfBounds(index: sourceIndex)
+        }
+        guard bricks[sourceIndex].opensLoop else {
             throw ScriptMoveError.sourceIsNotLoopOpener(index: sourceIndex)
         }
         guard let pair = range(ofPairAt: sourceIndex) else {
