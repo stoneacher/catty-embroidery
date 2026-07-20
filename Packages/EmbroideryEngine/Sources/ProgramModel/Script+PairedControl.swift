@@ -43,8 +43,6 @@ public enum ScriptMoveError: Error, Equatable {
     case unbalancedPair(index: Int)
     /// The destination lies outside the valid insertion range.
     case destinationOutOfBounds(index: Int)
-    /// Inserting at the destination would split another pair's begin/end block.
-    case destinationSplitsPair(index: Int)
 }
 
 public extension Script {
@@ -101,9 +99,16 @@ public extension Script {
     /// Returns a copy of the script with the pair opened at `sourceIndex` — its
     /// opener, matched `loopEnd`, and everything between — relocated as one
     /// contiguous block. `destination` is an insertion index into the list with
-    /// the block already removed (`0 ... remaining.count`). A move that would
-    /// split another pair, or whose source is not a resolvable opener, is
-    /// rejected (ADR-008: the invariant the M4 editor's drag builds on).
+    /// the block already removed (`0 ... remaining.count`).
+    ///
+    /// Every in-bounds destination is valid: the block is a complete, balanced
+    /// pair, so reinserting it anywhere — including inside another pair — nests
+    /// it rather than splitting anything, and the whole script stays balanced
+    /// (ADR-008: nesting is a rendering concern; the moved pair travels as one
+    /// unit, which this guarantees by construction). This is what lets the M4
+    /// editor drag a loop into another loop or reorder sibling loops. A move is
+    /// rejected only when it is ill-formed: source out of bounds, source not a
+    /// loop opener, source pair unbalanced, or destination out of bounds.
     func movingPair(at sourceIndex: Int, to destination: Int) throws -> Script {
         guard bricks.indices.contains(sourceIndex) else {
             throw ScriptMoveError.sourceOutOfBounds(index: sourceIndex)
@@ -122,30 +127,10 @@ public extension Script {
         guard destination >= 0, destination <= remaining.count else {
             throw ScriptMoveError.destinationOutOfBounds(index: destination)
         }
-        guard !Self.insertion(at: destination, splitsAPairIn: remaining) else {
-            throw ScriptMoveError.destinationSplitsPair(index: destination)
-        }
 
         remaining.insert(contentsOf: block, at: destination)
         var moved = self
         moved.bricks = remaining
         return moved
-    }
-
-    /// Whether inserting between elements `index - 1` and `index` of `bricks`
-    /// would land strictly inside some pair's `[opener … loopEnd]` block. Unpaired
-    /// (unbalanced) bricks cannot be split, so they are ignored.
-    private static func insertion(at index: Int, splitsAPairIn bricks: [Brick]) -> Bool {
-        var openerStack: [Int] = []
-        for (position, brick) in bricks.enumerated() {
-            if brick.opensLoop {
-                openerStack.append(position)
-            } else if brick.isLoopEnd, let opener = openerStack.popLast() {
-                if opener < index, index <= position {
-                    return true
-                }
-            }
-        }
-        return false
     }
 }
