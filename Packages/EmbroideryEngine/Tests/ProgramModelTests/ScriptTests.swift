@@ -224,6 +224,29 @@ struct ScriptTests {
         }
     }
 
+    @Test("moving an opener with no matching loopEnd is rejected as unbalanced")
+    func moveUnbalancedOpener() {
+        let script = Script(bricks: [.repeatLoop(times: .number(3)), .stitch])
+        #expect(throws: ScriptMoveError.unbalancedPair(index: 0)) {
+            _ = try script.movingPair(at: 0, to: 0)
+        }
+    }
+
+    @Test("moving a locally-matched pair preserves a pre-existing imbalance, not fixes it")
+    func moveDoesNotFixGlobalImbalance() throws {
+        // A stray leading loopEnd makes the script globally unbalanced, but the
+        // forever(1)…loopEnd(3) pair is locally resolvable. movingPair relocates
+        // that pair intact and leaves the pre-existing stray end untouched — it
+        // preserves balance, it does not enforce it (global balance is validate()'s job).
+        let script = Script(bricks: [.loopEnd, .forever, .stitch, .loopEnd])
+        let moved = try script.movingPair(at: 1, to: 0)
+        #expect(moved.bricks == [.forever, .stitch, .loopEnd, .loopEnd])
+        // Still unbalanced — the stray end survives, now trailing.
+        #expect(throws: ScriptValidationError.unmatchedLoopEnd(index: 3)) {
+            try moved.validate()
+        }
+    }
+
     // MARK: - Empty and unbalanced scripts
 
     @Test("an empty script is balanced and resolves no pairs")

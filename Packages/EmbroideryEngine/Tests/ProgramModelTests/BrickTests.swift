@@ -64,4 +64,19 @@ struct BrickTests {
         let decoded = try JSONDecoder().decode(Formula.self, from: data)
         #expect(decoded == formula)
     }
+
+    /// A NaN Formula payload stays reflexively equal all the way up the graph
+    /// (Brick → Script → Object → Program delegate to Formula's NaN-aware ==),
+    /// but the default JSONEncoder refuses to encode it — the M5-deferred
+    /// persistence-policy boundary of the new Codable conformance.
+    @Test("a NaN Formula payload is reflexive up to Program but does not JSON-encode")
+    func nanFormulaPayloadReflexiveButNotEncodable() {
+        let brick = Brick.moveNSteps(.number(.nan))
+        #expect(brick == brick)
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: [brick])])])])
+        #expect(program == program)
+        #expect(throws: EncodingError.self) {
+            _ = try JSONEncoder().encode(program)
+        }
+    }
 }

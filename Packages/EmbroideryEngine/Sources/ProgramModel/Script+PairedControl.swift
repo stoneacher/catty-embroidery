@@ -103,12 +103,17 @@ public extension Script {
     ///
     /// Every in-bounds destination is valid: the block is a complete, balanced
     /// pair, so reinserting it anywhere — including inside another pair — nests
-    /// it rather than splitting anything, and the whole script stays balanced
-    /// (ADR-008: nesting is a rendering concern; the moved pair travels as one
-    /// unit, which this guarantees by construction). This is what lets the M4
-    /// editor drag a loop into another loop or reorder sibling loops. A move is
-    /// rejected only when it is ill-formed: source out of bounds, source not a
-    /// loop opener, source pair unbalanced, or destination out of bounds.
+    /// it rather than splitting anything (ADR-008: nesting is a rendering
+    /// concern; the moved pair travels as one unit, which this guarantees by
+    /// construction). This is what lets the M4 editor drag a loop into another
+    /// loop or reorder sibling loops. It **preserves** balance rather than
+    /// enforcing it: a balanced script stays balanced, and a script that was
+    /// already unbalanced *elsewhere* keeps that pre-existing imbalance — global
+    /// balance is the caller's responsibility (`validate()`), not this move's.
+    ///
+    /// A move is rejected only when it is ill-formed: source out of bounds,
+    /// source not a loop opener, the *selected* opener has no matching `loopEnd`
+    /// (`unbalancedPair`), or destination out of bounds.
     func movingPair(at sourceIndex: Int, to destination: Int) throws -> Script {
         guard bricks.indices.contains(sourceIndex) else {
             throw ScriptMoveError.sourceOutOfBounds(index: sourceIndex)
