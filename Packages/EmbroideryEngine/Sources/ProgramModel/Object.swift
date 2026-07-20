@@ -1,8 +1,7 @@
-/// A programmable actor (Catroid `Sprite.java`). Scripts land in US-203; this is
-/// the script-free spine. Positions are plain `Double`s in stage coordinates —
-/// ADR-007: center origin, y-up, heading in degrees with 0° = up — converted to
-/// engine `StagePoint`s by the interpreter, which also maps each object to an
-/// `ActorID` and `zIndex` to the engine `layer`.
+/// A programmable actor (Catroid `Sprite.java`). Positions are plain `Double`s in
+/// stage coordinates — ADR-007: center origin, y-up, heading in degrees with
+/// 0° = up — converted to engine `StagePoint`s by the interpreter, which also
+/// maps each object to an `ActorID` and `zIndex` to the engine `layer`.
 public struct Object: Sendable, Equatable, Codable {
     public var name: String
     public var startX: Double
@@ -11,6 +10,9 @@ public struct Object: Sendable, Equatable, Codable {
     public var zIndex: Int
     /// Object-scoped variables; shadow same-named project-scoped ones.
     public var variables: [Variable]
+    /// The object's scripts (Catroid `Sprite.scriptList`). Deferred from US-201
+    /// to US-203 so it lands alongside the `Script`/`Brick` types it contains.
+    public var scripts: [Script]
 
     public init(
         name: String = "",
@@ -18,7 +20,8 @@ public struct Object: Sendable, Equatable, Codable {
         startY: Double = 0,
         startHeading: Double = 0,
         zIndex: Int = 0,
-        variables: [Variable] = []
+        variables: [Variable] = [],
+        scripts: [Script] = []
     ) {
         self.name = name
         self.startX = startX
@@ -26,6 +29,7 @@ public struct Object: Sendable, Equatable, Codable {
         self.startHeading = startHeading
         self.zIndex = zIndex
         self.variables = variables
+        self.scripts = scripts
     }
 
     /// NaN-aware on the `Double` fields for the same reflexivity guarantee as
@@ -37,5 +41,6 @@ public struct Object: Sendable, Equatable, Codable {
             && lhs.startHeading.isSameValue(as: rhs.startHeading)
             && lhs.zIndex == rhs.zIndex
             && lhs.variables == rhs.variables
+            && lhs.scripts == rhs.scripts
     }
 }
