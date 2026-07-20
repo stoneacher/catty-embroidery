@@ -25,6 +25,7 @@ identifier_name:
     - y
     - dx
     - dy
+    - to # Brick.setVariable(name:to:) — reads "set variable … to …" (Catroid parity)
 
 excluded:
   - "**/.build"

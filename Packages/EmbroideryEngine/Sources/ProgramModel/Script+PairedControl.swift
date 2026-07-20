@@ -1,0 +1,141 @@
+// Paired-control model logic (ADR-008): control bricks are begin/end pairs in
+// the flat brick list. Resolving a pair, validating balance, and moving a pair
+// as one unit are model concerns with tests here — never view logic in M4.
+
+public extension Brick {
+    /// Whether this brick opens a loop that a later `loopEnd` closes
+    /// (Catroid composite bricks: `RepeatBrick`, `ForeverBrick`). `wait` is a
+    /// leaf despite sitting in the control category, so it does not open a pair.
+    var opensLoop: Bool {
+        switch self {
+        case .repeatLoop, .forever: true
+        default: false
+        }
+    }
+
+    /// Whether this brick closes a loop (Catroid `LoopEndBrick`).
+    var isLoopEnd: Bool {
+        if case .loopEnd = self {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+/// A script whose control bricks do not balance (Catroid never lets this happen
+/// via the editor; the model reports it so the M4 editor and `.catrobat` import
+/// can reject malformed input).
+public enum ScriptValidationError: Error, Equatable {
+    /// A loop opener at `index` has no matching `loopEnd`.
+    case unmatchedLoopOpener(index: Int)
+    /// A `loopEnd` at `index` closes a loop that was never opened.
+    case unmatchedLoopEnd(index: Int)
+}
+
+/// Why a move-a-pair-as-a-unit request was rejected.
+public enum ScriptMoveError: Error, Equatable {
+    /// The source `index` is outside the brick list.
+    case sourceOutOfBounds(index: Int)
+    /// The brick at `index` is not a loop opener, so there is no pair to move.
+    case sourceIsNotLoopOpener(index: Int)
+    /// The opener at `index` has no matching `loopEnd` (unbalanced script).
+    case unbalancedPair(index: Int)
+    /// The destination lies outside the valid insertion range.
+    case destinationOutOfBounds(index: Int)
+}
+
+public extension Script {
+    /// The index of the `loopEnd` that closes the loop opener at `index`,
+    /// resolved by a depth-tracking forward scan so nested loops match their
+    /// correct partners. `nil` if the brick does not open a loop or the script
+    /// is unbalanced.
+    func matchingEnd(ofBrickAt index: Int) -> Int? {
+        guard bricks.indices.contains(index), bricks[index].opensLoop else {
+            return nil
+        }
+        var depth = 0
+        for cursor in index ..< bricks.count {
+            if bricks[cursor].opensLoop {
+                depth += 1
+            } else if bricks[cursor].isLoopEnd {
+                depth -= 1
+                if depth == 0 {
+                    return cursor
+                }
+            }
+        }
+        return nil // opener never closed
+    }
+
+    /// The contiguous `[opener … loopEnd]` range of the pair opened at `index`,
+    /// or `nil` if `index` is not a resolvable opener. This is the block that
+    /// moves as one unit.
+    func range(ofPairAt index: Int) -> ClosedRange<Int>? {
+        guard let end = matchingEnd(ofBrickAt: index) else { return nil }
+        return index ... end
+    }
+
+    /// Throws the first balance error found: a `loopEnd` with no open loop, or,
+    /// once the list is scanned, a loop opener that was never closed — reporting
+    /// the innermost (last-opened) unclosed opener when several remain.
+    func validate() throws {
+        var openerStack: [Int] = []
+        for (index, brick) in bricks.enumerated() {
+            if brick.opensLoop {
+                openerStack.append(index)
+            } else if brick.isLoopEnd {
+                guard !openerStack.isEmpty else {
+                    throw ScriptValidationError.unmatchedLoopEnd(index: index)
+                }
+                openerStack.removeLast()
+            }
+        }
+        if let unclosed = openerStack.last {
+            throw ScriptValidationError.unmatchedLoopOpener(index: unclosed)
+        }
+    }
+
+    /// Returns a copy of the script with the pair opened at `sourceIndex` — its
+    /// opener, matched `loopEnd`, and everything between — relocated as one
+    /// contiguous block. `destination` is an insertion index into the list with
+    /// the block already removed (`0 ... remaining.count`).
+    ///
+    /// Every in-bounds destination is valid: the block is a complete, balanced
+    /// pair, so reinserting it anywhere — including inside another pair — nests
+    /// it rather than splitting anything (ADR-008: nesting is a rendering
+    /// concern; the moved pair travels as one unit, which this guarantees by
+    /// construction). This is what lets the M4 editor drag a loop into another
+    /// loop or reorder sibling loops. It **preserves** balance rather than
+    /// enforcing it: a balanced script stays balanced, and a script that was
+    /// already unbalanced *elsewhere* keeps that pre-existing imbalance — global
+    /// balance is the caller's responsibility (`validate()`), not this move's.
+    ///
+    /// A move is rejected only when it is ill-formed: source out of bounds,
+    /// source not a loop opener, the *selected* opener has no matching `loopEnd`
+    /// (`unbalancedPair`), or destination out of bounds.
+    func movingPair(at sourceIndex: Int, to destination: Int) throws -> Script {
+        guard bricks.indices.contains(sourceIndex) else {
+            throw ScriptMoveError.sourceOutOfBounds(index: sourceIndex)
+        }
+        guard bricks[sourceIndex].opensLoop else {
+            throw ScriptMoveError.sourceIsNotLoopOpener(index: sourceIndex)
+        }
+        guard let pair = range(ofPairAt: sourceIndex) else {
+            throw ScriptMoveError.unbalancedPair(index: sourceIndex)
+        }
+
+        let block = Array(bricks[pair])
+        var remaining = bricks
+        remaining.removeSubrange(pair)
+
+        guard destination >= 0, destination <= remaining.count else {
+            throw ScriptMoveError.destinationOutOfBounds(index: destination)
+        }
+
+        remaining.insert(contentsOf: block, at: destination)
+        var moved = self
+        moved.bricks = remaining
+        return moved
+    }
+}

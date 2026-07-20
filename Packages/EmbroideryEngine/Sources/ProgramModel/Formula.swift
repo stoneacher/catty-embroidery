@@ -1,9 +1,12 @@
 /// A formula expression tree (Catroid `FormulaElement.java` / `Formula.java`),
 /// restricted to the numeric M2 subset: literals, variable references, the five
 /// binary operators, and unary minus. Precedence is structural — the editor/
-/// parser builds the tree; evaluation never re-parses. Codable is deferred to
-/// US-203, where formulas are embedded under `Program`.
-public indirect enum Formula: Sendable, Equatable {
+/// parser builds the tree; evaluation never re-parses. `Codable` (synthesized:
+/// every associated value is itself `Codable`) lands in US-203, where formulas
+/// ship embedded under `Program`. Like `Variable.value`, a non-finite `.number`
+/// payload throws under the default `JSONEncoder` (`.throw` non-conforming-float
+/// strategy) — the M5 persistence layer pins the policy for the save path.
+public indirect enum Formula: Sendable, Equatable, Codable {
     case number(Double)
     case variable(String)
     case binary(BinaryOperator, Formula, Formula)
@@ -38,6 +41,6 @@ public indirect enum Formula: Sendable, Equatable {
 /// Catroid's `Operators.MOD` is dead code — the operator switch in
 /// `FormulaElementOperations.kt` has no case for it and falls through to the
 /// default 0; the working modulo is `Functions.MOD`, out of M2 scope.
-public enum BinaryOperator: Sendable, Equatable, CaseIterable {
+public enum BinaryOperator: Sendable, Equatable, CaseIterable, Codable {
     case plus, minus, mult, divide, pow
 }
