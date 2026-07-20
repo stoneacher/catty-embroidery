@@ -55,13 +55,13 @@ public extension Script {
             return nil
         }
         var depth = 0
-        for i in index ..< bricks.count {
-            if bricks[i].opensLoop {
+        for cursor in index ..< bricks.count {
+            if bricks[cursor].opensLoop {
                 depth += 1
-            } else if bricks[i].isLoopEnd {
+            } else if bricks[cursor].isLoopEnd {
                 depth -= 1
                 if depth == 0 {
-                    return i
+                    return cursor
                 }
             }
         }
@@ -131,11 +131,11 @@ public extension Script {
     /// (unbalanced) bricks cannot be split, so they are ignored.
     private static func insertion(at index: Int, splitsAPairIn bricks: [Brick]) -> Bool {
         var openerStack: [Int] = []
-        for (i, brick) in bricks.enumerated() {
+        for (position, brick) in bricks.enumerated() {
             if brick.opensLoop {
-                openerStack.append(i)
+                openerStack.append(position)
             } else if brick.isLoopEnd, let opener = openerStack.popLast() {
-                if opener < index, index <= i {
+                if opener < index, index <= position {
                     return true
                 }
             }
