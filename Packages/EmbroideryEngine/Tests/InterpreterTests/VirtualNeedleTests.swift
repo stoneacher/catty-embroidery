@@ -120,4 +120,28 @@ struct VirtualNeedleTests {
         #expect(needle.position.x.isFinite)
         #expect(needle.position.y.isFinite)
     }
+
+    @Test("large finite turns reduce each operand → exact mod-360 periodicity, never NaN")
+    func hugeTurnStaysExactAndFinite() {
+        let huge = Double.greatestFiniteMagnitude
+        let reduced = huge.truncatingRemainder(dividingBy: 360) // exact mod-360 of the huge heading
+
+        // Turning by a huge amount must accumulate with exact periodicity — not
+        // round back to the same float and lose the turn.
+        var needle = VirtualNeedle()
+        needle.pointInDirection(huge)
+        #expect(isClose(needle.heading, reduced))
+        needle.turnRight(huge)
+        #expect(isClose(needle.heading, (reduced + reduced).truncatingRemainder(dividingBy: 360)))
+
+        // Overflow guard: an unreduced stored heading + a huge turn must stay
+        // finite (heading + degrees would be ∞ → NaN before the fix), and a
+        // later move must remain finite too.
+        var unreduced = VirtualNeedle(heading: huge)
+        unreduced.turnRight(huge)
+        #expect(unreduced.heading.isFinite)
+        unreduced.moveNSteps(10)
+        #expect(unreduced.position.x.isFinite)
+        #expect(unreduced.position.y.isFinite)
+    }
 }

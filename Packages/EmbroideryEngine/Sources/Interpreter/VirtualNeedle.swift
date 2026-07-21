@@ -38,14 +38,21 @@ public extension VirtualNeedle {
 
     /// Turns clockwise, **adding** degrees (Catroid `TurnRightAction` via
     /// `changeDirectionInUserInterfaceDimensionUnit`), then normalizes mod 360.
+    /// Both operands are reduced mod 360 *before* the addition: `heading` is a
+    /// public stored var and `degrees` an arbitrary formula result, so two
+    /// `greatestFiniteMagnitude`-scale values would otherwise overflow the sum to
+    /// ∞ — whose `truncatingRemainder` is NaN, poisoning every later move — and
+    /// even short of overflow the sum would lose the low bits ADR-014's exact
+    /// periodicity depends on (reducing first keeps the sum in (−720, 720)).
     mutating func turnRight(_ degrees: Double) {
-        heading = normalized(heading + degrees)
+        heading = normalized(normalized(heading) + normalized(degrees))
     }
 
     /// Turns counter-clockwise, **subtracting** degrees (Catroid `TurnLeftAction`),
-    /// then normalizes mod 360.
+    /// then normalizes mod 360. Operands reduced before subtraction for the same
+    /// overflow / exact-periodicity reason as `turnRight`.
     mutating func turnLeft(_ degrees: Double) {
-        heading = normalized(heading - degrees)
+        heading = normalized(normalized(heading) - normalized(degrees))
     }
 
     /// Sets an absolute heading (Catroid `PointInDirectionAction`), normalized

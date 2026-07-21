@@ -128,4 +128,33 @@ struct VirtualNeedleBrickTests {
         let result = needle.apply(.stitch, scope: scope)
         #expect(result == nil)
     }
+
+    // MARK: Catch-and-skip is uniform across every motion brick (no accidental zeroing)
+
+    @Test("a throwing formula leaves every motion brick's state unchanged and still emits")
+    func throwingFormulaSkipsEveryBrick() {
+        let start = VirtualNeedle(position: .init(x: 7, y: 3), heading: 42)
+        let bricks: [Brick] = [
+            .moveNSteps(throwing), .turnLeft(throwing), .turnRight(throwing),
+            .pointInDirection(throwing), .setX(throwing), .setY(throwing),
+            .changeXBy(throwing), .changeYBy(throwing)
+        ]
+        for brick in bricks {
+            var needle = start
+            let emitted = needle.apply(brick, scope: scope)
+            #expect(emitted != nil) // still exactly one update
+            #expect(needle == start) // untouched — NOT zeroed
+        }
+    }
+
+    // MARK: Formulas are evaluated against the supplied scope, not ignored
+
+    @Test("apply evaluates a variable formula against the supplied scope")
+    func evaluatesAgainstSuppliedScope() {
+        let scoped = VariableScope(projectVariables: [Variable(name: "n", value: 10)])
+        var needle = VirtualNeedle(heading: 90) // heading 90° → move advances +x
+        _ = needle.apply(.moveNSteps(.variable("n")), scope: scoped)
+        #expect(isClose(needle.position.x, 10))
+        #expect(isClose(needle.position.y, 0))
+    }
 }
