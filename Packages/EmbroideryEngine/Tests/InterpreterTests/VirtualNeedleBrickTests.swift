@@ -24,7 +24,8 @@ struct VirtualNeedleBrickTests {
     @Test("a valid motion brick returns one NeedleUpdate carrying the new needle state")
     func motionBrickEmitsMatchingUpdate() throws {
         var needle = VirtualNeedle(heading: 0)
-        let update = try #require(needle.apply(.moveNSteps(.number(10)), scope: scope))
+        let emitted = needle.apply(.moveNSteps(.number(10)), scope: scope)
+        let update = try #require(emitted)
         #expect(isClose(needle.position.y, 10))
         #expect(update.position == needle.position)
         #expect(update.heading == needle.heading)
@@ -36,7 +37,8 @@ struct VirtualNeedleBrickTests {
     func throwingMoveSkipsButStillEmits() throws {
         var needle = VirtualNeedle(position: .init(x: 7, y: -3), heading: 42)
         let before = needle
-        let update = try #require(needle.apply(.moveNSteps(throwing), scope: scope))
+        let emitted = needle.apply(.moveNSteps(throwing), scope: scope)
+        let update = try #require(emitted)
         #expect(needle == before) // position AND heading untouched
         #expect(update.position == before.position)
         #expect(update.heading == before.heading)
@@ -47,9 +49,8 @@ struct VirtualNeedleBrickTests {
     @Test("placeAt with a throwing x and valid y places the needle at (0, y)")
     func placeAtZeroSubstitutesFailedCoordinate() throws {
         var needle = VirtualNeedle(position: .init(x: 99, y: 99))
-        let update = try #require(
-            needle.apply(.placeAt(x: throwing, y: .number(200)), scope: scope)
-        )
+        let emitted = needle.apply(.placeAt(x: throwing, y: .number(200)), scope: scope)
+        let update = try #require(emitted)
         #expect(isClose(needle.position.x, 0)) // bad x → 0, not left at 99
         #expect(isClose(needle.position.y, 200))
         #expect(update.position == needle.position)
@@ -60,6 +61,7 @@ struct VirtualNeedleBrickTests {
     @Test("a non-motion brick returns nil")
     func nonMotionBrickReturnsNil() {
         var needle = VirtualNeedle()
-        #expect(needle.apply(.stitch, scope: scope) == nil)
+        let result = needle.apply(.stitch, scope: scope)
+        #expect(result == nil)
     }
 }

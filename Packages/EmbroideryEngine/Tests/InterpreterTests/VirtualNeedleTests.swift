@@ -19,10 +19,10 @@ struct VirtualNeedleTests {
 
     @Test("moveNSteps at heading 0° advances +y; at 90° advances +x")
     func moveFollowsHeading() {
-        var up = VirtualNeedle(heading: 0)
-        up.moveNSteps(10)
-        #expect(isClose(up.position.x, 0))
-        #expect(isClose(up.position.y, 10))
+        var upward = VirtualNeedle(heading: 0)
+        upward.moveNSteps(10)
+        #expect(isClose(upward.position.x, 0))
+        #expect(isClose(upward.position.y, 10))
 
         var right = VirtualNeedle(heading: 90)
         right.moveNSteps(10)
@@ -34,17 +34,17 @@ struct VirtualNeedleTests {
 
     @Test("turnRight(90) then move advances +x; turnLeft(90) mirrors to −x")
     func turnsSteerTheMove() {
-        var r = VirtualNeedle(heading: 0)
-        r.turnRight(90)
-        r.moveNSteps(10)
-        #expect(isClose(r.position.x, 10))
-        #expect(isClose(r.position.y, 0))
+        var right = VirtualNeedle(heading: 0)
+        right.turnRight(90)
+        right.moveNSteps(10)
+        #expect(isClose(right.position.x, 10))
+        #expect(isClose(right.position.y, 0))
 
-        var l = VirtualNeedle(heading: 0)
-        l.turnLeft(90)
-        l.moveNSteps(10)
-        #expect(isClose(l.position.x, -10))
-        #expect(isClose(l.position.y, 0))
+        var left = VirtualNeedle(heading: 0)
+        left.turnLeft(90)
+        left.moveNSteps(10)
+        #expect(isClose(left.position.x, -10))
+        #expect(isClose(left.position.y, 0))
     }
 
     @Test("turns accumulate and normalize mod 360 (truncatingRemainder, not (−180,180])")
