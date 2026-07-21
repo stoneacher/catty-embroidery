@@ -2,17 +2,17 @@
 
 **Epic**: E3 Program model & interpreter | **Estimate**: ~4 h | **Depends on**: US-202, US-203
 
-**Status**: Planned
+**Status**: Done (PR #22)
 
 **Story**: As the interpreter, I want a virtual needle that motion bricks move in ADR-007 stage space, emitting one `NeedleUpdate` per motion — no stitching yet.
 
 ## Acceptance criteria
-- [ ] `VirtualNeedle { position, heading }` lives in the `Interpreter` target and operates in ADR-007 stage space (center origin, y-up, degrees, 0° = up). The needle is the object — Catroid has no separate needle; embroidery reads the sprite's position.
-- [ ] `moveNSteps`: `dx = steps · sin(heading)`, `dy = steps · cos(heading)` (Catroid `MoveNStepsAction`; direction 0° = up, 90° = right, clockwise positive).
-- [ ] `turnRight` **adds** degrees, `turnLeft` **subtracts** (Catroid `TurnRight/LeftAction` via `changeDirectionInUserInterfaceDimensionUnit`); `pointInDirection` sets absolute heading. Headings normalized mod 360 exactly, matching the ADR-014 pattern-layer discipline.
-- [ ] `placeAt(x:y:)` teleports (Catroid compiles PlaceAt as a zero-duration glide — instantaneous); `setX`/`setY` set one axis; `changeXBy`/`changeYBy` accumulate.
-- [ ] Every executed motion brick produces exactly one `NeedleUpdate(position:heading:)` (the engine's pattern-input type; patterns derive geometry from heading, not the movement vector).
-- [ ] Bad-formula fallback is **per-brick, mirroring the corresponding Catroid action** (there is no universal "needle unchanged" rule): `moveNSteps`/`turnLeft`/`turnRight`/`pointInDirection`/`setX`/`setY`/`changeXBy`/`changeYBy` catch and perform no mutation (`MoveNStepsAction`/`SetXAction` catch-and-skip); **`placeAt` substitutes 0 for the failed coordinate** — it compiles to a zero-duration `GlideToAction`, whose failed x/y interpretation becomes `0f`, so a bad x with a good y places the needle at (0, y). The story ships this as an explicit per-brick fallback table; execution always continues.
+- [x] `VirtualNeedle { position, heading }` lives in the `Interpreter` target and operates in ADR-007 stage space (center origin, y-up, degrees, 0° = up). The needle is the object — Catroid has no separate needle; embroidery reads the sprite's position.
+- [x] `moveNSteps`: `dx = steps · sin(heading)`, `dy = steps · cos(heading)` (Catroid `MoveNStepsAction`; direction 0° = up, 90° = right, clockwise positive).
+- [x] `turnRight` **adds** degrees, `turnLeft` **subtracts** (Catroid `TurnRight/LeftAction` via `changeDirectionInUserInterfaceDimensionUnit`); `pointInDirection` sets absolute heading. Headings normalized mod 360 exactly, matching the ADR-014 pattern-layer discipline. (Codex round 1: both turn operands reduced mod 360 *before* combining so huge finite headings can't overflow the sum to ∞→NaN.)
+- [x] `placeAt(x:y:)` teleports (Catroid compiles PlaceAt as a zero-duration glide — instantaneous); `setX`/`setY` set one axis; `changeXBy`/`changeYBy` accumulate.
+- [x] Every executed motion brick produces exactly one `NeedleUpdate(position:heading:)` (the engine's pattern-input type; patterns derive geometry from heading, not the movement vector).
+- [x] Bad-formula fallback is **per-brick, mirroring the corresponding Catroid action** (there is no universal "needle unchanged" rule): `moveNSteps`/`turnLeft`/`turnRight`/`pointInDirection`/`setX`/`setY`/`changeXBy`/`changeYBy` catch and perform no mutation (`MoveNStepsAction`/`SetXAction` catch-and-skip); **`placeAt` substitutes 0 for the failed coordinate** — it compiles to a zero-duration `GlideToAction`, whose failed x/y interpretation becomes `0f`, so a bad x with a good y places the needle at (0, y). The story ships this as an explicit per-brick fallback table; execution always continues.
 
 ## Test-first plan
 1. Move 10 at heading 0° → (0, 10); at heading 90° → (10, 0).
