@@ -31,7 +31,7 @@ public extension VirtualNeedle {
     /// whose sin/cos is NaN (US-108 Codex find). The engine extends such headings
     /// by exact periodicity rather than reproducing Java's raw huge-argument noise.
     mutating func moveNSteps(_ steps: Double) {
-        let radians = heading.truncatingRemainder(dividingBy: 360) * .pi / 180
+        let radians = normalized(heading) * .pi / 180
         position.x += steps * sin(radians)
         position.y += steps * cos(radians)
     }

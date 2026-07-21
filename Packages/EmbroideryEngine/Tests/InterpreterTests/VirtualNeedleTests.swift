@@ -59,6 +59,16 @@ struct VirtualNeedleTests {
         var over = VirtualNeedle(heading: 0)
         over.turnRight(370)
         #expect(isClose(over.heading, 10)) // 370 → 10
+
+        // Discriminating cases (|reduced| > 180): these expose the ADR-014
+        // divergence — Catroid's (−180,180] fold would give −90 / +90 instead.
+        var beyond = VirtualNeedle(heading: 0)
+        beyond.turnRight(270)
+        #expect(isClose(beyond.heading, 270)) // truncatingRemainder keeps 270, not −90
+
+        var negative = VirtualNeedle(heading: 0)
+        negative.turnLeft(90)
+        #expect(isClose(negative.heading, -90)) // stored negative, not folded to 270
     }
 
     // MARK: Item 3 — pointInDirection is absolute, not relative

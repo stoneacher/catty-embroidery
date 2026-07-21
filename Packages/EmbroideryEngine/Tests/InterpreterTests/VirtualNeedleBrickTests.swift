@@ -44,7 +44,56 @@ struct VirtualNeedleBrickTests {
         #expect(update.heading == before.heading)
     }
 
-    // MARK: placeAt zero-substitutes the failed coordinate (NOT a no-op)
+    @Test("a throwing turnRight leaves the heading unchanged but still emits one update")
+    func throwingTurnSkipsButStillEmits() throws {
+        var needle = VirtualNeedle(heading: 42)
+        let before = needle
+        let emitted = needle.apply(.turnRight(throwing), scope: scope)
+        let update = try #require(emitted)
+        #expect(needle == before) // fallback is uniform across motion bricks, not move-specific
+        #expect(update.heading == before.heading)
+    }
+
+    // MARK: Each motion arm dispatches to its own needle method (ADR-016 seam)
+
+    @Test("apply routes every motion brick to its matching needle mutation")
+    func everyMotionArmDispatchesCorrectly() {
+        var turnedRight = VirtualNeedle(heading: 0)
+        _ = turnedRight.apply(.turnRight(.number(90)), scope: scope)
+        #expect(isClose(turnedRight.heading, 90)) // adds
+
+        var turnedLeft = VirtualNeedle(heading: 0)
+        _ = turnedLeft.apply(.turnLeft(.number(90)), scope: scope)
+        #expect(isClose(turnedLeft.heading, -90)) // subtracts
+
+        var pointed = VirtualNeedle(heading: 33)
+        _ = pointed.apply(.pointInDirection(.number(180)), scope: scope)
+        #expect(isClose(pointed.heading, 180)) // absolute, discards prior
+
+        var moved = VirtualNeedle(heading: 0)
+        _ = moved.apply(.moveNSteps(.number(10)), scope: scope)
+        #expect(isClose(moved.position.y, 10)) // heading 0 → +y
+
+        var xSet = VirtualNeedle(position: .init(x: 1, y: 2))
+        _ = xSet.apply(.setX(.number(5)), scope: scope)
+        #expect(isClose(xSet.position.x, 5))
+        #expect(isClose(xSet.position.y, 2)) // y untouched
+
+        var ySet = VirtualNeedle(position: .init(x: 1, y: 2))
+        _ = ySet.apply(.setY(.number(5)), scope: scope)
+        #expect(isClose(ySet.position.x, 1)) // x untouched
+        #expect(isClose(ySet.position.y, 5))
+
+        var xChanged = VirtualNeedle(position: .init(x: 10, y: 0))
+        _ = xChanged.apply(.changeXBy(.number(5)), scope: scope)
+        #expect(isClose(xChanged.position.x, 15)) // accumulates
+
+        var yChanged = VirtualNeedle(position: .init(x: 0, y: 10))
+        _ = yChanged.apply(.changeYBy(.number(5)), scope: scope)
+        #expect(isClose(yChanged.position.y, 15)) // accumulates
+    }
+
+    // MARK: placeAt zero-substitutes each failed coordinate independently (NOT a no-op)
 
     @Test("placeAt with a throwing x and valid y places the needle at (0, y)")
     func placeAtZeroSubstitutesFailedCoordinate() throws {
@@ -54,6 +103,21 @@ struct VirtualNeedleBrickTests {
         #expect(isClose(needle.position.x, 0)) // bad x → 0, not left at 99
         #expect(isClose(needle.position.y, 200))
         #expect(update.position == needle.position)
+    }
+
+    @Test("placeAt substitutes per-coordinate: good x + bad y ⇒ (x, 0); both bad ⇒ (0, 0)")
+    func placeAtSubstitutesPerCoordinate() throws {
+        var goodXBadY = VirtualNeedle(position: .init(x: 9, y: 9))
+        let goodXBadYUpdate = goodXBadY.apply(.placeAt(x: .number(50), y: throwing), scope: scope)
+        _ = try #require(goodXBadYUpdate)
+        #expect(isClose(goodXBadY.position.x, 50)) // good x kept
+        #expect(isClose(goodXBadY.position.y, 0)) // bad y → 0
+
+        var bothBad = VirtualNeedle(position: .init(x: 9, y: 9))
+        let bothBadUpdate = bothBad.apply(.placeAt(x: throwing, y: throwing), scope: scope)
+        _ = try #require(bothBadUpdate)
+        #expect(isClose(bothBad.position.x, 0))
+        #expect(isClose(bothBad.position.y, 0))
     }
 
     // MARK: Non-motion brick is a classification signal (nil), never a crash
