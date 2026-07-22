@@ -17,6 +17,6 @@ struct ObjectRuntime: Sendable {
 struct ScriptThread: Sendable {
     let objectIndex: Int
     let instructions: [Instruction]
-    var ip = 0
+    var instructionPointer = 0
     var finished = false
 }

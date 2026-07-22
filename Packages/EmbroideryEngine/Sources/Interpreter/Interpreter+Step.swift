@@ -10,17 +10,17 @@ extension Interpreter {
     mutating func stepThread(_ index: Int, into events: inout [InterpreterEvent]) {
         var executedAction = false
         while true {
-            if threads[index].ip >= threads[index].instructions.count {
+            if threads[index].instructionPointer >= threads[index].instructions.count {
                 threads[index].finished = true
                 return
             }
-            switch threads[index].instructions[threads[index].ip] {
+            switch threads[index].instructions[threads[index].instructionPointer] {
             case let .brick(brick):
                 if executedAction {
                     return
                 } // next action → defer to the next tick
                 perform(brick, objectIndex: threads[index].objectIndex, into: &events)
-                threads[index].ip += 1
+                threads[index].instructionPointer += 1
                 executedAction = true
             }
         }
