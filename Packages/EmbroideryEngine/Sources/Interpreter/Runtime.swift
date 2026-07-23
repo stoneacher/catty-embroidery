@@ -22,5 +22,16 @@ struct ScriptThread: Sendable {
     /// instruction index. A missing entry means "not yet initialized"; the entry
     /// is cleared when the loop exits so a nesting outer loop reinitializes it.
     var loopCounters: [Int: Int] = [:]
+    /// Non-nil while a `wait` brick is blocking this thread. `nil` means the wait
+    /// has not started (its duration is resolved lazily on first arrival).
+    var wait: WaitState?
     var finished = false
+}
+
+/// A `wait` brick's progress against the logical clock (ADR-018). `duration` is
+/// resolved once, on the tick the wait is first reached; `elapsed` accumulates
+/// `tickDelta` per tick until it reaches `duration` (Catroid `TemporalAction`).
+struct WaitState: Sendable {
+    var duration: Double
+    var elapsed: Double
 }

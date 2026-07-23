@@ -34,11 +34,43 @@ extension Interpreter {
                 if executedAction {
                     return
                 } // next action → defer to the next tick
-                perform(brick, objectIndex: threads[index].objectIndex, into: &events)
-                threads[index].instructionPointer += 1
-                executedAction = true
+                if case let .wait(seconds) = brick {
+                    let completed = advanceWait(index, seconds: seconds, into: &events)
+                    executedAction = true
+                    if completed {
+                        threads[index].instructionPointer += 1
+                    } else {
+                        return // still waiting — pointer stays on the wait
+                    }
+                } else {
+                    perform(brick, objectIndex: threads[index].objectIndex, into: &events)
+                    threads[index].instructionPointer += 1
+                    executedAction = true
+                }
             }
         }
+    }
+
+    /// Advances the blocking `wait` on the thread at `index` by one tick,
+    /// returning whether it completed this tick. The duration is resolved lazily
+    /// on first arrival via `interpretDouble` (throw → 0, Catroid `WaitAction`
+    /// duration-0 fallback); `elapsed` accumulates `tickDelta` and the wait
+    /// completes once `elapsed >= duration` (checked after the add, Catroid
+    /// `TemporalAction`), emitting one `.waited`. `interpretDouble` — not Catroid's
+    /// Float-API `interpretFloat` — keeps the Double clock exact (ADR-018).
+    private mutating func advanceWait(_ index: Int, seconds: Formula, into events: inout [InterpreterEvent]) -> Bool {
+        if threads[index].wait == nil {
+            let scope = scope(forObjectAt: threads[index].objectIndex)
+            let duration = (try? seconds.interpretDouble(scope: scope)) ?? 0
+            threads[index].wait = WaitState(duration: duration, elapsed: 0)
+        }
+        threads[index].wait?.elapsed += clock.tickDelta
+        guard let state = threads[index].wait, state.elapsed >= state.duration else {
+            return false
+        }
+        events.append(.waited(actor: objects[threads[index].objectIndex].actorID))
+        threads[index].wait = nil
+        return true
     }
 
     /// Processes a `repeatBegin` (zero-tick): initializes its counter on first
