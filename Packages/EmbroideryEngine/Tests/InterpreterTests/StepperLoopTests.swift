@@ -176,4 +176,33 @@ struct StepperLoopTests {
         _ = interpreter.step() // tick 3: exhausted counter marks the thread finished
         #expect(interpreter.isFinished)
     }
+
+    @Test(
+        "nested empty loops compound the delay, shifting a concurrent script's geometry (ADR-018 pathological divergence)"
+    )
+    func nestedEmptyLoopsCompoundDelay() {
+        // ADR-018 Codex round-2 pathological divergence: nested count-1 EMPTY loops
+        // add a late tick at each enclosing loopEnd, so A's turn only lands on tick 3.
+        // Because B shares A's needle, B's first two moves precede the turn (heading 0
+        // → (0,10),(0,20)) but its third move is on tick 3, after A's turn that tick,
+        // so it runs on heading 90 → (10,20); A then moves on heading 90 → (20,20).
+        // This documents our accounting, not Catroid's (which would land elsewhere).
+        let scriptA = Script(bricks: [
+            .repeatLoop(times: .number(1)),
+            .repeatLoop(times: .number(1)),
+            .loopEnd,
+            .loopEnd,
+            .turnRight(.number(90)),
+            .moveNSteps(.number(10))
+        ])
+        let scriptB = Script(bricks: [.moveNSteps(.number(10)), .moveNSteps(.number(10)), .moveNSteps(.number(10))])
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [scriptA, scriptB])])])
+        var interpreter = Interpreter(program: program, clock: clock)
+
+        guard case let .needleMoved(_, update)? = interpreter.run(maxTicks: 100).last else {
+            Issue.record("expected a final needleMoved event")
+            return
+        }
+        #expect(update.position == StagePoint(x: 20, y: 20))
+    }
 }

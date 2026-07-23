@@ -96,4 +96,33 @@ struct StepperWaitTests {
         }
         #expect(interpreter.step() == .ticked([.waited(actor: ActorID(0))])) // tick 11
     }
+
+    @Test("a reused wait re-resolves its formula each entry: a throw yields 0, not the prior duration")
+    func reusedWaitReResolvesFormula() {
+        // ADR-018 deliberate divergence (Codex round 2): Catroid reuses one
+        // WaitAction and keeps the previous duration when the formula throws; we
+        // re-resolve on every entry, so the second iteration's 0.1/0 throws → 0 → a
+        // one-tick wait. First wait (0.1 / 1) completes on tick 2; second (0.1 / 0,
+        // after d is zeroed) completes on tick 4.
+        let script = Script(bricks: [
+            .repeatLoop(times: .number(2)),
+            .wait(seconds: .binary(.divide, .number(0.1), .variable("d"))),
+            .setVariable(name: "d", to: .number(0)),
+            .loopEnd
+        ])
+        let program = Program(
+            scenes: [Scene(objects: [Object(scripts: [script])])],
+            variables: [Variable(name: "d", value: 1)]
+        )
+        var interpreter = Interpreter(program: program, clock: InterpreterClock(tickDelta: 0.05))
+        let actor = ActorID(0)
+
+        var waitedTicks: [Int] = []
+        for tick in 1 ... 6 {
+            if case let .ticked(events) = interpreter.step(), events.contains(.waited(actor: actor)) {
+                waitedTicks.append(tick)
+            }
+        }
+        #expect(waitedTicks == [2, 4]) // not [2, 5] — the reused throw is 0, not stale 0.1
+    }
 }
