@@ -114,4 +114,42 @@ struct StepperSchedulingTests {
         ]))
         #expect(interpreter.step() == .finished)
     }
+
+    // MARK: Item 7 — batch/step-by-step equivalence (M2 exit criterion)
+
+    @Test("concatenating every step() batch equals run()'s events for the same program")
+    func stepBatchesConcatenateToRun() {
+        // A program mixing motion, a variable-count loop, wait, and a second
+        // object — the same input drives both consumers.
+        let object0 = Object(name: "a", scripts: [Script(bricks: [
+            .setVariable(name: "x", to: .number(3)),
+            .repeatLoop(times: .variable("x")),
+            .moveNSteps(.number(10)),
+            .wait(seconds: .number(0.05)),
+            .loopEnd,
+            .moveNSteps(.number(5))
+        ])])
+        let object1 = Object(name: "b", scripts: [Script(bricks: [
+            .moveNSteps(.number(20)),
+            .turnRight(.number(45)),
+            .moveNSteps(.number(20))
+        ])])
+        let program = Program(scenes: [Scene(objects: [object0, object1])])
+
+        var stepwise = Interpreter(program: program, clock: clock)
+        var stepEvents: [InterpreterEvent] = []
+        var guardTicks = 0
+        while guardTicks < 1000 {
+            guardTicks += 1
+            switch stepwise.step() {
+            case .finished:
+                guardTicks = 1000 // stop
+            case let .ticked(batch):
+                stepEvents.append(contentsOf: batch)
+            }
+        }
+
+        var batched = Interpreter(program: program, clock: clock)
+        #expect(stepEvents == batched.run(maxTicks: 1000))
+    }
 }
