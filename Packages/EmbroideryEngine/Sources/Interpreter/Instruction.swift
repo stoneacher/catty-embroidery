@@ -16,8 +16,9 @@ enum Instruction: Sendable {
     /// Zero-tick bookkeeping.
     case repeatBegin(times: Formula, endIndex: Int)
 
-    /// `forever` head: never exits on its own. Zero-tick bookkeeping.
-    case foreverBegin(endIndex: Int)
+    /// `forever` head: never exits on its own, so it carries no forward-skip
+    /// target (unlike `repeatBegin`). Zero-tick bookkeeping.
+    case foreverBegin
 
     /// Loop tail (`loopEnd`): back-jumps to its matching begin at `beginIndex`.
     /// Zero-tick bookkeeping.
@@ -50,19 +51,15 @@ enum ScriptCompiler {
                 instructions.append(.repeatBegin(times: times, endIndex: 0))
             case .forever:
                 openLoops.append(instructions.count)
-                instructions.append(.foreverBegin(endIndex: 0))
+                instructions.append(.foreverBegin)
             case .loopEnd:
                 let beginIndex = openLoops.removeLast()
                 let endIndex = instructions.count
                 instructions.append(.loopEnd(beginIndex: beginIndex))
-                // Backpatch the begin so it can skip forward past this loopEnd.
-                switch instructions[beginIndex] {
-                case let .repeatBegin(times, _):
+                // Backpatch a repeatBegin so it can skip forward past this loopEnd
+                // when its count is exhausted; forever has no forward-skip target.
+                if case let .repeatBegin(times, _) = instructions[beginIndex] {
                     instructions[beginIndex] = .repeatBegin(times: times, endIndex: endIndex)
-                case .foreverBegin:
-                    instructions[beginIndex] = .foreverBegin(endIndex: endIndex)
-                default:
-                    break
                 }
             default:
                 instructions.append(.brick(brick))

@@ -16,15 +16,27 @@ extension Interpreter {
             }
             switch threads[index].instructions[threads[index].instructionPointer] {
             case let .repeatBegin(times, endIndex):
-                enterRepeat(index, times: times, endIndex: endIndex)
+                // Entering a *new* iteration after an action already ran this tick
+                // defers to the next tick (the next iteration's first brick, one
+                // per tick). Exhausting the loop is not a new iteration, so it
+                // folds into this tick — that is the same-tick finish.
+                if enterRepeat(index, times: times, endIndex: endIndex, deferEntry: executedAction) {
+                    return
+                }
 
             case .foreverBegin:
+                if executedAction {
+                    return
+                } // defer the next iteration to the next tick
                 threads[index].instructionPointer += 1 // zero-tick; never exits itself
 
             case let .loopEnd(beginIndex):
-                // An action-free iteration (e.g. `forever {}`) has no brick to
-                // stop at, so the back-jump itself consumes the tick — one empty
-                // iteration per tick (libgdx one-act-per-tick), never a spin.
+                // Close the iteration by jumping back to the matching begin. An
+                // action-free iteration (e.g. `forever {}` in isolation) reaches
+                // here with no action this tick, so the back-jump itself consumes
+                // the tick — one empty iteration per tick (libgdx one-act-per-tick),
+                // never a spin. When an action did run, the begin guards above stop
+                // the fold at the next iteration's entry.
                 threads[index].instructionPointer = beginIndex
                 if !executedAction {
                     return
@@ -75,9 +87,12 @@ extension Interpreter {
 
     /// Processes a `repeatBegin` (zero-tick): initializes its counter on first
     /// arrival (throw / negative / zero count → 0 iterations, Catroid
-    /// `RepeatAction` parity), then either enters the body or exits past the
-    /// matching `loopEnd`, clearing the counter so a nesting outer loop reinits it.
-    private mutating func enterRepeat(_ index: Int, times: Formula, endIndex: Int) {
+    /// `RepeatAction` parity), then either exits past the matching `loopEnd`
+    /// (clearing the counter so a nesting outer loop reinits it) or enters the
+    /// body. Returns `true` when the caller should yield the tick: an as-yet-
+    /// unstarted iteration (`deferEntry`) is deferred to the next tick, leaving
+    /// the pointer and counter untouched. Exhaustion never yields.
+    private mutating func enterRepeat(_ index: Int, times: Formula, endIndex: Int, deferEntry: Bool) -> Bool {
         let pointer = threads[index].instructionPointer
         let remaining: Int
         if let existing = threads[index].loopCounters[pointer] {
@@ -89,10 +104,14 @@ extension Interpreter {
         if remaining <= 0 {
             threads[index].loopCounters[pointer] = nil
             threads[index].instructionPointer = endIndex + 1
-        } else {
-            threads[index].loopCounters[pointer] = remaining - 1
-            threads[index].instructionPointer += 1
+            return false
         }
+        if deferEntry {
+            return true // next iteration starts next tick; counter/pointer untouched
+        }
+        threads[index].loopCounters[pointer] = remaining - 1
+        threads[index].instructionPointer += 1
+        return false
     }
 
     /// Executes one brick against its object's runtime. Motion bricks go through

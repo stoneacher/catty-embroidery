@@ -120,4 +120,42 @@ struct StepperLoopTests {
         #expect(interpreter.run(maxTicks: 100) == [])
         #expect(interpreter.isFinished) // terminates after its empty iterations
     }
+
+    // MARK: Prior action, THEN an empty loop (swift-code-reviewer regression)
+
+    @Test("an action followed by an empty forever does not hang and never finishes")
+    func actionThenEmptyForeverDoesNotHang() {
+        // The critical case the isolation tests missed: the move sets the
+        // per-tick action flag, so the empty forever must defer at its body entry
+        // rather than spin the back-jump inside a single step().
+        let script = Script(bricks: [.moveNSteps(.number(10)), .forever, .loopEnd])
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [script])])])
+        var interpreter = Interpreter(program: program, clock: clock)
+        let actor = ActorID(0)
+
+        // Tick 1: the move only (forever entry deferred).
+        #expect(interpreter.step() == .ticked([
+            .needleMoved(actor: actor, update: NeedleUpdate(position: StagePoint(x: 0, y: 10)))
+        ]))
+        // Subsequent ticks: empty iterations, never finishing.
+        #expect(interpreter.step() == .ticked([]))
+        #expect(!interpreter.isFinished)
+        #expect(interpreter.run(maxTicks: 10) == [])
+        #expect(!interpreter.isFinished)
+    }
+
+    @Test("an action followed by an empty repeatLoop runs one tick per iteration, not all at once")
+    func actionThenEmptyRepeatIsPaced() {
+        let script = Script(bricks: [.moveNSteps(.number(10)), .repeatLoop(times: .number(4)), .loopEnd])
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [script])])])
+        var interpreter = Interpreter(program: program, clock: clock)
+
+        // Tick 1 runs the move and must NOT drain the loop — the thread is still
+        // running (the empty iterations are paced one per tick, not collapsed).
+        _ = interpreter.step()
+        #expect(!interpreter.isFinished)
+        // It does terminate, having emitted only the one move.
+        #expect(interpreter.run(maxTicks: 100) == [])
+        #expect(interpreter.isFinished)
+    }
 }
