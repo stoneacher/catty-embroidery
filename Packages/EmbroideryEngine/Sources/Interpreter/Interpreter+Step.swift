@@ -29,13 +29,43 @@ extension Interpreter {
     /// Executes one brick against its object's runtime. Motion bricks go through
     /// the US-204 bridge (`VirtualNeedle.apply`), which applies the per-brick
     /// bad-formula fallback and always emits exactly one update; a non-motion
-    /// brick returns `nil` and is dispatched here. Data / wait / embroidery
-    /// handling arrives in later story-commits; for now a non-motion brick simply
-    /// advances (US-206 wires embroidery events).
+    /// brick returns `nil` and is dispatched here. Data bricks write the variable
+    /// store; wait / embroidery handling arrives in later story-commits (a still-
+    /// unhandled non-motion brick simply advances — US-206 wires embroidery).
     mutating func perform(_ brick: Brick, objectIndex: Int, into events: inout [InterpreterEvent]) {
         let scope = scope(forObjectAt: objectIndex)
         if let update = objects[objectIndex].needle.apply(brick, scope: scope) {
             events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
+            return
+        }
+        switch brick {
+        case let .setVariable(name, valueFormula):
+            // Throwing data formula substitutes 0 (Catroid data actions read
+            // through interpretDouble, which returns 0 on failure) — distinct
+            // from motion catch-and-skip.
+            let value = (try? valueFormula.interpretDouble(scope: scope)) ?? 0
+            setVariable(name, to: value, objectIndex: objectIndex)
+        case let .changeVariableBy(name, valueFormula):
+            // Throwing → add 0, i.e. a no-op that leaves the value intact.
+            let delta = (try? valueFormula.interpretDouble(scope: scope)) ?? 0
+            let current = scope.value(of: name)
+            setVariable(name, to: current + delta, objectIndex: objectIndex)
+        default:
+            break
+        }
+    }
+
+    /// Writes `value` to `name`, resolving which store it belongs to: an
+    /// object-declared name writes the object store, a project-declared name the
+    /// project store, an as-yet-unknown name is created object-local (Catroid
+    /// sprite-first `UserDataWrapper` resolution).
+    mutating func setVariable(_ name: String, to value: Double, objectIndex: Int) {
+        if objects[objectIndex].variables[name] != nil {
+            objects[objectIndex].variables[name] = value
+        } else if projectVariables[name] != nil {
+            projectVariables[name] = value
+        } else {
+            objects[objectIndex].variables[name] = value
         }
     }
 
