@@ -68,4 +68,50 @@ struct StepperSchedulingTests {
             .needleMoved(actor: actor, update: NeedleUpdate(position: StagePoint(x: 0, y: 30)))
         ])
     }
+
+    // MARK: Item 4 — brick-by-brick interleaving (the Catroid-parity case)
+
+    @Test("two scripts on one object interleave brick-by-brick, ending at (0, 20)")
+    func sameObjectScriptsInterleaveBrickByBrick() {
+        // Both scripts steer the SAME object's needle. Round-robin one brick per
+        // thread per tick means B's move lands before A's turn:
+        //   tick 1: A move → (0,10), B move → (0,20)
+        //   tick 2: A turn → heading 90 (position unchanged)
+        // A drain-A-first scheduler would turn before B moved and end at (10,10).
+        let scriptA = Script(bricks: [.moveNSteps(.number(10)), .turnRight(.number(90))])
+        let scriptB = Script(bricks: [.moveNSteps(.number(10))])
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [scriptA, scriptB])])])
+        var interpreter = Interpreter(program: program, clock: clock)
+        let actor = ActorID(0)
+
+        let events = interpreter.run(maxTicks: 100)
+        #expect(events == [
+            .needleMoved(actor: actor, update: NeedleUpdate(position: StagePoint(x: 0, y: 10))),
+            .needleMoved(actor: actor, update: NeedleUpdate(position: StagePoint(x: 0, y: 20))),
+            .needleMoved(actor: actor, update: NeedleUpdate(position: StagePoint(x: 0, y: 20), heading: 90))
+        ])
+        // The discriminating end state: (0, 20), never (10, 10).
+        if case let .needleMoved(_, update) = events.last {
+            #expect(update.position == StagePoint(x: 0, y: 20))
+        } else {
+            Issue.record("expected a final needleMoved event")
+        }
+    }
+
+    @Test("two objects each advance one brick per tick, in creation order")
+    func twoObjectsAdvanceInCreationOrder() {
+        let move = Script(bricks: [.moveNSteps(.number(10))])
+        let program = Program(scenes: [Scene(objects: [
+            Object(name: "first", scripts: [move]),
+            Object(name: "second", scripts: [move])
+        ])])
+        var interpreter = Interpreter(program: program, clock: clock)
+
+        // One tick: object 0's thread, then object 1's thread — creation order.
+        #expect(interpreter.step() == .ticked([
+            .needleMoved(actor: ActorID(0), update: NeedleUpdate(position: StagePoint(x: 0, y: 10))),
+            .needleMoved(actor: ActorID(1), update: NeedleUpdate(position: StagePoint(x: 0, y: 10)))
+        ]))
+        #expect(interpreter.step() == .finished)
+    }
 }
