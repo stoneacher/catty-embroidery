@@ -8,59 +8,76 @@ extension Interpreter {
     /// so the thread is marked finished in the *same* tick its last brick executes
     /// (not a tick later) — matching Catroid `RepeatAction`'s same-tick close.
     mutating func stepThread(_ index: Int, into events: inout [InterpreterEvent]) {
-        var executedAction = false
-        while true {
-            if threads[index].instructionPointer >= threads[index].instructions.count {
-                threads[index].finished = true
-                return
-            }
-            switch threads[index].instructions[threads[index].instructionPointer] {
-            case let .repeatBegin(times, endIndex):
-                // Entering a *new* iteration after an action already ran this tick
-                // defers to the next tick (the next iteration's first brick, one
-                // per tick). Exhausting the loop is not a new iteration, so it
-                // folds into this tick — that is the same-tick finish.
-                if enterRepeat(index, times: times, endIndex: endIndex, deferEntry: executedAction) {
-                    return
-                }
-
-            case .foreverBegin:
-                if executedAction {
-                    return
-                } // defer the next iteration to the next tick
-                threads[index].instructionPointer += 1 // zero-tick; never exits itself
-
-            case let .loopEnd(beginIndex):
-                // Close the iteration by jumping back to the matching begin. An
-                // action-free iteration (e.g. `forever {}` in isolation) reaches
-                // here with no action this tick, so the back-jump itself consumes
-                // the tick — one empty iteration per tick (libgdx one-act-per-tick),
-                // never a spin. When an action did run, the begin guards above stop
-                // the fold at the next iteration's entry.
-                threads[index].instructionPointer = beginIndex
-                if !executedAction {
-                    return
-                }
-
-            case let .brick(brick):
-                if executedAction {
-                    return
-                } // next action → defer to the next tick
-                if case let .wait(seconds) = brick {
-                    let completed = advanceWait(index, seconds: seconds, into: &events)
-                    executedAction = true
-                    if completed {
-                        threads[index].instructionPointer += 1
-                    } else {
-                        return // still waiting — pointer stays on the wait
-                    }
-                } else {
-                    perform(brick, objectIndex: threads[index].objectIndex, into: &events)
-                    threads[index].instructionPointer += 1
-                    executedAction = true
-                }
+        var acted = false
+        while threads[index].instructionPointer < threads[index].instructions.count {
+            guard advance(index, acted: &acted, into: &events) else {
+                return // yielded the tick
             }
         }
+        // Ran off the end — folded into the same tick as the last action, so the
+        // thread is marked finished now (not a tick later), matching Catroid
+        // `RepeatAction`'s same-tick close.
+        threads[index].finished = true
+    }
+
+    /// Processes the instruction under the pointer. Returns `true` to keep folding
+    /// this tick (zero-tick bookkeeping, or an action that lets the fold continue
+    /// to the loop close / end), `false` to yield the tick.
+    private mutating func advance(_ index: Int, acted: inout Bool, into events: inout [InterpreterEvent]) -> Bool {
+        switch threads[index].instructions[threads[index].instructionPointer] {
+        case let .repeatBegin(times, endIndex):
+            // Entering a *new* iteration after an action already ran this tick
+            // defers to the next tick (the next iteration's first brick, one per
+            // tick). Exhausting the loop is not a new iteration, so it folds into
+            // this tick — that is the same-tick finish.
+            return !enterRepeat(index, times: times, endIndex: endIndex, deferEntry: acted)
+
+        case .foreverBegin:
+            if acted {
+                return false
+            } // defer the next iteration to the next tick
+            threads[index].instructionPointer += 1 // zero-tick; never exits itself
+            return true
+
+        case let .loopEnd(beginIndex):
+            // Close the iteration by jumping back to the matching begin. An
+            // action-free iteration (e.g. `forever {}` in isolation) reaches here
+            // with no action this tick, so the back-jump itself consumes the tick
+            // — one empty iteration per tick (libgdx one-act-per-tick), never a
+            // spin. When an action did run, the begin guards stop the fold at the
+            // next iteration's entry.
+            threads[index].instructionPointer = beginIndex
+            return acted
+
+        case let .brick(brick):
+            return performActionBrick(index, brick, acted: &acted, into: &events)
+        }
+    }
+
+    /// Executes one action-producing brick (motion / data / wait / embroidery),
+    /// or defers it to the next tick if an action already ran this tick. Returns
+    /// `true` to keep folding, `false` to yield (a deferred or still-blocking wait).
+    private mutating func performActionBrick(
+        _ index: Int,
+        _ brick: Brick,
+        acted: inout Bool,
+        into events: inout [InterpreterEvent]
+    ) -> Bool {
+        if acted {
+            return false
+        } // next action → defer to the next tick
+        if case let .wait(seconds) = brick {
+            acted = true
+            guard advanceWait(index, seconds: seconds, into: &events) else {
+                return false // still waiting — pointer stays on the wait
+            }
+            threads[index].instructionPointer += 1
+            return true
+        }
+        perform(brick, objectIndex: threads[index].objectIndex, into: &events)
+        threads[index].instructionPointer += 1
+        acted = true
+        return true
     }
 
     /// Advances the blocking `wait` on the thread at `index` by one tick,
