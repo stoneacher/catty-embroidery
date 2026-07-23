@@ -158,4 +158,22 @@ struct StepperLoopTests {
         #expect(interpreter.run(maxTicks: 100) == [])
         #expect(interpreter.isFinished)
     }
+
+    @Test("an empty repeatLoop(2) detects termination one tick after its last iteration (accepted degenerate)")
+    func emptyRepeatFinishesOneTickLate() {
+        // ADR-018 accepted degenerate (Codex): an action-free repeat consumes one
+        // tick per empty iteration (ticks 1 and 2 here), then the exhausted
+        // counter-check finishes on tick 3 — one tick later than a non-empty loop,
+        // because the empty loopEnd yields before the begin can fold exhaustion in.
+        // The alternative fix reintroduces spurious empty ticks on nested-loop
+        // entry (the common case), a worse trade.
+        let script = Script(bricks: [.repeatLoop(times: .number(2)), .loopEnd])
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [script])])])
+        var interpreter = Interpreter(program: program, clock: clock)
+
+        _ = interpreter.run(maxTicks: 2) // two empty iterations
+        #expect(!interpreter.isFinished) // not yet — exhaustion detected next tick
+        _ = interpreter.step() // tick 3: exhausted counter marks the thread finished
+        #expect(interpreter.isFinished)
+    }
 }

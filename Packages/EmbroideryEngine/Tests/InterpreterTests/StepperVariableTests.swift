@@ -86,4 +86,62 @@ struct StepperVariableTests {
 
         #expect(finalPosition(interpreter.run(maxTicks: 100)) == StagePoint(x: 0, y: 7))
     }
+
+    // MARK: Duplicate names resolve first-match (Codex — matches VariableScope)
+
+    @Test("duplicate project-variable declarations resolve to the first (not the last)")
+    func duplicateProjectVariablesUseFirstMatch() {
+        let script = Script(bricks: [.moveNSteps(.variable("x"))])
+        let program = Program(
+            scenes: [Scene(objects: [Object(scripts: [script])])],
+            variables: [Variable(name: "x", value: 10), Variable(name: "x", value: 20)]
+        )
+        var interpreter = Interpreter(program: program, clock: clock)
+        // First match wins → 10, as ProgramModel.VariableScope defines; NOT 20.
+        #expect(finalPosition(interpreter.run(maxTicks: 100)) == StagePoint(x: 0, y: 10))
+    }
+
+    @Test("an object variable shadows a same-named project variable, per object")
+    func objectVariableShadowsProjectVariablePerObject() {
+        // Object A has its own "n" (=3, shadows project); object B reads project "n" (=100).
+        let readN = Script(bricks: [.moveNSteps(.variable("n"))])
+        let objectA = Object(name: "a", variables: [Variable(name: "n", value: 3)], scripts: [readN])
+        let objectB = Object(name: "b", scripts: [readN])
+        let program = Program(
+            scenes: [Scene(objects: [objectA, objectB])],
+            variables: [Variable(name: "n", value: 100)]
+        )
+        var interpreter = Interpreter(program: program, clock: clock)
+
+        let events = interpreter.run(maxTicks: 100)
+        #expect(events == [
+            .needleMoved(actor: ActorID(0), update: NeedleUpdate(position: StagePoint(x: 0, y: 3))),
+            .needleMoved(actor: ActorID(1), update: NeedleUpdate(position: StagePoint(x: 0, y: 100)))
+        ])
+    }
+
+    @Test("writing an object-shadowed variable does not leak into the project scope")
+    func writingObjectVariableDoesNotTouchProject() {
+        // Object A shadows "n" and overwrites its own copy; object B still sees project "n".
+        let objectA = Object(
+            name: "a",
+            variables: [Variable(name: "n", value: 3)],
+            scripts: [Script(bricks: [.setVariable(name: "n", to: .number(7)), .moveNSteps(.variable("n"))])]
+        )
+        let objectB = Object(name: "b", scripts: [Script(bricks: [.moveNSteps(.variable("n"))])])
+        let program = Program(
+            scenes: [Scene(objects: [objectA, objectB])],
+            variables: [Variable(name: "n", value: 100)]
+        )
+        var interpreter = Interpreter(program: program, clock: clock)
+
+        // Object A spends tick 1 on setVariable (no event), so B's move (actor 1,
+        // still project n = 100) emits before A's move (actor 0, its own n = 7) on
+        // tick 2 — the write stayed object-local.
+        let events = interpreter.run(maxTicks: 100)
+        #expect(events == [
+            .needleMoved(actor: ActorID(1), update: NeedleUpdate(position: StagePoint(x: 0, y: 100))),
+            .needleMoved(actor: ActorID(0), update: NeedleUpdate(position: StagePoint(x: 0, y: 7)))
+        ])
+    }
 }

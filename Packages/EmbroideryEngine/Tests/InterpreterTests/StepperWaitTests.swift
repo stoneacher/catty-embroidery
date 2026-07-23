@@ -79,4 +79,21 @@ struct StepperWaitTests {
         #expect(interpreter.step() == .ticked([.waited(actor: ActorID(0))]))
         #expect(interpreter.step() == .finished)
     }
+
+    @Test("an exact-ratio wait can drift one tick from ceil (accepted FP accumulation)")
+    func exactRatioWaitDriftsFromCeil() {
+        // ADR-018 (Codex): the logical clock ACCUMULATES tickDelta (Catroid
+        // TemporalAction parity), and accumulation is authoritative over the
+        // nominal ceil(seconds/tickDelta). For 0.1 / 0.01, ten binary additions
+        // sum to 0.09999999999999999 < 0.1, so the wait completes on tick 11, not
+        // the nominal 10. Deterministic and pinned, not a bug.
+        let script = Script(bricks: [.wait(seconds: .number(0.1))])
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [script])])])
+        var interpreter = Interpreter(program: program, clock: InterpreterClock(tickDelta: 0.01))
+
+        for _ in 1 ... 10 {
+            #expect(interpreter.step() == .ticked([])) // still short of 0.1
+        }
+        #expect(interpreter.step() == .ticked([.waited(actor: ActorID(0))])) // tick 11
+    }
 }

@@ -152,4 +152,26 @@ struct StepperSchedulingTests {
         var batched = Interpreter(program: program, clock: clock)
         #expect(stepEvents == batched.run(maxTicks: 1000))
     }
+
+    // MARK: Malformed script is inert (ADR-018 never-halt; Codex blind spot)
+
+    @Test("an unbalanced script compiles to nothing and produces no events")
+    func unbalancedScriptIsInert() {
+        // A loop opener with no matching loopEnd fails Script.validate(), so it
+        // compiles to [] — an inert thread that finishes without emitting, never
+        // a crash or a halt (ADR-018).
+        let malformed = Script(bricks: [.repeatLoop(times: .number(3)), .moveNSteps(.number(10))])
+        let wellFormed = Script(bricks: [.moveNSteps(.number(5))])
+        let program = Program(scenes: [Scene(objects: [
+            Object(name: "bad", scripts: [malformed]),
+            Object(name: "good", scripts: [wellFormed])
+        ])])
+        var interpreter = Interpreter(program: program, clock: clock)
+
+        // Only the well-formed object's move appears; the malformed thread is inert.
+        #expect(interpreter.run(maxTicks: 100) == [
+            .needleMoved(actor: ActorID(1), update: NeedleUpdate(position: StagePoint(x: 0, y: 5)))
+        ])
+        #expect(interpreter.isFinished)
+    }
 }

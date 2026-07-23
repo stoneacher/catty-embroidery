@@ -23,8 +23,11 @@ public struct Interpreter: Sendable {
 
         var objects: [ObjectRuntime] = []
         var threads: [ScriptThread] = []
+        // First declaration of a name wins, matching `ProgramModel.VariableScope`
+        // (name uniqueness is the editor's job, not the model's — Scope.swift); a
+        // plain dictionary assignment would let a later duplicate shadow the first.
         var projectVariables: [String: Double] = [:]
-        for variable in program.variables {
+        for variable in program.variables where projectVariables[variable.name] == nil {
             projectVariables[variable.name] = variable.value
         }
 
@@ -35,7 +38,7 @@ public struct Interpreter: Sendable {
         for scene in program.scenes {
             for object in scene.objects {
                 var objectVariables: [String: Double] = [:]
-                for variable in object.variables {
+                for variable in object.variables where objectVariables[variable.name] == nil {
                     objectVariables[variable.name] = variable.value
                 }
                 objects.append(ObjectRuntime(
