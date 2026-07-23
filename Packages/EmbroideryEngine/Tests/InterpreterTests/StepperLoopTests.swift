@@ -177,9 +177,7 @@ struct StepperLoopTests {
         #expect(interpreter.isFinished)
     }
 
-    @Test(
-        "nested empty loops compound the delay, shifting a concurrent script's geometry (ADR-018 pathological divergence)"
-    )
+    @Test("nested empty loops compound the delay, shifting concurrent geometry (ADR-018 pathological)")
     func nestedEmptyLoopsCompoundDelay() {
         // ADR-018 Codex round-2 pathological divergence: nested count-1 EMPTY loops
         // add a late tick at each enclosing loopEnd, so A's turn only lands on tick 3.
