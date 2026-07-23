@@ -15,6 +15,21 @@ extension Interpreter {
                 return
             }
             switch threads[index].instructions[threads[index].instructionPointer] {
+            case let .repeatBegin(times, endIndex):
+                enterRepeat(index, times: times, endIndex: endIndex)
+
+            case .foreverBegin:
+                threads[index].instructionPointer += 1 // zero-tick; never exits itself
+
+            case let .loopEnd(beginIndex):
+                // An action-free iteration (e.g. `forever {}`) has no brick to
+                // stop at, so the back-jump itself consumes the tick — one empty
+                // iteration per tick (libgdx one-act-per-tick), never a spin.
+                threads[index].instructionPointer = beginIndex
+                if !executedAction {
+                    return
+                }
+
             case let .brick(brick):
                 if executedAction {
                     return
@@ -23,6 +38,28 @@ extension Interpreter {
                 threads[index].instructionPointer += 1
                 executedAction = true
             }
+        }
+    }
+
+    /// Processes a `repeatBegin` (zero-tick): initializes its counter on first
+    /// arrival (throw / negative / zero count → 0 iterations, Catroid
+    /// `RepeatAction` parity), then either enters the body or exits past the
+    /// matching `loopEnd`, clearing the counter so a nesting outer loop reinits it.
+    private mutating func enterRepeat(_ index: Int, times: Formula, endIndex: Int) {
+        let pointer = threads[index].instructionPointer
+        let remaining: Int
+        if let existing = threads[index].loopCounters[pointer] {
+            remaining = existing
+        } else {
+            let scope = scope(forObjectAt: threads[index].objectIndex)
+            remaining = max(0, (try? times.interpretInteger(scope: scope)) ?? 0)
+        }
+        if remaining <= 0 {
+            threads[index].loopCounters[pointer] = nil
+            threads[index].instructionPointer = endIndex + 1
+        } else {
+            threads[index].loopCounters[pointer] = remaining - 1
+            threads[index].instructionPointer += 1
         }
     }
 

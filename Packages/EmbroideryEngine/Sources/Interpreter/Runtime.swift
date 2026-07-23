@@ -18,5 +18,9 @@ struct ScriptThread: Sendable {
     let objectIndex: Int
     let instructions: [Instruction]
     var instructionPointer = 0
+    /// Remaining iterations per open `repeatLoop`, keyed by the `repeatBegin`'s
+    /// instruction index. A missing entry means "not yet initialized"; the entry
+    /// is cleared when the loop exits so a nesting outer loop reinitializes it.
+    var loopCounters: [Int: Int] = [:]
     var finished = false
 }
