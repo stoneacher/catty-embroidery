@@ -160,10 +160,22 @@ extension Interpreter {
             let delta = (try? valueFormula.interpretDouble(scope: scope)) ?? 0
             let current = scope.value(of: name)
             setVariable(name, to: current + delta, objectIndex: objectIndex)
-        // Embroidery bricks (US-206). Pattern activators read the current needle
-        // position as their start (Catroid actions construct the stitch reading
-        // `sprite.look`). Zero / negative / non-finite params are engine no-ops
-        // (ADR-014); the interpreter passes values straight through.
+        default:
+            performEmbroidery(brick, objectIndex: objectIndex, scope: scope, into: &events)
+        }
+    }
+
+    /// Dispatches the eight embroidery bricks (US-206) to the engine. Pattern
+    /// activators read the current needle position as their start (Catroid
+    /// actions construct the stitch reading `sprite.look`); zero / negative /
+    /// non-finite params are engine no-ops (ADR-014). The interpreter only calls
+    /// the engine — it never re-implements dedup / interpolation / color-change /
+    /// layer logic (ADR-012/013/015). Any non-embroidery brick reaching here
+    /// (control bricks are compiled to instructions, never dispatched) no-ops.
+    private mutating func performEmbroidery(
+        _ brick: Brick, objectIndex: Int, scope: VariableStoreScope, into events: inout [InterpreterEvent]
+    ) {
+        switch brick {
         case let .runningStitch(length):
             // Length via interpretInteger (US-202 contract; Int32-saturating).
             let stitchLength = (try? length.interpretInteger(scope: scope)) ?? 0
