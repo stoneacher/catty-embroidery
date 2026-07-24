@@ -135,12 +135,17 @@ extension Interpreter {
     /// the US-204 bridge (`VirtualNeedle.apply`), which applies the per-brick
     /// bad-formula fallback and always emits exactly one update; a non-motion
     /// brick returns `nil` and is dispatched here. Data bricks write the variable
-    /// store; wait / embroidery handling arrives in later story-commits (a still-
-    /// unhandled non-motion brick simply advances — US-206 wires embroidery).
+    /// store; embroidery bricks (US-206) drive the engine — the interpreter only
+    /// calls it, never re-implementing stream semantics (ADR-012/013/015).
     mutating func perform(_ brick: Brick, objectIndex: Int, into events: inout [InterpreterEvent]) {
         let scope = scope(forObjectAt: objectIndex)
         if let update = objects[objectIndex].needle.apply(brick, scope: scope) {
             events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
+            // Catroid `Look.positionChanged → runningStitch.update`: an active
+            // pattern consumes the motion; an idle wrapper returns [] (no-op),
+            // so this is the documented once-per-motion feed, not once-per-tick.
+            let stitches = objects[objectIndex].runningStitch.update(update)
+            emitStitches(stitches, objectIndex: objectIndex, into: &events)
             return
         }
         switch brick {
@@ -155,8 +160,79 @@ extension Interpreter {
             let delta = (try? valueFormula.interpretDouble(scope: scope)) ?? 0
             let current = scope.value(of: name)
             setVariable(name, to: current + delta, objectIndex: objectIndex)
+        // Embroidery bricks (US-206). Pattern activators read the current needle
+        // position as their start (Catroid actions construct the stitch reading
+        // `sprite.look`). Zero / negative / non-finite params are engine no-ops
+        // (ADR-014); the interpreter passes values straight through.
+        case let .runningStitch(length):
+            // Length via interpretInteger (US-202 contract; Int32-saturating).
+            let stitchLength = (try? length.interpretInteger(scope: scope)) ?? 0
+            objects[objectIndex].runningStitch.activate(RunningStitchPattern(
+                length: Double(stitchLength), start: objects[objectIndex].needle.position
+            ))
+        case let .zigZagStitch(length, width):
+            // Length and width via interpretFloat (US-202 contract), widened to
+            // the engine's Double — Catroid reads them as Java float (ADR-014).
+            let zigLength = (try? length.interpretFloat(scope: scope)) ?? 0
+            let zigWidth = (try? width.interpretFloat(scope: scope)) ?? 0
+            objects[objectIndex].runningStitch.activate(ZigzagStitchPattern(
+                length: Double(zigLength), width: Double(zigWidth), start: objects[objectIndex].needle.position
+            ))
+        case let .tripleStitch(length):
+            let stitchLength = (try? length.interpretInteger(scope: scope)) ?? 0
+            objects[objectIndex].runningStitch.activate(TripleStitchPattern(
+                length: Double(stitchLength), start: objects[objectIndex].needle.position
+            ))
+        case .stitch:
+            // Catroid `StitchAction`: pause, place one point at the needle,
+            // re-anchor the running stitch there, resume.
+            let point = objects[objectIndex].needle.position
+            objects[objectIndex].runningStitch.pause()
+            emitStitches([point], objectIndex: objectIndex, into: &events)
+            objects[objectIndex].runningStitch.setStartPosition(point)
+            objects[objectIndex].runningStitch.resume()
+        case .sewUp:
+            // Catroid `SewUpAction`: 5-point bar tack around the needle. The
+            // engine pauses, re-anchors, and resumes the running stitch itself.
+            let points = SewUp.perform(
+                at: objects[objectIndex].needle.position,
+                heading: objects[objectIndex].needle.heading,
+                runningStitch: &objects[objectIndex].runningStitch
+            )
+            emitStitches(points, objectIndex: objectIndex, into: &events)
+        case let .setThreadColor(hex):
+            // The manager owns the change-record decision — invalid hex is a
+            // full no-op, and a set before any emission silently selects the
+            // starting color (ADR-015). `colorArmed` is the brick's *intent*,
+            // emitted on every execution regardless of that decision.
+            manager.setThreadColor(hexString: hex, for: objects[objectIndex].actorID)
+            events.append(.colorArmed(actor: objects[objectIndex].actorID, hex: hex))
+        case .stopRunningStitch:
+            // Catroid `StopRunningStitchAction.deactivate`: discard the pattern,
+            // so later motion emits nothing until a new activation.
+            objects[objectIndex].runningStitch.stop()
+        case let .writeEmbroideryToFile(name):
+            // Modeled as a finalize marker only — the package performs no I/O
+            // (milestone deviation table). The assembled stream is always
+            // available via `assembledStream()`; the brick stays for M4/M5.
+            events.append(.finalizeRequested(name: name))
         default:
             break
+        }
+    }
+
+    /// Sends each stage point to the shared manager (at the object's layer and
+    /// actor) and emits a `.stitch` event — one event per `addStitch` call, the
+    /// trace of the call (the stream's own dedup may later collapse consecutive
+    /// duplicates; the event count reflects calls, not surviving stitches).
+    private mutating func emitStitches(
+        _ points: [StagePoint], objectIndex: Int, into events: inout [InterpreterEvent]
+    ) {
+        let actorID = objects[objectIndex].actorID
+        let layer = objects[objectIndex].layer
+        for point in points {
+            manager.addStitch(at: point, layer: layer, actor: actorID)
+            events.append(.stitch(actor: actorID, position: point, layer: layer))
         }
     }
 

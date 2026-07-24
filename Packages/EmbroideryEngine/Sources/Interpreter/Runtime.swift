@@ -9,6 +9,10 @@ struct ObjectRuntime: Sendable {
     var variables: [String: Double]
     let actorID: ActorID
     let layer: Int
+    /// The object's active stitch pattern (Catroid: one `RunningStitch` per
+    /// sprite). Idle until an embroidery brick activates a pattern; motion feeds
+    /// it and drained points go to the shared `EmbroideryPatternManager` (US-206).
+    var runningStitch = RunningStitch()
 }
 
 /// Per-script execution state (Catroid: one `ScriptSequenceAction` thread). The

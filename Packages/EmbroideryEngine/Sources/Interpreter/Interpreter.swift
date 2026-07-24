@@ -17,6 +17,10 @@ public struct Interpreter: Sendable {
     var objects: [ObjectRuntime]
     var projectVariables: [String: Double]
     var threads: [ScriptThread]
+    /// The single sink every object's stitches feed (Catroid: the stage-wide
+    /// `embroideryPatternManager`). Owns dedup / interpolation / color-change /
+    /// layer assembly — the interpreter only calls it (ADR-012/013/015, US-206).
+    var manager = EmbroideryPatternManager()
 
     public init(program: Program, clock: InterpreterClock) {
         self.clock = clock
@@ -100,5 +104,14 @@ public struct Interpreter: Sendable {
     /// no whenStarted scripts).
     public var isFinished: Bool {
         threads.allSatisfy(\.finished)
+    }
+
+    /// The embroidery stream assembled from every stitch produced so far
+    /// (`EmbroideryPatternManager.assembled()`): layers replayed in ascending
+    /// z-order, interpolation and unit conversion run once (US-206, AC 7). Pure
+    /// — callable at any point; running further ticks and re-assembling reflects
+    /// the added stitches.
+    public func assembledStream() -> EmbroideryStream {
+        manager.assembled()
     }
 }
