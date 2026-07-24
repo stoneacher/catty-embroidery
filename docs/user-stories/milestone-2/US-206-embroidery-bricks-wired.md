@@ -2,19 +2,19 @@
 
 **Epic**: E3 Program model & interpreter | **Estimate**: ~5 h | **Depends on**: US-205
 
-**Status**: Planned
+**Status**: Done
 
 **Story**: As the interpreter, I want the eight embroidery bricks to drive the engine's `RunningStitch`, `SewUp`, and `EmbroideryPatternManager`, yielding an `EmbroideryStream`.
 
 The interpreter only *calls* the engine — it never re-implements dedup, interpolation, color-change, or layer logic (those stay owned by the engine per ADR-012/013/015).
 
 ## Acceptance criteria
-- [ ] Per object: one `RunningStitch` wrapper and one `ActorID`; one shared `EmbroideryPatternManager`. Motion while a pattern is active builds a `NeedleUpdate` and feeds `RunningStitch.update(_:)`; each returned `StagePoint` goes to `manager.addStitch(at:layer: object.zIndex, actor:)` and emits a `stitch` event (Catroid's `Look.positionChanged() → runningStitch.update()` path).
-- [ ] `runningStitch(length:)` / `zigZagStitch(length:width:)` / `tripleStitch(length:)` activate the matching engine pattern with **start = current needle position** (Catroid actions construct the stitch reading `sprite.look`). Running/triple length via `interpretInteger`, zigzag length and width via `interpretFloat` (US-202 contract).
-- [ ] `stitch`: pause the wrapper → `manager.addStitch` at the needle → `setStartPosition` re-anchor → resume (Catroid `StitchAction`).
-- [ ] `setThreadColor(hex:)` → `manager.setThreadColor(hexString:for:)`: invalid hex is a full no-op; before any emission it silently selects the starting color (ADR-015). Emits `colorArmed` as *intent* — the machine-level change record remains the manager's decision.
-- [ ] `sewUp` → `SewUp.perform(at:heading:runningStitch:)`, points to the manager; `stopRunningStitch` → `wrapper.stop()`; `writeEmbroideryToFile` emits `finalizeRequested(name:)` and performs **no I/O** (milestone README deviation table; the brick stays modeled for M4/M5).
-- [ ] `assembledStream() -> EmbroideryStream` returns `manager.assembled()`.
+- [x] Per object: one `RunningStitch` wrapper and one `ActorID`; one shared `EmbroideryPatternManager`. Motion while a pattern is active builds a `NeedleUpdate` and feeds `RunningStitch.update(_:)`; each returned `StagePoint` goes to `manager.addStitch(at:layer: object.zIndex, actor:)` and emits a `stitch` event (Catroid's `Look.positionChanged() → runningStitch.update()` path).
+- [x] `runningStitch(length:)` / `zigZagStitch(length:width:)` / `tripleStitch(length:)` activate the matching engine pattern with **start = current needle position** (Catroid actions construct the stitch reading `sprite.look`). Running/triple length via `interpretInteger`, zigzag length and width via `interpretFloat` (US-202 contract).
+- [x] `stitch`: pause the wrapper → `manager.addStitch` at the needle → `setStartPosition` re-anchor → resume (Catroid `StitchAction`).
+- [x] `setThreadColor(hex:)` → `manager.setThreadColor(hexString:for:)`: invalid hex is a full no-op; before any emission it silently selects the starting color (ADR-015). Emits `colorArmed` as *intent* — the machine-level change record remains the manager's decision.
+- [x] `sewUp` → `SewUp.perform(at:heading:runningStitch:)`, points to the manager; `stopRunningStitch` → `wrapper.stop()`; `writeEmbroideryToFile` emits `finalizeRequested(name:)` and performs **no I/O** (milestone README deviation table; the brick stays modeled for M4/M5).
+- [x] `assembledStream() -> EmbroideryStream` returns `manager.assembled()`.
 
 ## Test-first plan
 1. `runningStitch(2)` + move 10 → stitches at 0, 2, …, 10 (US-107 lazy-anchor semantics), both as ordered `stitch` events and in `assembledStream()`.
