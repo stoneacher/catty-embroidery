@@ -155,6 +155,57 @@ struct StepperEmbroideryTests {
         #expect(interpreter.assembledStream().colorChangeCount == 1)
     }
 
+    @Test("setThreadColor with invalid hex is a full manager no-op yet still arms the intent event")
+    func setThreadColorInvalidHex() {
+        // The manager no-ops on malformed input (ADR-015), but colorArmed is
+        // the brick's intent and fires regardless of that decision.
+        var interpreter = interpreter([
+            .runningStitch(length: .number(2)),
+            .moveNSteps(.number(4)),
+            .setThreadColor(hex: "not-a-color"),
+            .moveNSteps(.number(4))
+        ])
+        let events = interpreter.run(maxTicks: 100)
+
+        #expect(colorArmedHexes(events) == ["not-a-color"])
+        #expect(interpreter.assembledStream().colorChangeCount == 0)
+    }
+
+    // MARK: - Formula-type contract (US-202): interpretInteger vs interpretFloat
+
+    @Test("runningStitch length comes through interpretInteger — 2.9 truncates toward zero to 2")
+    func runningStitchUsesInterpretInteger() {
+        // A whole-number literal cannot tell the contracts apart; a fractional
+        // one does. interpretInteger truncates 2.9 → 2, so the run stitches at
+        // length-2 spacing. An interpretFloat/Double regression would keep 2.9
+        // and diverge. Cross-checked against the engine pattern at length 2.
+        var interpreter = interpreter([
+            .runningStitch(length: .number(2.9)),
+            .moveNSteps(.number(10))
+        ])
+        let events = interpreter.run(maxTicks: 100)
+
+        var reference = RunningStitchPattern(length: 2, start: StagePoint(x: 0, y: 0))
+        let expected = reference.update(NeedleUpdate(position: StagePoint(x: 0, y: 10)))
+        #expect(stitchPositions(events) == expected)
+    }
+
+    @Test("zigZagStitch length and width come through interpretFloat — a fractional length is preserved")
+    func zigZagUsesInterpretFloat() {
+        // interpretFloat keeps 2.5; an interpretInteger regression would
+        // truncate to 2 and diverge. Oracle: the engine pattern fed the same
+        // fractional length/width and the same needle update.
+        var interpreter = interpreter([
+            .zigZagStitch(length: .number(2.5), width: .number(4)),
+            .moveNSteps(.number(5))
+        ])
+        let events = interpreter.run(maxTicks: 100)
+
+        var reference = ZigzagStitchPattern(length: 2.5, width: 4, start: StagePoint(x: 0, y: 0))
+        let expected = reference.update(NeedleUpdate(position: StagePoint(x: 0, y: 5), heading: 0))
+        expect(stitchPositions(events), approximates: expected)
+    }
+
     // MARK: - Item 4 — zigzag and triple activation reproduce the pattern geometry
 
     @Test("zigZagStitch activation reproduces the US-108 vertical-line geometry")

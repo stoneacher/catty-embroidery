@@ -206,10 +206,12 @@ extension Interpreter {
         case .sewUp:
             // Catroid `SewUpAction`: 5-point bar tack around the needle. The
             // engine pauses, re-anchors, and resumes the running stitch itself.
+            // Read the needle by value into locals first, so the call does not
+            // depend on argument evaluation order preceding the `inout` access.
+            let center = objects[objectIndex].needle.position
+            let heading = objects[objectIndex].needle.heading
             let points = SewUp.perform(
-                at: objects[objectIndex].needle.position,
-                heading: objects[objectIndex].needle.heading,
-                runningStitch: &objects[objectIndex].runningStitch
+                at: center, heading: heading, runningStitch: &objects[objectIndex].runningStitch
             )
             emitStitches(points, objectIndex: objectIndex, into: &events)
         case let .setThreadColor(hex):
