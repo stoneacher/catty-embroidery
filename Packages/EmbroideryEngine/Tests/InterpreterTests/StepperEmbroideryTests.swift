@@ -13,54 +13,8 @@ import Testing
 struct StepperEmbroideryTests {
     private let clock = InterpreterClock(tickDelta: 0.05)
 
-    // MARK: - Helpers
-
-    /// The stitch positions, in emission order, from an event stream.
-    private func stitchPositions(_ events: [InterpreterEvent]) -> [StagePoint] {
-        events.compactMap {
-            if case let .stitch(_, position, _) = $0 {
-                position
-            } else {
-                nil
-            }
-        }
-    }
-
-    /// The `colorArmed` hex intents, in order.
-    private func colorArmedHexes(_ events: [InterpreterEvent]) -> [String] {
-        events.compactMap {
-            if case let .colorArmed(_, hex) = $0 {
-                hex
-            } else {
-                nil
-            }
-        }
-    }
-
-    /// Approximate stage-point comparison per ADR-014 — the zigzag/sew-up
-    /// offsets go through `sin`/`cos`, whose Double results carry transcendental
-    /// dust, so exact `==` cannot hold (mirrors the engine test helper).
-    private func expect(
-        _ actual: [StagePoint],
-        approximates expected: [StagePoint],
-        tolerance: Double = 1e-9,
-        sourceLocation: SourceLocation = #_sourceLocation
-    ) {
-        guard actual.count == expected.count else {
-            Issue.record(
-                "expected \(expected.count) points \(expected), got \(actual)",
-                sourceLocation: sourceLocation
-            )
-            return
-        }
-        for (index, pair) in zip(actual, expected).enumerated() {
-            #expect(
-                abs(pair.0.x - pair.1.x) <= tolerance && abs(pair.0.y - pair.1.y) <= tolerance,
-                "point \(index): \(pair.0) !≈ \(pair.1)",
-                sourceLocation: sourceLocation
-            )
-        }
-    }
+    // Shared helpers (`stitchPositions`, `colorArmedHexes`, `expectApproximates`)
+    // live in EmbroideryStepperTestSupport.swift.
 
     private func interpreter(_ bricks: [Brick], object: Object? = nil) -> Interpreter {
         let object = object ?? Object(scripts: [Script(bricks: bricks)])
@@ -120,6 +74,51 @@ struct StepperEmbroideryTests {
 
         let rest = interpreter.run(maxTicks: 100) // move +5
         #expect(stitchPositions(rest) == [StagePoint(x: 0, y: 3), StagePoint(x: 0, y: 8)])
+    }
+
+    // MARK: - Activation reads the current needle position; every motion feeds it
+
+    @Test("a pattern activates at the current needle position, not the origin")
+    func activationReadsCurrentNeedlePosition() {
+        // Move +3 first, THEN activate: the pattern anchors at (0,3). Moving +4
+        // more measures from (0,3) → [(0,3),(0,5),(0,7)]. An activation reading
+        // the origin would instead anchor (0,0) and give [(0,0),(0,2),(0,4),(0,6)].
+        var interpreter = interpreter([
+            .moveNSteps(.number(3)),
+            .runningStitch(length: .number(2)),
+            .moveNSteps(.number(4))
+        ])
+        let events = interpreter.run(maxTicks: 100)
+        #expect(stitchPositions(events) == [
+            StagePoint(x: 0, y: 3), StagePoint(x: 0, y: 5), StagePoint(x: 0, y: 7)
+        ])
+    }
+
+    @Test("placeAt while a pattern is active feeds it too — the feed is per motion brick, not moveNSteps-only")
+    func placeAtFeedsRunningStitch() {
+        var interpreter = interpreter([
+            .runningStitch(length: .number(2)),
+            .placeAt(x: .number(0), y: .number(4))
+        ])
+        let events = interpreter.run(maxTicks: 100)
+        #expect(stitchPositions(events) == [
+            StagePoint(x: 0, y: 0), StagePoint(x: 0, y: 2), StagePoint(x: 0, y: 4)
+        ])
+    }
+
+    @Test("two scripts on one object share the running stitch — one activates, the other's motion drives it")
+    func sharedRunningStitchAcrossScripts() {
+        // Round-robin, creation order: tick 1 script A activates the pattern at
+        // (0,0), then script B moves the shared needle to (0,10) — feeding A's
+        // pattern. A per-thread wrapper would leave B's motion driving nothing.
+        let scriptA = Script(bricks: [.runningStitch(length: .number(2))])
+        let scriptB = Script(bricks: [.moveNSteps(.number(10))])
+        var interpreter = interpreter([], object: Object(scripts: [scriptA, scriptB]))
+        let events = interpreter.run(maxTicks: 100)
+        #expect(stitchPositions(events) == [
+            StagePoint(x: 0, y: 0), StagePoint(x: 0, y: 2), StagePoint(x: 0, y: 4),
+            StagePoint(x: 0, y: 6), StagePoint(x: 0, y: 8), StagePoint(x: 0, y: 10)
+        ])
     }
 
     // MARK: - Item 3 — set thread color: silent start, arm after emission (ADR-015)
@@ -190,20 +189,34 @@ struct StepperEmbroideryTests {
         #expect(stitchPositions(events) == expected)
     }
 
-    @Test("zigZagStitch length and width come through interpretFloat — a fractional length is preserved")
-    func zigZagUsesInterpretFloat() {
-        // interpretFloat keeps 2.5; an interpretInteger regression would
-        // truncate to 2 and diverge. Oracle: the engine pattern fed the same
-        // fractional length/width and the same needle update.
+    @Test("tripleStitch length comes through interpretInteger — 2.9 truncates toward zero to 2")
+    func tripleStitchUsesInterpretInteger() {
         var interpreter = interpreter([
-            .zigZagStitch(length: .number(2.5), width: .number(4)),
+            .tripleStitch(length: .number(2.9)),
+            .moveNSteps(.number(4))
+        ])
+        let events = interpreter.run(maxTicks: 100)
+
+        var reference = TripleStitchPattern(length: 2, start: StagePoint(x: 0, y: 0))
+        let expected = reference.update(NeedleUpdate(position: StagePoint(x: 0, y: 4)))
+        #expect(stitchPositions(events) == expected)
+    }
+
+    @Test("zigZagStitch length AND width come through interpretFloat — both fractional values are preserved")
+    func zigZagUsesInterpretFloat() {
+        // interpretFloat keeps 2.5 and 4.5; an interpretInteger regression on
+        // either would truncate (2, or width 4) and diverge — the fractional
+        // width shifts the perpendicular offset. Oracle: the engine pattern fed
+        // the same fractional length/width and the same needle update.
+        var interpreter = interpreter([
+            .zigZagStitch(length: .number(2.5), width: .number(4.5)),
             .moveNSteps(.number(5))
         ])
         let events = interpreter.run(maxTicks: 100)
 
-        var reference = ZigzagStitchPattern(length: 2.5, width: 4, start: StagePoint(x: 0, y: 0))
+        var reference = ZigzagStitchPattern(length: 2.5, width: 4.5, start: StagePoint(x: 0, y: 0))
         let expected = reference.update(NeedleUpdate(position: StagePoint(x: 0, y: 5), heading: 0))
-        expect(stitchPositions(events), approximates: expected)
+        expectApproximates(stitchPositions(events), expected)
     }
 
     // MARK: - Item 4 — zigzag and triple activation reproduce the pattern geometry
@@ -216,7 +229,7 @@ struct StepperEmbroideryTests {
             .moveNSteps(.number(20))
         ])
         let events = interpreter.run(maxTicks: 100)
-        expect(stitchPositions(events), approximates: [
+        expectApproximates(stitchPositions(events), [
             StagePoint(x: -2.5, y: 0), StagePoint(x: 2.5, y: 10), StagePoint(x: -2.5, y: 20)
         ])
     }
@@ -244,7 +257,7 @@ struct StepperEmbroideryTests {
         // Port of SewUp verticalSewUp: heading 0 → center/ahead/center/behind/center.
         var interpreter = interpreter([.sewUp])
         let events = interpreter.run(maxTicks: 100)
-        expect(stitchPositions(events), approximates: [
+        expectApproximates(stitchPositions(events), [
             StagePoint(x: 0, y: 0), StagePoint(x: 0, y: 3), StagePoint(x: 0, y: 0),
             StagePoint(x: 0, y: -3), StagePoint(x: 0, y: 0)
         ])
