@@ -31,7 +31,7 @@ Pull the logic that's currently inlined as one-liners in `.claude/settings.json`
 - `scripts/review/cross-vendor-review.sh <self>` — generalizes `.claude/commands/codex-review.md`'s body. Given `self` (`claude` or `codex`), shells out to the *other* vendor's headless review invocation against `git diff main...HEAD`, pointed at the same ADR-012/013/017-aware adversarial rubric used today:
   - `self=claude` → `codex exec -s read-only -C "$PWD" -o /tmp/codex-review-verdict.md "<rubric>"` (today's exact invocation, unchanged).
   - `self=codex` → `claude -p --permission-mode plan --allowedTools "Read Grep Glob Bash(git *)" "<rubric>"` (new — confirmed flags exist: `-p/--print` for non-interactive output, `--permission-mode plan` for a read-only-equivalent session, `--allowedTools` to scope it to inspection).
-  Same triage rule applies regardless of direction: ADRs are the arbiter, findings that contradict a pinned ADR are invalid, verdict gets appended to the PR description and journaled, re-review rounds run on branch changes (cap 3).
+  Same triage rule applies regardless of direction: ADRs are the arbiter, findings that contradict a pinned ADR are invalid, verdict gets appended to the PR description and journaled, re-review rounds run on branch changes (cap 5).
 
 ### 2. Claude side (adjust existing files to call the shared scripts)
 
