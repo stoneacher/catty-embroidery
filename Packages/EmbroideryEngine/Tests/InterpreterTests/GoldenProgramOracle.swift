@@ -223,6 +223,22 @@ enum GoldenSquare {
         return replayGoldenProgram(polygonOps(spec, pattern: pattern), actor: actor, layer: layer)
     }
 
+    /// The square sewn by the **second** object of a scene, the first being inert.
+    /// `ActorID` is the global object index (ADR-018), so every event must carry
+    /// `ActorID(1)` while the assembled stream is unchanged — the discriminator for
+    /// an interpreter that hardcodes actor 0 into its events (Codex US-207 round 2).
+    static let secondActor = ActorID(1)
+
+    static var secondObjectProgram: Program {
+        let stitcher = polygonProgram(spec).scenes[0].objects[0]
+        return Program(scenes: [Scene(objects: [Object(name: "inert"), stitcher])])
+    }
+
+    static var secondObjectOracle: GoldenReplay {
+        let pattern = RunningStitchPattern(length: length, start: StagePoint(x: 0, y: 0))
+        return replayGoldenProgram(polygonOps(spec, pattern: pattern), actor: secondActor, layer: layer)
+    }
+
     static var displacedOracle: GoldenReplay {
         let pattern = RunningStitchPattern(length: length, start: displacedStart)
         return replayGoldenProgram(
@@ -243,10 +259,15 @@ enum GoldenSquare {
 /// actor and layer the event carries rather than any outside knowledge.
 ///
 /// This is what makes the events a *sufficient* description of the stitch output
-/// rather than a mere side channel. It is also why a `.stitch` carrying the wrong
-/// `actor` or `layer` cannot pass: the reconstruction would arm the colour for one
-/// actor and stitch as another, or file the ops under the wrong layer, and diverge
-/// from `assembledStream()` (Codex US-207 round 1).
+/// rather than a mere side channel (Codex US-207 round 1).
+///
+/// What it does **not** discriminate, corrected in round 2: a *uniform* payload
+/// relabelling. `EmbroideryStream` keeps no absolute layer numbers, so moving every
+/// stitch event from layer 0 to layer −1 rebuilds byte-identically (one layer is
+/// still one layer), and relabelling every actor consistently keeps a one-actor
+/// stream one-actor. Those are the whole-event comparison's job. This test pins
+/// that the event stream is *sufficient*; the oracle pins that each payload is
+/// *right*.
 func streamRebuiltFromEvents(_ events: [InterpreterEvent]) -> EmbroideryStream {
     var manager = EmbroideryPatternManager()
     for event in events {

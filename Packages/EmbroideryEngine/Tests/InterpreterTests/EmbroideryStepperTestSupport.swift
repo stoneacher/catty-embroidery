@@ -35,10 +35,15 @@ func eventTags(_ events: [InterpreterEvent]) -> [String] {
     }
 }
 
-/// Exact `[StagePoint]` comparison with index-level diagnostics. Distinct from
-/// `expectApproximates`: used where both sides run the *same* engine calls with
-/// the same operands, so trig dust matches bit for bit and a tolerance would
-/// erase the very residue a golden may depend on (US-207).
+/// Zero-tolerance `[StagePoint]` comparison with index-level diagnostics. Distinct
+/// from `expectApproximates`: used where both sides run the *same* engine calls
+/// with the same operands, so trig dust agrees exactly and a tolerance would erase
+/// the very residue a golden may depend on (US-207).
+///
+/// This is `Equatable` equality, not bit-pattern identity (Codex US-207 round 2):
+/// `-0.0 == +0.0` passes and two NaNs never compare equal. Neither matters under
+/// the pinned semantics — ADR-014 rejects non-finite pattern updates, and
+/// signed-zero differences are invisible after the ×2/`javaRound` conversion.
 func expectExactlyEqual(
     _ actual: [StagePoint],
     _ expected: [StagePoint],

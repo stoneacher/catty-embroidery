@@ -153,6 +153,23 @@ struct GoldenProgramSquareTests {
         #expect(interpreter.assembledStream().firstStitchPosition == EmbroideryPoint(x: -40, y: -40))
     }
 
+    @Test("sewn by the scene's second object, every event carries ActorID(1) and the stream is unchanged")
+    func secondObjectEventsCarryItsOwnActor() {
+        // Both other goldens run as ActorID(0), so hardcoding `ActorID(0)` into
+        // `.stitch` / `.colorArmed` survived the whole suite (Codex US-207 round 2).
+        // An inert first object shifts the stitching object to global index 1
+        // (ADR-018: ActorID *is* that index), and colour state is per actor
+        // (ADR-015) — so a mislabelled actor is a real defect, not cosmetics.
+        var interpreter = Interpreter(program: GoldenSquare.secondObjectProgram, clock: clock)
+        let events = interpreter.run(maxTicks: 100)
+
+        #expect(events == GoldenSquare.secondObjectOracle.events)
+        #expect(events.first == .colorArmed(actor: GoldenSquare.secondActor, hex: GoldenSquare.hex))
+        // The inert object contributes nothing, so the machine output is identical
+        // to the single-object square — only the event labels moved.
+        #expect(recordPositions(interpreter.assembledStream()) == goldenSquareRecords)
+    }
+
     @Test("the assembled stream equals the differential engine replay")
     func assembledStreamEqualsTheEngineOracle() {
         // Structural half of the golden: whole-stream equality against a raw
