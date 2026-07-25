@@ -25,6 +25,8 @@ Where the Catroid and Catty references disagree, **ADR-012 in [DECISIONS.md](../
 
 **Milestone exit criterion**: a hardcoded "stitch a square/star" program produces the expected stitch stream in unit tests, and the interpreter is incrementally consumable — execution advances step-by-step, emits ordered needle/stitch/color events, is deterministic (golden stitch-stream tests), and takes an injected clock for time-based bricks; consuming events one tick at a time yields the same stream as batch execution. Reached at US-207, demonstrated fully at US-208.
 
+**Reached** — 2026-07-25 with US-207. The square golden lives in `Tests/InterpreterTests/GoldenProgram*.swift`: `PolygonSpec`/`polygonProgram` build the program (a compiled `repeatLoop`, not an unrolled brick list), `replayGoldenProgram` is the differential oracle over the engine primitives, and `goldenSquareRecords` / `goldenSquareTickProfile` / `goldenSquareEventTags` are the hand-derived independent half. US-208 reuses all four.
+
 ## Design summary
 
 Decided in the M2 planning session (2026-07-16; explored per the explore-before-propose practice, journal 2026-07-09) with `swift-architect`, grounded in the Catroid canonical implementation, Catty prior art, and the M1 engine API:

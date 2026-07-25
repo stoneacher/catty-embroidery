@@ -47,6 +47,8 @@ Detailed stories: [`user-stories/milestone-2/`](user-stories/milestone-2/)
 
 **Exit criterion**: a hardcoded "stitch a square/star" program produces the expected stitch stream in unit tests — still no UI — and the interpreter is **incrementally consumable**: execution advances step-by-step, emits ordered needle/stitch/color events, is deterministic (golden stitch-stream tests), and takes an injected clock for time-based bricks. Unit test: consuming events one at a time yields the same stream as batch execution.
 
+**Exit criterion met** — 2026-07-25, US-207: the hardcoded square program (`setThreadColor` → `runningStitch` → compiled `repeatLoop(4)[moveNSteps, turnRight]` → `sewUp` → `writeEmbroideryToFile`) is pinned by a hand-derived 22-record golden stream *and* a differential replay through the engine's own pattern types, with step-by-tick consumption, the 12-tick ADR-018 profile and re-run determinism all asserted. US-208 (star) demonstrates it on a second pattern type with a mid-program color change.
+
 ### M3 — Walking skeleton app (E4 + E7, thin E6)
 Minimal SwiftUI app wired end-to-end: pick a bundled sample program → run it with live stage preview (needle + stitches) → export the DST via share sheet. Proves the full thread through all layers. App-layer state uses iOS 17 `@Observable` view models on `@MainActor` (ADR-006); interpreter output reaches the preview via `AsyncStream` from the cancellable run `Task`, **batched before mutating observable state** (never one UI update per stitch); the run lifecycle is a small state enum (idle/running/finished/failed).
 
