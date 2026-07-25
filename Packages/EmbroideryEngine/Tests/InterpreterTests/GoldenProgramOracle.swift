@@ -3,9 +3,10 @@ import Interpreter
 import ProgramModel
 
 // Shared machinery for the M2 exit-criterion golden programs (US-207 square,
-// US-208 star). Free functions and file-scope constants, like
-// EmbroideryStepperTestSupport.swift, so nothing here counts toward a suite's
-// type_body_length.
+// US-208 star): program builders plus the differential replay. Nothing here is a
+// suite member, so none of it counts toward a suite's type_body_length. The
+// *independent* hand-derived half lives in GoldenSquareLiterals.swift, kept apart
+// on purpose.
 
 // MARK: - Program builders
 
@@ -16,9 +17,17 @@ struct PolygonSpec {
     var side: Double
     var turn: Double
     /// The pattern activator — `runningStitch` here, zigzag or triple in US-208.
+    ///
+    /// This and the pattern handed to `polygonOps(_:pattern:)` are two unlinked
+    /// expressions of one fact. A mismatch shows up as a red differential test
+    /// here, but US-208 must be careful: if the interpreter's `zigZagStitch`
+    /// dispatch transposed length and width *and* the oracle's pattern was
+    /// constructed with the same transposition, both halves would agree and only
+    /// the hand-derived literals would catch it (swift-code-reviewer US-207).
     var patternBrick: Brick
     var hex: String
-    var name: String
+    /// The DST design name (≤15 chars, ADR-012).
+    var designName: String
 }
 
 /// Builds the program: set a thread color, activate the pattern, walk the edges
@@ -28,8 +37,14 @@ struct PolygonSpec {
 /// The loop is deliberately expressed as `repeatLoop`/`loopEnd` (ADR-008 paired
 /// control) rather than an unrolled brick list — the golden then proves loop
 /// *compilation*, since the oracle below walks a plain Swift `for` instead.
+///
+/// `header: .whenStarted` is passed explicitly rather than relying on `Script`'s
+/// default: the hat brick is named in the story's AC, so it should be visible.
+///
+/// US-208 needs a *differing* `setThreadColor` mid-program; that will want an
+/// insertion point here and in `polygonOps` (this shape has none).
 func polygonProgram(_ spec: PolygonSpec) -> Program {
-    let script = Script(bricks: [
+    let script = Script(header: .whenStarted, bricks: [
         .setThreadColor(hex: spec.hex),
         spec.patternBrick,
         .repeatLoop(times: .number(Double(spec.sides))),
@@ -37,7 +52,7 @@ func polygonProgram(_ spec: PolygonSpec) -> Program {
         .turnRight(.number(spec.turn)),
         .loopEnd,
         .sewUp,
-        .writeEmbroideryToFile(name: spec.name)
+        .writeEmbroideryToFile(name: spec.designName)
     ])
     return Program(scenes: [Scene(objects: [Object(scripts: [script])])])
 }
@@ -51,10 +66,20 @@ func polygonOps(_ spec: PolygonSpec, pattern: any StitchPattern) -> [GoldenOp] {
         ops.append(.turn(spec.turn))
     }
     ops.append(.sewUp)
+    ops.append(.finalize(spec.designName))
     return ops
 }
 
 // MARK: - Differential oracle
+
+/// What a replay produces: the stitch points in emission order, the full expected
+/// event stream, and the assembled stream. A struct rather than a tuple so the
+/// three members stay named at every call site.
+struct GoldenReplay {
+    var points: [StagePoint]
+    var events: [InterpreterEvent]
+    var stream: EmbroideryStream
+}
 
 /// One step of a golden program, in the order the interpreter executes it.
 enum GoldenOp {
@@ -63,12 +88,15 @@ enum GoldenOp {
     case turn(Double)
     case setColor(String)
     case sewUp
+    case finalize(String)
 }
 
 /// Replays `ops` straight through the engine primitives — `VirtualNeedle`
 /// (US-204), the `RunningStitch` lifecycle wrapper and its pattern (US-107/108/
 /// 109), `SewUp` (US-109) and `EmbroideryPatternManager` (US-110) — and returns
-/// both the stitch points in emission order and the assembled stream.
+/// the stitch points in emission order, the **full expected event stream with
+/// every payload** (so a wrong `actor` or `layer` on a `.stitch` cannot slip
+/// through a positions-only comparison), and the assembled stream.
 ///
 /// This is a **differential** oracle, not an independent model: it shares the
 /// engine code with the interpreter, so it cannot catch a bug *inside* those
@@ -85,28 +113,41 @@ enum GoldenOp {
 ///   zero-distance update must produce nothing;
 /// - `NeedleUpdate` carries the heading as well as the position, because
 ///   `ZigzagStitchPattern` consumes it (US-208);
-/// - `sewUp` goes through the real `SewUp.perform(at:heading:runningStitch:)`,
-///   so the pause / re-anchor / resume seam is exercised, not simulated.
+/// - `sewUp` goes through the real `SewUp.perform(at:heading:runningStitch:)`
+///   rather than a simulated 5-point list. Note what that does *not* buy: in a
+///   program whose tack is the last stitching brick, the re-anchor is a no-op
+///   (the centre already equals the pattern anchor) and `resume()` has no
+///   following motion to affect — deleting either from `SewUp` leaves US-207
+///   green, and only `SewUpTests` catches it (swift-code-reviewer US-207,
+///   mutation-proven). Making the seam observable would need a motion brick
+///   after `sewUp`, which the story's program does not have.
 func replayGoldenProgram(
     _ ops: [GoldenOp],
     start: StagePoint = StagePoint(x: 0, y: 0),
     heading: Double = 0,
     actor: ActorID = ActorID(0),
     layer: Int = 0
-) -> (points: [StagePoint], stream: EmbroideryStream) {
+) -> GoldenReplay {
     var needle = VirtualNeedle(position: start, heading: heading)
     var wrapper = RunningStitch()
     var manager = EmbroideryPatternManager()
     var points: [StagePoint] = []
+    var events: [InterpreterEvent] = []
 
     func emit(_ produced: [StagePoint]) {
         for point in produced {
             points.append(point)
+            events.append(.stitch(actor: actor, position: point, layer: layer))
             manager.addStitch(at: point, layer: layer, actor: actor)
         }
     }
-    func feedPattern() {
-        emit(wrapper.update(NeedleUpdate(position: needle.position, heading: needle.heading)))
+    /// A motion brick emits its one `needleMoved` first, then whatever the
+    /// pattern produced from that update (`Interpreter+Step.perform`).
+    func moveAndFeed(_ mutate: (inout VirtualNeedle) -> Void) {
+        mutate(&needle)
+        let update = NeedleUpdate(position: needle.position, heading: needle.heading)
+        events.append(.needleMoved(actor: actor, update: update))
+        emit(wrapper.update(update))
     }
 
     for operation in ops {
@@ -114,18 +155,19 @@ func replayGoldenProgram(
         case let .activate(pattern):
             wrapper.activate(pattern)
         case let .move(steps):
-            needle.moveNSteps(steps)
-            feedPattern()
+            moveAndFeed { $0.moveNSteps(steps) }
         case let .turn(degrees):
-            needle.turnRight(degrees)
-            feedPattern()
+            moveAndFeed { $0.turnRight(degrees) }
         case let .setColor(hex):
             manager.setThreadColor(hexString: hex, for: actor)
+            events.append(.colorArmed(actor: actor, hex: hex))
         case .sewUp:
             emit(SewUp.perform(at: needle.position, heading: needle.heading, runningStitch: &wrapper))
+        case let .finalize(name):
+            events.append(.finalizeRequested(name: name))
         }
     }
-    return (points, manager.assembled())
+    return GoldenReplay(points: points, events: events, stream: manager.assembled())
 }
 
 // MARK: - US-207: the square
@@ -136,7 +178,7 @@ func replayGoldenProgram(
 enum GoldenSquare {
     static let length = 5.0
     static let hex = "#00ff00"
-    static let name = "square"
+    static let designName = "square"
     static let color = ThreadColor(red: 0, green: 255, blue: 0)
     static let actor = ActorID(0)
     static let layer = 0
@@ -147,87 +189,86 @@ enum GoldenSquare {
         turn: 90,
         patternBrick: .runningStitch(length: .number(length)),
         hex: hex,
-        name: name
+        designName: designName
     )
 
+    /// The program as the golden runs it: object at the stage origin, heading 0.
     static var program: Program {
         polygonProgram(spec)
     }
 
-    static var oracle: (points: [StagePoint], stream: EmbroideryStream) {
+    /// The same square sewn by an object with a non-default start state. Used to
+    /// pin the `Object` → `ObjectRuntime` seam (`startX`/`startY`/`startHeading` →
+    /// `VirtualNeedle`, `zIndex` → layer) and the claim that a pattern activates at
+    /// the *current* needle position: none of that is observable from a program
+    /// that begins at the origin facing up on layer 0 (swift-code-reviewer US-207
+    /// proved `startHeading` had no killing test anywhere in the package).
+    static let displacedStart = StagePoint(x: -20, y: -20)
+    static let displacedHeading = 90.0
+    static let displacedLayer = 3
+
+    static var displacedProgram: Program {
+        var program = polygonProgram(spec)
+        program.scenes[0].objects[0].startX = displacedStart.x
+        program.scenes[0].objects[0].startY = displacedStart.y
+        program.scenes[0].objects[0].startHeading = displacedHeading
+        program.scenes[0].objects[0].zIndex = displacedLayer
+        return program
+    }
+
+    /// Recomputed per access (a `static var`, not a `let`): parallel Swift Testing
+    /// runs must not share the replay's mutable pattern state.
+    static var oracle: GoldenReplay {
         let pattern = RunningStitchPattern(length: length, start: StagePoint(x: 0, y: 0))
         return replayGoldenProgram(polygonOps(spec, pattern: pattern), actor: actor, layer: layer)
     }
-}
 
-/// The square's stream in embroidery units, derived **by hand** from ADR-007/012
-/// geometry — the independent half of the golden, owing nothing to the replay.
-///
-/// A 20×20 stage square at length 5 is 4 intervals per side, ×2 into embroidery
-/// units → a 40×40 square walked clockwise from the origin (heading 0 is +y and
-/// `turnRight` adds): up the +y edge, right, down, back left. 17 path points (the
-/// lazy anchor plus 4 sides × 4 interpolants) then the 5-point bar tack at the
-/// closing corner, ±6 units along heading 0 — hence the y = −6 record.
-///
-/// The tack's leading centre is **not** deduped, so this list has 22 entries and
-/// not 21: see `tackCentreCarriesDust` for why.
-let goldenSquareRecords: [EmbroideryPoint] = [
-    // Side 1 — the lazy anchor, then up +y.
-    EmbroideryPoint(x: 0, y: 0), EmbroideryPoint(x: 0, y: 10),
-    EmbroideryPoint(x: 0, y: 20), EmbroideryPoint(x: 0, y: 30), EmbroideryPoint(x: 0, y: 40),
-    // Side 2 — right, +x.
-    EmbroideryPoint(x: 10, y: 40), EmbroideryPoint(x: 20, y: 40),
-    EmbroideryPoint(x: 30, y: 40), EmbroideryPoint(x: 40, y: 40),
-    // Side 3 — down, −y.
-    EmbroideryPoint(x: 40, y: 30), EmbroideryPoint(x: 40, y: 20),
-    EmbroideryPoint(x: 40, y: 10), EmbroideryPoint(x: 40, y: 0),
-    // Side 4 — left, −x, closing on the origin.
-    EmbroideryPoint(x: 30, y: 0), EmbroideryPoint(x: 20, y: 0),
-    EmbroideryPoint(x: 10, y: 0), EmbroideryPoint(x: 0, y: 0),
-    // Sew-up bar tack: centre / ahead / centre / behind / centre, heading 0.
-    EmbroideryPoint(x: 0, y: 0), EmbroideryPoint(x: 0, y: 6),
-    EmbroideryPoint(x: 0, y: 0), EmbroideryPoint(x: 0, y: -6), EmbroideryPoint(x: 0, y: 0)
-]
-
-/// Events per tick, hand-derived from ADR-018 tick accounting: `setThreadColor`
-/// (one `colorArmed`), `runningStitch` (action-consuming but event-free), then
-/// eight loop-body ticks alternating move (one `needleMoved` + its stitches) and
-/// turn (one `needleMoved`, no stitch), then `sewUp` (5 tack stitches) and
-/// `writeEmbroideryToFile` (one `finalizeRequested`).
-///
-/// Twelve entries, because `repeatLoop` / `loopEnd` are zero-tick and fold into
-/// the surrounding tick — the loop's exhaustion folds into tick 10 (the last
-/// turn), so `sewUp` runs on tick 11 rather than sharing it.
-let goldenSquareTickProfile = [1, 0, 6, 1, 5, 1, 5, 1, 5, 1, 5, 1]
-
-/// The stitch positions from an assembled stream, for golden comparison.
-func recordPositions(_ stream: EmbroideryStream) -> [EmbroideryPoint] {
-    stream.stitches.map(\.position)
-}
-
-/// Event kinds in emission order — pins the *interleaving* of motion, stitches
-/// and markers (which `stitchPositions` discards) without spelling out payloads.
-/// `needleMoved` precedes the stitches its motion produced, per `perform`.
-func eventTags(_ events: [InterpreterEvent]) -> [String] {
-    events.map {
-        switch $0 {
-        case .needleMoved: "move"
-        case .waited: "wait"
-        case .stitch: "stitch"
-        case .colorArmed: "color"
-        case .finalizeRequested: "finalize"
-        }
+    static var displacedOracle: GoldenReplay {
+        let pattern = RunningStitchPattern(length: length, start: displacedStart)
+        return replayGoldenProgram(
+            polygonOps(spec, pattern: pattern),
+            start: displacedStart,
+            heading: displacedHeading,
+            actor: actor,
+            layer: displacedLayer
+        )
     }
 }
 
-/// The square's event interleaving, hand-derived: the colour intent, then per
-/// loop iteration a move carrying its stitches followed by a stitch-free turn,
-/// then the bare 5-stitch tack and the finalize marker.
-let goldenSquareEventTags: [String] =
-    ["color"]
-        + ["move"] + Array(repeating: "stitch", count: 5) + ["move"] // side 1 + turn
-        + ["move"] + Array(repeating: "stitch", count: 4) + ["move"] // side 2 + turn
-        + ["move"] + Array(repeating: "stitch", count: 4) + ["move"] // side 3 + turn
-        + ["move"] + Array(repeating: "stitch", count: 4) + ["move"] // side 4 + turn
-        + Array(repeating: "stitch", count: 5) // sew-up bar tack
-        + ["finalize"]
+// MARK: - Consumer-side reconstruction
+
+/// Rebuilds an embroidery stream from an event sequence **alone**, the way a
+/// downstream consumer (M3's live preview, an exporter) has to: replay each
+/// `colorArmed` and `stitch` event's own payload into a fresh manager, using the
+/// actor and layer the event carries rather than any outside knowledge.
+///
+/// This is what makes the events a *sufficient* description of the stitch output
+/// rather than a mere side channel. It is also why a `.stitch` carrying the wrong
+/// `actor` or `layer` cannot pass: the reconstruction would arm the colour for one
+/// actor and stitch as another, or file the ops under the wrong layer, and diverge
+/// from `assembledStream()` (Codex US-207 round 1).
+func streamRebuiltFromEvents(_ events: [InterpreterEvent]) -> EmbroideryStream {
+    var manager = EmbroideryPatternManager()
+    for event in events {
+        switch event {
+        case let .colorArmed(actor, hex):
+            manager.setThreadColor(hexString: hex, for: actor)
+        case let .stitch(actor, position, layer):
+            manager.addStitch(at: position, layer: layer, actor: actor)
+        case .needleMoved, .waited, .finalizeRequested:
+            continue // carry no stream effect of their own
+        }
+    }
+    return manager.assembled()
+}
+
+/// The number of *action-producing* bricks in a polygon program: the colour set,
+/// the pattern activation, `sides × [move, turn]`, the tack, the finalize marker.
+/// `repeatLoop` and `loopEnd` are excluded because they are zero-tick (ADR-018) —
+/// so this is also the program's tick count, which is what makes the zero-tick
+/// bookkeeping self-documenting rather than a bare literal.
+func actionBrickCount(_ spec: PolygonSpec) -> Int {
+    // setThreadColor, the pattern activation, sewUp, writeEmbroideryToFile.
+    let fixed = 4
+    return fixed + 2 * spec.sides // move + turn per side
+}

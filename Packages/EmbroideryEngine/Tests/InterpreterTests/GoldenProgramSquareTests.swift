@@ -26,13 +26,24 @@ struct GoldenProgramSquareTests {
 
     @Test("the square's stitch events equal the engine oracle's points, exactly")
     func stitchEventsEqualTheEngineOracle() {
-        // Exact, tolerance 0 — unlike US-206's trig comparisons. The sew-up dust
-        // is real (see tackCentreCarriesDust) but the oracle issues bit-identical
-        // operations in the same order, so it matches to the last bit. A 1e-9
-        // tolerance would erase exactly the dust the dedup outcome depends on.
+        // Exact, not `expectApproximates` — unlike US-206's trig comparisons.
+        // Both sides call the same libm in the same process with the same
+        // operands, so the sin/cos dust matches bit for bit; a 1e-9 tolerance
+        // would erase exactly the residue the dedup outcome depends on (see
+        // tackCentreIsNotTheLastPathPoint). The debug-mode default also rules out
+        // LLVM constant-folding one path's trig but not the other's.
         // If this ever goes red at the 1e-16 scale, investigate the divergence —
         // do NOT loosen the comparison.
-        expectApproximates(stitchPositions(run().events), GoldenSquare.oracle.points, tolerance: 0)
+        expectExactlyEqual(stitchPositions(run().events), GoldenSquare.oracle.points)
+    }
+
+    @Test("every event matches the oracle's full payload, actor and layer included")
+    func eventPayloadsEqualTheEngineOracle() {
+        // Positions alone would let a wrong actor or layer through: emitting
+        // `.stitch(actor: ActorID(999), …, layer: -1)` while still calling
+        // `manager.addStitch` correctly keeps every position and tag intact.
+        // Comparing whole events closes that hole (Codex US-207 round 1).
+        #expect(run().events == GoldenSquare.oracle.events)
     }
 
     @Test("the event stream interleaves colour, motion, stitches and the finalize marker in order")
@@ -44,11 +55,8 @@ struct GoldenProgramSquareTests {
         #expect(eventTags(events) == goldenSquareEventTags)
         #expect(events.count == 32)
         #expect(events.first == .colorArmed(actor: GoldenSquare.actor, hex: GoldenSquare.hex))
-        #expect(events.last == .finalizeRequested(name: GoldenSquare.name))
+        #expect(events.last == .finalizeRequested(name: GoldenSquare.designName))
         #expect(colorArmedHexes(events) == [GoldenSquare.hex])
-        // Eight motion bricks (four moves, four turns); the clock is never waited on.
-        #expect(eventTags(events).filter { $0 == "move" }.count == 8)
-        #expect(!eventTags(events).contains("wait"))
     }
 
     @Test("the square walks 17 path points with its corners on the derived indices")
@@ -67,23 +75,28 @@ struct GoldenProgramSquareTests {
         ])
     }
 
-    @Test("the tack centre carries sin/cos dust, so clause A does not dedup it — 22 records, not 21")
-    func tackCentreCarriesDust() {
+    @Test("the tack centre is not the last path point, so clause A does not dedup it — 22 records, not 21")
+    func tackCentreIsNotTheLastPathPoint() {
         // The subtlest value in this suite. Side 4's last pattern point is
         // javaRounded to exactly (0, 0), but the *needle* the tack centres on is
-        // not: turn 4 leaves heading 0 exactly (270 + 90 → 360 → 0), and the
-        // fourth move added 20·cos(3π/2) = −3.674e-15 to a y of exactly 0.0,
-        // which no rounding can absorb. So `EmbroideryPatternManager` clause A
-        // sees two different StagePoints and records both — 22 ops, not 21.
-        // Pinned explicitly so the knife edge is documented, not accidental.
+        // not — and the residue is over-determined, on both axes independently
+        // (swift-code-reviewer US-207 corrected an earlier comment crediting y
+        // alone):
+        //   x: move 3 added 20·sin(π) = 2.449e-15 to 20.0, crossing half an ulp
+        //      of 20, so x ends one ulp off: 3.5527e-15. This predates move 4.
+        //   y: move 4 added 20·cos(3π/2) = −3.674e-15 to a y of exactly 0.0,
+        //      which no rounding can absorb.
+        // Either channel alone defeats clause A's exact StagePoint equality, so
+        // the manager records both points — 22 ops, not 21. Asserted as the point
+        // inequality (the necessary condition) rather than per-axis, so a future
+        // change that cleans up one axis is not a false alarm.
         let stitches = stitchPositions(run().events)
         let lastPathPoint = stitches[16]
         let tackCentre = stitches[17]
 
         #expect(lastPathPoint == StagePoint(x: 0, y: 0))
         #expect(tackCentre != StagePoint(x: 0, y: 0))
-        #expect(tackCentre.y != 0)
-        // Both convert to the same embroidery unit, hence the duplicate record.
+        // Yet both convert to the same embroidery unit, hence the duplicate record.
         #expect(EmbroideryPoint(converting: lastPathPoint) == EmbroideryPoint(converting: tackCentre))
     }
 
@@ -116,6 +129,28 @@ struct GoldenProgramSquareTests {
         #expect(stream.colorChangeCount == 0)
         // …but the colour was applied, not dropped — the discriminating half.
         #expect(Set(stream.stitches.map(\.color)) == [GoldenSquare.color])
+    }
+
+    // MARK: - The Object → ObjectRuntime seam
+
+    @Test("the same square from a displaced, rotated object on another layer tracks its start state")
+    func displacedObjectStartStateIsWiredThrough() {
+        // A golden that begins at the origin facing up on layer 0 cannot see the
+        // model→runtime seam at all: swift-code-reviewer US-207 showed that
+        // replacing `heading: object.startHeading` with `heading: 0` in
+        // Interpreter.init left all 302 tests green. Same program, same oracle —
+        // only the object's start state moves, so the expectation moves with it.
+        var interpreter = Interpreter(program: GoldenSquare.displacedProgram, clock: clock)
+        let events = interpreter.run(maxTicks: 100)
+        let oracle = GoldenSquare.displacedOracle
+
+        #expect(events == oracle.events)
+        #expect(interpreter.assembledStream() == oracle.stream)
+        // Rotated: heading 90 means the first side runs along +x, not +y.
+        #expect(stitchPositions(events).first == GoldenSquare.displacedStart)
+        #expect(stitchPositions(events)[1] == StagePoint(x: -15, y: -20))
+        // And the whole design sits in negative stage space, unlike the origin square.
+        #expect(interpreter.assembledStream().firstStitchPosition == EmbroideryPoint(x: -40, y: -40))
     }
 
     @Test("the assembled stream equals the differential engine replay")
