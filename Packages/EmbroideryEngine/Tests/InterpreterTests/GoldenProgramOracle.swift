@@ -229,9 +229,18 @@ enum GoldenSquare {
     /// an interpreter that hardcodes actor 0 into its events (Codex US-207 round 2).
     static let secondActor = ActorID(1)
 
-    static var secondObjectProgram: Program {
+    /// `inSeparateScene: false` puts the inert object and the stitcher in one
+    /// scene; `true` gives each its own scene. ADR-018 makes `ActorID` the
+    /// **global** object index in scene→object order, so both must yield
+    /// `ActorID(1)` — a regression resetting the counter per scene would only show
+    /// up in the two-scene case, and no interpreter test used a multi-scene program
+    /// before (Codex US-207 round 3).
+    static func secondObjectProgram(inSeparateScene: Bool) -> Program {
         let stitcher = polygonProgram(spec).scenes[0].objects[0]
-        return Program(scenes: [Scene(objects: [Object(name: "inert"), stitcher])])
+        let inert = Object(name: "inert")
+        return inSeparateScene
+            ? Program(scenes: [Scene(objects: [inert]), Scene(objects: [stitcher])])
+            : Program(scenes: [Scene(objects: [inert, stitcher])])
     }
 
     static var secondObjectOracle: GoldenReplay {

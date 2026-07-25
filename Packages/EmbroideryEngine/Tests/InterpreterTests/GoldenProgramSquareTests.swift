@@ -153,21 +153,34 @@ struct GoldenProgramSquareTests {
         #expect(interpreter.assembledStream().firstStitchPosition == EmbroideryPoint(x: -40, y: -40))
     }
 
-    @Test("sewn by the scene's second object, every event carries ActorID(1) and the stream is unchanged")
-    func secondObjectEventsCarryItsOwnActor() {
+    @Test(
+        "sewn as the second object, every event and the manager's colour state carry ActorID(1)",
+        arguments: [false, true]
+    )
+    func secondObjectEventsCarryItsOwnActor(inSeparateScene: Bool) {
         // Both other goldens run as ActorID(0), so hardcoding `ActorID(0)` into
-        // `.stitch` / `.colorArmed` survived the whole suite (Codex US-207 round 2).
-        // An inert first object shifts the stitching object to global index 1
-        // (ADR-018: ActorID *is* that index), and colour state is per actor
-        // (ADR-015) — so a mislabelled actor is a real defect, not cosmetics.
-        var interpreter = Interpreter(program: GoldenSquare.secondObjectProgram, clock: clock)
+        // `.stitch` / `.colorArmed` survived the whole suite (Codex round 2). An
+        // inert first object shifts the stitcher to global index 1 — and ADR-018
+        // makes that index global across *scenes*, so both arrangements must agree
+        // (Codex round 3: a per-scene counter reset would otherwise survive).
+        var interpreter = Interpreter(
+            program: GoldenSquare.secondObjectProgram(inSeparateScene: inSeparateScene),
+            clock: clock
+        )
         let events = interpreter.run(maxTicks: 100)
 
         #expect(events == GoldenSquare.secondObjectOracle.events)
         #expect(events.first == .colorArmed(actor: GoldenSquare.secondActor, hex: GoldenSquare.hex))
+        // Whole-stream equality, not just positions: colour state is per actor
+        // (ADR-015), so passing the *manager* a hardcoded actor while emitting the
+        // right `colorArmed` would leave every stitch black with the positions
+        // still correct (Codex round 3 found exactly that mutant surviving).
+        let stream = interpreter.assembledStream()
+        #expect(stream == GoldenSquare.secondObjectOracle.stream)
+        #expect(Set(stream.stitches.map(\.color)) == [GoldenSquare.color])
         // The inert object contributes nothing, so the machine output is identical
         // to the single-object square — only the event labels moved.
-        #expect(recordPositions(interpreter.assembledStream()) == goldenSquareRecords)
+        #expect(recordPositions(stream) == goldenSquareRecords)
     }
 
     @Test("the assembled stream equals the differential engine replay")
