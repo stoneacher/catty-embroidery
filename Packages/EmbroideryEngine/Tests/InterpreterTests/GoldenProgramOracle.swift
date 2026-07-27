@@ -38,12 +38,21 @@ struct PolygonSpec {
     /// for the star.
     ///
     /// This and the pattern handed to `polygonOps(_:pattern:)` are two unlinked
-    /// expressions of one fact. A mismatch shows up as a red differential test
-    /// here, but the zigzag needs more care: if the interpreter's `zigZagStitch`
-    /// dispatch transposed length and width *and* the oracle's pattern was
-    /// constructed with the same transposition, both halves would agree and only
-    /// the hand-derived literals would catch it (swift-code-reviewer US-207).
-    /// US-208 keeps `length != width` so the transposition is observable at all.
+    /// expressions of one fact, so a mismatch between them shows up as a red
+    /// differential test here. US-208 keeps `length != width` so that a
+    /// length/width transposition in the `zigZagStitch` dispatch is observable
+    /// at all — with equal values it would be invisible everywhere.
+    ///
+    /// Note what the unlinking does *not* uniquely buy, since two drafts
+    /// overstated it (Codex US-208 rounds 2–3): a transposition in the dispatch
+    /// alone is caught by the differential half too, and even a *coordinated*
+    /// one — dispatch and oracle constructor together — is caught by the
+    /// structural assertions, because 20/4 and 20/5 are different interval
+    /// counts, so the per-side and event totals move. What the hand-derived
+    /// literals uniquely caught, mutation-measured in US-208, are the four
+    /// pattern-internal errors the differential half mirrors: anchor emitted raw
+    /// instead of offset, `direction` reset per update, interior midpoints not
+    /// `javaRound`ed, and the final clamp rounded instead of raw.
     var patternBrick: Brick
     var hex: String
     /// The DST design name (≤15 chars, ADR-012).
@@ -76,7 +85,18 @@ func polygonProgram(_ spec: PolygonSpec) -> Program {
     if let midColor = spec.midColor {
         // Both invariants below are load-bearing for ADR-015; nothing downstream
         // would fail loudly if they were violated, so fail here instead.
-        precondition(midColor.hex != spec.hex, "a same-colour set is an ADR-015 no-op and arms nothing")
+        //
+        // Compared as parsed colours, not as strings: "#ff0000" and "#FF0000"
+        // differ as text but are the same `ThreadColor`, so a string comparison
+        // would pass while ADR-015 armed nothing. A hex that fails to parse is
+        // the same failure by another route — malformed input is a full no-op
+        // (ADR-015) (Codex US-208 round 3).
+        let midThreadColor = ThreadColor(hexString: midColor.hex)
+        precondition(midThreadColor != nil, "a malformed hex is an ADR-015 no-op and arms nothing")
+        precondition(
+            midThreadColor != ThreadColor(hexString: spec.hex),
+            "a same-colour set is an ADR-015 no-op and arms nothing"
+        )
         precondition((1 ..< spec.sides).contains(midColor.afterSides), "the colour set must fall between sides")
         bricks += walkLoop(sides: midColor.afterSides, spec: spec)
         bricks.append(.setThreadColor(hex: midColor.hex))

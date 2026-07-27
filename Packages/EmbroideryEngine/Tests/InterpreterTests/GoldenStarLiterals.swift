@@ -6,15 +6,14 @@ import EmbroideryEngine
 // `replayGoldenProgram`. Kept in its own file for the same reason as the
 // square's — a later "simplification" that computed these from the replay would
 // collapse the two golden halves into one, and the zigzag makes that collapse
-// especially costly: `PolygonSpec.patternBrick` and the pattern handed to
-// `polygonOps` are two unlinked expressions of one fact. To be precise about
-// what that buys, since an earlier draft overstated it (Codex US-208 round 2):
-// a transposition in the `zigZagStitch` *dispatch* alone disagrees with the
-// oracle too, because the oracle constructs `ZigzagStitchPattern(length: 5,
-// width: 4)` directly — mutation-checked, it takes twelve star tests red across
-// both halves. What only these literals could catch is a **coordinated**
-// transposition, in the dispatch and in the oracle's constructor together,
-// which is exactly the shape a careless "fix the failing oracle" would take.
+// costly. What these literals uniquely caught, measured by mutation rather than
+// asserted (two earlier drafts overstated this — Codex US-208 rounds 2–3), are
+// the four errors *inside* the pattern that the differential half mirrors and so
+// cannot see: the anchor emitted raw instead of offset, `direction` reset per
+// update, interior midpoints not `javaRound`ed, and the final clamp rounded
+// instead of raw. Each takes this table red while every differential assertion
+// stays green. A length/width transposition is *not* in that set — it is caught
+// by the differential half and by the structural counts as well.
 //
 // # The derivation, once
 //
