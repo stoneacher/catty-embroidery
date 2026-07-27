@@ -15,18 +15,35 @@ import ProgramModel
 ///
 /// - **`side: 20`, `length: 5` — the square's, deliberately.** Holding them
 ///   fixed isolates what US-208 actually adds: the turn, the pattern and the
-///   colour change. It is also not a free choice. A star's move directions are
-///   irrational, so `hypot` need not return the nominal side, and the pattern
-///   measures from its previous *clamped* anchor rather than from the needle's
-///   previous position — an ulp short of a whole multiple of `length` costs the
-///   side an entire interval and leaves the anchor a length behind, compounding
-///   over the rest of the walk. Plenty of plausible pairs land there (side 30 at
-///   length 5 yields `[6, 6, 6, 5, 5]`); 20 at 5 gives a clean `[4, 4, 4, 4, 4]`.
-///   `starParametersAvoidTheIntervalCliff` pins both halves of that.
+///   colour change.
+///
+///   It is *not* a safe choice, and the earlier version of this comment claiming
+///   it "avoids the cliff" was wrong (swift-code-reviewer US-208). A pentagram's
+///   move directions are irrational, so a side whose nominal length is a whole
+///   multiple of `length` sits exactly **on** the interval boundary and the last
+///   bit of `hypot` decides the emission structure. Side 4's exact distance from
+///   the anchor is 19.999999999999998122…, i.e. 1.878e-15 short of 20 — past the
+///   half-ulp boundary by a mere 1e-16. Darwin's `hypot` is 0.53 ulp high here
+///   and returns 20.0, giving 4 intervals; a correctly rounded `hypot` (glibc
+///   ≥ 2.35, Python ≥ 3.8) returns 19.999999999999996 and gives 3, which
+///   deforms the whole design. **This golden is therefore pinned to Apple
+///   platforms' libm**, which today is the package's only deployment target and
+///   its only CI, but is a latent trap for a Linux SwiftPM job.
+///
+///   No integer `side / length` ratio escapes this — the boundary is where the
+///   ratio puts it. A ratio with real margin would decouple the anchor from the
+///   vertices and make the hand derivation far harder, which is the trade-off
+///   not taken here. `theGoldenDependsOnLibmRoundingOfHypot` measures the
+///   distances directly, so a platform or toolchain move names its own cause
+///   rather than leaving a dozen unexplained golden diffs.
 /// - **`length: 5` ≠ `width: 4`.** Equal values would make a length/width
 ///   transposition in the `zigZagStitch` dispatch unobservable — see
-///   `PolygonSpec.patternBrick`. Both are `Float`-exact, which matters because
-///   the dispatch reads them through `interpretFloat` before widening.
+///   `PolygonSpec.patternBrick`. Both are `Float`-exact, so nothing is lost on
+///   the way through the dispatch's `interpretFloat`. That is a precondition of
+///   this golden, not coverage of that seam: with integral values the
+///   `interpretFloat` and `interpretInteger` paths are indistinguishable here,
+///   and US-206's `zigZagStitch length AND width come through interpretFloat`
+///   is what actually pins it (swift-code-reviewer US-208, mutation-proven).
 /// - **Two sides before the colour change.** Enough that stitches exist when the
 ///   set happens, so ADR-015 arms a change instead of silently choosing the
 ///   starting colour, as it does for the leading set.
@@ -37,10 +54,10 @@ enum GoldenStar {
     static let length = 5.0
     static let width = 4.0
     /// Catroid's `BrickValues.THREAD_COLOR` default, then a differing blue.
-    static let startHex = "#ff0000"
-    static let midHex = "#0000ff"
-    static let startColor = ThreadColor(red: 255, green: 0, blue: 0)
-    static let midThreadColor = ThreadColor(red: 0, green: 0, blue: 255)
+    static let firstHex = "#ff0000"
+    static let secondHex = "#0000ff"
+    static let firstColor = ThreadColor(red: 255, green: 0, blue: 0)
+    static let secondColor = ThreadColor(red: 0, green: 0, blue: 255)
     static let sidesBeforeColorChange = 2
     static let designName = "star"
     static let actor = ActorID(0)
@@ -51,9 +68,9 @@ enum GoldenStar {
         side: side,
         turn: turn,
         patternBrick: .zigZagStitch(length: .number(length), width: .number(width)),
-        hex: startHex,
+        hex: firstHex,
         designName: designName,
-        midColor: MidProgramColor(hex: midHex, afterSides: sidesBeforeColorChange)
+        midColor: MidProgramColor(hex: secondHex, afterSides: sidesBeforeColorChange)
     )
 
     static var program: Program {

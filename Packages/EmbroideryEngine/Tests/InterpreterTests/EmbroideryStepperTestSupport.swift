@@ -61,6 +61,17 @@ func expectExactlyEqual(
     }
 }
 
+/// Drives `interpreter` one tick at a time to completion, returning each tick's
+/// batch separately so the per-tick profile stays assertable. Program-agnostic,
+/// so it is shared by every golden-program consumption suite (US-207, US-208).
+func stepToCompletion(_ interpreter: inout Interpreter) -> [[InterpreterEvent]] {
+    var batches: [[InterpreterEvent]] = []
+    while case let .ticked(batch) = interpreter.step() {
+        batches.append(batch)
+    }
+    return batches
+}
+
 /// The `colorArmed` hex intents, in order.
 func colorArmedHexes(_ events: [InterpreterEvent]) -> [String] {
     events.compactMap {

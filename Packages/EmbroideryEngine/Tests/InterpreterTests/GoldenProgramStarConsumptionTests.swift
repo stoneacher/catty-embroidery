@@ -19,16 +19,6 @@ struct GoldenProgramStarConsumptionTests {
         Interpreter(program: GoldenStar.program, clock: clock)
     }
 
-    /// Drives `interpreter` one tick at a time to completion, returning each
-    /// tick's batch separately so the per-tick profile stays assertable.
-    private func stepToCompletion(_ interpreter: inout Interpreter) -> [[InterpreterEvent]] {
-        var batches: [[InterpreterEvent]] = []
-        while case let .ticked(batch) = interpreter.step() {
-            batches.append(batch)
-        }
-        return batches
-    }
-
     // MARK: - Incremental consumption equals batch execution
 
     @Test("stepping one tick at a time yields the identical events and stream as run()")
@@ -57,7 +47,7 @@ struct GoldenProgramStarConsumptionTests {
         #expect(rebuilt == stepped.assembledStream())
         #expect(recordPositions(rebuilt) == goldenStarRecords)
         #expect(rebuilt.colorChangeCount == 1)
-        #expect(Set(rebuilt.stitches.map(\.color)) == [GoldenStar.startColor, GoldenStar.midThreadColor])
+        #expect(Set(rebuilt.stitches.map(\.color)) == [GoldenStar.firstColor, GoldenStar.secondColor])
     }
 
     @Test("the star occupies exactly fifteen ticks with the derived per-tick event profile")
@@ -105,7 +95,7 @@ struct GoldenProgramStarConsumptionTests {
         #expect(recordPositions(midRun) == Array(goldenStarRecords.prefix(5)))
         // Stopped before the second colour set, so no change has been armed yet.
         #expect(midRun.colorChangeCount == 0)
-        #expect(Set(midRun.stitches.map(\.color)) == [GoldenStar.startColor])
+        #expect(Set(midRun.stitches.map(\.color)) == [GoldenStar.firstColor])
         // Pure: asking twice changes nothing.
         #expect(interpreter.assembledStream() == midRun)
     }

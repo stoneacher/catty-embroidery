@@ -48,18 +48,18 @@ struct GoldenProgramStarTests {
 
         #expect(eventTags(events) == goldenStarEventTags)
         #expect(events.count == 39)
-        #expect(events.first == .colorArmed(actor: GoldenStar.actor, hex: GoldenStar.startHex))
+        #expect(events.first == .colorArmed(actor: GoldenStar.actor, hex: GoldenStar.firstHex))
         #expect(events.last == .finalizeRequested(name: GoldenStar.designName))
         // Both intents, in order, each emitted exactly once — the second loop's
         // colour brick is outside its body, so it does not repeat per iteration.
-        #expect(colorArmedHexes(events) == [GoldenStar.startHex, GoldenStar.midHex])
+        #expect(colorArmedHexes(events) == [GoldenStar.firstHex, GoldenStar.secondHex])
     }
 
     @Test("the star walks 21 path points, five on the first side and four on each of the rest")
-    func perSideStitchCountsMatchTheZigzagOracle() {
-        // Geometry only, no engine: 20 stage units at length 5 is 4 whole
-        // intervals per side. Side 1 carries one extra point — the lazily
-        // emitted anchor (offset, unlike the running stitch's raw one).
+    func eachSideCarriesItsOwnStitchesAndEachTurnNone() {
+        // 20 stage units at length 5 is 4 whole intervals per side. Side 1
+        // carries one extra point — the lazily emitted anchor (offset, unlike
+        // the running stitch's raw one).
         let events = run().events
         let path = stitchPositions(events).dropLast(5)
         #expect(path.count == 21)
@@ -69,10 +69,10 @@ struct GoldenProgramStarTests {
         // carries none (its zero-distance update is rejected by the pattern's
         // `distance >= length` guard).
         var perMotion: [Int] = []
-        for tag in eventTags(events).dropLast(6) {
+        for tag in eventTags(events).dropLast(6) where tag != "color" {
             if tag == "move" {
                 perMotion.append(0)
-            } else if tag == "stitch", !perMotion.isEmpty {
+            } else {
                 perMotion[perMotion.count - 1] += 1
             }
         }
@@ -104,39 +104,46 @@ struct GoldenProgramStarTests {
         #expect(closing.position != StagePoint(x: 0, y: 0))
     }
 
-    @Test("a star's side length can silently cost it an interval — these parameters do not")
-    func starParametersAvoidTheIntervalCliff() {
-        /// A characterization test, not a golden: it records the constraint that
-        /// chose `GoldenStar.side`/`length`, so a later "rounder numbers" tidy-up
-        /// fails loudly instead of silently deforming the design. A consequence
-        /// of ADR-014's Double pattern arithmetic, not a new decision.
-        ///
-        /// The measurement that matters is the pattern's, not the needle's: it
-        /// measures from its previous **clamped anchor**, so a short side does not
-        /// just lose its own interval, it leaves the anchor behind and the deficit
-        /// compounds. Walking the anchor chain is the whole point of this helper —
-        /// needle-to-needle distances are all exactly `side` and would show nothing.
-        func intervalsPerSide(side: Double, length: Double) -> [Double] {
+    /// A tripwire, not a golden. A pentagram's directions are irrational, so a
+    /// side whose nominal length is a whole multiple of the stitch length sits
+    /// exactly **on** the pattern's interval boundary, and the last bit of
+    /// `hypot` decides how many stitches the side emits.
+    ///
+    /// Side 4 is that side. Its exact length is 19.999999999999998122…, i.e.
+    /// 1.878e-15 below 20 — past the half-ulp boundary (1.776e-15) by 1e-16.
+    /// Darwin's `hypot` is 0.53 ulp high and returns 20.0; a correctly rounded
+    /// one (glibc ≥ 2.35, Python ≥ 3.8) returns 19.999999999999996, which costs
+    /// side 4 an interval, leaves the anchor 5 units behind and deforms sides 4
+    /// and 5. Every literal in `GoldenStarLiterals` depends on that rounding, so
+    /// this test exists to name the cause legibly when the platform's libm
+    /// changes, instead of leaving a dozen unexplained golden diffs
+    /// (swift-code-reviewer US-208).
+    ///
+    /// The needle's own step-to-step distance is the quantity the pattern
+    /// measures only because the anchor tracks the vertices exactly — which is
+    /// what whole-multiple distances establish in the first place, and what
+    /// `eachSideCarriesItsOwnStitchesAndEachTurnNone` confirms through the real
+    /// `ZigzagStitchPattern`.
+    @Test("the golden's structure rests on libm's rounding of one hypot, so pin that hypot")
+    func theGoldenDependsOnLibmRoundingOfHypot() {
+        func sideDistances(side: Double) -> [Double] {
             var needle = VirtualNeedle()
-            var anchor = StagePoint(x: 0, y: 0)
+            var previous = needle.position
             return (0 ..< GoldenStar.sides).map { _ in
                 needle.moveNSteps(side)
-                let dx = needle.position.x - anchor.x
-                let dy = needle.position.y - anchor.y
-                let distance = hypot(dx, dy)
-                let remainder = distance.truncatingRemainder(dividingBy: length)
-                let surplus = (distance - remainder) / distance
-                anchor = StagePoint(x: anchor.x + surplus * dx, y: anchor.y + surplus * dy)
+                let distance = hypot(needle.position.x - previous.x, needle.position.y - previous.y)
+                previous = needle.position
                 needle.turnRight(GoldenStar.turn)
-                return ((distance - remainder) / length).rounded(.down)
+                return distance
             }
         }
-        // The chosen parameters: every side measures a whole number of intervals.
-        #expect(intervalsPerSide(side: GoldenStar.side, length: GoldenStar.length) == [4, 4, 4, 4, 4])
-        // Side 30 at the same length is the trap — an equally plausible choice
-        // whose fourth move measures 29.999999999999996 from the anchor, so the
-        // last two sides emit five interpolants where six were intended.
-        #expect(intervalsPerSide(side: 30, length: GoldenStar.length) == [6, 6, 6, 5, 5])
+        #expect(sideDistances(side: GoldenStar.side) == Array(repeating: 20, count: GoldenStar.sides))
+
+        // The same computation one side length away, to show the boundary is real
+        // and not an artifact of this test: at side 30 the fourth side falls the
+        // other way, and no choice of an integer side/length ratio escapes the
+        // boundary — it is where the ratio puts it.
+        #expect(sideDistances(side: 30) == [30, 30, 30, 29.999999999999996, 30])
     }
 
     // MARK: - Item 2 — golden assembled stream
@@ -178,19 +185,23 @@ struct GoldenProgramStarTests {
         // Both colours were actually applied — the discriminating half, since a
         // manager that dropped the second set would keep every position intact.
         let colors = stream.stitches.map(\.color)
-        #expect(colors.prefix(goldenStarColorChangeIndex).allSatisfy { $0 == GoldenStar.startColor })
-        #expect(colors.dropFirst(goldenStarColorChangeIndex).allSatisfy { $0 == GoldenStar.midThreadColor })
-        #expect(Set(colors) == [GoldenStar.startColor, GoldenStar.midThreadColor])
+        #expect(colors.prefix(goldenStarColorChangeIndex).allSatisfy { $0 == GoldenStar.firstColor })
+        #expect(colors.dropFirst(goldenStarColorChangeIndex).allSatisfy { $0 == GoldenStar.secondColor })
+        #expect(Set(colors) == [GoldenStar.firstColor, GoldenStar.secondColor])
     }
 
     @Test("one change means the DST header declares two colour blocks: CO = changes + 1")
-    func headerDeclaresTwoColorBlocks() throws {
+    func headerDeclaresTwoColorBlocks() {
         // The AC's "at the header level", taken literally, without straying into
         // US-209's pattern→stream→bytes scope: only the CO field is read.
         let header = DSTHeader(stream: run().stream, name: GoldenStar.designName)
-        let tag = Array("CO:".utf8)
-        let start = try #require(header.bytes.firstRange(of: tag)?.upperBound)
-        // `appendField` writes the value then NUL-pads to the 2-byte field.
-        #expect(Array(header.bytes[start ..< start + 2]) == Array("2".utf8) + [0x00])
+        // At a fixed offset rather than by searching for "CO:", which would also
+        // match a design name containing it: `appendField` writes `TAG:` + value
+        // + padding + \n + 0x1A, so LA occupies 3 + 15 + 2 = 20 bytes and ST the
+        // next 3 + 6 + 2 = 11, putting CO's tag at byte 31.
+        let coField = 31
+        #expect(Array(header.bytes[coField ..< coField + 3]) == Array("CO:".utf8))
+        // The value, then the NUL padding to the 2-byte field.
+        #expect(Array(header.bytes[coField + 3 ..< coField + 5]) == Array("2".utf8) + [0x00])
     }
 }

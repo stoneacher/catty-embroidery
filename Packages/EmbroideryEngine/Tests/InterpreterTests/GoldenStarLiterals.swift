@@ -57,7 +57,13 @@ import EmbroideryEngine
 /// last path point is offset to (3, −2), nowhere near the tack centre, so all 26
 /// entries are distinct emissions. Repeated *values* do occur — the pentagram
 /// crosses itself, so e.g. (15, 14) appears three times — but never on
-/// consecutive records, which is what clause A would dedup.
+/// consecutive records.
+///
+/// Which is more than clause A needs either way: it compares **stage** points
+/// exactly, not these embroidery units, so consecutive records with equal units
+/// are not deduped at all — the square's two surviving consecutive (0, 0)
+/// records are exactly that case (`tackCentreIsNotTheLastPathPoint`). The star
+/// happens to be free of repeats in both spaces.
 let goldenStarRecords: [EmbroideryPoint] = [
     // Side 1, heading 0° — offset anchor, three interior points, the V1 clamp.
     // Offset ±(2, 0) stage = ±(4, 0) units, so x alternates while y climbs by 10.
@@ -95,8 +101,15 @@ let goldenStarColorChangeIndex = 9
 ///
 /// Fifteen entries — one per *action* brick. As in US-207 that equality is the
 /// observable consequence of `repeatLoop`/`loopEnd` being zero-tick (ADR-018),
-/// but here it spans **two** loops: eight bookkeeping steps across two separate
-/// counters still cost nothing.
+/// and here it spans **two** loops: eight bookkeeping steps across two loops
+/// still cost nothing.
+///
+/// Carrying over `goldenSquareTickProfile`'s caveat, which still applies and
+/// which doubling the loops did **not** weaken: this profile pins the composed
+/// shape, not ADR-018's fold-vs-yield or one-iteration-per-tick mechanisms. A
+/// loop whose body starts with an action brick cannot discriminate those, and a
+/// mutation making `loopEnd` consume a tick survives all fifteen of these ticks
+/// — `StepperLoopTests` owns it (swift-code-reviewer US-208, mutation-proven).
 let goldenStarTickProfile: [Int] = [1, 0, 6, 1, 5, 1, 1, 5, 1, 5, 1, 5, 1, 5, 1]
 
 /// The star's event interleaving. Side 1 carries one stitch more than the rest

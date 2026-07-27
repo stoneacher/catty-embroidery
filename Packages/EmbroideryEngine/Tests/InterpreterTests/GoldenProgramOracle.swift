@@ -17,13 +17,14 @@ import ProgramModel
 /// A second `setThreadColor` executed partway through the walk (US-208). It sits
 /// *between* two `repeatLoop`s rather than inside one body, so it executes
 /// exactly once and the colour partition of the stream is unambiguous.
+/// Both fields carry invariants `polygonProgram` asserts: the hex must differ
+/// from `PolygonSpec.hex` (ADR-015 makes a same-colour set a no-op that arms
+/// nothing), and `afterSides` must fall strictly inside the walk — 0 would put
+/// the set before any emission, where ADR-015's silent-start branch swallows it,
+/// and `sides` would build an inert `repeatLoop(0)` second loop.
 struct MidProgramColor {
-    /// The new hex. Must differ from `PolygonSpec.hex`, or ADR-015's
-    /// same-colour branch makes the set a no-op and no change is ever armed.
     var hex: String
     /// How many sides the first loop walks; the second loop walks the rest.
-    /// Must be ≥ 1, or the set happens before any emission and ADR-015's
-    /// silent-start branch swallows it instead of arming a change.
     var afterSides: Int
 }
 
@@ -63,13 +64,20 @@ struct PolygonSpec {
 /// default: the hat brick is named in the story's AC, so it should be visible.
 ///
 /// A `spec.midColor` splits the walk into **two** compiled loops with the colour
-/// brick between them (US-208). That is more than a place to hang the brick: the
-/// second `repeatLoop` proves loop counters are keyed per loop and that a later
-/// loop re-initializes independently of an exhausted earlier one, which a
-/// single-loop program cannot show.
+/// brick between them (US-208), which is the only shape that executes the brick
+/// exactly once and so partitions the stream unambiguously by colour. It gives
+/// the compiler a second, independently counted loop, but claim nothing more
+/// than that: the two loops are *sequential* and `enterRepeat` clears a counter
+/// on exhaustion, so keying `loopCounters` globally instead of per loop pointer
+/// behaves identically here. Only *nesting* discriminates the keying, and
+/// `StepperLoopTests` owns that (swift-code-reviewer US-208, mutation-proven).
 func polygonProgram(_ spec: PolygonSpec) -> Program {
     var bricks: [Brick] = [.setThreadColor(hex: spec.hex), spec.patternBrick]
     if let midColor = spec.midColor {
+        // Both invariants below are load-bearing for ADR-015; nothing downstream
+        // would fail loudly if they were violated, so fail here instead.
+        precondition(midColor.hex != spec.hex, "a same-colour set is an ADR-015 no-op and arms nothing")
+        precondition((1 ..< spec.sides).contains(midColor.afterSides), "the colour set must fall between sides")
         bricks += walkLoop(sides: midColor.afterSides, spec: spec)
         bricks.append(.setThreadColor(hex: midColor.hex))
         bricks += walkLoop(sides: spec.sides - midColor.afterSides, spec: spec)
