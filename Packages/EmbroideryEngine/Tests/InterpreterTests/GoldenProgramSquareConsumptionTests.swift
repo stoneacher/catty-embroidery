@@ -15,16 +15,6 @@ struct GoldenProgramSquareConsumptionTests {
         Interpreter(program: GoldenSquare.program, clock: clock)
     }
 
-    /// Drives `interpreter` one tick at a time to completion, returning each
-    /// tick's batch separately so the per-tick profile stays assertable.
-    private func stepToCompletion(_ interpreter: inout Interpreter) -> [[InterpreterEvent]] {
-        var batches: [[InterpreterEvent]] = []
-        while case let .ticked(batch) = interpreter.step() {
-            batches.append(batch)
-        }
-        return batches
-    }
-
     // MARK: - Item 3 — incremental consumption equals batch execution
 
     @Test("stepping one tick at a time yields the identical events and stream as run()")

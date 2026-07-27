@@ -4,11 +4,29 @@ import ProgramModel
 
 // Shared machinery for the M2 exit-criterion golden programs (US-207 square,
 // US-208 star): program builders plus the differential replay. Nothing here is a
-// suite member, so none of it counts toward a suite's type_body_length. The
-// *independent* hand-derived half lives in GoldenSquareLiterals.swift, kept apart
-// on purpose.
+// suite member, so none of it counts toward a suite's type_body_length.
+//
+// Each program contributes two more files, kept apart on purpose:
+// `Golden<Name>Oracle` binds this machinery to that program's parameters, and
+// `Golden<Name>Literals` holds the hand-derived expectations that owe nothing to
+// this replay. Collapsing a literals file into its oracle would turn a
+// two-sided golden into a one-sided one.
 
 // MARK: - Program builders
+
+/// A second `setThreadColor` executed partway through the walk (US-208). It sits
+/// *between* two `repeatLoop`s rather than inside one body, so it executes
+/// exactly once and the colour partition of the stream is unambiguous.
+/// Both fields carry invariants `polygonProgram` asserts: the hex must differ
+/// from `PolygonSpec.hex` (ADR-015 makes a same-colour set a no-op that arms
+/// nothing), and `afterSides` must fall strictly inside the walk — 0 would put
+/// the set before any emission, where ADR-015's silent-start branch swallows it,
+/// and `sides` would build an inert `repeatLoop(0)` second loop.
+struct MidProgramColor {
+    var hex: String
+    /// How many sides the first loop walks; the second loop walks the rest.
+    var afterSides: Int
+}
 
 /// The shape of a closed regular-polygon embroidery program: `sides: 4, turn: 90`
 /// is US-207's square, `sides: 5, turn: 144` US-208's star.
@@ -16,18 +34,31 @@ struct PolygonSpec {
     var sides: Int
     var side: Double
     var turn: Double
-    /// The pattern activator — `runningStitch` here, zigzag or triple in US-208.
+    /// The pattern activator — `runningStitch` for the square, `zigZagStitch`
+    /// for the star.
     ///
     /// This and the pattern handed to `polygonOps(_:pattern:)` are two unlinked
-    /// expressions of one fact. A mismatch shows up as a red differential test
-    /// here, but US-208 must be careful: if the interpreter's `zigZagStitch`
-    /// dispatch transposed length and width *and* the oracle's pattern was
-    /// constructed with the same transposition, both halves would agree and only
-    /// the hand-derived literals would catch it (swift-code-reviewer US-207).
+    /// expressions of one fact, so a mismatch between them shows up as a red
+    /// differential test here. US-208 keeps `length != width` so that a
+    /// length/width transposition in the `zigZagStitch` dispatch is observable
+    /// at all — with equal values it would be invisible everywhere.
+    ///
+    /// Note what the unlinking does *not* uniquely buy, since two drafts
+    /// overstated it (Codex US-208 rounds 2–3): a transposition in the dispatch
+    /// alone is caught by the differential half too, and even a *coordinated*
+    /// one — dispatch and oracle constructor together — is caught by the
+    /// structural assertions, because 20/4 and 20/5 are different interval
+    /// counts, so the per-side and event totals move. What the hand-derived
+    /// literals uniquely caught, mutation-measured in US-208, are the four
+    /// pattern-internal errors the differential half mirrors: anchor emitted raw
+    /// instead of offset, `direction` reset per update, interior midpoints not
+    /// `javaRound`ed, and the final clamp rounded instead of raw.
     var patternBrick: Brick
     var hex: String
     /// The DST design name (≤15 chars, ADR-012).
     var designName: String
+    /// Absent for a single-colour, single-loop walk (US-207's square).
+    var midColor: MidProgramColor?
 }
 
 /// Builds the program: set a thread color, activate the pattern, walk the edges
@@ -41,27 +72,67 @@ struct PolygonSpec {
 /// `header: .whenStarted` is passed explicitly rather than relying on `Script`'s
 /// default: the hat brick is named in the story's AC, so it should be visible.
 ///
-/// US-208 needs a *differing* `setThreadColor` mid-program; that will want an
-/// insertion point here and in `polygonOps` (this shape has none).
+/// A `spec.midColor` splits the walk into **two** compiled loops with the colour
+/// brick between them (US-208), which is the only shape that executes the brick
+/// exactly once and so partitions the stream unambiguously by colour. It gives
+/// the compiler a second, independently counted loop, but claim nothing more
+/// than that: the two loops are *sequential* and `enterRepeat` clears a counter
+/// on exhaustion, so keying `loopCounters` globally instead of per loop pointer
+/// behaves identically here. Only *nesting* discriminates the keying, and
+/// `StepperLoopTests` owns that (swift-code-reviewer US-208, mutation-proven).
 func polygonProgram(_ spec: PolygonSpec) -> Program {
-    let script = Script(header: .whenStarted, bricks: [
-        .setThreadColor(hex: spec.hex),
-        spec.patternBrick,
-        .repeatLoop(times: .number(Double(spec.sides))),
+    var bricks: [Brick] = [.setThreadColor(hex: spec.hex), spec.patternBrick]
+    if let midColor = spec.midColor {
+        // Both invariants below are load-bearing for ADR-015; nothing downstream
+        // would fail loudly if they were violated, so fail here instead.
+        //
+        // Compared as parsed colours, not as strings: "#ff0000" and "#FF0000"
+        // differ as text but are the same `ThreadColor`, so a string comparison
+        // would pass while ADR-015 armed nothing. A hex that fails to parse is
+        // the same failure by another route — malformed input is a full no-op
+        // (ADR-015) (Codex US-208 round 3).
+        // Both parses must succeed, not just the mid one: an unparseable
+        // *starting* hex would leave `firstColor` nil, and comparing a valid
+        // colour against nil passes while the leading set silently does nothing
+        // (Codex US-208 round 4).
+        guard let firstColor = ThreadColor(hexString: spec.hex),
+              let midThreadColor = ThreadColor(hexString: midColor.hex)
+        else {
+            preconditionFailure("a malformed hex is an ADR-015 no-op and arms nothing")
+        }
+        precondition(midThreadColor != firstColor, "a same-colour set is an ADR-015 no-op and arms nothing")
+        precondition((1 ..< spec.sides).contains(midColor.afterSides), "the colour set must fall between sides")
+        bricks += walkLoop(sides: midColor.afterSides, spec: spec)
+        bricks.append(.setThreadColor(hex: midColor.hex))
+        bricks += walkLoop(sides: spec.sides - midColor.afterSides, spec: spec)
+    } else {
+        bricks += walkLoop(sides: spec.sides, spec: spec)
+    }
+    bricks += [.sewUp, .writeEmbroideryToFile(name: spec.designName)]
+    return Program(scenes: [Scene(objects: [Object(scripts: [Script(header: .whenStarted, bricks: bricks)])])])
+}
+
+/// One `repeatLoop`/`loopEnd` pair walking `sides` edges (ADR-008 paired control,
+/// deliberately not an unrolled brick list — the golden then proves loop
+/// *compilation*, since the oracle walks a plain Swift `for` instead).
+private func walkLoop(sides: Int, spec: PolygonSpec) -> [Brick] {
+    [
+        .repeatLoop(times: .number(Double(sides))),
         .moveNSteps(.number(spec.side)),
         .turnRight(.number(spec.turn)),
-        .loopEnd,
-        .sewUp,
-        .writeEmbroideryToFile(name: spec.designName)
-    ])
-    return Program(scenes: [Scene(objects: [Object(scripts: [script])])])
+        .loopEnd
+    ]
 }
 
 /// The matching `GoldenOp` script — the same walk, minus every interpreter
-/// concern: no compiled loop, just a Swift `for`.
+/// concern: no compiled loop, just a Swift `for`, and the mid-program colour
+/// dropped in by counting sides rather than by compiling a second loop.
 func polygonOps(_ spec: PolygonSpec, pattern: any StitchPattern) -> [GoldenOp] {
     var ops: [GoldenOp] = [.setColor(spec.hex), .activate(pattern)]
-    for _ in 0 ..< spec.sides {
+    for side in 0 ..< spec.sides {
+        if let midColor = spec.midColor, side == midColor.afterSides {
+            ops.append(.setColor(midColor.hex))
+        }
         ops.append(.move(spec.side))
         ops.append(.turn(spec.turn))
     }
@@ -170,96 +241,6 @@ func replayGoldenProgram(
     return GoldenReplay(points: points, events: events, stream: manager.assembled())
 }
 
-// MARK: - US-207: the square
-
-/// US-207's square: side 20 stage units at stitch length 5 — exactly four stitch
-/// intervals per side, so every interpolant lands on a whole stage unit — sewn in
-/// green, tied off, finalized as "square".
-enum GoldenSquare {
-    static let length = 5.0
-    static let hex = "#00ff00"
-    static let designName = "square"
-    static let color = ThreadColor(red: 0, green: 255, blue: 0)
-    static let actor = ActorID(0)
-    static let layer = 0
-
-    static let spec = PolygonSpec(
-        sides: 4,
-        side: 20,
-        turn: 90,
-        patternBrick: .runningStitch(length: .number(length)),
-        hex: hex,
-        designName: designName
-    )
-
-    /// The program as the golden runs it: object at the stage origin, heading 0.
-    static var program: Program {
-        polygonProgram(spec)
-    }
-
-    /// The same square sewn by an object with a non-default start state. Used to
-    /// pin the `Object` → `ObjectRuntime` seam (`startX`/`startY`/`startHeading` →
-    /// `VirtualNeedle`, `zIndex` → layer) and the claim that a pattern activates at
-    /// the *current* needle position: none of that is observable from a program
-    /// that begins at the origin facing up on layer 0 (swift-code-reviewer US-207
-    /// proved `startHeading` had no killing test anywhere in the package).
-    static let displacedStart = StagePoint(x: -20, y: -20)
-    static let displacedHeading = 90.0
-    static let displacedLayer = 3
-
-    static var displacedProgram: Program {
-        var program = polygonProgram(spec)
-        program.scenes[0].objects[0].startX = displacedStart.x
-        program.scenes[0].objects[0].startY = displacedStart.y
-        program.scenes[0].objects[0].startHeading = displacedHeading
-        program.scenes[0].objects[0].zIndex = displacedLayer
-        return program
-    }
-
-    /// Recomputed per access (a `static var`, not a `let`): parallel Swift Testing
-    /// runs must not share the replay's mutable pattern state.
-    static var oracle: GoldenReplay {
-        let pattern = RunningStitchPattern(length: length, start: StagePoint(x: 0, y: 0))
-        return replayGoldenProgram(polygonOps(spec, pattern: pattern), actor: actor, layer: layer)
-    }
-
-    /// The square sewn by the **second** object of a scene, the first being inert.
-    /// `ActorID` is the global object index (ADR-018), so every event must carry
-    /// `ActorID(1)` while the assembled stream is unchanged — the discriminator for
-    /// an interpreter that hardcodes actor 0 into its events (Codex US-207 round 2).
-    static let secondActor = ActorID(1)
-
-    /// `inSeparateScene: false` puts the inert object and the stitcher in one
-    /// scene; `true` gives each its own scene. ADR-018 makes `ActorID` the
-    /// **global** object index in scene→object order, so both must yield
-    /// `ActorID(1)` — a regression resetting the counter per scene would only show
-    /// up in the two-scene case, and no interpreter test used a multi-scene program
-    /// before (Codex US-207 round 3).
-    static func secondObjectProgram(inSeparateScene: Bool) -> Program {
-        let stitcher = polygonProgram(spec).scenes[0].objects[0]
-        let inert = Object(name: "inert")
-        return inSeparateScene
-            ? Program(scenes: [Scene(objects: [inert]), Scene(objects: [stitcher])])
-            : Program(scenes: [Scene(objects: [inert, stitcher])])
-    }
-
-    static var secondObjectOracle: GoldenReplay {
-        let pattern = RunningStitchPattern(length: length, start: StagePoint(x: 0, y: 0))
-        return replayGoldenProgram(polygonOps(spec, pattern: pattern), actor: secondActor, layer: layer)
-    }
-
-    static var displacedOracle: GoldenReplay {
-        let pattern = RunningStitchPattern(length: length, start: displacedStart)
-        return replayGoldenProgram(
-            polygonOps(spec, pattern: pattern),
-            start: displacedStart,
-            heading: displacedHeading,
-            actor: actor,
-            layer: displacedLayer
-        )
-    }
-}
-
 // MARK: - Consumer-side reconstruction
 
 /// Rebuilds an embroidery stream from an event sequence **alone**, the way a
@@ -293,12 +274,14 @@ func streamRebuiltFromEvents(_ events: [InterpreterEvent]) -> EmbroideryStream {
 }
 
 /// The number of *action-producing* bricks in a polygon program: the colour set,
-/// the pattern activation, `sides × [move, turn]`, the tack, the finalize marker.
-/// `repeatLoop` and `loopEnd` are excluded because they are zero-tick (ADR-018) —
-/// so this is also the program's tick count, which is what makes the zero-tick
-/// bookkeeping self-documenting rather than a bare literal.
+/// the pattern activation, `sides × [move, turn]`, the tack, the finalize marker,
+/// plus the mid-program colour set when there is one. `repeatLoop` and `loopEnd`
+/// are excluded because they are zero-tick (ADR-018) — so this is also the
+/// program's tick count, which is what makes the zero-tick bookkeeping
+/// self-documenting rather than a bare literal, and it stays true across the
+/// star's *two* loops.
 func actionBrickCount(_ spec: PolygonSpec) -> Int {
     // setThreadColor, the pattern activation, sewUp, writeEmbroideryToFile.
-    let fixed = 4
+    let fixed = 4 + (spec.midColor == nil ? 0 : 1)
     return fixed + 2 * spec.sides // move + turn per side
 }
