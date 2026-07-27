@@ -7,9 +7,14 @@ import EmbroideryEngine
 // square's — a later "simplification" that computed these from the replay would
 // collapse the two golden halves into one, and the zigzag makes that collapse
 // especially costly: `PolygonSpec.patternBrick` and the pattern handed to
-// `polygonOps` are two unlinked expressions of one fact, so a `zigZagStitch`
-// dispatch that transposed length and width would agree with itself and only
-// these literals would catch it (swift-code-reviewer US-207).
+// `polygonOps` are two unlinked expressions of one fact. To be precise about
+// what that buys, since an earlier draft overstated it (Codex US-208 round 2):
+// a transposition in the `zigZagStitch` *dispatch* alone disagrees with the
+// oracle too, because the oracle constructs `ZigzagStitchPattern(length: 5,
+// width: 4)` directly — mutation-checked, it takes twelve star tests red across
+// both halves. What only these literals could catch is a **coordinated**
+// transposition, in the dispatch and in the oracle's constructor together,
+// which is exactly the shape a careless "fix the failing oracle" would take.
 //
 // # The derivation, once
 //
