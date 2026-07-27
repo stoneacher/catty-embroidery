@@ -109,8 +109,10 @@ let goldenStarColorChangeIndex = 9
 ///
 /// Fifteen entries — one per *action* brick. As in US-207 that equality is the
 /// observable consequence of `repeatLoop`/`loopEnd` being zero-tick (ADR-018),
-/// and here it spans **two** loops: eight bookkeeping steps across two loops
-/// still cost nothing.
+/// and here it spans **two** loops: their four bookkeeping instructions — two
+/// `repeatBegin`, two `loopEnd` — still cost nothing between them. (An earlier
+/// draft said "eight bookkeeping steps", a number no accounting produces:
+/// Codex US-208 round 5.)
 ///
 /// Carrying over `goldenSquareTickProfile`'s caveat, which still applies and
 /// which doubling the loops did **not** weaken: this profile pins the composed

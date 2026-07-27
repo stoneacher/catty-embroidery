@@ -37,9 +37,13 @@ struct GoldenProgramStarConsumptionTests {
 
     @Test("a consumer rebuilding the stream from the events alone reproduces both colours")
     func eventsAloneReconstructTheStream() {
-        // The square could only show that positions survive an event-only
-        // rebuild; with two colours the rebuild also has to place the change
-        // record, which is the harder half of the claim M3's live preview rests on.
+        // What this adds over the square, stated precisely (Codex US-208 round 5
+        // corrected a draft that sold it as more): the square's rebuild already
+        // compares the whole `EmbroideryStream`, so dropping its single
+        // `colorArmed` would rebuild black stitches and fail. What it could not
+        // show is a colour *transition* — that the rebuild puts the change on
+        // the right record, from events alone, which is what M3's live preview
+        // will have to do.
         var stepped = makeInterpreter()
         let batches = stepToCompletion(&stepped)
 
@@ -56,9 +60,10 @@ struct GoldenProgramStarConsumptionTests {
         let batches = stepToCompletion(&stepped)
 
         // Fifteen ticks = fifteen *action* bricks (two colour sets, the pattern
-        // activation, 5 × [move, turn], sewUp, write). Eight loop-bookkeeping
-        // steps across *two* loops cost nothing — the observable consequence of
-        // `repeatLoop`/`loopEnd` being zero-tick (ADR-018).
+        // activation, 5 × [move, turn], sewUp, write). The two loops' four
+        // bookkeeping instructions — two `repeatBegin`, two `loopEnd` — cost
+        // nothing however often they execute, which is the observable
+        // consequence of their being zero-tick (ADR-018).
         #expect(batches.count == 15)
         #expect(batches.count == actionBrickCount(GoldenStar.spec))
         #expect(batches.map(\.count) == goldenStarTickProfile)
