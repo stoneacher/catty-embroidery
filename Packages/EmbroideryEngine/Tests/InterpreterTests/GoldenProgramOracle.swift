@@ -91,12 +91,16 @@ func polygonProgram(_ spec: PolygonSpec) -> Program {
         // would pass while ADR-015 armed nothing. A hex that fails to parse is
         // the same failure by another route — malformed input is a full no-op
         // (ADR-015) (Codex US-208 round 3).
-        let midThreadColor = ThreadColor(hexString: midColor.hex)
-        precondition(midThreadColor != nil, "a malformed hex is an ADR-015 no-op and arms nothing")
-        precondition(
-            midThreadColor != ThreadColor(hexString: spec.hex),
-            "a same-colour set is an ADR-015 no-op and arms nothing"
-        )
+        // Both parses must succeed, not just the mid one: an unparseable
+        // *starting* hex would leave `firstColor` nil, and comparing a valid
+        // colour against nil passes while the leading set silently does nothing
+        // (Codex US-208 round 4).
+        guard let firstColor = ThreadColor(hexString: spec.hex),
+              let midThreadColor = ThreadColor(hexString: midColor.hex)
+        else {
+            preconditionFailure("a malformed hex is an ADR-015 no-op and arms nothing")
+        }
+        precondition(midThreadColor != firstColor, "a same-colour set is an ADR-015 no-op and arms nothing")
         precondition((1 ..< spec.sides).contains(midColor.afterSides), "the colour set must fall between sides")
         bricks += walkLoop(sides: midColor.afterSides, spec: spec)
         bricks.append(.setThreadColor(hex: midColor.hex))
