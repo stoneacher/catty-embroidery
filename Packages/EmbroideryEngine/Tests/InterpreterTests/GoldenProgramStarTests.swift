@@ -111,10 +111,12 @@ struct GoldenProgramStarTests {
     ///
     /// Side 4 is that side. Its exact length is 19.999999999999998122…, i.e.
     /// 1.878e-15 below 20 — past the half-ulp boundary (1.776e-15) by 1e-16.
-    /// Darwin's `hypot` is 0.53 ulp high and returns 20.0; a correctly rounded
-    /// one (glibc ≥ 2.35, Python ≥ 3.8) returns 19.999999999999996, which costs
-    /// side 4 an interval, leaves the anchor 5 units behind and deforms sides 4
-    /// and 5. Every literal in `GoldenStarLiterals` depends on that rounding, so
+    /// Darwin's `hypot` is 0.53 ulp high and returns 20.0; the correctly rounded
+    /// result is 19.999999999999996, which costs side 4 an interval, leaves the
+    /// anchor 5 units behind and deforms sides 4 and 5. `hypot` is not required
+    /// to be correctly rounded by C or IEEE-754 and implementations disagree
+    /// here. `GoldenStarLiterals` depends on that rounding from side 4 onward —
+    /// sides 1–3 and the tack are identical either way (Codex US-208) — so
     /// this test exists to name the cause legibly when the platform's libm
     /// changes, instead of leaving a dozen unexplained golden diffs
     /// (swift-code-reviewer US-208).

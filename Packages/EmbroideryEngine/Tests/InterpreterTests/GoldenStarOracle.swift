@@ -24,9 +24,11 @@ import ProgramModel
 ///   bit of `hypot` decides the emission structure. Side 4's exact distance from
 ///   the anchor is 19.999999999999998122…, i.e. 1.878e-15 short of 20 — past the
 ///   half-ulp boundary by a mere 1e-16. Darwin's `hypot` is 0.53 ulp high here
-///   and returns 20.0, giving 4 intervals; a correctly rounded `hypot` (glibc
-///   ≥ 2.35, Python ≥ 3.8) returns 19.999999999999996 and gives 3, which
-///   deforms the whole design. **This golden is therefore pinned to Apple
+///   and returns 20.0, giving 4 intervals; the correctly rounded result is
+///   19.999999999999996, which gives 3 and deforms the design from side 4 on.
+///   `hypot` is not required to be correctly rounded by C or IEEE-754, and
+///   implementations disagree here — Python 3.14.6 on the same machine returns
+///   the correctly rounded value. **This golden is therefore pinned to Apple
 ///   platforms' libm**, which today is the package's only deployment target and
 ///   its only CI, but is a latent trap for a Linux SwiftPM job.
 ///

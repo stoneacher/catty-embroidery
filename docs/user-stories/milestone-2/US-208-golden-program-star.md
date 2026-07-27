@@ -38,9 +38,11 @@ Two findings worth carrying forward:
   tolerance (ADR-014) and structure-determining threshold crossings are different
   problems, and only the first has a tolerance.
 - **Parameter screening must run against the engine, not a model of it.** The first
-  attempt screened side/length pairs in Python; `math.hypot` has been correctly
-  rounded since 3.8 while Darwin's is not, so the screen recommended parameters the
-  engine rejects and rejected the ones it accepts.
+  attempt screened side/length pairs in Python, whose `math.hypot` returns the
+  correctly rounded result for these operands where Darwin's libm does not, so the
+  screen recommended parameters the engine rejects and rejected the ones it accepts.
+  (Neither project guarantees correct rounding for `hypot`; the point is that two
+  implementations disagree, not that either is specified — Codex US-208.)
 
 **Manual Ink/Stitch verification: not needed.** No DST file is produced — the CO
 assertion reads header bytes in memory — and no byte-level semantics changed.

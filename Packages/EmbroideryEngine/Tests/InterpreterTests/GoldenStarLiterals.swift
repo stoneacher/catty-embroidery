@@ -47,8 +47,12 @@ import EmbroideryEngine
 // nearest rounding boundary by at least 0.148 embroidery units — some 10¹⁴× the
 // transcendental dust — so this table cannot disagree with the engine by a
 // rounding flip. That margin is a property of the chosen side/length/width and
-// nothing more general: `starParametersAvoidTheIntervalCliff` pins a neighbouring
-// choice for which the emission structure itself changes.
+// nothing more general: `theGoldenDependsOnLibmRoundingOfHypot` pins the one
+// measured distance this table's structure turns on, and shows a neighbouring
+// side length falling the other way. Note what that test does and does not do —
+// it measures distances only; the emission structure they imply is pinned by
+// `eachSideCarriesItsOwnStitchesAndEachTurnNone` through the real pattern, and
+// nothing constructs the neighbouring design to check its records (Codex US-208).
 
 /// The star's stream in embroidery units: 21 zigzag path points, then the
 /// 5-point bar tack at the closing corner (±6 units along heading 0).
