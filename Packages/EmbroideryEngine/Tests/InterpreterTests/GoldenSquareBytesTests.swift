@@ -86,24 +86,29 @@ struct GoldenSquareBytesTests {
 
     @Test("a design wholly in negative space writes extents relative to its first stitch")
     func displacedSquareWritesExtentsRelativeToItsFirstStitch() {
-        // The one assertion in this story that kills a *production* mutant no
-        // other test in the package kills. `DSTHeader` computes `-X` as
-        // `abs(min(box.min.x - first.x, 0))`; the plausible "simplification"
-        // `abs(box.min.x)` — which is also exactly the ADR-012 semantics the
-        // Catty fixtures cannot cover — survives everything else, because every
-        // existing negative-extent case starts *at* the origin, where the two
-        // expressions coincide. This design does not: the object starts at
-        // (−20, −20) heading 90, so the closing heading is 90 again and the tack
-        // runs along ±x, putting the bounding box at min (−46, −80) / max (0, −40)
-        // with the first stitch at (−40, −40) — the box corner is neither the
-        // origin nor the first stitch.
+        // Composition, **not** a unique mutant kill — the first draft of this
+        // comment claimed one and mutation testing disproved it. Replacing
+        // `abs(min(box.min.x - first.x, 0))` with `abs(box.min.x)` dies in
+        // `DSTHeaderTests.nonOriginFirstStitch` too, whose synthetic stream has
+        // first stitch (20, 10) over a box starting at (0, 0), so the mutant
+        // reads 0 where 20 is correct. Measured, not assumed: with this test
+        // skipped the mutant still takes two pre-existing tests red.
+        //
+        // What is new here is the *route*: this is the only design in the package
+        // that reaches `DSTHeader` through a real interpreted program while lying
+        // wholly in negative embroidery space, with the box corner distinct from
+        // both the origin and the first stitch. The object starts at (−20, −20)
+        // heading 90, so the closing heading is 90 again and the tack runs along
+        // ±x, putting the box at min (−46, −80) / max (0, −40) with the first
+        // stitch at (−40, −40). ADR-012 calls a non-origin-start case out
+        // specifically as what the Catty fixtures cannot cover.
         var interpreter = Interpreter(program: GoldenSquare.displacedProgram, clock: clock)
         _ = interpreter.run(maxTicks: 100)
         let header = Array(DSTFile(stream: interpreter.assembledStream(), name: GoldenSquare.designName)
             .data.prefix(512))
 
         // Magnitudes only, relative to the first stitch (ADR-012). The mutant
-        // above would read 46 and 80 here.
+        // named above reads 46 and 80 here.
         #expect(dstHeaderField(header, .extentPlusX) == "40")
         #expect(dstHeaderField(header, .extentMinusX) == "6")
         #expect(dstHeaderField(header, .extentPlusY) == "0")
