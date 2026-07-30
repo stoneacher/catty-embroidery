@@ -1,15 +1,21 @@
 import Testing
 
-// This is the canonical copy; `Tests/InterpreterTests/ByteDiff.swift` is a
-// deliberate duplicate (US-209 — SwiftPM forbids test-target-to-test-target
-// dependencies; the reasoning is in that file's header). Keep the two
-// identical, and note that only this one has unit tests (`ByteDiffTests.swift`).
+// Deliberate copy of `Tests/EmbroideryEngineTests/ByteDiff.swift` (US-209).
 //
-// Byte-level diff helpers for the golden-file tests (US-106): a raw
-// `#expect(a == b)` on two ~580-byte arrays dumps both blobs unreadably,
-// and byte-diff debugging without offsets "is where days go" (story risk
-// note). `firstByteDifference` is a pure function so the differ itself is
-// unit-testable; `expectBytesEqual` is the assertion wrapper.
+// The canonical file is the one in `EmbroideryEngineTests`; it owns the unit
+// tests (`ByteDiffTests.swift`, which exercises `firstByteDifference`). This is
+// a duplicate, not a fork: keep the two identical.
+//
+// Why duplicated rather than shared: SwiftPM does not let one test target
+// depend on another, so sharing would mean a plain target under `Sources/` —
+// test-only code in the shipped source tree, and `import Testing` in a library
+// target's build graph. Splitting the pure differ out to avoid that still
+// leaves `expectBytesEqual` duplicated per target. For a package headed
+// upstream to Catrobat, a self-contained copy inside a test target is the
+// smaller and more explicable cost (US-209 planning, Sebastian).
+//
+// Promotion trigger: if a third target needs these helpers, promote them to a
+// shared test-support target then, rather than adding a third copy.
 
 /// Returns `nil` when the arrays are equal; otherwise a message naming the
 /// first mismatching offset (decimal and hex), the differing bytes, any

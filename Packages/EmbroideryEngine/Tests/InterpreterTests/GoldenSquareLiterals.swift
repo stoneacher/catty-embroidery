@@ -39,6 +39,63 @@ let goldenSquareRecords: [EmbroideryPoint] = [
     EmbroideryPoint(x: 0, y: 0), EmbroideryPoint(x: 0, y: -6), EmbroideryPoint(x: 0, y: 0)
 ]
 
+/// The residue US-209's hand-built stream puts on the tack's leading centre.
+///
+/// It exists only to be **distinct from zero**, not to model a magnitude:
+/// `EmbroideryStream.addStitch` dedups by comparing raw stage `Double`s, so a
+/// clean `(0, 0)` fed straight after the path's closing `(0, 0)` is dropped and
+/// the hand-built design would carry 21 records where the real one carries 22.
+/// The admissible class is every ε with `ε != 0` and `|2ε| < 0.5` — non-zero so
+/// it survives dedup, inside half an embroidery unit so it still `javaRound`s to
+/// unit 0 — and `residueClassProducesTheGoldenBytes` walks that class instead of
+/// asserting this one value works.
+///
+/// Deliberately **not** the interpreter's own residue (~3.55e-15 in x,
+/// ~−3.67e-15 in y; `tackCentreIsNotTheLastPathPoint` has the arithmetic). That
+/// value is a Darwin `sin`/`cos` product, and importing it would put a libm
+/// dependency into the half that is supposed to owe nothing to the platform
+/// (ADR-019), while crediting these bytes with a sensitivity they do not have.
+/// `1e-12` is unmistakably hand-picked: three orders above the real dust,
+/// eleven below the conversion boundary.
+let goldenSquareNominalTackResidue = 1e-12
+
+/// The square's path in **stage** units, as US-209's hand-built stream feeds it:
+/// `goldenSquareRecords` halved (the ADR-012 ×2 conversion inverted), exact for
+/// every value here — 0, 5, 10, 15, 20 and the tack's ±3 (`SewUp.steps`).
+///
+/// This is the one place the design's *pre-conversion* geometry is stated:
+/// `goldenSquareRecords` are already-converted units, so US-207's independent
+/// half never says what the stage path was. Feeding it forward pins ×2 +
+/// `javaRound` from the other direction.
+///
+/// Only index 17 carries the residue — it is the design's one consecutive stage
+/// duplicate, since the path closes on `(0, 0)` and the tack centres there. The
+/// tack's later centres each follow an `ahead` or `behind` point and survive
+/// dedup unaided. `ahead`/`behind` are fed clean, because the bytes see only
+/// rounded values and the interpreter's dust-bearing ±3 (5.999999999999993,
+/// −6.000000000000007) `javaRound` to the same ±6 an exact ±3 does.
+func goldenSquareStagePath(tackCentreResidue: Double = goldenSquareNominalTackResidue) -> [StagePoint] {
+    [
+        // Side 1 — the lazy anchor, then up +y.
+        StagePoint(x: 0, y: 0), StagePoint(x: 0, y: 5),
+        StagePoint(x: 0, y: 10), StagePoint(x: 0, y: 15), StagePoint(x: 0, y: 20),
+        // Side 2 — right, +x.
+        StagePoint(x: 5, y: 20), StagePoint(x: 10, y: 20),
+        StagePoint(x: 15, y: 20), StagePoint(x: 20, y: 20),
+        // Side 3 — down, −y.
+        StagePoint(x: 20, y: 15), StagePoint(x: 20, y: 10),
+        StagePoint(x: 20, y: 5), StagePoint(x: 20, y: 0),
+        // Side 4 — left, −x, closing on the origin.
+        StagePoint(x: 15, y: 0), StagePoint(x: 10, y: 0),
+        StagePoint(x: 5, y: 0), StagePoint(x: 0, y: 0),
+        // Sew-up bar tack: centre / ahead / centre / behind / centre, heading 0.
+        // The residue is on both axes, mirroring the over-determination US-207
+        // documents (either channel alone defeats clause A).
+        StagePoint(x: tackCentreResidue, y: tackCentreResidue), StagePoint(x: 0, y: 3),
+        StagePoint(x: 0, y: 0), StagePoint(x: 0, y: -3), StagePoint(x: 0, y: 0)
+    ]
+}
+
 /// Events per tick: `setThreadColor` (one `colorArmed`), `runningStitch`
 /// (action-consuming but event-free), then eight loop-body ticks alternating move
 /// (one `needleMoved` + its stitches) and turn (one `needleMoved`, no stitch),
