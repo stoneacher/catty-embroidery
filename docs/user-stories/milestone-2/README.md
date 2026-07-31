@@ -27,6 +27,16 @@ Where the Catroid and Catty references disagree, **ADR-012 in [DECISIONS.md](../
 
 **Reached** — 2026-07-25 with US-207. The square golden lives in `Tests/InterpreterTests/`: `PolygonSpec`/`polygonProgram` build the program (a compiled `repeatLoop`, not an unrolled brick list), `replayGoldenProgram` in `GoldenProgramOracle.swift` is the differential oracle over the engine primitives, and `GoldenSquareLiterals.swift` holds the hand-derived independent half (`goldenSquareRecords` / `goldenSquareTickProfile` / `goldenSquareEventTags`) — deliberately a separate file, since its value is owing nothing to the replay. US-208 added that insertion point: `PolygonSpec.midColor` makes `polygonProgram` emit two loops with the colour brick between them, and the per-program namespaces moved out of `GoldenProgramOracle.swift` into `Golden<Name>Oracle.swift` so the shared file stays machinery only. The star reuses `GoldenOp`/`replayGoldenProgram` unchanged. Its parameters are pinned to Apple platforms' libm — see ADR-019 and `theGoldenDependsOnLibmRoundingOfHypot`.
 
+US-209 adds the first golden **file** in the interpreter target:
+`Tests/InterpreterTests/Resources/GoldenPrograms/square.dst` (581 bytes), with
+`PROVENANCE.md` recording how it was generated and how far its trust extends.
+SPM declares resources per target, so `InterpreterTests` gained its own
+`resources:` clause and a deliberate copy of `ByteDiff` — SwiftPM forbids a test
+target depending on another test target. Note what the byte path does and does
+not buy: `DSTFile` is a pure *and lossy* function of the stream, so the fixture
+adds composition and an immovable expected side, not interpreter discrimination
+(US-207's stream goldens own that).
+
 ## Design summary
 
 Decided in the M2 planning session (2026-07-16; explored per the explore-before-propose practice, journal 2026-07-09) with `swift-architect`, grounded in the Catroid canonical implementation, Catty prior art, and the M1 engine API:

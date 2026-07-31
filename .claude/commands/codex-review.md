@@ -15,10 +15,27 @@ Run OpenAI Codex as the second, independent reviewer of the current story branch
 
 Run from the repo root against the branch's diff vs `main`. Use the Bash tool's background mode — a review takes minutes; watch for the completion notification instead of polling.
 
-Use plain `codex exec` (not the `review` subcommand — it rejects a custom prompt combined with `--base`) and put the diff scope in the prompt:
+Use plain `codex exec` (not the `review` subcommand — it rejects a custom prompt combined with `--base`) and put the diff scope in the prompt.
+
+**Redirect stdin from `/dev/null`, and keep the prompt in a file.** Two traps, both found the hard way in US-209 (2026-07-31):
+
+1. `codex exec` reads stdin *even when the prompt is passed as an argument* — it prints "Reading additional input from stdin..." and blocks. In the Bash tool's background mode stdin is an open pipe that never reaches EOF, so the run hangs **forever at 0% CPU with no session log**, looking exactly like a slow review. Two runs were lost to this (~20 min and ~2 min) before the cause was found. `< /dev/null` is the whole fix. A foreground smoke test does *not* reproduce it, because there stdin gets immediate EOF — so "codex works fine" is not evidence against this.
+2. Do not pipe the command through `tail`: it buffers all output until the process exits, so the log stays empty and a hang is indistinguishable from progress. (`head` does *not* buffer — it prints and exits immediately — but avoid it too, since it truncates the log and can kill the producer via SIGPIPE. Corrected in round 2 after an earlier version of this file gave `head` the wrong failure mechanism.) Let it stream, and `Read` the task output file to check on it.
+
+Prompts are long and contain backticks; write the prompt to a file and pass `"$(cat …)"` rather than inlining it. Put that file in **this session's scratchpad directory** — the absolute path is given in the system prompt; do not use `/tmp` or the repo. Set a shell variable for it in the same command, since nothing defines one for you:
 
 ```
+SCRATCH="<the session scratchpad path from the system prompt>"
+# … write the prompt to "$SCRATCH/codex-prompt.txt" …
 codex exec -s read-only -C "$PWD" -o /tmp/codex-review-verdict.md \
+  "$(cat "$SCRATCH/codex-prompt.txt")" < /dev/null
+```
+
+With `SCRATCH` unset this silently reads `/codex-prompt.txt` and the review dies before Codex starts (Codex US-209 round 2 found exactly that hole in this file).
+
+The prompt file's content (adapt the rubric per story):
+
+```
   "Review the changes shown by \`git diff main...HEAD\` (run it yourself; also read the touched files for context). You are the independent cross-vendor reviewer for a Swift 6 embroidery engine that emits Tajima DST files. Byte-level semantics are pinned in docs/DECISIONS.md (ADR-012 and ADR-013) — read them first; they are the arbiter, not your priors. Focus adversarially on semantics and correctness: try to construct concrete inputs (stage coordinates, color changes, jumps, boundary values) where the changed code produces wrong DST bytes, diverges from the pinned Catroid semantics, or violates an ADR. Also name test blind spots: real failure modes the suite cannot catch. Do NOT comment on style, formatting, naming, or architecture taste — a separate reviewer covers those. For each finding: severity, file:line, a concrete reproducing input, and why the ADRs say it is wrong."
 ```
 

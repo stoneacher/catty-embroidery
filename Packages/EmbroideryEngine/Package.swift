@@ -25,7 +25,15 @@ let package = Package(
             resources: [.copy("Resources")]
         ),
         .testTarget(name: "ProgramModelTests", dependencies: ["ProgramModel"]),
-        .testTarget(name: "InterpreterTests", dependencies: ["Interpreter", "ProgramModel", "EmbroideryEngine"])
+        .testTarget(
+            name: "InterpreterTests",
+            dependencies: ["Interpreter", "ProgramModel", "EmbroideryEngine"],
+            // .copy for the same reason as above: US-209 diffs the golden program's
+            // DST bytes against this fixture byte by byte. SPM resources are declared
+            // per target, so the interpreter-level golden cannot reach the engine test
+            // target's fixtures and gets its own Resources directory.
+            resources: [.copy("Resources")]
+        )
     ],
     swiftLanguageModes: [.v6]
 )
