@@ -95,9 +95,19 @@ one: a stroke hanging below the square's start corner looked like a stray stitch
 the `sewUp` bar tack. The tack is laid along the **closing heading** (0° after four
 `turnRight(90)`s, i.e. +y), so its `ahead` leg runs up along the square's own left edge
 and is invisible while its `behind` leg runs down outside the design — only one leg of a
-tack at this corner can ever be seen. The viewer's own `4.00 × 4.60 mm` settles it
+tack at this corner can ever be seen. The viewer's own `4.00 × 4.60 mm` corroborates it
 arithmetically: 4.60 mm is 46 units, the square's 40 plus exactly the 6 the tack hangs
-below, which is the `-Y 6` the decode read from the header. A tack in the wrong place or
-of the wrong length could not produce that number. Also recorded: the predicted risk
-that a viewer might collapse the zero-delta 18th record did **not** occur — it counted
-all 22.
+below, which is the `-Y 6` the decode read from the header.
+
+That measurement pins the **extents and the leg length only** — not the tack's placement,
+heading, or record order. The same vertical ±6-unit tack at the square's *bottom-right*
+corner leaves the extents at x = 0…40 and y = −6…40 and so reports the identical
+`4.00 × 4.60 mm`; so does the same five points laid along heading 180°, which reverses
+ADR-012's ahead/behind order. Order and placement are pinned by the byte diff and the
+three independent decodes, not by the picture. (An earlier version of this paragraph
+claimed the dimension ruled out a misplaced tack. Codex US-209 disproved it in round 1,
+I corrected `PROVENANCE.md` and missed this copy, and round 2 caught the leftover — the
+third time in this story that fixing the named instance was not fixing the defect.)
+
+Also recorded: the predicted risk that a viewer might collapse the zero-delta 18th
+record did **not** occur — it counted all 22.

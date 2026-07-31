@@ -30,9 +30,14 @@ import Testing
 ///
 /// Specifically not covered: ADR-015 colour application (no byte can witness it —
 /// `GoldenProgramSquareTests.silentStartStillAppliesTheColour` owns it), and
-/// `javaRound`'s negative-half asymmetry (every stage value here doubles to an
-/// exact integer and none is a negative half, so `javaRound` and `.rounded()`
-/// agree at every point; US-105/US-106 own that edge).
+/// `javaRound`'s negative-half asymmetry. The reason, stated correctly: **not**
+/// that every stage value doubles to an exact integer — the tack's do not, the
+/// closing point carries trig residue and ≈2.9999999999999964 doubles to
+/// 5.999999999999993 (`GoldenSquareLiterals` gives the pair) — but that no doubled
+/// value here is at or near a *negative* half-integer, which is the only place
+/// `floor(x + 0.5)` and `.rounded()` disagree. So the two rules agree at every
+/// point in this design, for a narrower reason than an earlier draft of this
+/// comment gave (Codex US-209 round 2). US-105/US-106 own that edge.
 ///
 /// ADR-019 screening, which that ADR asks of any golden compared against a
 /// threshold: the pattern interval threshold is *inherited* — 20.0 / 5 is exactly
