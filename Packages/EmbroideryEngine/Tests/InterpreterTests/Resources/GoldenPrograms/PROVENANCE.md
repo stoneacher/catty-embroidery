@@ -34,7 +34,7 @@ SHA-256:
 
 ## Trust verification (US-209)
 
-**Status: verified — this fixture is trusted** (2026-07-30). Both halves passed: an
+**Status: verified — this fixture is trusted** (2026-07-31). Both halves passed: an
 independent byte-level decode and an embroidery-viewer check, which agree with each
 other and with the golden's literals.
 
@@ -46,7 +46,7 @@ other and with the golden's literals.
   colour changes; accumulated positions exactly the 22 hand-derived records of
   `goldenSquareRecords`; header `LA square`, `ST 22`, `CO 1`, `+X 40`, `-X 0`,
   `+Y 40`, `-Y 6`, `AX 0`, `AY 0`, `MX 0`, `MY 0`, `PD *****`.
-- **Embroidery viewer — pass** (Sebastian, 2026-07-30). Loads without error and
+- **Embroidery viewer — pass** (Sebastian, 2026-07-31). Loads without error and
   renders a closed square walked from the bottom-left corner upwards
   (heading 0 = +y, `turnRight` ⇒ clockwise: up, right, down, left). Reported
   **design dimensions 4.00 × 4.60 mm, 22 stitches, 0 colour changes, 0 jumps,
@@ -63,10 +63,19 @@ other and with the golden's literals.
   this corner can ever be visible, and it is the downward one. ADR-012 pins the
   five-point sew-up (over Catty's four-point) as authoritative.
 
-  The viewer's own dimensions are the arithmetic proof: 4.00 mm is the 40-unit
-  square (`+X 40`, `-X 0`), and 4.60 mm is 46 units — the square's 40 plus exactly
-  the 6 the tack hangs below (`+Y 40`, `-Y 6`). A tack drawn anywhere else, or with
-  the wrong leg length, could not produce 4.60.
+  The viewer's own dimensions corroborate the extents arithmetically: 4.00 mm is the
+  40-unit square (`+X 40`, `-X 0`), and 4.60 mm is 46 units — the square's 40 plus
+  exactly the 6 the tack hangs below (`+Y 40`, `-Y 6`).
+
+  What that measurement does **not** establish, stated because an earlier version of
+  this note claimed it did ("a tack drawn anywhere else could not produce 4.60"):
+  the dimensions pin the extents and the leg length, not the tack's *placement*,
+  *heading*, or record *order*. Codex US-209 gave two counterexamples with identical
+  reported dimensions — the same five points laid along heading 180°
+  (`(0,0) → (0,−6) → (0,0) → (0,+6) → (0,0)`, i.e. ADR-012's ahead/behind order
+  reversed), and a vertical tack at the bottom-right corner instead. Order and
+  placement are pinned by the byte diff and by the independent decode above
+  (records 18–22 in sequence), not by the viewer.
 
   Also noted, because it was predicted and did not happen: the viewer did **not**
   collapse the zero-delta 18th record (the tack's leading centre, present only

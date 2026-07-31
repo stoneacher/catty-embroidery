@@ -146,7 +146,7 @@ struct GoldenSquareBytesTests {
     }
 
     @Test("a name needing sanitization reaches the label field raw and is sanitized there")
-    func designNameIsSanitizedAtTheHeaderNotByTheInterpreter() {
+    func designNameIsSanitizedAtTheHeaderNotByTheInterpreter() throws {
         // Written as escapes, not literal characters, so the test states its own
         // scalar sequence: a decomposed "ä" in the source would be two scalars and
         // sanitize differently.
@@ -154,19 +154,26 @@ struct GoldenSquareBytesTests {
         var spec = GoldenSquare.spec
         spec.designName = name
 
-        var interpreter = Interpreter(program: polygonProgram(spec), clock: clock)
-        let events = interpreter.run(maxTicks: 100)
+        // Serialized through `runAndSerialize`, which takes the name from the run's
+        // own `.finalizeRequested` event — the whole point of the test. An earlier
+        // version ran the interpreter itself and then passed the *local* `name`
+        // straight to `DSTFile`, which bypassed the join it claimed to exercise:
+        // Codex US-209 showed that a mutant stripping non-ASCII inside
+        // `runAndSerialize` left this test green (it never called it) and left
+        // `designNameInTheFileComesFromTheProgram` green too (its name is 6 ASCII
+        // characters). Both name tests now go through the one seam.
+        let result = try runAndSerialize(polygonProgram(spec), clock: clock)
 
         // The event carries the name *unsanitized* — sanitization is `DSTHeader`'s
         // job (ADR-012's 15-char limit, non-ASCII to "_"). A mutant that truncated
-        // in the interpreter would pass `designNameInTheFileComesFromTheProgram`,
-        // whose name is 6 ASCII characters and survives any sanitizer untouched.
-        #expect(finalizedDesignName(events) == name)
+        // in the interpreter instead would pass
+        // `designNameInTheFileComesFromTheProgram`, whose name survives any
+        // sanitizer untouched.
+        #expect(finalizedDesignName(result.events) == name)
 
-        let file = DSTFile(stream: interpreter.assembledStream(), name: name)
         // Each non-ASCII scalar becomes one "_", then the whole is cut to 15:
         // N ä h e n ␠ ⭐ ␠ Q u a d r a t | ␠ g r o ß
-        #expect(dstHeaderField(Array(file.data.prefix(512)), .label) == "N_hen _ Quadrat")
+        #expect(dstHeaderField(Array(result.file.data.prefix(512)), .label) == "N_hen _ Quadrat")
     }
 
     // MARK: - ADR-019 threshold screening
@@ -179,7 +186,16 @@ struct GoldenSquareBytesTests {
         // it and `DSTFile`'s own doc flags a round-then-subtract disagreement at
         // the exact boundary, so this measures the quantity rather than asserting
         // the consequence (US-207 asserts `!isJump`; ADR-019 asks for the margin).
-        let deltas = zip(goldenSquareRecords, goldenSquareRecords.dropFirst()).map {
+        //
+        // Measured on the **emitted stream's** record positions, for the same
+        // reason as leg (2) below: reading `goldenSquareRecords` would measure
+        // hand-written literals that cannot move when the engine does. Codex
+        // US-209 built the mutant that proves it — `stitchPointUnitFactor` 2.0 →
+        // 24.2 puts the real consecutive deltas at exactly 121, still legal since
+        // ADR-012's bound is inclusive, while a literals-based version of this
+        // test went on reporting a delta of 10 and a margin of 111.
+        let positions = stream.stitches.map(\.position)
+        let deltas = zip(positions, positions.dropFirst()).map {
             max(abs($1.x - $0.x), abs($1.y - $0.y))
         }
         #expect(deltas.max() == 10)

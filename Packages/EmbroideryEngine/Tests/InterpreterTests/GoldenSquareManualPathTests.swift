@@ -67,17 +67,23 @@ struct GoldenSquareManualPathTests {
 
     @Test(
         "any distinct tack centre inside the conversion boundary yields the same bytes",
-        arguments: [1e-15, 1e-12, 1e-9, 0.24]
+        arguments: [-0.25, -1e-9, -1e-15, 1e-15, 1e-12, 1e-9, 0.24]
     )
     func residueClassProducesTheGoldenBytes(residue: Double) throws {
         // The point of walking the class rather than trusting one value: within the
         // class the structure depends on the residue being non-zero and on nothing
-        // else about it — not on its magnitude, and certainly not on it being as
-        // small as the interpreter's trig dust. `0.24` is the near-boundary
-        // witness, showing the class is bounded by the ×2 conversion boundary
-        // rather than by smallness; `boundaryResidueMovesTheCoordinate` and
-        // `zeroResidueDedupsToTwentyOneRecords` pin the two ends where the
-        // dependence does return.
+        // else about it — not on its magnitude, not on its sign, and certainly not
+        // on it being as small as the interpreter's trig dust.
+        //
+        // The arguments span the class in both directions, and `−0.25` is the true
+        // lower end (`javaRound(2·−0.25) = floor(0.0) = 0`, admissible) while
+        // `+0.25` is *outside* it — the asymmetry ADR-012's `floor(x + 0.5)`
+        // creates. `0.24` shows the bound is the conversion boundary rather than
+        // smallness. Negative witnesses were absent from the first version, which
+        // Codex US-209 showed would let a *directional* dedup mutant through: one
+        // that dropped only negative unit-identical moves passed every positive
+        // residue case and the engine's existing positive dedup test while
+        // violating ADR-012's raw-stage comparison.
         #expect(EmbroideryPoint(converting: StagePoint(x: residue, y: residue)) == EmbroideryPoint(x: 0, y: 0))
         let stream = handBuiltStream(residue: residue)
         #expect(stream.count == goldenSquareRecords.count)
