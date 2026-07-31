@@ -31,4 +31,28 @@ struct CoordinateConversionTests {
         #expect(EmbroideryPoint(converting: StagePoint(x: 0, y: 10)) == EmbroideryPoint(x: 0, y: 20))
         #expect(EmbroideryPoint(converting: StagePoint(x: 0, y: -10)) == EmbroideryPoint(x: 0, y: -20))
     }
+
+    // MARK: - The conversion is failable (US-210, ADR-020)
+
+    @Test("Non-finite and unrepresentable coordinates convert to nil instead of trapping")
+    func unconvertibleCoordinates() {
+        // `Int(javaRound(value × 2))` traps on all four of these. ADR-020 makes
+        // the initializer failable so the trap is unrepresentable at the type
+        // level rather than avoided by a predicate every caller must remember.
+        #expect(EmbroideryPoint(converting: StagePoint(x: .infinity, y: 0)) == nil)
+        #expect(EmbroideryPoint(converting: StagePoint(x: 0, y: -.infinity)) == nil)
+        #expect(EmbroideryPoint(converting: StagePoint(x: .nan, y: 0)) == nil)
+        #expect(EmbroideryPoint(converting: StagePoint(x: 0, y: .nan)) == nil)
+        // Finite but past the ×2 conversion's `Int` range.
+        #expect(EmbroideryPoint(converting: StagePoint(x: 5e18, y: 0)) == nil)
+        #expect(EmbroideryPoint(converting: StagePoint(x: 0, y: -5e18)) == nil)
+    }
+
+    @Test("A coordinate just inside the ×2 conversion range still converts")
+    func nearBoundaryCoordinateStillConverts() {
+        // 4.6e18 × 2 = 9.2e18, just under `Int.max` — the guard rejects what
+        // does not fit, not what is merely large.
+        #expect(EmbroideryPoint(converting: StagePoint(x: 4.6e18, y: -4.6e18))
+            == EmbroideryPoint(x: 9_200_000_000_000_000_000, y: -9_200_000_000_000_000_000))
+    }
 }
