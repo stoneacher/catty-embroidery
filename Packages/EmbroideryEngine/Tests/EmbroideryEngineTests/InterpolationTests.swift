@@ -216,13 +216,13 @@ struct InterpolationTests {
     }
 
     @Test("Emitted deltas telescope to the exact converted target and stay encodable")
-    func accumulatedRounding() {
+    func accumulatedRounding() throws {
         var stream = EmbroideryStream()
         stream.addStitch(at: StagePoint(x: 0, y: 0))
         stream.addStitch(at: StagePoint(x: 123.4, y: -250.1))
 
         let deltas = records(for: stream).map(DSTRecordDecoder.decode)
-        let target = EmbroideryPoint(converting: StagePoint(x: 123.4, y: -250.1))
+        let target = try #require(EmbroideryPoint(converting: StagePoint(x: 123.4, y: -250.1)))
         #expect(deltas.reduce(0) { $0 + $1.dx } == target.x)
         #expect(deltas.reduce(0) { $0 + $1.dy } == target.y)
         #expect(stream.lastStitchPosition == target)

@@ -4,6 +4,14 @@
 /// carries, and the color-change count increments at `addColorChange()`
 /// time. A plain value type by design (ADR/US-102) — Catty's class +
 /// `SynchronizedArray` + draw-queue construction is deliberately not ported.
+/// Longest move `EmbroideryStream` will interpolate, in embroidery units
+/// (ADR-020): 1,000,000 splits at `DSTStitchRecord.maxDelta` units each. The
+/// split count, not the distance, is what the bound is really about — it is
+/// the same 1,000,000 as ADR-014's `maxStitchesPerUpdate`, for the same
+/// reason, and 12.1 metres is three orders of magnitude past the 500-point
+/// stage. A longer move emits nothing at all.
+let maxInterpolatedMoveInUnits = 1_000_000 * DSTStitchRecord.maxDelta
+
 public struct EmbroideryStream: Hashable, Sendable {
     /// Min/max corners of the stitched area in embroidery units; the header
     /// writer (US-104) derives +X/−X/+Y/−Y extents from these.
@@ -90,22 +98,52 @@ public struct EmbroideryStream: Hashable, Sendable {
     /// moves, and records the stage position. Internal so the pattern
     /// manager's layer replay (US-110) can emit its byte-pinned consecutive
     /// duplicates — like interpolation, it must bypass `addStitch`'s dedup.
+    ///
+    /// Also the engine's coordinate chokepoint (ADR-020). Two guards run
+    /// *above* the flag reads, so a rejected stitch is a true no-op: armed
+    /// flags stay pending for the next surviving stitch and `lastStagePosition`
+    /// keeps pointing at a coordinate that was actually stitched, exactly like
+    /// `addStitch`'s dedup. Both take the ADR-014 shape — emit nothing, leave
+    /// state untouched — rather than clamping, which would silently move the
+    /// needle somewhere the program never asked for and leave it there.
     mutating func append(stitchAt stagePoint: StagePoint, color: ThreadColor) {
+        // Non-finite, or past the ×2 conversion's `Int` range.
+        guard let position = EmbroideryPoint(converting: stagePoint) else { return }
+        // Representable, but too far from the last stitch to interpolate.
+        if let previous = lastStagePosition, !canInterpolate(from: previous, to: stagePoint) {
+            return
+        }
+
         let isJump = nextIsJump
         let isColorChange = nextIsColorChange
         nextIsJump = false
         nextIsColorChange = false
 
         if let previous = lastStagePosition {
-            addInterpolatedStitches(from: previous, to: stagePoint, color: color)
+            addInterpolatedStitches(
+                from: previous, to: stagePoint, targetPosition: position, color: color
+            )
         }
         stitches.append(Stitch(
-            position: EmbroideryPoint(converting: stagePoint),
+            position: position,
             color: color,
             isJump: isJump,
             isColorChange: isColorChange
         ))
         lastStagePosition = stagePoint
+    }
+
+    /// Whether a move is short enough to split into a bounded number of jump
+    /// stitches (ADR-020). Beyond the bound `addInterpolatedStitches` would
+    /// append until it exhausted memory — Swift does not trap on that, but an
+    /// unbounded emission is no better for a caller than the conversion trap
+    /// this chokepoint closes. Same policy and same 1,000,000 bound as
+    /// ADR-014's `maxStitchesPerUpdate`; running this check *before* the
+    /// interpolation arithmetic is also what keeps that arithmetic in `Int`
+    /// range, since both endpoints are already known convertible.
+    private func canInterpolate(from previous: StagePoint, to target: StagePoint) -> Bool {
+        EmbroideryPoint.distanceInUnits(dx: target.x - previous.x, dy: target.y - previous.y)
+            <= maxInterpolatedMoveInUnits
     }
 
     /// Port of Catroid `DSTStream.addInterpolatedPoints` (ADR-012, byte-pinned
@@ -121,12 +159,33 @@ public struct EmbroideryStream: Hashable, Sendable {
     private mutating func addInterpolatedStitches(
         from previous: StagePoint,
         to target: StagePoint,
+        targetPosition: EmbroideryPoint,
         color: ThreadColor
     ) {
-        let distance = max(
-            abs(EmbroideryPoint.embroideryUnits(fromStageValue: target.x - previous.x)),
-            abs(EmbroideryPoint.embroideryUnits(fromStageValue: target.y - previous.y))
+        // Catroid's measure: the stage difference, rounded.
+        let differenceDistance = EmbroideryPoint.distanceInUnits(
+            dx: target.x - previous.x, dy: target.y - previous.y
         )
+        // And the delta `DSTFile` will actually encode, which ADR-012 builds
+        // by subtracting individually rounded positions. The two disagree by
+        // one unit at half-unit stage fractions, and where the difference says
+        // 121 while the encoded delta is 122 this used to skip the split and
+        // hand `DSTStitchRecord` an unencodable record. Taking the max keeps
+        // Catroid's decision wherever it is sound and only *adds* splits —
+        // deciding from the encoded delta alone would stop splitting in the
+        // mirror case (difference 122, encoded 121), where the reference is
+        // correct. Catroid emits a corrupt record at this boundary rather
+        // than splitting; ADR-012 calls that a reference accident (ADR-020).
+        //
+        // Safe in `Int`: `append`'s cap guard has already bounded the
+        // separation, and both endpoints are known convertible.
+        let encodedDistance = stitches.last.map {
+            max(
+                abs(targetPosition.x - $0.position.x),
+                abs(targetPosition.y - $0.position.y)
+            )
+        } ?? 0
+        let distance = max(differenceDistance, encodedDistance)
         guard distance > DSTStitchRecord.maxDelta else { return }
         let splitCount = Int((Double(distance) / Double(DSTStitchRecord.maxDelta)).rounded(.up))
         let previousColor = stitches.last?.color ?? color

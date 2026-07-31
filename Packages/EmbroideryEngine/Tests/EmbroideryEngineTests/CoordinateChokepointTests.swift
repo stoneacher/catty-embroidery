@@ -127,17 +127,24 @@ struct CoordinateChokepointTests {
         ])
     }
 
-    @Test("A long move far beyond any real design still interpolates")
+    @Test("A long move far beyond any real design still interpolates, re-splitting as it goes")
     func longButSplittableMoveStillInterpolates() {
         // 121,000 units is 12.1 metres — three orders of magnitude past the
-        // 500-point stage and still a thousandth of the cap. splitCount = 1000,
-        // so the emission is dup + 999 intermediates + target as jumps, then
-        // the plain target.
+        // 500-point stage and still a thousandth of the cap.
         var stream = EmbroideryStream()
         stream.addStitch(at: StagePoint(x: 0, y: 0))
         stream.addStitch(at: StagePoint(x: 60500, y: 0))
 
-        #expect(stream.count == 1 + 1 + 999 + 1 + 1)
+        // splitCount = ceil(121000/121) = 1000, but the emission is not 1000
+        // evenly spaced points. Intermediate k sits at stage round(60.5k),
+        // which is exactly 60.5k for even k and half a unit higher for odd k,
+        // so the hops alternate 122 and 120 units — and every 122-unit hop
+        // re-enters the guard and splits again. That recursion is what makes
+        // ADR-020's backstop terminating rather than merely one-shot, and the
+        // count is where it is visible: 500 odd hops cost 3 extra stitches
+        // each, giving 1 first + 1 dup + (999 + 1500) loop + 1 target jump +
+        // 1 plain target.
+        #expect(stream.count == 2503)
         #expect(stream.lastStitchPosition == EmbroideryPoint(x: 121_000, y: 0))
         expectEveryDeltaEncodable(stream)
     }

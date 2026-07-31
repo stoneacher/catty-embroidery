@@ -241,10 +241,13 @@ public struct EmbroideryPatternManager: Sendable {
     /// negative halves — the opposite order misclassifies half-unit gaps
     /// like ±60.75 stage points. The stream's interpolation check rounds
     /// `target − previous` and must stay that way (`DSTStream`).
+    ///
+    /// This is the manager's *own* reach into the conversion, and it happens at
+    /// command time — the stitch positions convert later, in the `assembled()`
+    /// replay. An adversarial coordinate therefore arrives here first, and the
+    /// shared helper saturates rather than trapping (ADR-020): an
+    /// unconvertible gap classifies as far, which is the honest answer.
     private func distanceInUnits(from start: StagePoint, to end: StagePoint) -> Int {
-        max(
-            abs(EmbroideryPoint.embroideryUnits(fromStageValue: start.x - end.x)),
-            abs(EmbroideryPoint.embroideryUnits(fromStageValue: start.y - end.y))
-        )
+        EmbroideryPoint.distanceInUnits(dx: start.x - end.x, dy: start.y - end.y)
     }
 }
