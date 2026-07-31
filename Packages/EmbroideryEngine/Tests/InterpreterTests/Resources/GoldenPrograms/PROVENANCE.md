@@ -34,11 +34,9 @@ SHA-256:
 
 ## Trust verification (US-209)
 
-**Status: one half done, one half outstanding.** The numeric check has passed; the
-embroidery-viewer check has not been run yet, so this fixture is a *regression*
-anchor only — it pins that the bytes have not changed, not yet that they are
-right. Do not cite it as externally validated until the viewer line below is
-filled in.
+**Status: verified — this fixture is trusted** (2026-07-30). Both halves passed: an
+independent byte-level decode and an embroidery-viewer check, which agree with each
+other and with the golden's literals.
 
 - **Independent byte-level decode — pass** (2026-07-30). Decoded with the
   repository's own `DSTFileReader` / `DSTRecordDecoder`
@@ -48,22 +46,37 @@ filled in.
   colour changes; accumulated positions exactly the 22 hand-derived records of
   `goldenSquareRecords`; header `LA square`, `ST 22`, `CO 1`, `+X 40`, `-X 0`,
   `+Y 40`, `-Y 6`, `AX 0`, `AY 0`, `MX 0`, `MY 0`, `PD *****`.
-- **Embroidery viewer (Ink/Stitch) — OUTSTANDING.** What to check: the file loads
-  without error; it renders a **closed square** with the tie-off spur at the start
-  corner (zoom hard — the design is 4 × 4 mm, 1 mm stitches, ±0.6 mm tack legs);
-  and it reports 22 stitches and one colour block.
+- **Embroidery viewer — pass** (Sebastian, 2026-07-30). Loads without error and
+  renders a closed square walked from the bottom-left corner upwards
+  (heading 0 = +y, `turnRight` ⇒ clockwise: up, right, down, left). Reported
+  **design dimensions 4.00 × 4.60 mm, 22 stitches, 0 colour changes, 0 jumps,
+  0 trims, 0 stops** — one colour block, and every figure agreeing with the decode
+  above.
 
-  Two observations to expect and *not* read as defects: a viewer may collapse or
-  drop the zero-delta 18th record (the tack's leading centre — a real stitch the
-  machine will sew, present only because of the trig dust
-  `tackCentreIsNotTheLastPathPoint` documents), and short-stitch/density warnings
-  on the sub-millimetre tack legs are normal. The authoritative counts are the
-  decode above, not the viewer's stitch-plan summary — the US-101 precedent in
-  `../../../EmbroideryEngineTests/Resources/EmbroideryReference/PROVENANCE.md` is
-  a viewer legitimately rendering a correct file as nothing.
+  **The one thing that looks wrong and is not**: a short stroke hangs *downwards*
+  below the square's start corner. That is the `sewUp` bar tack, and it is the
+  expected shape rather than an artefact. The tack is Catroid's five-point tie-off
+  — centre / ahead / centre / behind / centre — laid along the **closing heading**,
+  which after four `turnRight(90)`s is 0° again, i.e. +y. So its `ahead` leg runs
+  6 units straight up *along the square's own left edge* and is invisible, while
+  its `behind` leg runs 6 units down, outside the design. Only one leg of a tack at
+  this corner can ever be visible, and it is the downward one. ADR-012 pins the
+  five-point sew-up (over Catty's four-point) as authoritative.
 
-  Unlike those Catty fixtures, this one contains genuinely **sewn** segments, so
-  "renders empty" would here be a real finding, not the expected outcome.
+  The viewer's own dimensions are the arithmetic proof: 4.00 mm is the 40-unit
+  square (`+X 40`, `-X 0`), and 4.60 mm is 46 units — the square's 40 plus exactly
+  the 6 the tack hangs below (`+Y 40`, `-Y 6`). A tack drawn anywhere else, or with
+  the wrong leg length, could not produce 4.60.
+
+  Also noted, because it was predicted and did not happen: the viewer did **not**
+  collapse the zero-delta 18th record (the tack's leading centre, present only
+  because of the trig dust `tackCentreIsNotTheLastPathPoint` documents). It counted
+  all 22. The prediction was a precaution, not a known behaviour.
+
+  Unlike the Catty fixtures in
+  `../../../EmbroideryEngineTests/Resources/EmbroideryReference/PROVENANCE.md`,
+  which correctly render as an empty canvas, this one contains genuinely **sewn**
+  segments — so "renders nothing" would here have been a real finding.
 
 Note what this design does *not* exercise, so a later story does not assume it
 does: ADR-013 colour-change flag placement (single colour), long-move

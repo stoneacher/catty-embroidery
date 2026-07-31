@@ -45,10 +45,16 @@ let goldenSquareRecords: [EmbroideryPoint] = [
 /// `EmbroideryStream.addStitch` dedups by comparing raw stage `Double`s, so a
 /// clean `(0, 0)` fed straight after the path's closing `(0, 0)` is dropped and
 /// the hand-built design would carry 21 records where the real one carries 22.
-/// The admissible class is every ε with `ε != 0` and `|2ε| < 0.5` — non-zero so
-/// it survives dedup, inside half an embroidery unit so it still `javaRound`s to
-/// unit 0 — and `residueClassProducesTheGoldenBytes` walks that class instead of
-/// asserting this one value works.
+/// The admissible class is `-0.25 <= ε < 0.25`, ε != 0 — non-zero so it survives
+/// dedup, and inside the conversion boundary so it still `javaRound`s to unit 0.
+/// Note the class is **asymmetric**, and deliberately stated that way rather than
+/// as `|2ε| < 0.5`: `javaRound` is `floor(x + 0.5)`, so `2ε = -0.5` floors to 0
+/// and is admissible while `2ε = +0.5` floors to 1 and is not. That is ADR-012's
+/// negative-half rule, owned by
+/// `CoordinateConversionTests.appliesFactorTwoWithJavaStyleRounding` (which pins
+/// -0.25 → 0 and 0.25 → 1); this comment only has to get the bound right.
+/// `residueClassProducesTheGoldenBytes` walks the class rather than asserting
+/// that this one value happens to work.
 ///
 /// Deliberately **not** the interpreter's own residue (~3.55e-15 in x,
 /// ~−3.67e-15 in y; `tackCentreIsNotTheLastPathPoint` has the arithmetic). That
@@ -72,8 +78,13 @@ let goldenSquareNominalTackResidue = 1e-12
 /// duplicate, since the path closes on `(0, 0)` and the tack centres there. The
 /// tack's later centres each follow an `ahead` or `behind` point and survive
 /// dedup unaided. `ahead`/`behind` are fed clean, because the bytes see only
-/// rounded values and the interpreter's dust-bearing ±3 (5.999999999999993,
-/// −6.000000000000007) `javaRound` to the same ±6 an exact ±3 does.
+/// rounded values: the interpreter's dust-bearing ±3 stage values
+/// (≈2.9999999999999964 and ≈−3.0000000000000036, which **double** to
+/// 5.999999999999993 and −6.000000000000007) `javaRound` to the same ±6 an exact
+/// ±3 does. Stage and doubled values are named separately here because an earlier
+/// version of this comment gave the doubled pair while calling it the stage pair —
+/// right numbers, wrong label, and the label is what a reader checks
+/// (swift-code-reviewer US-209).
 func goldenSquareStagePath(tackCentreResidue: Double = goldenSquareNominalTackResidue) -> [StagePoint] {
     [
         // Side 1 — the lazy anchor, then up +y.

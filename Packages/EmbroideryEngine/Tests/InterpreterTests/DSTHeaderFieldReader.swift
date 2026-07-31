@@ -13,6 +13,13 @@ import Testing
 /// `appendField`'s layout changes, these offsets must be re-derived by hand and
 /// the change noticed, rather than silently tracking it.
 ///
+/// The precise claim, since a looser one would be false: this is independent of the
+/// writer's *code*, not of its ADR-012-pinned *layout*. The widths below are
+/// transcribed from the same Tajima field sizes `DSTHeader` writes, so the reader
+/// cannot discriminate a wrong width *choice* — only a wrong value or a shifted
+/// layout (verified: `CO` width 2 → 3 shifts the extents and takes
+/// `displacedSquareWritesExtentsRelativeToItsFirstStitch` red).
+///
 /// Offsets follow from the Tajima layout: each field is `TAG:` + value +
 /// padding-to-width + `\n` + 0x1A, i.e. tag 3 + width + 2 bytes. LA is 15 wide
 /// (3+15+2 = 20), ST 6 (11), CO 2 (7), the four extents 4 each (9), AX/AY 5 (10).
@@ -57,15 +64,17 @@ enum DSTHeaderField {
         self == .label ? 0x20 : 0x00
     }
 
-    /// Byte offset of the field's tag from the start of the header.
+    /// The fields in file order.
+    static let fileOrder: [DSTHeaderField] = [
+        .label, .stitchCount, .colorBlocks,
+        .extentPlusX, .extentMinusX, .extentPlusY, .extentMinusY,
+        .endOffsetX, .endOffsetY
+    ]
+
+    /// Byte offset of the field's tag from the start of the header: the sum of the
+    /// preceding fields' whole widths (`TAG:` 3 + value width + `\n` 0x1A 2).
     var offset: Int {
-        // Sum of the preceding fields' whole widths (3 + width + 2), in file order.
-        let order: [DSTHeaderField] = [
-            .label, .stitchCount, .colorBlocks,
-            .extentPlusX, .extentMinusX, .extentPlusY, .extentMinusY,
-            .endOffsetX, .endOffsetY
-        ]
-        return order.prefix(while: { $0 != self }).reduce(0) { $0 + 3 + $1.width + 2 }
+        Self.fileOrder.prefix { $0 != self }.reduce(0) { $0 + 3 + $1.width + 2 }
     }
 }
 
@@ -82,6 +91,12 @@ func dstHeaderTag(_ header: [UInt8], _ field: DSTHeaderField) -> String {
 /// `"N_hen _ Quadrat"` and quietly compare something the file does not contain.
 /// (Found by `designNameIsSanitizedAtTheHeaderNotByTheInterpreter` going red on a
 /// first version of this reader that did exactly that.)
+///
+/// Still lossy at one edge, named so the doc is not read as fully faithful: a label
+/// with *significant trailing spaces* is indistinguishable from its padding —
+/// `writeEmbroideryToFile("square ")` is reachable and `DSTHeader.sanitized`
+/// preserves that space. Inherent to a space-padded fixed-width field, not a
+/// defect in this reader; a test needing that distinction must read the raw bytes.
 func dstHeaderField(_ header: [UInt8], _ field: DSTHeaderField) -> String {
     let start = field.offset + 3
     var bytes = Array(header[start ..< start + field.width])
@@ -101,9 +116,9 @@ private func asciiField(_ bytes: [UInt8]) -> String {
 /// One run of a golden program, serialized. A struct rather than a tuple so the
 /// members are named at every use site (and SwiftLint's `large_tuple` agrees).
 struct GoldenProgramRun {
-    var file: DSTFile
-    var stream: EmbroideryStream
-    var events: [InterpreterEvent]
+    let file: DSTFile
+    let stream: EmbroideryStream
+    let events: [InterpreterEvent]
 }
 
 /// Runs `program` to completion and serializes it under the name **the program
@@ -128,6 +143,11 @@ func finalizedDesignName(_ events: [InterpreterEvent]) -> String? {
 /// US-209's committed golden, loaded from this test target's own resources
 /// (SPM declares resources per target, so `EmbroideryEngineTests`' fixtures are
 /// out of reach here — hence the `resources:` clause added in this story).
+///
+/// The filename is keyed off `GoldenSquare.designName`, so renaming the design
+/// breaks the *load* rather than the *diff* — deliberate, since a rename that left
+/// a stale fixture in place would be the worse failure, but it means a `#require`
+/// failure here can mean "renamed", not only "missing".
 func goldenSquareFixture() throws -> Data {
     let url = try #require(Bundle.module.url(
         forResource: GoldenSquare.designName,

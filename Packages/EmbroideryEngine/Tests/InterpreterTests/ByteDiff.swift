@@ -15,7 +15,10 @@ import Testing
 // smaller and more explicable cost (US-209 planning, Sebastian).
 //
 // Promotion trigger: if a third target needs these helpers, promote them to a
-// shared test-support target then, rather than adding a third copy.
+// shared test-support target then, rather than adding a third copy. The second
+// candidate for that target already exists — DST header-field reading, which the
+// same SwiftPM constraint has now produced three times (`DSTHeaderTests.fields`,
+// `DSTFileReader.fields`, and `dstHeaderField` here).
 
 /// Returns `nil` when the arrays are equal; otherwise a message naming the
 /// first mismatching offset (decimal and hex), the differing bytes, any

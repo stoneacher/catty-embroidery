@@ -2,14 +2,13 @@
 
 **Epic**: E3 Program model & interpreter | **Estimate**: ~3 h | **Depends on**: US-207
 
-**Status**: In review — 2026-07-30. Implemented and CI green; **the Ink/Stitch half of
-the fixture's trust verification is outstanding** (AC 2), so the story cannot close yet.
+**Status**: Done — 2026-07-30. Fixture externally verified (viewer + independent decode).
 
 **Story**: As a maintainer, I want an interpreted program piped through `EmbroideryStream` → `DSTFile` to bytes and diffed against a golden `.dst`, closing the test blind spot carried in the workflow journal since US-108: no test yet covers the full pattern-output-to-real-bytes path.
 
 ## Acceptance criteria
 - [x] The square program's (US-207) `assembledStream()` feeds `DSTFile(stream:name:)`; the emitted bytes are byte-diffed against a committed golden fixture. `ByteDiff` is internal to the `EmbroideryEngineTests` target and SPM test resources are declared per target, so this story does the plumbing explicitly: either a small shared test-support target or a deliberate copy of the helper into `InterpreterTests`, plus the golden fixture declared as a `Bundle.module` resource of the test target running this test (a `Package.swift` change inside this story). **Resolved as the deliberate copy** — SwiftPM forbids a test target depending on another test target, so sharing would mean test-only code under `Sources/` plus `import Testing` in a library target (and the package has no external dependencies today). Both copies cross-reference each other; promotion trigger recorded: if a third target needs them, promote then.
-- [ ] The golden fixture is **verified in an embroidery viewer before being trusted** (ADR-012 discipline: a golden derived from our own output must be externally validated once). Manual Ink/Stitch check happens in this story. — **Half done.** The independent byte-level decode passed (the repo's own `DSTFileReader`/`DSTRecordDecoder`, which share no definitions with the writer): 22 records, 0 jumps, 0 colour changes, positions equal to `goldenSquareRecords`, every header field as expected. **The Ink/Stitch check is outstanding**, and `PROVENANCE.md` says so — until it is done the fixture is a regression anchor, not an externally validated golden.
+- [x] The golden fixture is **verified in an embroidery viewer before being trusted** (ADR-012 discipline: a golden derived from our own output must be externally validated once). Manual Ink/Stitch check happens in this story. — **Both halves passed.** Independent byte-level decode (the repo's own `DSTFileReader`/`DSTRecordDecoder`, which share no definitions with the writer): 22 records, 0 jumps, 0 colour changes, positions equal to `goldenSquareRecords`, every header field as expected. Viewer (Sebastian, 2026-07-30): loads, renders a closed square walked bottom-left upwards, reports **4.00 × 4.60 mm, 22 stitches, 0 colour changes, 0 jumps, 0 trims, 0 stops**. The downward spur below the start corner is the `sewUp` tack's `behind` leg — its `ahead` leg lies along the square's own left edge and is invisible — and the 4.60 mm height is the arithmetic proof: 40 units of square plus exactly the 6 the tack hangs below (`-Y 6`).
 - [x] Header assertions: stitch count and `CO = colorChangeCount + 1` match the program's actual stitch and color-stop counts (US-104 semantics). Read out of the **file** bytes, not a separately built `DSTHeader` (which is what US-208 did and cannot see a serializer that fails to emit the header it built), and compared against the run's own `stream.count` / `colorChangeCount`, not against literals.
 - [x] Differential assertion: interpreter-assembled bytes equal the bytes of a hand-built `EmbroideryStream` encoding the same geometry — the interpreter path and the manual path converge. **Deviation — the AC as written is close to vacuous, and the test now says so instead of claiming otherwise.** `DSTFile` is a pure function of the stream, so both sides of the comparison run through the same serializer and every defect in `DSTFile`/`DSTHeader`/`DSTStitchRecord` cancels; US-207 already pins the interpreter's stream against the same geometry in unit space, more strongly. Measured, not argued: mutating `stitchPointUnitFactor` 2.0 → 1.0 takes 106 assertions red while leaving this one **green**, because both paths move together. Implemented anyway (Sebastian chose the hand-built-stream form during planning) with its limit documented in the suite header, and its real contribution stated honestly: it makes the 22-versus-21 dedup structure executable rather than a comment plus a count, and states the design's pre-conversion **stage** geometry, which the already-converted `goldenSquareRecords` cannot. The serializer mutants are caught by the committed-fixture leg, whose expected side cannot move with the code.
 
@@ -46,8 +45,12 @@ broader than what closing it could deliver, and the close-out entry corrects tha
 
 **Mutation matrix** (measured, per US-208's lesson that measuring must precede the
 claim): CO drops `+1` → 17 issues; record delta x reversed → 11; end-of-file record
-dropped → 17; unit factor 2.0 → 1.0 → 106 **with the manual-path leg green**;
-interpreter pre-sanitizes the name → exactly 1. Seeding the first record at the origin
+dropped → 17; unit factor 2.0 → 1.0 → 106 with the **AC-4 convergence leg** green
+(precisely that one test, not the whole manual-path suite — its other three compare
+against the frozen fixture and do go red); interpreter pre-sanitizes the name → exactly 1;
+`SewUp.steps` 3.0 → 3.25 → 26, including the ADR-019 conversion-boundary screening once
+that screening was rewritten to measure the engine's own stage values instead of the
+hand-written literals, which sit on whole units by construction and left it green. Seeding the first record at the origin
 instead of `previous ?? stitch.position` **traps** rather than failing (the delta
 exceeds ±121), so it is detected but is not a usable mutant. Not claimed:
 `javaRound` → `.rounded()` survives the whole suite, since no stage value in this
@@ -61,15 +64,27 @@ at (0, 0), so the mutant reads 0 where 20 is correct. The comment now claims onl
 route, not the kill. Same defect class US-207 and US-208 each surfaced; caught here
 because the mutation was run before the claim was committed.
 
-**Gap found and deliberately left open**: no test in the package pins a *negative*
-`AX`/`AY`. Every existing case has `last >= first`, and a closed design has
-`AX = AY = 0`, so neither square can reach it — a mutant `AX = abs(last.x - first.x)`
-(the mirror of the Catty signed-extent bug ADR-012 says not to port) survives
-everything. Closing it is ~3 lines in `DSTHeaderTests`, i.e. the engine target and M1
-semantics, so it is flagged rather than folded into this story.
+**A gap I reported and then disproved**: I claimed no test pins a *negative* `AX`/`AY`,
+so `AX = abs(last.x - first.x)` — the mirror of the Catty signed-extent bug ADR-012 says
+not to port — would survive the package. It does not. `DSTRoundTripTests`'
+"jumps, a color change, and a non-origin start survive a round trip" kills it, because
+`expectMatches` compares `last.x - first.x` literally and its stream ends left of its
+start. Measured, both axes independently. There is no gap and nothing to fold into a
+later story. (Found by `swift-code-reviewer`; the claim originated in a planning agent's
+finding that I recorded without running its mutation — see the journal correction.)
 
-**Manual Ink/Stitch verification: REQUIRED and still outstanding** — see AC 2 and the
-fixture's `PROVENANCE.md`, which carries the check-list, the two benign observations to
-expect (a viewer may collapse the zero-delta 18th record; sub-millimetre tack legs draw
-short-stitch warnings), and the note that "renders empty" would be a real finding here,
-unlike the US-101 Catty fixtures.
+**Manual viewer verification: done and passed** (2026-07-30) — the first externally
+validated design in this repo that actually sews anything, and the first with a non-zero
+*negative* extent. Full record in the fixture's `PROVENANCE.md`.
+
+The one finding was a false alarm worth keeping, because it is the shape of the next
+one: a stroke hanging below the square's start corner looked like a stray stitch and is
+the `sewUp` bar tack. The tack is laid along the **closing heading** (0° after four
+`turnRight(90)`s, i.e. +y), so its `ahead` leg runs up along the square's own left edge
+and is invisible while its `behind` leg runs down outside the design — only one leg of a
+tack at this corner can ever be seen. The viewer's own `4.00 × 4.60 mm` settles it
+arithmetically: 4.60 mm is 46 units, the square's 40 plus exactly the 6 the tack hangs
+below, which is the `-Y 6` the decode read from the header. A tack in the wrong place or
+of the wrong length could not produce that number. Also recorded: the predicted risk
+that a viewer might collapse the zero-delta 18th record did **not** occur — it counted
+all 22.

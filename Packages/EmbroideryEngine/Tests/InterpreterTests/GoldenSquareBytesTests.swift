@@ -12,13 +12,21 @@ import Testing
 /// **What the byte path can and cannot add.** `DSTFile` is a pure function of the
 /// stream *and a lossy one* — DST stores no thread-colour table, only change
 /// flags — so the byte vector is a coarsening of what US-207 already pins twice
-/// over. Every interpreter defect visible here is visible in `assembledStream()`,
-/// which means this suite adds no interpreter discrimination at all. What it adds
-/// is **composition** (the header, the deltas and the terminator produced from a
-/// real program rather than a synthetic stream), the **name join** below, the
+/// over. Every interpreter defect *that reaches the stream* is therefore already
+/// visible in `assembledStream()`, so almost nothing here adds interpreter
+/// discrimination. What it adds is **composition** (the header, the deltas and the
+/// terminator produced from a real program rather than a synthetic stream), the
 /// **extent semantics** ADR-012 says the Catty fixtures cannot reach, and an
-/// externally validated fixture. Coverage claimed beyond that would be the defect
-/// class US-207 and US-208 each surfaced.
+/// externally validated fixture.
+///
+/// The **name join** is the exception, and the exception is precise: a design name
+/// never enters `assembledStream()` at all — it exists only in the
+/// `.finalizeRequested` payload — so it is outside the coarsening argument above.
+/// Measured: an `Interpreter+Step` mutant that pre-truncates the name is caught by
+/// exactly one test in all 334, `designNameIsSanitizedAtTheHeaderNotByTheInterpreter`.
+/// An earlier draft of this header said "no interpreter discrimination at all",
+/// which undersold the one genuinely new discriminator in the story
+/// (swift-code-reviewer US-209).
 ///
 /// Specifically not covered: ADR-015 colour application (no byte can witness it —
 /// `GoldenProgramSquareTests.silentStartStillAppliesTheColour` owns it), and
@@ -178,13 +186,28 @@ struct GoldenSquareBytesTests {
         #expect(DSTStitchRecord.maxDelta - (deltas.max() ?? 0) == 111)
 
         // (2) The ×2 + `javaRound` conversion boundary — the threshold that
-        // actually decides these bytes, and the one the residue class is bounded
-        // by. Every doubled stage coordinate sits on a whole unit, so the margin
-        // is the full half-unit; nothing here rounds by a hair.
-        let doubled = goldenSquareStagePath().flatMap {
+        // actually decides these bytes, and the one the residue class is bounded by.
+        //
+        // Measured on the **interpreter's own** stage points, not on
+        // `goldenSquareStagePath()`: those are hand-written literals that sit on
+        // whole units by construction, so screening them cannot respond when the
+        // engine's real values move, which is the one thing ADR-019 asks of this
+        // test ("a platform or toolchain change names its own cause"). The real
+        // values carry trig dust (`tackCentreIsNotTheLastPathPoint`), so the
+        // margin is a measurement rather than a tautology.
+        //
+        // Discrimination, measured: `SewUp.steps` 3.0 → 3.25 puts the tack's
+        // doubled coordinates at exactly ±6.5 — on the boundary, and on
+        // `javaRound`'s asymmetric side — and takes this assertion red along with
+        // the golden. Screening the literals left it green
+        // (swift-code-reviewer US-209).
+        let doubled = try stitchPositions(run().events).flatMap {
             [$0.x * EmbroideryPoint.stitchPointUnitFactor, $0.y * EmbroideryPoint.stitchPointUnitFactor]
         }
-        #expect(doubled.allSatisfy { abs($0 - $0.rounded()) < 1e-9 })
+        let worstMargin = doubled.map { abs($0 - $0.rounded()) }.max() ?? 0
+        // Half a unit is the boundary; the worst real value sits ~7e-15 from a
+        // whole unit, fifteen orders inside it.
+        #expect(worstMargin < 1e-9)
         #expect(stream.stitches.allSatisfy { !$0.isJump && !$0.isColorChange })
     }
 

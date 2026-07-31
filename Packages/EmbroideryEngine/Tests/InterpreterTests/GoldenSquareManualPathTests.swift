@@ -7,25 +7,39 @@ import Testing
 /// hand from `goldenSquareStagePath`, plus the dedup structure that decides how
 /// many records the design has.
 ///
-/// **What this convergence can and cannot prove**, stated plainly because the
-/// story's AC invites overclaiming it: both sides run through the same `DSTFile`,
-/// so every defect in `DSTFile`, `DSTHeader` and `DSTStitchRecord` appears
-/// identically on both sides and cancels. No serializer mutant can turn these
-/// tests red. What survives the cancellation is the geometry claim — that the
-/// interpreter's stream agrees with a hand-stated stage path — and US-207 already
-/// pins that more strongly in unit space (`recordPositions == goldenSquareRecords`).
+/// **What the convergence test can and cannot prove**, stated plainly because the
+/// story's AC invites overclaiming it. The claim applies to
+/// `interpreterBytesEqualTheHandBuiltStreamBytes` **only**: both of its sides run
+/// through the same `DSTFile`, so every defect in `DSTFile`, `DSTHeader` and
+/// `DSTStitchRecord` appears identically on both and cancels — no serializer
+/// mutant can turn *that* test red. What survives the cancellation is the geometry
+/// claim, and US-207 already pins that more strongly in unit space
+/// (`recordPositions == goldenSquareRecords`).
 ///
-/// So the honest accounting is: this suite is *characterization*, and its unique
-/// contribution is not a mutant kill but making the 22-versus-21 dedup structure
+/// It is in fact weaker still: it is a **logical consequence** of the two
+/// fixture-comparing legs, not an independent assertion. With A = interpreter
+/// bytes, B = hand-built bytes at the default residue, C = the fixture,
+/// `GoldenSquareBytesTests.interpreterBytesEqualTheCommittedGolden` asserts A = C
+/// and `residueClassProducesTheGoldenBytes(1e-12)` asserts B = C — the same B,
+/// since that is `handBuiltStream()`'s default — so A = B follows by entailment
+/// and can never be the only red leg. Kept because it is the AC's literal form,
+/// documented so no one reads a diagnosis into it that it cannot deliver
+/// (swift-code-reviewer US-209 proved the "diagnostic triangle" an earlier draft
+/// claimed here is an unreachable state).
+///
+/// The suite's other three tests compare against the **frozen fixture**, so
+/// serializer defects do *not* cancel there and they are not characterization:
+/// measured, `endOfFileRecord` `0xF3` → `0xF2` takes
+/// `residueClassProducesTheGoldenBytes` red on all four arguments, and heading
+/// `DSTHeader` at an empty stream takes it red plus
+/// `zeroResidueDedupsToTwentyOneRecords`.
+///
+/// So the honest accounting: the convergence leg is entailed and adds no
+/// discrimination; the fixture legs do discriminate; and what the suite uniquely
+/// contributes either way is making the 22-versus-21 dedup structure
 /// **executable** instead of a comment plus a count, and stating the design's
-/// pre-conversion geometry (which `goldenSquareRecords`, being already converted,
-/// cannot). The serializer mutants are caught by
-/// `GoldenSquareBytesTests.interpreterBytesEqualTheCommittedGolden`, whose
-/// expected side is a frozen file that cannot move with the code — which is
-/// exactly why that leg and this one are both here. The diagnostic triangle:
-/// this red and the fixture green means the hand model's own assumption broke;
-/// both red means the serializer or the stream moved; fixture red and this green
-/// means the pipeline moved.
+/// pre-conversion stage geometry, which the already-converted
+/// `goldenSquareRecords` cannot.
 @Suite("Golden program: square manual path")
 struct GoldenSquareManualPathTests {
     private let clock = InterpreterClock(tickDelta: 0.05)
@@ -56,10 +70,14 @@ struct GoldenSquareManualPathTests {
         arguments: [1e-15, 1e-12, 1e-9, 0.24]
     )
     func residueClassProducesTheGoldenBytes(residue: Double) throws {
-        // The point of walking the class rather than trusting one value: the
-        // structure depends on the residue being non-zero and on nothing else
-        // about it. `0.24` is the near-boundary witness — it shows the class is
-        // bounded by the ×2 conversion boundary, not by the residue being small.
+        // The point of walking the class rather than trusting one value: within the
+        // class the structure depends on the residue being non-zero and on nothing
+        // else about it — not on its magnitude, and certainly not on it being as
+        // small as the interpreter's trig dust. `0.24` is the near-boundary
+        // witness, showing the class is bounded by the ×2 conversion boundary
+        // rather than by smallness; `boundaryResidueMovesTheCoordinate` and
+        // `zeroResidueDedupsToTwentyOneRecords` pin the two ends where the
+        // dependence does return.
         #expect(EmbroideryPoint(converting: StagePoint(x: residue, y: residue)) == EmbroideryPoint(x: 0, y: 0))
         let stream = handBuiltStream(residue: residue)
         #expect(stream.count == goldenSquareRecords.count)
@@ -89,6 +107,10 @@ struct GoldenSquareManualPathTests {
         // exactly 0.5, which `javaRound` (floor(x + 0.5)) takes *up* to unit 1, so
         // the record moves and the design is no longer the golden. Together with
         // the ε = 0 case this pins both ends of the class.
+        //
+        // Above only — the class is asymmetric. ε = −0.25 doubles to −0.5, which
+        // floors to 0 and *is* admissible. `GoldenSquareLiterals` states the bound;
+        // `CoordinateConversionTests` owns the rule itself.
         #expect(EmbroideryPoint(converting: StagePoint(x: 0.25, y: 0.25)) == EmbroideryPoint(x: 1, y: 1))
         let stream = handBuiltStream(residue: 0.25)
         #expect(stream.count == goldenSquareRecords.count)
