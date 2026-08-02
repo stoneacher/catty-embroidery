@@ -210,6 +210,14 @@ public struct EmbroideryPatternManager: Sendable {
                 stream.append(stitchAt: lastStage!, color: lastColor)
             }
             for emission in ops {
+                // Ask before arming (ADR-020): flags are armed here at replay
+                // time but decided at command time, so a flag armed for an
+                // emission the stream rejects would ride the *next* surviving
+                // append — which, with actors interleaved on a layer, can be a
+                // different actor's stitch (Codex US-210 round 1). Skipping
+                // whole means a rejected point costs no change record and no
+                // count, so `CO = changes + 1` keeps matching what was emitted.
+                guard stream.canAppend(stitchAt: emission.stage) else { continue }
                 if emission.armColorChange {
                     stream.addColorChange()
                 } else if emission.armJump {

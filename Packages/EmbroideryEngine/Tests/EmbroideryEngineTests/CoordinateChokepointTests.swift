@@ -123,6 +123,44 @@ struct CoordinateChokepointTests {
         #expect(mirrored.count == 1)
     }
 
+    @Test("A move the stage lattice cannot subdivide emits nothing instead of recursing forever")
+    func moveTooCoarseToSubdivideIsANoOp() {
+        // Codex US-210 round 1. Both endpoints convert exactly and the move is
+        // only 128 units, so neither the conversion guard nor the split cap
+        // fires — but at 2^58 the gap between adjacent `Double`s is 64 stage
+        // points, so 128 units *is* one lattice step and there is no stage
+        // coordinate in between. The midpoint 2^58 + 32 is exactly halfway
+        // between neighbours and ties-to-even snaps it back onto `previous`,
+        // so the split makes no progress and the target re-enters the same
+        // decision unchanged: unbounded recursion, not a trap.
+        //
+        // The general rule this pins (ADR-020): interpolation needs a lattice
+        // step of at most ±121 units, otherwise no encodable non-zero move
+        // exists at these coordinates at all and the move is refused whole.
+        let base = 288_230_376_151_711_744.0 // 2^58
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: base, y: 0))
+        stream.addStitch(at: StagePoint(x: base + 64, y: 0)) // the next representable Double
+
+        #expect(stream.count == 1)
+        #expect(stream.lastStitchPosition == EmbroideryPoint(x: 576_460_752_303_423_488, y: 0))
+    }
+
+    @Test("Just below the coarse-lattice threshold a move still interpolates")
+    func moveAtTheCoarsestSubdividableLatticeStillInterpolates() {
+        // One binade down: at 2^57 the lattice step is 32 stage points = 64
+        // units, comfortably inside ±121, so a two-step move subdivides into
+        // two 64-unit hops. The guard refuses what cannot be subdivided, not
+        // everything large.
+        let base = 144_115_188_075_855_872.0 // 2^57
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: base, y: 0))
+        stream.addStitch(at: StagePoint(x: base + 64, y: 0)) // two lattice steps, 128 units
+
+        #expect(stream.count == 5)
+        expectEveryDeltaEncodable(stream)
+    }
+
     @Test("A single enormous but representable stitch still lands")
     func enormousSingleStitchStillStitches() {
         // The guard rejects what cannot be encoded or split, not what is merely
@@ -177,6 +215,42 @@ struct CoordinateChokepointTests {
         #expect(stream.stitches.allSatisfy { $0.position.x.magnitude < 1000 })
         #expect(stream.lastStitchPosition == EmbroideryPoint(x: 20, y: 0))
         expectEveryDeltaEncodable(stream)
+    }
+
+    @Test("A rejected emission cannot hand one actor's color change to another")
+    func rejectedEmissionDoesNotMigrateAColorChange() {
+        // Codex US-210 round 1. The manager arms flags at *command* time and
+        // the stream converts at *replay* time, so an emission the stream
+        // rejects had already armed `addColorChange()` on the stream — and the
+        // stream-global flag then rode the next surviving append, which in an
+        // interleaved multi-actor replay belongs to a different actor. Actor
+        // A's colour change landing on actor B's stitch contradicts ADR-015
+        // ("the actor's next surviving stitch") and ADR-020's own claim that a
+        // rejected emission preserves pending state.
+        //
+        // The replay now asks the stream whether an emission is acceptable
+        // before arming anything, so a rejected point costs no change record.
+        var manager = EmbroideryPatternManager()
+        let actorA = ActorID(0)
+        let actorB = ActorID(1)
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actorA)
+        manager.setThreadColor(ThreadColor(red: 255, green: 0, blue: 0), for: actorA)
+        manager.addStitch(at: StagePoint(x: 5e18, y: 0), layer: 0, actor: actorA) // rejected at replay
+        manager.addStitch(at: StagePoint(x: 1, y: 0), layer: 0, actor: actorB)
+        manager.addStitch(at: StagePoint(x: 2, y: 0), layer: 0, actor: actorA)
+
+        let stream = manager.assembled()
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 0, y: 0),
+            EmbroideryPoint(x: 2, y: 0), // clause E — actor B, and it must be flag-free
+            EmbroideryPoint(x: 2, y: 0), // clause B for A's return: the change belongs here
+            EmbroideryPoint(x: 2, y: 0),
+            EmbroideryPoint(x: 4, y: 0)
+        ])
+        #expect(stream.stitches.map(\.isColorChange) == [false, false, true, false, false])
+        #expect(stream.stitches.allSatisfy { !$0.isJump })
+        // Only the realized change counts, so `CO = changes + 1` still holds.
+        #expect(stream.colorChangeCount == 1)
     }
 
     // MARK: - Helpers

@@ -107,12 +107,9 @@ public struct EmbroideryStream: Hashable, Sendable {
     /// state untouched — rather than clamping, which would silently move the
     /// needle somewhere the program never asked for and leave it there.
     mutating func append(stitchAt stagePoint: StagePoint, color: ThreadColor) {
-        // Non-finite, or past the ×2 conversion's `Int` range.
-        guard let position = EmbroideryPoint(converting: stagePoint) else { return }
-        // Representable, but too far from the last stitch to interpolate.
-        if let previous = lastStagePosition, !canInterpolate(from: previous, to: stagePoint) {
-            return
-        }
+        guard canAppend(stitchAt: stagePoint),
+              let position = EmbroideryPoint(converting: stagePoint)
+        else { return }
 
         let isJump = nextIsJump
         let isColorChange = nextIsColorChange
@@ -133,16 +130,45 @@ public struct EmbroideryStream: Hashable, Sendable {
         lastStagePosition = stagePoint
     }
 
-    /// Whether a move is short enough to split into a bounded number of jump
-    /// stitches (ADR-020). Beyond the bound `addInterpolatedStitches` would
-    /// append until it exhausted memory — Swift does not trap on that, but an
-    /// unbounded emission is no better for a caller than the conversion trap
-    /// this chokepoint closes. Same policy and same 1,000,000 bound as
-    /// ADR-014's `maxStitchesPerUpdate`; running this check *before* the
-    /// interpolation arithmetic is also what keeps that arithmetic in `Int`
-    /// range, since both endpoints are already known convertible.
+    /// Whether `append` would emit for this point — the ADR-020 guards without
+    /// the emission. Internal because the pattern manager's replay has to ask
+    /// *before* arming a color change: the manager arms flags at command time
+    /// and the stream converts at replay time, so a flag armed for an emission
+    /// the stream then rejects would ride the next surviving append, which in
+    /// an interleaved multi-actor replay can belong to a different actor
+    /// (Codex US-210 round 1).
+    func canAppend(stitchAt stagePoint: StagePoint) -> Bool {
+        // Non-finite, or past the ×2 conversion's `Int` range.
+        guard EmbroideryPoint(converting: stagePoint) != nil else { return false }
+        // Representable, but unreachable from the last stitch by interpolation.
+        guard let previous = lastStagePosition else { return true }
+        return canInterpolate(from: previous, to: stagePoint)
+    }
+
+    /// Whether a move can be split into a bounded number of encodable jump
+    /// stitches (ADR-020). Two ways it cannot, both ending in an unbounded
+    /// emission rather than a trap — no better for a caller than the crash
+    /// this chokepoint closes:
+    ///
+    /// - **Too long.** Beyond 1,000,000 splits `addInterpolatedStitches` would
+    ///   append until it exhausted memory. Same policy and same bound as
+    ///   ADR-014's `maxStitchesPerUpdate`. Checking it before the interpolation
+    ///   arithmetic is also what keeps that arithmetic in `Int` range, since
+    ///   both endpoints are already known convertible.
+    /// - **Too coarse.** Above ~2^58 stage points the gap between adjacent
+    ///   `Double`s exceeds ±121 units, so *no* encodable non-zero move exists
+    ///   there: a subdivided midpoint rounds back onto an endpoint and the
+    ///   recursion re-enters with the same pair forever (Codex US-210 round 1,
+    ///   reproduced as a stack overflow at 2^58 → 2^58 + 64). Requiring the
+    ///   lattice step to stay within ±121 units is also exactly what makes the
+    ///   recursion's progress argument true: every hop is a multiple of that
+    ///   step, so a hop over ±121 is at least two steps and its subdivision
+    ///   cannot collapse onto an endpoint.
     private func canInterpolate(from previous: StagePoint, to target: StagePoint) -> Bool {
-        EmbroideryPoint.distanceInUnits(dx: target.x - previous.x, dy: target.y - previous.y)
+        let latticeStep = max(previous.x.ulp, previous.y.ulp, target.x.ulp, target.y.ulp)
+        guard latticeStep * EmbroideryPoint.stitchPointUnitFactor <= Double(DSTStitchRecord.maxDelta)
+        else { return false }
+        return EmbroideryPoint.distanceInUnits(dx: target.x - previous.x, dy: target.y - previous.y)
             <= maxInterpolatedMoveInUnits
     }
 
