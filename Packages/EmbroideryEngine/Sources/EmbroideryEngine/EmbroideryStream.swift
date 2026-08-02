@@ -183,10 +183,20 @@ public struct EmbroideryStream: Hashable, Sendable {
     /// intermediate sits about `hop / splitCount` from the start, which is
     /// never below ~60.5 stage points for a hop over ±121, so a step within
     /// ±121 units cannot round it back onto the endpoint.
+    ///
+    /// The step to measure is the coarsest one *inside* the interval, which is
+    /// not `.ulp` of either endpoint: at an exact power of two `.ulp` reports
+    /// the spacing going **outward**, twice the spacing a move heading back
+    /// toward zero actually lands in. 2^58 → 2^58 − 64 has a representable
+    /// midpoint and subdivides; 2^58 → 2^58 + 64 has none (Codex US-210 round
+    /// 3). Taking the *finer* endpoint instead would be wrong in the other
+    /// direction — 2^58 → 2^58 + 128 subdivides once into a hop that is itself
+    /// non-progressing, so it must be refused up front, not one level down.
     private func axisCanBeSubdivided(from start: Double, to end: Double) -> Bool {
         guard EmbroideryPoint.distanceInUnits(dx: end - start, dy: 0) > DSTStitchRecord.maxDelta
         else { return true }
-        return max(start.ulp, end.ulp) * EmbroideryPoint.stitchPointUnitFactor
+        let latticeStep = max(abs(start), abs(end)).nextDown.ulp
+        return latticeStep * EmbroideryPoint.stitchPointUnitFactor
             <= Double(DSTStitchRecord.maxDelta)
     }
 

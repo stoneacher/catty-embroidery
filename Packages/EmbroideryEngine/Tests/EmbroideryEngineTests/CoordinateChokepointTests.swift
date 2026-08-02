@@ -202,6 +202,53 @@ struct CoordinateChokepointTests {
         expectEveryDeltaEncodable(stream)
     }
 
+    @Test("A move inward across a binade boundary subdivides — the lattice there is finer")
+    func inwardMoveAcrossABinadeBoundaryStillInterpolates() {
+        // Codex US-210 round 3. `.ulp` at an exact power of two reports the
+        // spacing going *outward*: at 2^58 it is 64, but everything just below
+        // sits on a 32-point lattice. A move heading back toward zero therefore
+        // has a representable midpoint (2^58 − 32) and subdivides into two
+        // 64-unit hops — while the outward move of the same length has none.
+        // The guard has to measure the spacing *inside* the interval, not at
+        // whichever endpoint happens to be a power of two.
+        let base = 288_230_376_151_711_744.0 // 2^58
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: base, y: 0))
+        stream.addStitch(at: StagePoint(x: base - 64, y: 0))
+
+        #expect(stream.stitches.map(\.position.x) == [
+            576_460_752_303_423_488, // 2^59
+            576_460_752_303_423_488, // interpolation: duplicate-of-previous
+            576_460_752_303_423_424, // intermediate at stage 2^58 − 32
+            576_460_752_303_423_360, // target as jump
+            576_460_752_303_423_360 // plain target
+        ])
+        #expect(stream.stitches.map(\.isJump) == [false, true, true, true, false])
+        expectEveryDeltaEncodable(stream)
+
+        // The mirror, inward from the negative side.
+        var mirrored = EmbroideryStream()
+        mirrored.addStitch(at: StagePoint(x: -base, y: 0))
+        mirrored.addStitch(at: StagePoint(x: -base + 64, y: 0))
+        #expect(mirrored.count == 5)
+        expectEveryDeltaEncodable(mirrored)
+    }
+
+    @Test("A move that would strand a sub-hop on the coarse lattice is still refused")
+    func outwardMoveWhoseSubHopCannotProgressIsRefused() {
+        // The reason the guard cannot simply take the *finer* endpoint: two
+        // lattice steps outward from 2^58 subdivides once into a 128-unit hop
+        // that is itself non-progressing, so admitting it would only move the
+        // stack overflow one level down. Measuring the coarsest spacing inside
+        // the interval refuses it up front.
+        let base = 288_230_376_151_711_744.0 // 2^58
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: base, y: 0))
+        stream.addStitch(at: StagePoint(x: base + 128, y: 0))
+
+        #expect(stream.count == 1)
+    }
+
     @Test("The coarse-lattice refusal is symmetric in sign and axis")
     func coarseLatticeRefusalIsSymmetric() {
         // The termination proof covers negative and y-driven cases, but the
