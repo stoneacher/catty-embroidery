@@ -2,14 +2,14 @@
 
 **Epic**: E3 Program model & interpreter | **Estimate**: ~4 h | **Depends on**: US-206
 
-**Status**: Done — 2026-07-31. Semantics pinned as ADR-020 (encodable-delta interpolation trigger, failable conversion, guarded no-ops, bounded split count).
+**Status**: Done — 2026-07-31, PR #28. Semantics pinned as ADR-020 (encoded delta as a second interpolation *trigger*, failable conversion, guarded no-ops, bounded split count).
 
 **Story**: As the engine boundary, I want the two carried-forward coordinate traps closed **inside the engine**, so no caller — interpreter, manager, or direct stream user — can crash it: (a) the exact-boundary disagreement where the interpolation decision rounds the *difference* (`EmbroideryStream.swift`) while record encoding subtracts *individually rounded positions* (`DSTStitchRecord.swift`), so at half-unit stage fractions a move the decision sees as 121 encodes as delta 122 and traps (journal repro: x = 0.125 → 60.75); and (b) finite-but-huge coordinates whose stage→embroidery-unit conversion overflows `Int` at `EmbroideryPoint(converting:)`.
 
 These are engine-side chokepoints — an interpreter-side guard cannot reach (a) at all and would leave direct engine callers exposed to both.
 
 ## Acceptance criteria
-- [x] **Boundary trap (a)**: the stream's interpolation decision and the record encoder agree at every input — pinned by making the decision and the encoded delta derive from the same computation (or by an explicit guard at the record seam). Chosen semantics are pinned as an ADR in this story's close-out; at this boundary Catroid itself produces an out-of-range delta (the same rounding mismatch without Swift's trap) — a reference accident, not semantics to port (ADR-012 discipline). ADR-013/015 byte behavior at all ordinary magnitudes is unchanged — the existing golden and boundary tests stay green untouched. — **Resolved as neither alternative exactly: the decision takes the *maximum* of the two measures.** Keeping only Catroid's difference rounding leaves the trap; deriving the decision *only* from the encoded delta would have closed it but diverged in the mirror case (difference 122, encoded 121 — e.g. 0.25 → 61.0), where Catroid splits and is right. The max is a strict superset of Catroid's interpolation: it adds splits only where the reference emits a corrupt record. Every golden stayed green untouched, including the two US-106 fixtures, US-209's committed `square.dst`, and the ADR-015 ±60.75 clause pins.
+- [x] **Boundary trap (a)**: the stream's interpolation decision and the record encoder agree at every input — pinned by making the decision and the encoded delta derive from the same computation (or by an explicit guard at the record seam). Chosen semantics are pinned as an ADR in this story's close-out; at this boundary Catroid itself produces an out-of-range delta (the same rounding mismatch without Swift's trap) — a reference accident, not semantics to port (ADR-012 discipline). ADR-013/015 byte behavior at all ordinary magnitudes is unchanged — the existing golden and boundary tests stay green untouched. — **Resolved as neither alternative exactly: the encoded delta is a second *trigger*, and never touches the split count.** Keeping only Catroid's difference rounding leaves the trap; deciding *only* from the encoded delta closes it but diverges in the mirror case (difference 122, encoded 121 — e.g. 0.25 → 61.0), where Catroid splits and is right. A first implementation took the **maximum** of the two measures for both trigger and count, which is also wrong and shipped in this branch before review caught it: at difference 242 / encoded 243 (0.125 → 121.25) it emits six stitches where Catroid correctly emits eight, because Catroid's own recursion already re-splits the over-long first hop. The rule pinned is therefore trigger-on-either, count-from-the-difference (2 when only the encoded delta fires — 1 would not terminate). Both halves are guarded by name: `differenceTriggerStillWinsWhereTheEncoderIsInRange` and `catroidSplitCountSurvivesTheEncodedDeltaBackstop`. Every golden stayed green untouched, including the two US-106 fixtures, US-209's committed `square.dst`, and the ADR-015 ±60.75 clause pins.
 - [x] **Overflow/non-finite trap (b)**: `EmbroideryPoint(converting:)` (or its single call seam) guards **both** finite stage coordinates whose ×2 conversion exceeds `Int` range (|stage| > ~`Int.max`/2) **and non-finite coordinates (NaN/±∞)** — guarded no-op or clamp, pinned in the same ADR. The ADR-014 guards protect only the pattern path: the public `EmbroideryStream.addStitch` accepts any `StagePoint` and today traps at the conversion (`addStitch(at: StagePoint(x: .infinity, y: 0))` crashes). The interpreter cannot mint ∞ via `pow` overflow — per-node normalization caps it at `Double.greatestFiniteMagnitude` (ADR-017, corrected 2026-07-19) — but that extreme *finite* coordinate flowing through `placeAt` + `stitch` still exceeds the ×2 `Int` conversion range, and non-finite `StagePoint`s remain reachable through the public engine API directly. — **Done at both**: `init(converting:)` is failable via `Int(exactly:)` (one expression, no hand-maintained bound), and `EmbroideryStream.append` no-ops on it. Guarded no-op, not clamp, per ADR-014's precedent. **The "single call seam" premise was wrong** — see the correction under the test plan.
 - [x] The interpreter inherits the safety for free: an adversarial program reaching the manager with extreme coordinates leaves the stream valid and the program running — no `fatalError`, no `Int(_:)` trap. — Pinned by `extremeCoordinatesDoNotCrashTheRun`: `placeAt(5e18, 5e18)` + `stitch` still emits its `.stitch` event (the interpreter does not decide what is machine-representable), the engine drops it, the later ordinary stitch lands, and the run completes.
 - [x] The guard is not over-eager: ordinary >121-unit moves still interpolate per ADR-012, and the ADR-015 ==121 layer-switch behavior is untouched. — Plus three tighter probes: a single stitch at 4.6e18 still lands (there is nothing to interpolate from), a 121 000-unit move still interpolates, and the mirror-disagreement case is a regression guard that was green before the change as well as after.
@@ -43,13 +43,26 @@ does not encode — the streams simply came out as two stitches with an unencoda
 between them. That asymmetry is why `InterpolationTests`' clean-failure guard exists and why
 the new suite reuses it.
 
-**What the maximum-of-two-measures rule buys, stated narrowly.** It closes the trap without
-moving a single byte at any magnitude a real design reaches, and the evidence is the goldens
-being green *untouched* rather than re-blessed. What it does not buy is byte parity with
-Android at the boundary itself: Catroid emits a corrupt record there and we emit a correct
-split, deliberately, under ADR-012's do-not-port rule. A Catroweb round-trip landing exactly
-on a half-unit ±121 boundary would therefore differ — the same class of accepted divergence
-as ADR-014's and ADR-017's, and vanishingly rare for the same reason.
+**What the rule buys, stated narrowly.** It closes the trap without moving a single byte at
+any magnitude a real design reaches, and the evidence is the goldens being green *untouched*
+rather than re-blessed. What it does not buy is byte parity with Android at the boundary
+itself: Catroid emits a corrupt record there and we emit a correct split, deliberately, under
+ADR-012's do-not-port rule. A Catroweb round-trip landing exactly on a half-unit ±121
+boundary would therefore differ — the same class of accepted divergence as ADR-014's and
+ADR-017's, and vanishingly rare for the same reason.
+
+**The rule shipped wrong once, and no test in the repo would have caught it.** The first
+implementation took the maximum of the two measures for the split count as well as the
+trigger. That is a byte divergence at difference 242 / encoded 243, where Catroid is
+*correct* — and every golden stayed green, because none of them sits at a difference that is
+an exact multiple of 121 with the encoded delta one higher. The risk was identified before
+implementation and knowingly accepted on the reasoning that "the tests will tell us"; they
+could not, because the whole failure class is inputs no golden contains. A `swift-architect`
+pass, run in parallel during planning, derived the counterexample by differential simulation
+against a model of the reference rather than by running the suite. **The lesson is about the
+kind of evidence, not the amount: for a change whose whole point is behaviour at inputs no
+existing test exercises, a green suite is not evidence, and "the tests will catch it" is the
+wrong plan.** `catroidSplitCountSurvivesTheEncodedDeltaBackstop` now pins it.
 
 **Two premises in the story text turned out to be wrong**, both recorded above rather than
 quietly worked around: the manager converts at command time as well as during assembly (so

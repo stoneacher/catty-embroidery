@@ -155,8 +155,10 @@ struct InterpolationTests {
         // round((61 − 0.25) × 2) = round(121.5) = 122 splits, while the encoded
         // delta 122 − 1 = 121 would be legal on its own. Deciding from the
         // encoded delta *alone* would stop splitting here and diverge from
-        // Catroid at a point it handles correctly — which is why ADR-020 takes
-        // the max of the two rather than replacing one with the other.
+        // Catroid at a point it handles correctly — which is why ADR-020 adds
+        // the encoded delta as a second trigger instead of replacing the
+        // difference measure with it. `catroidSplitCountSurvivesTheEncoded-
+        // DeltaBackstop` guards the other half: it must not change the count.
         var stream = EmbroideryStream()
         stream.addStitch(at: StagePoint(x: 0.25, y: 0))
         stream.addStitch(at: StagePoint(x: 61, y: 0))
@@ -169,6 +171,27 @@ struct InterpolationTests {
             EmbroideryPoint(x: 122, y: 0)
         ])
         #expect(stream.stitches.map(\.isJump) == [false, true, true, true, false])
+    }
+
+    @Test("The backstop never changes a split count Catroid already gets right")
+    func catroidSplitCountSurvivesTheEncodedDeltaBackstop() {
+        // The other half of the "superset, not replacement" contract, and the
+        // one that is easy to break: at 0.125 → 121.25 the difference rounds
+        // to 242 and the encoded delta is 243, so ceil(·/121) is 2 from the
+        // first and 3 from the second. Catroid's 2 is *correct* here — its own
+        // recursion re-splits the over-long first hop, which is where the
+        // duplicated 0 and the 62 come from — so the encoded delta must widen
+        // the trigger only, never the count. Deriving the count from the
+        // maximum emits six stitches at [0, 0, 82, 162, 243, 243] instead of
+        // these eight, changing bytes where the reference is sound (ADR-012).
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 0.125, y: 0))
+        stream.addStitch(at: StagePoint(x: 121.25, y: 0))
+
+        #expect(stream.stitches.map(\.position.x) == [0, 0, 0, 62, 122, 122, 243, 243])
+        #expect(stream.stitches.map(\.isJump) == [
+            false, true, true, true, true, true, true, false
+        ])
     }
 
     // MARK: - Catroid parity

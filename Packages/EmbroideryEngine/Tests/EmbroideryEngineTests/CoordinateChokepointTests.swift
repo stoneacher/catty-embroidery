@@ -13,9 +13,16 @@ import Testing
 /// last stage position included — exactly as it was. Clamping would put the
 /// needle somewhere the program never asked for and keep it there.
 ///
-/// ADR-019 screening: the ±121 threshold cases live in `InterpolationTests`,
-/// deliberately *on* the boundary. Everything here is many orders of magnitude
-/// from any threshold it compares against, by construction.
+/// ADR-019 screening: the guard tests here clear every threshold they compare
+/// against by many orders of magnitude, by construction — a coordinate is
+/// either representable or 5e18. The one exception is
+/// `longButSplittableMoveStillInterpolates`, whose 999 hops alternate 122 and
+/// 120 units and so land *on* the ±121 boundary 500 times over; its stitch
+/// count is therefore decided by which side of a `.5` tie each intermediate
+/// rounds to. That is deliberate — it is the coverage that makes the
+/// interpolation recursion visible — and the count is derived in the test
+/// rather than observed. The ±121 semantics themselves are pinned in
+/// `InterpolationTests`, also deliberately on the boundary.
 @Suite("Coordinate chokepoint: non-finite, overflow, and unsplittable moves (ADR-020)")
 struct CoordinateChokepointTests {
     /// The largest stage magnitude whose ×2 conversion still fits `Int`, used

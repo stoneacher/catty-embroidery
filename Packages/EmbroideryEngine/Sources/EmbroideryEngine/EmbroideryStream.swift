@@ -1,9 +1,3 @@
-/// Ordered stitch stream shared by the pattern generators and the DST
-/// writer. Mirrors Catroid's `DSTStream` flag semantics: `addJump()` and
-/// `addColorChange()` arm a pending flag that the next appended stitch
-/// carries, and the color-change count increments at `addColorChange()`
-/// time. A plain value type by design (ADR/US-102) — Catty's class +
-/// `SynchronizedArray` + draw-queue construction is deliberately not ported.
 /// Longest move `EmbroideryStream` will interpolate, in embroidery units
 /// (ADR-020): 1,000,000 splits at `DSTStitchRecord.maxDelta` units each. The
 /// split count, not the distance, is what the bound is really about — it is
@@ -12,6 +6,12 @@
 /// stage. A longer move emits nothing at all.
 let maxInterpolatedMoveInUnits = 1_000_000 * DSTStitchRecord.maxDelta
 
+/// Ordered stitch stream shared by the pattern generators and the DST
+/// writer. Mirrors Catroid's `DSTStream` flag semantics: `addJump()` and
+/// `addColorChange()` arm a pending flag that the next appended stitch
+/// carries, and the color-change count increments at `addColorChange()`
+/// time. A plain value type by design (ADR/US-102) — Catty's class +
+/// `SynchronizedArray` + draw-queue construction is deliberately not ported.
 public struct EmbroideryStream: Hashable, Sendable {
     /// Min/max corners of the stitched area in embroidery units; the header
     /// writer (US-104) derives +X/−X/+Y/−Y extents from these.
@@ -167,27 +167,41 @@ public struct EmbroideryStream: Hashable, Sendable {
             dx: target.x - previous.x, dy: target.y - previous.y
         )
         // And the delta `DSTFile` will actually encode, which ADR-012 builds
-        // by subtracting individually rounded positions. The two disagree by
-        // one unit at half-unit stage fractions, and where the difference says
-        // 121 while the encoded delta is 122 this used to skip the split and
-        // hand `DSTStitchRecord` an unencodable record. Taking the max keeps
-        // Catroid's decision wherever it is sound and only *adds* splits —
-        // deciding from the encoded delta alone would stop splitting in the
-        // mirror case (difference 122, encoded 121), where the reference is
-        // correct. Catroid emits a corrupt record at this boundary rather
-        // than splitting; ADR-012 calls that a reference accident (ADR-020).
-        //
-        // Safe in `Int`: `append`'s cap guard has already bounded the
-        // separation, and both endpoints are known convertible.
+        // by subtracting individually rounded positions. Both roundings sit
+        // within half a unit of the exact value, so the two measures differ by
+        // at most one per axis — which is what keeps this subtraction inside
+        // `Int` (`append`'s cap has already bounded the difference measure,
+        // and both endpoints are known convertible). Where the difference
+        // reads 121 while the encoded delta is 122, this used to skip the
+        // split and hand `DSTStitchRecord` an unencodable record. Catroid has
+        // the same disagreement and emits a corrupt record; ADR-012 calls that
+        // a reference accident, so we split instead (ADR-020).
         let encodedDistance = stitches.last.map {
             max(
                 abs(targetPosition.x - $0.position.x),
                 abs(targetPosition.y - $0.position.y)
             )
         } ?? 0
-        let distance = max(differenceDistance, encodedDistance)
-        guard distance > DSTStitchRecord.maxDelta else { return }
-        let splitCount = Int((Double(distance) / Double(DSTStitchRecord.maxDelta)).rounded(.up))
+
+        // The encoded delta widens the *trigger*, never the count. Where the
+        // difference already exceeds ±121 Catroid's count is sound — its own
+        // recursion re-splits any over-long hop — so raising it there would
+        // change bytes the reference gets right: at difference 242 / encoded
+        // 243 (stage 0.125 → 121.25) a count taken from the maximum emits six
+        // stitches where the reference emits eight. Where only the encoded
+        // delta triggers, the count is two, not `ceil(121/121)` = 1: a
+        // one-way split emits no intermediates and re-enters this decision
+        // with the same pair, which would never terminate.
+        let splitCount: Int
+        if differenceDistance > DSTStitchRecord.maxDelta {
+            splitCount = Int(
+                (Double(differenceDistance) / Double(DSTStitchRecord.maxDelta)).rounded(.up)
+            )
+        } else if encodedDistance > DSTStitchRecord.maxDelta {
+            splitCount = 2
+        } else {
+            return
+        }
         let previousColor = stitches.last?.color ?? color
 
         addJump()
