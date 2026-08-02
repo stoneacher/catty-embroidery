@@ -211,9 +211,20 @@ struct CoordinateChokepointTests {
         manager.addStitch(at: StagePoint(x: 5e18, y: 5e18), layer: 0, actor: ActorID(1))
         manager.addStitch(at: StagePoint(x: 10, y: 0), layer: 0, actor: actor)
 
+        // The exact surviving trace, not a loose bound (Codex US-210 round 1:
+        // asserting only positions and encodability let a cross-actor flag
+        // migration through). Layer 0 keeps its two convertible points; every
+        // clause-B emission the rejected coordinates generated is skipped
+        // whole, and layer 1 — whose single op is NaN — contributes nothing,
+        // so it must not leave a colour stop or a join duplicate behind.
         let stream = manager.assembled()
-        #expect(stream.stitches.allSatisfy { $0.position.x.magnitude < 1000 })
-        #expect(stream.lastStitchPosition == EmbroideryPoint(x: 20, y: 0))
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 0, y: 0),
+            EmbroideryPoint(x: 20, y: 0)
+        ])
+        #expect(stream.stitches.allSatisfy { !$0.isJump && !$0.isColorChange })
+        #expect(stream.stitches.map(\.color) == [.black, .black])
+        #expect(stream.colorChangeCount == 0)
         expectEveryDeltaEncodable(stream)
     }
 
@@ -259,13 +270,22 @@ struct CoordinateChokepointTests {
     /// with direct position math instead of running the production encoder, so
     /// a regression fails as an expectation rather than tripping
     /// `DSTStitchRecord`'s precondition and killing the test process.
+    ///
+    /// Overflow-reporting subtraction rather than plain `-`: this suite is the
+    /// one that puts near-`Int`-limit positions in a stream, and two of those
+    /// with opposite signs would trap the *helper* before it could report the
+    /// expectation — defeating the whole point of the clean-failure pattern
+    /// (Codex US-210 round 1 blind spot).
     private func expectEveryDeltaEncodable(_ stream: EmbroideryStream) {
         var previous: EmbroideryPoint?
         for stitch in stream.stitches {
-            let dx = stitch.position.x - (previous ?? stitch.position).x
-            let dy = stitch.position.y - (previous ?? stitch.position).y
-            #expect(abs(dx) <= DSTStitchRecord.maxDelta, "unencodable dx \(dx)")
-            #expect(abs(dy) <= DSTStitchRecord.maxDelta, "unencodable dy \(dy)")
+            let anchor = previous ?? stitch.position
+            let dx = stitch.position.x.subtractingReportingOverflow(anchor.x)
+            let dy = stitch.position.y.subtractingReportingOverflow(anchor.y)
+            #expect(!dx.overflow && dx.partialValue.magnitude <= UInt(DSTStitchRecord.maxDelta),
+                    "unencodable dx from \(anchor.x) to \(stitch.position.x)")
+            #expect(!dy.overflow && dy.partialValue.magnitude <= UInt(DSTStitchRecord.maxDelta),
+                    "unencodable dy from \(anchor.y) to \(stitch.position.y)")
             previous = stitch.position
         }
     }

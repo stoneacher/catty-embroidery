@@ -203,12 +203,9 @@ public struct EmbroideryPatternManager: Sendable {
         var lastColor = ThreadColor.black
         let sortedLayers = layerOps.keys.sorted()
 
-        for (index, layer) in sortedLayers.enumerated() {
+        for layer in sortedLayers {
             guard let ops = layerOps[layer], !ops.isEmpty else { continue }
-            if !stream.stitches.isEmpty {
-                stream.addJump()
-                stream.append(stitchAt: lastStage!, color: lastColor)
-            }
+            var layerHasEmitted = false
             for emission in ops {
                 // Ask before arming (ADR-020): flags are armed here at replay
                 // time but decided at command time, so a flag armed for an
@@ -218,6 +215,24 @@ public struct EmbroideryPatternManager: Sendable {
                 // whole means a rejected point costs no change record and no
                 // count, so `CO = changes + 1` keeps matching what was emitted.
                 guard stream.canAppend(stitchAt: emission.stage) else { continue }
+
+                // The boundary between layers is emitted lazily, on the first
+                // op that actually survives, for the same reason: a layer whose
+                // every op is rejected must not leave a colour stop and an
+                // orphan join duplicate behind. Byte order is unchanged from
+                // the eager form — the previous layer's trailing change-stitch
+                // and this layer's leading jump were always adjacent, with
+                // nothing emitted between them.
+                if !layerHasEmitted {
+                    layerHasEmitted = true
+                    if let lastStage, !stream.stitches.isEmpty {
+                        stream.addColorChange()
+                        stream.append(stitchAt: lastStage, color: lastColor)
+                        stream.addJump()
+                        stream.append(stitchAt: lastStage, color: lastColor)
+                    }
+                }
+
                 if emission.armColorChange {
                     stream.addColorChange()
                 } else if emission.armJump {
@@ -226,12 +241,6 @@ public struct EmbroideryPatternManager: Sendable {
                 stream.append(stitchAt: emission.stage, color: emission.color)
                 lastStage = emission.stage
                 lastColor = emission.color
-            }
-            let hasLaterOps = sortedLayers[(index + 1)...]
-                .contains { !(layerOps[$0] ?? []).isEmpty }
-            if hasLaterOps {
-                stream.addColorChange()
-                stream.append(stitchAt: lastStage!, color: lastColor)
             }
         }
         return stream

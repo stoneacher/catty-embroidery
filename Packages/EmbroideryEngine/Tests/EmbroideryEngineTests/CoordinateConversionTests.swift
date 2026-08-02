@@ -55,4 +55,35 @@ struct CoordinateConversionTests {
         #expect(EmbroideryPoint(converting: StagePoint(x: 4.6e18, y: -4.6e18))
             == EmbroideryPoint(x: 9_200_000_000_000_000_000, y: -9_200_000_000_000_000_000))
     }
+
+    @Test("The exact conversion boundary and its neighbours land on the right side")
+    func adjacentDoublesAcrossTheConversionBoundary() {
+        // Codex US-210 round 1 blind spot: 4.6e18 / 5e18 straddle the boundary
+        // by a wide margin and so cannot see an off-by-one in it. These are the
+        // adjacent representable `Double`s at the boundary itself. In the
+        // binade below 2^62 the spacing is 512, so 2^62 − 512 is the largest
+        // stage value whose doubling still fits `Int` (2^63 − 1024), and the
+        // very next one doubles to exactly 2^63 — one past `Int.max`.
+        let largest = 4_611_686_018_427_387_392.0 // 2^62 − 512
+        #expect(EmbroideryPoint(converting: StagePoint(x: largest, y: 0))
+            == EmbroideryPoint(x: 9_223_372_036_854_774_784, y: 0))
+        #expect(EmbroideryPoint(converting: StagePoint(x: largest + 512, y: 0)) == nil)
+    }
+
+    @Test("The most negative convertible coordinate is Int.min, and taking its magnitude is safe")
+    func mostNegativeCoordinateConvertsToIntMin() {
+        // −2^62 doubles to exactly −2^63 = `Int.min`, which *is* representable
+        // and so converts. It is also the value that makes `abs` a trap and
+        // `.magnitude` mandatory in the distance helper — pinned here because
+        // the difference conversion is internal and cannot be tested directly.
+        #expect(EmbroideryPoint(converting: StagePoint(x: -4_611_686_018_427_387_904, y: 0))
+            == EmbroideryPoint(x: Int.min, y: 0))
+
+        // Driving that same value through the *difference* conversion: the
+        // move saturates and is refused, rather than trapping on the negation.
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 0, y: 0))
+        stream.addStitch(at: StagePoint(x: -4_611_686_018_427_387_904, y: 0))
+        #expect(stream.count == 1)
+    }
 }
