@@ -118,12 +118,12 @@ struct DSTStitchRecordTests {
     }
 
     @Test("deltas come from individually converted positions, not converted differences")
-    func roundThenSubtract() {
+    func roundThenSubtract() throws {
         // Stage x = ±0.2 → units floor(±0.4 + 0.5) = 0 each, so the delta
         // is 0; converting the stage difference (0.4 → 1 unit) would give 1
         // (ADR-012: round-then-subtract).
-        let previous = EmbroideryPoint(converting: StagePoint(x: -0.2, y: 0))
-        let current = EmbroideryPoint(converting: StagePoint(x: 0.2, y: 0))
+        let previous = try #require(EmbroideryPoint(converting: StagePoint(x: -0.2, y: 0)))
+        let current = try #require(EmbroideryPoint(converting: StagePoint(x: 0.2, y: 0)))
         let record = DSTStitchRecord(from: previous, to: current)
         #expect(record.bytes == [0x00, 0x00, 0x03])
     }

@@ -316,4 +316,34 @@ struct StepperEmbroideryTests {
         // though object A was created first.
         #expect(assembled.firstStitchPosition == EmbroideryPoint(x: 20, y: 20))
     }
+
+    // MARK: - The interpreter inherits the engine's coordinate guards (US-210, ADR-020)
+
+    @Test("an extreme placeAt then stitch is guarded in the engine — the program runs on")
+    func extremeCoordinatesDoNotCrashTheRun() {
+        // The chokepoint is engine-side on purpose (ADR-020): the interpreter
+        // adds no guard of its own and inherits the safety. Reaching it needs
+        // this exact path — pattern moves are suppressed earlier by ADR-014's
+        // `maxStitchesPerUpdate`, and the manager only converts the position
+        // during the `assembled()` replay, so the test must assemble.
+        //
+        // 5e18 is past the ×2 conversion's `Int` range, so the stitch is
+        // dropped; the later ordinary stitch still lands and the run completes.
+        var interpreter = interpreter([
+            .placeAt(x: .number(5e18), y: .number(5e18)),
+            .stitch,
+            .placeAt(x: .number(7), y: .number(-7)),
+            .stitch
+        ])
+        let events = interpreter.run(maxTicks: 100)
+
+        // The interpreter reports both stitches — it is not the layer that
+        // decides which coordinates are machine-representable.
+        #expect(stitchPositions(events) == [
+            StagePoint(x: 5e18, y: 5e18), StagePoint(x: 7, y: -7)
+        ])
+        // The engine keeps only the one it can encode.
+        #expect(interpreter.assembledStream().stitches.map(\.position)
+            == [EmbroideryPoint(x: 14, y: -14)])
+    }
 }

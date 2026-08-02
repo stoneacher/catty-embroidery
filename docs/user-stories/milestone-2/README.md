@@ -1,6 +1,6 @@
 # Milestone 2 — Interpreter MVP
 
-**Status**: In progress — planned 2026-07-16.
+**Status**: Done — 2026-07-31. All ten stories (US-201–US-210) merged; exit criterion met at US-207 on 2026-07-25 and demonstrated fully at US-208. US-210 closed the last M1 carry-forward — the engine's coordinate boundary is now a chokepoint no caller can crash (ADR-020).
 
 Goal: a value-type program model (project → scene → object → scripts → bricks) plus a minimal interpreter executing headlessly — when-started script, motion bricks, repeat/wait, the eight embroidery bricks, and a formula subset (literals, arithmetic, variables). Executing a program yields an `EmbroideryStream`. Still no UI. See [ROADMAP.md](../../ROADMAP.md).
 

@@ -203,13 +203,36 @@ public struct EmbroideryPatternManager: Sendable {
         var lastColor = ThreadColor.black
         let sortedLayers = layerOps.keys.sorted()
 
-        for (index, layer) in sortedLayers.enumerated() {
+        for layer in sortedLayers {
             guard let ops = layerOps[layer], !ops.isEmpty else { continue }
-            if !stream.stitches.isEmpty {
-                stream.addJump()
-                stream.append(stitchAt: lastStage!, color: lastColor)
-            }
+            var layerHasEmitted = false
             for emission in ops {
+                // Ask before arming (ADR-020): flags are armed here at replay
+                // time but decided at command time, so a flag armed for an
+                // emission the stream rejects would ride the *next* surviving
+                // append — which, with actors interleaved on a layer, can be a
+                // different actor's stitch (Codex US-210 round 1). Skipping
+                // whole means a rejected point costs no change record and no
+                // count, so `CO = changes + 1` keeps matching what was emitted.
+                guard stream.canAppend(stitchAt: emission.stage) else { continue }
+
+                // The boundary between layers is emitted lazily, on the first
+                // op that actually survives, for the same reason: a layer whose
+                // every op is rejected must not leave a colour stop and an
+                // orphan join duplicate behind. Byte order is unchanged from
+                // the eager form — the previous layer's trailing change-stitch
+                // and this layer's leading jump were always adjacent, with
+                // nothing emitted between them.
+                if !layerHasEmitted {
+                    layerHasEmitted = true
+                    if let lastStage, !stream.stitches.isEmpty {
+                        stream.addColorChange()
+                        stream.append(stitchAt: lastStage, color: lastColor)
+                        stream.addJump()
+                        stream.append(stitchAt: lastStage, color: lastColor)
+                    }
+                }
+
                 if emission.armColorChange {
                     stream.addColorChange()
                 } else if emission.armJump {
@@ -218,12 +241,6 @@ public struct EmbroideryPatternManager: Sendable {
                 stream.append(stitchAt: emission.stage, color: emission.color)
                 lastStage = emission.stage
                 lastColor = emission.color
-            }
-            let hasLaterOps = sortedLayers[(index + 1)...]
-                .contains { !(layerOps[$0] ?? []).isEmpty }
-            if hasLaterOps {
-                stream.addColorChange()
-                stream.append(stitchAt: lastStage!, color: lastColor)
             }
         }
         return stream
@@ -241,10 +258,13 @@ public struct EmbroideryPatternManager: Sendable {
     /// negative halves — the opposite order misclassifies half-unit gaps
     /// like ±60.75 stage points. The stream's interpolation check rounds
     /// `target − previous` and must stay that way (`DSTStream`).
+    ///
+    /// This is the manager's *own* reach into the conversion, and it happens at
+    /// command time — the stitch positions convert later, in the `assembled()`
+    /// replay. An adversarial coordinate therefore arrives here first, and the
+    /// shared helper saturates rather than trapping (ADR-020): an
+    /// unconvertible gap classifies as far, which is the honest answer.
     private func distanceInUnits(from start: StagePoint, to end: StagePoint) -> Int {
-        max(
-            abs(EmbroideryPoint.embroideryUnits(fromStageValue: start.x - end.x)),
-            abs(EmbroideryPoint.embroideryUnits(fromStageValue: start.y - end.y))
-        )
+        EmbroideryPoint.distanceInUnits(dx: start.x - end.x, dy: start.y - end.y)
     }
 }

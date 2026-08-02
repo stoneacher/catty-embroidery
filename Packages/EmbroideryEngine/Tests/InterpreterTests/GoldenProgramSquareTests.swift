@@ -76,7 +76,7 @@ struct GoldenProgramSquareTests {
     }
 
     @Test("the tack centre is not the last path point, so clause A does not dedup it — 22 records, not 21")
-    func tackCentreIsNotTheLastPathPoint() {
+    func tackCentreIsNotTheLastPathPoint() throws {
         // The subtlest value in this suite. Side 4's last pattern point is
         // javaRounded to exactly (0, 0), but the *needle* the tack centres on is
         // not — and the residue is over-determined, on both axes independently
@@ -96,8 +96,13 @@ struct GoldenProgramSquareTests {
 
         #expect(lastPathPoint == StagePoint(x: 0, y: 0))
         #expect(tackCentre != StagePoint(x: 0, y: 0))
-        // Yet both convert to the same embroidery unit, hence the duplicate record.
-        #expect(EmbroideryPoint(converting: lastPathPoint) == EmbroideryPoint(converting: tackCentre))
+        // Yet both convert to the same embroidery unit, hence the duplicate
+        // record. Unwrapped rather than compared as optionals (ADR-020 made the
+        // conversion failable): two nils compare equal, which would pass this
+        // for the wrong reason.
+        let convertedLast = try #require(EmbroideryPoint(converting: lastPathPoint))
+        let convertedTack = try #require(EmbroideryPoint(converting: tackCentre))
+        #expect(convertedLast == convertedTack)
     }
 
     // MARK: - Item 2 — golden assembled stream

@@ -13,6 +13,8 @@ Standalone native iOS app bringing Catrobat's embroidery functionality (Android 
 - App-layer side effects (file I/O, DST export/share, clock/sleep, UUID/date) sit behind small initializer-injected interfaces with deterministic test doubles (hand-rolled, no DI library — ADR-006). The engine takes no dependencies and performs no I/O.
 - **Definition of done for every UI story (M3+)**: no hardcoded user-facing strings (String Catalog + translator comments; layout uses leading/trailing — Catrobat ships ~75 languages incl. RTL); loading/empty/error states shipped with the feature; animations respect Reduce Motion; basic VoiceOver pass (the stage canvas gets a summarizing label: stitch count, colors, size in mm); touch targets ≥ 44 pt; Dynamic Type to AX1 without truncation.
 
+**Backlog**: fully analysed stories with no milestone yet live in [`user-stories/backlog.md`](user-stories/backlog.md); milestone planning assigns them a place. Written up at discovery time rather than left as journal carry-forwards, because the one carry-forward that was (the ±121 coordinate trap, 2026-07-09 → US-210) was mis-scoped twice by review before it became a correct story.
+
 ## Epics
 
 | ID | Epic | Summary |
@@ -39,7 +41,7 @@ A pure Swift package that turns a programmatic sequence of needle movements into
 Detailed stories: [`user-stories/milestone-1/`](user-stories/milestone-1/)
 
 ### M2 — Interpreter MVP (E3)
-**Status**: In progress — stories planned 2026-07-16.
+**Status**: Done — 2026-07-31. All ten stories (US-201–US-210) merged; exit criterion met 2026-07-25 (see below). US-210 closed the last M1 carry-forward: the engine's coordinate boundary is a chokepoint no caller can crash or hang (ADR-020).
 
 Program model (project → scene → object → scripts → bricks) plus a minimal interpreter executing headlessly: when-started script, move/turn/goto, repeat/wait, the eight embroidery bricks, and a formula subset (literals, arithmetic, variables). Executing a program yields an `EmbroideryStream`. Scripts are flat brick lists with paired control bricks; the move-a-pair-as-a-unit invariant is model logic with tests (ADR-008). The virtual needle operates in the ADR-007 stage space. The program model and interpreter ship as **two sibling targets in the same package** (ADR-016): `ProgramModel` (pure value graph, no engine dependency) and `Interpreter` (depends on `ProgramModel` + the engine target, never the reverse) so M4's editor and M5's persistence can import the program model without dragging the engine or DST I/O along.
 

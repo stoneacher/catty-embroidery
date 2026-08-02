@@ -7,12 +7,13 @@ import Foundation
 /// stitch, and the `00 00 F3` end-of-file record. The first stitch encodes
 /// as a zero-delta record carrying its own flags; every later record is
 /// the delta between consecutive absolute positions, kept encodable by
-/// long-move interpolation (US-105) — except at an exact ±121-unit
-/// boundary, where the guard's difference rounding and the record's
-/// position rounding can disagree by one unit and encoding traps. Catroid
-/// shares that asymmetry (it silently emits a corrupt record instead);
-/// the resolution is a tracked ADR-012 follow-up. Byte semantics are
-/// pinned by ADR-012 and ADR-013.
+/// long-move interpolation (US-105). At an exact ±121-unit boundary the
+/// interpolation guard's difference rounding and this delta's position
+/// rounding can disagree by one unit; the stream now decides on both, so
+/// the move splits instead of encoding an out-of-range delta (ADR-020,
+/// closing the ADR-012 follow-up this comment used to track — Catroid
+/// silently emits a corrupt record there). Byte semantics are pinned by
+/// ADR-012 and ADR-013.
 public struct DSTFile: Hashable, Sendable {
     /// The complete file bytes. Primary API — compare or persist directly;
     /// building it does no I/O.

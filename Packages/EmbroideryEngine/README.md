@@ -38,9 +38,9 @@ try file.write(to: designURL)
 let point = StagePoint(x: 10.5, y: 20.5)
 ```
 
-**EmbroideryPoint** — A point in embroidery units (0.1 mm, the DST coordinate grid). Created by converting stage points with a factor of 2.0 and Java rounding per ADR-012. Read-only in normal use; appear in emitted stitches.
+**EmbroideryPoint** — A point in embroidery units (0.1 mm, the DST coordinate grid). Created by converting stage points with a factor of 2.0 and Java rounding per ADR-012. Read-only in normal use; appear in emitted stitches. The conversion is failable: a non-finite coordinate, or a finite one whose ×2 conversion leaves `Int` range, returns `nil` rather than trapping (ADR-020).
 ```swift
-let embroideryPoint = EmbroideryPoint(converting: stagePoint)
+let embroideryPoint = EmbroideryPoint(converting: stagePoint) // EmbroideryPoint?
 ```
 
 See [ADR-007](../../docs/DECISIONS.md) for the coordinate space design.
@@ -160,7 +160,7 @@ let bounds = stream.boundingBox
 let first = stream.firstStitchPosition
 ```
 
-Long moves (exceeding ±121 embroidery units on either axis) are automatically interpolated into jump stitches per US-105 — with one known edge: at an exact ±121-unit boundary, the guard's difference rounding and the record's position rounding can disagree by one unit and encoding traps (a tracked ADR-012 follow-up; Catroid shares the asymmetry and silently emits a corrupt record instead). Dedup removes stitches at the last recorded stage position.
+Long moves (exceeding ±121 embroidery units on either axis) are automatically interpolated into jump stitches per US-105. At an exact ±121-unit boundary the guard's difference rounding and the record's position rounding can disagree by one unit; the guard decides on both, so such a move splits rather than encoding an out-of-range delta (ADR-020 — Catroid shares the asymmetry and silently emits a corrupt record instead). Dedup removes stitches at the last recorded stage position. A stitch whose coordinates cannot be converted (non-finite, or past the ×2 conversion's `Int` range) or whose move is too long to split into a bounded number of jumps emits nothing and leaves the stream untouched, armed flags included.
 
 See [ADR-012](../../docs/DECISIONS.md) for interpolation, rounding, and byte-level semantics.
 
