@@ -155,21 +155,39 @@ public struct EmbroideryStream: Hashable, Sendable {
     ///   ADR-014's `maxStitchesPerUpdate`. Checking it before the interpolation
     ///   arithmetic is also what keeps that arithmetic in `Int` range, since
     ///   both endpoints are already known convertible.
-    /// - **Too coarse.** Above ~2^58 stage points the gap between adjacent
-    ///   `Double`s exceeds ±121 units, so *no* encodable non-zero move exists
-    ///   there: a subdivided midpoint rounds back onto an endpoint and the
-    ///   recursion re-enters with the same pair forever (Codex US-210 round 1,
-    ///   reproduced as a stack overflow at 2^58 → 2^58 + 64). Requiring the
-    ///   lattice step to stay within ±121 units is also exactly what makes the
-    ///   recursion's progress argument true: every hop is a multiple of that
-    ///   step, so a hop over ±121 is at least two steps and its subdivision
-    ///   cannot collapse onto an endpoint.
+    /// - **Too coarse to subdivide.** Above ~2^58 stage points the gap between
+    ///   adjacent `Double`s exceeds ±121 units, so *no* encodable non-zero move
+    ///   exists on that axis: a subdivided midpoint rounds back onto an
+    ///   endpoint and the recursion re-enters with the same pair forever
+    ///   (Codex US-210 round 1, reproduced as a stack overflow at
+    ///   2^58 → 2^58 + 64). Checked **per axis, and only for an axis that
+    ///   actually has to be split** — a coordinate merely *sitting* at a coarse
+    ///   magnitude must not veto a legal move on the other axis (Codex round
+    ///   2: `(2^58, 0) → (2^58, 1)` encodes as a plain `(0, 2)` delta).
     private func canInterpolate(from previous: StagePoint, to target: StagePoint) -> Bool {
-        let latticeStep = max(previous.x.ulp, previous.y.ulp, target.x.ulp, target.y.ulp)
-        guard latticeStep * EmbroideryPoint.stitchPointUnitFactor <= Double(DSTStitchRecord.maxDelta)
+        guard axisCanBeSubdivided(from: previous.x, to: target.x),
+              axisCanBeSubdivided(from: previous.y, to: target.y)
         else { return false }
         return EmbroideryPoint.distanceInUnits(dx: target.x - previous.x, dy: target.y - previous.y)
             <= maxInterpolatedMoveInUnits
+    }
+
+    /// One axis of the coarse-lattice test. An axis whose own hop already fits
+    /// a record is carried along whatever its magnitude — stationary or short,
+    /// there is nothing on it to subdivide. (A coarse axis cannot be *short*
+    /// and non-zero: its hop is a multiple of a lattice step wider than ±121,
+    /// so "fits a record" and "does not move" are the same case there.)
+    ///
+    /// For an axis that must be split, the lattice step decides. This is also
+    /// where the recursion's progress argument comes from: the first
+    /// intermediate sits about `hop / splitCount` from the start, which is
+    /// never below ~60.5 stage points for a hop over ±121, so a step within
+    /// ±121 units cannot round it back onto the endpoint.
+    private func axisCanBeSubdivided(from start: Double, to end: Double) -> Bool {
+        guard EmbroideryPoint.distanceInUnits(dx: end - start, dy: 0) > DSTStitchRecord.maxDelta
+        else { return true }
+        return max(start.ulp, end.ulp) * EmbroideryPoint.stitchPointUnitFactor
+            <= Double(DSTStitchRecord.maxDelta)
     }
 
     /// Port of Catroid `DSTStream.addInterpolatedPoints` (ADR-012, byte-pinned

@@ -29,6 +29,14 @@ struct CoordinateChokepointTests {
     /// as the "legal but enormous" probe. Beyond it `EmbroideryPoint` refuses.
     private let nearConversionLimit = 4.6e18
 
+    // Deliberately not covered, stated rather than left silent: the split cap
+    // is exercised far above and far below, never at 1,000,000 splits itself.
+    // A move at the cap emits over a million stitches, which is seconds of
+    // runtime and hundreds of megabytes in a suite that runs in a tenth of a
+    // second — the boundary is a chosen round number rather than a semantic
+    // edge like ±121, so the cost buys little (Codex US-210 round 2 named the
+    // gap; this is the answer to it, not an oversight).
+
     // MARK: - The stream seam
 
     @Test("A non-finite stitch emits nothing and leaves the stream usable")
@@ -161,6 +169,55 @@ struct CoordinateChokepointTests {
         expectEveryDeltaEncodable(stream)
     }
 
+    @Test("A coarse axis only blocks the move when that axis is the one being split")
+    func coarseStationaryAxisDoesNotBlockAFineAxisMove() {
+        // Codex US-210 round 2: the first version of the lattice guard took one
+        // maximum over all four components, so a coordinate merely *sitting* at
+        // a coarse magnitude vetoed a move on the other axis. Here x never
+        // moves and the encoded delta is (0, 2) — directly encodable, nothing
+        // to subdivide — yet it was silently dropped. The guard is per-axis and
+        // applies only to an axis that actually has to be split.
+        let base = 288_230_376_151_711_744.0 // 2^58, lattice step 64 stage points
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: base, y: 0))
+        stream.addStitch(at: StagePoint(x: base, y: 1))
+
+        #expect(stream.stitches.map(\.position.y) == [0, 2])
+        #expect(stream.count == 2)
+    }
+
+    @Test("A long move on the fine axis still interpolates from a coarse coordinate")
+    func longMoveOnTheFineAxisInterpolatesFromACoarseCoordinate() {
+        // The same asymmetry one step further: y moves 200 units, so it *does*
+        // need splitting — and y's lattice is fine, so it can be. x is coarse
+        // but stationary and is carried along exactly (`javaRound` is the
+        // identity at magnitudes whose spacing exceeds 1).
+        let base = 288_230_376_151_711_744.0 // 2^58
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: base, y: 0))
+        stream.addStitch(at: StagePoint(x: base, y: 100))
+
+        #expect(stream.stitches.map(\.position.y) == [0, 0, 100, 200, 200])
+        #expect(stream.stitches.allSatisfy { $0.position.x == 576_460_752_303_423_488 })
+        expectEveryDeltaEncodable(stream)
+    }
+
+    @Test("The coarse-lattice refusal is symmetric in sign and axis")
+    func coarseLatticeRefusalIsSymmetric() {
+        // The termination proof covers negative and y-driven cases, but the
+        // tests pinned only positive x (Codex US-210 round 2 blind spot).
+        let base = 288_230_376_151_711_744.0 // 2^58
+        var negative = EmbroideryStream()
+        negative.addStitch(at: StagePoint(x: -base, y: 0))
+        negative.addStitch(at: StagePoint(x: -base - 64, y: 0))
+        #expect(negative.count == 1)
+
+        var yDriven = EmbroideryStream()
+        yDriven.addStitch(at: StagePoint(x: 0, y: base))
+        yDriven.addStitch(at: StagePoint(x: 0, y: base + 64))
+        #expect(yDriven.count == 1)
+    }
+
     @Test("A single enormous but representable stitch still lands")
     func enormousSingleStitchStillStitches() {
         // The guard rejects what cannot be encoded or split, not what is merely
@@ -262,6 +319,49 @@ struct CoordinateChokepointTests {
         #expect(stream.stitches.allSatisfy { !$0.isJump })
         // Only the realized change counts, so `CO = changes + 1` still holds.
         #expect(stream.colorChangeCount == 1)
+    }
+
+    @Test("An actor whose armed color change is rejected loses it — the pinned exception")
+    func rejectedStitchLosesItsOwnActorsColorChange() {
+        // ADR-020 accepts this rather than fixing it, so it is pinned rather
+        // than left to inference (Codex US-210 round 2: the cross-actor test
+        // could conceal it, because there a later clause-B change appears).
+        // The manager clears the actor's pending bit at *command* time and
+        // cannot know the replay will drop the point, so A's red arrives with
+        // no change record at all. Under-counting is the right direction: the
+        // alternative is a record attached to a stitch that does not exist.
+        var manager = EmbroideryPatternManager()
+        let actor = ActorID(0)
+        let red = ThreadColor(red: 255, green: 0, blue: 0)
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
+        manager.setThreadColor(red, for: actor)
+        manager.addStitch(at: StagePoint(x: 5e18, y: 0), layer: 0, actor: actor) // rejected at replay
+        manager.addStitch(at: StagePoint(x: 10, y: 0), layer: 0, actor: actor)
+
+        let stream = manager.assembled()
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 0, y: 0),
+            EmbroideryPoint(x: 20, y: 0)
+        ])
+        #expect(stream.stitches.map(\.color) == [.black, red])
+        #expect(stream.stitches.allSatisfy { !$0.isColorChange })
+        #expect(stream.colorChangeCount == 0)
+    }
+
+    @Test("A manager holding only rejected points reports a pattern but assembles nothing")
+    func rejectedOnlyPatternAssemblesEmpty() {
+        // Characterization, not an endorsement (Codex US-210 round 2):
+        // `hasValidPattern` counts *recorded* ops, which the replay may reject,
+        // so the two can disagree. Nothing in the engine currently promises
+        // they agree; a caller gating export on it would show an empty design
+        // as exportable. Recorded in ADR-020 for whoever wires up export.
+        var manager = EmbroideryPatternManager()
+        let actor = ActorID(0)
+        manager.addStitch(at: StagePoint(x: .infinity, y: 0), layer: 0, actor: actor)
+        manager.addStitch(at: StagePoint(x: .nan, y: 0), layer: 0, actor: actor)
+
+        #expect(manager.hasValidPattern)
+        #expect(manager.assembled().stitches.isEmpty)
     }
 
     // MARK: - Helpers

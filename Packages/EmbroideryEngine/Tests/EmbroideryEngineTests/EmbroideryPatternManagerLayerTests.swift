@@ -1,6 +1,47 @@
 import EmbroideryEngine
 import Testing
 
+/// Separate suite so the clause-semantics struct above stays inside
+/// `type_body_length` (the US-206 precedent for splitting rather than
+/// silencing the rule).
+@Suite("EmbroideryPatternManager layer boundary in bytes")
+struct LayerBoundaryByteOrderTests {
+    private let actor = ActorID(0)
+
+    @Test("The inter-layer boundary keeps its record order through the real serializer")
+    func layerBoundaryRecordOrderSurvivesSerialization() {
+        // US-210 moved the boundary emission from eager (trailing the previous
+        // layer, plus a leading jump on the next) to lazy (both on the first op
+        // of the next layer that survives the ADR-020 guards). The structured
+        // assertions elsewhere in this suite compare positions and flags; this
+        // one goes through `DSTFile` and decodes the bytes back, so the *record
+        // ordering* is guarded directly rather than inferred (Codex US-210
+        // round 2 blind spot).
+        //
+        // Layer 0 walks (0,0) → (5,0); layer 1 enters at (10,0), which clause D
+        // precedes with the previous command's point. The boundary sits between
+        // them: colour change at (5,0), then a jump at the same point.
+        var manager = EmbroideryPatternManager()
+        manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
+        manager.addStitch(at: StagePoint(x: 5, y: 0), layer: 0, actor: actor)
+        manager.addStitch(at: StagePoint(x: 10, y: 0), layer: 1, actor: actor)
+
+        let data = DSTFile(stream: manager.assembled(), name: "layers").data
+        let body = Array(data.dropFirst(512).dropLast(3))
+        let records = stride(from: 0, to: body.count, by: 3)
+            .map { DSTRecordDecoder.decode(Array(body[$0 ..< $0 + 3])) }
+
+        #expect(records == [
+            .init(dx: 0, dy: 0, isJump: false, isColorChange: false), // (0,0)
+            .init(dx: 10, dy: 0, isJump: false, isColorChange: false), // (5,0)
+            .init(dx: 0, dy: 0, isJump: false, isColorChange: true), // boundary change
+            .init(dx: 0, dy: 0, isJump: true, isColorChange: false), // boundary jump
+            .init(dx: 0, dy: 0, isJump: false, isColorChange: false), // clause D re-emit
+            .init(dx: 10, dy: 0, isJump: false, isColorChange: false) // clause E target
+        ])
+    }
+}
+
 @Suite("EmbroideryPatternManager layer switching and assembly")
 struct EmbroideryPatternManagerLayerTests {
     private let actor = ActorID(0)
