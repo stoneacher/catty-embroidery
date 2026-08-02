@@ -17,6 +17,8 @@ These are engine-side chokepoints — an interpreter-side guard cannot reach (a)
 ### Added beyond the ACs
 - [x] **A third trap, created by this story's own bound.** Once coordinates near the `Int` conversion limit are *accepted* (which AC 4 requires), a distant second stitch gives `splitCount ≈ 7.6e16` and `addInterpolatedStitches` appends jump stitches until it exhausts memory. Swift does not trap on that, but an unbounded emission is no better for a caller than the crash this story closes. Bounded at 1 000 000 splits — ADR-014's `maxStitchesPerUpdate` number, for its reason. Running the cap *first* is also what keeps the interpolation arithmetic inside `Int`.
 - [x] **The recursion is the termination argument, and it is now pinned.** Each emitted hop re-enters `append` and re-checks itself, so a hop the intermediate rounding pushes back over 121 splits again. `longButSplittableMoveStillInterpolates` makes it visible: of the 999 hops in a 121 000-unit move, 500 re-split, and the stitch count is 2503 rather than the naive 1003.
+- [x] **A fourth trap, and the one no amount of arithmetic-checking would have found.** Above ~2^58 stage points the gap between adjacent `Double`s exceeds ±121 units, so a 128-unit move at `2^58 → 2^58 + 64` has *no* representable midpoint: the split emits nothing new, the target re-enters the same decision, and the process dies of stack overflow rather than trapping. Interpolation now also requires the lattice step inside the interval to stay within ±121 units. That guard is not a patch bolted onto the termination argument — it is what makes the argument true.
+- [x] **The manager's replay must ask before arming.** It decides flags at command time and the stream converts at replay time, so a flag armed for a rejected emission rode the next surviving append — a *different actor's* stitch with actors interleaved on a layer, contradicting ADR-015 directly. `assembled()` now calls `EmbroideryStream.canAppend` first and skips a rejected emission whole. The same shape once more: a layer whose every op is rejected left a colour stop and an orphan join duplicate, so the inter-layer boundary is emitted lazily on the first op that survives.
 
 ## Test-first plan
 1. Journal repro at the stream level: previous x = 0.125, target x = 60.75 (decision distance 121, encoded delta 122) → no trap; the pinned semantics hold; the mirrored negative-half case likewise. — **Done, with a correction: 0.125 → 60.75 has no trapping mirror.** `javaRound`'s asymmetry means 0 → ±60.75 traps in *neither* direction, so mirroring a trapping case is not automatic. The three cases pinned are the journal's 0.125 → 60.75, the original 2026-07-09 repro −0.3 → 60.3, and its genuine negative-direction mirror 0.3 → −60.3.
@@ -32,8 +34,18 @@ These are engine-side chokepoints — an interpreter-side guard cannot reach (a)
 
 ## Outcome
 
-349 tests green (334 before), `swiftlint --strict` clean, CI green. Production changes in
-four engine files; `DSTStitchRecord` itself is untouched.
+363 tests green (334 before), `swiftlint --strict` clean, CI green. Production changes in
+four engine files; `DSTStitchRecord` itself is untouched. Four Codex rounds; the loop
+closed on a clean pass at round 4, under the cap of 5.
+
+**The story as written closed two traps. Shipping it safely took five.** The three the
+story did not name were each *created or exposed* by the guard that closed the previous
+one: bounding the conversion made an unbounded interpolation reachable; accepting large
+coordinates made a coordinate lattice coarser than ±121 units reachable; and making
+rejection a no-op inside the stream left the pattern manager arming flags for emissions
+that no longer happen. None was a mistake in the original analysis — they are what a
+chokepoint story looks like when the domain it admits is genuinely new to the code
+downstream of it.
 
 **The red baseline is worth keeping in view.** All three trap sites reproduced, and two of
 them killed the test process rather than failing an expectation: `Fatal error: Double value
@@ -80,7 +92,21 @@ failable and ripple that to the M3 export path, or surface "design too large" in
 that decision belongs with the export story rather than inside a coordinate-conversion
 chokepoint. Carried in the journal and in ADR-020's Consequences.
 
+**Three review layers, three methods, and they did not overlap.** `swift-architect`
+modelled the *reference* and caught a byte divergence at difference 242 / encoded 243.
+Codex modelled the *representation* and caught a non-terminating recursion at 2^58, then
+spent two more rounds finding the resulting guard mis-scoped in each direction in turn.
+I checked the arithmetic at the ±121 boundary, which is where the story said the bug was,
+and found neither. The two layers that reasoned about the algorithm agreed with each other
+and were both wrong; the one that reasoned about what the number system can represent was
+right. `swift-code-reviewer` was not run on this story — an omission, though on this
+evidence its checklist would not have reached any of these.
+
 **Manual Ink/Stitch verification: not needed.** No design's bytes change — the two US-106
 fixtures and US-209's committed `square.dst` all compare byte-identical with the goldens
 untouched, which is the check that would have caught it if any had. No new DST file is
-produced by this story.
+produced by this story. The one restructure that could plausibly have moved bytes silently
+(eager → lazy layer boundary) is now guarded by a byte oracle of its own:
+`layerBoundaryRecordOrderSurvivesSerialization` serializes a two-layer design through
+`DSTFile` and decodes the records back, so the boundary's record *order* is asserted rather
+than inferred from positions and flags.
