@@ -13,6 +13,8 @@ Standalone native iOS app bringing Catrobat's embroidery functionality (Android 
 - App-layer side effects (file I/O, DST export/share, clock/sleep, UUID/date) sit behind small initializer-injected interfaces with deterministic test doubles (hand-rolled, no DI library — ADR-006). The engine takes no dependencies and performs no I/O.
 - **Definition of done for every UI story (M3+)**: no hardcoded user-facing strings (String Catalog + translator comments; layout uses leading/trailing — Catrobat ships ~75 languages incl. RTL); loading/empty/error states shipped with the feature; animations respect Reduce Motion; basic VoiceOver pass (the stage canvas gets a summarizing label: stitch count, colors, size in mm); touch targets ≥ 44 pt; Dynamic Type to AX1 without truncation.
 
+**Backlog**: fully analysed stories with no milestone yet live in [`user-stories/backlog.md`](user-stories/backlog.md); milestone planning assigns them a place. Written up at discovery time rather than left as journal carry-forwards, because the one carry-forward that was (the ±121 coordinate trap, 2026-07-09 → US-210) was mis-scoped twice by review before it became a correct story.
+
 ## Epics
 
 | ID | Epic | Summary |
