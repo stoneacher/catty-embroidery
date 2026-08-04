@@ -1,0 +1,112 @@
+# Milestone 3 — Walking skeleton app
+
+**Status**: Planned — 2026-08-04. Ten stories (US-301…US-309 plus US-211, carried in from the backlog), ~40 h. Not started.
+
+Goal: a minimal SwiftUI app wired end to end — pick a bundled sample program → run it with a live stage preview (needle + stitches) → export the DST through the share sheet. Proves the full thread through every layer. See [ROADMAP.md](../../ROADMAP.md).
+
+Every story is developed test-first: the tests listed in its "Test-first plan" are written and red before implementation starts.
+
+**Where the Catroid and Catty references disagree, [ADR-012](../../DECISIONS.md) is the arbiter** — and the app never re-implements engine semantics. Thread colour, dedup, interpolation, colour-change and layer rules stay owned by `EmbroideryStream` / `EmbroideryPatternManager` (ADR-012/013/015/020). The app only *calls* them. This is the M2 rule ("the interpreter never re-implements stream semantics") applied one layer up, and it is what decides the milestone's central design question (ADR-021).
+
+| Story | Title | Epic | Est. | Depends on |
+|-------|-------|------|------|------------|
+| [US-301](US-301-bundled-sample-programs.md) | Bundled sample programs as a package product | E6 (thin) | ~4 h | — |
+| [US-302](US-302-preview-core.md) | Preview core: colour-resolved stitch events, display list, transform math | E4 | ~5 h | US-301 |
+| [US-303](US-303-app-target-rehabilitation.md) | App target rehabilitation, navigation skeleton, app CI job | E1 | ~4 h | US-301, US-302 |
+| [US-304](US-304-sample-picker.md) | Sample picker | E6 (thin) | ~2 h | US-303 |
+| [US-305](US-305-canvas-stitch-renderer.md) | Canvas stitch renderer, fit-to-screen, empty state | E4 | ~5 h | US-302, US-303 |
+| [US-306](US-306-run-lifecycle.md) | Run lifecycle: driver, `AsyncStream`, batching, play/stop, needle | E4 | ~5 h | US-302, US-305 |
+| [US-307](US-307-zoom-pan-and-accessibility.md) | Pinch-zoom / pan and the stage VoiceOver summary | E4 | ~3 h | US-302, US-305 |
+| [US-211](US-211-dst-field-width-chokepoint.md) | DST serialization field-width chokepoint | E2 / E7 | ~3 h | US-210 (ADR-020) |
+| [US-308](US-308-design-name-and-dst-export.md) | Design name, DST export via share sheet, exported UTType, gating | E7 | ~5 h | US-211, US-306, US-303 |
+| [US-309](US-309-fifty-thousand-stitch-exit-criterion.md) | Exit criterion: 50k synthetic design at 60 fps | E4 | ~4 h | US-305, US-306, US-307 |
+
+**Total: ~40 h.** Order: 301 → 302 → 303 → 304 → 305 → 306 → 307 → 211 → 308 → 309.
+
+**US-211 keeps its ID.** It was specified at discovery time on 2026-07-31 and parked in [`backlog.md`](../backlog.md); this milestone assigns it a place. The ID is stable so the ADR-020 and journal references that already cite it keep resolving.
+
+## Buildability — every story's symbols exist at or before its place in the order
+
+Checked deliberately rather than assumed: M2's planning round shipped a story order that was *not* independently buildable (US-201 referenced a `Brick` type landing one story later) and a cross-vendor review caught it one layer down. The claim per story:
+
+| Story | Creates | Consumes (from) | Verdict |
+|---|---|---|---|
+| US-301 | `Samples` target, `SampleLibrary`, `SampleProgram` | `ProgramModel` (M2, shipped) | ✅ zero prerequisites |
+| US-302 | `StagePreview` target, `StitchDisplayList`, `StageTransform`, `StageGeometry`, `RunBatch`, `PreviewStitch`; `InterpreterEvent.stitch(…color:)`; `EmbroideryPatternManager.threadColor(for:)`; `EmbroideryStream.requiresTraversal` | `SampleLibrary` (301), M2 engine + interpreter | ✅ no forward references |
+| US-303 | app shell, `RootView`, String Catalog, CI job | `Samples` (301), `StagePreview` (302) | ✅ **position forced** — see below |
+| US-304 | `SamplePickerView` | `SampleLibrary` (301), `RootView` (303) | ✅ |
+| US-305 | `StagePreviewRenderer`, `CanvasStitchRenderer`, `SettledRaster` | display list + transform (302), app shell (303) | ✅ |
+| US-306 | `InterpreterDriver`, `RunState`, `RunViewModel`, `RunPacing` | `RunBatch.reducing` (302), `StageView` (305) | ✅ |
+| US-307 | gestures, `StageAccessibility` | transform methods, `bounds`/`colorRuns` (302), `StageView` (305) | ✅ |
+| US-211 | throwing `DSTFile.init`/`DSTHeader.init`, `DSTSerializationError` | `DSTHeader`, `DSTFile`, `EmbroideryStream` — all M1 | ✅ **freely movable** |
+| US-308 | `DesignName`, `DSTDesign`, `DSTFileWriting`, UTType declaration | throwing init (211), `exportModel` (306), Info.plist (303) | ✅ |
+| US-309 | `SyntheticDesign` | everything render-side (302, 305, 306, 307) | ✅ |
+
+Two places the order is **forced**, both worth stating so a later reader does not "tidy" them:
+
+1. **US-303 comes after US-301 and US-302, even though it is narratively "story 1".** `*.pbxproj` changes are a human Xcode session (CLAUDE.md), and that session links package *products* — so `Samples` and `StagePreview` must already exist in `Package.swift` or the session has to be repeated three times. A pleasant side effect: the milestone opens with two package-only stories that run entirely under the existing `swift test` gate.
+2. **US-301 comes before US-302.** US-302's display-model-vs-export-model test needs a real program to run, and SwiftPM forbids a test target depending on another test target — so `StagePreviewTests` cannot reuse `InterpreterTests`' `polygonProgram`. With 301 first, US-302's fixtures are `SampleLibrary.all` and no fourth hand-rolled program builder gets written.
+
+US-211's freedom is genuine slack: it touches nothing M3 creates, and nothing M3 creates touches it before US-308. If the milestone runs hot it can move to position 1 and be done while the app-side design settles. It must not slip past US-308.
+
+## Milestone exit criteria
+
+End-to-end sample → preview → DST works; a synthetic 50 000-stitch design animates at 60 fps on an A15-class device; zoom/pan transform math is unit-tested. The transform-math criterion is met under `swift test` with no simulator, because `StagePreview` is a Foundation-only package target (ADR-022).
+
+## Design summary
+
+Decided in the M3 planning session (2026-08-04) with `swift-architect`, grounded in the Catroid canonical implementation, Catty prior art, and the M1/M2 package API. Two ADRs are pinned at planning time because US-302's tests are written against them; four more are reserved for the stories that discover them.
+
+- **The app renders from colour-resolved events into an append-only display list** (ADR-021). `InterpreterEvent.stitch` gains `color: ThreadColor`, supplied by a new read-only `EmbroideryPatternManager.threadColor(for:)`. The alternative of calling `assembledStream()` per frame was **measured, not assumed** — 0.64 ms at 50k stitches in release, roughly 10% of a frame on A15-class hardware, i.e. affordable. It was rejected on structure: `assembled()` iterates `layerOps.keys.sorted()` and emits layer boundaries lazily, so for a **multi-layer** program a new stitch inserts into the middle of the returned array, which forecloses ADR-009's "rasterise the settled prefix, redraw only the live tail". (For a single-layer program the prefix *is* stable — the point is not to bet the architecture on never having two objects.) Tracking colour in the app was rejected because it duplicates ADR-015's four rules, and Catty's prior art shows the concrete failure: its per-batch colour reset mis-colours the batch-boundary seam.
+- **Two new app-support targets in the engine package** (ADR-022): `Samples` (depends on `ProgramModel` only) and `StagePreview` (depends on `Interpreter` + `EmbroideryEngine`, Foundation-only — no SwiftUI, no CoreGraphics). This keeps the display list, the transform math and the event reducer under `swift test` and the existing pre-commit gate, and lets M5 inherit the samples rather than redo them. The ADR-016 dependency DAG stays a straight line inward.
+- **`StageGeometry` puts ADR-007's 500×500 stage into code for the first time.** Its doc comment must say that it does **not** bound engine input — nothing bounds a `StagePoint`, and a design can legitimately leave the stage. The stage is drawn as a hoop outline and is not clipped to, so an out-of-hoop design is visible rather than silently cropped.
+- **The interpreter runs off `@MainActor`** in a cancellable `Task`, looping `step()` — not `run(maxTicks:)`, which cannot break on a *stitch* budget. One tick can emit 51 stitches in sample 1 and 106 in a triple-stitch design (measured), and up to ADR-014's 1 000 000 cap in principle. Batches cross to the main actor through an `AsyncStream` with unbounded buffering, and the view model performs **exactly one** observable mutation per batch.
+- **`InterpreterClock(tickDelta: 1.0/60.0)` with one tick per frame**, so a `wait(1)` brick occupies 60 ticks ≈ 1 s of wall time and looks right on screen with no wall-clock anywhere in the package (ADR-018).
+- **The terminal batch always carries `assembledStream()`** — on natural finish, on the stitch cap, *and* on cancellation. That is the direct fix for Catty's hazard where `Stage.stopProject()` tears down the graph `shareDST` reads; export after a user stop is safe by construction and is an explicit acceptance criterion, not an accident of value semantics.
+- **The renderer sits behind a protocol with `associatedtype Body: View`**, not a `GraphicsContext` parameter — a context in the signature *is* the Canvas leaking into the protocol and would defeat ADR-009's Metal escape hatch.
+- **Export gates on the post-replay `assembledStream().count > 1`**, not on `hasValidPattern` (which counts recorded ops the replay may reject). This closes the divergence ADR-020 left "for whoever wires up export to decide", and matches Catroid's `validPatternExists()`, which counts points in the *built* streams.
+- **`DSTFile.init` and `DSTHeader.init` become throwing** (US-211, ADR-025). Both are public, so both trap today; 39 call sites gain `try`. Throwing rather than failable because the export path must tell the user *which* limit was hit, and `Optional` cannot carry that.
+
+## Documented deviations from the references
+
+Deliberate, and every one is an improvement on a reference defect rather than a shortcut:
+
+| Deviation | Why |
+|---|---|
+| Jump traversals drawn distinctly from thread | **Both** references draw them as solid thread indistinguishable from stitching (Catroid suppresses lines only across colour changes; Catty's `drawStitchingLine` is unconditional), so a machine's travel moves look sewn. Needs `EmbroideryStream.requiresTraversal` so the app asks the engine instead of re-deriving ADR-020. |
+| Needle indicator is our own design | Neither reference has one: Catroid's "needle" is an ordinary sprite with a PNG look; Catty has zero occurrences of "needle" in `src/`. No parity obligation — judged on ADR-009 cost and accessibility. |
+| Per-colour-run `Path` grouping | Catroid sets `shapeRenderer.color` per primitive because libGDX vertex colours don't break the batch; SwiftUI `Canvas` needs the grouping. Forced by the API, not a semantic change (ADR-009). |
+| Fixed logical tick, no adaptive sub-stepping | Catroid runs `stage.act()` up to **50×** per frame and *increases* the count when the pass is fast (`deltaActionTimeDivisor`, `StageListener.render():576-600`) — an anti-throttle that fights its own O(n)-per-frame rebuild. ADR-018's fixed tick plus an explicit stitch budget replaces it. |
+| Display list built from ops; export model from the replay | They differ in three places (clause-B transition points, clause C/D re-emits, interpolation intermediates), all duplicates or on-segment points — so the drawn path is identical and only the record list differs. Catroid needed `EmbroideryExportIsolationTest` for the same separation; ours is a deliberate invariant with its own test (US-302). |
+| Export gate and render gate may legitimately disagree | Catroid keeps one predicate for both, so "nothing rendered" and "nothing exportable" agree. For us they can diverge exactly in ADR-020's rejected-coordinate case: ops recorded and drawn, every one rejected at replay. The app says so specifically rather than offering a header-only file — Catty ships a 515-byte header-plus-EOF file with zero stitches. |
+| Design name validated, not silently truncated | Catroid `take(15)`s the project name, never validates it, and mangles non-ASCII to `?` bytes under `US_ASCII`; Catty's shipping app exports an **always-blank** `LA:` field (only its tests pass a name). There is no working precedent on either platform. |
+| File name sanitised independently of the header label | They are unrelated fields in the format. Catroid's `sanitizeFileName` has no empty check and yields a file literally named `.dst`. |
+| Exported UTType for `.dst` | Catty declares none — it ships bare temp URLs that resolve to `public.data`/`dyn.*`, and Catroid sets `type = "text/*"` for a binary file. The `.catrobat` declaration in Catty's `App-Info.plist:102-123` is the only structural template. |
+| `RunState` has no `failed` case | ADR-018 guarantees the interpreter never halts — every bad-formula path continues with a per-brick fallback and `FormulaError.notANumber` is caught, not propagated. Nothing in the run path can fail, so `failed` belongs to the *export* lifecycle, which really can. Corrects ROADMAP.md's four-case enum rather than shipping a case with no producer. |
+
+## Human Xcode hand-off (prerequisite for US-303)
+
+`*.pbxproj` is human-only (CLAUDE.md). US-303 cannot start until these are done, in this order. All are verified findings, not speculation — the app target is still the Xcode template and contradicts three ADRs.
+
+1. **Link five package products** to the app target: `EmbroideryEngine`, `ProgramModel`, `Interpreter`, `Samples`, `StagePreview`. Currently **zero** are linked (`grep -c EmbroideryEngine project.pbxproj` → 0).
+2. **`IPHONEOS_DEPLOYMENT_TARGET`: 26.5 → 17.0** (ADR-004). Nothing in M3 needs more: `Canvas` is iOS 15, `ShareLink` iOS 16, `@Observable` iOS 17.
+3. **`SWIFT_VERSION`: 5.0 → 6.0.** Keep `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and `SWIFT_APPROACHABLE_CONCURRENCY = YES` — they are literally ADR-006's shape. Note in review that the app target's isolation defaults therefore differ from the package's.
+4. **`PRODUCT_BUNDLE_IDENTIFIER`** on all targets: `temp.catrobat-embroidery-ios` → the real reverse-DNS id.
+5. **Create a real `Info.plist`** and point `INFOPLIST_FILE` at it (`GENERATE_INFOPLIST_FILE` stays `YES` for the generated keys). Required because `UTExportedTypeDeclarations` is an array of dicts with no `INFOPLIST_KEY_*` form. Once the file exists, US-308 edits its XML freely — that is not a pbxproj change.
+6. **Add `Localizable.xcstrings`** to the app target. `LOCALIZATION_PREFERS_STRING_CATALOGS` and `STRING_CATALOG_GENERATE_SYMBOLS` are already `YES`; only the file is missing.
+7. **Share the scheme** (Manage Schemes → Shared) so `xcshareddata/xcschemes/` is committed. It does **not exist** today — `xcodebuild -list` finds a scheme only because Xcode autocreated it locally, which a fresh CI checkout cannot be relied on to do.
+8. **Delete the `catrobat_embroidery_iosUITests` target.** XCUITest requires XCTest, which CLAUDE.md forbids; the UI definition of done uses XcodeBuildMCP screenshots instead. Accepted cost: no `XCTApplicationLaunchMetric` launch metrics in M6.
+9. **Delete the template `ContentView.swift`.**
+
+## Definition of done
+
+Every UI story inherits [ROADMAP.md](../../ROADMAP.md)'s M3+ definition of done in full (String Catalog with translator comments, leading/trailing layout, loading/empty/error states shipped with the feature, Reduce Motion, VoiceOver, ≥ 44 pt targets, Dynamic Type to AX1) plus a simulator screenshot via XcodeBuildMCP. Each story restates only what is *specific* to it — not the whole list.
+
+Two clarifications that apply throughout:
+
+- **Reduce Motion does not disable the stitch animation.** Watching stitches appear is the feature's content, not decoration. It disables transform springs and the fit-to-screen re-animation.
+- **Thread colours are design data and must not adapt to dark mode.** Only stage chrome (hoop, background, grid) is semantic-coloured.
+
+## Manual Ink/Stitch verification
+
+Needed at **US-308** (first time a file reaches a viewer through the *app* path — check the `LA:` name and the colour stops) and at **US-301** (the bundled samples' DST output, since sample 1 is meant to be byte-comparable against the shipping Android app). Not needed for the other eight stories, which change no bytes.
