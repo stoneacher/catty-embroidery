@@ -11,7 +11,8 @@
 ## Acceptance criteria
 - [ ] `InterpreterDriver` owns the `Interpreter` value in a non-`@MainActor` context, loops **`step()`** — not `run(maxTicks:)`, which cannot break on a *stitch* budget — and yields one `RunBatch` per frame's worth of work into an `AsyncStream`.
 - [ ] `AsyncStream` uses **unbounded buffering**, never `.bufferingNewest`: dropping a batch would lose stitches permanently from an append-only list. Back-pressure is adequate because the producer self-paces and `apply(batch)` is O(batch).
-- [ ] `ticksPerFrame` defaults to **1**, with a `maxStitchesPerFrame` cap for when it is raised. The budget is not theoretical: one tick emits 51 stitches in sample 1 and 106 in a triple-stitch design (measured at planning), and up to ADR-014's 1 000 000 cap in principle.
+- [ ] `ticksPerFrame` defaults to **1**, with a `maxStitchesPerFrame` budget for when it is raised. The budget is not theoretical: one tick emits 51 stitches in sample 1 and 106 in a triple-stitch design (measured at planning).
+- [ ] **The budget governs how many ticks run per frame, not how large a batch may be** — `step()` returns one atomic `[InterpreterEvent]`, so the driver cannot split it and a single tick can exceed any per-frame cap. The true worst case is **3 000 001** events from one tick, not ADR-014's 1 000 000: the cap bounds *segments*, and `TripleStitchPattern` emits three points per segment plus the first anchor — its own source comment says "so at most 3× that many stitches". An oversize batch is applied in a single observable mutation (correct, just a known worst-case frame), and there is a test for that path. (The first draft said "up to ADR-014's 1 000 000 cap" and implied the cap was enforceable at this seam; Codex round 1 corrected both halves.)
 - [ ] The view model performs **exactly one** observable mutation per batch. A test proves the mutation count equals the *batch* count, not the stitch count — this is the roadmap's "batched before mutating observable state", made checkable.
 - [ ] `RunState` is `idle | running | finished(.programFinished | .stoppedByUser | .stitchLimitReached)`. **There is no `failed` case** — ADR-018 guarantees the interpreter never halts (every bad-formula path continues with a per-brick fallback; `FormulaError.notANumber` is caught, not propagated), so nothing in the run path can fail. `failed` belongs to `ExportState` in US-308. This deliberately corrects ROADMAP.md's four-case enum rather than shipping a case with no producer.
 - [ ] `forever` never terminates on its own, so the app owns the stop: no hard tick cap, a generous stitch cap that resolves to `.stitchLimitReached`.
@@ -29,9 +30,10 @@
 2. Observable-mutation count equals batch count, not stitch count (spy on the view model's apply path).
 3. Cancelling mid-run leaves `.finished(.stoppedByUser)`, a non-empty display list, **and** a non-nil export model.
 4. A `forever` program stops at the stitch cap with `.stitchLimitReached` and does not hang.
-5. `reset()` returns `.idle`, empties the display list and clears the export model; a second `play()` reproduces the identical display list (determinism).
-6. `wait(1)` under `tickDelta = 1/60` occupies 60 batches. ADR-018's accumulating clock may produce a one-tick drift — if it appears, pin it rather than rounding it away.
-7. Screenshots mid-run and post-run.
+5. **Oversize single tick**: a triple-stitch move engineered to emit far more than `maxStitchesPerFrame` in one `step()` is applied whole, in one observable mutation, without dropping events or deadlocking — the path the atomic-batch criterion above describes.
+6. `reset()` returns `.idle`, empties the display list and clears the export model; a second `play()` reproduces the identical display list (determinism).
+7. `wait(1)` under `tickDelta = 1/60` occupies 60 batches. ADR-018's accumulating clock may produce a one-tick drift — if it appears, pin it rather than rounding it away.
+8. Screenshots mid-run and post-run.
 
 ## References
 - `Catroid/.../common/ThreadScheduler.java` (pause as `state != RUNNING`), `StageListener.render():576-600` — the `deltaActionTimeDivisor` anti-throttle: up to 50 `act()` passes per frame, *increasing* when the pass is fast. **Do not port.**

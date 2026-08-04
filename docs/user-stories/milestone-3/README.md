@@ -16,7 +16,7 @@ Every story is developed test-first: the tests listed in its "Test-first plan" a
 | [US-304](US-304-sample-picker.md) | Sample picker | E6 (thin) | ~2 h | US-303 |
 | [US-305](US-305-canvas-stitch-renderer.md) | Canvas stitch renderer, fit-to-screen, empty state | E4 | ~5 h | US-302, US-303 |
 | [US-306](US-306-run-lifecycle.md) | Run lifecycle: driver, `AsyncStream`, batching, play/stop, needle | E4 | ~5 h | US-302, US-305 |
-| [US-307](US-307-zoom-pan-and-accessibility.md) | Pinch-zoom / pan and the stage VoiceOver summary | E4 | ~3 h | US-302, US-305 |
+| [US-307](US-307-zoom-pan-and-accessibility.md) | Pinch-zoom / pan and the stage VoiceOver summary | E4 | ~3 h | US-302, US-305, US-306 |
 | [US-211](US-211-dst-field-width-chokepoint.md) | DST serialization field-width chokepoint | E2 / E7 | ~3 h | US-210 (ADR-020) |
 | [US-308](US-308-design-name-and-dst-export.md) | Design name, DST export via share sheet, exported UTType, gating | E7 | ~5 h | US-211, US-306, US-303 |
 | [US-309](US-309-fifty-thousand-stitch-exit-criterion.md) | Exit criterion: 50k synthetic design at 60 fps | E4 | ~4 h | US-305, US-306, US-307 |
@@ -34,10 +34,10 @@ Checked deliberately rather than assumed: M2's planning round shipped a story or
 | US-301 | `Samples` target, `SampleLibrary`, `SampleProgram` | `ProgramModel` (M2, shipped) | ✅ zero prerequisites |
 | US-302 | `StagePreview` target, `StitchDisplayList`, `StageTransform`, `StageGeometry`, `RunBatch`, `PreviewStitch`; `InterpreterEvent.stitch(…color:)`; `EmbroideryPatternManager.threadColor(for:)`; `EmbroideryStream.requiresTraversal` | `SampleLibrary` (301), M2 engine + interpreter | ✅ no forward references |
 | US-303 | app shell, `RootView`, String Catalog, CI job | `Samples` (301), `StagePreview` (302) | ✅ **position forced** — see below |
-| US-304 | `SamplePickerView` | `SampleLibrary` (301), `RootView` (303) | ✅ |
+| US-304 | `SamplePickerView`, the current-selection value | `SampleLibrary` (301), `RootView` (303) — **and nothing from US-306** | ✅ corrected in Codex round 1 |
 | US-305 | `StagePreviewRenderer`, `CanvasStitchRenderer`, `SettledRaster` | display list + transform (302), app shell (303) | ✅ |
 | US-306 | `InterpreterDriver`, `RunState`, `RunViewModel`, `RunPacing` | `RunBatch.reducing` (302), `StageView` (305) | ✅ |
-| US-307 | gestures, `StageAccessibility` | transform methods, `bounds`/`colorRuns` (302), `StageView` (305) | ✅ |
+| US-307 | gestures, `StageAccessibility` | transform methods, `bounds`/`colorRuns` (302), `StageView` (305), `RunState` + the export model (306) | ✅ — dependency on 306 was missing from the first draft (Codex round 1); its position after 306 was already correct |
 | US-211 | throwing `DSTFile.init`/`DSTHeader.init`, `DSTSerializationError` | `DSTHeader`, `DSTFile`, `EmbroideryStream` — all M1 | ✅ **freely movable** |
 | US-308 | `DesignName`, `DSTDesign`, `DSTFileWriting`, UTType declaration | throwing init (211), `exportModel` (306), Info.plist (303) | ✅ |
 | US-309 | `SyntheticDesign` | everything render-side (302, 305, 306, 307) | ✅ |

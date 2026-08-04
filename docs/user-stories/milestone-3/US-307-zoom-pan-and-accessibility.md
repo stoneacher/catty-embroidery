@@ -1,6 +1,6 @@
 # US-307 — Pinch-zoom / pan and the stage VoiceOver summary
 
-**Epic**: E4 Stage & preview | **Estimate**: ~3 h | **Depends on**: US-302, US-305
+**Epic**: E4 Stage & preview | **Estimate**: ~3 h | **Depends on**: US-302, US-305, **US-306**
 
 **Status**: Not started
 

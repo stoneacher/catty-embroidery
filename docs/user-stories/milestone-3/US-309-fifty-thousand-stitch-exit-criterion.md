@@ -11,7 +11,8 @@ ADR-009 was decided on reference analysis (Catty's node-per-stitch collapse, Cat
 ## Acceptance criteria
 - [ ] `SyntheticDesign` in `StagePreview` builds a 50 000-stitch display list directly, **and** — separately — a program that animates up to 50k, so both the steady state and the production path are measured.
 - [ ] Frame times measured **on device** (A15-class) in a **Release** build, with before/after numbers recorded for the thesis. Simulator numbers are noted as non-authoritative.
-- [ ] **Per-frame work is shown to be independent of total stitch count**: frame time at 50k settled + a 100-stitch live tail ≈ frame time at 5k settled + the same tail. This is the actual claim ADR-009 makes; a single 50k number would not test it.
+- [ ] **"60 fps" has an explicit pass/fail definition, stated before measuring** — otherwise a capture with periodic dropped frames satisfies every other item here (Codex round 1). The bar: over a ≥ 10 s capture at 50k settled, the **99th-percentile frame time ≤ 16.67 ms** and **no frame exceeds 33.3 ms** (i.e. no dropped frame doubles). Report median, p95, p99 and worst frame, not an average — an average hides exactly the stutter this criterion exists to catch.
+- [ ] **Per-frame work is shown to be independent of total stitch count**, with a numeric tolerance rather than "≈": p99 frame time at 50k settled + a 100-stitch live tail is within **1.5×** of p99 at 5k settled with the same tail. This is the actual claim ADR-009 makes; a single 50k number would not test it, and an unquantified "≈" cannot fail.
 - [ ] The rasterisation threshold and the re-rasterisation policy (including the mid-gesture blit from US-307) are tuned by measurement, and the chosen constants are documented **with the measurement that justified them** — not as bare magic numbers.
 - [ ] Headless throughput guard under `swift test`: appending 50 000 stitches in 1 000 batches to a `StitchDisplayList` stays within a documented time bound. This catches an accidental O(n²) in `colorRuns`/`bounds` maintenance, which is the realistic regression — and it runs on the existing pre-commit gate, unlike the device measurement.
 - [ ] The planning-session baseline is recorded for the record: **`assembled()` costs 0.64 ms/call at 50k stitches, 0.17 ms at 10k, 0.023 ms at 1k** (release, M-series Mac). This is the number that shows option B was *affordable* and was rejected on prefix stability, not on speed — the interesting part for the thesis, and the correction to the intuition that both references' per-frame rebuild was simply "too slow".
@@ -21,8 +22,8 @@ ADR-009 was decided on reference analysis (Catty's node-per-stitch collapse, Cat
 
 ## Test-first plan
 1. Headless throughput/complexity guard, written first and shown **red against a deliberately O(n²) append** — a passing performance test that was never seen failing proves nothing.
-2. Frame-time capture on device at 5k / 20k / 50k settled, tabulated.
-3. Per-frame independence assertion across those three points.
+2. Frame-time capture on device at 5k / 20k / 50k settled, tabulated as median / p95 / p99 / worst over ≥ 10 s each. The headless append benchmark cannot substitute for this — it verifies list maintenance, not rendering.
+3. Per-frame independence assertion across those three points, against the 1.5× p99 tolerance above.
 4. An animated run to 50k with no dropped batch: display list count equals the interpreter's stitch-event count.
 5. Pan and zoom at 50k measured, settled path and mid-gesture path separately.
 6. Screenshots at 50k, fitted and zoomed.

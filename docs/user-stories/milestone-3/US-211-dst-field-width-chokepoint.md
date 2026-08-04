@@ -34,7 +34,9 @@ Verified by execution unless marked otherwise. Widths confirmed directly against
 - **Bound the design at the app layer** per ADR-007 — rejected, and it fails on its own terms. ADR-007's stage bounds **do not exist as code** (`grep -rn "500" Sources/` returns two comments and no constant), so this option must first introduce engine-space bounds, moving its cost toward the throwing option rather than away. Worse, the asymmetry above means bounding coordinates would close only the trap already out of reach and leave the two that are in reach. Wrong shape for the problem.
 - **Throwing, not merely failable** — chosen. It is the only option that lets a caller respond, and US-308 has a caller that must: the export path needs to tell the user *which* limit was hit ("118 colour blocks; DST allows 99"). `Optional` cannot carry that. And `DSTFile` is not gaining an error surface for the first time — `write(to:)` already throws.
 
-**Measured cost**: **39 call sites** gain `try` — 24 × `DSTFile(stream`, 15 × `DSTHeader(stream` across the package. In tests these become `try #require` or `throws` test functions.
+**Measured cost**: **33 call sites** gain `try` — 19 × `DSTFile(stream`, 14 × `DSTHeader(stream` in checked-in Swift. In tests these become `try #require` or `throws` test functions.
+
+(Provenance of that number, since it was got wrong once: a planning-session count of 39 came from a `grep` without `--include='*.swift'`, which swept `README.md`, `Tests/InterpreterTests/Resources/GoldenPrograms/PROVENANCE.md` and two `.build/` artifact copies. Codex round 1 caught it. Count Swift only.)
 
 **On the ADR-020 cap (the backlog's AC 3): do not lower it.** Once `init` throws, `ST` overflow is a *handled error*, so the cap no longer needs to protect the header. Lowering 1 000 000 → 999 996 would change interpolation *emission* for moves the engine admits by design, in order to guard an error that is now representable, and would break the shared rationale ADR-014 and ADR-020 both hang on that number. Pin the opposite: `ST` overflow is a serialization error, not an interpolation bound.
 
@@ -49,10 +51,10 @@ Verified by execution unless marked otherwise. Widths confirmed directly against
 - [ ] ADR-019 screening: state that these inputs sit deliberately *on* field-width boundaries. That is the subject of the tests, not an accident of them.
 
 ## Test-first plan
-1. Characterisation tests pinning today's traps first — they pass, because the traps are real — then converted to the chosen semantics. `+X`: `addStitch(0,0)` then `addStitch(6000,0)`. `CO`: 99 `addColorChange()`. `ST`: 1 000 001 stitches inside a 2-unit extent. **Note the ordering trap**: `appendField` writes `ST` *before* `+X`, so an `ST` test built from a huge move would trap on the wrong field — isolate it with the tight-extent recipe.
+1. **Exit tests** pinning today's traps first — `#expect(processExitsWith:)`, the mechanism US-210 already used for ADR-020 — then converted to the chosen semantics. `+X`: `addStitch(0,0)` then `addStitch(6000,0)`. `CO`: 99 `addColorChange()`. `ST`: 1 000 001 stitches inside a 2-unit extent. **These must be exit tests, not ordinary ones**: `precondition` traps, and a trap terminates the test process rather than throwing, so an in-process "characterisation test" would kill the suite instead of passing. (An earlier draft of this plan said "characterisation tests… they pass", dropping the word "exit" that the backlog specification had and losing the mechanism with it — Codex round 1.) **Note the ordering trap too**: `appendField` writes `ST` *before* `+X`, so an `ST` test built from a huge move would trap on the wrong field — isolate it with the tight-extent recipe.
 2. The ADR-020 cap move confirms `ST` reaching width 7, and that cap and field are decoupled once `init` throws.
 3. Just-inside boundaries stay green (9999 / 99 / 999 999).
-4. All 39 call sites updated with `try` / `try #require`; one test proves a caller can distinguish "too large" — and *which* field — from any other failure.
+4. All 33 call sites updated with `try` / `try #require`; one test proves a caller can distinguish "too large" — and *which* field — from any other failure.
 5. The two US-106 goldens and `square.dst` re-run byte-identical.
 
 ## References
