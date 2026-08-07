@@ -85,4 +85,4 @@ playground.xcworkspace
 
 # Signing / local secrets
 *.mobileprovision
-*.p12
+*.p12.claude/worktrees/
