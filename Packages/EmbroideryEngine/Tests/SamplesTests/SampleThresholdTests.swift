@@ -20,23 +20,26 @@ struct SampleThresholdTests {
     /// mistake ADR-019 exists to stop.
     @Test("the screening mirror reproduces the engine's own emission counts",
           arguments: [
-              (SampleID.octagonRosette, 2.0),
-              (SampleID.squareCoil, 6.0)
+              (SampleID.octagonRosette, 2.0, 1),
+              (SampleID.squareCoil, 6.0, 3)
           ])
-    func mirrorIsFaithful(_ id: SampleID, _ length: Double) {
+    func mirrorIsFaithful(_ id: SampleID, _ length: Double, _ pointsPerInterval: Int) {
         let sample = SampleLibrary[id]
-        let screening = screen(sample, patternLength: length)
+        let screening = screen(sample, patternLength: length, pointsPerInterval: pointsPerInterval)
         let engineCounts = emissionCountsPerMove(run(sample))
 
-        // The first needle move activates the pattern's anchor and emits nothing,
-        // and the zigzag's very first emitting update also carries its offset
-        // anchor point, so compare the interval counts against the engine's
-        // emitted points with those two accounted for.
         #expect(!screening.probes.isEmpty)
-        #expect(
-            screening.probes.count <= engineCounts.count,
-            "screened \(screening.probes.count) updates but the engine moved \(engineCounts.count) times"
-        )
+
+        // Element-by-element over every needle-move tick, zeros included. A
+        // weaker form of this test — comparing totals, or counts, or asserting an
+        // inequality — would pass against a mirror whose anchor drifted and whose
+        // errors happened to cancel, which is exactly the failure mode that makes
+        // a screen worthless. It has to be the whole sequence.
+        #expect(screening.predictedEmissions == engineCounts, """
+        mirror disagrees with the engine
+          predicted \(screening.predictedEmissions.prefix(12))…
+          engine    \(engineCounts.prefix(12))…
+        """)
     }
 
     /// Sample 2's parameters were **chosen** off the boundary, which is ADR-019's
@@ -48,7 +51,7 @@ struct SampleThresholdTests {
     /// allows. The dogleg from the lagging anchor only ever helps.
     @Test("the square coil is astronomically far from any floor boundary")
     func squareCoilIsFarOffBoundary() {
-        let screening = screen(SampleLibrary[.squareCoil], patternLength: 6)
+        let screening = screen(SampleLibrary[.squareCoil], patternLength: 6, pointsPerInterval: 3)
         #expect(screening.atRisk.isEmpty, "at risk: \(screening.atRisk.map(\.moveIndex))")
         #expect(
             screening.minimumUlpsFromBoundary > 1e9,
@@ -101,7 +104,7 @@ struct SampleThresholdTests {
     /// Linux SwiftPM job can be expected to turn it red.
     @Test("the rosette's stitch count rests on libm's rounding of hypot")
     func theRosetteDependsOnLibmRoundingOfHypot() {
-        let screening = screen(SampleLibrary[.octagonRosette], patternLength: 2)
+        let screening = screen(SampleLibrary[.octagonRosette], patternLength: 2, pointsPerInterval: 1)
         let histogram = Dictionary(grouping: screening.probes, by: \.intervals).mapValues(\.count)
 
         // The screening question — every side's nominal ratio is integral, so all
@@ -124,11 +127,11 @@ struct SampleThresholdTests {
     /// term is safe for US-207's reason, whatever its ulp figure says.
     @Test("the residue decomposition is reported for every screened update",
           arguments: [
-              (SampleID.octagonRosette, 2.0),
-              (SampleID.squareCoil, 6.0)
+              (SampleID.octagonRosette, 2.0, 1),
+              (SampleID.squareCoil, 6.0, 3)
           ])
-    func residueDecompositionIsFinite(_ id: SampleID, _ length: Double) {
-        let screening = screen(SampleLibrary[id], patternLength: length)
+    func residueDecompositionIsFinite(_ id: SampleID, _ length: Double, _ pointsPerInterval: Int) {
+        let screening = screen(SampleLibrary[id], patternLength: length, pointsPerInterval: pointsPerInterval)
         for probe in screening.probes {
             #expect(probe.alongComponent.isFinite)
             #expect(probe.perpendicularContribution.isFinite)

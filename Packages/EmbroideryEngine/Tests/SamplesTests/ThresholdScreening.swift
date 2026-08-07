@@ -60,6 +60,12 @@ struct BoundaryProbe {
 struct Screening {
     var probes: [BoundaryProbe]
 
+    /// How many stitch points the mirror says each needle-move tick emitted, in
+    /// tick order and **including the zeros** — turns that moved the anchor
+    /// nowhere still occupy a tick, and dropping them would let the comparison in
+    /// `mirrorIsFaithful` line up two differently-shaped sequences by accident.
+    var predictedEmissions: [Int] = []
+
     /// Updates whose emission count libm decides.
     var atRisk: [BoundaryProbe] {
         probes.filter(\.isDecidedByLibm)
@@ -168,10 +174,17 @@ func boundaryProbe(
 /// a side emits one interval short, the anchor lags and the next distance is a
 /// dogleg. Measuring `hypot` of the nominal step would find all 64 sides clean
 /// and issue a false clean bill of health.
-func screen(_ sample: SampleProgram, patternLength: Double) -> Screening {
+///
+/// `pointsPerInterval` is the pattern's emission multiplier: 1 for the zigzag
+/// (one offset point per interval) and 3 for the triple stitch (`point, previous,
+/// point` per segment). It is what makes `predictedEmissions` comparable against
+/// the engine's own per-tick counts.
+func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: Int) -> Screening {
     let measured = run(sample)
     var probes: [BoundaryProbe] = []
+    var predicted: [Int] = []
     var moveIndex = 0
+    var isFirstEmission = true
 
     // Seed the anchor where the *engine* seeded it. Both samples activate their
     // pattern before any motion, and `performEmbroidery` hands the pattern the
@@ -193,7 +206,13 @@ func screen(_ sample: SampleProgram, patternLength: Double) -> Screening {
         let dx = target.x - current.x
         let dy = target.y - current.y
         let distance = hypot(dx, dy)
-        guard distance >= patternLength else { continue }
+        guard distance >= patternLength else {
+            // A tick that moved the needle but not far enough to emit. Recorded
+            // as a zero rather than skipped, so the predicted sequence stays
+            // aligned with the engine's tick-by-tick counts.
+            predicted.append(0)
+            continue
+        }
 
         let remainder = distance.truncatingRemainder(dividingBy: patternLength)
         probes.append(boundaryProbe(
@@ -203,6 +222,11 @@ func screen(_ sample: SampleProgram, patternLength: Double) -> Screening {
             heading: move.heading,
             length: patternLength
         ))
+        // Both patterns emit their anchor point once, on the first update that
+        // passes the distance guard — the zigzag offset, the triple stitch raw.
+        let intervals = probes[probes.count - 1].intervals
+        predicted.append(pointsPerInterval * intervals + (isFirstEmission ? 1 : 0))
+        isFirstEmission = false
         moveIndex += 1
 
         // The pattern's own clamp: the anchor advances to the surplus-stripped
@@ -211,7 +235,7 @@ func screen(_ sample: SampleProgram, patternLength: Double) -> Screening {
         anchor = StagePoint(x: current.x + surplus * dx, y: current.y + surplus * dy)
     }
 
-    return Screening(probes: probes)
+    return Screening(probes: probes, predictedEmissions: predicted)
 }
 
 /// The `NeedleUpdate` carried by a `.needleMoved` event, if this is one.
