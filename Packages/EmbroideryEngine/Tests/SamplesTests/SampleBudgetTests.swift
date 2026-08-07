@@ -29,7 +29,7 @@ struct SampleBudgetTests {
     func boundingBoxFitsTheStage(_ sample: SampleProgram) throws {
         let measured = run(sample)
         let bounds = try #require(stageBounds(of: measured.stream), "\(sample.id.rawValue) stitched nothing")
-        let extreme = max(abs(bounds.minX), abs(bounds.maxX), abs(bounds.minY), abs(bounds.maxY))
+        let extreme = bounds.extreme
         #expect(
             extreme <= 250,
             """

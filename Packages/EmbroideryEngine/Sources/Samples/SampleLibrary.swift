@@ -6,11 +6,8 @@ import ProgramModel
 /// sequence, so reordering here reorders the UI.
 public enum SampleLibrary {
     public static let all: [SampleProgram] = [
-        // US-301 red phase: identities and the target are wired, the programs are
-        // not. Both entries carry an empty Program so the story's tests fail on
-        // their assertions rather than on a missing symbol.
-        SampleProgram(id: .octagonRosette, program: Program()),
-        SampleProgram(id: .squareCoil, program: Program())
+        SampleProgram(id: .octagonRosette, program: makeOctagonRosetteProgram()),
+        SampleProgram(id: .squareCoil, program: makeSquareCoilProgram())
     ]
 
     /// The sample with this id. Total by construction — `all` covers every

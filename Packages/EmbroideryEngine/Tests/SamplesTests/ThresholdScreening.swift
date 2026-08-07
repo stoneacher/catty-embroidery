@@ -112,17 +112,22 @@ func compensatedMagnitude(_ dx: Double, _ dy: Double) -> (head: Double, tail: Do
 /// `head` and `boundary` are within a factor of two, so Sterbenz makes their
 /// difference exact and the catastrophic cancellation is carried losslessly by
 /// `tail`.
+/// `intervals` is computed here rather than passed in, with the pattern's own
+/// expression, so the probe and the emission it describes cannot disagree.
 func boundaryProbe(
     moveIndex: Int,
     from anchor: StagePoint,
     to target: StagePoint,
     heading: Double,
-    length: Double,
-    intervals: Int
+    length: Double
 ) -> BoundaryProbe {
     let dx = target.x - anchor.x
     let dy = target.y - anchor.y
     let (head, tail) = compensatedMagnitude(dx, dy)
+
+    let distance = hypot(dx, dy)
+    let remainder = distance.truncatingRemainder(dividingBy: length)
+    let intervals = Int(((distance - remainder) / length).rounded(.down))
 
     let multiple = Swift.max(1, (head / length).rounded())
     let boundary = length * multiple
@@ -138,7 +143,7 @@ func boundaryProbe(
 
     return BoundaryProbe(
         moveIndex: moveIndex,
-        distance: hypot(dx, dy),
+        distance: distance,
         intervals: intervals,
         ulpsFromBoundary: residual / boundary.ulp,
         alongComponent: residual - perpendicularContribution,
@@ -166,41 +171,37 @@ func boundaryProbe(
 func screen(_ sample: SampleProgram, patternLength: Double) -> Screening {
     let measured = run(sample)
     var probes: [BoundaryProbe] = []
-    var anchor: StagePoint?
     var moveIndex = 0
+
+    // Seed the anchor where the *engine* seeded it. Both samples activate their
+    // pattern before any motion, and `performEmbroidery` hands the pattern the
+    // needle's current position as its `start` — which at activation is still the
+    // object's declared start. Taking the first `.needleMoved` as the anchor
+    // instead drops the first side and leaves the anchor one move behind for the
+    // rest of the run (it did, on the first version of this screen: 65 probes for
+    // 64 sides, one of them a spurious dogleg).
+    guard let origin = sample.program.scenes.first?.objects.first else {
+        return Screening(probes: [])
+    }
+    var anchor = StagePoint(x: origin.startX, y: origin.startY)
 
     for batch in measured.batches {
         guard let move = batch.compactMap(needleMove(in:)).first else { continue }
-        let emitted = batch.count {
-            if case .stitch = $0 {
-                true
-            } else {
-                false
-            }
-        }
-        guard emitted > 0 || anchor != nil else { continue }
 
         let target = move.position
-        guard let current = anchor else {
-            // The activation position: the first update the pattern ever sees.
-            anchor = target
-            continue
-        }
-
+        let current = anchor
         let dx = target.x - current.x
         let dy = target.y - current.y
         let distance = hypot(dx, dy)
         guard distance >= patternLength else { continue }
 
         let remainder = distance.truncatingRemainder(dividingBy: patternLength)
-        let intervals = Int(((distance - remainder) / patternLength).rounded(.down))
         probes.append(boundaryProbe(
             moveIndex: moveIndex,
             from: current,
             to: target,
             heading: move.heading,
-            length: patternLength,
-            intervals: intervals
+            length: patternLength
         ))
         moveIndex += 1
 

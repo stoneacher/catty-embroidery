@@ -1,0 +1,156 @@
+{
+  "formatVersion" : 1,
+  "name" : "Square Coil",
+  "scenes" : [
+    {
+      "name" : "Scene 1",
+      "objects" : [
+        {
+          "name" : "Needle",
+          "scripts" : [
+            {
+              "bricks" : [
+                {
+                  "setThreadColor" : {
+                    "hex" : "#1d4ed8"
+                  }
+                },
+                {
+                  "tripleStitch" : {
+                    "length" : {
+                      "number" : {
+                        "_0" : 6
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "Side",
+                    "to" : {
+                      "number" : {
+                        "_0" : 9
+                      }
+                    }
+                  }
+                },
+                {
+                  "repeatLoop" : {
+                    "times" : {
+                      "number" : {
+                        "_0" : 31
+                      }
+                    }
+                  }
+                },
+                {
+                  "moveNSteps" : {
+                    "_0" : {
+                      "variable" : {
+                        "_0" : "Side"
+                      }
+                    }
+                  }
+                },
+                {
+                  "turnRight" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 90
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeVariableBy" : {
+                    "name" : "Side",
+                    "value" : {
+                      "number" : {
+                        "_0" : 6
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "setThreadColor" : {
+                    "hex" : "#f59e0b"
+                  }
+                },
+                {
+                  "repeatLoop" : {
+                    "times" : {
+                      "number" : {
+                        "_0" : 13
+                      }
+                    }
+                  }
+                },
+                {
+                  "moveNSteps" : {
+                    "_0" : {
+                      "variable" : {
+                        "_0" : "Side"
+                      }
+                    }
+                  }
+                },
+                {
+                  "turnRight" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 90
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeVariableBy" : {
+                    "name" : "Side",
+                    "value" : {
+                      "number" : {
+                        "_0" : 6
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "sewUp" : {
+
+                  }
+                }
+              ],
+              "header" : {
+                "whenStarted" : {
+
+                }
+              }
+            }
+          ],
+          "startHeading" : 0,
+          "startX" : 0,
+          "startY" : 0,
+          "variables" : [
+            {
+              "name" : "Side",
+              "value" : 0
+            }
+          ],
+          "zIndex" : 0
+        }
+      ]
+    }
+  ],
+  "variables" : [
+
+  ]
+}

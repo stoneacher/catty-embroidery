@@ -55,16 +55,22 @@ struct OctagonRosetteGoldenTests {
         #expect(abs(extent.height - closedForm) < 0.05, "height \(extent.height) mm vs \(closedForm) mm")
     }
 
-    /// The ±250 stage criterion is met with **3.58 points (0.72 mm) to spare**.
+    /// The ±250 stage criterion is met with **3.5 points (0.7 mm) to spare**.
     /// That margin is a consequence of transcribing Catroid verbatim, not a knob:
     /// the side length 100 and the zigzag width 10 are the reference's. Asserted
-    /// at the measured value rather than at the limit so a change announces
-    /// itself here instead of at the generic budget test.
+    /// at the measured value rather than at the limit, so a change announces
+    /// itself here instead of as a near-miss in the generic budget test.
+    ///
+    /// 246.5 rather than the closed form's 246.4214 because the stream holds
+    /// **integer machine units**: 246.4214 points × 2 units/point is 492.84,
+    /// which `javaRound`s to 493 units = 246.5 points. The margin is quantized to
+    /// half a stage point, and this test reads the quantized value because that
+    /// is what the exported design actually contains.
     @Test("the rosette clears the stage bound by under a millimetre")
     func stageMarginIsThin() throws {
         let bounds = try #require(stageBounds(of: measured.stream))
-        let extreme = max(abs(bounds.minX), abs(bounds.maxX), abs(bounds.minY), abs(bounds.maxY))
-        #expect(abs(extreme - 246.4214) < 0.01, "extreme \(extreme); margin to 250 is \(250 - extreme)")
+        let extreme = bounds.extreme
+        #expect(extreme == 246.5, "extreme \(extreme); margin to 250 is \(250 - extreme)")
     }
 
     /// Every consecutive gap is at most hypot(2, 10) ≈ 10.2 points = 20.4 units,

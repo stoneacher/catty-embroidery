@@ -70,10 +70,27 @@ struct SampleThresholdTests {
     /// can land a full ulp below 100 and emit 49 intervals instead of 50.
     ///
     /// The observable consequence is the gap between the boundary-free count
-    /// (1 anchor + 64 × 50 = **3201**) and the **3194** this program produces.
-    /// A short side leaves the anchor 2 units behind the vertex, so the next
-    /// side measures a dogleg of about 101.4 and re-emits 50 — the loss shifts
-    /// the anchor rather than deforming the design.
+    /// (1 anchor + 64 × 50 = **3201**) and the **3194** this program produces,
+    /// and it reconciles in three terms rather than one:
+    ///
+    ///     1 anchor + 55 × 50 + 9 × 49 + 2 × 1 = 3194
+    ///
+    /// Nine sides come up an interval short. Seven of those are decided by libm
+    /// — their exact length sits within the band where `hypot`'s rounding, not
+    /// the geometry, picks the count. The other two are the *geometric*
+    /// consequence of the anchor those seven left behind: a short side leaves the
+    /// anchor 2 units back, so the next side measures a dogleg and can fall
+    /// ~1e-4 short, which is 1e10 ulps off the boundary and not a threshold case
+    /// at all.
+    ///
+    /// The `2 × 1` term is the surprise, and it is worth stating because nothing
+    /// in ADR-019 predicts it: **a `turnRight` brick can emit a stitch.** A turn
+    /// moves the needle zero distance, but it still produces a `.needleMoved`
+    /// that reaches the pattern, and when a short side has left the anchor 2
+    /// units behind — exactly the zigzag length — that zero-distance update
+    /// measures 2.0 from the anchor and emits one catch-up point. So the design
+    /// self-corrects: the anchor never drifts more than one interval behind, and
+    /// the loss shifts the anchor rather than deforming the shape.
     ///
     /// **Kept deliberately.** The side length, the zigzag length and the loop
     /// counts are Catroid's; changing any of them forfeits the provenance that is
@@ -85,17 +102,20 @@ struct SampleThresholdTests {
     @Test("the rosette's stitch count rests on libm's rounding of hypot")
     func theRosetteDependsOnLibmRoundingOfHypot() {
         let screening = screen(SampleLibrary[.octagonRosette], patternLength: 2)
+        let histogram = Dictionary(grouping: screening.probes, by: \.intervals).mapValues(\.count)
 
-        // The screening question: the nominal ratio is integral on every side.
-        #expect(screening.probes.allSatisfy { $0.intervals == 50 || $0.intervals == 49 })
+        // The screening question — every side's nominal ratio is integral, so all
+        // 64 are *on* a boundary. Pinned as the emission shape they produce.
+        #expect(histogram[50] == 55, "full sides: \(histogram)")
+        #expect(histogram[49] == 9, "short sides: \(histogram)")
+        #expect(histogram[1] == 2, "turn catch-up updates: \(histogram)")
 
-        // The deciding question: at least one update is inside the band where
-        // libm's rounding, not the geometry, picks the interval count.
-        #expect(!screening.atRisk.isEmpty, "expected at least one libm-decided update")
+        // The deciding question — how many are inside the band where libm's
+        // rounding, not the geometry, picks the count. Seven of the nine; the
+        // other two are the lagging-anchor dogleg, 1e10 ulps clear.
+        #expect(screening.atRisk.count == 7, "libm-decided: \(screening.atRisk.map(\.moveIndex))")
 
         // The consequence, pinned at the value that causes it.
-        let short = screening.probes.filter { $0.intervals == 49 }
-        #expect(!short.isEmpty, "no short side — has the toolchain's hypot changed?")
         #expect(run(SampleLibrary[.octagonRosette]).stitchEventCount == 3194)
     }
 
@@ -114,10 +134,15 @@ struct SampleThresholdTests {
             #expect(probe.perpendicularContribution.isFinite)
             #expect(probe.perpendicularContribution >= 0, "a squared term cannot be negative")
         }
+        let histogram = Dictionary(grouping: screening.probes, by: \.intervals)
+            .mapValues(\.count)
+            .sorted { $0.key < $1.key }
+            .map { "\($0.key)x\($0.value)" }
+            .joined(separator: " ")
         print("""
         US-301 ADR-019 — \(id.rawValue): \(screening.probes.count) updates screened, \
         closest approach \(screening.minimumUlpsFromBoundary) ulps, \
-        \(screening.atRisk.count) decided by libm
+        \(screening.atRisk.count) decided by libm, intervals [\(histogram)]
         """)
     }
 }

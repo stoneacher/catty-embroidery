@@ -105,14 +105,27 @@ func run(_ sample: SampleProgram, tickCap: Int = 10000) -> SampleRun {
     )
 }
 
-/// The design's bounding box in **stage points**, which is the unit ADR-007's
-/// 500 × 500 stage and the story's ±250 criterion are stated in. The stream
-/// holds machine units, so this divides by the engine's own conversion factor
-/// rather than a re-typed 2.0.
-func stageBounds(of stream: EmbroideryStream) -> (minX: Double, maxX: Double, minY: Double, maxY: Double)? {
+/// A design's extent in **stage points** — the unit ADR-007's 500 × 500 stage and
+/// the story's ±250 criterion are stated in.
+struct StageBounds {
+    var minX: Double
+    var maxX: Double
+    var minY: Double
+    var maxY: Double
+
+    /// The largest absolute coordinate on either axis: the quantity the ±250
+    /// criterion actually bounds.
+    var extreme: Double {
+        max(abs(minX), abs(maxX), abs(minY), abs(maxY))
+    }
+}
+
+/// The design's bounding box in stage points. The stream holds machine units, so
+/// this divides by the engine's own conversion factor rather than a re-typed 2.0.
+func stageBounds(of stream: EmbroideryStream) -> StageBounds? {
     guard let box = stream.boundingBox else { return nil }
     let factor = EmbroideryPoint.stitchPointUnitFactor
-    return (
+    return StageBounds(
         minX: Double(box.min.x) / factor,
         maxX: Double(box.max.x) / factor,
         minY: Double(box.min.y) / factor,
