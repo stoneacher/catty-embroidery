@@ -29,6 +29,9 @@ let package = Package(
         .target(
             name: "Samples",
             dependencies: ["ProgramModel"],
+            // The provenance note lives beside the resources it documents, but
+            // must not ship inside the app bundle.
+            exclude: ["Resources/PROVENANCE.md"],
             // .process, deliberately unlike this manifest's two .copy declarations
             // below. Those diff DST bytes, so byte identity is the whole point;
             // here the guard is `decode(resource) == builder()`, a *value*
