@@ -76,15 +76,22 @@ struct SampleThresholdTests {
     /// (1 anchor + 64 × 50 = **3201**) and the **3194** this program produces,
     /// and it reconciles in three terms rather than one:
     ///
-    ///     1 anchor + 55 × 50 + 9 × 49 + 2 × 1 = 3194
+    ///     1 anchor + 54 × 50 + 10 × 49 + 3 × 1 = 3194
     ///
-    /// Nine sides come up an interval short. Seven of those are decided by libm
+    /// Ten sides come up an interval short. Seven of those are decided by libm
     /// — their exact length sits within the band where `hypot`'s rounding, not
-    /// the geometry, picks the count. The other two are the *geometric*
-    /// consequence of the anchor those seven left behind: a short side leaves the
-    /// anchor 2 units back, so the next side measures a dogleg and can fall
-    /// ~1e-4 short, which is 1e10 ulps off the boundary and not a threshold case
-    /// at all.
+    /// the geometry, picks the count. The rest are the *geometric* consequence of
+    /// the anchor those seven left behind: a short side leaves the anchor 2 units
+    /// back, so the next side measures a dogleg and can fall ~1e-4 short, which is
+    /// 1e10 ulps off the boundary and not a threshold case at all.
+    ///
+    /// **The split is not stable under rotation, and the total is.** Correcting
+    /// the start heading from 0 to Catroid's 90 (Codex round 1) moved the shape
+    /// from `55/9/2` to `54/10/3` while leaving the total at exactly 3194, the
+    /// tick count at 139, the peak at 51 and the extents unchanged — the rosette
+    /// has 8-fold symmetry, so a quarter turn maps it onto itself. Which
+    /// *particular* sides fall short is threshold-sensitive; how many stitches
+    /// come out is not. That is worth knowing before reading a future diff here.
     ///
     /// The `2 × 1` term is the surprise, and it is worth stating because nothing
     /// in ADR-019 predicts it: **a `turnRight` brick can emit a stitch.** A turn
@@ -109,9 +116,9 @@ struct SampleThresholdTests {
 
         // The screening question — every side's nominal ratio is integral, so all
         // 64 are *on* a boundary. Pinned as the emission shape they produce.
-        #expect(histogram[50] == 55, "full sides: \(histogram)")
-        #expect(histogram[49] == 9, "short sides: \(histogram)")
-        #expect(histogram[1] == 2, "turn catch-up updates: \(histogram)")
+        #expect(histogram[50] == 54, "full sides: \(histogram)")
+        #expect(histogram[49] == 10, "short sides: \(histogram)")
+        #expect(histogram[1] == 3, "turn catch-up updates: \(histogram)")
 
         // The deciding question — how many are inside the band where libm's
         // rounding, not the geometry, picks the count. Seven of the nine; the
@@ -135,7 +142,33 @@ struct SampleThresholdTests {
         for probe in screening.probes {
             #expect(probe.alongComponent.isFinite)
             #expect(probe.perpendicularContribution.isFinite)
-            #expect(probe.perpendicularContribution >= 0, "a squared term cannot be negative")
+
+            // The two parts account for the whole residual. Nearly by construction
+            // — the perpendicular term is *defined* as the remainder — so this
+            // guards the definition rather than discovering anything, and exists
+            // so that redefining either part independently breaks a test instead
+            // of silently un-summing.
+            //
+            // Not exact equality, and the reason is the interesting part: the
+            // remainder is a subtraction of a large along component from a ~1e-15
+            // residual, so re-adding it cannot recover the original bits. The
+            // tolerance is scaled to the larger operand, which is where the lost
+            // bits come from.
+            let recombined = probe.alongComponent + probe.perpendicularContribution
+            let scale = max(probe.alongComponent.magnitude, probe.residual.magnitude)
+            #expect(abs(recombined - probe.residual) <= 4 * scale.ulp,
+                    "decomposition lost \(recombined - probe.residual) at move \(probe.moveIndex)")
+
+            // No assertion that the along term dominates. A first version had one
+            // and it was wrong on ADR-019's own terms: the rosette's *first* side
+            // moves exactly along its heading, so its along component is 0.0 and
+            // its entire 1.9e-31 residue is perpendicular. That is not a defect,
+            // it is US-207's square — the case ADR-019 calls **safe**, because a
+            // purely perpendicular residue enters the distance quadratically and
+            // costs ~1e-31. Which term dominates is the *finding*, not a
+            // precondition, so this suite reports the split and lets the at-risk
+            // classification (asserted per sample below) carry the verdict.
+            #expect(probe.alongComponent.magnitude < probe.distance)
         }
         let histogram = Dictionary(grouping: screening.probes, by: \.intervals)
             .mapValues(\.count)

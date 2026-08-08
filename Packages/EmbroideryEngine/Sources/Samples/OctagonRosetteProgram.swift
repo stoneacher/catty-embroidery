@@ -69,13 +69,19 @@ func makeOctagonRosetteProgram() -> Program {
                         name: "Needle", // R.string.default_project_needle_name
                         startX: 0,
                         startY: 0,
-                        // ADR-007's 0 degrees = up, and this *is* Catroid's
-                        // default rather than an adaptation of it: MoveNStepsAction
-                        // reads Look.realRotation, which Look.java:89 initialises
-                        // from the libGDX rotation (0). DEGREE_UI_OFFSET = 90 only
-                        // enters setMotionDirectionInUserInterfaceDimensionUnit,
-                        // which this project never calls.
-                        startHeading: 0,
+                        // 90, not 0, and the reference is explicit about it:
+                        // `Look.java:87-88` declares `rotation = 90f` and
+                        // `realRotation = rotation`, and
+                        // `getMotionDirectionInUserInterfaceDimensionUnit()`
+                        // (`Look.java:484-486`) returns `realRotation` unmodified.
+                        // `MoveNStepsAction` then moves by
+                        // `sin(theta), cos(theta)` — ADR-007's convention exactly —
+                        // so Catroid's first 100-step move goes +x, to the right.
+                        //
+                        // An earlier version of this file said 0 and cited the
+                        // same line for it. That was backwards, and it rotated the
+                        // whole design a quarter turn (Codex round 1).
+                        startHeading: 90,
                         zIndex: 0,
                         // needle.addUserVariable(inner); needle.addUserVariable(outer);
                         // — Sprite.addUserVariable, i.e. object-scoped, inner

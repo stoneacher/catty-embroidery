@@ -63,11 +63,19 @@ Four things about the reference that a careless transcription gets wrong:
   formula as `new Formula(1)` and then calls `setRoot(USER_VARIABLE …)`, which
   discards the literal. The repeat count is a bare variable reference — not 1,
   and not a formula containing 1.
-- **The start heading is 0 (up), not 90.** `DEGREE_UI_OFFSET = 90` exists, but it
-  only enters `setMotionDirectionInUserInterfaceDimensionUnit`, which this project
-  never calls. `MoveNStepsAction` reads `Look.realRotation`, initialised from the
-  libGDX rotation (0) at `Look.java:89`. So `startHeading: 0` is verbatim and
-  ADR-007's "0° = up" holds.
+- **The start heading is 90, so the first move goes +x (right).** `Look.java:87-88`
+  declares `private float rotation = 90f;` and `private float realRotation =
+  rotation;`, and `getMotionDirectionInUserInterfaceDimensionUnit()`
+  (`Look.java:484-486`) returns `realRotation` unmodified. `MoveNStepsAction` then
+  moves by `steps·sin(θ), steps·cos(θ)` — ADR-007's convention exactly — so a
+  fresh sprite walks along +x.
+
+  **An earlier version of this file asserted the opposite** ("the start heading is
+  0, not 90") and cited the same line as evidence, which was factually reversed.
+  It shipped, and it rotated the whole design a quarter turn. Caught by the
+  cross-vendor review (Codex round 1). Worth leaving in the record because the
+  claim was not a guess — it was stated as a verified reference fact, with a line
+  number, and the line number was right while the reading of it was backwards.
 - **The stage units and DST factor match.** Catroid's units are virtual pixels at
   a pixel→unit factor of 2.0, identical to ADR-005/ADR-007, so a 100-step side is
   20 mm on both platforms.
@@ -119,12 +127,19 @@ The boundary-free count would be 3201 (1 anchor + 64 × 50). The actual 3194
 reconciles in three terms:
 
 ```
-1 anchor  +  55 × 50  +  9 × 49  +  2 × 1  =  3194
+1 anchor  +  54 × 50  +  10 × 49  +  3 × 1  =  3194
 ```
 
-Nine sides come up an interval short; **seven** of those are decided by libm's
-rounding, the other two by the geometry of the anchor those seven left behind
+Ten sides come up an interval short; **seven** of those are decided by libm's
+rounding, the rest by the geometry of the anchor those seven left behind
 (~1e-4 short, i.e. 1e10 ulps clear of any boundary).
+
+**The split moves under rotation; the total does not.** Correcting the start
+heading from 0 to Catroid's 90 changed the shape from `55/9/2` to `54/10/3` and
+left the total at exactly 3194 — along with 139 ticks, the 51-stitch peak, the
+±246.5 extents and the 10 097 bytes. The rosette has 8-fold symmetry, so a
+quarter turn maps it onto itself; *which* sides fall short is threshold-sensitive,
+*how many stitches come out* is not.
 
 The `2 × 1` term is not predicted by anything in ADR-019 and is worth stating on
 its own: **a `turnRight` brick can emit a stitch.** A turn moves the needle zero
@@ -154,10 +169,17 @@ different perturbation again.
 
 This is not a new divergence; it is ADR-014's "bit-exact parity with Android is
 not guaranteed" showing up in a place where it is *structurally* visible rather
-than sub-resolution. The honest claim is that the two platforms run the **same
-program with the same brick semantics** and produce the **same design**,
-comparable by shape, size, colour count and record structure — not by record
-count or by bytes.
+than sub-resolution.
+
+The precise claim, since a looser one was drafted first and is wrong: Android's
+output is **not a byte-identical oracle** — equality cannot be promised, and a
+mismatch is therefore not evidence of a bug on either side. That is weaker than
+"byte comparison is impossible" and weaker than "the record counts cannot
+coincide"; neither follows, and float-vs-Double does not prove either (Codex
+round 1). A byte comparison remains worth *running* — it just cannot be a golden.
+What the two platforms do share is the **same program with the same brick
+semantics** producing the **same design**, comparable by shape, size, colour
+count and record structure.
 
 ## `SquareCoil.json` — sample 2
 

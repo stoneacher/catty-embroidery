@@ -27,6 +27,11 @@ struct BoundaryProbe {
     /// Signed distance from the nearest whole multiple of `length`, in ulps of
     /// that multiple. Inside ±0.5 the outcome is decided by libm, not geometry.
     var ulpsFromBoundary: Double
+    /// The same quantity in stage points, before the ulp conversion. Carried so a
+    /// test can check the decomposition without having to reconstruct it from
+    /// `ulpsFromBoundary` — that needs the *boundary's* ulp, and using the
+    /// distance's instead is wrong whenever the two land in different binades.
+    var residual: Double
     /// The residue's component **along** the direction of motion. Only this moves
     /// the distance to first order (ADR-019); the perpendicular part enters
     /// quadratically.
@@ -140,20 +145,31 @@ func boundaryProbe(
     let residual = (head - boundary) + tail
 
     // Decompose against the nominal unit direction (ADR-007: x via sin, y via
-    // cos, 0 degrees = up). Only the along part moves the distance to first order.
+    // cos, 0 degrees = up). Only the along part moves the distance to first order;
+    // the perpendicular part enters quadratically.
+    //
+    // The along component is the *projection* minus the boundary, computed
+    // directly. It is deliberately not inferred as `residual − perp²/(2·boundary)`:
+    // that quadratic term is a small-angle approximation, and it is wrong as soon
+    // as the perpendicular part is not small. Codex round 1's counterexample —
+    // (0,0) → (3,4) at heading 0 against boundary 5 — has a true along component
+    // of 4 − 5 = −1, where the approximation reports −0.9. The samples never leave
+    // the small-angle regime, so no reported figure changes, but a screen whose
+    // decomposition only works for the inputs it has seen is not a screen.
     let radians = heading.truncatingRemainder(dividingBy: 360) * .pi / 180
-    let unitX = sin(radians)
-    let unitY = cos(radians)
-    let perpendicular = dx * unitY - dy * unitX
-    let perpendicularContribution = boundary > 0 ? perpendicular * perpendicular / (2 * boundary) : 0
+    let projection = dx * sin(radians) + dy * cos(radians)
+    let alongComponent = projection - boundary
 
     return BoundaryProbe(
         moveIndex: moveIndex,
         distance: distance,
         intervals: intervals,
         ulpsFromBoundary: residual / boundary.ulp,
-        alongComponent: residual - perpendicularContribution,
-        perpendicularContribution: perpendicularContribution
+        residual: residual,
+        alongComponent: alongComponent,
+        // Whatever the along term does not account for. Defined as the remainder
+        // so the two provably sum to the residual instead of nearly doing so.
+        perpendicularContribution: residual - alongComponent
     )
 }
 
@@ -179,6 +195,20 @@ func boundaryProbe(
 /// (one offset point per interval) and 3 for the triple stitch (`point, previous,
 /// point` per segment). It is what makes `predictedEmissions` comparable against
 /// the engine's own per-tick counts.
+///
+/// **Known limitation, stated because it is currently invisible**: the mirror
+/// models the pattern's *motion* anchor only. It does not model a re-anchor from
+/// `sewUp` (which pauses the running stitch, calls `setStartPosition` on the tack
+/// centre, and resumes) or from `stitch` / `stopRunningStitch`. That costs
+/// nothing today — `sewUp` is a non-motion brick, so it emits no `.needleMoved`
+/// and both sides of the comparison skip its tick, and in sample 2 it is the last
+/// brick anyway, so its re-anchor has no successor to affect.
+///
+/// A future sample with a **mid-program** `sewUp` would break that, and the right
+/// thing happens: `mirrorIsFaithful` compares every tick element by element, so
+/// the divergence surfaces as a named red test rather than as a quietly wrong ulp
+/// figure. If that happens, teach this function about the re-anchor — do not
+/// relax the assertion.
 func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: Int) -> Screening {
     let measured = run(sample)
     var probes: [BoundaryProbe] = []

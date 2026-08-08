@@ -22,19 +22,49 @@ struct SquareCoilTests {
         #expect(coField(of: header) == 2)
     }
 
-    /// The two colour blocks are balanced to within a couple of stitches (1489 /
-    /// 1487). The split point is chosen for that: cumulative thread after `k`
-    /// sides is `3k(k+1)/2`, so 31 of 44 sides is the halfway mark, not 22.
+    /// The colour change rides one exact record, and that record is derived, not
+    /// eyeballed: 31 sides at 3 points per interval over `1 + 2 + … + 31 = 496`
+    /// intervals, plus the one anchor point the pattern emits on its first update,
+    /// puts the first amber stitch at index `3 × 496 + 1 = 1489`.
     ///
-    /// A balanced split makes this assertion mean something — "a change exists
-    /// somewhere" would pass against a change on the second stitch.
-    @Test("the colour change lands halfway through the thread, not halfway through the sides")
-    func colourChangeSplitsTheDesignEvenly() throws {
+    /// **Pinned to the index, not to a ratio.** An earlier version allowed the
+    /// flag anywhere within 2% of halfway — about 59 records — which is not an
+    /// ADR-015 placement test at all: a bug delaying the armed change by thirty
+    /// stitches would keep `CO == 2`, keep the split looking balanced, and still
+    /// move where the machine stops (Codex round 1). ADR-015 says the change rides
+    /// the actor's *next surviving stitch*; this asserts which one that is.
+    @Test("the colour change rides the exact record ADR-015 puts it on")
+    func colourChangeRidesTheExpectedRecord() throws {
         let firstChange = measured.stream.stitches.firstIndex { $0.isColorChange }
         let changeIndex = try #require(firstChange, "no colour-change record in the stream")
-        let total = measured.stream.count
-        let ratio = Double(changeIndex) / Double(total)
-        #expect(abs(ratio - 0.5) < 0.02, "colour change at \(changeIndex) of \(total) (\(ratio))")
+        let intervalsBeforeChange = (1 ... 31).reduce(0, +)
+        #expect(changeIndex == 3 * intervalsBeforeChange + 1, "colour change at \(changeIndex)")
+
+        // Exactly one record carries the flag, and it is the first amber stitch —
+        // so the two blocks come out 1489 / 1487, near-balanced by construction.
+        let flagged = measured.stream.stitches.count { $0.isColorChange }
+        #expect(flagged == 1)
+        #expect(measured.stream.count - changeIndex == 1487)
+    }
+
+    /// The record count and file size, pinned directly.
+    ///
+    /// `SampleDSTTests` only relates the byte count to `stream.count`, which stays
+    /// true for *any* wrong stream — an implementation dropping the initial
+    /// triple-stitch anchor would yield 2975 records and 9440 bytes while keeping
+    /// the triplets, `CO 2`, no jumps, 137 ticks and the 132-record peak, and
+    /// every other test in this suite would pass (Codex round 1).
+    ///
+    /// The derivation: `1 + 3 × (1 + 2 + … + 44) + 5` — one anchor, three points
+    /// per interval over the 44 growing sides, and the five-point `sewUp` tack.
+    @Test("2976 records and 9443 bytes, derived rather than observed")
+    func recordAndByteCountsArePinned() {
+        let intervals = (1 ... 44).reduce(0, +)
+        #expect(measured.stream.count == 1 + 3 * intervals + 5)
+        #expect(measured.stream.count == 2976)
+
+        let file = DSTFile(stream: measured.stream, name: SampleLibrary[.squareCoil].program.name)
+        #expect(file.data.count == 9443)
     }
 
     /// `TripleStitchPattern` emits `point, previous, point` per segment, so record
