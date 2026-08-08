@@ -112,23 +112,49 @@ struct OctagonRosetteGoldenTests {
         var interpreter = Interpreter(program: rotated, clock: sampleClock)
         var ticks = 0
         var stitches = 0
-        while case let .ticked(batch) = interpreter.step(), ticks < 10000 {
+        var peak = 0
+        var finished = false
+        while ticks < 10000 {
+            guard case let .ticked(batch) = interpreter.step() else {
+                finished = true
+                break
+            }
             ticks += 1
-            stitches += batch.count {
+            let emitted = batch.count {
                 if case .stitch = $0 {
                     true
                 } else {
                     false
                 }
             }
+            stitches += emitted
+            peak = max(peak, emitted)
         }
 
+        // The run must have *ended*, not been cut off. Without this the loop's cap
+        // is indistinguishable from termination: a regression emitting the normal
+        // 3194 events and then ticking empty forever would satisfy every
+        // comparison below, on both sides (Codex round 3).
+        #expect(finished, "the rotated run hit the tick cap instead of finishing")
         #expect(ticks == measured.ticks)
         #expect(stitches == measured.stitchEventCount)
+        #expect(peak == measured.perTickStitchMaximum)
 
-        let box = try #require(interpreter.assembledStream().boundingBox)
-        let reference = try #require(measured.stream.boundingBox)
-        #expect(box.max.x - box.min.x == reference.max.x - reference.min.x)
-        #expect(box.max.y - box.min.y == reference.max.y - reference.min.y)
+        // Every figure the provenance calls orientation-independent, not just two
+        // of them — including the assembled record count and the serialized size,
+        // which a duplicate record at an interior point would move while leaving
+        // the extents untouched.
+        let rotatedStream = interpreter.assembledStream()
+        #expect(rotatedStream.count == measured.stream.count)
+
+        let bounds = try #require(stageBounds(of: rotatedStream))
+        let reference = try #require(stageBounds(of: measured.stream))
+        #expect(bounds.extreme == reference.extreme)
+        #expect(bounds.maxX - bounds.minX == reference.maxX - reference.minX)
+        #expect(bounds.maxY - bounds.minY == reference.maxY - reference.minY)
+
+        let name = SampleLibrary[.octagonRosette].program.name
+        #expect(DSTFile(stream: rotatedStream, name: name).data.count
+            == DSTFile(stream: measured.stream, name: name).data.count)
     }
 }

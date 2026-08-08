@@ -93,7 +93,7 @@ struct SampleThresholdTests {
     /// *particular* sides fall short is threshold-sensitive; how many stitches
     /// come out is not. That is worth knowing before reading a future diff here.
     ///
-    /// The `2 × 1` term is the surprise, and it is worth stating because nothing
+    /// The `3 × 1` term is the surprise, and it is worth stating because nothing
     /// in ADR-019 predicts it: **a `turnRight` brick can emit a stitch.** A turn
     /// moves the needle zero distance, but it still produces a `.needleMoved`
     /// that reaches the pattern, and when a short side has left the anchor 2
@@ -122,7 +122,7 @@ struct SampleThresholdTests {
 
         // The deciding question — how many are inside the band where libm's
         // rounding, not the geometry, picks the count. Seven of the ten; the
-        // other two are the lagging-anchor dogleg, 1e10 ulps clear.
+        // other three are the lagging-anchor dogleg, 1e10 ulps clear.
         #expect(screening.atRisk.count == 7, "libm-decided: \(screening.atRisk.map(\.moveIndex))")
 
         // The consequence, pinned at the value that causes it.

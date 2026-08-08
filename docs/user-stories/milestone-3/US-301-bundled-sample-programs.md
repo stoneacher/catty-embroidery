@@ -2,7 +2,11 @@
 
 **Epic**: E6 Projects & persistence (thin) | **Estimate**: ~4 h | **Depends on**: —
 
-**Status**: Done — 2026-08-07
+**Status**: Implementation complete — 2026-08-07. **Not closed out**: the manual
+Ink/Stitch verification the milestone requires at this story is outstanding, and
+`PROVENANCE.md`'s trust section is a placeholder until it is done. Marking this
+*Done* while that is open would be the close-out defect US-110 established the
+rule against (Codex round 3 flagged the same contradiction).
 
 **Story**: As the app, I want ready-made, visually appealing embroidery programs available as a linkable product, so that M3 can run something real and M5 can turn the same content into projects on disk.
 
@@ -41,7 +45,7 @@ Per ADR-022, samples live in a new `Samples` target depending on `ProgramModel` 
 ## Outcome
 
 `Samples` is the package's fourth library product. 403 tests in 51 suites green,
-40 of them new. All four of the planning session's sample-1 figures re-derived
+40 of them new, across three cross-vendor review rounds. All four of the planning session's sample-1 figures re-derived
 exactly — 139 ticks, 3194 stitch events, 98.57 × 98.57 mm, 10 097 bytes — which
 is the first time an M3 planning measurement has been confirmed by
 implementation rather than adjusted by it.

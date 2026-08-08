@@ -149,7 +149,7 @@ this toolchain, not an invariant — pinned as one by
 useful either way: the goldens are robust to orientation, the screening histogram
 is not, and that is the difference between what the two of them measure.
 
-The `2 × 1` term is not predicted by anything in ADR-019 and is worth stating on
+The `3 × 1` term is not predicted by anything in ADR-019 and is worth stating on
 its own: **a `turnRight` brick can emit a stitch.** A turn moves the needle zero
 distance but still produces a `.needleMoved` that reaches the pattern, and when a
 short side has left the anchor exactly one stitch length behind, that

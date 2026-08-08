@@ -70,9 +70,31 @@ struct SquareCoilTests {
     /// `TripleStitchPattern` emits `point, previous, point` per segment, so record
     /// *i* and *i + 2* share a position while *i + 1* differs. That triplet is the
     /// structural signature the story asks for.
-    @Test("the stream contains triple-stitch triplets")
+    ///
+    /// Read from the **assembled stream**, not from the interpreter events. The
+    /// story's criterion says "the assembled stream contains at least one
+    /// triple-stitch triplet", and the distinction is load-bearing: a replay or
+    /// assembly bug that collapsed each `point, previous, point` into three
+    /// same-position records would leave the *events* untouched, along with the
+    /// record count, `CO`, the extents and the no-jump assertions — so an
+    /// event-based version of this test passed while the exported file had no
+    /// triple stitch in it at all (Codex round 3).
+    ///
+    /// The count is pinned, not just its positivity — but as a **measured
+    /// structural fingerprint**, not a derived quantity, and the distinction is
+    /// worth stating because a first version of this test asserted the derived
+    /// "one triplet per interval" (990) and was wrong by a factor of two.
+    ///
+    /// The window slides by one, so consecutive segments overlap: the emission
+    /// `… Pk, Pk₋₁, Pk, Pk₊₁, Pk, Pk₊₁ …` matches at more offsets than there are
+    /// segments. 1979 is what that comes to over 990 intervals. Any positive
+    /// number already catches the collapse bug this test exists for — if each
+    /// triple became three same-position records, `positions[i] != positions[i+1]`
+    /// would fail everywhere and the count would go to zero — so the exact value
+    /// is the stronger guard rather than the necessary one.
+    @Test("the assembled stream contains triple-stitch triplets")
     func containsTripleStitchTriplets() {
-        let positions: [StagePoint] = measured.stitchPositions
+        let positions = measured.stream.stitches.map(\.position)
         var triplets = 0
         var index = 0
         while index + 2 < positions.count {
@@ -84,6 +106,7 @@ struct SquareCoilTests {
             index += 1
         }
         #expect(triplets > 0, "no back-and-forth triplet found — is this really triple stitch?")
+        #expect(triplets == 1979, "triple-stitch fingerprint changed: \(triplets)")
     }
 
     /// Four right turns per revolution and 44 sides: 44 × 90° = 3960° = 11 × 360°,
