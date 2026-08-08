@@ -1,0 +1,159 @@
+{
+  "formatVersion" : 1,
+  "name" : "Octagon Rosette",
+  "scenes" : [
+    {
+      "name" : "Scene 1",
+      "objects" : [
+        {
+          "name" : "Needle",
+          "scripts" : [
+            {
+              "bricks" : [
+                {
+                  "setVariable" : {
+                    "name" : "Inner Loop",
+                    "to" : {
+                      "number" : {
+                        "_0" : 8
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "Outer Loop",
+                    "to" : {
+                      "number" : {
+                        "_0" : 8
+                      }
+                    }
+                  }
+                },
+                {
+                  "zigZagStitch" : {
+                    "length" : {
+                      "number" : {
+                        "_0" : 2
+                      }
+                    },
+                    "width" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "repeatLoop" : {
+                    "times" : {
+                      "variable" : {
+                        "_0" : "Outer Loop"
+                      }
+                    }
+                  }
+                },
+                {
+                  "repeatLoop" : {
+                    "times" : {
+                      "variable" : {
+                        "_0" : "Inner Loop"
+                      }
+                    }
+                  }
+                },
+                {
+                  "moveNSteps" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 100
+                      }
+                    }
+                  }
+                },
+                {
+                  "turnRight" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "divide" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 360
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "Inner Loop"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "turnRight" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "divide" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 360
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "Outer Loop"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                }
+              ],
+              "header" : {
+                "whenStarted" : {
+
+                }
+              }
+            }
+          ],
+          "startHeading" : 90,
+          "startX" : 0,
+          "startY" : 0,
+          "variables" : [
+            {
+              "name" : "Inner Loop",
+              "value" : 0
+            },
+            {
+              "name" : "Outer Loop",
+              "value" : 0
+            }
+          ],
+          "zIndex" : 0
+        }
+      ]
+    }
+  ],
+  "variables" : [
+
+  ]
+}

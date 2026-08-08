@@ -86,3 +86,6 @@ playground.xcworkspace
 # Signing / local secrets
 *.mobileprovision
 *.p12
+
+# Throwaway git worktrees created by isolated review agents
+.claude/worktrees/

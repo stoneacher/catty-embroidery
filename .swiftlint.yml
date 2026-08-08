@@ -26,6 +26,7 @@ identifier_name:
     - dx
     - dy
     - to # Brick.setVariable(name:to:) — reads "set variable … to …" (Catroid parity)
+    - id # Identifiable's required property name — spelled by the protocol, not chosen
 
 excluded:
   - "**/.build"
