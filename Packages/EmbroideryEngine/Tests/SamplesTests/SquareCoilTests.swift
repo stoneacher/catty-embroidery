@@ -80,18 +80,22 @@ struct SquareCoilTests {
     /// event-based version of this test passed while the exported file had no
     /// triple stitch in it at all (Codex round 3).
     ///
-    /// The count is pinned, not just its positivity — but as a **measured
-    /// structural fingerprint**, not a derived quantity, and the distinction is
-    /// worth stating because a first version of this test asserted the derived
-    /// "one triplet per interval" (990) and was wrong by a factor of two.
+    /// The count is pinned, and it decomposes exactly:
     ///
-    /// The window slides by one, so consecutive segments overlap: the emission
-    /// `… Pk, Pk₋₁, Pk, Pk₊₁, Pk, Pk₊₁ …` matches at more offsets than there are
-    /// segments. 1979 is what that comes to over 990 intervals. Any positive
-    /// number already catches the collapse bug this test exists for — if each
-    /// triple became three same-position records, `positions[i] != positions[i+1]`
-    /// would fail everywhere and the count would go to zero — so the exact value
-    /// is the stronger guard rather than the necessary one.
+    ///     990 per-segment windows  +  989 seam windows  =  1979
+    ///
+    /// One window per segment where the emission is `Pk, Pk₋₁, Pk`, plus one at
+    /// each of the 989 seams between consecutive segments, because the window
+    /// slides by one and `Pk₋₁, Pk, Pk₋₁` straddles the boundary. A first version
+    /// of this test asserted only the first term (990) and was wrong; a second
+    /// recorded 1979 as an unexplained measurement. The derivation is Codex
+    /// round 4's.
+    ///
+    /// Any positive number already catches the collapse bug this test exists for
+    /// — if each triple became three same-position records,
+    /// `positions[i] != positions[i+1]` would fail everywhere and the count would
+    /// go to zero — so the exact value is the stronger guard, not the necessary
+    /// one.
     @Test("the assembled stream contains triple-stitch triplets")
     func containsTripleStitchTriplets() {
         let positions = measured.stream.stitches.map(\.position)
@@ -106,7 +110,9 @@ struct SquareCoilTests {
             index += 1
         }
         #expect(triplets > 0, "no back-and-forth triplet found — is this really triple stitch?")
-        #expect(triplets == 1979, "triple-stitch fingerprint changed: \(triplets)")
+        let segments = (1 ... 44).reduce(0, +)
+        #expect(triplets == segments + (segments - 1), "triple-stitch fingerprint changed: \(triplets)")
+        #expect(triplets == 1979)
     }
 
     /// Four right turns per revolution and 44 sides: 44 × 90° = 3960° = 11 × 360°,
