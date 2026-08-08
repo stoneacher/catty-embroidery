@@ -1,4 +1,5 @@
 import EmbroideryEngine
+import Interpreter
 import Samples
 import Testing
 
@@ -24,7 +25,7 @@ struct OctagonRosetteGoldenTests {
     }
 
     /// **3194, not 3201.** The boundary-free count is 1 offset anchor + 64 sides ×
-    /// 50 intervals = 3201; nine sides emit 49 because their measured length falls
+    /// 50 intervals = 3201; ten sides emit 49 because their measured length falls
     /// an ulp below 100. That is a structure-determining threshold crossing, and
     /// it is pinned and explained by
     /// `SampleThresholdTests.theRosetteDependsOnLibmRoundingOfHypot` — read that
@@ -87,5 +88,47 @@ struct OctagonRosetteGoldenTests {
     func dstByteLength() {
         let file = DSTFile(stream: measured.stream, name: SampleLibrary[.octagonRosette].program.name)
         #expect(file.data.count == 512 + 3 * 3194 + 3)
+    }
+
+    /// Rotating the whole design a quarter turn leaves every pinned figure alone
+    /// — **measured here, not argued from symmetry.**
+    ///
+    /// The distinction matters and an earlier comment got it wrong. Eight-fold
+    /// symmetry is a statement about *exact* geometry; this walk runs on `sin`,
+    /// `cos` and `hypot`, and ADR-019 exists precisely because those are not
+    /// equivariant at the last ulp. The interval split proves it: correcting the
+    /// heading from 0 to 90 moved the shape from `55/9/2` to `54/10/3`. So the
+    /// totals coinciding is a fact about this toolchain on these inputs, and it
+    /// belongs in a test rather than in a paragraph claiming it had to be so.
+    ///
+    /// Kept because it is genuinely informative: it says the goldens above are
+    /// robust to the orientation while the screening histogram is not, which is
+    /// the difference between what they each measure.
+    @Test("the pinned totals survive a quarter turn, as a measurement not a proof")
+    func totalsAreUnchangedByAQuarterTurn() throws {
+        var rotated = SampleLibrary[.octagonRosette].program
+        rotated.scenes[0].objects[0].startHeading = 0
+
+        var interpreter = Interpreter(program: rotated, clock: sampleClock)
+        var ticks = 0
+        var stitches = 0
+        while case let .ticked(batch) = interpreter.step(), ticks < 10000 {
+            ticks += 1
+            stitches += batch.count {
+                if case .stitch = $0 {
+                    true
+                } else {
+                    false
+                }
+            }
+        }
+
+        #expect(ticks == measured.ticks)
+        #expect(stitches == measured.stitchEventCount)
+
+        let box = try #require(interpreter.assembledStream().boundingBox)
+        let reference = try #require(measured.stream.boundingBox)
+        #expect(box.max.x - box.min.x == reference.max.x - reference.min.x)
+        #expect(box.max.y - box.min.y == reference.max.y - reference.min.y)
     }
 }

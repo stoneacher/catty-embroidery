@@ -13,7 +13,7 @@ import ProgramModel
 //     stage bound by 3.58 points — 0.72 mm. Widening the zigzag or lengthening
 //     the side puts a bundled sample off the hoop.
 //   * All 64 sides sit exactly on a `floor(distance / length)` boundary
-//     (100 / 2 = 50), and nine of them fall an ulp short, which is why this
+//     (100 / 2 = 50), and ten of them fall an ulp short, which is why this
 //     design emits 3194 stitches and not 3201. That is pinned and explained by
 //     `SampleThresholdTests.theRosetteDependsOnLibmRoundingOfHypot`.
 

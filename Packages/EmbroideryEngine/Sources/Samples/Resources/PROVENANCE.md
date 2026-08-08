@@ -134,12 +134,20 @@ Ten sides come up an interval short; **seven** of those are decided by libm's
 rounding, the rest by the geometry of the anchor those seven left behind
 (~1e-4 short, i.e. 1e10 ulps clear of any boundary).
 
-**The split moves under rotation; the total does not.** Correcting the start
-heading from 0 to Catroid's 90 changed the shape from `55/9/2` to `54/10/3` and
-left the total at exactly 3194 — along with 139 ticks, the 51-stitch peak, the
-±246.5 extents and the 10 097 bytes. The rosette has 8-fold symmetry, so a
-quarter turn maps it onto itself; *which* sides fall short is threshold-sensitive,
-*how many stitches come out* is not.
+**The split moves under rotation; the total, measurably, does not.** Correcting
+the start heading from 0 to Catroid's 90 changed the shape from `55/9/2` to
+`54/10/3` and left the total at exactly 3194 — along with 139 ticks, the
+51-stitch peak, the ±246.5 extents and the 10 097 bytes.
+
+It is tempting to explain that by 8-fold symmetry, and an earlier draft did. That
+is not a proof and the evidence is in the same sentence: symmetry is a property of
+*exact* geometry, this walk runs on `sin`, `cos` and `hypot`, and the split
+changing is itself a demonstration that the floating-point behaviour is **not**
+equivariant under the rotation. So the coinciding totals are a measurement on
+this toolchain, not an invariant — pinned as one by
+`OctagonRosetteGoldenTests.totalsAreUnchangedByAQuarterTurn`. What it tells you is
+useful either way: the goldens are robust to orientation, the screening histogram
+is not, and that is the difference between what the two of them measure.
 
 The `2 × 1` term is not predicted by anything in ADR-019 and is worth stating on
 its own: **a `turnRight` brick can emit a stitch.** A turn moves the needle zero
@@ -162,7 +170,7 @@ records so a later reader does not chase a byte diff that cannot close:
 Catroid computes its pattern distance as `(float) Math.hypot(...)`
 (`catroid/src/main/java/org/catrobat/catroid/embroidery/RunningStitchType.java:35-37`)
 and carries every coordinate as `float`. We compute in `Double` (ADR-014). The
-residue that costs this design nine intervals is ~1e-14, roughly nine orders of
+residue that costs this design ten intervals is ~1e-14, roughly nine orders of
 magnitude below `ulp(100f)` — so the threshold behaviour that produces our 3194
 cannot arise the same way on Android, and their float-level position error is a
 different perturbation again.
@@ -267,5 +275,6 @@ then open the printed paths. What to check:
   well as a numeric one: the colour changes 31 sides in, so the amber is the
   outer third of the coil.
 - Optional and high-value: run sample 1 in the Android Embroidery Designer and
-  compare. Per the section above, expect the **design** to match and the record
-  count not to.
+  compare. Per the section above, expect the **design** to match; the record
+  count may or may not, and a difference there is not evidence of a bug on
+  either side.

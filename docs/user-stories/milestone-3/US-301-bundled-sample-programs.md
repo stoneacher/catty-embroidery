@@ -40,8 +40,8 @@ Per ADR-022, samples live in a new `Samples` target depending on `ProgramModel` 
 
 ## Outcome
 
-`Samples` is the package's fourth library product. 396 tests in 50 suites green,
-33 of them new. All four of the planning session's sample-1 figures re-derived
+`Samples` is the package's fourth library product. 403 tests in 51 suites green,
+40 of them new. All four of the planning session's sample-1 figures re-derived
 exactly — 139 ticks, 3194 stitch events, 98.57 × 98.57 mm, 10 097 bytes — which
 is the first time an M3 planning measurement has been confirmed by
 implementation rather than adjusted by it.
@@ -60,9 +60,9 @@ Three findings worth carrying forward:
 
 - **The ADR-019 screening was not a formality, and its answer has a third term.**
   Sample 1's boundary-free count is 3201; it emits 3194, reconciling as
-  `1 anchor + 55 × 50 + 9 × 49 + 2 × 1`. Nine sides come up an interval short,
+  `1 anchor + 54 × 50 + 10 × 49 + 3 × 1`. Ten sides come up an interval short,
   seven of them decided by libm's rounding of `hypot` rather than by geometry.
-  The `2 × 1` is not predicted anywhere in ADR-019: **a `turnRight` brick can
+  The `3 × 1` is not predicted anywhere in ADR-019: **a `turnRight` brick can
   emit a stitch.** A turn moves the needle zero distance but still reaches the
   pattern, and when a short side has left the anchor exactly one stitch length
   behind, that zero-distance update emits a catch-up point — which is why a lost
@@ -71,12 +71,15 @@ Three findings worth carrying forward:
 - **The AC's justification for verbatim reproduction is over-stated and is now
   scoped in `PROVENANCE.md`.** Catroid computes `(float) Math.hypot(...)`
   (`RunningStitchType.java:35-37`) and carries every coordinate as `float`, so
-  the ~1e-14 residue costing us nine intervals is nine orders of magnitude below
-  its resolution. Byte comparability against the Android app was never available
-  — this is ADR-014's existing "no bit-exact Android parity" becoming
-  *structurally* visible instead of sub-resolution. Same program, same semantics,
-  same design; not the same record count. Verbatim transcription is still right,
-  for the design-level comparison and the provenance.
+  the ~1e-14 residue costing us ten intervals is nine orders of magnitude below
+  its resolution. This is ADR-014's existing "no bit-exact Android parity"
+  becoming *structurally* visible instead of sub-resolution: same program, same
+  semantics, same design, but Android is **not a byte-identical oracle** for it.
+  Equality cannot be promised, so a mismatch is not evidence of a bug on either
+  side — which is weaker than "byte comparison is impossible", a claim that does
+  not follow and that two drafts made anyway (Codex rounds 1–2). Verbatim
+  transcription is still right, for the design-level comparison and the
+  provenance.
 - **SwiftPM does not compile String Catalogs.** An `.xcstrings` in a package
   target is copied into the resource bundle verbatim — `xcstringstool` is never
   invoked — so every lookup falls back to the key under `swift test`. Measured on

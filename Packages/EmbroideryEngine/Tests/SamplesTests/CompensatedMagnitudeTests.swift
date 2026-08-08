@@ -1,3 +1,4 @@
+import EmbroideryEngine
 import Foundation
 import Testing
 
@@ -55,6 +56,40 @@ struct CompensatedMagnitudeTests {
             worstUlps = max(worstUlps, difference)
         }
         #expect(worstUlps < 1, "worst disagreement with libm: \(worstUlps) ulps")
+    }
+
+    /// The along/perpendicular split, pinned on the one case where the correct
+    /// formula and the wrong one disagree.
+    ///
+    /// This is Codex round 1's counterexample, kept as a test because round 2
+    /// pointed out that nothing else can catch a regression here: within the
+    /// samples' small-angle regime the true remainder `q²/(d + p)` and the
+    /// discarded approximation `q²/(2B)` agree to many digits, since `d ≈ p ≈ B`.
+    /// Only a large perpendicular component separates them — so the guard has to
+    /// be a synthetic case, not a sample.
+    ///
+    /// `(0,0) → (3,4)` at heading 0 against stitch length 5: the projection onto
+    /// the heading is 4, the boundary is 5, so the along component is **−1** and
+    /// the perpendicular remainder is **+1**. The old formula reported −0.9 / 0.9.
+    @Test("the residue decomposition is exact where the small-angle form is not")
+    func decompositionIsNotTheSmallAngleApproximation() {
+        let probe = boundaryProbe(
+            moveIndex: 0,
+            from: StagePoint(x: 0, y: 0),
+            to: StagePoint(x: 3, y: 4),
+            heading: 0,
+            length: 5
+        )
+        #expect(probe.distance == 5)
+        #expect(probe.intervals == 1)
+        #expect(abs(probe.alongComponent - -1) < 1e-12, "along \(probe.alongComponent), expected -1")
+        #expect(abs(probe.perpendicularContribution - 1) < 1e-12,
+                "perpendicular \(probe.perpendicularContribution), expected 1")
+
+        // What the discarded approximation would have said, spelled out so the
+        // difference is visible rather than asserted from memory: q²/(2B) with
+        // q = 3 and B = 5 is 0.9, not 1.
+        #expect(abs(probe.perpendicularContribution - 0.9) > 0.05)
     }
 
     /// The tail must actually carry information. Without this, a

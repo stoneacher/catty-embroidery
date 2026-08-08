@@ -121,7 +121,7 @@ struct SampleThresholdTests {
         #expect(histogram[1] == 3, "turn catch-up updates: \(histogram)")
 
         // The deciding question — how many are inside the band where libm's
-        // rounding, not the geometry, picks the count. Seven of the nine; the
+        // rounding, not the geometry, picks the count. Seven of the ten; the
         // other two are the lagging-anchor dogleg, 1e10 ulps clear.
         #expect(screening.atRisk.count == 7, "libm-decided: \(screening.atRisk.map(\.moveIndex))")
 
