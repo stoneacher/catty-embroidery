@@ -46,9 +46,9 @@ struct CompensatedMagnitudeTests {
         // A deterministic spread — no Double.random, because a test that samples
         // a different set each run reports a different fact each run.
         var worstUlps = 0.0
-        for i in 1 ... 400 {
-            let dx = Double(i) * 0.7357
-            let dy = Double(401 - i) * 1.3179
+        for step in 1 ... 400 {
+            let dx = Double(step) * 0.7357
+            let dy = Double(401 - step) * 1.3179
             let (head, tail) = compensatedMagnitude(dx, dy)
             let reference = hypot(dx, dy)
             let difference = abs((head - reference) + tail) / reference.ulp
