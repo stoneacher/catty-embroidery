@@ -253,10 +253,67 @@ every run would compare a file against the builder that had just written it.
 
 ## Trust verification
 
-**Status: not yet verified.** The milestone requires a manual embroidery-viewer
-check at this story. Until the section below is filled in, these figures are
-self-consistent — the engine agreeing with itself — and not independently
-confirmed.
+**Status: verified — both samples are trusted** (Sebastian, 2026-08-09). Opened
+in an embroidery viewer; both load without error and render the intended design.
+An independent byte-level decode reconciles every figure the viewer reported.
+
+| Viewer reported | Octagon Rosette | Square Coil |
+|---|---|---|
+| Dimensions | 98.6 × 98.6 mm | 53.4 × 52.8 mm |
+| Stitches | 3195 | 2978 |
+| Colour changes | 0 | 1 |
+| Jumps / trims / stops | 0 / 0 / 0 | 1 / 0 / 0 |
+
+**Shapes are right.** The rosette renders as eight octagons fanned around one
+shared corner, with the eight sides adjacent to that corner meeting at the centre
+— the spoked hub in the render is those sides, not an artefact. The coil renders
+as a nested square spiral with the blue core and the amber outer third, matching
+the 31/13 split.
+
+### The two count differences are the viewer's convention, not our bytes
+
+Both were checked by decoding the files directly rather than by argument, since
+"the viewer disagrees with the golden" is the one result this check exists to
+surface. The decode reads the 512-byte header and then 3-byte records, counting
+flag bytes:
+
+| | records in file | `ST:` field | flag bytes present |
+|---|---|---|---|
+| Octagon Rosette | 3195 (3194 stitches + 1 terminator) | **3194** | `0x03`, `0xF3` |
+| Square Coil | 2977 (2975 stitches + 1 colour change + 1 terminator) | **2976** | `0x03`, `0xC3`, `0xF3` |
+
+The `ST:` fields are exactly our own numbers, and under ADR-012 that field is the
+authoritative in-file count. The viewer's totals reconcile as:
+
+```
+rosette:  3194 + 1 (end-of-file record counted as a stitch)                = 3195
+coil:     2976 + 1 (end-of-file record)  + 1 (0xC3 counted twice)          = 2978
+```
+
+**The reported "Jumps: 1" looks wrong and is not.** There is **no jump-only
+record in either file** — the flag histograms above contain no `0x83`. The single
+jump is the one `0xC3` colour-change record, and `0xC3` has bit `0x80` set by
+construction, so a reader that tests the jump bit before testing the
+colour-change bits reports the same record as both. That also explains the coil's
+second extra stitch: the same record is expanded into two commands. Nothing
+travels un-sewn; a colour change is where the machine *stops*, not a travel move
+(ADR-013).
+
+What this check does **not** establish, stated because the rosette's symmetry
+makes it tempting to think otherwise: it does not confirm the start heading. The
+design has 8-fold symmetry, so heading 0 and heading 90 render identically and
+report identical dimensions and counts — which is exactly how the quarter-turn
+error survived to the cross-vendor review. That fact is pinned by
+`OctagonRosetteGoldenTests.totalsAreUnchangedByAQuarterTurn`, and the heading
+itself is pinned only by the reference citation above.
+
+Also corroborated arithmetically: the header extents. The rosette's `+X 493 /
+-X 493` and `+Y 483 / -Y 503` sum to 986 units on both axes = 98.6 mm, and the
+asymmetry between `+Y` and `-Y` is ADR-012's rule that extents are measured from
+the **first stitch**, not from the design centre. The coil's `270/264` and
+`258/270` give 534 × 528 units = 53.4 × 52.8 mm, matching the viewer exactly.
+
+### Reproducing the check
 
 To produce the files:
 

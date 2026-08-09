@@ -2,11 +2,9 @@
 
 **Epic**: E6 Projects & persistence (thin) | **Estimate**: ~4 h | **Depends on**: —
 
-**Status**: Implementation complete — 2026-08-07. **Not closed out**: the manual
-Ink/Stitch verification the milestone requires at this story is outstanding, and
-`PROVENANCE.md`'s trust section is a placeholder until it is done. Marking this
-*Done* while that is open would be the close-out defect US-110 established the
-rule against (Codex round 3 flagged the same contradiction).
+**Status**: Done — 2026-08-09. Implemented 2026-08-07; closed out after the
+manual Ink/Stitch verification the milestone requires at this story (Sebastian,
+2026-08-09 — both samples trusted, see `PROVENANCE.md`).
 
 **Story**: As the app, I want ready-made, visually appealing embroidery programs available as a linkable product, so that M3 can run something real and M5 can turn the same content into projects on disk.
 
@@ -93,6 +91,15 @@ Three findings worth carrying forward:
   package. US-303 should not assume the app-target catalog behaves the same way
   the package's resources do.
 
-**Manual Ink/Stitch verification: needed, and not yet done.** `PROVENANCE.md`'s
-trust-verification section is a placeholder until it is. `DUMP_SAMPLE_DST=1
-swift test` writes both files and prints their paths.
+**Manual Ink/Stitch verification: done, both samples trusted** (Sebastian,
+2026-08-09). Shapes correct — the rosette's eight octagons fan around one shared
+corner, the coil's amber is the outer third. Dimensions matched exactly
+(98.6 × 98.6 mm and 53.4 × 52.8 mm).
+
+The viewer's stitch counts came back 3195 and 2978 against our 3194 and 2976, and
+it reported one jump in the coil where our tests assert none. **Both are its
+counting convention, confirmed by decoding the bytes rather than by argument**:
+it counts the 3-byte end-of-file terminator as a stitch, and it expands the
+single `0xC3` colour-change record into two commands while also reporting its
+`0x80` bit as a jump. Neither file contains a jump-only record, and both `ST:`
+header fields read exactly our numbers. Full reconciliation in `PROVENANCE.md`.
