@@ -162,8 +162,17 @@ public struct StageTransform: Hashable, Sendable {
     }
 
     /// Whether fitting `content` at `scale` maps every corner to a finite view
-    /// position — evaluated through the same arithmetic `viewPoint(of:)` uses,
-    /// so the check cannot drift from the thing it is checking.
+    /// position.
+    ///
+    /// Calls `viewPoint(of:)` on the candidate transform rather than re-spelling
+    /// its arithmetic, so the predicate *cannot* drift from the mapping it
+    /// certifies — a re-spelled copy would stay correct only until someone
+    /// changed one of the two (Codex round 7, which noted the earlier version's
+    /// "cannot drift" comment was not literally true).
+    ///
+    /// The translation is checked **before** the transform is built, because
+    /// `init` sanitises a non-finite translation to zero — which would hide
+    /// exactly the condition being tested.
     private static func mapsFinitely(
         _ content: StageBox,
         in viewport: ViewSize,
@@ -172,11 +181,11 @@ public struct StageTransform: Hashable, Sendable {
         let translation = centringTranslation(for: content.center, in: viewport, at: scale)
         guard translation.x.isFinite, translation.y.isFinite else { return false }
 
+        let candidate = StageTransform(scale: scale, translation: translation)
         for x in [content.minX, content.maxX] {
             for y in [content.minY, content.maxY] {
-                guard (x * scale + translation.x).isFinite,
-                      (flippingY(y) * scale + translation.y).isFinite
-                else { return false }
+                let mapped = candidate.viewPoint(of: StagePoint(x: x, y: y))
+                guard mapped.x.isFinite, mapped.y.isFinite else { return false }
             }
         }
         return true

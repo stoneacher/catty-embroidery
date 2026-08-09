@@ -286,35 +286,58 @@ struct StageTransformFinitenessTests {
     }
 
     /// The sweep, strengthened to the restored contract: across hostile content
-    /// and hostile viewports, every corner maps finitely — not merely the
-    /// transform's own fields. This is the assertion round 5's weakened
+    /// and hostile viewports, **every one of the four corners** maps finitely —
+    /// not merely the transform's own fields, which is what round 5's weakened
     /// contract had given up on.
-    @Test("fitting maps every corner finitely across hostile content and viewports")
+    ///
+    /// **Both axes vary independently, and the viewport dimensions are a cross
+    /// product** (Codex round 7). The earlier version varied only x, pinned
+    /// `minY = 0` / `maxY = 1`, and mapped only `y: 0` — so a y-flip, a
+    /// height-fit or a y-translation overflow could regress while it stayed
+    /// green. That is the **third** time on this branch a test meant to be
+    /// exhaustive held an input constant, which is why the shape is spelled out
+    /// here rather than left to the next reader to notice.
+    @Test("fitting maps all four corners finitely across hostile content and viewports")
     func fittingMapsCornersAcrossHostileInputs() {
         let magnitude = Double.greatestFiniteMagnitude
-        let extremes = [
-            -magnitude, -magnitude / 2, -magnitude / 100, -1e300, 0, 1e300,
-            magnitude / 100, magnitude / 2, magnitude
-        ]
-        let viewports = [
-            ViewSize(width: 0, height: 0),
-            ViewSize(width: 300, height: 300),
-            ViewSize(width: magnitude, height: magnitude),
-            ViewSize(width: magnitude, height: 1)
-        ]
+        let extremes = [-magnitude, -magnitude / 100, -1e300, 0, 1e300, magnitude / 100, magnitude]
+        let dimensions = [0.0, 1, 300, magnitude]
+
         for minX in extremes {
             for maxX in extremes where maxX >= minX {
-                for viewport in viewports {
-                    let bounds = StageBox(minX: minX, minY: 0, maxX: maxX, maxY: 1)
-                    let transform = StageTransform.fitting(bounds, in: viewport)
-                    for corner in [bounds.minX, bounds.maxX] {
-                        let mapped = transform.viewPoint(of: StagePoint(x: corner, y: 0))
-                        #expect(
-                            mapped.x.isFinite && mapped.y.isFinite,
-                            "corner \(corner) of \(minX)…\(maxX) in \(viewport.width)×\(viewport.height)"
-                        )
+                for minY in extremes {
+                    for maxY in extremes where maxY >= minY {
+                        let bounds = StageBox(minX: minX, minY: minY, maxX: maxX, maxY: maxY)
+                        for width in dimensions {
+                            for height in dimensions {
+                                expectAllCornersMapFinitely(
+                                    bounds, in: ViewSize(width: width, height: height)
+                                )
+                            }
+                        }
                     }
                 }
+            }
+        }
+    }
+
+    private func expectAllCornersMapFinitely(
+        _ bounds: StageBox,
+        in viewport: ViewSize,
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) {
+        let transform = StageTransform.fitting(bounds, in: viewport)
+        for x in [bounds.minX, bounds.maxX] {
+            for y in [bounds.minY, bounds.maxY] {
+                let mapped = transform.viewPoint(of: StagePoint(x: x, y: y))
+                #expect(
+                    mapped.x.isFinite && mapped.y.isFinite,
+                    """
+                    corner (\(x), \(y)) of \(bounds.minX)…\(bounds.maxX) × \
+                    \(bounds.minY)…\(bounds.maxY) in \(viewport.width)×\(viewport.height)
+                    """,
+                    sourceLocation: sourceLocation
+                )
             }
         }
     }
