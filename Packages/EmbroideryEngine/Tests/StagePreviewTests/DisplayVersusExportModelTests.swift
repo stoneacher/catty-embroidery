@@ -111,12 +111,55 @@ struct DisplayVersusExportModelTests {
         #expect(stream.stitches.map(\.color) == [red, green])
         #expect(list.count == stream.count + 1)
 
+        // **Positions and the surviving flag, not just the colours** (Codex
+        // round 3). Colours and counts alone are satisfied by an implementation
+        // that dropped the *final* stitch instead of the duplicate — asserting
+        // which record survived is what distinguishes the two.
+        #expect(stream.stitches.map(\.position) == [
+            EmbroideryPoint(x: 0, y: 0), EmbroideryPoint(x: 2, y: 0)
+        ])
+        #expect(list.stitches.map(\.position) == [
+            StagePoint(x: 0, y: 0), StagePoint(x: 0, y: 0), StagePoint(x: 1, y: 0)
+        ])
+        // ADR-015: the change armed across the dedup rides the next *surviving*
+        // stitch, so the colour change lands on the export's second record.
+        #expect(stream.stitches.map(\.isColorChange) == [false, true])
+        #expect(stream.colorChangeCount == 1)
+
         // The path is unchanged: the extra entry sits on the previous stitch.
         #expect(list.stitches[0].position == list.stitches[1].position)
 
         // And this is why the square-coil colour-sequence test needs its length
         // precondition — that sample simply contains no deduped command.
         #expect(list.colorRuns.map(\.range) == [0 ..< 1, 1 ..< 3])
+    }
+
+    /// **A fifth divergence** (Codex round 3), and the one with the largest
+    /// visible gap: ADR-020 rejection. `emitStitches` publishes the event
+    /// unconditionally, while `assembled()` asks `canAppend` first and skips a
+    /// recorded op the stream would refuse — so an unconvertible coordinate is
+    /// drawn but never stitched.
+    ///
+    /// This is the case the milestone README already anticipates for the export
+    /// gate ("ops recorded and drawn, every one rejected at replay"), which is
+    /// why export gates on the post-replay stream rather than on
+    /// `hasValidPattern`. It belongs in ADR-021's list too.
+    @Test("an ADR-020-rejected coordinate is drawn but never stitched")
+    func adr020RejectionIsAFifthDivergence() {
+        var run = interpreter(singleObjectProgram([
+            .setThreadColor(hex: "#ff0000"),
+            .stitch,
+            .placeAt(x: .number(1e300), y: .number(0)),
+            .stitch
+        ]))
+        let events = run.run(maxTicks: 200)
+        let list = displayList(from: events)
+        let stream = run.assembledStream()
+
+        #expect(list.count == 2, "the preview draws what the program asked for")
+        #expect(stream.count == 1, "the machine never goes there")
+        #expect(list.stitches[1].position == StagePoint(x: 1e300, y: 0))
+        #expect(stream.stitches.map(\.position) == [EmbroideryPoint(x: 0, y: 0)])
     }
 
     // MARK: - Two actors on one layer: clause B, where they diverge

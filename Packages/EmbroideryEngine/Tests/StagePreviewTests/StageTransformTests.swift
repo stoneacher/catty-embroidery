@@ -145,11 +145,61 @@ struct StageTransformTests {
                 minX: 0, minY: -.greatestFiniteMagnitude,
                 maxX: 1, maxY: -.greatestFiniteMagnitude
             ),
-            StageBox(containing: StagePoint(x: .leastNonzeroMagnitude, y: .leastNonzeroMagnitude))
+            StageBox(containing: StagePoint(x: .leastNonzeroMagnitude, y: .leastNonzeroMagnitude)),
+            // Codex round 3's brute-forced counterexample. The round-2 fix
+            // bounded the scale by `greatestFiniteMagnitude / |centre|`, but
+            // that division *rounds up*: here the ceiling comes back as
+            // 1.2000448438435127 and `centre.x * scale` overflowed anyway.
+            StageBox(
+                minX: Double(bitPattern: 0x7FEA_AA69_5C4B_773D), minY: 0,
+                maxX: Double(bitPattern: 0x7FEA_AA69_5C4B_773D), maxY: 1
+            )
         ]
     )
     func everyFiniteBoxYieldsAFiniteTransform(_ bounds: StageBox) {
         expectUsableFit(bounds)
+    }
+
+    /// A search over the top binade, because the counterexample above was found
+    /// by brute force rather than by reasoning — and reasoning about this
+    /// product has now been wrong twice. A property this cheap to check should
+    /// be checked rather than argued.
+    @Test("no finite one-point box yields an infinite transform")
+    func noFiniteBoxYieldsAnInfiniteTransform() {
+        var bits: UInt64 = 0x7FE0_0000_0000_0000
+        while bits < 0x7FF0_0000_0000_0000 {
+            let value = Double(bitPattern: bits)
+            let bounds = StageBox(minX: value, minY: 0, maxX: value, maxY: 1)
+            let transform = StageTransform.fitting(bounds, in: ViewSize(width: 300, height: 300))
+            #expect(transform.translation.x.isFinite, "overflowed at bit pattern \(bits)")
+            #expect(transform.translation.y.isFinite, "overflowed at bit pattern \(bits)")
+            bits &+= 0x0000_4000_0000_0000
+        }
+    }
+
+    /// `pinched` multiplies a stage coordinate by the zoom exactly as `fitting`
+    /// does, and the round-2 fix closed only `fitting` (Codex round 3). A zoom
+    /// that cannot be represented is refused rather than returned as infinity.
+    @Test("pinching a design at an extreme coordinate cannot produce an infinite transform")
+    func pinchAtExtremeCoordinateStaysFinite() {
+        let bounds = StageBox(containing: StagePoint(x: .greatestFiniteMagnitude, y: 0))
+        let fitted = StageTransform.fitting(bounds, in: ViewSize(width: 300, height: 300))
+
+        for factor in [0.5, 2.0, 1e6] {
+            let pinched = fitted.pinched(by: factor, about: ViewPoint(x: 150, y: 150))
+            #expect(pinched.scale.isFinite)
+            #expect(pinched.translation.x.isFinite, "factor \(factor)")
+            #expect(pinched.translation.y.isFinite, "factor \(factor)")
+        }
+    }
+
+    /// The refusal must not leak into ordinary use: a normal design still zooms.
+    @Test("an ordinary pinch is unaffected by the overflow guard")
+    func ordinaryPinchStillZooms() {
+        let transform = StageTransform(scale: 1, translation: ViewPoint(x: 10, y: 10))
+        let pinched = transform.pinched(by: 2, about: ViewPoint(x: 100, y: 100))
+        #expect(pinched.scale == 2)
+        #expect(pinched != transform)
     }
 
     /// Finiteness of the *fields* is not usability — round 1's version stopped
@@ -168,9 +218,21 @@ struct StageTransformTests {
         #expect(transform.translation.x.isFinite, sourceLocation: sourceLocation)
         #expect(transform.translation.y.isFinite, sourceLocation: sourceLocation)
 
-        let mapped = transform.viewPoint(of: bounds.center)
-        #expect(mapped.x.isFinite, sourceLocation: sourceLocation)
-        #expect(mapped.y.isFinite, sourceLocation: sourceLocation)
+        // The guarantee is that the *content* maps finitely — every corner, not
+        // just the centre. "The fields are finite" was the weaker claim that
+        // let round 2's fix look complete.
+        let corners = [
+            bounds.center,
+            StagePoint(x: bounds.minX, y: bounds.minY),
+            StagePoint(x: bounds.maxX, y: bounds.minY),
+            StagePoint(x: bounds.minX, y: bounds.maxY),
+            StagePoint(x: bounds.maxX, y: bounds.maxY)
+        ]
+        for corner in corners {
+            let mapped = transform.viewPoint(of: corner)
+            #expect(mapped.x.isFinite, "corner \(corner)", sourceLocation: sourceLocation)
+            #expect(mapped.y.isFinite, "corner \(corner)", sourceLocation: sourceLocation)
+        }
     }
 
     /// And at ordinary magnitudes the fit is *correct*, not merely finite: the

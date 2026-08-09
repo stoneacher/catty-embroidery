@@ -103,7 +103,7 @@ This story implements ADR-021 and ADR-022. It is the milestone's load-bearing st
   the manager, so ~3000 stitch events per golden gained an independently derived
   colour dimension instead of a tautology.
 
-### A fourth display/export divergence, found in review
+### Two more display/export divergences, found in review
 
 ADR-021 enumerated three (clause C/D re-emits, interpolation intermediates,
 clause B). Codex round 2 found a fourth, reachable with a **single** actor:
@@ -118,6 +118,17 @@ moves the colour-run boundary one entry earlier.
 Deliberately **not** fixed in the app: filtering it preview-side would put
 ADR-012's clause A into the app layer, which is what ADR-021 exists to prevent.
 Pinned by `clauseADedupIsAFourthDivergence`, and ADR-021 corrected in place.
+
+Round 3 then found a **fifth**: **ADR-020 rejection**. `emitStitches` publishes
+the event unconditionally while `assembled()` asks `canAppend` first, so an
+unconvertible coordinate is *drawn but never stitched* — `placeAt(1e300, 0)`
+then `stitch` leaves two display entries against one export record. The largest
+of the five: the others shift a colour or duplicate a point, this one shows a
+stitch the machine will not make. Pinned by `adr020RejectionIsAFifthDivergence`.
+
+The five share one shape, now stated in ADR-021: **the display list is the trace
+of what the program asked for; the export model is the trace of what the machine
+will do.** The preview is a preview of the *program*, not of the file.
 
 ### ADR-019 screening
 
