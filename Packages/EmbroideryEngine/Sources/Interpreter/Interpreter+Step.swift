@@ -244,10 +244,15 @@ extension Interpreter {
     ) {
         let actorID = objects[objectIndex].actorID
         let layer = objects[objectIndex].layer
+        // Read once for the whole burst. `addStitch` cannot change the actor's
+        // current color — it snapshots it up front and only clears the armed
+        // bit (ADR-021) — and no brick runs between these points, so one read
+        // is the same answer as one per point. Worth hoisting: a single tick
+        // can emit 51 points in sample 1 and 106 in a triple-stitch design.
+        let color = manager.threadColor(for: actorID)
         for point in points {
             manager.addStitch(at: point, layer: layer, actor: actorID)
-            // US-302 red phase: the resolved color is not read yet.
-            events.append(.stitch(actor: actorID, position: point, layer: layer, color: .black))
+            events.append(.stitch(actor: actorID, position: point, layer: layer, color: color))
         }
     }
 

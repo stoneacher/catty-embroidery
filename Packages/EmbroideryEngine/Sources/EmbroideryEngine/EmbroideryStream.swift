@@ -130,10 +130,38 @@ public struct EmbroideryStream: Hashable, Sendable {
         lastStagePosition = stagePoint
     }
 
-    /// US-302 red phase: total but deliberately wrong; the green phase decides.
+    /// Whether travelling from `previous` to `target` needs a traversal — i.e.
+    /// whether `append` would emit **more than one** record for it (ADR-020's
+    /// interpolation). `false` when `append` would emit nothing at all.
+    ///
+    /// M3's renderer draws travel moves distinctly from thread and asks the
+    /// engine rather than re-deriving ADR-020: both references draw them as
+    /// solid thread, so a machine's travel looks sewn.
+    ///
+    /// **A predicate over a pair, not over stream state.** ADR-020's
+    /// encoded-delta trigger reads `stitches.last` inside
+    /// `addInterpolatedStitches`; here that becomes
+    /// `EmbroideryPoint(converting: previous)`. The two agree in any real
+    /// stream — `lastStagePosition` and `stitches.last` are written together in
+    /// the same `append` call and neither is set without the other — but that
+    /// is *believed*, not proven, which is why `TraversalPredicateTests` checks
+    /// it differentially against real appends instead of asserting it here.
+    ///
+    /// Reproduces **conversion plus every `canAppend` guard**, not just the two
+    /// distance triggers: a move past the split cap, or across a lattice too
+    /// coarse to subdivide, emits nothing, and claiming traversal there would
+    /// draw a travel line to somewhere the machine never goes.
     public static func requiresTraversal(from previous: StagePoint, to target: StagePoint) -> Bool {
-        _ = (previous, target)
-        return false
+        guard let previousPosition = EmbroideryPoint(converting: previous),
+              let targetPosition = EmbroideryPoint(converting: target),
+              canAppend(from: previous, to: target)
+        else { return false }
+        return interpolationSplitCount(
+            from: previous,
+            to: target,
+            targetPosition: targetPosition,
+            previousPosition: previousPosition
+        ) != nil
     }
 
     /// Whether `append` would emit for this point — the ADR-020 guards without
@@ -144,11 +172,20 @@ public struct EmbroideryStream: Hashable, Sendable {
     /// an interleaved multi-actor replay can belong to a different actor
     /// (Codex US-210 round 1).
     func canAppend(stitchAt stagePoint: StagePoint) -> Bool {
+        Self.canAppend(from: lastStagePosition, to: stagePoint)
+    }
+
+    /// The guards themselves, over a pair. One implementation, two entry
+    /// points: the instance seam above and `requiresTraversal`. Re-spelling
+    /// them in the predicate is exactly the duplication that would let the two
+    /// drift apart, and the drift would be invisible until a design drew a
+    /// travel line the machine never makes.
+    static func canAppend(from previous: StagePoint?, to target: StagePoint) -> Bool {
         // Non-finite, or past the ×2 conversion's `Int` range.
-        guard EmbroideryPoint(converting: stagePoint) != nil else { return false }
+        guard EmbroideryPoint(converting: target) != nil else { return false }
         // Representable, but unreachable from the last stitch by interpolation.
-        guard let previous = lastStagePosition else { return true }
-        return canInterpolate(from: previous, to: stagePoint)
+        guard let previous else { return true }
+        return canInterpolate(from: previous, to: target)
     }
 
     /// Whether a move can be split into a bounded number of encodable jump
@@ -170,7 +207,7 @@ public struct EmbroideryStream: Hashable, Sendable {
     ///   actually has to be split** — a coordinate merely *sitting* at a coarse
     ///   magnitude must not veto a legal move on the other axis (Codex round
     ///   2: `(2^58, 0) → (2^58, 1)` encodes as a plain `(0, 2)` delta).
-    private func canInterpolate(from previous: StagePoint, to target: StagePoint) -> Bool {
+    private static func canInterpolate(from previous: StagePoint, to target: StagePoint) -> Bool {
         guard axisCanBeSubdivided(from: previous.x, to: target.x),
               axisCanBeSubdivided(from: previous.y, to: target.y)
         else { return false }
@@ -198,7 +235,7 @@ public struct EmbroideryStream: Hashable, Sendable {
     /// 3). Taking the *finer* endpoint instead would be wrong in the other
     /// direction — 2^58 → 2^58 + 128 subdivides once into a hop that is itself
     /// non-progressing, so it must be refused up front, not one level down.
-    private func axisCanBeSubdivided(from start: Double, to end: Double) -> Bool {
+    private static func axisCanBeSubdivided(from start: Double, to end: Double) -> Bool {
         guard EmbroideryPoint.distanceInUnits(dx: end - start, dy: 0) > DSTStitchRecord.maxDelta
         else { return true }
         let latticeStep = max(abs(start), abs(end)).nextDown.ulp
@@ -222,46 +259,12 @@ public struct EmbroideryStream: Hashable, Sendable {
         targetPosition: EmbroideryPoint,
         color: ThreadColor
     ) {
-        // Catroid's measure: the stage difference, rounded.
-        let differenceDistance = EmbroideryPoint.distanceInUnits(
-            dx: target.x - previous.x, dy: target.y - previous.y
-        )
-        // And the delta `DSTFile` will actually encode, which ADR-012 builds
-        // by subtracting individually rounded positions. Both roundings sit
-        // within half a unit of the exact value, so the two measures differ by
-        // at most one per axis — which is what keeps this subtraction inside
-        // `Int` (`append`'s cap has already bounded the difference measure,
-        // and both endpoints are known convertible). Where the difference
-        // reads 121 while the encoded delta is 122, this used to skip the
-        // split and hand `DSTStitchRecord` an unencodable record. Catroid has
-        // the same disagreement and emits a corrupt record; ADR-012 calls that
-        // a reference accident, so we split instead (ADR-020).
-        let encodedDistance = stitches.last.map {
-            max(
-                abs(targetPosition.x - $0.position.x),
-                abs(targetPosition.y - $0.position.y)
-            )
-        } ?? 0
-
-        // The encoded delta widens the *trigger*, never the count. Where the
-        // difference already exceeds ±121 Catroid's count is sound — its own
-        // recursion re-splits any over-long hop — so raising it there would
-        // change bytes the reference gets right: at difference 242 / encoded
-        // 243 (stage 0.125 → 121.25) a count taken from the maximum emits six
-        // stitches where the reference emits eight. Where only the encoded
-        // delta triggers, the count is two, not `ceil(121/121)` = 1: a
-        // one-way split emits no intermediates and re-enters this decision
-        // with the same pair, which would never terminate.
-        let splitCount: Int
-        if differenceDistance > DSTStitchRecord.maxDelta {
-            splitCount = Int(
-                (Double(differenceDistance) / Double(DSTStitchRecord.maxDelta)).rounded(.up)
-            )
-        } else if encodedDistance > DSTStitchRecord.maxDelta {
-            splitCount = 2
-        } else {
-            return
-        }
+        guard let splitCount = Self.interpolationSplitCount(
+            from: previous,
+            to: target,
+            targetPosition: targetPosition,
+            previousPosition: stitches.last?.position
+        ) else { return }
         let previousColor = stitches.last?.color ?? color
 
         addJump()
@@ -279,5 +282,62 @@ public struct EmbroideryStream: Hashable, Sendable {
 
         addJump()
         append(stitchAt: target, color: color)
+    }
+
+    /// ADR-020's dual trigger and single count, in the one place both the
+    /// emitter and `requiresTraversal` read it. `nil` means no split.
+    ///
+    /// Two measures. Catroid's is the stage *difference*, rounded. The other is
+    /// the delta `DSTFile` will actually encode, which ADR-012 builds by
+    /// subtracting individually rounded positions. Both roundings sit within
+    /// half a unit of the exact value, so the two differ by at most one per
+    /// axis — which is what keeps the subtraction below inside `Int`: every
+    /// caller has already passed `canAppend`, so the cap has bounded the
+    /// difference measure and both endpoints are known convertible. Where the
+    /// difference reads 121 while the encoded delta is 122, skipping the split
+    /// used to hand `DSTStitchRecord` an unencodable record. Catroid has the
+    /// same disagreement and emits a corrupt record; ADR-012 calls that a
+    /// reference accident, so we split instead.
+    ///
+    /// The encoded delta widens the *trigger*, never the count. Where the
+    /// difference already exceeds ±121 Catroid's count is sound — its own
+    /// recursion re-splits any over-long hop — so raising it there would change
+    /// bytes the reference gets right: at difference 242 / encoded 243 (stage
+    /// 0.125 → 121.25) a count taken from the maximum emits six stitches where
+    /// the reference emits eight. Where only the encoded delta triggers, the
+    /// count is two, not `ceil(121/121)` = 1: a one-way split emits no
+    /// intermediates and re-enters this decision with the same pair, which
+    /// would never terminate.
+    ///
+    /// `previousPosition` is the encoded anchor. The emitter passes
+    /// `stitches.last?.position`; `requiresTraversal`, which holds no stream,
+    /// passes the converted `previous`. `nil` — an empty stream — cannot arise
+    /// from the emitter, since `lastStagePosition` is only ever set alongside a
+    /// `stitches.append`, but is handled rather than asserted.
+    static func interpolationSplitCount(
+        from previous: StagePoint,
+        to target: StagePoint,
+        targetPosition: EmbroideryPoint,
+        previousPosition: EmbroideryPoint?
+    ) -> Int? {
+        let differenceDistance = EmbroideryPoint.distanceInUnits(
+            dx: target.x - previous.x, dy: target.y - previous.y
+        )
+        let encodedDistance = previousPosition.map {
+            max(
+                abs(targetPosition.x - $0.x),
+                abs(targetPosition.y - $0.y)
+            )
+        } ?? 0
+
+        if differenceDistance > DSTStitchRecord.maxDelta {
+            return Int(
+                (Double(differenceDistance) / Double(DSTStitchRecord.maxDelta)).rounded(.up)
+            )
+        }
+        if encodedDistance > DSTStitchRecord.maxDelta {
+            return 2
+        }
+        return nil
     }
 }
