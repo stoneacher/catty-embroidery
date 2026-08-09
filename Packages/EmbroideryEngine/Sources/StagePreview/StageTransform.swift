@@ -40,35 +40,78 @@ public struct StageTransform: Hashable, Sendable {
         -value
     }
 
-    /// US-302 red phase: total but deliberately wrong; the green phase maps.
+    /// Stage space → view space.
     public func viewPoint(of stagePoint: StagePoint) -> ViewPoint {
-        ViewPoint(x: stagePoint.x, y: stagePoint.y)
+        ViewPoint(
+            x: stagePoint.x * scale + translation.x,
+            y: Self.flippingY(stagePoint.y) * scale + translation.y
+        )
     }
 
-    /// US-302 red phase: total but deliberately wrong; the green phase inverts.
+    /// View space → stage space. The exact inverse of `viewPoint(of:)`, sharing
+    /// its single flip rather than spelling a sign of its own.
     public func stagePoint(of viewPoint: ViewPoint) -> StagePoint {
-        StagePoint(x: viewPoint.x, y: viewPoint.y)
+        StagePoint(
+            x: (viewPoint.x - translation.x) / scale,
+            y: Self.flippingY((viewPoint.y - translation.y) / scale)
+        )
     }
 
-    /// US-302 red phase: total but deliberately wrong; the green phase fits.
+    /// The transform that shows all of `content`, centred, with `padding` view
+    /// points of margin.
+    ///
+    /// One scalar scale for both axes: a stitched design's proportions are the
+    /// design, so it is never stretched to fill the viewport. Total for
+    /// degenerate input — a one-stitch design has zero width and height, and a
+    /// viewport can be measured at zero before layout settles — by falling back
+    /// to whichever axis has an extent, then to a scale of 1.
     public static func fitting(
         _ content: StageBox,
         in viewport: ViewSize,
         padding: Double = 16
     ) -> StageTransform {
-        _ = (content, viewport, padding)
-        return StageTransform()
+        let availableWidth = Swift.max(viewport.width - 2 * padding, 0)
+        let availableHeight = Swift.max(viewport.height - 2 * padding, 0)
+        let horizontal = content.width > 0 ? availableWidth / content.width : Double.infinity
+        let vertical = content.height > 0 ? availableHeight / content.height : Double.infinity
+        let fitted = Swift.min(horizontal, vertical)
+        let scale = clampedScale(fitted.isFinite && fitted > 0 ? fitted : 1)
+
+        let centre = content.center
+        return StageTransform(
+            scale: scale,
+            translation: ViewPoint(
+                x: viewport.width / 2 - centre.x * scale,
+                y: viewport.height / 2 - flippingY(centre.y) * scale
+            )
+        )
     }
 
-    /// US-302 red phase: total but deliberately wrong; the green phase zooms.
+    /// Zooms by `factor` while keeping whatever stage point sits under `anchor`
+    /// exactly there.
+    ///
+    /// The new translation is recomputed from the **clamped** scale, so the
+    /// anchor stays pinned even when the clamp bites — a version that bailed
+    /// out early at the limit would also keep the anchor fixed while silently
+    /// refusing the part of the zoom that was still allowed.
     public func pinched(by factor: Double, about anchor: ViewPoint) -> StageTransform {
-        _ = (factor, anchor)
-        return self
+        let anchored = stagePoint(of: anchor)
+        let zoomed = Self.clampedScale(scale * factor)
+        return StageTransform(
+            scale: zoomed,
+            translation: ViewPoint(
+                x: anchor.x - anchored.x * zoomed,
+                y: anchor.y - Self.flippingY(anchored.y) * zoomed
+            )
+        )
     }
 
-    /// US-302 red phase: total but deliberately wrong; the green phase pans.
+    /// Pans by a view-space delta. Additive, so a continuous gesture applied
+    /// incrementally reaches the same place as one combined drag.
     public func dragged(by delta: ViewPoint) -> StageTransform {
-        _ = delta
-        return self
+        StageTransform(
+            scale: scale,
+            translation: ViewPoint(x: translation.x + delta.x, y: translation.y + delta.y)
+        )
     }
 }

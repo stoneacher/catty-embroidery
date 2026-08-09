@@ -51,12 +51,36 @@ public struct RunBatch: Hashable, Sendable {
 
     public static let empty = RunBatch()
 
-    /// US-302 red phase: total but deliberately wrong; the green phase folds.
+    /// Folds one tick's events into a batch, carrying the previous needle pose
+    /// so a tick that only stitches still knows where the needle is.
+    ///
+    /// The `switch` is exhaustive with no `default:` on purpose: a future
+    /// `InterpreterEvent` case must force a decision here rather than being
+    /// silently dropped into the preview's blind spot.
     public static func reducing(
         _ events: [InterpreterEvent],
         from carriedNeedle: PreviewNeedle? = nil
     ) -> RunBatch {
-        _ = (events, carriedNeedle)
-        return .empty
+        var batch = RunBatch(needle: carriedNeedle)
+        for event in events {
+            switch event {
+            case let .stitch(_, position, _, color):
+                batch.stitches.append(PreviewStitch(position: position, color: color))
+            case let .needleMoved(actor, update):
+                batch.needle = PreviewNeedle(actor: actor, update: update)
+            case let .finalizeRequested(name):
+                batch.requestedDesignName = name
+            case .colorArmed:
+                // Deliberately ignored (ADR-021). It reports the brick's raw
+                // *intent* — an unvalidated hex, emitted even when the manager
+                // rejected it and even for the silent start — so consuming it
+                // would mean re-deriving ADR-015 in the app. The resolved
+                // colour already rides `.stitch`.
+                continue
+            case .waited:
+                continue // no visible effect of its own
+            }
+        }
+        return batch
     }
 }

@@ -48,25 +48,54 @@ public struct StitchDisplayList: Hashable, Sendable {
         stitches[settledCount...]
     }
 
-    /// US-302 red phase: stores the stitch but maintains none of the derived
-    /// state, so the suite fails on what it is testing instead of trapping on
-    /// an empty array — a crash takes its whole parallel suite with it.
+    /// Appends one stitch, extending the derived state in place.
+    ///
+    /// O(1), and that is a requirement rather than an observation: nothing here
+    /// may scan `stitches` or `colorRuns`, so appending N stitches to a list
+    /// already holding M costs O(N) whatever M is. At the 50 000-stitch exit
+    /// criterion a per-append rescan would be quadratic.
+    ///
+    /// The runs stay a gapless partition by construction — a new run always
+    /// starts exactly where the previous one ended — rather than by a repair
+    /// pass that could be got wrong.
     public mutating func append(_ stitch: PreviewStitch) {
+        let index = stitches.count
         stitches.append(stitch)
+
+        if colorRuns.isEmpty || colorRuns[colorRuns.count - 1].color != stitch.color {
+            colorRuns.append(ColorRun(color: stitch.color, range: index ..< index + 1))
+        } else {
+            colorRuns[colorRuns.count - 1].range = colorRuns[colorRuns.count - 1].range
+                .lowerBound ..< index + 1
+        }
+
+        if bounds == nil {
+            bounds = StageBox(containing: stitch.position)
+        } else {
+            bounds?.expand(toInclude: stitch.position)
+        }
     }
 
-    /// US-302 red phase: total but deliberately wrong; the green phase appends.
     public mutating func append(contentsOf newStitches: some Sequence<PreviewStitch>) {
+        stitches.reserveCapacity(stitches.count + newStitches.underestimatedCount)
         for stitch in newStitches {
             append(stitch)
         }
     }
 
-    /// US-302 red phase: total but deliberately wrong; the green phase advances.
+    /// Advances the rasterisation watermark. Monotonic and clamped: moving it
+    /// backwards would silently invalidate pixels the renderer still holds, and
+    /// only `reset()` legitimately takes it back.
     public mutating func markSettled(upTo count: Int) {
-        _ = count
+        settledCount = Swift.max(settledCount, Swift.min(count, stitches.count))
     }
 
-    /// US-302 red phase: total but deliberately wrong; the green phase empties.
-    public mutating func reset() {}
+    /// Empties the list for a fresh run — the one operation allowed to move the
+    /// watermark backwards, because there are no settled pixels left to protect.
+    public mutating func reset() {
+        stitches.removeAll(keepingCapacity: true)
+        colorRuns.removeAll(keepingCapacity: true)
+        bounds = nil
+        settledCount = 0
+    }
 }
