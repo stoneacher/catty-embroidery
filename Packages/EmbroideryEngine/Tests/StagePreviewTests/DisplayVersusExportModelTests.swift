@@ -74,6 +74,51 @@ struct DisplayVersusExportModelTests {
         #expect(list.stitches.map(\.color) == stream.stitches.map(\.color))
     }
 
+    // MARK: - Clause A: a fourth divergence, found in review
+
+    /// **A divergence ADR-021's original enumeration missed** (Codex round 2).
+    /// It listed clause C/D re-emits, interpolation intermediates and clause B;
+    /// workspace dedup is a fourth, and it is reachable with a *single* actor.
+    ///
+    /// `emitStitches` emits one event per `addStitch` **call** — documented
+    /// since M2, and deliberate: the event is the trace of what the program
+    /// asked for, which is what US-306's stitch budget counts. But clause A
+    /// drops an identical consecutive command from the same actor, so the
+    /// export has no record for it while the display list does.
+    ///
+    /// The drawn *path* is unaffected — the extra entry is at the position the
+    /// previous stitch already occupies — but the colour run boundary moves one
+    /// entry earlier when a colour change is armed across the dedup.
+    ///
+    /// **Not fixed in the app, deliberately.** Filtering it preview-side would
+    /// put ADR-012's clause A into the app layer, which is exactly what ADR-021
+    /// exists to prevent. Pinned instead, and the ADR corrected.
+    @Test("workspace dedup leaves an entry in the display list with no export record")
+    func clauseADedupIsAFourthDivergence() {
+        var run = interpreter(singleObjectProgram([
+            .setThreadColor(hex: "#ff0000"),
+            .stitch,
+            .setThreadColor(hex: "#00ff00"),
+            .stitch, // same position, same actor — clause A drops this one
+            .placeAt(x: .number(1), y: .number(0)),
+            .stitch
+        ]))
+        let events = run.run(maxTicks: 200)
+        let list = displayList(from: events)
+        let stream = run.assembledStream()
+
+        #expect(list.stitches.map(\.color) == [red, green, green])
+        #expect(stream.stitches.map(\.color) == [red, green])
+        #expect(list.count == stream.count + 1)
+
+        // The path is unchanged: the extra entry sits on the previous stitch.
+        #expect(list.stitches[0].position == list.stitches[1].position)
+
+        // And this is why the square-coil colour-sequence test needs its length
+        // precondition — that sample simply contains no deduped command.
+        #expect(list.colorRuns.map(\.range) == [0 ..< 1, 1 ..< 3])
+    }
+
     // MARK: - Two actors on one layer: clause B, where they diverge
 
     /// Item 9. Two objects on one layer, red then green, so the export's two

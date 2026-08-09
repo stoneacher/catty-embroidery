@@ -75,9 +75,28 @@ public struct StageTransform: Hashable, Sendable {
         let horizontal = content.width > 0 ? availableWidth / content.width : Double.infinity
         let vertical = content.height > 0 ? availableHeight / content.height : Double.infinity
         let fitted = Swift.min(horizontal, vertical)
-        let scale = clampedScale(fitted.isFinite && fitted > 0 ? fitted : 1)
-
         let centre = content.center
+
+        // The translation is `viewportCentre − centre × scale`, so the product
+        // is where a finite box can still overflow to infinity: a design at
+        // 1e308 fitted at any scale above 1 puts an infinity in the transform
+        // and the preview shows nothing (Codex round 2 — round 1's midpoint fix
+        // closed the *centre*, not this). Bounding the scale by what keeps the
+        // product finite is the fix, and it costs nothing at ordinary
+        // magnitudes: the ceiling only drops below `maximumScale` once the
+        // centre is past ~1e307, which no hoop-sized design approaches.
+        //
+        // Precision, not just finiteness, is genuinely lost out there — at
+        // `greatestFiniteMagnitude` the viewport offset is smaller than one ulp
+        // of the coordinate, so the content centre cannot land exactly on the
+        // viewport centre. That is inherent to `Double` and is not something a
+        // different formula recovers; the guarantee this function makes is that
+        // the transform stays *finite and usable* for every finite box.
+        let centreMagnitude = Swift.max(abs(centre.x), abs(centre.y), 1)
+        let scaleCeiling = .greatestFiniteMagnitude / centreMagnitude
+        let bounded = Swift.min(fitted.isFinite && fitted > 0 ? fitted : 1, scaleCeiling)
+        let scale = clampedScale(bounded)
+
         return StageTransform(
             scale: scale,
             translation: ViewPoint(

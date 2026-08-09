@@ -166,6 +166,18 @@ struct TraversalPredicateTests {
     /// intermediates of its own* — and only a third append, past a move that
     /// split, exercises that. Two axes as well, since interpolation rounds each
     /// axis independently.
+    ///
+    /// **What this can and cannot prove** (Codex round 2, and worth stating
+    /// rather than letting the test imply more than it delivers): no public
+    /// input can actually make the two disagree. Every successful `append`
+    /// writes `lastStagePosition` and `stitches.last` from the same target,
+    /// including the final plain target after interpolation, so the equivalence
+    /// is a **structural invariant** rather than a property these inputs could
+    /// falsify — distinguishing them would need an injected internal state. So
+    /// this is coverage of the post-interpolation path, and reassurance about
+    /// the invariant, not a discriminating test of the substitution. ADR-020's
+    /// "believed equivalent, not proven" is now better understood: it is
+    /// unreachable-by-construction, which is stronger than believed.
     @Test("the predicate still agrees on an append following a split move")
     func agreesOnTheAppendAfterInterpolation() {
         let first = StagePoint(x: -100, y: -100)

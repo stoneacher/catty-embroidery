@@ -121,30 +121,79 @@ struct StageTransformTests {
         var list = StitchDisplayList()
         list.append(previewStitch(.greatestFiniteMagnitude, .greatestFiniteMagnitude))
         let bounds = try #require(list.bounds)
-
-        #expect(bounds.center.x.isFinite)
-        #expect(bounds.center.y.isFinite)
-
-        let transform = StageTransform.fitting(bounds, in: ViewSize(width: 300, height: 300))
-        #expect(transform.scale.isFinite)
-        #expect(transform.translation.x.isFinite)
-        #expect(transform.translation.y.isFinite)
+        expectUsableFit(bounds)
     }
 
-    /// The opposite-sign case, where the *width* overflows rather than the
-    /// centre: a box spanning the whole finite range has infinite extent.
-    @Test("a box spanning the finite range still yields a usable transform")
-    func fullRangeBoxStaysFinite() {
-        let bounds = StageBox(
-            minX: -.greatestFiniteMagnitude, minY: -.greatestFiniteMagnitude,
-            maxX: .greatestFiniteMagnitude, maxY: .greatestFiniteMagnitude
-        )
-        #expect(bounds.center.x.isFinite)
+    /// Every finite box must yield a finite, *usable* transform.
+    ///
+    /// The third case is the one round 1's fix missed (Codex round 2): the
+    /// centre is finite there, but `centre.x × scale` still overflowed, because
+    /// the *other* axis had an extent and pulled the scale above 1. Fixing the
+    /// midpoint alone was not enough — the product needed bounding too.
+    @Test(
+        "every finite box yields a finite transform",
+        arguments: [
+            StageBox(
+                minX: -.greatestFiniteMagnitude, minY: -.greatestFiniteMagnitude,
+                maxX: .greatestFiniteMagnitude, maxY: .greatestFiniteMagnitude
+            ),
+            StageBox(
+                minX: .greatestFiniteMagnitude, minY: 0,
+                maxX: .greatestFiniteMagnitude, maxY: 1
+            ),
+            StageBox(
+                minX: 0, minY: -.greatestFiniteMagnitude,
+                maxX: 1, maxY: -.greatestFiniteMagnitude
+            ),
+            StageBox(containing: StagePoint(x: .leastNonzeroMagnitude, y: .leastNonzeroMagnitude))
+        ]
+    )
+    func everyFiniteBoxYieldsAFiniteTransform(_ bounds: StageBox) {
+        expectUsableFit(bounds)
+    }
+
+    /// Finiteness of the *fields* is not usability — round 1's version stopped
+    /// there and would have passed while the transform mapped every point to
+    /// something unusable. The mapping itself has to stay finite.
+    private func expectUsableFit(
+        _ bounds: StageBox,
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) {
+        #expect(bounds.center.x.isFinite, sourceLocation: sourceLocation)
+        #expect(bounds.center.y.isFinite, sourceLocation: sourceLocation)
 
         let transform = StageTransform.fitting(bounds, in: ViewSize(width: 300, height: 300))
-        #expect(transform.scale.isFinite)
-        #expect(transform.translation.x.isFinite)
-        #expect(transform.translation.y.isFinite)
+        #expect(transform.scale.isFinite, sourceLocation: sourceLocation)
+        #expect(transform.scale > 0, sourceLocation: sourceLocation)
+        #expect(transform.translation.x.isFinite, sourceLocation: sourceLocation)
+        #expect(transform.translation.y.isFinite, sourceLocation: sourceLocation)
+
+        let mapped = transform.viewPoint(of: bounds.center)
+        #expect(mapped.x.isFinite, sourceLocation: sourceLocation)
+        #expect(mapped.y.isFinite, sourceLocation: sourceLocation)
+    }
+
+    /// And at ordinary magnitudes the fit is *correct*, not merely finite: the
+    /// content centre lands on the viewport centre. This is the assertion the
+    /// extreme cases cannot make — near `greatestFiniteMagnitude` the viewport
+    /// offset is below one ulp of the coordinate, so exact centring is
+    /// unrepresentable in `Double` and no different formula recovers it. The
+    /// guarantee `fitting` makes out there is finite and usable, not exact.
+    @Test(
+        "at ordinary magnitudes the content centre lands on the viewport centre",
+        arguments: [0.0, 1000.0, 1e6, 1e12]
+    )
+    func fittingCentresContentAtOrdinaryMagnitudes(_ offset: Double) {
+        let bounds = StageBox(
+            minX: offset - 100, minY: offset - 50, maxX: offset + 100, maxY: offset + 50
+        )
+        let viewport = ViewSize(width: 800, height: 600)
+        let transform = StageTransform.fitting(bounds, in: viewport, padding: 0)
+
+        let mapped = transform.viewPoint(of: bounds.center)
+        let slack = 1e-9 * Swift.max(offset, 1)
+        #expect(abs(mapped.x - viewport.width / 2) <= slack)
+        #expect(abs(mapped.y - viewport.height / 2) <= slack)
     }
 
     @Test("fitting honours padding on the limiting axis")
