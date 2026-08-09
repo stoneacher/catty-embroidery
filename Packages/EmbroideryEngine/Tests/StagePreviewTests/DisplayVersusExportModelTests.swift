@@ -162,6 +162,71 @@ struct DisplayVersusExportModelTests {
         #expect(stream.stitches.map(\.position) == [EmbroideryPoint(x: 0, y: 0)])
     }
 
+    /// **A sixth divergence** (Codex round 4): the assembler's inter-layer
+    /// boundary. On the first surviving op of a later layer, `assembled()`
+    /// emits a colour change and a jump, each re-emitting the previous layer's
+    /// last point — two export-only records with no display counterpart, and
+    /// none of the other five mechanisms.
+    @Test("the inter-layer boundary adds two export-only records")
+    func layerBoundaryIsASixthDivergence() {
+        var run = interpreter(twoLayersProgram(waitTicks: 40))
+        let events = run.run(maxTicks: 100_000)
+        let list = displayList(from: events)
+        let stream = run.assembledStream()
+
+        #expect(list.count == 4, "four program stitches")
+        #expect(stream.count == 6, "plus the boundary's colour-change and jump re-emits")
+
+        // Both boundary records sit on the lower layer's last point, (10, 0)
+        // → 20 embroidery units, and carry the change and the jump in order.
+        #expect(stream.stitches[2].position == EmbroideryPoint(x: 20, y: 0))
+        #expect(stream.stitches[3].position == EmbroideryPoint(x: 20, y: 0))
+        #expect(stream.stitches[2].isColorChange)
+        #expect(stream.stitches[3].isJump)
+    }
+
+    /// **A seventh** (Codex round 4), and the one that matters most for M4/M5:
+    /// ordering. `assembled()` replays `layerOps.keys.sorted()`, so the export
+    /// is ordered by layer while the display list keeps interpreter execution
+    /// order. For a program whose upper layer stitches *first* the two
+    /// sequences are genuinely reordered, not merely padded.
+    ///
+    /// This is the concrete form of the structural reason ADR-021 rejected
+    /// per-frame `assembled()`: a new stitch can land in the middle of the
+    /// returned array, which is what forecloses ADR-009's immutable prefix.
+    @Test("export is ordered by layer while the display keeps execution order")
+    func layerOrderingIsASeventhDivergence() {
+        // The *upper* layer runs first here, so sorting by layer reorders it
+        // behind the lower one.
+        let upperFirst = Program(scenes: [Scene(objects: [
+            Object(
+                name: "Upper",
+                startX: 0, startY: 0, zIndex: 5,
+                scripts: [Script(bricks: [
+                    .placeAt(x: .number(50), y: .number(0)), .stitch
+                ])]
+            ),
+            Object(
+                name: "Lower",
+                startX: 0, startY: 0, zIndex: 0,
+                scripts: [Script(bricks: [
+                    .wait(seconds: .number(40 * previewClock.tickDelta)),
+                    .placeAt(x: .number(-50), y: .number(0)), .stitch
+                ])]
+            )
+        ])])
+
+        var run = interpreter(upperFirst)
+        let events = run.run(maxTicks: 100_000)
+        let list = displayList(from: events)
+        let stream = run.assembledStream()
+
+        // Display: execution order — the upper layer stitched first.
+        #expect(list.stitches.map(\.position.x) == [50, -50])
+        // Export: layer order — the lower layer's record comes first.
+        #expect(stream.stitches.first?.position == EmbroideryPoint(x: -100, y: 0))
+    }
+
     // MARK: - Two actors on one layer: clause B, where they diverge
 
     /// Item 9. Two objects on one layer, red then green, so the export's two

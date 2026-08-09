@@ -103,7 +103,7 @@ This story implements ADR-021 and ADR-022. It is the milestone's load-bearing st
   the manager, so ~3000 stitch events per golden gained an independently derived
   colour dimension instead of a tautology.
 
-### Two more display/export divergences, found in review
+### Four more display/export divergences, found in review
 
 ADR-021 enumerated three (clause C/D re-emits, interpolation intermediates,
 clause B). Codex round 2 found a fourth, reachable with a **single** actor:
@@ -126,9 +126,18 @@ then `stitch` leaves two display entries against one export record. The largest
 of the five: the others shift a colour or duplicate a point, this one shows a
 stitch the machine will not make. Pinned by `adr020RejectionIsAFifthDivergence`.
 
-The five share one shape, now stated in ADR-021: **the display list is the trace
-of what the program asked for; the export model is the trace of what the machine
-will do.** The preview is a preview of the *program*, not of the file.
+Round 4 found a **sixth** (the assembler's inter-layer boundary emits a colour
+change and a jump, each re-emitting the previous layer's last point — two
+export-only records) and a **seventh** (ordering: the export is layer-sorted,
+the display list keeps execution order). Both pinned by test.
+
+The enumeration was wrong three times, so ADR-021 now states the **rule** as
+normative and the list as illustrative-and-incomplete: **the display list is the
+trace of what the program asked for; the export model is the trace of what the
+machine will do.** They coincide only for a single-object, single-layer design
+with no dedup, no rejection and no interpolation — which is exactly what M3's
+samples are, and why no M3 user sees a difference. The preview is a preview of
+the *program*, not of the file.
 
 ### ADR-019 screening
 

@@ -19,9 +19,30 @@ public struct StageTransform: Hashable, Sendable {
     /// Where stage-space origin lands in view space.
     public private(set) var translation: ViewPoint
 
+    /// **The chokepoint.** Every `StageTransform` that exists has a finite
+    /// scale within the zoom bounds and a finite translation — enforced here,
+    /// at the one place a value of this type can be made, rather than argued
+    /// about at each call site.
+    ///
+    /// That this is a chokepoint rather than a bound is the lesson of four
+    /// review rounds. Each earlier attempt fixed the *expression* that had
+    /// overflowed and left a sibling: the midpoint but not the product, the
+    /// product but not the ceiling's rounding, the ceiling but not `pinched`,
+    /// `pinched`'s product but not its subtraction, and none of them the
+    /// viewport. Checking intermediate terms is a losing game because there is
+    /// always one more term; checking the constructed value is not, because
+    /// there is only one constructor. Same shape as ADR-020 in the engine —
+    /// make the bad state unrepresentable at the type level.
+    ///
+    /// A non-finite translation collapses to zero rather than trapping: the
+    /// preview is a view, and a design placed beyond what the transform can
+    /// express should be off-screen, not a crash.
     public init(scale: Double = 1, translation: ViewPoint = .zero) {
         self.scale = Self.clampedScale(scale)
-        self.translation = translation
+        self.translation = ViewPoint(
+            x: translation.x.isFinite ? translation.x : 0,
+            y: translation.y.isFinite ? translation.y : 0
+        )
     }
 
     public static func clampedScale(_ scale: Double) -> Double {
@@ -132,9 +153,13 @@ public struct StageTransform: Hashable, Sendable {
         _ coordinate: Double,
         _ scale: Double
     ) -> Double {
-        let scaled = coordinate * scale
-        guard scaled.isFinite else { return viewportCentre }
-        return viewportCentre - scaled
+        // The **result**, not the product. Round 3 checked `coordinate * scale`
+        // and round 4 found that `viewportCentre − scaled` overflows on its own
+        // once the viewport is itself enormous. Checking terms one at a time is
+        // how this defect kept surviving its own fix.
+        let offset = viewportCentre - coordinate * scale
+        guard offset.isFinite else { return viewportCentre.isFinite ? viewportCentre : 0 }
+        return offset
     }
 
     /// Zooms by `factor` while keeping whatever stage point sits under `anchor`
@@ -145,34 +170,35 @@ public struct StageTransform: Hashable, Sendable {
     /// out early at the limit would also keep the anchor fixed while silently
     /// refusing the part of the zoom that was still allowed.
     ///
-    /// Carries the same overflow hazard as `fitting` and closes it the same
-    /// way (Codex round 3 — the round-2 fix closed `fitting` and left this
-    /// one): a design fitted at an extreme coordinate has an anchored stage
-    /// point near `greatestFiniteMagnitude`, and multiplying it by the zoom
-    /// overflows. A zoom that cannot be represented is **refused** — returning
-    /// `self` leaves a usable transform, where returning an infinite one would
-    /// blank the preview and give the user no way back.
+    /// A zoom that cannot be represented is **refused**: returning `self`
+    /// leaves a usable transform, where returning a collapsed one would jump
+    /// the design somewhere the user did not ask for.
+    ///
+    /// The guard is on the **computed translation**, not on the intermediate
+    /// product. Round 3 checked `anchored × zoomed` and round 4 found that
+    /// `anchor − product` overflows on its own when both are large and of
+    /// opposite sign. There is always one more intermediate term; there is only
+    /// one result.
     public func pinched(by factor: Double, about anchor: ViewPoint) -> StageTransform {
         let anchored = stagePoint(of: anchor)
         let zoomed = Self.clampedScale(scale * factor)
-        guard anchored.x.isFinite, anchored.y.isFinite,
-              (anchored.x * zoomed).isFinite, (anchored.y * zoomed).isFinite
-        else { return self }
-        return StageTransform(
-            scale: zoomed,
-            translation: ViewPoint(
-                x: anchor.x - anchored.x * zoomed,
-                y: anchor.y - Self.flippingY(anchored.y) * zoomed
-            )
+        let translated = ViewPoint(
+            x: anchor.x - anchored.x * zoomed,
+            y: anchor.y - Self.flippingY(anchored.y) * zoomed
         )
+        guard translated.x.isFinite, translated.y.isFinite else { return self }
+        return StageTransform(scale: zoomed, translation: translated)
     }
 
     /// Pans by a view-space delta. Additive, so a continuous gesture applied
     /// incrementally reaches the same place as one combined drag.
+    ///
+    /// A pan that cannot be represented is refused, like an unrepresentable
+    /// zoom — including one reached by accumulating ordinary finite drags
+    /// (Codex round 4).
     public func dragged(by delta: ViewPoint) -> StageTransform {
-        StageTransform(
-            scale: scale,
-            translation: ViewPoint(x: translation.x + delta.x, y: translation.y + delta.y)
-        )
+        let translated = ViewPoint(x: translation.x + delta.x, y: translation.y + delta.y)
+        guard translated.x.isFinite, translated.y.isFinite else { return self }
+        return StageTransform(scale: scale, translation: translated)
     }
 }

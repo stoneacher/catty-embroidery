@@ -48,6 +48,44 @@ func tickBatches(_ interpreter: inout Interpreter) -> [[InterpreterEvent]] {
     return batches
 }
 
+/// Two objects on **different layers**, serialized by a wait so the first
+/// finishes before the second starts.
+///
+/// Serialized for the same reason as the one-layer fixture: ADR-018 round-robins
+/// one action brick per thread per tick, and interleaving would fire the
+/// layer-switch clauses on nearly every stitch. With one clean switch the
+/// assembler emits exactly one layer boundary, which is the thing under test.
+func twoLayersProgram(waitTicks: Int) -> Program {
+    let lower = Object(
+        name: "Lower",
+        startX: 0,
+        startY: 0,
+        zIndex: 0,
+        scripts: [Script(bricks: [
+            .setThreadColor(hex: "#ff0000"),
+            .placeAt(x: .number(0), y: .number(0)),
+            .stitch,
+            .placeAt(x: .number(10), y: .number(0)),
+            .stitch
+        ])]
+    )
+    let upper = Object(
+        name: "Upper",
+        startX: 20,
+        startY: 20,
+        zIndex: 1,
+        scripts: [Script(bricks: [
+            .wait(seconds: .number(Double(waitTicks) * previewClock.tickDelta)),
+            .setThreadColor(hex: "#00ff00"),
+            .placeAt(x: .number(20), y: .number(20)),
+            .stitch,
+            .placeAt(x: .number(30), y: .number(20)),
+            .stitch
+        ])]
+    )
+    return Program(scenes: [Scene(objects: [lower, upper])])
+}
+
 /// Two objects on **one layer**, each with a non-black thread, where the second
 /// waits long enough that the first finishes before it starts.
 ///
