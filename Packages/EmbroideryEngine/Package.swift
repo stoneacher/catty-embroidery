@@ -14,7 +14,8 @@ let package = Package(
         .library(name: "EmbroideryEngine", targets: ["EmbroideryEngine"]),
         .library(name: "ProgramModel", targets: ["ProgramModel"]),
         .library(name: "Interpreter", targets: ["Interpreter"]),
-        .library(name: "Samples", targets: ["Samples"])
+        .library(name: "Samples", targets: ["Samples"]),
+        .library(name: "StagePreview", targets: ["StagePreview"])
     ],
     targets: [
         .target(name: "EmbroideryEngine"),
@@ -24,8 +25,7 @@ let package = Package(
         .target(name: "Interpreter", dependencies: ["ProgramModel", "EmbroideryEngine"]),
         // ADR-022 app-support target: bundled sample programs, depending on
         // ProgramModel *only* — no EmbroideryEngine, no Interpreter — so the
-        // ADR-016 DAG stays a straight line inward. US-302 adds StagePreview,
-        // the fifth product.
+        // ADR-016 DAG stays a straight line inward.
         .target(
             name: "Samples",
             dependencies: ["ProgramModel"],
@@ -39,6 +39,13 @@ let package = Package(
             // en.lproj/ localization layout its standard handling.
             resources: [.process("Resources")]
         ),
+        // ADR-022's second app-support target: the display list, the stage
+        // geometry, the zoom/pan math and the event reducer. **Foundation-only**
+        // — no SwiftUI, no CoreGraphics — which is what keeps the milestone's
+        // "zoom/pan transform math is unit-tested" exit criterion under
+        // `swift test` and the pre-commit gate instead of behind a simulator
+        // boot. The app adds a small `CGAffineTransform` adapter in US-305.
+        .target(name: "StagePreview", dependencies: ["Interpreter", "EmbroideryEngine"]),
         .testTarget(
             name: "EmbroideryEngineTests",
             dependencies: ["EmbroideryEngine"],
@@ -62,6 +69,16 @@ let package = Package(
         .testTarget(
             name: "SamplesTests",
             dependencies: ["Samples", "ProgramModel", "Interpreter", "EmbroideryEngine"]
+        ),
+        // Depends on Samples so the display-vs-export tests run a *real*
+        // program: SwiftPM forbids test→test dependencies, so the sample
+        // builders could not have been reached from InterpreterTests — which
+        // is why US-301 had to land first.
+        .testTarget(
+            name: "StagePreviewTests",
+            dependencies: [
+                "StagePreview", "Samples", "Interpreter", "EmbroideryEngine", "ProgramModel"
+            ]
         )
     ],
     swiftLanguageModes: [.v6]
