@@ -155,6 +155,61 @@ struct TraversalPredicateTests {
         #expect(recordsAddedByStream(from: previous, to: target) == 0)
     }
 
+    // MARK: - After interpolation has already run
+
+    /// **The case that actually attacks the substitution** (Codex round 1).
+    ///
+    /// Every other check here starts a fresh stream with exactly one prior
+    /// append, where `lastStagePosition` and `stitches.last?.position` are
+    /// trivially the same point. The claim `requiresTraversal` rests on is that
+    /// they stay coupled *after recursive interpolation has appended
+    /// intermediates of its own* — and only a third append, past a move that
+    /// split, exercises that. Two axes as well, since interpolation rounds each
+    /// axis independently.
+    @Test("the predicate still agrees on an append following a split move")
+    func agreesOnTheAppendAfterInterpolation() {
+        let first = StagePoint(x: -100, y: -100)
+        let second = StagePoint(x: 121.125, y: 121.125)
+        let third = StagePoint(x: 181.75, y: 181.75)
+
+        var stream = EmbroideryStream()
+        stream.addStitch(at: first, color: .black)
+        stream.addStitch(at: second, color: .black)
+        let interpolatedCount = stream.count
+        #expect(interpolatedCount > 2, "the second move must actually have split")
+
+        stream.addStitch(at: third, color: .black)
+        let addedByThird = stream.count - interpolatedCount
+
+        #expect(EmbroideryStream.requiresTraversal(from: second, to: third) == (addedByThird > 1))
+    }
+
+    /// The same shape driven through the pattern manager's replay, which is the
+    /// path US-305 consumes, and over a spread of third points so the check is
+    /// not one lucky pair.
+    @Test("agreement after interpolation holds across a spread of follow-on moves")
+    func agreesAfterInterpolationAcrossASpread() {
+        let first = StagePoint(x: -100, y: -100)
+        let second = StagePoint(x: 121.125, y: 121.125)
+
+        for offset in stride(from: -130.0, through: 130.0, by: 6.5) {
+            let third = StagePoint(x: second.x + offset, y: second.y + offset / 2)
+            guard third != second else { continue }
+
+            var stream = EmbroideryStream()
+            stream.addStitch(at: first, color: .black)
+            stream.addStitch(at: second, color: .black)
+            let before = stream.count
+            stream.addStitch(at: third, color: .black)
+
+            #expect(
+                EmbroideryStream.requiresTraversal(from: second, to: third)
+                    == (stream.count - before > 1),
+                "after interpolation, second → \(third)"
+            )
+        }
+    }
+
     // MARK: - Ordinary moves
 
     @Test("a short move needs no traversal")

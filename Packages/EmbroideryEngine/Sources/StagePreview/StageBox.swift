@@ -34,8 +34,19 @@ public struct StageBox: Hashable, Sendable {
         maxY - minY
     }
 
+    /// Halved before summing, not after. `(minX + maxX) / 2` overflows to
+    /// infinity for a box at extreme finite coordinates — a single stitch at
+    /// `Double.greatestFiniteMagnitude` is enough — and the infinity then
+    /// propagates into `StageTransform.fitting`'s translation, so a finite,
+    /// valid design produces an unusable transform.
+    ///
+    /// Reachable in the preview specifically: ADR-021 makes the display list
+    /// event-driven, and the event carries the stage point whether or not the
+    /// *stream* later rejects it under ADR-020 — so export's conversion guard
+    /// cannot protect this path. ADR-007 and `StageGeometry` deliberately bound
+    /// nothing, which leaves this the only place to be careful.
     public var center: StagePoint {
-        StagePoint(x: (minX + maxX) / 2, y: (minY + maxY) / 2)
+        StagePoint(x: minX / 2 + maxX / 2, y: minY / 2 + maxY / 2)
     }
 
     public mutating func expand(toInclude point: StagePoint) {

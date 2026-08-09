@@ -59,19 +59,19 @@ struct DisplayVersusExportModelTests {
         #expect(list.colorRuns[0].color != list.colorRuns[1].color)
     }
 
-    /// And the colours themselves agree, run for run — not merely the index at
-    /// which they change.
-    @Test("square coil: each run's color is the color the export records there")
-    func squareCoilRunColorsMatchTheExport() {
+    /// And the colours themselves agree — **stitch for stitch, not run endpoint
+    /// for run endpoint** (Codex round 1). An earlier version checked only the
+    /// first and last stitch of each run, which a regression at any interior
+    /// stitch survives untouched. ADR-021's claim for a single-object design is
+    /// that the whole colour *sequence* agrees, so that is what is asserted.
+    @Test("square coil: the color sequence agrees stitch for stitch with the export")
+    func squareCoilColorSequenceMatchesTheExport() {
         var run = interpreter(SampleLibrary[.squareCoil].program)
         let events = run.run(maxTicks: 100_000)
         let list = displayList(from: events)
         let stream = run.assembledStream()
 
-        for colorRun in list.colorRuns {
-            #expect(stream.stitches[colorRun.range.lowerBound].color == colorRun.color)
-            #expect(stream.stitches[colorRun.range.upperBound - 1].color == colorRun.color)
-        }
+        #expect(list.stitches.map(\.color) == stream.stitches.map(\.color))
     }
 
     // MARK: - Two actors on one layer: clause B, where they diverge

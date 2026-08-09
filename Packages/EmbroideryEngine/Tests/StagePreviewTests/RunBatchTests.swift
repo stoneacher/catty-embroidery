@@ -93,5 +93,40 @@ struct RunBatchTests {
         #expect(carried == wholeBatch.needle)
         #expect(lastRequestedName == wholeBatch.requestedDesignName)
         #expect(!accumulated.isEmpty, "a sample that produced nothing would pass vacuously")
+        #expect(carried != nil, "a sample that moved no needle would pass vacuously")
+    }
+
+    /// The partition test above is **tautological for the terminal marker** on
+    /// the bundled samples, because neither contains `writeEmbroideryToFile`:
+    /// both sides yield `nil`, so a reducer that dropped finalization entirely
+    /// would pass (Codex round 1). This partitions explicit batches instead,
+    /// with the finalize in an *earlier* tick than the last, so carrying it
+    /// across a later non-finalize tick is what is actually tested.
+    @Test("the terminal marker survives a later tick that does not finalize")
+    func finalizeMarkerSurvivesAcrossTicks() {
+        let batches: [[InterpreterEvent]] = [
+            [.stitch(actor: ActorID(0), position: StagePoint(x: 0, y: 0), layer: 0, color: red)],
+            [.finalizeRequested(name: "design")],
+            [.stitch(actor: ActorID(0), position: StagePoint(x: 1, y: 0), layer: 0, color: red)]
+        ]
+
+        var carried: PreviewNeedle?
+        var lastRequestedName: String?
+        var accumulated: [PreviewStitch] = []
+        for events in batches {
+            let batch = RunBatch.reducing(events, from: carried)
+            accumulated += batch.stitches
+            carried = batch.needle
+            lastRequestedName = batch.requestedDesignName ?? lastRequestedName
+        }
+
+        let whole = RunBatch.reducing(batches.flatMap(\.self))
+        #expect(lastRequestedName == "design")
+        #expect(whole.requestedDesignName == "design")
+        #expect(accumulated == whole.stitches)
+
+        // And the marker really is per-batch, not sticky: the final batch
+        // carries none of its own.
+        #expect(RunBatch.reducing(batches[2]).requestedDesignName == nil)
     }
 }

@@ -75,13 +75,25 @@ struct StageTransformTests {
     }
 
     /// One scalar scale, applied to both axes — a design must not be stretched
-    /// to fill the viewport. The check that discriminates: the content here is
-    /// 2:1 and the viewport 4:1, so a per-axis fit would give different
-    /// horizontal and vertical extents.
-    @Test("fitting preserves aspect ratio rather than stretching")
-    func fittingPreservesAspect() {
+    /// to fill the viewport.
+    ///
+    /// **The content and viewport aspects must differ, or the test proves
+    /// nothing** (Codex round 1). An earlier version used 2:1 content in a 2:1
+    /// viewport and claimed the viewport was 4:1; there the width-only and
+    /// height-only fits both give scale 4, so a per-axis implementation passed.
+    /// Both cases here are asymmetric, and the two limiting axes are covered in
+    /// turn so neither a width-only nor a height-only fit survives.
+    @Test(
+        "fitting preserves aspect ratio rather than stretching",
+        arguments: [
+            // 2:1 content in a 4:3 viewport — width-limited: 800/200 = 4 vs 600/100 = 6.
+            (ViewSize(width: 800, height: 600), 4.0),
+            // …and height-limited: 200/100 = 2 vs 800/200 = 4.
+            (ViewSize(width: 800, height: 200), 2.0)
+        ]
+    )
+    func fittingPreservesAspect(_ viewport: ViewSize, _ expectedScale: Double) {
         let content = StageBox(minX: -100, minY: -50, maxX: 100, maxY: 50)
-        let viewport = ViewSize(width: 800, height: 400)
         let transform = StageTransform.fitting(content, in: viewport, padding: 0)
 
         let topLeft = transform.viewPoint(of: StagePoint(x: content.minX, y: content.maxY))
@@ -90,9 +102,49 @@ struct StageTransformTests {
         let drawnHeight = bottomRight.y - topLeft.y
 
         #expect(abs(drawnWidth / drawnHeight - content.width / content.height) < tolerance)
-        // Limited by height (400/100 = 4) rather than width (800/200 = 4)…
-        // both are 4 here, so assert the scale directly.
-        #expect(abs(transform.scale - 4) < tolerance)
+        #expect(abs(transform.scale - expectedScale) < tolerance)
+        // The content fits: neither axis overflows the viewport.
+        #expect(drawnWidth <= viewport.width + tolerance)
+        #expect(drawnHeight <= viewport.height + tolerance)
+    }
+
+    /// The Medium from Codex round 1. `StageBox.center` computed as
+    /// `(minX + maxX) / 2` overflows to infinity at extreme finite
+    /// coordinates, and the infinity propagates into the translation — so a
+    /// finite, perfectly valid one-stitch design yields an unusable transform.
+    ///
+    /// Reachable through the preview because ADR-021 is event-driven: the event
+    /// carries the stage point whether or not the *stream* later rejects it
+    /// under ADR-020, and ADR-007 bounds nothing.
+    @Test("an extreme but finite coordinate does not produce an infinite transform")
+    func extremeFiniteCoordinateStaysFinite() throws {
+        var list = StitchDisplayList()
+        list.append(previewStitch(.greatestFiniteMagnitude, .greatestFiniteMagnitude))
+        let bounds = try #require(list.bounds)
+
+        #expect(bounds.center.x.isFinite)
+        #expect(bounds.center.y.isFinite)
+
+        let transform = StageTransform.fitting(bounds, in: ViewSize(width: 300, height: 300))
+        #expect(transform.scale.isFinite)
+        #expect(transform.translation.x.isFinite)
+        #expect(transform.translation.y.isFinite)
+    }
+
+    /// The opposite-sign case, where the *width* overflows rather than the
+    /// centre: a box spanning the whole finite range has infinite extent.
+    @Test("a box spanning the finite range still yields a usable transform")
+    func fullRangeBoxStaysFinite() {
+        let bounds = StageBox(
+            minX: -.greatestFiniteMagnitude, minY: -.greatestFiniteMagnitude,
+            maxX: .greatestFiniteMagnitude, maxY: .greatestFiniteMagnitude
+        )
+        #expect(bounds.center.x.isFinite)
+
+        let transform = StageTransform.fitting(bounds, in: ViewSize(width: 300, height: 300))
+        #expect(transform.scale.isFinite)
+        #expect(transform.translation.x.isFinite)
+        #expect(transform.translation.y.isFinite)
     }
 
     @Test("fitting honours padding on the limiting axis")
