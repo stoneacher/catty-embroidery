@@ -6,15 +6,18 @@
 2026-08-09. All ten test-plan items landed and all ten acceptance criteria are
 met; **489 engine tests green** (from 403), CI green, SwiftLint clean.
 
-**Seven Codex rounds ran** (the cap was extended from 5 to 7 for this story
-after severity failed to fall): **20 findings, all valid, none rejected**.
-Severity by round: Medium → High → High → High → High/Medium → High → **Medium**.
+**Eight Codex rounds ran**: **21 findings, all valid, none rejected**. Severity
+by round: Medium → High → High → High → High/Medium → High → Medium → **none**.
+Round 8 was clean and ended the loop on the project's new convergence rule (a
+round producing no code changes), which replaced the fixed cap partly on the
+evidence of this story.
 
-The two extra rounds earned themselves. Round 6 found that round 5's "fix" had
+The extra rounds earned themselves. Round 6 found that round 5's "fix" had
 *lowered the standard* — I wrongly concluded a `fitting` overflow was
 unfixable, weakened the contract, and wrote the failure into a characterisation
-test, turning a bug into a specification. Round 7 then found a gap in round 6's
-fix. Neither would have been found under the standing cap.
+test, turning a bug into a specification. Round 7 found a gap in round 6's fix.
+Under the retired 5-round cap this branch would have been handed over with that
+High-severity defect still latent and no clean round in its history.
 
 Closing this story out is Sebastian's.
 No manual Ink/Stitch verification is needed — the milestone requires it only at
