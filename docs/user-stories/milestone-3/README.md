@@ -1,6 +1,6 @@
 # Milestone 3 — Walking skeleton app
 
-**Status**: Planned — 2026-08-04. Ten stories (US-301…US-309 plus US-211, carried in from the backlog), ~40 h. Not started.
+**Status**: In progress — planned 2026-08-04. Ten stories (US-301…US-309 plus US-211, carried in from the backlog), ~40 h. **US-301 done 2026-08-09** (implemented 2026-08-07, Ink/Stitch verified 2026-08-09); US-302 is next.
 
 Goal: a minimal SwiftUI app wired end to end — pick a bundled sample program → run it with a live stage preview (needle + stitches) → export the DST through the share sheet. Proves the full thread through every layer. See [ROADMAP.md](../../ROADMAP.md).
 
@@ -111,4 +111,6 @@ Two clarifications that apply throughout:
 
 ## Manual Ink/Stitch verification
 
-Needed at **US-308** (first time a file reaches a viewer through the *app* path — check the `LA:` name and the colour stops) and at **US-301** (the bundled samples' DST output, since sample 1 is meant to be byte-comparable against the shipping Android app). Not needed for the other eight stories, which change no bytes.
+Needed at **US-308** (first time a file reaches a viewer through the *app* path — check the `LA:` name and the colour stops) and at **US-301** (the bundled samples' DST output). Not needed for the other eight stories, which change no bytes.
+
+**Correction (2026-08-07, US-301 close-out)**: this paragraph originally justified the US-301 check as "since sample 1 is meant to be byte-comparable against the shipping Android app". **Android is not a byte-identical oracle for it.** Catroid computes its pattern distance as `(float) Math.hypot(...)` (`RunningStitchType.java:35-37`) and carries every coordinate as `float`, so the ~1e-14 residue that costs our sample 1 ten stitch intervals is roughly nine orders of magnitude below its resolution — the threshold behaviour producing our 3194 records cannot arise the same way there. This is ADR-014's existing "bit-exact parity with Android is not guaranteed" showing up where it is *structurally* visible rather than sub-resolution, not a new divergence. The precise consequence — a first draft of this paragraph overstated it, and Codex round 1 was right to push back — is that Android's output is **not a byte-identical oracle**: equality cannot be promised, so a mismatch is not evidence of a bug on either side. That is weaker than "byte comparison is impossible", which does not follow. A byte comparison is still worth running; it just cannot be a golden. Verbatim transcription remains correct, for the design-level comparison and the provenance; only the stated reason needed narrowing. Scoped in `Sources/Samples/Resources/PROVENANCE.md`.

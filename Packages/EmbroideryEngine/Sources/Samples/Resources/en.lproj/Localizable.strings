@@ -1,0 +1,26 @@
+/* Strings for the bundled sample programs (US-301).
+
+   Legacy .strings rather than a .xcstrings String Catalog, and the reason is
+   measured rather than assumed: SwiftPM copies an .xcstrings into the resource
+   bundle verbatim and never invokes xcstringstool, so every lookup falls back to
+   the key under `swift test` — the gate this package is developed against.
+   Verified on Swift 6.3.3 / Xcode 26.6 with a throwaway package; the same probe
+   resolves correctly from en.lproj/Localizable.strings. `xcstringstool` converts
+   this file to a catalog in one command if a later milestone needs one. */
+
+/* Display name of the first bundled design: eight octagons fanned around a
+   shared corner, stitched in zigzag. Shown in the sample picker. */
+"sample.octagonRosette.name" = "Octagon Rosette";
+
+/* One-line description of the octagon rosette design, shown under its name in
+   the sample picker. "zigzag stitch" is an embroidery stitch type. */
+"sample.octagonRosette.description" = "Eight rotated octagons in zigzag stitch, filling the hoop.";
+
+/* Display name of the second bundled design: a square spiral that grows
+   outward, drawn in two thread colours. Shown in the sample picker. */
+"sample.squareCoil.name" = "Square Coil";
+
+/* One-line description of the square coil design, shown under its name in the
+   sample picker. "triple stitch" is an embroidery stitch type that sews each
+   segment three times. */
+"sample.squareCoil.description" = "A square spiral in triple stitch, winding outward in two colours.";
