@@ -2,12 +2,22 @@
 
 **Epic**: E4 Stage & preview | **Estimate**: ~5 h | **Depends on**: US-301
 
-**Status**: Implementation complete — 2026-08-09. All ten test-plan items landed
-and all ten acceptance criteria are met; 467 engine tests green (from 403).
-**Not yet closed out**: the cross-vendor Codex review has not run. No manual
-Ink/Stitch verification is needed — the milestone requires it only at US-301 and
-US-308, and this story changes no DST bytes (every golden stayed green untouched,
-which is the evidence).
+**Status**: Implementation complete, review complete, **not closed out** —
+2026-08-09. All ten test-plan items landed and all ten acceptance criteria are
+met; **488 engine tests green** (from 403), CI green, SwiftLint clean.
+
+Five Codex rounds ran (the project's cap): **17 findings, all valid, none
+rejected**. **The loop ended by rule rather than by convergence** — severity
+never fell (Medium → High → High → High → High/Medium) — so round 5's three
+fixes are escalated to Sebastian on PR #32 rather than re-reviewed in a sixth
+round. Every unreviewed fix is in `StageTransform`, in the ≥1e300 coordinate
+regime; no DST byte is affected, and every golden stayed byte-identical
+throughout.
+
+Closing this story out is Sebastian's, together with that escalation decision.
+No manual Ink/Stitch verification is needed — the milestone requires it only at
+US-301 and US-308, and this story changes no DST bytes (every golden staying
+green untouched is the evidence, not the claim).
 
 **Story**: As the app layer, I want stitches to arrive already carrying their colour and to accumulate in an append-only display list with unit-tested zoom/pan math, so the preview never re-implements engine semantics and never re-assembles the stream per frame.
 
