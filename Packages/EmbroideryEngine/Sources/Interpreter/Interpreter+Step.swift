@@ -246,7 +246,8 @@ extension Interpreter {
         let layer = objects[objectIndex].layer
         for point in points {
             manager.addStitch(at: point, layer: layer, actor: actorID)
-            events.append(.stitch(actor: actorID, position: point, layer: layer))
+            // US-302 red phase: the resolved color is not read yet.
+            events.append(.stitch(actor: actorID, position: point, layer: layer, color: .black))
         }
     }
 

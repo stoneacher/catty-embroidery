@@ -83,6 +83,12 @@ public struct EmbroideryPatternManager: Sendable {
 
     // MARK: - Thread color (ADR-012 divergence, edges pinned by ADR-015)
 
+    /// US-302 red phase: total but deliberately wrong; the green phase reads state.
+    public func threadColor(for actor: ActorID) -> ThreadColor {
+        _ = actor
+        return .black
+    }
+
     /// Sets the actor's thread color. Setting the current color is a no-op;
     /// a differing color arms a DST color change for the actor's next
     /// surviving stitch — unless nothing has been emitted manager-wide yet,

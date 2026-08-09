@@ -130,6 +130,12 @@ public struct EmbroideryStream: Hashable, Sendable {
         lastStagePosition = stagePoint
     }
 
+    /// US-302 red phase: total but deliberately wrong; the green phase decides.
+    public static func requiresTraversal(from previous: StagePoint, to target: StagePoint) -> Bool {
+        _ = (previous, target)
+        return false
+    }
+
     /// Whether `append` would emit for this point — the ADR-020 guards without
     /// the emission. Internal because the pattern manager's replay has to ask
     /// *before* arming a color change: the manager arms flags at command time

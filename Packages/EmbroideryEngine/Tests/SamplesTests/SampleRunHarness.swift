@@ -61,7 +61,7 @@ struct SampleRun {
     /// (US-302 consumes exactly this projection).
     var stitchPositions: [StagePoint] {
         events.compactMap { event in
-            if case let .stitch(_, position, _) = event {
+            if case let .stitch(_, position, _, _) = event {
                 position
             } else {
                 nil
