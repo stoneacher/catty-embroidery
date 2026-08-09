@@ -2,7 +2,12 @@
 
 **Epic**: E4 Stage & preview | **Estimate**: ~5 h | **Depends on**: US-301
 
-**Status**: Not started
+**Status**: Implementation complete — 2026-08-09. All ten test-plan items landed
+and all ten acceptance criteria are met; 467 engine tests green (from 403).
+**Not yet closed out**: the cross-vendor Codex review has not run. No manual
+Ink/Stitch verification is needed — the milestone requires it only at US-301 and
+US-308, and this story changes no DST bytes (every golden stayed green untouched,
+which is the evidence).
 
 **Story**: As the app layer, I want stitches to arrive already carrying their colour and to accumulate in an append-only display list with unit-tested zoom/pan math, so the preview never re-implements engine semantics and never re-assembles the stream per frame.
 
@@ -11,16 +16,16 @@ This story implements ADR-021 and ADR-022. It is the milestone's load-bearing st
 `InterpreterEvent`'s embroidery payloads are documented as **provisional** — "chosen to carry what US-206's producers will need so the enum need not be reshaped then". M3 is the first real *consumer*, so reshaping now is what that comment invited.
 
 ## Acceptance criteria
-- [ ] `InterpreterEvent.stitch` carries `color: ThreadColor`, supplied by a new public read-only `EmbroideryPatternManager.threadColor(for actor: ActorID) -> ThreadColor`. No new dependency edge: `InterpreterEvent` already imports `EmbroideryEngine` and already carries `ActorID`, `StagePoint` and `NeedleUpdate`, so ADR-016 is unaffected.
-- [ ] Reading `threadColor(for:)` before or after `addStitch` yields the same value — `addStitch` captures `let color = colorState.current` up front and only clears `pendingChange`. Asserted, because this invariant is what makes the change two lines in the producer rather than a refactor.
-- [ ] `.colorArmed` is unchanged and **no preview code path consumes it**. The app performs no ADR-015 reasoning: not the silent start, not the invalid-hex no-op, not clause-B black, not the `==121` tie-off.
-- [ ] New `StagePreview` target and product (depends on `Interpreter` + `EmbroideryEngine`), **Foundation-only** — no SwiftUI, no CoreGraphics. Transform math is `Double`-based; the app adds a small `CGAffineTransform` adapter in US-305.
-- [ ] `StitchDisplayList` is append-only, never reordered, with incrementally maintained `colorRuns` (a gapless partition of `stitches.indices`), `bounds`, and a `settledCount` rasterisation watermark. Appending N stitches is O(N) regardless of how many are already held — no rescan.
-- [ ] `StageTransform` is pure `Double` math: fit-to-content, pinch about an anchor, drag, zoom clamping, and both directions of the stage↔view mapping. **The y-flip exists in exactly one function.** Stage space is y-up and the engine applies no y-flip (ADR-007), so the flip is purely the renderer's; confining it makes a future "why is my design mirrored?" a one-line diff.
-- [ ] `StageGeometry` puts ADR-007's 500×500 stage into code for the first time, with a doc comment stating explicitly that it does **not** bound engine input — nothing bounds a `StagePoint` and a design can legitimately leave the stage.
-- [ ] `RunBatch.reducing(_:from:)` folds `[InterpreterEvent]` into stitches + last needle pose + terminal marker as a **pure function**, so US-306's batching is tested here rather than behind an actor.
-- [ ] `EmbroideryStream.requiresTraversal(from:to:)` is public and agrees with whether `append` actually added more than one record, proven differentially. Two shape risks, both real: ADR-020's dual trigger reads `stitches.last` for the encoded-delta half, so as a static it must use `EmbroideryPoint(converting: previous)` instead (believed equivalent in a real stream, **not proven** — hence a differential test rather than an assertion); and the predicate must reproduce **conversion plus every `canAppend` guard**, not just the two distance triggers, or it will claim traversal for moves ADR-020 rejects outright and emits nothing for.
-- [ ] **Display model ≠ export model, deliberately.** A test pins that the display list's colour sequence matches the assembled stream's for a single-object sample. Clause C/D re-emits and interpolation intermediates differ only in record sequence (duplicates and on-segment points, so the drawn path is identical). **Clause B differs in colour and must have its own multi-actor test**: when an actor changes on a layer, the replay emits **two** points at the previous actor's workspace position in explicit black — both unconditional, with `isFar` deciding only whether the second arms a jump. Those two records have no counterpart in the display list, so when the *incoming* actor's colour is not itself black the export carries black where the preview carries that actor's colour. (Not "black never appears in the display list": `ColorState.current` defaults to `.black`, so an actor that never set a colour emits black stitch events.) M3's samples are single-object so it is not user-visible in this milestone, but the test must exist and the difference must be asserted rather than assumed away. Catroid needed `EmbroideryExportIsolationTest` for the same separation.
+- [x] `InterpreterEvent.stitch` carries `color: ThreadColor`, supplied by a new public read-only `EmbroideryPatternManager.threadColor(for actor: ActorID) -> ThreadColor`. No new dependency edge: `InterpreterEvent` already imports `EmbroideryEngine` and already carries `ActorID`, `StagePoint` and `NeedleUpdate`, so ADR-016 is unaffected.
+- [x] Reading `threadColor(for:)` before or after `addStitch` yields the same value — `addStitch` captures `let color = colorState.current` up front and only clears `pendingChange`. Asserted, because this invariant is what makes the change two lines in the producer rather than a refactor.
+- [x] `.colorArmed` is unchanged and **no preview code path consumes it**. The app performs no ADR-015 reasoning: not the silent start, not the invalid-hex no-op, not clause-B black, not the `==121` tie-off.
+- [x] New `StagePreview` target and product (depends on `Interpreter` + `EmbroideryEngine`), **Foundation-only** — no SwiftUI, no CoreGraphics. Transform math is `Double`-based; the app adds a small `CGAffineTransform` adapter in US-305.
+- [x] `StitchDisplayList` is append-only, never reordered, with incrementally maintained `colorRuns` (a gapless partition of `stitches.indices`), `bounds`, and a `settledCount` rasterisation watermark. Appending N stitches is O(N) regardless of how many are already held — no rescan.
+- [x] `StageTransform` is pure `Double` math: fit-to-content, pinch about an anchor, drag, zoom clamping, and both directions of the stage↔view mapping. **The y-flip exists in exactly one function.** Stage space is y-up and the engine applies no y-flip (ADR-007), so the flip is purely the renderer's; confining it makes a future "why is my design mirrored?" a one-line diff.
+- [x] `StageGeometry` puts ADR-007's 500×500 stage into code for the first time, with a doc comment stating explicitly that it does **not** bound engine input — nothing bounds a `StagePoint` and a design can legitimately leave the stage.
+- [x] `RunBatch.reducing(_:from:)` folds `[InterpreterEvent]` into stitches + last needle pose + terminal marker as a **pure function**, so US-306's batching is tested here rather than behind an actor.
+- [x] `EmbroideryStream.requiresTraversal(from:to:)` is public and agrees with whether `append` actually added more than one record, proven differentially. Two shape risks, both real: ADR-020's dual trigger reads `stitches.last` for the encoded-delta half, so as a static it must use `EmbroideryPoint(converting: previous)` instead (believed equivalent in a real stream, **not proven** — hence a differential test rather than an assertion); and the predicate must reproduce **conversion plus every `canAppend` guard**, not just the two distance triggers, or it will claim traversal for moves ADR-020 rejects outright and emits nothing for.
+- [x] **Display model ≠ export model, deliberately.** A test pins that the display list's colour sequence matches the assembled stream's for a single-object sample. Clause C/D re-emits and interpolation intermediates differ only in record sequence (duplicates and on-segment points, so the drawn path is identical). **Clause B differs in colour and must have its own multi-actor test**: when an actor changes on a layer, the replay emits **two** points at the previous actor's workspace position in explicit black — both unconditional, with `isFar` deciding only whether the second arms a jump. Those two records have no counterpart in the display list, so when the *incoming* actor's colour is not itself black the export carries black where the preview carries that actor's colour. (Not "black never appears in the display list": `ColorState.current` defaults to `.black`, so an actor that never set a colour emits black stitch events.) M3's samples are single-object so it is not user-visible in this milestone, but the test must exist and the difference must be asserted rather than assumed away. Catroid needed `EmbroideryExportIsolationTest` for the same separation.
 
 ## Test-first plan
 1. A **two-brick** program — `setThreadColor` then a stitch-producing brick — because `setThreadColor` alone emits only `.colorArmed` and never a `.stitch`, while a lone stitch brick has no non-default colour to observe (Codex round 3 caught the one-brick version as unreachable). Assert the `.stitch` event's colour is the set colour, and that an invalid hex leaves it unchanged — proving the app inherits ADR-015 without implementing it.
@@ -46,3 +51,80 @@ This story implements ADR-021 and ADR-022. It is the milestone's load-bearing st
 - ADR-009 (batched paths, rasterised settled prefix), ADR-015 (colour semantics the app must not duplicate), ADR-016, ADR-020 (the traversal trigger), ADR-021, ADR-022
 - `Catroid/.../test/embroidery/EmbroideryExportIsolationTest.kt` — display/export separation, same concern
 - `Catty/src/Catty/Embroidery/EmbroideryStream.swift:161-169` — the producer→renderer seam worth porting, with the cursor as an index rather than a second mutated array
+
+## Outcome
+
+**467 engine tests green, up from 403.** Four commits: two `[red]`/green pairs
+(engine seam, then the `StagePreview` target), plus one test-only commit.
+
+### What landed
+
+| Where | What |
+|---|---|
+| `EmbroideryPatternManager` | `threadColor(for:)` — public, read-only, `.black` for an actor that never set one |
+| `InterpreterEvent` | `.stitch` gains `color:`; its payload is no longer "provisional" |
+| `Interpreter+Step` | the producer reads the resolved colour once per stitch burst |
+| `EmbroideryStream` | public static `requiresTraversal(from:to:)`; `canAppend` gains a static pair form; the dual trigger extracted to `interpolationSplitCount` |
+| `Sources/StagePreview/` | `PreviewStitch`, `StitchDisplayList`, `StageBox`, `StageGeometry`, `StageTransform`, `ViewPoint`/`ViewSize`, `RunBatch` — the package's fifth library product |
+
+### Decisions taken during implementation
+
+- **`requiresTraversal` is static, and the dual trigger is shared rather than
+  duplicated.** ADR-020's decision now lives once, in
+  `EmbroideryStream.interpolationSplitCount`, read by both the emitter and the
+  predicate. They differ in exactly one argument: the emitter passes the real
+  encoded anchor (`stitches.last?.position`), the predicate passes the converted
+  `previous`. Confining the believed-but-unproven substitution to one argument at
+  one call site is what makes the differential test a sharp test of *it*, rather
+  than of two independently written copies of the rule.
+- **The negative-side seam was derived, then confirmed by execution.** Writing
+  `2·previous + 0.5 = P + f`, the seam requires `f < 0.5` on the negative side
+  where the positive seam requires `f ≥ 0.5`, so the mirror of `(0.125, 0) →
+  (60.75, 0)` *cannot* be one. The real pair is `(−0.25, 0) → (−60.875, 0)`:
+  converted endpoints 0 and −122 (encoded delta 122) with the difference rounding
+  to −121. Both it and the non-seam mirror are pinned.
+- **One case was added beyond the story's list**: `2^58 → 2^58 − 64` must return
+  **true**. Without it, a predicate that blanket-rejects everything at a coarse
+  magnitude passes every other case in the plan.
+- **`PreviewStitch` carries neither `layer` nor `actor`.** No M3 consumer needs
+  them, and a stored layer would invite the layer-ordered redraw that ADR-021
+  rejects `assembled()` for. Both stay purely additive later.
+- **`RunBatch` is a delta, not an accumulator**, so US-306 appends each batch
+  rather than replacing the list. Its terminal marker is `requestedDesignName`
+  because that is the only completion fact the events carry — none of the run
+  enum's three finish reasons is an event, and inventing a field for them would
+  repeat the `RunState.failed` mistake the ROADMAP already corrected.
+- **The `GoldenProgramOracle` change was not mechanical, and this is the one
+  place where a mechanical fix would have done damage.** `streamRebuiltFromEvents`
+  keeps discarding the event's colour and replaying `.colorArmed` through
+  ADR-015 — it proves the events are a *sufficient* description, and reading the
+  ready-made colour would bypass exactly what it proves. In the other direction,
+  `replayGoldenProgram` now tracks the expected colour itself rather than asking
+  the manager, so ~3000 stitch events per golden gained an independently derived
+  colour dimension instead of a tautology.
+
+### ADR-019 screening
+
+Stated rather than measured, in the ADR-020 shape. This story's boundary inputs
+sit **deliberately on** the ±121 threshold — that is the subject, not an accident
+needing margin — and each is pinned by name with its arithmetic in the test's doc
+comment. No new golden depends on a threshold crossing; every existing DST golden
+stayed byte-identical and untouched, which is the evidence that extracting
+`interpolationSplitCount` moved no emission.
+
+### No new ADR
+
+ADR-023…026 stay with their owner stories (US-303/305/211/308). Nothing here
+needed a decision ADR-021 and ADR-022 had not already made.
+
+### Notes for later stories
+
+- **US-305**: the `CGAffineTransform` adapter maps `ViewPoint`/`ViewSize`;
+  `requiresTraversal` is the call for drawing travel moves distinctly.
+- **US-306**: `RunBatch.reducing(_:from:)` is the batching, already tested;
+  `StitchDisplayList.append(contentsOf:)` is the single observable mutation.
+- **A red-phase lesson worth carrying**: the first display-list stub appended
+  nothing, and a test indexing the settled prefix *trapped* on an empty array
+  instead of failing. A crash takes its whole parallel suite with it, so it hides
+  results rather than reporting one. Red-phase stubs must be total enough that
+  the tests fail rather than die.
