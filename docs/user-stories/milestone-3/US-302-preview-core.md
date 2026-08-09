@@ -4,17 +4,19 @@
 
 **Status**: Implementation complete, review complete, **not closed out** —
 2026-08-09. All ten test-plan items landed and all ten acceptance criteria are
-met; **488 engine tests green** (from 403), CI green, SwiftLint clean.
+met; **489 engine tests green** (from 403), CI green, SwiftLint clean.
 
-Five Codex rounds ran (the project's cap): **17 findings, all valid, none
-rejected**. **The loop ended by rule rather than by convergence** — severity
-never fell (Medium → High → High → High → High/Medium) — so round 5's three
-fixes are escalated to Sebastian on PR #32 rather than re-reviewed in a sixth
-round. Every unreviewed fix is in `StageTransform`, in the ≥1e300 coordinate
-regime; no DST byte is affected, and every golden stayed byte-identical
-throughout.
+**Seven Codex rounds ran** (the cap was extended from 5 to 7 for this story
+after severity failed to fall): **20 findings, all valid, none rejected**.
+Severity by round: Medium → High → High → High → High/Medium → High → **Medium**.
 
-Closing this story out is Sebastian's, together with that escalation decision.
+The two extra rounds earned themselves. Round 6 found that round 5's "fix" had
+*lowered the standard* — I wrongly concluded a `fitting` overflow was
+unfixable, weakened the contract, and wrote the failure into a characterisation
+test, turning a bug into a specification. Round 7 then found a gap in round 6's
+fix. Neither would have been found under the standing cap.
+
+Closing this story out is Sebastian's.
 No manual Ink/Stitch verification is needed — the milestone requires it only at
 US-301 and US-308, and this story changes no DST bytes (every golden staying
 green untouched is the evidence, not the claim).
