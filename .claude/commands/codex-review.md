@@ -82,7 +82,11 @@ The cap was 3, then 5, and both were wrong in the same way: a fixed count is a p
 
 Two things follow. **Severity trend beats round count** as a convergence signal: US-302's first genuine downward move came at round 7, and no count short of that would have found the round-6 defect. And **expect slower convergence when the diff is test code or numerically hostile code** — every new assertion is itself new surface, and a function over an unbounded input domain (`Double`, coordinates) has far more places to hide than byte-semantics work does. Extra rounds are cheap next to a golden that silently stops discriminating, or a defect written into a test as if it were intended.
 
-**Stated plainly because it would otherwise read as precedent: US-302 does not itself satisfy this rule.** It stopped at round 7 because that was the extension Sebastian authorised, but round 7's severity fall (High → Medium) is *one* decrease, not two, and its triage changed code — so under the rule written above the loop would have continued to round 8. The first branch to apply this rule end-to-end is the next one. Do not cite US-302's seven rounds as an example of the stop condition firing; cite it as the case that showed a fixed count was the wrong axis.
+**US-302 was then run to the rule, and it is the first branch the rule closed.** An earlier version of this paragraph noted that its round 7 (High → Medium, one decrease, code changed) did *not* satisfy the stop condition and that the loop should continue. It did: **round 8 returned no findings at all**, ending the loop on condition 1 — the first clean round on the branch, after seven consecutive rounds that each produced valid findings.
+
+That is the cleanest available evidence for the change. Under the old fixed cap the branch would have been handed over at round 5 with a High-severity defect still latent (the round-6 characterisation test that had converted a bug into a specification) and no clean round anywhere in its history. Under this rule it ran three more rounds, found two further real defects, and terminated on a genuine signal instead of an arbitrary count.
+
+Final shape: **8 rounds, 21 findings, none rejected**, severity Medium → High → High → High → High/Medium → High → Medium → **none**.
 
 The 10-round ceiling exists so a genuinely pathological branch escalates to a human instead of looping indefinitely; it is not a target.
 
