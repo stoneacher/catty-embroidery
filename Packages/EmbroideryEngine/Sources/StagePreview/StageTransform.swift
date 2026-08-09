@@ -45,8 +45,18 @@ public struct StageTransform: Hashable, Sendable {
         )
     }
 
+    /// Clamps into the zoom bounds. **Direction-preserving at the infinities**,
+    /// which the first version was not: it mapped every non-finite value to
+    /// `minimumScale`, so `pinched(by: .greatestFiniteMagnitude)` — whose
+    /// `scale × factor` overflows to `+∞` — turned an enormous zoom *in* into
+    /// the maximum zoom *out* (Codex round 5). Wrong-but-finite and plainly
+    /// visible, which makes it worse than the overflows the earlier rounds
+    /// chased.
+    ///
+    /// Only NaN has no direction to preserve. Both infinities fall out of the
+    /// ordinary clamp correctly, so there is no special case left to get wrong.
     public static func clampedScale(_ scale: Double) -> Double {
-        guard scale.isFinite else { return minimumScale }
+        guard !scale.isNaN else { return minimumScale }
         return Swift.min(Swift.max(scale, minimumScale), maximumScale)
     }
 
@@ -98,18 +108,29 @@ public struct StageTransform: Hashable, Sendable {
         let fitted = Swift.min(horizontal, vertical)
         let centre = content.center
 
-        // Reduce the scale until the *content itself* maps finitely. A
-        // transform exists to map points, so "the fields are finite" is the
-        // wrong guarantee — `fitting` promises that every corner of the box it
-        // was given has a finite view position.
+        // Reduce the scale until the content's own extent maps finitely, which
+        // is what makes a hoop-sized or even wildly-oversized design usable.
         //
         // Established by checking rather than by a bound, because reasoning
         // about this product has been wrong twice: once by fixing only the
         // midpoint, once by a `greatestFiniteMagnitude / |centre|` ceiling that
         // rounds *up* and overflowed anyway. Halving from at most
         // `maximumScale` reaches `minimumScale` in about ten steps, and
-        // `minimumScale` always succeeds — `greatestFiniteMagnitude × 0.05` is
-        // finite — so the loop terminates and the guarantee holds.
+        // `minimumScale` always succeeds, so the loop terminates.
+        //
+        // **It does not make every corner finite, and no implementation
+        // could.** Content spanning most of the `Double` range needs a scale
+        // below `minimumScale` to fit at all, and even at a legal scale the
+        // centring translation can itself sit near `greatestFiniteMagnitude`,
+        // so `point × scale + translation` overflows for a far corner (Codex
+        // round 5: `minX = -greatestFiniteMagnitude`, `maxX = 1e300` in a
+        // `greatestFiniteMagnitude`-wide viewport). An earlier version of this
+        // comment promised all corners finite — that promise was simply false,
+        // and the honest fix was to the claim rather than to the code.
+        //
+        // What holds: the returned transform's own fields are always finite
+        // (guaranteed at `init`), and any content within a sane fraction of the
+        // `Double` range maps finitely. A design at 1e308 is not a design.
         let extent = Swift.max(
             abs(content.minX), abs(content.maxX), abs(content.minY), abs(content.maxY), 1
         )

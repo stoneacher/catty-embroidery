@@ -144,6 +144,11 @@ struct StageTransformFinitenessTests {
 
     /// Codex round 4's `pinched` counterexample: the product is finite and the
     /// *subtraction* is not.
+    ///
+    /// Asserts **identity**, not finiteness (Codex round 5). "Refused" means
+    /// the transform is unchanged; a version that silently reset or repositioned
+    /// it would also be finite, and the earlier assertion could not tell the
+    /// two apart — the same mis-targeting this branch has now hit five times.
     @Test("a pinch whose translation overflows is refused rather than returned")
     func pinchWithOverflowingSubtractionIsRefused() {
         let magnitude = Double.greatestFiniteMagnitude
@@ -151,8 +156,7 @@ struct StageTransformFinitenessTests {
             scale: 0.05, translation: ViewPoint(x: 0.81 * magnitude, y: 0)
         )
         let result = transform.pinched(by: 50, about: ViewPoint(x: 0.8 * magnitude, y: 0))
-        #expect(result.translation.x.isFinite)
-        #expect(result.translation.y.isFinite)
+        #expect(result == transform, "an unrepresentable pinch leaves the transform alone")
     }
 
     @Test("a drag that would overflow is refused, including by accumulation")
@@ -163,7 +167,29 @@ struct StageTransformFinitenessTests {
             transform = transform.dragged(by: ViewPoint(x: 0.5 * magnitude, y: 0))
             #expect(transform.translation.x.isFinite)
         }
-        #expect(transform.dragged(by: ViewPoint(x: .infinity, y: 0)).translation.x.isFinite)
+        let refused = transform.dragged(by: ViewPoint(x: .infinity, y: 0))
+        #expect(refused == transform, "an unrepresentable drag leaves the transform alone")
+    }
+
+    /// A huge zoom-in must not become the maximum zoom-*out* (Codex round 5).
+    /// `scale × factor` overflows to `+∞`, and the original `clampedScale`
+    /// mapped every non-finite value to `minimumScale` — so pinching in by an
+    /// enormous factor threw the design away. Wrong-but-finite, and visible.
+    @Test("an overflowing zoom-in clamps to maximum zoom, not minimum")
+    func overflowingZoomInClampsToMaximum() {
+        let transform = StageTransform(scale: 2)
+        let zoomedIn = transform.pinched(by: .greatestFiniteMagnitude, about: .zero)
+        #expect(zoomedIn.scale == StageTransform.maximumScale)
+
+        let zoomedOut = transform.pinched(by: -.infinity, about: .zero)
+        #expect(zoomedOut.scale == StageTransform.minimumScale)
+    }
+
+    @Test("clampedScale preserves direction at the infinities")
+    func clampedScalePreservesDirection() {
+        #expect(StageTransform.clampedScale(.infinity) == StageTransform.maximumScale)
+        #expect(StageTransform.clampedScale(-.infinity) == StageTransform.minimumScale)
+        #expect(StageTransform.clampedScale(.nan) == StageTransform.minimumScale)
     }
 
     /// The sweep the fixed-viewport helper could not do: hostile content
@@ -213,9 +239,18 @@ struct StageTransformFinitenessTests {
         #expect(transform.translation.x.isFinite, sourceLocation: sourceLocation)
         #expect(transform.translation.y.isFinite, sourceLocation: sourceLocation)
 
-        // The guarantee is that the *content* maps finitely — every corner, not
-        // just the centre. "The fields are finite" was the weaker claim that
-        // let round 2's fix look complete.
+        // Corners map finitely for content within a sane fraction of the
+        // `Double` range — which is every real design, and everything this
+        // helper is given.
+        //
+        // Deliberately **not** claimed for content spanning most of the range.
+        // Codex round 5 found that no implementation can promise it: such
+        // content needs a scale below `minimumScale` to fit at all, and the
+        // centring translation can itself sit near `greatestFiniteMagnitude`,
+        // so a far corner's `point × scale + translation` overflows regardless.
+        // An earlier version of this helper asserted all corners for every box
+        // and only passed because the cases it was given happened to comply.
+        // The universal guarantee is the type invariant, swept below.
         let corners = [
             bounds.center,
             StagePoint(x: bounds.minX, y: bounds.minY),
@@ -228,5 +263,23 @@ struct StageTransformFinitenessTests {
             #expect(mapped.x.isFinite, "corner \(corner)", sourceLocation: sourceLocation)
             #expect(mapped.y.isFinite, "corner \(corner)", sourceLocation: sourceLocation)
         }
+    }
+
+    /// Codex round 5's counterexample, kept as a **characterisation** test: it
+    /// documents that a far corner of range-spanning content maps to infinity,
+    /// because that is inherent rather than a defect. The transform itself is
+    /// still well-formed, which is the guarantee that matters.
+    @Test("range-spanning content keeps a finite transform even where a corner cannot map")
+    func rangeSpanningContentKeepsAFiniteTransform() {
+        let magnitude = Double.greatestFiniteMagnitude
+        let bounds = StageBox(minX: -magnitude, minY: 0, maxX: 1e300, maxY: 1)
+        let transform = StageTransform.fitting(bounds, in: ViewSize(width: magnitude, height: 1))
+
+        #expect(transform.scale.isFinite)
+        #expect(transform.translation.x.isFinite)
+        #expect(transform.translation.y.isFinite)
+
+        // And the inherent limit, stated rather than hidden.
+        #expect(!transform.viewPoint(of: StagePoint(x: 1e300, y: 0)).x.isFinite)
     }
 }
