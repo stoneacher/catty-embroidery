@@ -63,8 +63,27 @@ Same invocation shape, output to `/tmp/codex-review-verdict-2.md` (increment per
 
 Triage per step 3, then append a **Codex round N** section to the PR verdict (prior findings confirmed-fixed or not, new findings + triage) and a journal entry for the round's outcome.
 
-**Stop condition**: run another round only if this round's triage produced *code* changes; rejected findings and doc/comment-only corrections end the loop. Hard cap: **5 rounds total**; if the fifth round still finds code bugs, stop and escalate to Sebastian instead of looping.
+**Stop condition** — the loop ends when **either** holds:
 
-Why 5 and not 3 (raised 2026-07-25): the original cap assumed the US-108 pattern, where severity fell High → Medium-no-code-bugs across two rounds — diminishing returns. US-207 contradicted that. It was a **test-only** story, and severity stayed flat (Medium → Medium → Medium) with each round finding a real gap in the *previous round's fix*: round 2 closed round 1's unasserted-actor gap, and round 3 found that round 2's new test compared only positions, so a hardcoded actor on the manager call left every stitch silently black with all positions correct. The loop hit the cap while still producing findings, and the last round's fixes went to handover verified only by self-authored mutation tests. Convergence is not guaranteed by round count — expect **slower convergence when the diff is test code**, since every new assertion is itself new surface, and the round that proposes a fix is not the round that checks it. Two more rounds are cheap next to a golden that silently stops discriminating.
+1. **This round's triage produced no *code* changes.** Rejected findings and doc/comment-only corrections end the loop.
+2. **Severity has fallen for two consecutive rounds.** Take the highest severity in each round: two successive strict decreases (e.g. High → Medium → Low, or High → Medium → clean) means the loop is converging and the remaining findings are not the kind that ship defects. A flat run — High → High, or Medium → Medium — is **not** convergence and does not stop the loop, however many rounds have passed.
+
+**Hard cap: 10 rounds.** At 10, stop and escalate to Sebastian rather than continuing. Also escalate *early*, without waiting for the cap, if severity has been flat or rising for three rounds — that pattern means the loop is not converging and more rounds are unlikely to fix it on their own.
+
+**Record, every round**: the round's highest severity and whether it produced code changes. The stop condition is now a function of that history rather than a count, so the history has to be written down — the PR verdict section and the journal entry are where it goes.
+
+### Why this replaced a fixed count (2026-08-09, US-302)
+
+The cap was 3, then 5, and both were wrong in the same way: a fixed count is a proxy for convergence, and it stops the loop on the wrong axis.
+
+- **US-108** converged in two rounds (High → Medium-no-code-bugs) — a count of 5 would have wasted three rounds.
+- **US-207** was a **test-only** story and stayed flat (Medium → Medium → Medium), each round finding a real gap in the *previous round's fix*. It hit the cap while still producing findings; the last round's fixes reached handover verified only by self-authored mutation tests. (That is why the cap went 3 → 5 on 2026-07-25.)
+- **US-302** ran Medium → High → High → High → High/Medium → **High** → **Medium**, 20 findings, none rejected. It hit the 5-round cap *one round before its most valuable finding*: round 6 caught that round 5's "fix" had **lowered the standard** — I concluded an overflow was unfixable, weakened the documented contract, and wrote the failure into a characterisation test, converting a bug into a specification. Round 7 then found a gap in round 6's fix, and severity finally fell.
+
+Two things follow. **Severity trend beats round count** as a convergence signal: US-302's first genuine downward move came at round 7, and no count short of that would have found the round-6 defect. And **expect slower convergence when the diff is test code or numerically hostile code** — every new assertion is itself new surface, and a function over an unbounded input domain (`Double`, coordinates) has far more places to hide than byte-semantics work does. Extra rounds are cheap next to a golden that silently stops discriminating, or a defect written into a test as if it were intended.
+
+**Stated plainly because it would otherwise read as precedent: US-302 does not itself satisfy this rule.** It stopped at round 7 because that was the extension Sebastian authorised, but round 7's severity fall (High → Medium) is *one* decrease, not two, and its triage changed code — so under the rule written above the loop would have continued to round 8. The first branch to apply this rule end-to-end is the next one. Do not cite US-302's seven rounds as an example of the stop condition firing; cite it as the case that showed a fixed count was the wrong axis.
+
+The 10-round ceiling exists so a genuinely pathological branch escalates to a human instead of looping indefinitely; it is not a target.
 
 The PR is ready for handover only after the final round's verdict is recorded and its CI is green.
