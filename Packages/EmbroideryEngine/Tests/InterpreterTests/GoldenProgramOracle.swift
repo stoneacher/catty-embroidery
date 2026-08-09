@@ -204,11 +204,16 @@ func replayGoldenProgram(
     var manager = EmbroideryPatternManager()
     var points: [StagePoint] = []
     var events: [InterpreterEvent] = []
+    // Tracked here rather than read back from `manager`, so the colour the
+    // golden expects is one *this oracle* derived. Asking the manager would
+    // make the whole-event comparison tautological on the new dimension —
+    // both sides would be querying the same production type.
+    var expectedColor = ThreadColor.black
 
     func emit(_ produced: [StagePoint]) {
         for point in produced {
             points.append(point)
-            events.append(.stitch(actor: actor, position: point, layer: layer))
+            events.append(.stitch(actor: actor, position: point, layer: layer, color: expectedColor))
             manager.addStitch(at: point, layer: layer, actor: actor)
         }
     }
@@ -230,6 +235,12 @@ func replayGoldenProgram(
         case let .turn(degrees):
             moveAndFeed { $0.turnRight(degrees) }
         case let .setColor(hex):
+            // Reproduces ADR-015's *parse* rule and nothing else: a malformed
+            // hex is a full no-op. The armed-change bit is the stream's
+            // business and is not observable on a `.stitch` event.
+            if let parsed = ThreadColor(hexString: hex) {
+                expectedColor = parsed
+            }
             manager.setThreadColor(hexString: hex, for: actor)
             events.append(.colorArmed(actor: actor, hex: hex))
         case .sewUp:
@@ -264,7 +275,12 @@ func streamRebuiltFromEvents(_ events: [InterpreterEvent]) -> EmbroideryStream {
         switch event {
         case let .colorArmed(actor, hex):
             manager.setThreadColor(hexString: hex, for: actor)
-        case let .stitch(actor, position, layer):
+        // The event's own colour is deliberately **not** consumed. This function
+        // proves the events are a *sufficient* description of the stitch output,
+        // and it does that by replaying `colorArmed` through the manager — i.e.
+        // through ADR-015. Reading the ready-made `.stitch` colour instead would
+        // bypass those rules and turn a sufficiency proof into a restatement.
+        case let .stitch(actor, position, layer, _):
             manager.addStitch(at: position, layer: layer, actor: actor)
         case .needleMoved, .waited, .finalizeRequested:
             continue // carry no stream effect of their own

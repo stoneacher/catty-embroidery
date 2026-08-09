@@ -8,8 +8,20 @@ import Testing
 /// The stitch positions, in emission order, from an interpreter event stream.
 func stitchPositions(_ events: [InterpreterEvent]) -> [StagePoint] {
     events.compactMap {
-        if case let .stitch(_, position, _) = $0 {
+        if case let .stitch(_, position, _, _) = $0 {
             position
+        } else {
+            nil
+        }
+    }
+}
+
+/// The stitch colors, in emission order — the ADR-021 payload the app renders
+/// from, so the app never re-derives ADR-015's rules for itself.
+func stitchColors(_ events: [InterpreterEvent]) -> [ThreadColor] {
+    events.compactMap {
+        if case let .stitch(_, _, _, color) = $0 {
+            color
         } else {
             nil
         }

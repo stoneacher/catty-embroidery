@@ -83,6 +83,24 @@ public struct EmbroideryPatternManager: Sendable {
 
     // MARK: - Thread color (ADR-012 divergence, edges pinned by ADR-015)
 
+    /// The actor's current thread color — the color its next stitch will carry.
+    /// An actor that never set one reads `.black`, exactly as `ColorState`
+    /// defaults, so black is a legitimate stitch color rather than a marker.
+    ///
+    /// Order-insensitive across `addStitch` (ADR-021): that method snapshots
+    /// `colorState.current` before any clause runs and afterwards only ever
+    /// clears `pendingChange`, and clause A returns before touching color state
+    /// at all. Reading before or after a stitch therefore gives the same value,
+    /// which is what lets the interpreter resolve the color with a single read
+    /// per stitch burst instead of threading it through the emitter.
+    ///
+    /// Deliberately does **not** expose `pendingChange`. The armed-change bit
+    /// is the stream's business (ADR-015); a consumer able to see it would be
+    /// one step from re-deriving emission rules it must not duplicate.
+    public func threadColor(for actor: ActorID) -> ThreadColor {
+        colorByActor[actor]?.current ?? .black
+    }
+
     /// Sets the actor's thread color. Setting the current color is a no-op;
     /// a differing color arms a DST color change for the actor's next
     /// surviving stitch — unless nothing has been emitted manager-wide yet,
