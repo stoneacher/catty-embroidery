@@ -69,8 +69,9 @@ This story implements ADR-021 and ADR-022. It is the milestone's load-bearing st
 
 ## Outcome
 
-**467 engine tests green, up from 403.** Four commits: two `[red]`/green pairs
-(engine seam, then the `StagePreview` target), plus one test-only commit.
+**489 engine tests green, up from 403.** The implementation itself was four
+commits — two `[red]`/green pairs (engine seam, then the `StagePreview` target)
+plus one test-only commit; the rest of the growth came from the review rounds.
 
 ### What landed
 
