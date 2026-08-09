@@ -96,6 +96,13 @@ public struct StageTransform: Hashable, Sendable {
     /// degenerate input — a one-stitch design has zero width and height, and a
     /// viewport can be measured at zero before layout settles — by falling back
     /// to whichever axis has an extent, then to a scale of 1.
+    ///
+    /// **Guarantees, for any finite `content` and `viewport`**: the returned
+    /// transform's own fields are finite (enforced at `init`), and every corner
+    /// of `content` maps to a finite view position. The second is checked
+    /// directly rather than argued — see the reduction loop — because arguing
+    /// about it produced four wrong answers in a row, and a fifth that wrongly
+    /// declared it impossible.
     public static func fitting(
         _ content: StageBox,
         in viewport: ViewSize,
@@ -108,44 +115,71 @@ public struct StageTransform: Hashable, Sendable {
         let fitted = Swift.min(horizontal, vertical)
         let centre = content.center
 
-        // Reduce the scale until the content's own extent maps finitely, which
-        // is what makes a hoop-sized or even wildly-oversized design usable.
+        // Reduce the scale until **the content's own corners map finitely** —
+        // the thing a caller actually needs, checked directly.
         //
-        // Established by checking rather than by a bound, because reasoning
-        // about this product has been wrong twice: once by fixing only the
-        // midpoint, once by a `greatestFiniteMagnitude / |centre|` ceiling that
-        // rounds *up* and overflowed anyway. Halving from at most
-        // `maximumScale` reaches `minimumScale` in about ten steps, and
-        // `minimumScale` always succeeds, so the loop terminates.
+        // The predicate here is the whole history of this function. Round 3's
+        // loop tested `extent * scale`, which is a *proxy*: it ignores the
+        // translation, and the translation is where the remaining overflow
+        // lived. Round 5 then found a case the proxy missed and I concluded no
+        // implementation could do better — **which was false**, and worse, I
+        // wrote it into a test that locked the defect in (Codex round 6). At
+        // scale 0.5 that very counterexample maps both corners finitely; the
+        // fit had simply fallen back to scale 1 because an overflowed content
+        // width and a zero-height viewport made `fitted` zero.
         //
-        // **It does not make every corner finite, and no implementation
-        // could.** Content spanning most of the `Double` range needs a scale
-        // below `minimumScale` to fit at all, and even at a legal scale the
-        // centring translation can itself sit near `greatestFiniteMagnitude`,
-        // so `point × scale + translation` overflows for a far corner (Codex
-        // round 5: `minX = -greatestFiniteMagnitude`, `maxX = 1e300` in a
-        // `greatestFiniteMagnitude`-wide viewport). An earlier version of this
-        // comment promised all corners finite — that promise was simply false,
-        // and the honest fix was to the claim rather than to the code.
+        // So the loop now evaluates the real mapping, translation included. The
+        // lesson is the one this whole branch keeps teaching: check the thing
+        // you promise, not a proxy for it — and be very slow to conclude that
+        // something is impossible right after failing to do it.
         //
-        // What holds: the returned transform's own fields are always finite
-        // (guaranteed at `init`), and any content within a sane fraction of the
-        // `Double` range maps finitely. A design at 1e308 is not a design.
-        let extent = Swift.max(
-            abs(content.minX), abs(content.maxX), abs(content.minY), abs(content.maxY), 1
-        )
+        // Terminates: halving from at most `maximumScale` reaches
+        // `minimumScale` in about ten steps, and the loop stops there whether
+        // or not the predicate is satisfied. `init` guarantees the fields are
+        // finite regardless, so even a pathological box yields a well-formed
+        // transform.
         var scale = clampedScale(fitted.isFinite && fitted > 0 ? fitted : 1)
-        while scale > minimumScale, !(extent * scale).isFinite {
+        while scale > minimumScale, !mapsFinitely(content, in: viewport, at: scale) {
             scale = Swift.max(minimumScale, scale / 2)
         }
 
         return StageTransform(
             scale: scale,
-            translation: ViewPoint(
-                x: centringOffset(viewport.width / 2, centre.x, scale),
-                y: centringOffset(viewport.height / 2, flippingY(centre.y), scale)
-            )
+            translation: centringTranslation(for: centre, in: viewport, at: scale)
         )
+    }
+
+    /// The translation that puts `centre` at the viewport's centre.
+    private static func centringTranslation(
+        for centre: StagePoint,
+        in viewport: ViewSize,
+        at scale: Double
+    ) -> ViewPoint {
+        ViewPoint(
+            x: centringOffset(viewport.width / 2, centre.x, scale),
+            y: centringOffset(viewport.height / 2, flippingY(centre.y), scale)
+        )
+    }
+
+    /// Whether fitting `content` at `scale` maps every corner to a finite view
+    /// position — evaluated through the same arithmetic `viewPoint(of:)` uses,
+    /// so the check cannot drift from the thing it is checking.
+    private static func mapsFinitely(
+        _ content: StageBox,
+        in viewport: ViewSize,
+        at scale: Double
+    ) -> Bool {
+        let translation = centringTranslation(for: content.center, in: viewport, at: scale)
+        guard translation.x.isFinite, translation.y.isFinite else { return false }
+
+        for x in [content.minX, content.maxX] {
+            for y in [content.minY, content.maxY] {
+                guard (x * scale + translation.x).isFinite,
+                      (flippingY(y) * scale + translation.y).isFinite
+                else { return false }
+            }
+        }
+        return true
     }
 
     /// One axis of `fitting`'s translation: `viewportCentre − coordinate ×

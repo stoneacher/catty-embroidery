@@ -239,18 +239,8 @@ struct StageTransformFinitenessTests {
         #expect(transform.translation.x.isFinite, sourceLocation: sourceLocation)
         #expect(transform.translation.y.isFinite, sourceLocation: sourceLocation)
 
-        // Corners map finitely for content within a sane fraction of the
-        // `Double` range — which is every real design, and everything this
-        // helper is given.
-        //
-        // Deliberately **not** claimed for content spanning most of the range.
-        // Codex round 5 found that no implementation can promise it: such
-        // content needs a scale below `minimumScale` to fit at all, and the
-        // centring translation can itself sit near `greatestFiniteMagnitude`,
-        // so a far corner's `point × scale + translation` overflows regardless.
-        // An earlier version of this helper asserted all corners for every box
-        // and only passed because the cases it was given happened to comply.
-        // The universal guarantee is the type invariant, swept below.
+        // Every corner maps finitely — the contract `fitting` restored in round
+        // 6 after round 5 wrongly concluded it was unachievable and weakened it.
         let corners = [
             bounds.center,
             StagePoint(x: bounds.minX, y: bounds.minY),
@@ -265,12 +255,19 @@ struct StageTransformFinitenessTests {
         }
     }
 
-    /// Codex round 5's counterexample, kept as a **characterisation** test: it
-    /// documents that a far corner of range-spanning content maps to infinity,
-    /// because that is inherent rather than a defect. The transform itself is
-    /// still well-formed, which is the guarantee that matters.
-    @Test("range-spanning content keeps a finite transform even where a corner cannot map")
-    func rangeSpanningContentKeepsAFiniteTransform() {
+    /// Codex round 5's counterexample — and the correction of round 5's own
+    /// conclusion about it (Codex round 6).
+    ///
+    /// I originally shipped this as a *characterisation* test asserting the far
+    /// corner maps to infinity, on the reasoning that no implementation could
+    /// do better. That was false: at scale 0.5 both corners map finitely, and
+    /// the fit had merely fallen back to scale 1 because an overflowed content
+    /// width and a zero-height viewport made the computed fit zero. Writing the
+    /// defect into a test is a worse outcome than leaving it unfixed, because
+    /// it converts a bug into a specification. The test now demands what a
+    /// caller actually needs.
+    @Test("range-spanning content still maps every corner finitely")
+    func rangeSpanningContentMapsFinitely() {
         let magnitude = Double.greatestFiniteMagnitude
         let bounds = StageBox(minX: -magnitude, minY: 0, maxX: 1e300, maxY: 1)
         let transform = StageTransform.fitting(bounds, in: ViewSize(width: magnitude, height: 1))
@@ -279,7 +276,46 @@ struct StageTransformFinitenessTests {
         #expect(transform.translation.x.isFinite)
         #expect(transform.translation.y.isFinite)
 
-        // And the inherent limit, stated rather than hidden.
-        #expect(!transform.viewPoint(of: StagePoint(x: 1e300, y: 0)).x.isFinite)
+        for x in [bounds.minX, bounds.maxX] {
+            for y in [bounds.minY, bounds.maxY] {
+                let mapped = transform.viewPoint(of: StagePoint(x: x, y: y))
+                #expect(mapped.x.isFinite, "corner (\(x), \(y))")
+                #expect(mapped.y.isFinite, "corner (\(x), \(y))")
+            }
+        }
+    }
+
+    /// The sweep, strengthened to the restored contract: across hostile content
+    /// and hostile viewports, every corner maps finitely — not merely the
+    /// transform's own fields. This is the assertion round 5's weakened
+    /// contract had given up on.
+    @Test("fitting maps every corner finitely across hostile content and viewports")
+    func fittingMapsCornersAcrossHostileInputs() {
+        let magnitude = Double.greatestFiniteMagnitude
+        let extremes = [
+            -magnitude, -magnitude / 2, -magnitude / 100, -1e300, 0, 1e300,
+            magnitude / 100, magnitude / 2, magnitude
+        ]
+        let viewports = [
+            ViewSize(width: 0, height: 0),
+            ViewSize(width: 300, height: 300),
+            ViewSize(width: magnitude, height: magnitude),
+            ViewSize(width: magnitude, height: 1)
+        ]
+        for minX in extremes {
+            for maxX in extremes where maxX >= minX {
+                for viewport in viewports {
+                    let bounds = StageBox(minX: minX, minY: 0, maxX: maxX, maxY: 1)
+                    let transform = StageTransform.fitting(bounds, in: viewport)
+                    for corner in [bounds.minX, bounds.maxX] {
+                        let mapped = transform.viewPoint(of: StagePoint(x: corner, y: 0))
+                        #expect(
+                            mapped.x.isFinite && mapped.y.isFinite,
+                            "corner \(corner) of \(minX)…\(maxX) in \(viewport.width)×\(viewport.height)"
+                        )
+                    }
+                }
+            }
+        }
     }
 }
