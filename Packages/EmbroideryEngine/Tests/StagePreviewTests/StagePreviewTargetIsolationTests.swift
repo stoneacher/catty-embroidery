@@ -28,19 +28,18 @@ struct StagePreviewTargetIsolationTests {
         #expect(inverse(transform)(ViewPoint(x: 1, y: 1)) == transform.stagePoint(
             of: ViewPoint(x: 1, y: 1)
         ))
-        #expect(transform.scale is Double)
     }
 
     @Test("a display list is buildable from interpreter events and engine types alone")
     func displayListNeedsNothingBeyondTheEngine() {
         let reduce: ([InterpreterEvent], PreviewNeedle?) -> RunBatch = RunBatch.reducing
         let batch = reduce(
-            [.stitch(actor: ActorID(0), position: StagePoint(x: 2, y: 3), layer: 0, color: red)],
+            [.stitch(actor: ActorID(0), position: StagePoint(x: 2, y: 3), layer: 0, color: PreviewColor.red)],
             nil
         )
         var list = StitchDisplayList()
         list.append(contentsOf: batch.stitches)
 
-        #expect(list.stitches == [previewStitch(2, 3, red)])
+        #expect(list.stitches == [previewStitch(2, 3, PreviewColor.red)])
     }
 }

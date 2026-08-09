@@ -30,4 +30,8 @@ public struct ViewSize: Hashable, Sendable {
         self.width = width
         self.height = height
     }
+
+    /// A viewport measured before layout settles. `StageTransform.fitting`
+    /// stays total for it.
+    public static let zero = ViewSize(width: 0, height: 0)
 }

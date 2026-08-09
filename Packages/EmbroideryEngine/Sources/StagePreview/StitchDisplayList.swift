@@ -14,7 +14,12 @@ import EmbroideryEngine
 /// property so that appending a batch is literally one observable mutation. A
 /// reference type would leave the property unchanged and the observation would
 /// not fire.
-public struct StitchDisplayList: Hashable, Sendable {
+/// `Equatable` but deliberately **not** `Hashable`: nothing needs a hash, and
+/// `hash(into:)` over 50 000 stitches would be unconditionally O(n) with no
+/// copy-on-write fast path — a trap for anyone who put the list in a `Set` or
+/// used it as a dictionary key. `Array.==` at least short-circuits on shared
+/// storage (`swift-code-reviewer`, US-302).
+public struct StitchDisplayList: Equatable, Sendable {
     /// A maximal run of consecutive stitches sharing a thread colour. The runs
     /// form a **gapless partition** of `stitches.indices`, which is what lets
     /// US-305 draw one `Path` per colour without scanning.
@@ -43,9 +48,31 @@ public struct StitchDisplayList: Hashable, Sendable {
     }
 
     /// The stitches after the rasterisation watermark — the only ones a frame
-    /// has to redraw. A slice, not a copy.
+    /// has to redraw.
+    ///
+    /// **Do not store the returned slice.** An `ArraySlice` retains the whole
+    /// backing buffer, so a slice held across the next `append` makes the
+    /// storage non-uniquely referenced and turns that append into a full copy
+    /// of every stitch — which silently converts `append`'s O(N) into O(M + N)
+    /// exactly where it matters, in the per-frame path. Measured at 50 000
+    /// stitches: one reallocation *per frame* and ~1.2 MB copied, versus zero
+    /// when nothing is retained (`swift-code-reviewer`, US-302).
+    ///
+    /// Use `withLiveTail(_:)` for a scoped read, which cannot outlive the call.
+    /// If a renderer genuinely needs to keep the tail beyond the frame,
+    /// `Array(list.liveTail)` is the **cheaper** option, not the more expensive
+    /// one: it copies only the tail and leaves the list's buffer unique.
     public var liveTail: ArraySlice<PreviewStitch> {
         stitches[settledCount...]
+    }
+
+    /// Reads the live tail within `body`, without giving the caller a slice it
+    /// could accidentally retain past the next append. Preferred over
+    /// `liveTail` for per-frame rendering.
+    public func withLiveTail<Result>(
+        _ body: (ArraySlice<PreviewStitch>) throws -> Result
+    ) rethrows -> Result {
+        try body(stitches[settledCount...])
     }
 
     /// Appends one stitch, extending the derived state in place.
@@ -54,6 +81,10 @@ public struct StitchDisplayList: Hashable, Sendable {
     /// may scan `stitches` or `colorRuns`, so appending N stitches to a list
     /// already holding M costs O(N) whatever M is. At the 50 000-stitch exit
     /// criterion a per-append rescan would be quadratic.
+    ///
+    /// That amortised O(N) additionally assumes the buffer is **uniquely
+    /// referenced** — see `liveTail`, which is the one easy way for a caller to
+    /// break it.
     ///
     /// The runs stay a gapless partition by construction — a new run always
     /// starts exactly where the previous one ended — rather than by a repair
@@ -76,8 +107,22 @@ public struct StitchDisplayList: Hashable, Sendable {
         }
     }
 
+    /// Appends a batch — one `RunBatch` per tick, in the US-306 path.
+    ///
+    /// **No `reserveCapacity` here, deliberately.** An earlier version reserved
+    /// `count + underestimatedCount` on every call, intending an optimisation
+    /// and getting the opposite twice over (`swift-code-reviewer`, US-302):
+    ///
+    /// - `Array.reserveCapacity` requests an *exact* capacity, which defeats
+    ///   the geometric growth `append` would otherwise use. Building 50 000
+    ///   stitches in batches of 10 measured **96 reallocations / 0.69 ms with
+    ///   the reserve against 13 / 0.07 ms without** it.
+    /// - Worse per-frame: `reserveCapacity` copies whenever the buffer is not
+    ///   uniquely referenced, *regardless of capacity*. With a renderer holding
+    ///   a copy, a tick producing **no stitches at all** — routine, since a
+    ///   `wait` or a non-stitch brick yields an empty batch — still paid a full
+    ///   1.2 MB copy. A plain append loop over zero elements costs nothing.
     public mutating func append(contentsOf newStitches: some Sequence<PreviewStitch>) {
-        stitches.reserveCapacity(stitches.count + newStitches.underestimatedCount)
         for stitch in newStitches {
             append(stitch)
         }

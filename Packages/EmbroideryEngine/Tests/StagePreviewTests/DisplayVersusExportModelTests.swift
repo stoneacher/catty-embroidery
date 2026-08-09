@@ -107,8 +107,8 @@ struct DisplayVersusExportModelTests {
         let list = displayList(from: events)
         let stream = run.assembledStream()
 
-        #expect(list.stitches.map(\.color) == [red, green, green])
-        #expect(stream.stitches.map(\.color) == [red, green])
+        #expect(list.stitches.map(\.color) == [PreviewColor.red, PreviewColor.green, PreviewColor.green])
+        #expect(stream.stitches.map(\.color) == [PreviewColor.red, PreviewColor.green])
         #expect(list.count == stream.count + 1)
 
         // **Positions and the surviving flag, not just the colours** (Codex
@@ -229,7 +229,7 @@ struct DisplayVersusExportModelTests {
 
     // MARK: - Two actors on one layer: clause B, where they diverge
 
-    /// Item 9. Two objects on one layer, red then green, so the export's two
+    /// Item 9. Two objects on one layer, PreviewColor.red then PreviewColor.green, so the export's two
     /// **black** clause-B records are distinguishable from everything else.
     ///
     /// Asserting the count rather than mere presence is the point: "some black
@@ -246,14 +246,14 @@ struct DisplayVersusExportModelTests {
         // Both actors are non-black, or this proves only that extra records
         // exist — not that they differ in *colour*, which is the claim.
         let previewColors = Set(list.stitches.map(\.color))
-        #expect(previewColors == [red, green])
+        #expect(previewColors == [PreviewColor.red, PreviewColor.green])
         #expect(!previewColors.contains(.black))
 
         let blackRecords = stream.stitches.filter { $0.color == .black }
         #expect(blackRecords.count == 2, "clause B emits exactly two, not one and not three")
 
         // Both sit at the *previous* actor's workspace position, i.e. where the
-        // red object last stitched — (10, 0) → 20 embroidery units.
+        // PreviewColor.red object last stitched — (10, 0) → 20 embroidery units.
         #expect(blackRecords.allSatisfy { $0.position == EmbroideryPoint(x: 20, y: 0) })
         #expect(blackRecords[0].isColorChange)
 

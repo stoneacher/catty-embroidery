@@ -27,13 +27,13 @@ struct StitchDisplayListTests {
     @Test("color runs partition the indices with no gaps and no overlaps")
     func colorRunsPartitionTheIndices() {
         let list = displayList([
-            previewStitch(0, 0, red),
-            previewStitch(1, 0, red),
-            previewStitch(2, 0, green),
-            previewStitch(3, 0, red)
+            previewStitch(0, 0, PreviewColor.red),
+            previewStitch(1, 0, PreviewColor.red),
+            previewStitch(2, 0, PreviewColor.green),
+            previewStitch(3, 0, PreviewColor.red)
         ])
 
-        #expect(list.colorRuns.map(\.color) == [red, green, red])
+        #expect(list.colorRuns.map(\.color) == [PreviewColor.red, PreviewColor.green, PreviewColor.red])
         #expect(list.colorRuns.first?.range.lowerBound == 0)
         #expect(list.colorRuns.last?.range.upperBound == list.count)
         for (earlier, later) in zip(list.colorRuns, list.colorRuns.dropFirst()) {
@@ -46,7 +46,7 @@ struct StitchDisplayListTests {
 
     @Test("consecutive stitches of one color form a single run")
     func oneColorIsOneRun() {
-        let list = displayList((0 ..< 500).map { previewStitch(Double($0), 0, blue) })
+        let list = displayList((0 ..< 500).map { previewStitch(Double($0), 0, PreviewColor.blue) })
         #expect(list.colorRuns.count == 1)
         #expect(list.colorRuns.first?.range == 0 ..< 500)
     }
@@ -58,7 +58,7 @@ struct StitchDisplayListTests {
     @Test("alternating colors form one run per stitch")
     func alternatingColorsFormOneRunEach() {
         let list = displayList((0 ..< 500).map {
-            previewStitch(Double($0), 0, $0.isMultiple(of: 2) ? red : green)
+            previewStitch(Double($0), 0, $0.isMultiple(of: 2) ? PreviewColor.red : PreviewColor.green)
         })
         #expect(list.colorRuns.count == 500)
     }
@@ -119,20 +119,20 @@ struct StitchDisplayListTests {
 
     @Test("appending after settling leaves the settled prefix untouched")
     func appendingKeepsTheSettledPrefixStable() {
-        var list = displayList((0 ..< 10).map { previewStitch(Double($0), 0, red) })
+        var list = displayList((0 ..< 10).map { previewStitch(Double($0), 0, PreviewColor.red) })
         list.markSettled(upTo: 10)
         let settledPrefix = Array(list.stitches)
 
-        list.append(previewStitch(99, 99, green))
+        list.append(previewStitch(99, 99, PreviewColor.green))
 
         #expect(Array(list.stitches.prefix(10)) == settledPrefix)
         #expect(list.settledCount == 10)
-        #expect(Array(list.liveTail) == [previewStitch(99, 99, green)])
+        #expect(Array(list.liveTail) == [previewStitch(99, 99, PreviewColor.green)])
     }
 
     @Test("reset empties everything including the watermark")
     func resetEmptiesEverything() {
-        var list = displayList((0 ..< 10).map { previewStitch(Double($0), 0, red) })
+        var list = displayList((0 ..< 10).map { previewStitch(Double($0), 0, PreviewColor.red) })
         list.markSettled(upTo: 5)
 
         list.reset()
@@ -147,7 +147,7 @@ struct StitchDisplayListTests {
     @Test("appending in batches gives the same list as appending one at a time")
     func batchedAndSingleAppendsAgree() {
         let stitches = (0 ..< 50).map {
-            previewStitch(Double($0), Double($0 % 7), $0 % 3 == 0 ? red : green)
+            previewStitch(Double($0), Double($0 % 7), $0 % 3 == 0 ? PreviewColor.red : PreviewColor.green)
         }
         var oneAtATime = StitchDisplayList()
         for stitch in stitches {

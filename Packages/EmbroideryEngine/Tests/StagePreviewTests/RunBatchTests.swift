@@ -26,10 +26,13 @@ struct RunBatchTests {
     @Test("stitch events become preview stitches in order, with their colors")
     func stitchEventsBecomePreviewStitches() {
         let events: [InterpreterEvent] = [
-            .stitch(actor: ActorID(0), position: StagePoint(x: 1, y: 2), layer: 0, color: red),
-            .stitch(actor: ActorID(0), position: StagePoint(x: 3, y: 4), layer: 0, color: green)
+            .stitch(actor: ActorID(0), position: StagePoint(x: 1, y: 2), layer: 0, color: PreviewColor.red),
+            .stitch(actor: ActorID(0), position: StagePoint(x: 3, y: 4), layer: 0, color: PreviewColor.green)
         ]
-        #expect(RunBatch.reducing(events).stitches == [previewStitch(1, 2, red), previewStitch(3, 4, green)])
+        #expect(RunBatch.reducing(events).stitches == [
+            previewStitch(1, 2, PreviewColor.red),
+            previewStitch(3, 4, PreviewColor.green)
+        ])
     }
 
     @Test("the needle pose is the last one in the batch")
@@ -75,25 +78,17 @@ struct RunBatchTests {
         var stepped = interpreter(SampleLibrary[id].program)
         let batches = tickBatches(&stepped)
 
-        var accumulated: [PreviewStitch] = []
-        var carried: PreviewNeedle?
-        var lastRequestedName: String?
-        for events in batches {
-            let batch = RunBatch.reducing(events, from: carried)
-            accumulated += batch.stitches
-            carried = batch.needle
-            lastRequestedName = batch.requestedDesignName ?? lastRequestedName
-        }
+        let folded = foldBatches(batches)
 
         var whole = interpreter(SampleLibrary[id].program)
         let allEvents = whole.run(maxTicks: 100_000)
         let wholeBatch = RunBatch.reducing(allEvents)
 
-        #expect(accumulated == wholeBatch.stitches)
-        #expect(carried == wholeBatch.needle)
-        #expect(lastRequestedName == wholeBatch.requestedDesignName)
-        #expect(!accumulated.isEmpty, "a sample that produced nothing would pass vacuously")
-        #expect(carried != nil, "a sample that moved no needle would pass vacuously")
+        #expect(folded.stitches == wholeBatch.stitches)
+        #expect(folded.needle == wholeBatch.needle)
+        #expect(folded.requestedName == wholeBatch.requestedDesignName)
+        #expect(!folded.stitches.isEmpty, "a sample that produced nothing would pass vacuously")
+        #expect(folded.needle != nil, "a sample that moved no needle would pass vacuously")
     }
 
     /// The partition test above is **tautological for the terminal marker** on
@@ -105,25 +100,17 @@ struct RunBatchTests {
     @Test("the terminal marker survives a later tick that does not finalize")
     func finalizeMarkerSurvivesAcrossTicks() {
         let batches: [[InterpreterEvent]] = [
-            [.stitch(actor: ActorID(0), position: StagePoint(x: 0, y: 0), layer: 0, color: red)],
+            [.stitch(actor: ActorID(0), position: StagePoint(x: 0, y: 0), layer: 0, color: PreviewColor.red)],
             [.finalizeRequested(name: "design")],
-            [.stitch(actor: ActorID(0), position: StagePoint(x: 1, y: 0), layer: 0, color: red)]
+            [.stitch(actor: ActorID(0), position: StagePoint(x: 1, y: 0), layer: 0, color: PreviewColor.red)]
         ]
 
-        var carried: PreviewNeedle?
-        var lastRequestedName: String?
-        var accumulated: [PreviewStitch] = []
-        for events in batches {
-            let batch = RunBatch.reducing(events, from: carried)
-            accumulated += batch.stitches
-            carried = batch.needle
-            lastRequestedName = batch.requestedDesignName ?? lastRequestedName
-        }
+        let folded = foldBatches(batches)
 
         let whole = RunBatch.reducing(batches.flatMap(\.self))
-        #expect(lastRequestedName == "design")
+        #expect(folded.requestedName == "design")
         #expect(whole.requestedDesignName == "design")
-        #expect(accumulated == whole.stitches)
+        #expect(folded.stitches == whole.stitches)
 
         // And the marker really is per-batch, not sticky: the final batch
         // carries none of its own.

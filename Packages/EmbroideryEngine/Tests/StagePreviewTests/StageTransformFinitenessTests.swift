@@ -294,7 +294,7 @@ struct StageTransformFinitenessTests {
     /// product** (Codex round 7). The earlier version varied only x, pinned
     /// `minY = 0` / `maxY = 1`, and mapped only `y: 0` — so a y-flip, a
     /// height-fit or a y-translation overflow could regress while it stayed
-    /// green. That is the **third** time on this branch a test meant to be
+    /// PreviewColor.green. That is the **third** time on this branch a test meant to be
     /// exhaustive held an input constant, which is why the shape is spelled out
     /// here rather than left to the next reader to notice.
     @Test("fitting maps all four corners finitely across hostile content and viewports")
