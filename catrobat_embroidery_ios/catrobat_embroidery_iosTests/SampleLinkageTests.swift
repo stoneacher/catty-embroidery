@@ -113,9 +113,18 @@ struct SampleLinkageTests {
             default: break
             }
         }
+        // **Both** properties, because each fix lost the other. Requiring only a
+        // finite position passed while the needle repeated one point forever;
+        // requiring only two distinct points passes for `(nan, 0)` and
+        // `(infinity, 0)`, which are two set members and no geometry at all. The
+        // pair is the claim: it moved, and it moved somewhere representable.
         #expect(
             positions.count >= 2,
             "expected two distinct needle positions in \(Self.tickBudget) ticks, saw \(positions.count)"
+        )
+        #expect(
+            positions.allSatisfy { $0.allSatisfy(\.isFinite) },
+            "needle reached a non-finite coordinate: \(positions)"
         )
     }
 
@@ -154,10 +163,14 @@ struct SampleLinkageTests {
             }
         }
 
+        // `last`, and also the count: asserting only the last tick would pass if
+        // the wait emitted spurious extra `.waited` events along the way, as long
+        // as the final one landed on 59. A one-second wait is one wait.
         #expect(
             waitedTicks.last == 59,
             "a one-second wait should end on tick 59, ended on \(String(describing: waitedTicks.last))"
         )
+        #expect(waitedTicks.count == 1, "expected exactly one .waited event, saw \(waitedTicks.count)")
         #expect(interpreter.isFinished)
     }
 }

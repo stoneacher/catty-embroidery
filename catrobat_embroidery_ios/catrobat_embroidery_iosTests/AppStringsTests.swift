@@ -44,13 +44,20 @@ struct AppStringsTests {
     /// substituted values remain. Asserting "≠ key" cannot catch that, because
     /// there is no key left in the output to compare against.
     ///
-    /// The third expectation is the one that earns its place: an earlier version
-    /// asserted only that the arguments survived and that the result was not the
-    /// two of them concatenated, which **still passed** if the entry were reduced
-    /// to `"%1$@ × %2$@"` — dropping the word "Hoop" and leaving the label
-    /// meaningless. Comparing against the arguments joined by the separator alone
-    /// is what pins that the entry has literal text of its own. (Cross-vendor
-    /// review found the gap; the comment above had overclaimed.)
+    /// The third expectation catches one more collapse than the second: an
+    /// earlier version asserted only that the arguments survived and that the
+    /// result was not the two of them concatenated, which **still passed** if the
+    /// entry were reduced to `"%1$@ × %2$@"` — dropping the word "Hoop" and
+    /// leaving the label meaningless.
+    ///
+    /// **What this still does not prove**, stated because two successive versions
+    /// of this comment overclaimed and the review caught both: it does not prove
+    /// a *descriptive* literal survives. A catalog value of `"%1$@ %2$@"` — the
+    /// arguments separated by a plain space — passes all three expectations. The
+    /// three assertions pin the two collapses `xcstringstool` can actually
+    /// produce (total loss of literals, and separator-only), not the presence of
+    /// the word "Hoop", which would mean asserting English wording in a file
+    /// whose whole point is that the wording is translatable.
     @Test func theHoopSizeStringKeepsItsLiteralPartsAroundTheArguments() {
         let side = "100 mm"
         let rendered = String(localized: .stageHoopSize(side, side))

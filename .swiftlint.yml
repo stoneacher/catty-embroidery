@@ -52,7 +52,10 @@ custom_rules:
     # such as `searchable(prompt:)`. The first branch needs a paren after the
     # name; the second must not require one, which is why `prompt:` failed to
     # fire when it was folded into the first.
-    regex: "(\\b(Text|Label|Button|Toggle|Section|TextField|SecureField|ContentUnavailableView|NavigationLink|Picker|Stepper|Slider|Menu|Link|navigationTitle|navigationBarTitle|accessibilityLabel|accessibilityHint|accessibilityValue|confirmationDialog|alert|help)\\s*\\(\\s*\")|(\\b(prompt|titleKey|titleResource|message|label):\\s*\")"
+    # `label:` is deliberately NOT in the labelled-argument branch: it is generic
+    # enough that a non-UI `Metadata(label: "run")` would be flagged. `prompt:`
+    # and the title labels are UI-specific.
+    regex: "(\\b(Text|Label|Button|Toggle|Section|TextField|SecureField|ContentUnavailableView|NavigationLink|Picker|Stepper|Slider|Menu|Link|navigationTitle|navigationBarTitle|accessibilityLabel|accessibilityHint|accessibilityValue|confirmationDialog|alert|help)\\s*\\(\\s*\")|(\\b(prompt|titleKey|titleResource):\\s*\")"
     excluded_match_kinds:
       - comment
       - doccomment
@@ -73,7 +76,12 @@ custom_rules:
   localized_string_literal_constructors:
     name: "Localization API wrapping a literal"
     included: ".*/catrobat_embroidery_ios/catrobat_embroidery_ios/.*\\.swift"
-    regex: "\\b(String\\(localized:|LocalizedStringKey\\(|LocalizedStringResource\\()\\s*\""
+    # `\s*` after every identifier and before every label, because Swift permits
+    # whitespace and newlines there and round 2 of the review found three forms
+    # that slipped the first version: `LocalizedStringKey ("…")`,
+    # `String (localized: "…")`, and the label on its own line. `\s` matches
+    # newlines in SwiftLint's regex engine, so the multi-line form is covered.
+    regex: "\\b(String\\s*\\(\\s*localized:\\s*\"|LocalizedStringKey\\s*\\(\\s*\"|LocalizedStringResource\\s*\\(\\s*\")"
     excluded_match_kinds:
       - comment
       - doccomment
