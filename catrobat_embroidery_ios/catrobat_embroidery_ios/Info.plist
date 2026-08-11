@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-   Info.plist
-   catrobat_embroidery_ios
+  Info.plist — Embroidery Designer for iOS
+  Copyright (C) 2026 The Catrobat Team. Licensed under AGPL-3.0.
 
-   Created by Sebi [Private] on 11.08.26.
-   Copyright (c) 2026 ___ORGANIZATIONNAME___. All rights reserved.
+  Deliberately empty (US-303). GENERATE_INFOPLIST_FILE stays YES, so Xcode
+  merges the generated keys into this file at build time and nothing here needs
+  to duplicate them. The file exists because US-308 must declare
+  UTExportedTypeDeclarations for .dst — an array of dictionaries with no
+  INFOPLIST_KEY_* build-setting form. Editing this XML is a normal file change,
+  not a project-file change, so it needs no second Xcode session.
 -->
 <plist version="1.0">
 <dict/>

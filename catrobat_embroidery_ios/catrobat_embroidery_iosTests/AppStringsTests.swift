@@ -41,11 +41,25 @@ struct AppStringsTests {
     /// The hoop-size string is parameterised, and its fallback is the failure mode
     /// worth pinning: when a catalog entry goes missing, `xcstringstool` generates
     /// `defaultValue: "\(arg1)\(arg2)"` — the *literal parts vanish* and only the
-    /// substituted values remain. So asserting "≠ key" would not catch it here;
-    /// asserting the rendered string still contains its literal separator does.
+    /// substituted values remain. Asserting "≠ key" cannot catch that, because
+    /// there is no key left in the output to compare against.
+    ///
+    /// The third expectation is the one that earns its place: an earlier version
+    /// asserted only that the arguments survived and that the result was not the
+    /// two of them concatenated, which **still passed** if the entry were reduced
+    /// to `"%1$@ × %2$@"` — dropping the word "Hoop" and leaving the label
+    /// meaningless. Comparing against the arguments joined by the separator alone
+    /// is what pins that the entry has literal text of its own. (Cross-vendor
+    /// review found the gap; the comment above had overclaimed.)
     @Test func theHoopSizeStringKeepsItsLiteralPartsAroundTheArguments() {
-        let rendered = String(localized: .stageHoopSize("100 mm", "100 mm"))
-        #expect(rendered.contains("100 mm"))
-        #expect(rendered != "100 mm100 mm", "the catalog entry's literal parts were dropped")
+        let side = "100 mm"
+        let rendered = String(localized: .stageHoopSize(side, side))
+
+        #expect(rendered.contains(side))
+        #expect(rendered != side + side, "the catalog entry collapsed to its arguments")
+        #expect(
+            rendered != "\(side) × \(side)",
+            "the catalog entry kept its separator but lost its literal text"
+        )
     }
 }

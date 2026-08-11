@@ -42,7 +42,17 @@ custom_rules:
   localized_user_facing_strings:
     name: "Hardcoded user-facing string"
     included: ".*/catrobat_embroidery_ios/catrobat_embroidery_ios/.*\\.swift"
-    regex: "\\b(Text|Label|Button|Toggle|Section|TextField|ContentUnavailableView|navigationTitle|navigationBarTitle|accessibilityLabel|accessibilityHint|accessibilityValue|confirmationDialog|alert)\\(\\s*\""
+    # The name list and the `\s*` before `(` are both from measurement, not
+    # imagination: the in-loop review ran a probe file and found `NavigationLink`,
+    # `Picker`, `Stepper`, `Menu`, `Link`, `.searchable(prompt:)`, `.help()` and
+    # `Text ("…")` (space before the paren) all slipping through. `NavigationLink`
+    # is the one US-304 reaches for on its first day.
+    # Two branches, because user-facing literals arrive in two shapes: as the
+    # first positional argument of a view or modifier, and as a labelled argument
+    # such as `searchable(prompt:)`. The first branch needs a paren after the
+    # name; the second must not require one, which is why `prompt:` failed to
+    # fire when it was folded into the first.
+    regex: "(\\b(Text|Label|Button|Toggle|Section|TextField|SecureField|ContentUnavailableView|NavigationLink|Picker|Stepper|Slider|Menu|Link|navigationTitle|navigationBarTitle|accessibilityLabel|accessibilityHint|accessibilityValue|confirmationDialog|alert|help)\\s*\\(\\s*\")|(\\b(prompt|titleKey|titleResource|message|label):\\s*\")"
     excluded_match_kinds:
       - comment
       - doccomment
@@ -51,6 +61,27 @@ custom_rules:
       LocalizedStringResource symbol, never a literal (Catrobat ships ~75
       languages). Text(verbatim:) is the escape hatch for genuinely
       non-localizable content such as a number already formatted for the locale.
+    severity: error
+
+  # The rule above only catches a literal *immediately* after the paren, so
+  # `Text(String(localized: "…"))` and `Text(LocalizedStringKey("…"))` slipped
+  # through it — found by the cross-vendor review, not by us. Those two are worse
+  # than a bare literal, not better: they look like localization APIs while the
+  # literal itself becomes the displayed fallback when no catalog entry exists.
+  # Matching the constructors directly also catches them across line breaks,
+  # which the call-site regex cannot do.
+  localized_string_literal_constructors:
+    name: "Localization API wrapping a literal"
+    included: ".*/catrobat_embroidery_ios/catrobat_embroidery_ios/.*\\.swift"
+    regex: "\\b(String\\(localized:|LocalizedStringKey\\(|LocalizedStringResource\\()\\s*\""
+    excluded_match_kinds:
+      - comment
+      - doccomment
+    message: >-
+      A string literal inside String(localized:) / LocalizedStringKey() /
+      LocalizedStringResource() is not localization — it is the fallback that
+      ships when the catalog entry is missing. Add the entry to
+      Localizable.xcstrings and use the generated symbol instead.
     severity: error
 
 excluded:

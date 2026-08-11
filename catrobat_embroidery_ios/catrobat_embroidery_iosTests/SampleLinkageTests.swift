@@ -2,6 +2,7 @@
 import EmbroideryEngine
 import Foundation
 import Interpreter
+import ProgramModel
 import Samples
 import Testing
 
@@ -45,10 +46,6 @@ struct SampleLinkageTests {
         #expect(summary != sample.descriptionKey)
     }
 
-    /// The link proof: a real program, through the app's own clock, produces a
-    /// tick. Nothing here is a stub — `SampleLibrary` builds the brick graph,
-    /// `Interpreter` compiles and runs it, and the events it emits carry
-    /// `EmbroideryEngine` types.
     /// How many ticks to allow before the run must have said *something*.
     ///
     /// 60 = one second of logical time at `AppRunClock.preview`. Generous on
@@ -56,18 +53,42 @@ struct SampleLinkageTests {
     /// expectation about pacing, which belongs to US-306.
     static let tickBudget = 60
 
+    /// The link proof: a real program, through the app's own clock, produces a
+    /// tick. Nothing here is a stub — `SampleLibrary` builds the brick graph,
+    /// `Interpreter` compiles and runs it, and the events it emits carry
+    /// `EmbroideryEngine` types.
+    ///
+    /// Note how the linkage actually resolves: the test target declares **no**
+    /// `packageProductDependencies` of its own. These imports work because the
+    /// host app links the products and the test bundle resolves through
+    /// `TEST_HOST` + `BUILT_PRODUCTS_DIR`. That is deliberate — adding the
+    /// products to the test target would make this file compile even if the app
+    /// stopped using them, i.e. it would stop proving the thing it is named for.
+    /// The cost is diagnostic: if a later story drops a product from *app* code,
+    /// this file fails at link time with a message that does not mention why.
     @Test(arguments: SampleLibrary.all)
     func anInterpreterConstructsAndStepsFromASample(_ sample: SampleProgram) {
         var interpreter = Interpreter(program: sample.program, clock: AppRunClock.preview)
         #expect(!interpreter.isFinished)
 
-        // Two engine facts this loop respects rather than asserts against, both
-        // learned by watching this test fail: the **first tick emits nothing**
-        // (the runtime starts its scripts before any brick runs), and the first
-        // non-empty batch carries only `.colorArmed`, because both samples open
-        // with `setThreadColor`. So events are accumulated over a budget instead
-        // of read off a particular tick — the engine was right both times, and
-        // pinning either detail here would duplicate US-306's pacing contract.
+        // Events are accumulated over a budget rather than read off a particular
+        // tick, because **the two samples do not agree on what the early ticks
+        // look like** (measured, in-loop review 2026-08-11):
+        //
+        //   squareCoil      tick 0 emits 1 event (`.colorArmed`)
+        //   octagonRosette  tick 0 is empty; first batch is tick 3, 52 events
+        //                   led by `.needleMoved`
+        //
+        // Two earlier versions of this test asserted on tick 1 and then on the
+        // first non-empty batch, and an earlier version of *this comment* stated
+        // both behaviours as general engine facts. Each is true of one sample and
+        // false of the other. The budget is what makes the test independent of a
+        // detail that belongs to US-306's pacing contract, not to this smoke test.
+        //
+        // Margin, per ADR-019's spirit: the first geometry event lands at tick 3
+        // of 60, and a full run is 137/139 ticks. The budget is one second of
+        // *logical* time, so a future sample opening with `wait(1)` would need
+        // 61+ ticks and fail here with a message that reads like a link failure.
         var events: [InterpreterEvent] = []
         for _ in 0 ..< Self.tickBudget {
             guard case let .ticked(tickEvents) = interpreter.step() else { break }
@@ -78,22 +99,65 @@ struct SampleLinkageTests {
         // Reading a payload is what makes this a *link* proof rather than a
         // construction proof: `StagePoint` and `NeedleUpdate` are
         // `EmbroideryEngine` types, so an unlinked engine cannot reach here.
-        let carriesEngineGeometry = events.contains { event in
+        // Distinct positions, not merely *a* position. Asserting that some event
+        // carries finite geometry would still pass if a regression emitted the
+        // same `.needleMoved` forever — i.e. while the program was stuck. Two
+        // different positions is the weakest claim that means "it progressed",
+        // and it is what makes this a smoke test rather than a liveness check
+        // dressed up as one. (Cross-vendor review found the earlier version.)
+        var positions: Set<[Double]> = []
+        for event in events {
             switch event {
-            case let .needleMoved(_, update): update.position.x.isFinite
-            case let .stitch(_, position, _, _): position.x.isFinite
-            default: false
+            case let .needleMoved(_, update): positions.insert([update.position.x, update.position.y])
+            case let .stitch(_, position, _, _): positions.insert([position.x, position.y])
+            default: break
             }
         }
-        #expect(carriesEngineGeometry, "no needle or stitch event in \(Self.tickBudget) ticks")
+        #expect(
+            positions.count >= 2,
+            "expected two distinct needle positions in \(Self.tickBudget) ticks, saw \(positions.count)"
+        )
     }
 
     /// ADR-018 requires only `tickDelta > 0`; the *app* pins one tick per frame,
-    /// so a `wait(1)` brick occupies 60 ticks and reads as one second on screen.
-    /// Recording it as an asserted constant rather than a comment is what the
-    /// acceptance criterion asks for, and it is the value US-306's driver inherits.
-    @Test func theAppClockAdvancesOneFramePerTick() {
-        #expect(AppRunClock.preview == InterpreterClock(tickDelta: 1.0 / 60.0))
-        #expect(AppRunClock.preview.tickDelta > 0)
+    /// which is the coupling the acceptance criterion asks to have recorded, and
+    /// the value US-306's driver inherits.
+    ///
+    /// Asserts the clock's *effect*, not its definition.
+    ///
+    /// The earlier version compared `AppRunClock.preview` against
+    /// `InterpreterClock(tickDelta: 1.0 / 60.0)` — restating the constant one
+    /// file away, which cannot fail for any reason worth knowing about, and
+    /// testing nothing about advancement despite the name. A `wait(1)` brick
+    /// under this clock occupies exactly 60 ticks, so `.waited` is emitted on
+    /// tick index 59 and the program is finished by tick 60. *That* is what "one
+    /// tick per frame" means, and it fails if the constant changes.
+    @Test func theAppClockMakesAWaitOfOneSecondTakeSixtyTicks() {
+        let program = Program(scenes: [
+            Scene(objects: [
+                Object(scripts: [Script(bricks: [.wait(seconds: .number(1))])])
+            ])
+        ])
+        var interpreter = Interpreter(program: program, clock: AppRunClock.preview)
+
+        var waitedTicks: [Int] = []
+        for tick in 0 ..< 120 {
+            guard case let .ticked(events) = interpreter.step() else { break }
+            if events.contains(where: {
+                if case .waited = $0 {
+                    true
+                } else {
+                    false
+                }
+            }) {
+                waitedTicks.append(tick)
+            }
+        }
+
+        #expect(
+            waitedTicks.last == 59,
+            "a one-second wait should end on tick 59, ended on \(String(describing: waitedTicks.last))"
+        )
+        #expect(interpreter.isFinished)
     }
 }
