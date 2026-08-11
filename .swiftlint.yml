@@ -55,7 +55,7 @@ custom_rules:
     # `label:` is deliberately NOT in the labelled-argument branch: it is generic
     # enough that a non-UI `Metadata(label: "run")` would be flagged. `prompt:`
     # and the title labels are UI-specific.
-    regex: "(\\b(Text|Label|Button|Toggle|Section|TextField|SecureField|ContentUnavailableView|NavigationLink|Picker|Stepper|Slider|Menu|Link|navigationTitle|navigationBarTitle|accessibilityLabel|accessibilityHint|accessibilityValue|confirmationDialog|alert|help)\\s*\\(\\s*\")|(\\b(prompt|titleKey|titleResource):\\s*\")"
+    regex: "(\\b(Text|Label|Button|Toggle|Section|TextField|SecureField|ContentUnavailableView|NavigationLink|Picker|Stepper|Slider|Menu|Link|navigationTitle|navigationBarTitle|accessibilityLabel|accessibilityHint|accessibilityValue|confirmationDialog|alert|help)\\s*\\(\\s*#*\")|(\\b(prompt|titleKey|titleResource):\\s*#*\")"
     excluded_match_kinds:
       - comment
       - doccomment
@@ -81,7 +81,7 @@ custom_rules:
     # that slipped the first version: `LocalizedStringKey ("…")`,
     # `String (localized: "…")`, and the label on its own line. `\s` matches
     # newlines in SwiftLint's regex engine, so the multi-line form is covered.
-    regex: "\\b(String\\s*\\(\\s*localized:\\s*\"|LocalizedStringKey\\s*\\(\\s*\"|LocalizedStringResource\\s*\\(\\s*\")"
+    regex: "\\b(String\\s*\\(\\s*localized:\\s*#*\"|LocalizedStringKey\\s*\\(\\s*#*\"|LocalizedStringResource\\s*\\(\\s*#*\")"
     excluded_match_kinds:
       - comment
       - doccomment
