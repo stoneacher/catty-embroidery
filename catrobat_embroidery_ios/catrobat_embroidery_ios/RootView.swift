@@ -21,6 +21,7 @@ struct RootView: View {
             NavigationStack {
                 sampleList
                     .navigationTitle(Text(.rootTitle))
+                    .navigationBarTitleDisplayMode(.inline)
                     .navigationDestination(for: StageDestination.self) { _ in
                         StagePlaceholderView()
                     }
@@ -29,6 +30,7 @@ struct RootView: View {
             NavigationSplitView {
                 sampleList
                     .navigationTitle(Text(.rootTitle))
+                    .navigationBarTitleDisplayMode(.inline)
             } detail: {
                 StagePlaceholderView()
             }

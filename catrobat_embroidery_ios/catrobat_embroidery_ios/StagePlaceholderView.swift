@@ -46,11 +46,17 @@ struct StagePlaceholderView: View {
             .accessibilityLabel(Text(Self.hoopSizeDescription))
     }
 
-    /// "Hoop 100 mm × 100 mm", with both lengths formatted for the reader's
-    /// locale — so a US reader sees inches without this view knowing that.
+    /// "Hoop 100 mm × 100 mm".
+    ///
+    /// `usage: .asProvided` is deliberate. The default lets the formatter pick
+    /// the locale's preferred unit, which rendered this as "10 cm × 10 cm" —
+    /// arithmetically right and wrong for the domain: ADR-007 defines the stage
+    /// in millimetres, DST is a millimetre-based format, and hoops are specified
+    /// in millimetres by every machine vendor. The number and the unit
+    /// abbreviation are still localized; only the *choice* of unit is pinned.
     static var hoopSizeDescription: String {
         let side = Measurement(value: StageGeometry.sideInMillimetres, unit: UnitLength.millimeters)
-            .formatted(.measurement(width: .abbreviated))
+            .formatted(.measurement(width: .abbreviated, usage: .asProvided))
         return String(localized: LocalizedStringResource.stageHoopSize(side, side))
     }
 }

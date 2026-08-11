@@ -43,9 +43,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CMD=$(jq -r '.tool_input.command // empty'); case \"$CMD\" in *'git commit'*) case \"$CMD\" in *'[red]'*) exit 0 ;; esac; ENG=\"$CLAUDE_PROJECT_DIR/Packages/EmbroideryEngine\"; if [ -d \"$ENG\" ]; then OUT=$(cd \"$ENG\" && swift test 2>&1) || { echo 'Engine tests are red — commit blocked. Never commit failing engine tests (fix or finish the green phase first). A deliberate TDD red-phase commit is allowed with a [red] marker in the commit message.' >&2; echo \"$OUT\" | tail -30 >&2; exit 2; }; fi ;; esac",
+            "command": "CMD=$(jq -r '.tool_input.command // empty'); case \"$CMD\" in *'git commit'*) case \"$CMD\" in *'[red]'*) exit 0 ;; esac; ENG=\"$CLAUDE_PROJECT_DIR/Packages/EmbroideryEngine\"; if [ -d \"$ENG\" ]; then OUT=$(cd \"$ENG\" && swift test 2>&1) || { echo 'Engine tests are red — commit blocked. Never commit failing engine tests (fix or finish the green phase first). A deliberate TDD red-phase commit is allowed with a [red] marker in the commit message.' >&2; echo \"$OUT\" | tail -30 >&2; exit 2; }; fi; PROJ=\"$CLAUDE_PROJECT_DIR/catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj\"; APP=0; git -C \"$CLAUDE_PROJECT_DIR\" diff --cached --name-only | grep -q '^catrobat_embroidery_ios/' && APP=1; if [ \"$APP\" -eq 0 ] && printf '%s' \"$CMD\" | grep -qE ' (-a|--all)([[:space:]]|$)'; then git -C \"$CLAUDE_PROJECT_DIR\" diff --name-only | grep -q '^catrobat_embroidery_ios/' && APP=1; fi; if [ -d \"$PROJ\" ] && [ \"$APP\" -eq 1 ]; then OUT=$(xcodebuild build-for-testing -project \"$PROJ\" -scheme catrobat_embroidery_ios -destination 'generic/platform=iOS' -derivedDataPath \"$HOME/Library/Caches/catty-embroidery-precommit\" CODE_SIGNING_ALLOWED=NO -quiet 2>&1) || { echo 'App target does not compile — commit blocked. Signing-free generic-device build, no simulator boot; it compiles the app and test targets only, so a test that compiles but fails is still CI'\"'\"'s to catch. A deliberate TDD red-phase commit is allowed with a [red] marker.' >&2; printf '%s\\n' \"$OUT\" | grep -E 'error:' | head -20 >&2; exit 2; }; fi ;; esac",
             "timeout": 300,
-            "statusMessage": "engine test gate (git commit)"
+            "statusMessage": "engine test + app compile gate (git commit)"
           }
         ]
       }

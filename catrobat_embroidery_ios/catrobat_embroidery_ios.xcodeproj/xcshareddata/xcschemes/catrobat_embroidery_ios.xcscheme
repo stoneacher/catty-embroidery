@@ -41,17 +41,6 @@
                ReferencedContainer = "container:catrobat_embroidery_ios.xcodeproj">
             </BuildableReference>
          </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "109256C52FFD4EC6006DD2AA"
-               BuildableName = "catrobat_embroidery_iosUITests.xctest"
-               BlueprintName = "catrobat_embroidery_iosUITests"
-               ReferencedContainer = "container:catrobat_embroidery_ios.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

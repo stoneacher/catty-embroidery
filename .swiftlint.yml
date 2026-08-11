@@ -28,6 +28,31 @@ identifier_name:
     - to # Brick.setVariable(name:to:) — reads "set variable … to …" (Catroid parity)
     - id # Identifiable's required property name — spelled by the protocol, not chosen
 
+custom_rules:
+  # US-303's "no hardcoded user-facing strings" check.
+  #
+  # A lint rule rather than a test, and the reason is structural: app tests run
+  # sandboxed in the simulator and cannot read repo sources, so no Swift test can
+  # see a literal in a view file. The story allows "a grep-level check"; this is
+  # that check, running in the existing CI lint job and locally with no new script.
+  #
+  # It is a backstop, not the mechanism. The real guarantee is that every string
+  # goes through a generated `LocalizedStringResource` symbol, where a typo is a
+  # compile error — this only catches someone reintroducing a literal.
+  localized_user_facing_strings:
+    name: "Hardcoded user-facing string"
+    included: ".*/catrobat_embroidery_ios/catrobat_embroidery_ios/.*\\.swift"
+    regex: "\\b(Text|Label|Button|Toggle|Section|TextField|ContentUnavailableView|navigationTitle|navigationBarTitle|accessibilityLabel|accessibilityHint|accessibilityValue|confirmationDialog|alert)\\(\\s*\""
+    excluded_match_kinds:
+      - comment
+      - doccomment
+    message: >-
+      User-facing text goes through Localizable.xcstrings as a generated
+      LocalizedStringResource symbol, never a literal (Catrobat ships ~75
+      languages). Text(verbatim:) is the escape hatch for genuinely
+      non-localizable content such as a number already formatted for the locale.
+    severity: error
+
 excluded:
   - "**/.build"
   - "**/DerivedData"
