@@ -1,6 +1,6 @@
 # Milestone 3 — Walking skeleton app
 
-**Status**: In progress — planned 2026-08-04. Ten stories (US-301…US-309 plus US-211, carried in from the backlog), ~40 h. **US-301 done 2026-08-09** (implemented 2026-08-07, Ink/Stitch verified 2026-08-09). **US-302 implementation complete 2026-08-09**; eight Codex rounds (21 findings, all valid, final round clean), story not yet closed out — PR #32. The package now has five library products and 489 engine tests. US-303 is next once US-302 closes — and it needs the human Xcode hand-off below first.
+**Status**: In progress — planned 2026-08-04. Ten stories (US-301…US-309 plus US-211, carried in from the backlog), ~40 h. **US-301 done 2026-08-09** (implemented 2026-08-07, Ink/Stitch verified 2026-08-09). **US-302 done 2026-08-11** (implemented and reviewed 2026-08-09, merged as PR #32; eight Codex rounds — 21 findings, all valid, final round clean — then an in-loop `swift-code-reviewer` pass that found two disjoint allocation defects). The package now has five library products and 489 engine tests. **US-303 is next and is blocked on the human Xcode hand-off below**, all nine items of which were still open on 2026-08-11.
 
 Goal: a minimal SwiftUI app wired end to end — pick a bundled sample program → run it with a live stage preview (needle + stitches) → export the DST through the share sheet. Proves the full thread through every layer. See [ROADMAP.md](../../ROADMAP.md).
 
