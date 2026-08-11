@@ -56,3 +56,9 @@ custom_rules:
 excluded:
   - "**/.build"
   - "**/DerivedData"
+  # Agent worktrees (`isolation: "worktree"`) are checkouts *inside* the repo, so
+  # SwiftLint walks them and reports violations against a copy — including
+  # deleted files that still exist on the agent's branch. Found the first time a
+  # reviewer agent ran while the new custom rule was active: it flagged
+  # `ContentView.swift`, a file this story deletes.
+  - ".claude/worktrees"

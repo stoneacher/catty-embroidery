@@ -33,8 +33,8 @@ rather than argued:
 Also unstated by the story: the template test file needed no XCTest migration
 — it was already Swift Testing. It was deleted as a placeholder, not ported.
 
-**One acceptance criterion is not met, and it is a finding rather than an
-omission: `main` has no branch protection at all.** This story asks for the new
+**An acceptance criterion turned into a finding, and the finding was then
+closed the same day: `main` had no branch protection at all.** This story asks for the new
 job to be "added to the required checks". There are none to add it to — the
 repository has a ruleset named *Protect main* whose `enforcement` is
 **`disabled`** and whose rule list is **empty**. So CLAUDE.md's standing claim
@@ -42,10 +42,15 @@ that "branch protection keeps red out of `main`" is **not true today**, and has
 not been for the whole project: the `[red]` marker skips the local gate by
 design, and nothing downstream stops such a commit reaching `main` through a
 merge. The engine's byte-level goldens have been protected by the local hook
-and by review, not by the repository. Enabling the ruleset and registering
-**Engine tests (swift test)**, **SwiftLint** and **App build & test
-(xcodebuild)** is a repository-settings change on Sebastian's account, so it is
-deliberately left to him rather than done silently from a story branch.
+and by review, not by the repository. **Closed 2026-08-11 on Sebastian's instruction**: the ruleset is now
+`active` with **Engine tests (swift test)**, **SwiftLint** and **App build &
+test (xcodebuild)** as required status checks, plus `non_fast_forward` and the
+existing deletion/creation/pull-request rules. Zero approvals are required, so
+solo merging is unaffected; there are **no bypass actors**, so direct pushes to
+`main` are now blocked for everyone including the owner. It was asked rather
+than assumed, because a repository-settings change is not a story branch's to
+make silently. The criterion is met as of that change, and CLAUDE.md's claim is
+true for the first time.
 
 No manual Ink/Stitch verification is needed — this story changes no DST bytes.
 
@@ -61,7 +66,7 @@ Its position after US-301/US-302 is forced, not narrative: the human Xcode sessi
 - [x] `RootView` is size-class adaptive per ADR-010: compact → sequential (`NavigationStack`); regular → side-by-side (`NavigationSplitView`) with the stage on the detail side. Skeleton fidelity, no editor.
 - [x] `Localizable.xcstrings` exists and **every** user-facing string in this story goes through it with a translator comment. Layout uses leading/trailing throughout (Catrobat ships ~75 languages including RTL).
 - [x] The app imports and *uses* `Samples` and `StagePreview` in real code — not a dead import — so the link is genuinely exercised.
-- [x] *(job: done; required-checks registration: **blocked on Sebastian**, see below)* A CI job `app-build-and-test` on `macos-26` with the same pinned `DEVELOPER_DIR` as the engine job, added to the required checks. **Every `xcodebuild` invocation passes `-project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj` explicitly** (or sets an equivalent working directory): the project is nested, GitHub Actions starts at the repository root, and a bare `xcodebuild -scheme …` finds nothing and fails before reaching a test. CLAUDE.md's own documented command already spells the path out — match it. (Codex round 1: the first draft of this story wrote bare commands.)
+- [x] A CI job `app-build-and-test` on `macos-26` with the same pinned `DEVELOPER_DIR` as the engine job, added to the required checks. **Every `xcodebuild` invocation passes `-project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj` explicitly** (or sets an equivalent working directory): the project is nested, GitHub Actions starts at the repository root, and a bare `xcodebuild -scheme …` finds nothing and fails before reaching a test. CLAUDE.md's own documented command already spells the path out — match it. (Codex round 1: the first draft of this story wrote bare commands.)
 - [x] The job depends on the shared scheme existing — `xcshareddata/xcschemes/` is absent today and a fresh CI checkout cannot be relied on to autocreate it.
 - [x] The local PreToolUse commit gate **keeps `swift test` engine-only** and gains a signing-free app *compile* check — `xcodebuild build -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO` with a persistent `-derivedDataPath` outside the repo — conditioned on the staged diff touching `catrobat_embroidery_ios/`. Measured at 9.3 s cold on the pre-link target; **re-measure with five products linked and drop the check if it exceeds ~30 s incremental.** A simulator boot in a pre-commit hook is explicitly rejected: it would cost the small-commit cadence the whole process rests on.
 - [x] SwiftLint (already repo-root, so it starts seeing app sources the moment they appear) passes. Expect a first-time wave from the scaffolded files; clearing it belongs to this story.
