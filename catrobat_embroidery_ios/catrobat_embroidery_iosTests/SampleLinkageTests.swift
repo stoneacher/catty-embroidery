@@ -1,4 +1,5 @@
 @testable import catrobat_embroidery_ios
+import EmbroideryEngine
 import Foundation
 import Interpreter
 import Samples
@@ -48,21 +49,43 @@ struct SampleLinkageTests {
     /// tick. Nothing here is a stub — `SampleLibrary` builds the brick graph,
     /// `Interpreter` compiles and runs it, and the events it emits carry
     /// `EmbroideryEngine` types.
+    /// How many ticks to allow before the run must have said *something*.
+    ///
+    /// 60 = one second of logical time at `AppRunClock.preview`. Generous on
+    /// purpose: the number guards against a silent hang, it does not encode an
+    /// expectation about pacing, which belongs to US-306.
+    static let tickBudget = 60
+
     @Test(arguments: SampleLibrary.all)
-    func anInterpreterConstructsAndStepsFromASample(_ sample: SampleProgram) throws {
+    func anInterpreterConstructsAndStepsFromASample(_ sample: SampleProgram) {
         var interpreter = Interpreter(program: sample.program, clock: AppRunClock.preview)
         #expect(!interpreter.isFinished)
 
-        let outcome = interpreter.step()
-        let events = try #require(
-            if case let .ticked(events) = outcome {
-                events
-            } else {
-                nil
-            },
-            "a freshly constructed interpreter must tick, not report finished"
-        )
-        #expect(!events.isEmpty)
+        // Two engine facts this loop respects rather than asserts against, both
+        // learned by watching this test fail: the **first tick emits nothing**
+        // (the runtime starts its scripts before any brick runs), and the first
+        // non-empty batch carries only `.colorArmed`, because both samples open
+        // with `setThreadColor`. So events are accumulated over a budget instead
+        // of read off a particular tick — the engine was right both times, and
+        // pinning either detail here would duplicate US-306's pacing contract.
+        var events: [InterpreterEvent] = []
+        for _ in 0 ..< Self.tickBudget {
+            guard case let .ticked(tickEvents) = interpreter.step() else { break }
+            events += tickEvents
+        }
+        #expect(!events.isEmpty, "no events in \(Self.tickBudget) ticks")
+
+        // Reading a payload is what makes this a *link* proof rather than a
+        // construction proof: `StagePoint` and `NeedleUpdate` are
+        // `EmbroideryEngine` types, so an unlinked engine cannot reach here.
+        let carriesEngineGeometry = events.contains { event in
+            switch event {
+            case let .needleMoved(_, update): update.position.x.isFinite
+            case let .stitch(_, position, _, _): position.x.isFinite
+            default: false
+            }
+        }
+        #expect(carriesEngineGeometry, "no needle or stitch event in \(Self.tickBudget) ticks")
     }
 
     /// ADR-018 requires only `tickDelta > 0`; the *app* pins one tick per frame,
