@@ -24,7 +24,12 @@ rather than argued:
 3. **The pre-commit hook command as written omits `-scheme`** and would be
    ambiguous. It also became `build-for-testing` rather than `build`, which
    costs 0.9 s and additionally compiles the test target — where red-phase
-   code actually lives.
+   code actually lives. **And its "conditioned on the staged diff" clause did
+   not survive review**: six rounds established that no regex over a command
+   string can decide which paths a commit will include, so the gate now runs
+   whenever the *working tree* holds any change under `catrobat_embroidery_ios/`.
+   The cost — an engine-only commit is blocked while the app is broken on disk —
+   is accepted and pinned in ADR-023.
 4. **The 9.3 s hook measurement was stale**, taken before the five products
    were linked. Re-measured with them linked: **5 s cold, 2 s incremental** —
    pessimistic, not optimistic, so the ~30 s "drop the check" threshold is not
@@ -68,7 +73,7 @@ Its position after US-301/US-302 is forced, not narrative: the human Xcode sessi
 - [x] The app imports and *uses* `Samples` and `StagePreview` in real code — not a dead import — so the link is genuinely exercised.
 - [x] A CI job `app-build-and-test` on `macos-26` with the same pinned `DEVELOPER_DIR` as the engine job, added to the required checks. **Every `xcodebuild` invocation passes `-project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj` explicitly** (or sets an equivalent working directory): the project is nested, GitHub Actions starts at the repository root, and a bare `xcodebuild -scheme …` finds nothing and fails before reaching a test. CLAUDE.md's own documented command already spells the path out — match it. (Codex round 1: the first draft of this story wrote bare commands.)
 - [x] The job depends on the shared scheme existing — `xcshareddata/xcschemes/` is absent today and a fresh CI checkout cannot be relied on to autocreate it.
-- [x] The local PreToolUse commit gate **keeps `swift test` engine-only** and gains a signing-free app *compile* check — `xcodebuild build -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO` with a persistent `-derivedDataPath` outside the repo — conditioned on the staged diff touching `catrobat_embroidery_ios/`. Measured at 9.3 s cold on the pre-link target; **re-measure with five products linked and drop the check if it exceeds ~30 s incremental.** A simulator boot in a pre-commit hook is explicitly rejected: it would cost the small-commit cadence the whole process rests on.
+- [x] The local PreToolUse commit gate **keeps `swift test` engine-only** and gains a signing-free app *compile* check — `xcodebuild build -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO` with a persistent `-derivedDataPath` outside the repo — conditioned on the staged diff touching `catrobat_embroidery_ios/`. Measured at 9.3 s cold on the pre-link target; **re-measure with five products linked and drop the check if it exceeds ~30 s incremental.** A simulator boot in a pre-commit hook is explicitly rejected: it would cost the small-commit cadence the whole process rests on. *(Spec as written 2026-08-04. The `-scheme`, `build-for-testing` and staged-diff clauses were all corrected during implementation — see correction 3 in the status block above. Left unedited because the story text is the record of what was specified, not of what shipped.)*
 - [x] SwiftLint (already repo-root, so it starts seeing app sources the moment they appear) passes. Expect a first-time wave from the scaffolded files; clearing it belongs to this story.
 - [x] The tick/clock coupling is recorded: the app's clock is `InterpreterClock(tickDelta: 1.0/60.0)`, so at one tick per frame a `wait` brick tracks wall time (ADR-018 requires only `tickDelta > 0`).
 - [x] **Story-specific definition of done**: `RootView`'s split behaviour screenshotted at both size classes; navigation titles and the sample-list header localised; Dynamic Type to AX1 reflows the skeleton without truncation.
