@@ -2,9 +2,10 @@
 
 **Epic**: E4 Stage & preview | **Estimate**: ~5 h | **Depends on**: US-301
 
-**Status**: Implementation complete, review complete, **not closed out** —
-2026-08-09. All ten test-plan items landed and all ten acceptance criteria are
-met; **489 engine tests green** (from 403), CI green, SwiftLint clean.
+**Status**: Done — 2026-08-11. Implemented and reviewed 2026-08-09, merged as
+PR #32 (`8f0417a`), closed out 2026-08-11. All ten test-plan items landed and
+all ten acceptance criteria are met; **489 engine tests green** (from 403), CI
+green, SwiftLint clean.
 
 **Eight Codex rounds ran**: **21 findings, all valid, none rejected**. Severity
 by round: Medium → High → High → High → High/Medium → High → Medium → **none**.
@@ -19,10 +20,15 @@ test, turning a bug into a specification. Round 7 found a gap in round 6's fix.
 Under the retired 5-round cap this branch would have been handed over with that
 High-severity defect still latent and no clean round in its history.
 
-Closing this story out is Sebastian's.
-No manual Ink/Stitch verification is needed — the milestone requires it only at
-US-301 and US-308, and this story changes no DST bytes (every golden staying
+No manual Ink/Stitch verification was needed — the milestone requires it only
+at US-301 and US-308, and this story changes no DST bytes (every golden staying
 green untouched is the evidence, not the claim).
+
+**Close-out (2026-08-11)**: ADR-021 and ADR-022 were pinned at planning time
+and this story implemented them, so both gained a "confirmed in
+implementation" note rather than a new ADR. **ADR-023 is US-303's** — a
+planning agent once wrongly claimed it for this story, and the number stays
+where the milestone README assigns it.
 
 **Story**: As the app layer, I want stitches to arrive already carrying their colour and to accumulate in an append-only display list with unit-tested zoom/pan math, so the preview never re-implements engine semantics and never re-assembles the stream per frame.
 
