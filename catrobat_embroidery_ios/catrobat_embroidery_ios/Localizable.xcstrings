@@ -1,6 +1,18 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "root.sample.accessibility.label" : {
+      "comment" : "Spoken by VoiceOver for one row of the list of example designs. %1$@ is the design's name, %2$@ is a one-line description of what it looks like; both arrive already translated. The separator is what makes VoiceOver pause between them — use the sentence-ending punctuation and spacing your language reads naturally (which is not a full stop everywhere). Arguments are positional and may be reordered.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@. %2$@"
+          }
+        }
+      }
+    },
     "root.samples.header" : {
       "comment" : "Header of the list of ready-made embroidery designs bundled with the app, shown on the main screen. \"Designs\" here means embroidery patterns, not graphic design.",
       "extractionState" : "manual",

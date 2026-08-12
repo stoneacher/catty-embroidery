@@ -1,31 +1,32 @@
-import Samples
 import SwiftUI
 
 /// The app's root, adaptive by size class from the start (ADR-010).
 ///
 /// Compact reaches the stage sequentially through a `NavigationStack`; regular
-/// shows the list and the stage side by side with the stage on the **detail**
+/// shows the picker and the stage side by side with the stage on the **detail**
 /// side. Deciding this now rather than "adding iPad support later" is the ADR's
 /// whole point — retrofitting a split layout onto a stack-shaped app means
 /// rewriting the navigation model, not adding a branch.
 ///
-/// **Skeleton fidelity only.** There is no selection, no editor and no run
-/// control here: US-304 owns picking a sample, US-305 the renderer, US-306 the
-/// run lifecycle. What this story owns is that the shell exists, adapts, is
-/// localized, and genuinely links the engine.
+/// **The size-class swap no longer discards the selection.** US-303 shipped this
+/// view with an `if` that swaps one container for the other, tearing down
+/// whichever it leaves, and recorded the cost as acceptable only while there was
+/// nothing to select — with the fix assigned to this story (ADR-023). It is
+/// done: the selection and the compact path live in `AppModel`, owned by the
+/// `App` above this view, so both containers read the same state instead of each
+/// owning their own. `AppModel`'s doc comment lists what still does not survive
+/// the swap (scroll positions, split-view column visibility, in-flight
+/// transitions) rather than leaving the claim broader than it is.
 ///
-/// **Known cost: a size-class change discards navigation state.** The `if`
-/// swaps one container for the other, so an iPad window resized from regular to
-/// compact (Split View, Slide Over, or a rotation on a smaller iPad) tears down
-/// the `NavigationSplitView` and builds a fresh, empty `NavigationStack` — the
-/// user lands back on the list. Accepted at skeleton fidelity, where the only
-/// destination is a placeholder and nothing is lost but a position. It stops
-/// being acceptable the moment there is a *selection* to lose, which is US-304,
-/// and the fix belongs there rather than here: hoist the selection and the path
-/// into an `@Observable` view model owned above this view, so both containers
-/// read the same state instead of each owning their own. Pinned in ADR-023 so
-/// the swap is not mistaken for a finished adaptive layout.
+/// What no unit test can prove is that the model is owned *above* the swap —
+/// that is proved by construction and by resizing an iPad window across the
+/// boundary in the simulator, which is why that check is in this story's
+/// definition of done.
 struct RootView: View {
+    /// `@Bindable` for `$model.path` alone; everything else reads through the
+    /// plain reference, which `@Observable` tracks just as well.
+    @Bindable var model: AppModel
+
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
@@ -36,62 +37,20 @@ struct RootView: View {
         // unknown environment the split. (In-loop review.)
         if horizontalSizeClass == .regular {
             NavigationSplitView {
-                sampleList
-                    .navigationTitle(Text(.rootTitle))
-                    .navigationBarTitleDisplayMode(.inline)
+                SamplePickerView(model: model)
             } detail: {
-                StagePlaceholderView()
+                // The detail column ignores `path` entirely: it shows the
+                // selection, or the empty state before there is one. Two
+                // representations of "which sample" would be two things able to
+                // disagree after a Back.
+                StagePlaceholderView(sample: model.selection?.sample)
             }
         } else {
-            NavigationStack {
-                sampleList
-                    .navigationTitle(Text(.rootTitle))
-                    .navigationBarTitleDisplayMode(.inline)
+            NavigationStack(path: $model.path) {
+                SamplePickerView(model: model)
                     .navigationDestination(for: StageDestination.self) { _ in
-                        StagePlaceholderView()
+                        StagePlaceholderView(sample: model.selection?.sample)
                     }
-            }
-        }
-    }
-
-    /// The bundled samples, in `SampleLibrary.all`'s presentation order.
-    ///
-    /// A private computed property rather than its own type: US-304 replaces
-    /// this body with `SamplePickerView` and adds the selection model, so giving
-    /// it a name now would create a type that exists only to be deleted.
-    ///
-    /// Rows carry no `NavigationLink` — a row that navigates *is* selection, and
-    /// selection is US-304's. Compact reaches the stage through the separate
-    /// link below, which keeps "sequential navigation works" provable today
-    /// without inventing a selection model this story would have to unpick.
-    private var sampleList: some View {
-        List {
-            Section {
-                ForEach(SampleLibrary.all) { sample in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(sample.displayName)
-                            .font(.headline)
-                        Text(sample.summary)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
-                }
-            } header: {
-                Text(.rootSamplesHeader)
-            }
-
-            // `!= .regular`, matching `body`'s test exactly rather than its
-            // negation. Written as `== .compact` these two disagree when the size
-            // class is `nil`: `body` renders the stack (correct) while this row
-            // disappears, leaving the stage unreachable. The two conditions are
-            // one decision and must be spelled the same way.
-            if horizontalSizeClass != .regular {
-                Section {
-                    NavigationLink(value: StageDestination.stage) {
-                        Text(.stageTitle)
-                    }
-                }
             }
         }
     }
@@ -100,9 +59,15 @@ struct RootView: View {
 /// The single navigation destination the skeleton has.
 ///
 /// A named type rather than a `Bool` or the sample itself, because
-/// `navigationDestination(for:)` keys on the type: when US-304 pushes a chosen
-/// sample and US-306 adds a run, each gets its own case here rather than
-/// overloading one flag.
+/// `navigationDestination(for:)` keys on the type: when US-306 adds a run, it
+/// gets its own case here rather than overloading one flag.
+///
+/// **It stays valueless, correcting what US-303's comment anticipated.** That
+/// comment expected US-304 to push the chosen sample into the path. Doing so
+/// would make the path a second source of truth for "which sample", able to
+/// disagree with `AppModel.selection` after a Back, and the generation token
+/// that makes re-selection meaningful could not live coherently in two places.
+/// The destination closure reads the selection instead. One owner.
 enum StageDestination: Hashable {
     case stage
 }
@@ -120,5 +85,5 @@ enum StageDestination: Hashable {
 // next author trusts it. Both size classes are covered by the simulator
 // screenshots the UI definition of done requires.
 #Preview {
-    RootView()
+    RootView(model: AppModel())
 }

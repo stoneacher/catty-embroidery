@@ -1,8 +1,9 @@
+import Samples
 import StagePreview
 import SwiftUI
 
-/// The stage's skeleton: an empty state and the hoop outline, at the size
-/// ADR-007 defines.
+/// The stage's skeleton: the hoop outline at the size ADR-007 defines, naming
+/// the chosen design or saying that there is none.
 ///
 /// Named `StagePlaceholderView` rather than `StageView` on purpose — US-305
 /// introduces the real renderer under the latter name, and a placeholder that
@@ -11,7 +12,21 @@ import SwiftUI
 /// This is also the app's only honest use of `StagePreview` before US-305
 /// exists: it reads `StageGeometry` for the hoop's physical size and aspect
 /// ratio. There is no display list, no transform and no run state here.
+///
+/// **The rule, because US-305 is one story away: this view *names* the
+/// selection, it does not draw it.** US-304 gave it the `sample` parameter for
+/// one reason — without it the app told a user who had just picked a design
+/// that no design was selected, and the regular-width screenshot that is
+/// supposed to evidence "selecting fills the detail column" would have been
+/// pixel-identical before and after the tap. Naming the design costs no new
+/// catalog entries: the strings already ship in the `Samples` bundle.
 struct StagePlaceholderView: View {
+    /// The chosen design, or `nil` before anything is picked.
+    ///
+    /// No default value on purpose: a defaulted `nil` would let a call site
+    /// silently keep the empty state.
+    let sample: SampleProgram?
+
     var body: some View {
         // A `ScrollView`, even though nothing here is long enough to scroll at
         // ordinary type sizes. The detail pane does not scroll on its own, so at
@@ -24,17 +39,49 @@ struct StagePlaceholderView: View {
         ScrollView {
             VStack(spacing: 24) {
                 hoopOutline
-                ContentUnavailableView(
-                    String(localized: .stageEmptyTitle),
-                    systemImage: "circle.dashed",
-                    description: Text(.stageEmptyDescription)
-                )
+
+                if let sample {
+                    chosenDesign(sample)
+                } else {
+                    // Survives, and this is the case it was written for: on
+                    // regular the detail column exists before anything has been
+                    // picked. On compact it is unreachable, because the stage is
+                    // only ever pushed by a selection.
+                    ContentUnavailableView(
+                        String(localized: .stageEmptyTitle),
+                        systemImage: "circle.dashed",
+                        description: Text(.stageEmptyDescription)
+                    )
+                }
             }
             .padding()
             .frame(maxWidth: .infinity)
         }
-        .navigationTitle(Text(.stageTitle))
+        // The design's own name once there is one: the title is where a user
+        // looks to confirm which design they opened, and on regular it is the
+        // detail column's only header.
+        .navigationTitle(sample.map { Text($0.displayName) } ?? Text(.stageTitle))
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// What US-305 replaces with the renderer: for now, the design's name and
+    /// the one line describing it, both already translated in the `Samples`
+    /// bundle.
+    private func chosenDesign(_ sample: SampleProgram) -> some View {
+        VStack(spacing: 8) {
+            Text(sample.displayName)
+                .font(.title3)
+            Text(sample.summary)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .multilineTextAlignment(.center)
+        // Same guard as the picker's rows: without it a height-constrained
+        // proposal makes `Text` ellipsise instead of wrapping.
+        .fixedSize(horizontal: false, vertical: true)
+        // One element, name then description — the same order and the same
+        // reasoning as the picker row's label.
+        .accessibilityElement(children: .combine)
     }
 
     /// The hoop, drawn from `StageGeometry.box` rather than a literal square.
@@ -93,8 +140,14 @@ struct StagePlaceholderView: View {
     }
 }
 
-#Preview {
+#Preview("Nothing selected") {
     NavigationStack {
-        StagePlaceholderView()
+        StagePlaceholderView(sample: nil)
+    }
+}
+
+#Preview("A design selected") {
+    NavigationStack {
+        StagePlaceholderView(sample: SampleLibrary.all.first)
     }
 }
