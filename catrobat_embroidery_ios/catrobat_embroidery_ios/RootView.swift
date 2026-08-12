@@ -37,7 +37,10 @@ struct RootView: View {
         // unknown environment the split. (In-loop review.)
         if horizontalSizeClass == .regular {
             NavigationSplitView {
-                SamplePickerView(model: model)
+                // The sidebar shows the selection, because the detail column
+                // beside it *is* the selection. The stack does not — see
+                // `SamplePickerView.showsSelection`.
+                SamplePickerView(model: model, showsSelection: true)
             } detail: {
                 // The detail column ignores `path` entirely: it shows the
                 // selection, or the empty state before there is one. Two
@@ -47,8 +50,16 @@ struct RootView: View {
             }
         } else {
             NavigationStack(path: $model.path) {
-                SamplePickerView(model: model)
+                SamplePickerView(model: model, showsSelection: false)
                     .navigationDestination(for: StageDestination.self) { _ in
+                        // Reads the selection when the destination is built, not
+                        // continuously. Sound today — nothing can change the
+                        // selection while the stage covers the picker — but US-306
+                        // is the story that could break it, by clearing or
+                        // replacing the selection during a run. Noted rather than
+                        // pre-solved: passing the model down instead of the sample
+                        // would couple the stage to `AppModel` one story before
+                        // US-305 rewrites this view entirely.
                         StagePlaceholderView(sample: model.selection?.sample)
                     }
             }

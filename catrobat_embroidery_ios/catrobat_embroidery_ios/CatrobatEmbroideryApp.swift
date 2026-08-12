@@ -32,11 +32,13 @@ struct CatrobatEmbroideryApp: App {
 /// container for another and destroys whichever it leaves. This view holds the
 /// state; `RootView` below it holds the branch.
 ///
-/// The model is injected explicitly rather than through `.environment(_:)`: the
-/// chain is one level deep, and a missing `@Environment(AppModel.self)` is a
-/// *runtime* crash where a missing initializer argument is a compile error. For
-/// a target whose local gate compiles but does not run (ADR-023), compile-time
-/// is the gate that actually fires.
+/// The model is injected explicitly rather than through `.environment(_:)`,
+/// because a missing `@Environment(AppModel.self)` is a *runtime* crash where a
+/// missing initializer argument is a compile error. For a target whose local
+/// gate compiles but does not run (ADR-023), compile-time is the gate that
+/// actually fires. (The earlier justification also claimed the chain was "one
+/// level deep". It is three — this view, `RootView`, then the picker and the
+/// stage — and the argument never needed the depth claim.)
 struct WindowRootView: View {
     @State private var model = AppModel()
 

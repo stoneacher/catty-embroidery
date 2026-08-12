@@ -45,8 +45,11 @@ struct StagePlaceholderView: View {
                 } else {
                     // Survives, and this is the case it was written for: on
                     // regular the detail column exists before anything has been
-                    // picked. On compact it is unreachable, because the stage is
-                    // only ever pushed by a selection.
+                    // picked. On compact nothing reaches it *today*, because
+                    // `AppModel.select(_:)` is the only writer of the path —
+                    // stated as a fact about the current code rather than an
+                    // impossibility, since `path` is an unrestricted `var` and a
+                    // later deep link could push a stage with no selection.
                     ContentUnavailableView(
                         String(localized: .stageEmptyTitle),
                         systemImage: "circle.dashed",
@@ -79,8 +82,19 @@ struct StagePlaceholderView: View {
         // Same guard as the picker's rows: without it a height-constrained
         // proposal makes `Text` ellipsise instead of wrapping.
         .fixedSize(horizontal: false, vertical: true)
-        // One element, name then description — the same order and the same
-        // reasoning as the picker row's label.
+        // `.combine` here, where the picker's row rejects it — the difference is
+        // what each one has to prove. The row's label is an acceptance criterion
+        // with a test asserting the exact spoken string, and `.combine`
+        // synthesises a label that cannot be read back. This is body text with
+        // no such claim on it, so the synthesised label is adequate and a
+        // hand-composed one would need a second catalog entry for its separator.
+        // (In-loop review asked whether the two disagree. They do not; the rule
+        // is narrower than "never `.combine`".)
+        //
+        // The name is therefore spoken twice on entering this screen — once as
+        // the navigation title, once here. That is ordinary iOS behaviour (title,
+        // then content) and the visible text is the point; US-305 replaces this
+        // whole branch with the renderer and its own summary.
         .accessibilityElement(children: .combine)
     }
 

@@ -45,16 +45,37 @@ struct AppModelTests {
     /// what a later consumer actually needs: US-306 constructs an `Interpreter`
     /// from it. Asserted through the selection rather than through the sample so
     /// that the seam US-306 uses is the seam under test.
-    @Test func selectingASamplePublishesItAndExposesItsProgram() throws {
+    /// Parameterised over the whole library rather than its first entry: the
+    /// `program` reach-through is precisely the seam US-306 consumes, and an
+    /// implementation that resolved it through anything other than the passed
+    /// sample would still pass a one-sample test. (In-loop review.)
+    @Test(arguments: SampleLibrary.all)
+    func selectingASamplePublishesItAndExposesItsProgram(_ sample: SampleProgram) throws {
         let model = AppModel()
         #expect(model.selection == nil, "nothing is selected before the first tap")
 
-        let sample = try #require(SampleLibrary.all.first)
         model.select(sample)
 
         let selection = try #require(model.selection)
         #expect(selection.sample == sample)
         #expect(selection.program == sample.program)
+    }
+
+    /// `SampleSelection` must not become `Identifiable`.
+    ///
+    /// Its doc comment explains why — `.task(id: selection.id)` would compile
+    /// and silently dedupe re-selection, defeating the generation — but a
+    /// comment does not stop anyone adding the conformance in a later story to
+    /// put the value in a `ForEach`. This does, and it fails at the moment the
+    /// conformance is added rather than at the moment a run stops restarting.
+    @Test func theSelectionIsDeliberatelyNotIdentifiable() throws {
+        let sample = try #require(SampleLibrary.all.first)
+        let selection: Any = SampleSelection(sample: sample, generation: 0)
+
+        #expect(
+            !(selection is any Identifiable),
+            "SampleSelection became Identifiable — see its doc comment before removing this test"
+        )
     }
 
     /// Re-selecting the currently selected sample re-publishes it.
@@ -103,12 +124,19 @@ struct AppModelTests {
 
     /// Going back keeps the selection.
     ///
-    /// Pins a decision so a later story does not "tidy" it into a
-    /// deselect-on-pop: on regular the detail column always shows *something*,
-    /// and US-306 wants the selection to outlive a stop. The visible
-    /// consequence, which is intended rather than tolerated: popping in compact
-    /// and then rotating to regular shows that design in the detail column
-    /// again.
+    /// **A guard against a coupling that does not exist yet, not a test of one
+    /// that does** — stated plainly because the name reads stronger than the
+    /// test is. `selection` is `private(set)` with a single writer and `path`
+    /// has no observer, so no implementation reachable from here could fail
+    /// this. What it buys is that adding a deselect-on-pop later turns red
+    /// instead of quietly changing behaviour US-306 depends on: on regular the
+    /// detail column always shows *something*, and a run must outlive a stop.
+    ///
+    /// The visible consequence is intended rather than tolerated: popping in
+    /// compact and then widening to regular shows that design in the detail
+    /// column again. What is *not* intended, and is handled in the view rather
+    /// than here, is the picker row staying highlighted after Back in compact —
+    /// see `SamplePickerView.showsSelection`.
     @Test func poppingTheStageKeepsTheSelection() throws {
         let model = AppModel()
         let sample = try #require(SampleLibrary.all.first)

@@ -18,8 +18,15 @@ import Samples
 /// Deliberately **not** `Identifiable`. A `var id: SampleID` would make
 /// `.task(id: selection.id)` compile and silently stop re-firing on
 /// re-selection — the exact defect the generation exists to prevent, in the
-/// spelling a later author is most likely to reach for. Withholding the
-/// conformance removes the trap rather than documenting it.
+/// spelling a later author is most likely to reach for.
+///
+/// It closes that spelling, **not the trap**. `.task(id: selection.sample.id)`
+/// still compiles and still dedupes, because `SampleProgram` is `Identifiable`
+/// and its id is one dot away; no type-level trick can prevent that. The
+/// defence that actually holds is this comment plus
+/// `AppModelTests.reselectingTheSameSamplePublishesAgainRatherThanBeingANoOp`,
+/// which states what the id-based spellings would break. (In-loop review — the
+/// earlier wording claimed the conformance's absence "removes the trap".)
 ///
 /// `nonisolated` for the reason `AppRunClock` records: the app target builds
 /// with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, so without the keyword this

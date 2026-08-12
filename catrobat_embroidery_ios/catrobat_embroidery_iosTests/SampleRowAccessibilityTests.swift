@@ -10,8 +10,15 @@ import Testing
 /// requirement has two halves and only one of them is a unit test:
 ///
 /// - *One element* is structural (`.accessibilityElement(children: .ignore)`)
-///   and is verified in the simulator with VoiceOver, because SwiftUI's
-///   accessibility tree is not readable from a test.
+///   and cannot be asserted here, because SwiftUI's accessibility tree is not
+///   readable from a test. It was checked by capturing the **runtime
+///   accessibility snapshot** of the running app on both an iPhone and an iPad,
+///   which reported exactly one `button` per row carrying the composed label and
+///   no separate elements for the two `Text`s. Stated precisely because an
+///   earlier version of this comment said "verified in the simulator with
+///   VoiceOver" — VoiceOver itself was not switched on, and the `.isSelected`
+///   trait and the spoken order are *not* covered by what was actually run.
+///   (In-loop review asked the question directly.)
 /// - *The label's content* is a string, and it is a string precisely so that
 ///   this file can assert it. That is why the row exposes a pure static
 ///   producing it rather than relying on `.combine`, which synthesises a

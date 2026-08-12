@@ -12,7 +12,9 @@ import Samples
 /// that this app supports multiple iPad windows, and a selection is a per-window
 /// decision.
 ///
-/// **Owning this above `RootView` is what makes the size-class swap lossless**,
+/// **Owning this above `RootView` is what stops the size-class swap discarding
+/// the selection** — deliberately not "lossless", which an earlier version of
+/// this comment claimed three lines above a list of things it does lose,
 /// and it is the fix US-303 deferred to this story by name (`RootView`'s own doc
 /// comment, and ADR-023). `RootView` branches on the horizontal size class and
 /// swaps one navigation container for another, tearing down whichever it leaves;
@@ -52,15 +54,30 @@ final class AppModel {
     /// The compact navigation stack's path.
     ///
     /// `var`, because `NavigationStack(path:)` writes back on Back and on the
-    /// interactive swipe. A typed array rather than `NavigationPath` because it
-    /// is `Equatable` and a test can assert the whole value; `NavigationPath`
-    /// exposes only `count`.
+    /// interactive swipe. A typed array rather than `NavigationPath` because a
+    /// test can assert the whole value — `NavigationPath` is `Equatable` too, so
+    /// the reason is readability of its *contents*, not equality, which an
+    /// earlier version of this comment got wrong.
+    ///
+    /// It is an unrestricted `var`, so the invariant "a non-empty path implies a
+    /// selection" is upheld by there being exactly one writer today
+    /// (`select(_:)`) and not by the type. A later story that pushes `.stage`
+    /// without selecting — a deep link, state restoration — would reach a stage
+    /// titled "Stage" showing the empty state. Worth encoding when there is a
+    /// second writer; not worth the binding machinery while there is one.
     var path: [StageDestination] = []
 
     /// `@ObservationIgnored` on purpose: bumping the counter is bookkeeping, not
-    /// state anyone renders. Without it, one selection would produce two
-    /// observable mutations, which is the opposite of the discipline US-306 is
-    /// held to ("exactly one observable mutation per batch").
+    /// state anyone renders, and the attribute keeps it out of the observation
+    /// graph entirely.
+    ///
+    /// It is **not** what keeps `select(_:)` to a single notification, which an
+    /// earlier version of this comment claimed. Observation is keypath-granular,
+    /// so an un-ignored counter would notify only observers that had *read* it,
+    /// and nothing reads it — it is `private`. And `select(_:)` mutates two
+    /// observed properties anyway (`selection` and `path`), so the "exactly one
+    /// observable mutation" discipline US-306 is held to is not a property this
+    /// class has ever had. (In-loop review.)
     @ObservationIgnored private var nextGeneration = 0
 
     /// Selects `sample` and shows the stage.
@@ -72,6 +89,11 @@ final class AppModel {
     /// The path is **assigned**, not appended to. Appending would stack a second
     /// stage on the first, so Back would return to a stage rather than to the
     /// list.
+    ///
+    /// It writes `path` even when the split layout is showing, which ignores it.
+    /// That is deliberate rather than a leak: it means a window resized down to
+    /// compact opens on the design the user had selected, which is how UIKit's
+    /// own split-view collapse behaves.
     func select(_ sample: SampleProgram) {
         selection = SampleSelection(sample: sample, generation: nextGeneration)
         nextGeneration += 1

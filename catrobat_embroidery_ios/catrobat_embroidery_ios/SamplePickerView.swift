@@ -18,10 +18,36 @@ import SwiftUI
 struct SamplePickerView: View {
     let model: AppModel
 
+    /// Whether a selected row should *read* as selected.
+    ///
+    /// True only where the selection is visible next to the list — the split
+    /// view's sidebar, where the detail column is showing that design, so the
+    /// tint means "this is what you are looking at". In the compact stack it is
+    /// false, because selecting pushes the stage and coming back leaves nothing
+    /// on screen for a highlight to refer to. iOS clears a pushed row's
+    /// highlight on return for exactly that reason (UIKit spells it
+    /// `clearsSelectionOnViewWillAppear`), and a row that stays lit after Back
+    /// claims a state the screen is not in. Reported from the simulator by
+    /// Sebastian, 2026-08-12.
+    ///
+    /// **This is a flag, not a size-class read, and that is the point.** The
+    /// container knows whether it displays the selection beside the list;
+    /// `SamplePickerView` does not, and must not start branching on the
+    /// environment — that would put back the size-class dependency whose
+    /// absence is what makes the container swap lossless.
+    ///
+    /// Note what this does *not* change: `AppModel.selection` outlives the pop
+    /// either way, which is deliberate and pinned by
+    /// `AppModelTests.poppingTheStageKeepsTheSelection`. Only its *presentation*
+    /// is conditional.
+    let showsSelection: Bool
+
     var body: some View {
         List {
             Section {
                 ForEach(model.samples) { sample in
+                    let isSelected = showsSelection && model.isSelected(sample)
+
                     // A `Button`, **not** `List(selection:)`, and this is the
                     // story's load-bearing UI decision.
                     //
@@ -35,12 +61,25 @@ struct SamplePickerView: View {
                     // unreachable through the UI while every unit test still
                     // passed: green, and wrong.
                     //
-                    // The cost is real and is paid below: the selected-row
-                    // treatment is hand-rolled rather than the system's, so it
-                    // approximates today's appearance and will not follow the
-                    // platform's if that changes. Accepted, because an
-                    // approximate highlight is a smaller defect than an
-                    // acceptance criterion that cannot fire.
+                    // **Three costs, all of them paid below rather than
+                    // listed and shrugged at** — the first version of this
+                    // comment named only the first, and the in-loop review
+                    // found the two that matter more:
+                    //
+                    // 1. the selected-row tint is hand-rolled, so it
+                    //    approximates the system's rather than following it;
+                    // 2. `.plain` strips the pressed-state highlight a
+                    //    `NavigationLink` gives free — restored by
+                    //    `PickerRowButtonStyle` below, and *load-bearing here*,
+                    //    because re-tapping the already-selected row in the
+                    //    split layout otherwise produces no perceptible change
+                    //    anywhere on screen, making the one interaction this
+                    //    story exists to enable indistinguishable from a dead
+                    //    row;
+                    // 3. a `Button`'s hit area is its label, not the row, so
+                    //    the list's own insets become dead zones — fixed by
+                    //    zeroing `listRowInsets` and re-applying the padding
+                    //    inside the label, where it is part of the target.
                     //
                     // `.onTapGesture` on a selectable row was the other way out
                     // and is worse: it competes with the list's own tap
@@ -49,13 +88,16 @@ struct SamplePickerView: View {
                     Button {
                         model.select(sample)
                     } label: {
-                        SampleRowView(sample: sample, isSelected: model.isSelected(sample))
+                        SampleRowView(sample: sample, isSelected: isSelected)
                     }
-                    // Without `.plain`, a `Button` in a list row tints its whole
-                    // label with the accent colour — the sample's name would
-                    // render blue.
-                    .buttonStyle(.plain)
-                    .listRowBackground(model.isSelected(sample) ? Color.accentColor.opacity(0.15) : nil)
+                    .buttonStyle(PickerRowButtonStyle())
+                    // Zeroed so the label owns the row's full width and height;
+                    // `SampleRowView` re-applies the spacing internally. Without
+                    // this, a tap in the row's ~20 pt leading margin — where a
+                    // thumb naturally lands — does nothing, while every stock
+                    // iOS row responds edge to edge.
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(isSelected ? Color.accentColor.opacity(0.15) : nil)
                 }
             } header: {
                 Text(.rootSamplesHeader)
@@ -98,37 +140,64 @@ struct SampleRowView: View {
     let isSelected: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(sample.displayName)
-                .font(.headline)
-                // Prevents the failure mode that actually bites in a list row:
-                // the row proposes a *height* smaller than the text's ideal, and
-                // `Text` obeys by dropping lines and ellipsising rather than
-                // growing. Wrapping is already the default; this is what stops a
-                // height-constrained proposal from overriding it, and it is the
-                // AX1 no-truncation requirement's real guarantee.
-                .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(sample.displayName)
+                    .font(.headline)
+                    // Prevents the failure mode that actually bites in a list row:
+                    // the row proposes a *height* smaller than the text's ideal, and
+                    // `Text` obeys by dropping lines and ellipsising rather than
+                    // growing. Wrapping is already the default; this is what stops a
+                    // height-constrained proposal from overriding it, and it is the
+                    // AX1 no-truncation requirement's real guarantee.
+                    .fixedSize(horizontal: false, vertical: true)
 
-            Text(sample.summary)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+                Text(sample.summary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            // Explicit, because alignment is inherited: a future ancestor setting
+            // `.center` would silently centre the wrapped lines. `.leading` is also
+            // the only RTL-correct spelling.
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // **Selection is not encoded in colour alone.** The tint behind the
+            // row was the only sighted indicator until the in-loop review
+            // measured it: system blue at 15 % over the dark grouped-list
+            // background is roughly a 3 % luminance difference, the row
+            // background does not respond to Increase Contrast, and a
+            // blue-yellow deficiency removes it entirely — in a classroom, on
+            // an iPad, at arm's length. A checkmark is the platform's own
+            // selection affordance and, unlike a disclosure chevron, is correct
+            // in the split layout, which is the only place this is shown at all.
+            //
+            // Hidden from VoiceOver because the `.isSelected` trait already
+            // carries it; announcing both would say "selected" twice.
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .font(.headline)
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
+            }
         }
-        // Explicit, because alignment is inherited: a future ancestor setting
-        // `.center` would silently centre the wrapped lines. `.leading` is also
-        // the only RTL-correct spelling.
-        .multilineTextAlignment(.leading)
+        // The row's own spacing, applied *inside* the label because the label is
+        // the button's hit area — see `listRowInsets(EdgeInsets())` at the call
+        // site. `.horizontal` is leading+trailing, so it mirrors in RTL.
+        .padding(.horizontal, 20)
+        .padding(.vertical, 11)
         // `minHeight`, not `height` — a floor, not a size; `height` would clip at
         // the accessibility sizes. 44 is the HIG's physical thumb target and is
         // deliberately *not* `@ScaledMetric`: scaling a floor that exists for
         // anatomy would be scaling the wrong thing, and above roughly Large the
         // intrinsic content already exceeds it and the floor stops binding. It
         // is load-bearing at the *small* type sizes, where `.headline` plus
-        // `.subheadline` come to well under 44 pt and only the default row
-        // insets — a layout accident, not a promise — would otherwise carry it.
+        // `.subheadline` come to well under 44 pt.
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        // Makes the whole row tappable rather than just the text. Free inside a
-        // `NavigationLink`; not free inside a `Button` with `.plain`.
+        // With the insets zeroed at the call site and re-applied above, this
+        // genuinely is the whole row — which the earlier version of this comment
+        // claimed while the list's own insets were still dead zones.
         .contentShape(Rectangle())
         // One VoiceOver element per row, carrying both lines — the story's
         // requirement, and by construction rather than by SwiftUI's merging
@@ -148,13 +217,18 @@ struct SampleRowView: View {
         // would duplicate once VoiceOver speaks the trait itself.
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
 
-        // **No disclosure chevron.** It comes free only from `NavigationLink`,
-        // which cannot deliver the re-selection event this screen is built
-        // around, and drawing one by hand costs an `HStack` that competes with
-        // the text for width in ~75 languages at AX1 — while being wrong on
-        // regular, where selecting fills the detail column rather than leaving
-        // the screen. The story is explicitly thin; this is one of the places
-        // that has to mean something.
+        // **No disclosure chevron**, and the honest reason is structural rather
+        // than aesthetic. On compact, selecting *does* leave the screen, so a
+        // chevron would be the right affordance — the first version of this
+        // comment argued only from the split layout and ignored that (in-loop
+        // review). What actually rules it out is that a chevron would have to
+        // appear on compact and not in the sidebar, and this view deliberately
+        // does not know which it is in. The container tells it whether to show
+        // *selection*, which is a fact about the container; "am I a stack"
+        // is not, and threading it in would reintroduce the size-class
+        // dependency whose absence is what makes the container swap lossless.
+        // The checkmark above is unaffected: it comes from `showsSelection`,
+        // which the container already states.
     }
 
     /// The exact string VoiceOver speaks for this row: the design's name, then
@@ -186,6 +260,27 @@ struct SampleRowView: View {
     }
 }
 
+/// A list row that looks like a list row and *feels* like one under the finger.
+///
+/// `.plain` renders the label untinted — without it a `Button` in a list row
+/// paints the design's name accent-blue — but it also drops the pressed-state
+/// highlight that `NavigationLink` and `List(selection:)` provide. That
+/// omission is not cosmetic here: in the split layout, re-tapping the
+/// already-selected row is the interaction this whole screen is shaped around,
+/// and with no press feedback, no navigation and a tint that is already on, it
+/// produces no perceptible change at all. The row would be indistinguishable
+/// from a dead one while doing exactly what it is supposed to.
+///
+/// `.primary.opacity(0.06)` rather than a named grey so it holds up in both
+/// appearances, and it sits *behind* the label so the text keeps full contrast
+/// while pressed.
+struct PickerRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? AnyShapeStyle(.primary.opacity(0.06)) : AnyShapeStyle(.clear))
+    }
+}
+
 /// Preview support: a model with the first sample already picked.
 ///
 /// A function rather than statements inside `#Preview`, because that closure is
@@ -198,16 +293,18 @@ private func previewModelWithASelection() -> AppModel {
     return model
 }
 
-#Preview("Nothing selected") {
+// As the compact stack presents it: no selection shown, because coming back
+// from the stage must not leave a row lit.
+#Preview("In the stack") {
     NavigationStack {
-        SamplePickerView(model: AppModel())
+        SamplePickerView(model: previewModelWithASelection(), showsSelection: false)
     }
 }
 
-// The selected-row treatment is hand-rolled (see the `Button` comment above), so
-// it is the one thing on this screen a preview genuinely helps with.
-#Preview("One selected") {
+// As the sidebar presents it. The selected-row treatment is hand-rolled, so this
+// is the one thing on this screen a preview genuinely helps with.
+#Preview("As a sidebar") {
     NavigationStack {
-        SamplePickerView(model: previewModelWithASelection())
+        SamplePickerView(model: previewModelWithASelection(), showsSelection: true)
     }
 }
