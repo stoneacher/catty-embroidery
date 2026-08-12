@@ -81,7 +81,7 @@ custom_rules:
     # that slipped the first version: `LocalizedStringKey ("…")`,
     # `String (localized: "…")`, and the label on its own line. `\s` matches
     # newlines in SwiftLint's regex engine, so the multi-line form is covered.
-    regex: "\\b(String\\s*\\(\\s*localized:\\s*#*\"|LocalizedStringKey\\s*\\(\\s*#*\"|LocalizedStringResource\\s*\\(\\s*#*\")"
+    regex: "\\b(String\\s*\\(\\s*localized:\\s*#*\"|String\\s*\\(\\s*#*\"|LocalizedStringKey\\s*\\(\\s*#*\"|LocalizedStringResource\\s*\\(\\s*#*\")"
     excluded_match_kinds:
       - comment
       - doccomment
