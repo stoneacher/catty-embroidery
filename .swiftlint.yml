@@ -62,8 +62,9 @@ custom_rules:
     message: >-
       User-facing text goes through Localizable.xcstrings as a generated
       LocalizedStringResource symbol, never a literal (Catrobat ships ~75
-      languages). Text(verbatim:) is the escape hatch for genuinely
-      non-localizable content such as a number already formatted for the locale.
+      languages). Text(verbatim:) is the escape hatch for a non-localizable
+      *value* — a number already formatted for the locale, a design name the
+      user typed — not for a literal, which is flagged by the rule below.
     severity: error
 
   # The rule above only catches a literal *immediately* after the paren, so
@@ -81,15 +82,18 @@ custom_rules:
     # that slipped the first version: `LocalizedStringKey ("…")`,
     # `String (localized: "…")`, and the label on its own line. `\s` matches
     # newlines in SwiftLint's regex engine, so the multi-line form is covered.
-    regex: "\\b(String\\s*\\(\\s*localized:\\s*#*\"|String\\s*\\(\\s*#*\"|LocalizedStringKey\\s*\\(\\s*#*\"|LocalizedStringResource\\s*\\(\\s*#*\")"
+    regex: "\\b(String\\s*\\(\\s*localized:\\s*#*\"|String\\s*\\(\\s*#*\"|LocalizedStringKey\\s*\\(\\s*#*\"|LocalizedStringResource\\s*\\(\\s*#*\"|Text\\s*\\(\\s*verbatim:\\s*#*\")"
     excluded_match_kinds:
       - comment
       - doccomment
     message: >-
       A string literal inside String(localized:) / LocalizedStringKey() /
       LocalizedStringResource() is not localization — it is the fallback that
-      ships when the catalog entry is missing. Add the entry to
-      Localizable.xcstrings and use the generated symbol instead.
+      ships when the catalog entry is missing. Text(verbatim: "literal") is not
+      localization either: verbatim exists for non-localizable *values*, and a
+      literal passed to it is simply an untranslated string on screen. Add the
+      entry to Localizable.xcstrings and use the generated symbol; if the text
+      genuinely must not be translated, bind it to a value first.
     severity: error
 
 excluded:
