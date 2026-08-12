@@ -1,0 +1,78 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "root.samples.header" : {
+      "comment" : "Header of the list of ready-made embroidery designs bundled with the app, shown on the main screen. \"Designs\" here means embroidery patterns, not graphic design.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Example Designs"
+          }
+        }
+      }
+    },
+    "root.title" : {
+      "comment" : "Title of the app's main screen, and the app's own name. Catrobat ships this app as \"Embroidery Designer\" on Android; keep the two consistent per locale.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Embroidery Designer"
+          }
+        }
+      }
+    },
+    "stage.empty.description" : {
+      "comment" : "Explains the empty stage. Tells the user the one action available right now: pick a design from the list. \"Stitches\" are the individual needle penetrations that make up an embroidery design.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose an example design to watch its stitches appear here."
+          }
+        }
+      }
+    },
+    "stage.empty.title" : {
+      "comment" : "Title of the empty state shown on the stage before any design has been chosen. Not an error — it is the app's normal starting state.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Design Selected"
+          }
+        }
+      }
+    },
+    "stage.hoop.size" : {
+      "comment" : "Physical size of the embroidery hoop the stage represents, e.g. \"Hoop 100 mm × 100 mm\". Both arguments are already-formatted lengths including their unit, localized for the reader's region — do not add a unit. The separator is the multiplication sign U+00D7, not the letter x. Arguments are positional and may be reordered.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoop %1$@ × %2$@"
+          }
+        }
+      }
+    },
+    "stage.title" : {
+      "comment" : "Title of the screen showing the embroidery stage — the area where a design's stitches are drawn. On iPad this labels the detail pane.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stage"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.2"
+}

@@ -23,6 +23,53 @@ jobs:
       - name: Run engine tests
         run: swift test --package-path Packages/EmbroideryEngine
 
+  app-build-and-test:
+    name: App build & test (xcodebuild)
+    runs-on: macos-26
+    # A wedged simulator would otherwise burn the 360-minute default. The healthy
+    # job is ~4m30s, so this is generous while still failing in a useful time.
+    timeout-minutes: 20
+    env:
+      # Same pin and the same reason as the engine job: the runner-default Xcode
+      # drifts and breaks Swift 6.x builds. Xcode 26.6 (Swift 6.3.3) matches the
+      # local development toolchain.
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+      - name: Show toolchain
+        run: xcodebuild -version
+      - name: Require the shared scheme
+        # Checked explicitly so a missing scheme fails here with a readable
+        # message rather than inside xcodebuild. xcshareddata/xcschemes/ must be
+        # committed: .gitignore excludes xcuserdata/, so a fresh checkout has no
+        # scheme unless it is shared, and Xcode's autocreation cannot be relied on.
+        run: |
+          test -f catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj/xcshareddata/xcschemes/catrobat_embroidery_ios.xcscheme \
+            || { echo "::error::Shared scheme missing from xcshareddata/xcschemes/"; exit 1; }
+      - name: Show available simulators
+        run: xcrun simctl list devices available
+      - name: Build and test the app target
+        # -project is explicit, and must stay so: the project is nested and
+        # Actions starts at the repository root, where a bare -scheme finds
+        # nothing and fails before reaching a test.
+        #
+        # OS=latest is explicit too: a runner image carrying two iOS runtimes has
+        # two devices named "iPhone 17", and xcodebuild picks one silently. That
+        # is a coin flip the day the image ships a second runtime, so the choice
+        # is stated rather than inherited.
+        run: |
+          xcodebuild test \
+            -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj \
+            -scheme catrobat_embroidery_ios \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -resultBundlePath "$RUNNER_TEMP/AppTests.xcresult"
+      - name: Upload result bundle
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-tests-xcresult
+          path: ${{ runner.temp }}/AppTests.xcresult
+
   lint:
     name: SwiftLint
     runs-on: ubuntu-latest
