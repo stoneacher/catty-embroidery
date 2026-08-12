@@ -7,6 +7,11 @@ import Samples
 /// The app's state above the navigation containers: what can be picked, what is
 /// picked, and how deep the compact stack is.
 ///
+/// One instance per window, owned by `WindowRootView` — not by the `App`, whose
+/// state every scene would share. See that view for why; the short version is
+/// that this app supports multiple iPad windows, and a selection is a per-window
+/// decision.
+///
 /// **Owning this above `RootView` is what makes the size-class swap lossless**,
 /// and it is the fix US-303 deferred to this story by name (`RootView`'s own doc
 /// comment, and ADR-023). `RootView` branches on the horizontal size class and
