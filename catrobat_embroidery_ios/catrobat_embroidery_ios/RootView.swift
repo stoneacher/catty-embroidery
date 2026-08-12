@@ -12,9 +12,13 @@ import SwiftUI
 /// view with an `if` that swaps one container for the other, tearing down
 /// whichever it leaves, and recorded the cost as acceptable only while there was
 /// nothing to select — with the fix assigned to this story (ADR-023). It is
-/// done: the selection and the compact path live in `AppModel`, owned by the
-/// `App` above this view, so both containers read the same state instead of each
-/// owning their own. `AppModel`'s doc comment lists what still does not survive
+/// done: the selection and the compact path live in `AppModel`, owned by
+/// `WindowRootView` above this view, so both containers read the same state
+/// instead of each owning their own. **Above this view, and specifically *not*
+/// on the `App`** — state declared there is shared by every scene, which on
+/// iPad let one window drive another (Codex round 1). ADR-023 asks for
+/// ownership above `RootView`; it does not ask for App scope, and the two are
+/// not interchangeable. `AppModel`'s doc comment lists what still does not survive
 /// the swap (scroll positions, split-view column visibility, in-flight
 /// transitions) rather than leaving the claim broader than it is.
 ///
