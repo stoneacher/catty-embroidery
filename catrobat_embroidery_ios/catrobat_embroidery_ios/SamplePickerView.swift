@@ -235,7 +235,8 @@ struct SampleRowView: View {
     /// what it looks like.
     ///
     /// A pure static — the same shape as
-    /// `StagePlaceholderView.hoopSizeDescription`, and for the same two reasons.
+    /// `StageView.hoopSizeDescription`, and for the same two reasons. (It lived on
+    /// `StagePlaceholderView` until US-305 replaced that view with the real renderer.)
     /// It is computed rather than stored because both lookups depend on the
     /// current locale, which can change while the app is running; and it is a
     /// *value* rather than a modifier so that a test can assert what is spoken.

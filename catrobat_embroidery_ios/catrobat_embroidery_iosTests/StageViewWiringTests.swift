@@ -24,15 +24,17 @@ import UIKit
 struct StageViewWiringTests {
     /// Records what it was handed instead of drawing it. A class, because recording is
     /// a side effect of a `View`'s `body` and a value type would record into a copy.
+    /// One recorded call. A sibling of the renderer rather than nested inside it, purely
+    /// to stay within SwiftLint's one-level nesting limit.
+    private struct Invocation {
+        let display: StitchDisplayList
+        let transform: StageTransform
+        let needle: PreviewNeedle?
+        let viewport: ViewSize
+    }
+
     @MainActor
     private final class RecordingRenderer: StagePreviewRenderer {
-        struct Invocation {
-            let display: StitchDisplayList
-            let transform: StageTransform
-            let needle: PreviewNeedle?
-            let viewport: ViewSize
-        }
-
         var invocations: [Invocation] = []
 
         func makeBody(

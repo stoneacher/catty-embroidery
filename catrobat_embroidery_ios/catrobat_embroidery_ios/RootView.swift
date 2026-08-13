@@ -50,23 +50,38 @@ struct RootView: View {
                 // selection, or the empty state before there is one. Two
                 // representations of "which sample" would be two things able to
                 // disagree after a Back.
-                StagePlaceholderView(sample: model.selection?.sample)
+                stage
             }
         } else {
             NavigationStack(path: $model.path) {
                 SamplePickerView(model: model, showsSelection: false)
                     .navigationDestination(for: StageDestination.self) { _ in
-                        // Reads the selection when the destination is built, not
-                        // continuously. Sound today — nothing can change the
-                        // selection while the stage covers the picker — but US-306
-                        // is the story that could break it, by clearing or
-                        // replacing the selection during a run. Noted rather than
-                        // pre-solved: passing the model down instead of the sample
-                        // would couple the stage to `AppModel` one story before
-                        // US-305 rewrites this view entirely.
-                        StagePlaceholderView(sample: model.selection?.sample)
+                        stage
                     }
             }
+        }
+    }
+
+    /// Both call sites build the stage the same way, so they cannot drift apart — and the
+    /// drain is attached here rather than in `StageView`, which should not know that its
+    /// stitches currently come from a placeholder producer.
+    ///
+    /// `task(id: model.selection)` keys on the whole selection, **generation included**.
+    /// That is what `SampleSelection`'s counter was added for: re-selecting the design
+    /// already selected re-fires this, where keying on `selection?.sample.id` would dedupe
+    /// and silently do nothing — the exact trap `SampleSelection`'s doc comment warns
+    /// about, in the spelling most likely to be reached for.
+    private var stage: some View {
+        StageView(
+            sample: model.selection?.sample,
+            display: model.display,
+            needle: nil,
+            renderer: CanvasStitchRenderer()
+        )
+        .task(id: model.selection) {
+            // Synchronous and on the main actor, which US-306 must not be. Acceptable
+            // only because M3's samples are small; see `AppModel.drainSelectionForPreview`.
+            model.drainSelectionForPreview()
         }
     }
 }
