@@ -62,3 +62,15 @@ Verified by execution unless marked otherwise. Widths confirmed directly against
 - ADR-020 Consequences (why US-210 left this open, and the "not closed" section that spawned this story), ADR-012 (extents relative to first stitch, magnitudes only), ADR-007 (stage bounds — which exist only as prose), ADR-014 (the 1 000 000 cap's shared rationale)
 - `docs/workflow-journal.md` 2026-07-31 (US-210's four Codex rounds; the carry-forward that opened this) and 2026-08-04 (the M3 planning session that scheduled it)
 - ADR-025 (this story's close-out)
+
+## Inherited from US-305 (2026-08-13): the fit clamp crops the same designs this story rejects
+
+**Codex round 1 on US-305, High, valid and deliberately not fixed there.** `StageTransform.fitting` clamps its result to `StageTransform.minimumScale = 0.05`, so a fit target wider than `available / 0.05` cannot be shown whole and out-of-hoop content maps outside the viewport — despite US-305's criterion that the hoop ∪ content union keeps such content *visible rather than silently cropped*. Reproducer: `fitTarget(including: StageBox(minX: 7000, minY: 0, maxX: 7000, maxY: 0))` into a 320 × 320 viewport needs scale ≈ 0.0397, gets 0.05, and maps x = 7000 to view x = 341.25 on a 320-point canvas.
+
+**Why it landed here rather than being fixed in US-305.** The threshold is ~5760 stage points of *extent* on a 320-point viewport (~1.15 m of fabric; ~6560 at iPhone width). **Every design that reaches it is already unexportable by this story's own subject**: the 4-wide `+X`/`−X`/`+Y`/`−Y` header fields overflow above 9999 units = **5000 stage points**, which ADR-020 records as reachable and which traps in `DSTHeader.appendField`. So the crop's entire domain sits inside the domain US-211 must already handle, and the two decisions want to be taken together — a preview that shows a design the writer will refuse is its own kind of wrong.
+
+It is also **not silent**: `bounds != StageGeometry.box`, so US-305's hoop-overflow notice still fires and a VoiceOver user is still told part of the design lies outside the hoop. They just cannot see it.
+
+**Deliberately not blessed with a test.** No characterisation test pins the current behaviour, because that is how a defect becomes a specification — the failure mode ADR-024's review notes record from US-302's round 6.
+
+**What this story has to decide**, since the fix is a small change to a chokepoint with seven rounds of review history: `minimumScale`'s own doc comment says "**how far the user may zoom**", i.e. the bound is about *gestures*, and `fitting` is not a gesture. So the aligned fix is to move the gesture bound into `pinched(by:about:)` and leave `init`'s clamp with only an absolute representable floor — after which `fitting` may go as low as the content needs. That changes what US-302's `StageTransformTests` assert (they pin the implementation — `init` clamping — rather than the stated intent), which is exactly why it is not a close-out edit. Note ADR-024 also records that the fitted transform is *constant for every in-hoop design*, so nothing in M3's samples is affected either way.
