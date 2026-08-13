@@ -28,7 +28,15 @@ struct AppStringsTests {
             (.rootSamplesHeader, "root.samples.header"),
             (.stageTitle, "stage.title"),
             (.stageEmptyTitle, "stage.empty.title"),
-            (.stageEmptyDescription, "stage.empty.description")
+            (.stageEmptyDescription, "stage.empty.description"),
+            // US-305. `stage.empty.*` survives alongside these: there are **two**
+            // empty states, and they are not interchangeable — nothing selected
+            // (reachable only in the regular-width detail column) against a design
+            // selected but not yet run.
+            (.stageReadyTitle, "stage.ready.title"),
+            (.stageReadyDescription, "stage.ready.description"),
+            (.stageOutsideHoop, "stage.outside.hoop"),
+            (.stageCanvasAccessibilityLabel, "stage.canvas.accessibility.label")
         ]
 
         for entry in entries {
