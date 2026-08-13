@@ -39,10 +39,16 @@ struct StitchSegmentStyleTests {
     /// *inclusive* bound — one record encodes it, so no travel is needed.
     /// `interpolationSplitCount` reaches that conclusion through a strict `>` on
     /// **both** of its clauses (the rounded difference and the round-then-subtract
-    /// encoded delta), and this pair is 121 by both measures: from the origin the
-    /// conversion is exact, and more generally `round(d) == 121` forces
-    /// `d < 121.5`, which bounds the encoded delta at 121 as well — so the two
-    /// clauses cannot disagree *at this boundary*, whatever they do further out.
+    /// encoded delta), and this pair is 121 by both measures **because it starts at the
+    /// origin**, where the conversion is exact.
+    ///
+    /// **That is as far as the claim goes, and an earlier version of this comment
+    /// overreached** (Codex round 1). It argued that `round(d) == 121` forces `d < 121.5`
+    /// and therefore bounds the encoded delta at 121 too, so the clauses "cannot disagree
+    /// at this boundary". False: for `d ∈ [121, 121.5)` the encoded delta can reach
+    /// `floor(d) + 1 = 122`, and `theEncodedDeltaAloneCanTriggerTraversalAtRoundedDistance121`
+    /// below is that case. The two clauses *can* disagree here; this pair simply is not
+    /// where they do.
     ///
     /// Loosening either comparison to `>=` reclassifies every 121-unit move as
     /// travel and fails here loudly, which is the point of pinning it.
@@ -54,6 +60,28 @@ struct StitchSegmentStyleTests {
         )
 
         #expect(style == .thread)
+    }
+
+    /// The clause the threshold test above does **not** cover: `interpolationSplitCount`
+    /// has *two* triggers, and the second can fire alone.
+    ///
+    /// `(0.125, 0) → (60.75, 0)`: the rounded difference is 121 — inside the encodable
+    /// bound — but converting each endpoint separately gives 0 and 122, so the *encoded*
+    /// delta is 122 and a single record cannot hold it. `EmbroideryStream` splits rather
+    /// than emitting an unencodable record, and ADR-012 calls Catroid's corrupt record
+    /// there a reference accident; the preview must therefore draw travel, not thread.
+    ///
+    /// A blind spot Codex found and the in-loop review did not, which is the point of
+    /// running both: the difference-only case and the encoded-only case are separate
+    /// seams, and only one of them was guarded.
+    @Test("the encoded delta alone can trigger traversal at rounded distance 121")
+    func theEncodedDeltaAloneCanTriggerTraversalAtRoundedDistance121() {
+        let style = StitchSegmentStyle.classifying(
+            from: previewStitch(0.125, 0, PreviewColor.red),
+            to: previewStitch(60.75, 0, PreviewColor.red)
+        )
+
+        #expect(style == .traversal)
     }
 
     @Test("a colour-run boundary draws no segment at all")

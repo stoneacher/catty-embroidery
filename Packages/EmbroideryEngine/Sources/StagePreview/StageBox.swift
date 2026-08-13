@@ -99,14 +99,22 @@ public struct StageBox: Hashable, Sendable {
         return Swift.max(first, second)
     }
 
-    /// The box at a single point, or `nil` if either coordinate is non-finite.
+    /// Assembles a box from two **independently accumulated** axes, or `nil` if either
+    /// axis never saw a finite value.
     ///
-    /// The seed half of the finiteness rule below: a box has to start *somewhere*, and
-    /// starting it at infinity is what let a single rejected coordinate poison every
-    /// bound derived afterwards.
-    public init?(finitelyContaining point: StagePoint) {
-        guard point.x.isFinite, point.y.isFinite else { return nil }
-        self.init(containing: point)
+    /// Per axis, because a box seeded per *point* is order-dependent (Codex round 1): an
+    /// earlier fix required both coordinates to be finite before anything could seed the
+    /// box, so a first stitch at `(.infinity, 1000)` contributed nothing and its perfectly
+    /// good `y` was lost — while the *same pair in the opposite order* kept it. Splitting
+    /// the axes makes the seed obey the same rule `expand(toInclude:)` already did.
+    ///
+    /// `nil` when an axis is empty is deliberate and not a half-measure: a `StageBox` has
+    /// four edges, so a design with no finite `x` has no box to report, exactly as an empty
+    /// list has none. `StageGeometry.fitTarget` already handles `nil` by falling back to
+    /// the hoop; inventing an extent would be the actual error.
+    init?(combining x: StageExtent?, _ y: StageExtent?) {
+        guard let x, let y else { return nil }
+        self.init(minX: x.min, minY: y.min, maxX: x.max, maxY: y.max)
     }
 
     /// Grows the box to include `point`, **skipping a non-finite coordinate per axis**.
@@ -148,14 +156,49 @@ public struct StageBox: Hashable, Sendable {
     /// would be worse than no oracle, since the differential test would fail for the wrong
     /// reason. `nil` therefore also means "nothing finite here".
     public static func containing(_ points: some Sequence<StagePoint>) -> StageBox? {
-        var box: StageBox?
+        var x: StageExtent?
+        var y: StageExtent?
         for point in points {
-            if box == nil {
-                box = StageBox(finitelyContaining: point)
-            } else {
-                box?.expand(toInclude: point)
-            }
+            StageExtent.accumulate(&x, point.x)
+            StageExtent.accumulate(&y, point.y)
         }
-        return box
+        return StageBox(combining: x, y)
+    }
+}
+
+/// One axis of a `StageBox`, accumulated on its own.
+///
+/// Exists so that "skip a non-finite coordinate" is **one** rule covering both the first
+/// value and every later one. When the seed and the expansion had separate rules they
+/// disagreed, and bounds came out dependent on the order stitches arrived in (Codex
+/// round 1).
+struct StageExtent: Hashable, Sendable {
+    var min: Double
+    var max: Double
+
+    /// `nil` for a non-finite value: an axis cannot start at infinity. ADR-021 divergence
+    /// #5 makes that reachable from a legal program, since a coordinate the stream rejects
+    /// is still emitted and still drawn.
+    init?(_ value: Double) {
+        guard value.isFinite else { return nil }
+        min = value
+        max = value
+    }
+
+    mutating func expand(to value: Double) {
+        guard value.isFinite else { return }
+        min = Swift.min(min, value)
+        max = Swift.max(max, value)
+    }
+
+    /// Seeds or expands in one call — the shape both the incremental path
+    /// (`StitchDisplayList.append`) and the oracle (`StageBox.containing`) need, so neither
+    /// can drift from the other.
+    static func accumulate(_ extent: inout StageExtent?, _ value: Double) {
+        if extent == nil {
+            extent = StageExtent(value)
+        } else {
+            extent?.expand(to: value)
+        }
     }
 }

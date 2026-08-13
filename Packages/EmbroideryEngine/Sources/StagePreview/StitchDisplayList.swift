@@ -30,7 +30,18 @@ public struct StitchDisplayList: Equatable, Sendable {
 
     public private(set) var stitches: [PreviewStitch] = []
     public private(set) var colorRuns: [ColorRun] = []
-    public private(set) var bounds: StageBox?
+    /// The extent of what has been stitched, or `nil` when nothing finite has been.
+    ///
+    /// Computed from two independently accumulated axes rather than stored, so that a
+    /// coordinate the stream rejects (ADR-021 divergence #5, and reachable from a legal
+    /// program) can neither poison a bound nor make the result depend on the order the
+    /// stitches arrived in. Still O(1) — the accumulation happens in `append`.
+    public var bounds: StageBox? {
+        StageBox(combining: xExtent, yExtent)
+    }
+
+    private var xExtent: StageExtent?
+    private var yExtent: StageExtent?
 
     /// How many leading stitches the renderer has committed to its cached
     /// raster. Monotonic: only `reset()` may take it back, because moving it
@@ -118,17 +129,14 @@ public struct StitchDisplayList: Equatable, Sendable {
                 .lowerBound ..< index + 1
         }
 
-        // `finitelyContaining`, so a rejected coordinate cannot *seed* the box. Together
-        // with `expand`'s per-axis skip this makes `bounds` cover exactly the finite
-        // positions — without the seed guard, a design whose **first** stitch is
+        // Per axis, so a rejected coordinate can neither poison a bound nor depend on
+        // arrival order. Without the finiteness rule a design whose first stitch was
         // unconvertible had infinite bounds forever after, and US-305's fit target then
         // cropped the genuinely out-of-hoop stitches it exists to keep on screen
-        // (`swift-code-reviewer`, US-305).
-        if bounds == nil {
-            bounds = StageBox(finitelyContaining: stitch.position)
-        } else {
-            bounds?.expand(toInclude: stitch.position)
-        }
+        // (`swift-code-reviewer`, US-305); without the *per-axis* split, the same pair of
+        // stitches gave different bounds depending which arrived first (Codex round 1).
+        StageExtent.accumulate(&xExtent, stitch.position.x)
+        StageExtent.accumulate(&yExtent, stitch.position.y)
     }
 
     /// Appends a batch — one `RunBatch` per tick, in the US-306 path.
@@ -164,7 +172,8 @@ public struct StitchDisplayList: Equatable, Sendable {
     public mutating func reset() {
         stitches.removeAll(keepingCapacity: true)
         colorRuns.removeAll(keepingCapacity: true)
-        bounds = nil
+        xExtent = nil
+        yExtent = nil
         settledCount = 0
         // Monotonic, and deliberately **not** reset by anything: it is an identity for the
         // run, not a count of live state. See its declaration for the stale-raster bug it

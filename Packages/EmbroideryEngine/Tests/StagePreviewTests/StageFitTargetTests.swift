@@ -184,3 +184,70 @@ struct StageBoundsFinitenessTests {
         #expect(list.bounds == StageBox.containing(finite))
     }
 }
+
+/// Bounds must not depend on the **order** the stitches arrived in.
+///
+/// Codex round 1: `StageBox(finitelyContaining:)` requires *both* axes finite to seed, so
+/// a first stitch at `(.infinity, 1000)` contributed nothing at all and its perfectly good
+/// `y` was lost — while the same pair in the opposite order kept it. The suite missed it
+/// because `aNonFiniteAxisDoesNotDiscardTheOther` puts the finite stitch first, i.e. it
+/// only ever tested `expand`, never the seed. The fix accumulates each axis
+/// independently, so the seed and the expansion follow one rule.
+@Suite("Stage bounds axis independence")
+struct StageBoundsAxisIndependenceTests {
+    @Test("a partly non-finite first stitch still contributes its finite axis")
+    func aPartlyNonFiniteFirstStitchStillContributesItsFiniteAxis() throws {
+        let list = displayList([
+            previewStitch(.infinity, 1000, PreviewColor.red),
+            previewStitch(0, 0, PreviewColor.red)
+        ])
+        let bounds = try #require(list.bounds)
+
+        #expect(bounds.maxY == 1000, "the y of the poisoned stitch is real and must survive")
+        #expect(bounds.minY == 0)
+        #expect(bounds.minX == 0, "only the second stitch has a usable x")
+        #expect(bounds.maxX == 0)
+    }
+
+    @Test("bounds do not depend on the order the stitches arrived in")
+    func boundsDoNotDependOnArrivalOrder() {
+        let forwards = displayList([
+            previewStitch(.infinity, 1000, PreviewColor.red),
+            previewStitch(0, 0, PreviewColor.red)
+        ])
+        let backwards = displayList([
+            previewStitch(0, 0, PreviewColor.red),
+            previewStitch(.infinity, 1000, PreviewColor.red)
+        ])
+
+        #expect(forwards.bounds == backwards.bounds)
+    }
+
+    /// The one place Codex's expectation is **not** followed, stated rather than quietly
+    /// diverged from: it called a list of only `(.infinity, 1000)` having no bounds
+    /// "incorrect". A `StageBox` has four edges and there is no finite `x` here, so there
+    /// is no box to report — the same reason `bounds` is optional for an empty list. `nil`
+    /// is handled correctly downstream (`fitTarget` falls back to the hoop); inventing an
+    /// x extent would not be.
+    @Test("a stitch with no finite x yields no box, because a box needs both axes")
+    func aStitchWithNoFiniteXYieldsNoBox() {
+        let list = displayList([previewStitch(.infinity, 1000, PreviewColor.red)])
+
+        #expect(list.bounds == nil)
+        #expect(StageGeometry.fitTarget(including: list.bounds) == StageGeometry.box)
+    }
+
+    @Test("the oracle agrees with the incremental bounds on axis independence")
+    func theOracleAgreesOnAxisIndependence() {
+        let positions = [
+            StagePoint(x: .infinity, y: 1000),
+            StagePoint(x: 5, y: .nan),
+            StagePoint(x: -3, y: 20)
+        ]
+        var list = StitchDisplayList()
+        list.append(contentsOf: positions.map { PreviewStitch(position: $0, color: .black) })
+
+        #expect(list.bounds == StageBox.containing(positions))
+        #expect(list.bounds == StageBox(minX: -3, minY: 20, maxX: 5, maxY: 1000))
+    }
+}
