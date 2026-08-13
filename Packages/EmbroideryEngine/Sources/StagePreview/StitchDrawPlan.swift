@@ -36,6 +36,7 @@ public struct StitchDrawPlan: Equatable, Sendable {
     /// long → short, and one stroked path cannot render the middle one hairline while
     /// the others stay normal. With three styles of which one is never drawn, the real
     /// bound is two strokes per run, so ADR-009's batching claim is untouched.
+    ///
     /// **No public initializer, deliberately, and note how that is achieved.** A
     /// `public struct` gets an *internal* synthesized memberwise initializer, so simply
     /// not writing one already confines construction to this module — which makes
@@ -47,6 +48,17 @@ public struct StitchDrawPlan: Equatable, Sendable {
     /// chokepoint, so don't.
     public struct Stroke: Equatable, Sendable {
         public let style: StitchSegmentStyle
+
+        /// The colour run this stroke came from.
+        ///
+        /// **Meaningful for `.thread` and deliberately ignored for `.traversal`.** ADR-024
+        /// pins travel as *chrome* — the machine trims it, so it is not design data — and
+        /// the renderer draws it in a fixed chrome colour. This field still carries the
+        /// run's thread colour there because the stroke belongs to that run, which makes it
+        /// an invitation to "just use the colour that's right there"; don't
+        /// (`swift-code-reviewer`, US-305). Making it unrepresentable would need a second
+        /// two-case style enum, rejected in planning as more surface than the invariant is
+        /// worth given `Stroke` has exactly one producer.
         public let color: ThreadColor
 
         /// The *lower* index of each segment in this path; segment `i` spans stitch
@@ -66,6 +78,7 @@ public struct StitchDrawPlan: Equatable, Sendable {
     /// op can be recorded and drawn while the replay rejects it. The preview shows the
     /// requested design; that is intended, and it is a record-model difference rather
     /// than an appearance one.
+    ///
     /// Constructible only inside this module, for the reason `Stroke` records.
     public struct DotRun: Equatable, Sendable {
         public let color: ThreadColor

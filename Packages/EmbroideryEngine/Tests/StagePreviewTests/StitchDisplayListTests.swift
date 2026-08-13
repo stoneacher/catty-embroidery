@@ -156,3 +156,40 @@ struct StitchDisplayListTests {
         #expect(displayList(stitches) == oneAtATime)
     }
 }
+
+/// `resetCount`, added by US-305 for the stale-raster bug its declaration describes.
+@Suite("Display list reset identity")
+struct StitchDisplayListResetIdentityTests {
+    @Test("a fresh list has never been reset")
+    func aFreshListHasNeverBeenReset() {
+        #expect(StitchDisplayList().resetCount == 0)
+    }
+
+    /// The property a cache key needs: two *different* runs that settle to the same count
+    /// are distinguishable. Without this the key repeats and the previous design's raster
+    /// is composited under the new design's live tail.
+    @Test("two runs settled to the same count are still distinguishable")
+    func twoRunsSettledToTheSameCountAreDistinguishable() {
+        var list = displayList([previewStitch(0, 0), previewStitch(10, 0)])
+        list.markSettled(upTo: 2)
+        let firstKey = [list.settledCount, list.resetCount]
+
+        list.reset()
+        list.append(contentsOf: [previewStitch(50, 50), previewStitch(60, 50)])
+        list.markSettled(upTo: 2)
+        let secondKey = [list.settledCount, list.resetCount]
+
+        #expect(list.settledCount == 2, "the counts deliberately do collide")
+        #expect(firstKey != secondKey, "so something else has to break the tie")
+    }
+
+    @Test("the reset count is monotonic and survives appending")
+    func theResetCountIsMonotonicAndSurvivesAppending() {
+        var list = StitchDisplayList()
+        list.reset()
+        list.reset()
+        list.append(previewStitch(0, 0))
+
+        #expect(list.resetCount == 2)
+    }
+}

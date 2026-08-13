@@ -41,7 +41,23 @@ private struct CanvasStitchLayers: View {
     /// something to turn.
     private static let bakingThreshold = 2000
 
+    /// Read here rather than in `StageChrome`, because it is a *drawing input*: it changes
+    /// what the travel stroke looks like, so it has to reach the stroking function and it
+    /// has to be part of the bake key.
+    @Environment(\.colorSchemeContrast) private var contrast
+
     @State private var baked: Baked?
+
+    /// Travel at full opacity under Increase Contrast, per ADR-024.
+    ///
+    /// This was **documented in `StageChrome` and recorded in ADR-024 before any code
+    /// asked for it** — the renderer strokes travel unconditionally at 0.6
+    /// (`swift-code-reviewer`, US-305). An ADR asserting behaviour with nothing behind it
+    /// is worse than a missing feature in a repo whose house style is to retract
+    /// overclaiming comments explicitly, so the code now matches the claim.
+    private var travelOpacity: Double {
+        contrast == .increased ? 1 : StageChrome.travelOpacity
+    }
 
     /// What a cached raster is only valid for.
     ///
@@ -51,9 +67,25 @@ private struct CanvasStitchLayers: View {
     /// user switches appearance, so the raster survives it.
     private struct BakeKey: Hashable {
         let settledCount: Int
+
+        /// **Not redundant with `settledCount`.** `reset()` breaks the append-only premise
+        /// the count relies on: afterwards the same count describes different pixels, so a
+        /// US-306 driver switching designs and re-settling to the same watermark would hit
+        /// a matching key and composite the *previous* design's raster under the new
+        /// design's live tail. The fitted transform cannot break that tie, because ADR-024
+        /// records as a benefit that it is identical for every in-hoop design.
+        let resetCount: Int
+
         let transform: StageTransform
         let width: Double
         let height: Double
+
+        /// The colour **scheme** is deliberately absent — nothing inside the canvas adapts
+        /// to it, which is a real payoff of the dark-mode rule. Increase Contrast is a
+        /// different matter: it *does* change the travel stroke, so it belongs here. The
+        /// distinction is the whole reason ADR-024's "the raster survives an appearance
+        /// switch" argument had to be re-checked when contrast became a drawing input.
+        let increasedContrast: Bool
     }
 
     private struct Baked {
@@ -64,26 +96,48 @@ private struct CanvasStitchLayers: View {
     private var bakeKey: BakeKey {
         BakeKey(
             settledCount: display.settledCount,
+            resetCount: display.resetCount,
             transform: transform,
             width: viewport.width,
-            height: viewport.height
+            height: viewport.height,
+            increasedContrast: contrast == .increased
         )
     }
 
     var body: some View {
         Canvas { context, size in
-            if let baked, baked.key == bakeKey {
+            // The raster was rendered at `viewport` and is blitted into `size`, so a
+            // mismatch would *stretch* the settled layer while the live tail stays
+            // unstretched — a visibly misplaced seam. Today they are equal because this
+            // view fills the `GeometryReader` that measured the viewport, but nothing in
+            // the type system says so, and a future caller framing the renderer smaller
+            // would get the seam with no test able to see it. Falling back to `.entire`
+            // makes the assumption self-enforcing (`swift-code-reviewer`, US-305).
+            if let baked, baked.key == bakeKey, Self.matches(size, viewport) {
                 context.draw(baked.image, in: CGRect(origin: .zero, size: size))
                 Self.stroke(
-                    .live(of: display), of: display.stitches, transform: transform, into: &context
+                    .live(of: display),
+                    of: display.stitches,
+                    transform: transform,
+                    travelOpacity: travelOpacity,
+                    into: &context
                 )
             } else {
                 Self.stroke(
-                    .entire(of: display), of: display.stitches, transform: transform, into: &context
+                    .entire(of: display),
+                    of: display.stitches,
+                    transform: transform,
+                    travelOpacity: travelOpacity,
+                    into: &context
                 )
             }
         }
         .onChange(of: bakeKey, initial: true) { rebakeIfWorthwhile() }
+    }
+
+    /// Whether the `Canvas`'s own size is the viewport the raster was rendered at.
+    private static func matches(_ size: CGSize, _ viewport: ViewSize) -> Bool {
+        size.width == viewport.width && size.height == viewport.height
     }
 
     /// Bakes the settled prefix, or throws the raster away if there is not enough of it
@@ -104,12 +158,19 @@ private struct CanvasStitchLayers: View {
         // the more expensive one.
         let settledPoints = Array(display.stitches[..<settled])
         let transform = transform
+        let travelOpacity = travelOpacity
         let size = CGSize(width: viewport.width, height: viewport.height)
 
         baked = Baked(
             key: bakeKey,
             image: Image(size: size) { context in
-                Self.stroke(plan, of: settledPoints, transform: transform, into: &context)
+                Self.stroke(
+                    plan,
+                    of: settledPoints,
+                    transform: transform,
+                    travelOpacity: travelOpacity,
+                    into: &context
+                )
             }
         )
     }
@@ -128,6 +189,7 @@ private struct CanvasStitchLayers: View {
         _ plan: StitchDrawPlan,
         of points: [PreviewStitch],
         transform: StageTransform,
+        travelOpacity: Double,
         into context: inout GraphicsContext
     ) {
         for stroke in plan.strokes {
@@ -146,7 +208,7 @@ private struct CanvasStitchLayers: View {
             case .traversal:
                 context.stroke(
                     path,
-                    with: .color(StageChrome.travelLine.opacity(StageChrome.travelOpacity)),
+                    with: .color(StageChrome.travelLine.opacity(travelOpacity)),
                     style: StrokeStyle(
                         lineWidth: StitchDrawMetrics.traversalWidthInViewPoints,
                         lineCap: .butt,

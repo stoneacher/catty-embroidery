@@ -64,6 +64,16 @@ public struct StageBox: Hashable, Sendable {
     /// non-finite edge — `center` above says the same thing about the same field.
     /// Skipping per axis means one bad stitch can neither delete the finite extent
     /// beside it nor shrink the union below the hoop.
+    ///
+    /// **Precondition: both operands are well-ordered per axis** (`minX <= maxX`,
+    /// `minY <= maxY`). Because the per-axis skip picks each edge independently from
+    /// whichever operand is finite there, two boxes each poisoned on a *different* edge can
+    /// otherwise produce an inverted result — `(minX: 300, maxX: .nan)` unioned with
+    /// `(minX: .nan, maxX: 200)` gives `minX 300 > maxX 200`. Unreachable through
+    /// `StageGeometry.fitTarget`, whose hoop operand is finite on every edge, and
+    /// `StageTransform.fitting` stays total for an inverted box in any case — it falls back
+    /// to scale 1 rather than trapping. Stated because this method is public
+    /// (`swift-code-reviewer`, US-305).
     public func union(_ other: StageBox) -> StageBox {
         StageBox(
             minX: Self.lesser(minX, other.minX),
@@ -89,23 +99,62 @@ public struct StageBox: Hashable, Sendable {
         return Swift.max(first, second)
     }
 
-    public mutating func expand(toInclude point: StagePoint) {
-        minX = Swift.min(minX, point.x)
-        minY = Swift.min(minY, point.y)
-        maxX = Swift.max(maxX, point.x)
-        maxY = Swift.max(maxY, point.y)
+    /// The box at a single point, or `nil` if either coordinate is non-finite.
+    ///
+    /// The seed half of the finiteness rule below: a box has to start *somewhere*, and
+    /// starting it at infinity is what let a single rejected coordinate poison every
+    /// bound derived afterwards.
+    public init?(finitelyContaining point: StagePoint) {
+        guard point.x.isFinite, point.y.isFinite else { return nil }
+        self.init(containing: point)
     }
 
-    /// The from-scratch min/max over a sequence — the oracle
-    /// `StitchDisplayList.bounds` is checked against, so that the incremental
-    /// maintenance is proven rather than merely plausible. `nil` for an empty
-    /// sequence: there is no such thing as the bounds of nothing.
+    /// Grows the box to include `point`, **skipping a non-finite coordinate per axis**.
+    ///
+    /// **This is a correctness fix, not hygiene** (`swift-code-reviewer`, US-305). ADR-021
+    /// divergence #5 means a coordinate the stream *rejects* is still emitted and still
+    /// drawn, and `changeXBy` accumulates without normalising — so two
+    /// `greatestFiniteMagnitude` steps reach infinity from a perfectly legal program.
+    /// Absorbing that infinity made `StitchDisplayList.bounds` infinite, which made
+    /// `StageGeometry.fitTarget` collapse back to the hoop, which fitted a stitch 750 pt
+    /// *outside* the hoop off-screen — the exact "silently cropped" outcome US-305's
+    /// criterion forbids, and it silenced the hoop-overflow notice with it.
+    ///
+    /// Per axis rather than per point, so a stitch at `(.infinity, 400)` still
+    /// contributes its perfectly good `y`.
+    ///
+    /// The invariant this establishes: **`bounds` covers exactly the finite positions.**
+    /// `union`'s own non-finite skip is therefore the belt-and-braces its doc comment
+    /// claims to be, rather than the only thing standing between a bad stitch and a
+    /// cropped design.
+    public mutating func expand(toInclude point: StagePoint) {
+        if point.x.isFinite {
+            minX = Swift.min(minX, point.x)
+            maxX = Swift.max(maxX, point.x)
+        }
+        if point.y.isFinite {
+            minY = Swift.min(minY, point.y)
+            maxY = Swift.max(maxY, point.y)
+        }
+    }
+
+    /// The from-scratch min/max over a sequence — the oracle `StitchDisplayList.bounds` is
+    /// checked against, so that the incremental maintenance is proven rather than merely
+    /// plausible. `nil` for an empty sequence: there is no such thing as the bounds of
+    /// nothing.
+    ///
+    /// Skips non-finite coordinates on the same terms as `expand(toInclude:)`, including
+    /// when looking for a seed — an oracle that disagreed with the thing it certifies
+    /// would be worse than no oracle, since the differential test would fail for the wrong
+    /// reason. `nil` therefore also means "nothing finite here".
     public static func containing(_ points: some Sequence<StagePoint>) -> StageBox? {
-        var iterator = points.makeIterator()
-        guard let first = iterator.next() else { return nil }
-        var box = StageBox(containing: first)
-        while let point = iterator.next() {
-            box.expand(toInclude: point)
+        var box: StageBox?
+        for point in points {
+            if box == nil {
+                box = StageBox(finitelyContaining: point)
+            } else {
+                box?.expand(toInclude: point)
+            }
         }
         return box
     }
