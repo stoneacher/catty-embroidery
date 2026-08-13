@@ -49,6 +49,46 @@ public struct StageBox: Hashable, Sendable {
         StagePoint(x: minX / 2 + maxX / 2, y: minY / 2 + maxY / 2)
     }
 
+    /// The smallest box containing both — US-305's fit target is
+    /// `union(hoop, contentBounds)`, so a design that leaves the hoop is *visible*
+    /// rather than silently cropped.
+    ///
+    /// **Non-finite edges are skipped per axis, and that is the whole subtlety.**
+    /// `Swift.min(a, .nan)` returns `a` while `Swift.min(.nan, a)` returns `.nan`,
+    /// so the naive four-way min/max is order-dependent in the presence of NaN: it
+    /// would either poison the result or silently discard a real extent, depending
+    /// on which operand happened to be the receiver.
+    ///
+    /// This is reachable, not defensive: ADR-021 divergence #5 means a coordinate the
+    /// stream *rejects* is still drawn, so `StitchDisplayList.bounds` can carry a
+    /// non-finite edge — `center` above says the same thing about the same field.
+    /// Skipping per axis means one bad stitch can neither delete the finite extent
+    /// beside it nor shrink the union below the hoop.
+    public func union(_ other: StageBox) -> StageBox {
+        StageBox(
+            minX: Self.lesser(minX, other.minX),
+            minY: Self.lesser(minY, other.minY),
+            maxX: Self.greater(maxX, other.maxX),
+            maxY: Self.greater(maxY, other.maxY)
+        )
+    }
+
+    /// `min`, treating a non-finite edge as absent. Returns the other operand
+    /// unexamined when one is unusable — and `self` when both are, since there is no
+    /// finite answer to give and the caller's box is the one with a claim to it.
+    private static func lesser(_ first: Double, _ second: Double) -> Double {
+        guard first.isFinite else { return second }
+        guard second.isFinite else { return first }
+        return Swift.min(first, second)
+    }
+
+    /// `max`, treating a non-finite edge as absent.
+    private static func greater(_ first: Double, _ second: Double) -> Double {
+        guard first.isFinite else { return second }
+        guard second.isFinite else { return first }
+        return Swift.max(first, second)
+    }
+
     public mutating func expand(toInclude point: StagePoint) {
         minX = Swift.min(minX, point.x)
         minY = Swift.min(minY, point.y)

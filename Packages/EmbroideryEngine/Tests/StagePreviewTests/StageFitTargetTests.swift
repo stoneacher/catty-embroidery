@@ -94,11 +94,11 @@ struct StageFitTargetTests {
     /// expectation here quietly relies on.
     @Test("union never shrinks either operand and does not depend on the order")
     func unionNeverShrinksAndIsCommutative() {
-        let a = StageBox(minX: -5, minY: -5, maxX: 5, maxY: 5)
-        let b = StageBox(minX: 0, minY: -20, maxX: 40, maxY: 1)
+        let small = StageBox(minX: -5, minY: -5, maxX: 5, maxY: 5)
+        let wide = StageBox(minX: 0, minY: -20, maxX: 40, maxY: 1)
 
-        #expect(a.union(b) == b.union(a))
-        #expect(a.union(b) == StageBox(minX: -5, minY: -20, maxX: 40, maxY: 5))
-        #expect(a.union(a) == a)
+        #expect(small.union(wide) == wide.union(small))
+        #expect(small.union(wide) == StageBox(minX: -5, minY: -20, maxX: 40, maxY: 5))
+        #expect(small.union(small) == small)
     }
 }

@@ -33,4 +33,27 @@ public enum StageGeometry {
         maxX: halfExtentInPoints,
         maxY: halfExtentInPoints
     )
+
+    /// What the view fits: the hoop **union** whatever has been stitched.
+    ///
+    /// The union, not the content, and not the hoop — this is the one line that makes
+    /// "the hoop is an outline and is not clipped to" true. Fitting the content alone
+    /// would let the hoop slide off-screen and lose the frame of reference; fitting
+    /// the hoop alone would crop a design that left it, which is exactly the silent
+    /// failure the criterion forbids. Overflow therefore *zooms the scene out*: the
+    /// hoop shrinks inside a growing margin, which is motion the user caused and can
+    /// interpret.
+    ///
+    /// `nil` content is the empty display list, not an error — before a run there is
+    /// nothing stitched, and the hoop alone is the right thing to show. (There is no
+    /// such thing as the bounds of nothing, which is why `bounds` is optional.)
+    ///
+    /// A pleasant consequence worth knowing about: because the result always contains
+    /// the 500 × 500 hoop, the fitted transform is **constant for every design that
+    /// stays inside it** — all of M3's samples. So a normal run never refits, and the
+    /// settled raster is never invalidated by a zoom change it did not ask for.
+    public static func fitTarget(including content: StageBox?) -> StageBox {
+        guard let content else { return box }
+        return box.union(content)
+    }
 }
