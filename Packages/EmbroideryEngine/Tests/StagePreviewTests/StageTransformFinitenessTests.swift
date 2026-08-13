@@ -124,7 +124,10 @@ struct StageTransformFinitenessTests {
         #expect(transform.scale.isFinite)
         #expect(transform.translation.x.isFinite)
         #expect(transform.translation.y.isFinite)
-        #expect(transform.scale >= StageTransform.minimumScale)
+        // The **representability** floor, not the gesture bound. US-305 separated the two:
+        // `init` guarantees a usable transform, while `minimumScale` bounds only a pinch.
+        // This suite's subject is finiteness, so it asserts the floor `init` actually owns.
+        #expect(transform.scale >= StageTransform.minimumRepresentableScale)
     }
 
     /// Codex round 4's `fitting` counterexample. The round-3 fix bounded

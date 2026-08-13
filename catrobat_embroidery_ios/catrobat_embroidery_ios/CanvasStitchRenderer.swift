@@ -228,6 +228,8 @@ private struct CanvasStitchLayers: View {
             var path = Path()
             for index in run.indices {
                 let centre = transform.viewCGPoint(of: points[index].position)
+                // Skip an undrawable dot rather than adding it. See `segmentPath`.
+                guard centre.isDrawable else { continue }
                 path.addEllipse(
                     in: CGRect(
                         x: centre.x - radius,
@@ -255,8 +257,21 @@ private struct CanvasStitchLayers: View {
     ) -> Path {
         var path = Path()
         for start in starts {
-            path.move(to: transform.viewCGPoint(of: points[start].position))
-            path.addLine(to: transform.viewCGPoint(of: points[start + 1].position))
+            let from = transform.viewCGPoint(of: points[start].position)
+            let to = transform.viewCGPoint(of: points[start + 1].position)
+
+            // **The renderer's non-finite policy, and it needs to be explicit** (Codex
+            // round 2). ADR-021 divergence #5 deliberately lets a coordinate the stream
+            // *rejects* into the display trace, so a position can be infinite or NaN — and
+            // because this is a **batched** path, one such point does not merely misdraw
+            // itself: CoreGraphics can discard the whole path, taking every good segment in
+            // the colour run with it. Skipping the offending subpath keeps the rest of the
+            // run on screen, which is the same "one bad stitch must not delete the design"
+            // rule `StageBox.expand(toInclude:)` applies to bounds.
+            guard from.isDrawable, to.isDrawable else { continue }
+
+            path.move(to: from)
+            path.addLine(to: to)
         }
         return path
     }

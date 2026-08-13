@@ -251,3 +251,67 @@ struct StageBoundsAxisIndependenceTests {
         #expect(list.bounds == StageBox(minX: -3, minY: 20, maxX: 5, maxY: 1000))
     }
 }
+
+/// The fit must show the whole design even when that needs a scale below the *gesture*
+/// zoom limit.
+///
+/// Codex round 2, High. `fitting` inherited `minimumScale` from `init`'s clamp, so a fit
+/// target wider than `available / 0.05` could not be shown whole and content the
+/// hoop ∪ content union exists to keep visible mapped off-canvas — against US-305's own
+/// criterion.
+///
+/// **And the design in question exports perfectly well**, which is what makes this a defect
+/// rather than a boundary. An earlier triage deferred it on the argument that every design
+/// the clamp cropped was already unexportable, since the 4-wide DST extent fields overflow
+/// above 5000 stage points. That confused *span* with *per-direction extent*: ADR-012
+/// measures extents relative to the **first stitch**, per direction, so a design centred on
+/// its first stitch can span 6402 points with both `+X` and `−X` at 6402 units — inside the
+/// fields. The deferral argument was wrong and the fix belongs here.
+@Suite("Stage fit beyond the gesture zoom limit")
+struct StageFitBeyondGestureLimitTests {
+    /// Codex's reproducer exactly: `(0,0) → (−3201,0) → (3201,0)` into a 320 × 320 viewport.
+    @Test("an exportable design wider than the pinch limit is still shown whole")
+    func anExportableDesignWiderThanThePinchLimitIsShownWhole() {
+        let list = displayList([
+            previewStitch(0, 0),
+            previewStitch(-3201, 0),
+            previewStitch(3201, 0)
+        ])
+        let viewport = ViewSize(width: 320, height: 320)
+        let transform = StageTransform.fitting(
+            StageGeometry.fitTarget(including: list.bounds), in: viewport
+        )
+
+        for extreme in [-3201.0, 3201.0] {
+            let mapped = transform.viewPoint(of: StagePoint(x: extreme, y: 0))
+            #expect(mapped.x >= 0, "x = \(extreme) fell off the left edge")
+            #expect(mapped.x <= viewport.width, "x = \(extreme) fell off the right edge")
+        }
+
+        #expect(transform.scale < StageTransform.minimumScale, "it genuinely needs to go lower")
+        #expect(transform.scale >= StageTransform.minimumRepresentableScale)
+    }
+
+    /// The other half of the separation, and the reason it is safe: a **pinch** still cannot
+    /// zoom out past `minimumScale`, so the gesture bound the user feels is unchanged.
+    @Test("a pinch still cannot zoom out past the gesture limit")
+    func aPinchStillCannotZoomOutPastTheGestureLimit() {
+        let fitted = StageTransform.fitting(
+            StageGeometry.box, in: ViewSize(width: 320, height: 320)
+        )
+
+        #expect(fitted.pinched(by: 1e-9, about: .zero).scale == StageTransform.minimumScale)
+    }
+
+    /// A fit target far past anything a DST file could describe still yields a usable
+    /// transform rather than an unbounded one — the floor is a floor, not a removal.
+    @Test("the representability floor still bounds an absurd fit target")
+    func theRepresentabilityFloorStillBoundsAnAbsurdFitTarget() {
+        let absurd = StageBox(minX: -1e300, minY: 0, maxX: 1e300, maxY: 0)
+        let transform = StageTransform.fitting(absurd, in: ViewSize(width: 320, height: 320))
+
+        #expect(transform.scale >= StageTransform.minimumRepresentableScale)
+        #expect(transform.scale.isFinite)
+        #expect(transform.translation.x.isFinite)
+    }
+}

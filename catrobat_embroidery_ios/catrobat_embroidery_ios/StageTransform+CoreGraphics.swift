@@ -46,6 +46,18 @@ extension StageTransform {
     }
 }
 
+extension CGPoint {
+    /// Whether this point can go into a `Path` at all.
+    ///
+    /// Lives beside the adapter because the adapter is what produces it: `viewCGPoint(of:)`
+    /// maps whatever the display list holds, and ADR-021 divergence #5 means that can be
+    /// non-finite. The renderer's batching is what makes the check load-bearing rather than
+    /// cosmetic — a single NaN in a shared `Path` can cost every other segment in it.
+    var isDrawable: Bool {
+        x.isFinite && y.isFinite
+    }
+}
+
 extension ViewSize {
     /// A measured SwiftUI size, on the way in to the package's fitting math.
     init(_ size: CGSize) {

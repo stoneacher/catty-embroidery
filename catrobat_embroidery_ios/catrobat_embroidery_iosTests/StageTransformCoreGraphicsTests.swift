@@ -73,6 +73,71 @@ struct StageTransformCoreGraphicsTests {
     }
 }
 
+/// The non-finite policy the renderer depends on, and the extreme coordinates the
+/// differential suite above omits.
+///
+/// Codex round 2 named both as blind spots: the adapter was only ever exercised on ordinary
+/// finite points, so nothing pinned what happens when ADR-021 divergence #5 puts an infinite
+/// position in the display list — and nothing stated that the renderer must skip it.
+@Suite("Stage transform drawability")
+struct StageTransformDrawabilityTests {
+    @Test("an ordinary mapped point is drawable")
+    func anOrdinaryMappedPointIsDrawable() {
+        let transform = StageTransform.fitting(
+            StageGeometry.box, in: ViewSize(width: 320, height: 320)
+        )
+
+        #expect(transform.viewCGPoint(of: StagePoint(x: 10, y: -20)).isDrawable)
+    }
+
+    /// The case that matters: a rejected coordinate maps to something no `Path` can hold.
+    /// The renderer's guard is what stops it, and this pins the predicate that guard uses —
+    /// so a future "simplification" that drops the check has something to fail.
+    @Test("a non-finite stage position maps to an undrawable point")
+    func aNonFiniteStagePositionIsUndrawable() {
+        let transform = StageTransform.fitting(
+            StageGeometry.box, in: ViewSize(width: 320, height: 320)
+        )
+
+        #expect(!transform.viewCGPoint(of: StagePoint(x: .infinity, y: 0)).isDrawable)
+        #expect(!transform.viewCGPoint(of: StagePoint(x: 0, y: .nan)).isDrawable)
+        #expect(!transform.viewCGPoint(of: StagePoint(x: -.infinity, y: .infinity)).isDrawable)
+    }
+
+    /// A coordinate that is finite but enormous still maps finitely, because
+    /// `StageTransform.fitting` reduces the scale until the content's corners do — so it is
+    /// drawable, merely far away. Worth pinning separately from the non-finite case: the two
+    /// look alike and want opposite treatment.
+    @Test("an extreme but finite coordinate stays drawable")
+    func anExtremeButFiniteCoordinateStaysDrawable() {
+        let extreme = 1e12
+        let transform = StageTransform.fitting(
+            StageBox(minX: -extreme, minY: -extreme, maxX: extreme, maxY: extreme),
+            in: ViewSize(width: 320, height: 320)
+        )
+
+        #expect(transform.viewCGPoint(of: StagePoint(x: extreme, y: extreme)).isDrawable)
+        #expect(transform.viewCGPoint(of: StagePoint(x: -extreme, y: -extreme)).isDrawable)
+    }
+
+    /// The adapter and the package mapping must agree at extremes too, not just on the
+    /// ordinary points the suite above uses — the differential pin is worthless if it only
+    /// covers the inputs where nothing goes wrong.
+    @Test("the affine transform agrees with the double mapping at extreme coordinates")
+    func theAffineAgreesAtExtremeCoordinates() {
+        let transform = StageTransform(scale: 1e-6, translation: ViewPoint(x: 160, y: 160))
+
+        for coordinate in [1e12, -1e12, 1e300, -1e300] {
+            let point = StagePoint(x: coordinate, y: coordinate)
+            let throughAffine = CGPoint(x: point.x, y: point.y).applying(transform.affine)
+            let throughPackage = transform.viewPoint(of: point)
+
+            #expect(Double(throughAffine.x) == throughPackage.x)
+            #expect(Double(throughAffine.y) == throughPackage.y)
+        }
+    }
+}
+
 private extension Double {
     func isApproximately(_ other: Double, within tolerance: Double = 1e-9) -> Bool {
         Swift.abs(self - other) <= tolerance
