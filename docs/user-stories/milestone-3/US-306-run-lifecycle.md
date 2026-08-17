@@ -2,7 +2,7 @@
 
 **Epic**: E4 Stage & preview | **Estimate**: ~5 h | **Depends on**: US-302, US-305
 
-**Status**: In review — implemented 2026-08-17, ADR-027 pinned. **577 engine tests** (up from 546) and 47 app tests; five screenshots. In-loop `swift-code-reviewer` round 1 closed: one Critical (a discarded run corrupting the next), two Important, four suggestions, all accepted. Awaiting the cross-vendor `/codex-review` loop before hand-over.
+**Status**: In review — implemented 2026-08-17, ADR-027 pinned. **577 engine tests** (up from 546) and 47 app tests; five screenshots. In-loop `swift-code-reviewer` round 1 closed: one Critical (a discarded run corrupting the next), two Important, four suggestions, all accepted. **Cross-vendor `/codex-review` closed after 4 rounds — 15 findings, none rejected, Medium → Medium → Low → Low, ending on a round with no code changes.** 581 engine tests and 48 app tests at hand-over. Ready for review on [PR #37](https://github.com/stoneacher/catty-embroidery/pull/37); Sebastian merges.
 
 **Story**: As a user, I want to press play and watch the needle lay stitches, and press stop and still have my design, so the preview is a live run rather than a static picture.
 
