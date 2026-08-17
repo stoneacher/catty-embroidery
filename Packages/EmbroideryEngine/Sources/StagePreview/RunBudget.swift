@@ -8,7 +8,7 @@ public struct RunBudget: Hashable, Sendable {
     /// How many `step()` calls one frame may make. Defaults to 1, which is
     /// ADR-018's coupling: one logical tick per displayed frame, so a `wait(1)`
     /// brick at `tickDelta = 1/60` occupies 60 frames and reads as one second.
-    public var ticksPerFrame: Int
+    public let ticksPerFrame: Int
 
     /// A stitch budget checked **between** ticks: once a frame has accumulated
     /// this many stitches, it runs no further tick and yields what it has.
@@ -26,7 +26,7 @@ public struct RunBudget: Hashable, Sendable {
     /// So this exists for when `ticksPerFrame` is *raised*, exactly as US-306's
     /// criterion says. Saying so here matters because a reader who assumes it
     /// throttles today would size it against a frame time it does not control.
-    public var maxStitchesPerFrame: Int
+    public let maxStitchesPerFrame: Int
 
     /// The whole-run stitch cap, and the only producer of
     /// `RunCompletion.stitchLimitReached`.
@@ -44,16 +44,27 @@ public struct RunBudget: Hashable, Sendable {
     /// US-309's 50 000-stitch exit criterion by a wide margin (4×), and sit well
     /// under the DST `ST` header field's 999 999 ceiling, which US-211 turns from
     /// a trap into a thrown error.
-    public var maxStitchesPerRun: Int
+    public let maxStitchesPerRun: Int
 
+    /// **Every axis is clamped to at least 1, and that is a correctness fix rather than
+    /// tidiness** (`swift-code-reviewer`). `ticksPerFrame: 0` ran zero ticks per frame, so no
+    /// budget axis could ever fire — `run.isFinished` stayed false because no `step()` was
+    /// made, and `stitchesThisRun` stayed 0 — producing a run that yielded empty frames
+    /// forever and delivered **zero** terminals. That was the only path found that breaks the
+    /// terminal guarantee ADR-027 makes structural everywhere else. A negative
+    /// `maxStitchesPerRun` is the mirror case: `0 >= -1` terminated every run on frame 1.
+    ///
+    /// Clamped here rather than guarded at the use site because this type is `public` and
+    /// ADR-027 hands it to US-309 as a tunable, so the invalid value must not be
+    /// constructible in the first place.
     public init(
         ticksPerFrame: Int = 1,
         maxStitchesPerFrame: Int = 2000,
         maxStitchesPerRun: Int = 200_000
     ) {
-        self.ticksPerFrame = ticksPerFrame
-        self.maxStitchesPerFrame = maxStitchesPerFrame
-        self.maxStitchesPerRun = maxStitchesPerRun
+        self.ticksPerFrame = Swift.max(1, ticksPerFrame)
+        self.maxStitchesPerFrame = Swift.max(1, maxStitchesPerFrame)
+        self.maxStitchesPerRun = Swift.max(1, maxStitchesPerRun)
     }
 
     /// What the app runs with: one tick per displayed frame (ADR-018).

@@ -122,13 +122,25 @@
       }
     },
     "stage.run.limit.notice": {
-      "comment": "Shown beneath the preview when a design was stopped because it produced more stitches than the preview will draw — typically a design that repeats forever. %lld is the number of stitches reached. Not an error: the stitches shown are real and the design can still be exported.",
+      "comment": "Shown beneath the preview when a design was stopped because it produced more stitches than the preview will draw — typically a design that repeats forever. %lld is the number of stitches reached. Not an error: the stitches shown are real and the design can still be exported. Pluralised on the stitch count; add the categories your language needs (zero/one/two/few/many as applicable).",
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Preview stopped after %lld stitches."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Preview stopped after %lld stitch."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Preview stopped after %lld stitches."
+                }
+              }
+            }
           }
         }
       }

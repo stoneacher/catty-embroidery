@@ -95,6 +95,9 @@ struct StagePreviewTargetIsolationTests {
         var batch = RunBatch.empty
         absorb(&batch, RunBatch(stitches: [previewStitch(1, 1)]))
         var run = PreviewRunState()
+        // `begin()` is required, not incidental: `apply` refuses updates unless the run is
+        // `.running`, which is the structural half of the discarded-run fix.
+        run.begin()
         apply(&run, RunUpdate(batch: batch))
 
         #expect(batch.stitches.count == 1)

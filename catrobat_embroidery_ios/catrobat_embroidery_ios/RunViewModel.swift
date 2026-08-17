@@ -61,6 +61,26 @@ final class RunViewModel {
         // The work it awaits happens off-actor inside the driver.
         consumer = Task { [weak self] in
             for await update in session.updates {
+                // **A cancelled consumer keeps receiving buffered elements**, so this check
+                // is required rather than belt-and-braces. Cancelling an `AsyncStream`
+                // consumer marks the stream terminal but does **not** discard `pending`:
+                // measured, a consumer cancelled before it ever ran still received all five
+                // buffered elements, and `next()` in a cancelled task with one element
+                // buffered returned the element rather than `nil`.
+                //
+                // Without this, an orphaned consumer from a discarded run applied its
+                // buffered frames into the run that replaced it — measured at 5 001 stitches
+                // and a `.stitchLimitReached` state arriving *after* a `reset()`, and a
+                // buffered terminal published the discarded design's export model, which is
+                // US-308's input (`swift-code-reviewer`). Reachable by picking a new sample
+                // while a run is in flight.
+                //
+                // `PreviewRunState.apply` additionally refuses updates unless the run is
+                // `.running`, which makes the corruption unrepresentable; this stops the
+                // wasted work rather than merely its effect.
+                if Task.isCancelled {
+                    return
+                }
                 self?.apply(update)
             }
         }
@@ -82,6 +102,18 @@ final class RunViewModel {
     func reset() {
         discard()
         run.reset()
+    }
+
+    /// Nothing owns this object beyond the window today — `AppModel.runner` is a `let` living
+    /// as long as the window — so this is unreachable rather than load-bearing. It is here
+    /// because the ownership argument above would otherwise be incomplete: the consumer holds
+    /// the session strongly, and the session owns the producer, so a `RunViewModel` released
+    /// mid-run would leave the producer stepping the interpreter to `maxStitchesPerRun` —
+    /// 200 000 stitches of work nobody will ever see (`swift-code-reviewer`). Cancelling the
+    /// consumer is enough: that terminates the stream, and the stream's `onTermination`
+    /// cancels the producer.
+    deinit {
+        consumer?.cancel()
     }
 
     /// Tears down both tasks. Unlike `stop()`, this *does* cancel the consumer: the run

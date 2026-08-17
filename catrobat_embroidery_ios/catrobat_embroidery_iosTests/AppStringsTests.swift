@@ -107,5 +107,15 @@ struct AppStringsTests {
         #expect(hasDigit)
         // And the words around it survive: a collapsed entry would be the bare number.
         #expect(hasLetter, "the entry collapsed to its argument")
+
+        // **Pluralised**, so the singular is a different string rather than "1 stitches".
+        // The count is arbitrary — any value at or above the cap — and this is the catalog's
+        // first numeric string, so it sets the pattern for a repo targeting ~75 languages
+        // through Crowdin (`swift-code-reviewer`). Languages with dual/paucal forms cannot be
+        // translated correctly from a single form, and the plural *categories* are the
+        // translator's to add; what this pins is that the entry has variations at all.
+        let singular = String(localized: .stageRunLimitNotice(1))
+        #expect(singular != rendered, "the entry has no plural variations")
+        #expect(singular.contains { $0.isLetter })
     }
 }

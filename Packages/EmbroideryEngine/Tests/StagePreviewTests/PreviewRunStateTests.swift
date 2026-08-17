@@ -162,6 +162,91 @@ struct PreviewRunStateTests {
         #expect(run.exportModel == nil)
     }
 
+    // MARK: - Only a running run accepts updates
+
+    /// **The structural half of the fix for a discarded run's updates landing in the next
+    /// one** (`swift-code-reviewer`). A cancelled consumer keeps receiving elements already
+    /// buffered in the `AsyncStream` — cancellation marks the stream terminal but does not
+    /// discard `pending`, measured directly — so the app-side `Task.isCancelled` check stops
+    /// the *work* while this makes the corruption unrepresentable.
+    @Test("an update applied before the run begins is ignored")
+    func anUpdateBeforeBeginIsIgnored() {
+        var run = PreviewRunState()
+
+        run.apply(RunUpdate(batch: RunBatch(stitches: [previewStitch(1, 1)])))
+
+        #expect(run.state == .idle)
+        #expect(run.display.isEmpty)
+        #expect(run.revision == 0)
+    }
+
+    /// The reachable case, and the one with teeth: the user picks a new design mid-run, so
+    /// `AppModel.select(_:)` resets, and the previous run's buffered frames arrive
+    /// afterwards. Without this they append into the new design's display list — and a
+    /// buffered *terminal* would additionally publish the discarded design's export model,
+    /// which is US-308's input.
+    @Test("updates arriving after a run ends or is reset are ignored")
+    func updatesAfterTheRunEndsAreIgnored() {
+        var run = PreviewRunState()
+        run.begin()
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 1, y: 1))
+        run.apply(RunUpdate(
+            batch: RunBatch(stitches: [previewStitch(1, 1)]),
+            termination: RunTermination(reason: .programFinished, exportModel: stream)
+        ))
+        let settled = run
+
+        // A late frame from the finished run, then a late frame after a reset.
+        run.apply(RunUpdate(batch: RunBatch(stitches: [previewStitch(9, 9)])))
+        #expect(run.display.stitches == settled.display.stitches)
+        #expect(run.revision == settled.revision)
+
+        run.reset()
+        var late = EmbroideryStream()
+        late.addStitch(at: StagePoint(x: 5, y: 5))
+        run.apply(RunUpdate(
+            batch: RunBatch(stitches: [previewStitch(5, 5)]),
+            termination: RunTermination(reason: .stitchLimitReached, exportModel: late)
+        ))
+
+        #expect(run.state == .idle)
+        #expect(run.display.isEmpty)
+        #expect(run.exportModel == nil, "a discarded run must not publish an export model")
+    }
+
+    // MARK: - What the stage draws the needle from
+
+    /// The needle is only shown while the run is running, and the rule is **a value here**
+    /// rather than an expression at the call site.
+    ///
+    /// It was an expression in `RootView`, and the test that claimed to pin it recomputed
+    /// the same expression in its own body — so it stayed green if the call site dropped the
+    /// condition entirely (`swift-code-reviewer`). A needle parked on a finished design says
+    /// the machine is still working on it.
+    @Test("the needle is visible only while the run is running")
+    func theNeedleIsVisibleOnlyWhileRunning() {
+        let pose = PreviewNeedle(
+            actor: ActorID(0),
+            update: NeedleUpdate(position: StagePoint(x: 1, y: 1), heading: 0)
+        )
+        var run = PreviewRunState()
+        run.begin()
+        run.apply(RunUpdate(batch: RunBatch(stitches: [previewStitch(1, 1)], needle: pose)))
+
+        #expect(run.visibleNeedle == pose)
+
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 1, y: 1))
+        run.apply(RunUpdate(
+            batch: RunBatch(),
+            termination: RunTermination(reason: .stoppedByUser, exportModel: stream)
+        ))
+
+        #expect(run.needle == pose, "the pose is retained — only its visibility changes")
+        #expect(run.visibleNeedle == nil)
+    }
+
     // MARK: - The settling watermark
 
     /// US-305 shipped the cached-raster path wired but unreachable, because nothing

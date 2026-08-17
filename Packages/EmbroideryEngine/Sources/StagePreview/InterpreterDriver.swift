@@ -42,10 +42,17 @@ public struct InterpreterDriver: Sendable {
             await Self.produce(interpreter, into: continuation, budget: budget, pacing: pacing)
         }
 
-        // Assigned after the fact, which is safe: if the stream has already
-        // terminated the handler runs immediately. It cancels the **producer** — a
-        // consumer that walks away (a view model reset, a window teardown) must stop
-        // the interpreter rather than leave it running to the stitch cap.
+        // Assigned after the task is created, which is safe — but **not** for the reason an
+        // earlier version of this comment gave ("if the stream has already terminated the
+        // handler runs immediately"). Measured: a handler assigned after `finish()` is stored
+        // and invoked with `.cancelled` when the stream *storage* deallocates, not at
+        // assignment (`swift-code-reviewer`). It is safe because the handler's only action is
+        // `task.cancel()`, and a stream that has already terminated implies the producer has
+        // already returned, so there is nothing left to cancel.
+        //
+        // It cancels the **producer** — a consumer that walks away (a view model reset, a
+        // window teardown) must stop the interpreter rather than leave it running to the
+        // stitch cap.
         continuation.onTermination = { _ in task.cancel() }
 
         return RunSession(updates: stream, task: task)
@@ -148,18 +155,31 @@ public struct InterpreterDriver: Sendable {
 
 /// A running run: the updates to consume, and the way to stop it.
 ///
-/// **`stop()` cancels the producer only, never the consumer — and getting this
-/// backwards silently breaks the story's central criterion.**
-/// `AsyncStream.Iterator.next()` returns `nil` when the *consuming* task is
-/// cancelled. So a `stop()` that cancelled the consumer (the natural reading of
-/// "the run `Task` is cancellable", and what cancelling a `for await` task or a
-/// `.task {}` does) would let the producer build the terminal update carrying
-/// `assembledStream()` and then have it **never delivered** — export-after-stop
-/// would fail exactly the way Catty's does, while every unit test that inspects
-/// the producer in isolation still passed.
+/// **`stop()` cancels the producer only, never the consumer — and getting this backwards
+/// silently breaks the story's central criterion.** Only the producer can *decide* to stop:
+/// it is the thing that observes `Task.isCancelled` and emits the terminal update carrying
+/// `assembledStream()`. Cancelling the consumer instead — the natural reading of "the run
+/// `Task` is cancellable", and what cancelling a `for await` task or a `.task {}` does —
+/// leaves the interpreter running to its natural end or the stitch cap, so no
+/// `.stoppedByUser` terminal is ever produced; and once the buffer drains, the cancelled
+/// consumer's suspended `next()` returns `nil`, so anything the producer yields afterwards
+/// is lost. Export-after-stop would fail the way Catty's does while every unit test that
+/// inspects the producer in isolation still passed.
 ///
-/// The consumer therefore keeps draining until the stream finishes on its own,
-/// which it does one element after `stop()`.
+/// **Correction (2026-08-17, in-loop review):** an earlier version of this comment argued
+/// that from "`AsyncStream.Iterator.next()` returns `nil` when the consuming task is
+/// cancelled". That is **false while elements are buffered**, and it was checked rather than
+/// assumed only after the reviewer contradicted it: a consumer cancelled before it ever ran
+/// still received all five buffered elements, and `next()` in a cancelled task with one
+/// element buffered returned the element, not `nil`. Cancellation marks the stream terminal;
+/// it does not discard `pending`. The conclusion is unchanged, the reason is not — and the
+/// false premise had a second cost, because it is what made a discarded run's buffered
+/// frames look impossible. See `RunViewModel`.
+///
+/// The consumer therefore keeps draining until the stream finishes on its own. That is **one
+/// or two elements** after `stop()`, not one: cancellation is observed at the top of the
+/// loop, so a `stop()` landing inside `runFrame` yields that frame's ordinary update first
+/// and the terminal on the next pass.
 public struct RunSession: Sendable {
     /// Single-consumer, unbounded buffering.
     ///

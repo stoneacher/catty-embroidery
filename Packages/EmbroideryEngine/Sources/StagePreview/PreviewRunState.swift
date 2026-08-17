@@ -63,12 +63,38 @@ public struct PreviewRunState: Equatable, Sendable {
         state = .running
     }
 
+    /// The pose the stage should draw, or `nil` when no run is in flight.
+    ///
+    /// **A value here rather than an expression at the call site**, because the rule was an
+    /// expression in `RootView` and the test that claimed to pin it recomputed the same
+    /// expression in its own body — so it stayed green if the call site dropped the condition
+    /// entirely (`swift-code-reviewer`). The stored `needle` is deliberately *not* cleared on
+    /// finish: where the needle stopped is real information a later story may want, and only
+    /// its visibility is a presentation question.
+    public var visibleNeedle: PreviewNeedle? {
+        state.isRunning ? needle : nil
+    }
+
     /// Folds one update in — the single mutation per frame.
     ///
-    /// Every statement here is O(batch), never O(display): appending is amortised
-    /// O(1) per stitch and the watermark arithmetic is constant. At the 50 000-stitch
-    /// exit criterion anything that rescanned the list would be quadratic.
+    /// **Only a running run accepts updates, and that guard is load-bearing rather than
+    /// defensive.** A cancelled `AsyncStream` consumer keeps receiving elements already
+    /// buffered — cancellation marks the stream terminal and does *not* discard `pending`,
+    /// measured directly — so a discarded run's frames arrive after the run that replaced it
+    /// has already begun. Without this, picking a new design mid-run appended the previous
+    /// design's stitches to the new one, and a buffered *terminal* published the discarded
+    /// design's export model, which is US-308's input (`swift-code-reviewer`). The app also
+    /// checks `Task.isCancelled` to stop the wasted work; this is what makes the corruption
+    /// unrepresentable rather than dependent on that check being present.
+    ///
+    /// Every statement here is O(batch), never O(display) *within this value*: appending is
+    /// amortised O(1) per stitch and the watermark arithmetic is constant. The qualifier
+    /// matters — in the app the display list is also handed into the view tree, so its buffer
+    /// is not uniquely referenced and copy-on-write makes the frame O(display) regardless.
+    /// ADR-024 records that cost and ADR-027 passes it to US-309; this type cannot fix it.
     public mutating func apply(_ update: RunUpdate) {
+        guard state.isRunning else { return }
+
         display.append(contentsOf: update.batch.stitches)
 
         // Carried forward when the batch moved no needle, so a tick that only
@@ -87,7 +113,11 @@ public struct PreviewRunState: Equatable, Sendable {
         // monotonic and clamped, so repeating the same value between chunk crossings
         // costs nothing and changes nothing — which is exactly why the raster's bake
         // key does not churn.
-        display.markSettled(upTo: display.count - display.count % Self.settleChunk)
+        // `max(1, …)` guards the modulo: `settleChunk` is a constant today, but ADR-027 hands
+        // it to US-309 as a tunable, and a zero would be a division **trap** rather than a
+        // degradation (`swift-code-reviewer`).
+        let chunk = Swift.max(1, Self.settleChunk)
+        display.markSettled(upTo: display.count - display.count % chunk)
 
         revision += 1
     }

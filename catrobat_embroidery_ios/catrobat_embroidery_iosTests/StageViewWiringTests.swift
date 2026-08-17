@@ -144,22 +144,23 @@ struct StageViewWiringTests {
         #expect(renderer.invocations.last?.needle == needle)
     }
 
-    /// US-306: no needle once the run is over.
+    /// US-306: whatever needle it is given reaches the renderer unchanged, including `nil`.
     ///
-    /// `RootView` is where the decision lives — it passes `nil` unless the state is
-    /// `.running` — so this pins the *rule*, at the seam a caller could get wrong. A needle
-    /// parked on a finished design would say the machine is still working on it.
-    @Test func noNeedleReachesTheRendererOnceTheRunHasFinished() {
+    /// **This deliberately no longer claims to pin the "hidden once finished" rule.** An
+    /// earlier version did, and could not fail: it recomputed the rule
+    /// (`RunState.finished(…).isRunning ? needle : nil`) in its own body and then asserted the
+    /// result, so it stayed green even if `RootView` dropped the condition altogether
+    /// (`swift-code-reviewer`). The rule now lives in `PreviewRunState.visibleNeedle` and is
+    /// pinned in the package by `PreviewRunStateTests.theNeedleIsVisibleOnlyWhileRunning`.
+    /// What is left for this test is the wiring: a `nil` pose is passed through rather than
+    /// substituted for something.
+    @Test func aNilNeedleReachesTheRendererUnchanged() {
         let renderer = RecordingRenderer()
-        let needle = PreviewNeedle(
-            actor: ActorID(0), update: NeedleUpdate(position: StagePoint(x: 1, y: 2), heading: 90)
-        )
 
         Self.hosting(
             Self.stage(
                 display: Self.drawnList(),
-                // What `RootView` computes: the pose is only handed over while running.
-                needle: RunState.finished(.programFinished).isRunning ? needle : nil,
+                needle: nil,
                 renderer: renderer,
                 runState: .finished(.programFinished)
             ),

@@ -103,11 +103,40 @@ struct InterpreterDriverTests {
         )
 
         #expect(drained.termination?.reason == .stitchLimitReached)
+        #expect(drained.terminalCount == 1)
         // At or just past the cap, never short of it: the cap is checked between
         // ticks, and one tick of this program adds two stitches.
         #expect(drained.stitches.count >= 400)
         #expect(drained.stitches.count <= 402)
         #expect((drained.termination?.exportModel.count ?? 0) > 0)
+    }
+
+    /// A degenerate budget must not produce a run that can never end.
+    ///
+    /// `ticksPerFrame: 0` ran **zero** ticks per frame, so `programFinished` stayed false,
+    /// `run.isFinished` never became true (no `step()` was ever made) and `stitchesThisRun`
+    /// stayed 0 — no budget axis could fire and the producer yielded empty frames forever.
+    /// That was the only path found that produces **zero** terminals, breaking the guarantee
+    /// ADR-027 makes structural everywhere else (`swift-code-reviewer`). Negative
+    /// `maxStitchesPerRun` is the mirror case: `0 >= -1` terminated every run on frame 1.
+    ///
+    /// `RunBudget` is public and ADR-027 hands it to US-309 as a tunable, so the values are
+    /// clamped in `init` rather than guarded at the use site.
+    @Test("a degenerate budget is clamped rather than producing an endless run",
+          .timeLimit(.minutes(1)))
+    func aDegenerateBudgetIsClamped() async {
+        #expect(RunBudget(ticksPerFrame: 0).ticksPerFrame >= 1)
+        #expect(RunBudget(ticksPerFrame: -5).ticksPerFrame >= 1)
+        #expect(RunBudget(maxStitchesPerFrame: 0).maxStitchesPerFrame >= 1)
+        #expect(RunBudget(maxStitchesPerRun: -1).maxStitchesPerRun >= 1)
+
+        // And the run it produces still terminates, on a program that never ends by itself.
+        let drained = await driveToCompletion(
+            foreverProgram(), budget: RunBudget(ticksPerFrame: 0, maxStitchesPerRun: 300)
+        )
+
+        #expect(drained.terminalCount == 1)
+        #expect(drained.termination?.reason == .stitchLimitReached)
     }
 
     /// The default budget is the number the story's close-out records, so it is

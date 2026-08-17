@@ -72,8 +72,12 @@ struct RootView: View {
     /// rebuilds its navigation container after a horizontal size-class change (ADR-023),
     /// so either would wipe a finished design on an iPad window resize.
     ///
-    /// The needle is passed **only while the run is running**. A needle parked on a
-    /// finished design would imply the machine is still working on it.
+    /// The needle comes from `visibleNeedle`, which **is** the "only while running" rule
+    /// rather than a place that reimplements it. It was spelled out here as a conditional,
+    /// and the test that claimed to pin it recomputed the same conditional in its own body —
+    /// so the test stayed green if this line dropped the condition entirely
+    /// (`swift-code-reviewer`). A needle parked on a finished design would imply the machine
+    /// is still working on it.
     ///
     /// The display list and the run state are handed over **separately, never as the
     /// whole `PreviewRunState`**. That value also holds the export model — an
@@ -85,7 +89,7 @@ struct RootView: View {
             sample: model.selection?.sample,
             display: model.runner.run.display,
             runState: model.runner.run.state,
-            needle: model.runner.run.state.isRunning ? model.runner.run.needle : nil,
+            needle: model.runner.run.visibleNeedle,
             renderer: CanvasStitchRenderer(),
             onPlay: {
                 if let program = model.selection?.program {

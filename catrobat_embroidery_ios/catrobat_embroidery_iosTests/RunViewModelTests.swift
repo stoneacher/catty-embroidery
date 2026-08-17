@@ -1,5 +1,6 @@
 @testable import catrobat_embroidery_ios
 import EmbroideryEngine
+import Foundation
 import Observation
 import Samples
 import StagePreview
@@ -17,6 +18,18 @@ import Testing
 struct RunViewModelTests {
     private static func immediateModel() -> RunViewModel {
         RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing()))
+    }
+
+    /// Blocks the current thread, which for these tests is the main actor's.
+    ///
+    /// **Synchronous on purpose, and the whole point is that it does not `await`.** It lets
+    /// the *detached* producer fill the `AsyncStream`'s buffer while the `@MainActor` consumer
+    /// gets no turn at all, which is the interleaving that exposes a discarded run's buffered
+    /// frames. `await Task.sleep` would hand the consumer turns and drain the buffer, hiding
+    /// exactly the defect under test. It is wrapped in a non-async function because
+    /// `Thread.sleep` is unavailable directly from an async context.
+    private static func blockingSleep(_ seconds: Double) {
+        Thread.sleep(forTimeInterval: seconds)
     }
 
     /// Waits until `condition` holds, letting the consumer task run in between.
@@ -83,37 +96,51 @@ struct RunViewModelTests {
         #expect(model.run.revision * 10 < model.run.display.count)
     }
 
-    /// One delivered update produces exactly one observable notification.
+    /// One delivered frame produces exactly one observable notification.
     ///
-    /// A fresh one-shot registration per update, created by the test between updates —
-    /// so the observation is deterministic and there is no re-arming race. This proves
-    /// the notification happens and is per-update; the *count* of mutations is the
-    /// `revision` assertion above.
-    @Test("each applied batch notifies observers of the run")
-    func eachAppliedBatchNotifiesObservers() {
-        let model = Self.immediateModel()
+    /// A fresh one-shot registration per frame, created by the test *between* frames, so the
+    /// observation is deterministic and there is no re-arming race. This proves the
+    /// notification happens and is per-frame; the *count* of mutations is the `revision`
+    /// assertion above, for the reason that test's comment gives.
+    ///
+    /// **Driven through a real gated run rather than by calling `apply` directly**, because
+    /// `PreviewRunState.apply` now refuses updates unless the run is `.running` — the
+    /// structural half of the discarded-run fix. A direct-apply version of this test was
+    /// exercising a path the production code no longer permits.
+    @Test("each applied frame notifies observers of the run", .timeLimit(.minutes(1)))
+    func eachAppliedFrameNotifiesObservers() async {
+        let pacing = GatedPacing()
+        let model = RunViewModel(driver: InterpreterDriver(pacing: pacing))
         let counter = NotificationCounter()
 
-        for index in 0 ..< 3 {
+        model.play(SampleLibrary[.squareCoil].program)
+
+        for frame in 0 ..< 3 {
             withObservationTracking {
                 _ = model.run
             } onChange: {
                 // `onChange` is `@Sendable`, so the count cannot be a captured `var`.
                 // `assumeIsolated` is sound rather than convenient: the only writer is
-                // `apply(_:)`, which is `@MainActor`, and `onChange` fires
-                // synchronously inside that mutation.
+                // `apply(_:)`, which is `@MainActor`, and `onChange` fires synchronously
+                // inside that mutation.
                 MainActor.assumeIsolated { counter.count += 1 }
             }
-            model.apply(RunUpdate(batch: RunBatch(
-                stitches: (0 ..< 100).map { PreviewStitch(
-                    position: StagePoint(x: Double(index * 100 + $0), y: 0), color: .black
-                ) }
-            )))
+            // The first frame needs no credit: the driver produces one, *then* paces.
+            if frame > 0 {
+                await pacing.grant()
+            }
+            await Self.settle(until: { model.run.revision == frame + 1 })
         }
 
         #expect(counter.count == 3)
         #expect(model.run.revision == 3)
-        #expect(model.run.display.count == 300)
+        // **And the display list is still empty, which is the stronger form of the claim.**
+        // `squareCoil` opens with `setThreadColor`, `tripleStitch` and `setVariable` — three
+        // non-stitching bricks — so these three frames produced no stitches at all and still
+        // produced exactly three notifications. One mutation per *frame*, demonstrably not per
+        // stitch. (An earlier version of this test asserted the list was non-empty here and
+        // failed for exactly this reason.)
+        #expect(model.run.display.isEmpty)
     }
 
     /// The story's central criterion at the app layer: after a stop, the design is
@@ -164,6 +191,59 @@ struct RunViewModelTests {
         #expect(model.run.state == .idle)
         #expect(model.run.display.isEmpty)
         #expect(model.run.exportModel == nil)
+    }
+
+    /// **The defect this test exists for was measured, not theorised** (`swift-code-reviewer`).
+    ///
+    /// `discard()` cancels the consumer, but a cancelled task **keeps receiving elements
+    /// already buffered in the `AsyncStream`** — cancellation marks the stream terminal and
+    /// does not discard `pending`. Verified directly: a consumer cancelled before it ever ran
+    /// still received all five buffered elements, and `next()` in a cancelled task with one
+    /// buffered element returned the element rather than `nil`. So the orphaned consumer
+    /// resumed and applied a discarded run's frames into the next run's state — measured at
+    /// `finished(.stitchLimitReached)` with 5 001 stitches *after* a `reset()`, and a
+    /// buffered terminal additionally published the discarded design's export model, which
+    /// is US-308's input.
+    ///
+    /// **`Thread.sleep`, deliberately, and it is what makes this deterministic.** Blocking
+    /// the main actor lets the detached producer fill the buffer while the `@MainActor`
+    /// consumer cannot run, so by the time `reset()` is called there is a full buffer and
+    /// nothing has been applied. `await Task.sleep` would hand the consumer turns and drain
+    /// it, which is precisely the interleaving that hides the bug.
+    @Test("a discarded run's buffered frames never land in the next run",
+          .timeLimit(.minutes(1)))
+    func aDiscardedRunsBufferedFramesNeverLand() async {
+        let model = Self.immediateModel()
+
+        model.play(SampleLibrary[.squareCoil].program)
+        // The producer races ahead and buffers the whole run; the consumer gets no turn.
+        Self.blockingSleep(0.2)
+        model.reset()
+
+        // Give the orphaned consumer every chance to deliver what it buffered.
+        await Self.settle(until: { false }, turns: 5000)
+
+        #expect(model.run.state == .idle)
+        #expect(model.run.display.isEmpty)
+        #expect(model.run.exportModel == nil)
+        #expect(model.run.revision == 0)
+    }
+
+    /// The same hazard through the other door: a second `play()` rather than a `reset()`.
+    /// Here the corruption is silent — the display list simply holds two runs' stitches, and
+    /// `count` was measured at 9 996 for a design whose run is 2 976.
+    @Test("a second play does not inherit the first run's buffered frames",
+          .timeLimit(.minutes(1)))
+    func aSecondPlayDoesNotInheritBufferedFrames() async {
+        let model = Self.immediateModel()
+        let program = SampleLibrary[.squareCoil].program
+
+        model.play(program)
+        Self.blockingSleep(0.2)
+        model.play(program)
+        await Self.settle(until: { model.run.state == .finished(.programFinished) })
+
+        #expect(model.run.display.count == 2976, "one run's worth of stitches, not two")
     }
 
     /// Playing twice must not draw the second run on top of the first.
