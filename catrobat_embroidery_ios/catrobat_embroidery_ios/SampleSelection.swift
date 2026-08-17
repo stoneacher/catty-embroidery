@@ -42,6 +42,20 @@ nonisolated struct SampleSelection: Equatable, Sendable {
     /// unequal.
     let generation: Int
 
+    /// Equality over the sample's **id** and the generation, not the whole value.
+    ///
+    /// The synthesized `==` would compare `sample`, dragging the entire `Program` tree
+    /// along — and this type is compared on every update pass, because `RootView` keys
+    /// `.task(id:)` on it. `AppModel.isSelected` is documented to avoid exactly that cost
+    /// one file over; this closes the same hole here (`swift-code-reviewer`, US-305).
+    ///
+    /// **The generation stays in the comparison**, which is the whole point of the type:
+    /// dropping it would make re-selecting the current design equal to the previous value
+    /// and silently stop the restart, which is the defect this type exists to prevent.
+    static func == (lhs: SampleSelection, rhs: SampleSelection) -> Bool {
+        lhs.sample.id == rhs.sample.id && lhs.generation == rhs.generation
+    }
+
     /// The program to run. What US-306 constructs its `Interpreter` from.
     ///
     /// Exposed here rather than reached through `sample` so that the seam a

@@ -30,12 +30,41 @@ public struct StitchDisplayList: Equatable, Sendable {
 
     public private(set) var stitches: [PreviewStitch] = []
     public private(set) var colorRuns: [ColorRun] = []
-    public private(set) var bounds: StageBox?
+    /// The extent of what has been stitched, or `nil` when nothing finite has been.
+    ///
+    /// Computed from two independently accumulated axes rather than stored, so that a
+    /// coordinate the stream rejects (ADR-021 divergence #5, and reachable from a legal
+    /// program) can neither poison a bound nor make the result depend on the order the
+    /// stitches arrived in. Still O(1) — the accumulation happens in `append`.
+    public var bounds: StageBox? {
+        StageBox(combining: xExtent, yExtent)
+    }
+
+    private var xExtent: StageExtent?
+    private var yExtent: StageExtent?
 
     /// How many leading stitches the renderer has committed to its cached
     /// raster. Monotonic: only `reset()` may take it back, because moving it
     /// backwards would silently invalidate pixels the app still holds.
     public private(set) var settledCount = 0
+
+    /// How many times this list has been `reset()`.
+    ///
+    /// **What it exists for: telling two designs apart that settled to the same count.**
+    /// A renderer caching the settled prefix keys its raster on `settledCount` — sound
+    /// under append-only, because a prefix can never change. `reset()` breaks exactly that
+    /// premise: afterwards, the same count describes different pixels. So a US-306 driver
+    /// that runs design A to a watermark of *k*, then switches to design B and re-settles
+    /// to the same *k* in the same viewport, would find a matching cache key and composite
+    /// **A's raster under B's live tail** — and the fitted transform cannot break the tie,
+    /// because ADR-024 records as a *benefit* that it is identical for every in-hoop
+    /// design.
+    ///
+    /// Latent rather than live: nothing in US-305 advances the watermark, so the bake path
+    /// is unreachable today and no test could have caught this at runtime
+    /// (`swift-code-reviewer`, US-305). Added now because the fix is one integer and the
+    /// bug would first appear as a wrong image in a story that did not cause it.
+    public private(set) var resetCount = 0
 
     public init() {}
 
@@ -100,11 +129,14 @@ public struct StitchDisplayList: Equatable, Sendable {
                 .lowerBound ..< index + 1
         }
 
-        if bounds == nil {
-            bounds = StageBox(containing: stitch.position)
-        } else {
-            bounds?.expand(toInclude: stitch.position)
-        }
+        // Per axis, so a rejected coordinate can neither poison a bound nor depend on
+        // arrival order. Without the finiteness rule a design whose first stitch was
+        // unconvertible had infinite bounds forever after, and US-305's fit target then
+        // cropped the genuinely out-of-hoop stitches it exists to keep on screen
+        // (`swift-code-reviewer`, US-305); without the *per-axis* split, the same pair of
+        // stitches gave different bounds depending which arrived first (Codex round 1).
+        StageExtent.accumulate(&xExtent, stitch.position.x)
+        StageExtent.accumulate(&yExtent, stitch.position.y)
     }
 
     /// Appends a batch — one `RunBatch` per tick, in the US-306 path.
@@ -140,7 +172,12 @@ public struct StitchDisplayList: Equatable, Sendable {
     public mutating func reset() {
         stitches.removeAll(keepingCapacity: true)
         colorRuns.removeAll(keepingCapacity: true)
-        bounds = nil
+        xExtent = nil
+        yExtent = nil
         settledCount = 0
+        // Monotonic, and deliberately **not** reset by anything: it is an identity for the
+        // run, not a count of live state. See its declaration for the stale-raster bug it
+        // exists to prevent.
+        resetCount += 1
     }
 }

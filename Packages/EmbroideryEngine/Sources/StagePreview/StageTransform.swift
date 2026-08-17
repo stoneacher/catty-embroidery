@@ -7,10 +7,32 @@ import EmbroideryEngine
 /// Uniform scale, never per-axis: a design must not be stretched to fill a
 /// viewport, because a stitched design's proportions are the design.
 public struct StageTransform: Hashable, Sendable {
-    /// How far the user may zoom. Bounds exist so a pinch cannot reach a scale
-    /// where the inverse mapping loses all precision, or where the whole design
-    /// is a sub-pixel dot with no way back.
+    /// How far **a pinch** may zoom out. Bounds exist so a gesture cannot reach a scale
+    /// where the inverse mapping loses all precision, or where the whole design is a
+    /// sub-pixel dot with no way back.
+    ///
+    /// **A gesture bound, and only that** — which is what this comment always said
+    /// ("how far the user may zoom") and what the code did not do. Until US-305 it was
+    /// applied in `init`, so it bounded `fitting` too, and a fit target wider than
+    /// `available / 0.05` could not be shown whole: content the hoop∪content union exists
+    /// to keep visible mapped off-canvas instead. Codex round 2 showed that is reachable
+    /// for a design that **exports perfectly well** — `(0,0) → (-3201,0) → (3201,0)` spans
+    /// 6402 stage points, needs scale ≈ 0.04499, and its DST extents are ±6402 units, both
+    /// inside the 4-wide header fields, because ADR-012 measures extents per direction
+    /// relative to the first stitch. (An earlier triage deferred this to US-211 on the
+    /// argument that every design the clamp cropped was already unexportable. That
+    /// argument confused *span* with *per-direction extent* and was wrong.)
     public static let minimumScale: Double = 0.05
+
+    /// The floor **any** transform must satisfy, gesture or not: far below the gesture
+    /// bound, and there only so that the inverse mapping keeps meaningful precision.
+    ///
+    /// Generous on purpose. At this scale a 288-point viewport spans 2.88 × 10⁸ stage
+    /// points — some 57 km of fabric — so it cannot bind any design that a DST file could
+    /// describe, while dividing by it in `stagePoint(of:)` still leaves a `Double` about
+    /// ten significant digits.
+    public static let minimumRepresentableScale: Double = 1e-6
+
     public static let maximumScale: Double = 50
 
     /// View points per stage point.
@@ -38,7 +60,10 @@ public struct StageTransform: Hashable, Sendable {
     /// preview is a view, and a design placed beyond what the transform can
     /// express should be off-screen, not a crash.
     public init(scale: Double = 1, translation: ViewPoint = .zero) {
-        self.scale = Self.clampedScale(scale)
+        // `representableScale`, not `clampedScale`: the chokepoint's job is to make an
+        // unusable transform unrepresentable, and the *gesture* bound is not part of that.
+        // Conflating the two is what let the zoom limit crop a fitted design.
+        self.scale = Self.representableScale(scale)
         self.translation = ViewPoint(
             x: translation.x.isFinite ? translation.x : 0,
             y: translation.y.isFinite ? translation.y : 0
@@ -58,6 +83,16 @@ public struct StageTransform: Hashable, Sendable {
     public static func clampedScale(_ scale: Double) -> Double {
         guard !scale.isNaN else { return minimumScale }
         return Swift.min(Swift.max(scale, minimumScale), maximumScale)
+    }
+
+    /// Clamps into the bounds every transform must satisfy — the `init` chokepoint's
+    /// clamp, which `fitting` therefore inherits.
+    ///
+    /// Direction-preserving at the infinities for the same reason `clampedScale` is, and
+    /// NaN — which has no direction to preserve — collapses to the floor.
+    public static func representableScale(_ scale: Double) -> Double {
+        guard !scale.isNaN else { return minimumRepresentableScale }
+        return Swift.min(Swift.max(scale, minimumRepresentableScale), maximumScale)
     }
 
     /// The renderer's y-flip, and the **only** place it exists.
@@ -134,13 +169,17 @@ public struct StageTransform: Hashable, Sendable {
         // something is impossible right after failing to do it.
         //
         // Terminates: halving from at most `maximumScale` reaches
-        // `minimumScale` in about ten steps, and the loop stops there whether
+        // `minimumRepresentableScale` in about 26 steps, and the loop stops there whether
         // or not the predicate is satisfied. `init` guarantees the fields are
         // finite regardless, so even a pathological box yields a well-formed
         // transform.
-        var scale = clampedScale(fitted.isFinite && fitted > 0 ? fitted : 1)
-        while scale > minimumScale, !mapsFinitely(content, in: viewport, at: scale) {
-            scale = Swift.max(minimumScale, scale / 2)
+        //
+        // Floored at `minimumRepresentableScale` rather than `minimumScale`: the gesture
+        // bound has no business here, and applying it was what cropped exportable designs
+        // wider than `available / 0.05` (Codex round 2).
+        var scale = representableScale(fitted.isFinite && fitted > 0 ? fitted : 1)
+        while scale > minimumRepresentableScale, !mapsFinitely(content, in: viewport, at: scale) {
+            scale = Swift.max(minimumRepresentableScale, scale / 2)
         }
 
         return StageTransform(

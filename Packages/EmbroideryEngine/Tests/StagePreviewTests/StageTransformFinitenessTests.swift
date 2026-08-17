@@ -124,7 +124,10 @@ struct StageTransformFinitenessTests {
         #expect(transform.scale.isFinite)
         #expect(transform.translation.x.isFinite)
         #expect(transform.translation.y.isFinite)
-        #expect(transform.scale >= StageTransform.minimumScale)
+        // The **representability** floor, not the gesture bound. US-305 separated the two:
+        // `init` guarantees a usable transform, while `minimumScale` bounds only a pinch.
+        // This suite's subject is finiteness, so it asserts the floor `init` actually owns.
+        #expect(transform.scale >= StageTransform.minimumRepresentableScale)
     }
 
     /// Codex round 4's `fitting` counterexample. The round-3 fix bounded
@@ -339,6 +342,50 @@ struct StageTransformFinitenessTests {
                     sourceLocation: sourceLocation
                 )
             }
+        }
+    }
+}
+
+/// `representableScale` — the clamp `init` uses since US-305 separated the representability
+/// floor from the gesture bound.
+///
+/// Codex round 3 verified the behaviour by reading the code and then named the absence of
+/// these assertions as a coverage gap. It is a real one: `representableScale` is public, and
+/// the direction-preservation property is exactly the one `clampedScale` got **wrong** in
+/// US-302's round 5 — it mapped every non-finite value to the minimum, turning an enormous
+/// zoom *in* into maximum zoom *out*. A second function with the same shape deserves the
+/// same pin rather than the same bug.
+@Suite("Representable scale clamp")
+struct RepresentableScaleTests {
+    @Test("the clamp is direction-preserving at the infinities")
+    func theClampIsDirectionPreservingAtTheInfinities() {
+        #expect(StageTransform.representableScale(.infinity) == StageTransform.maximumScale)
+        #expect(
+            StageTransform.representableScale(-.infinity) == StageTransform.minimumRepresentableScale
+        )
+    }
+
+    /// NaN is the one input with no direction to preserve, so it collapses to the floor.
+    @Test("NaN collapses to the floor")
+    func nanCollapsesToTheFloor() {
+        #expect(StageTransform.representableScale(.nan) == StageTransform.minimumRepresentableScale)
+    }
+
+    @Test("an ordinary scale below the gesture bound passes through untouched")
+    func aScaleBelowTheGestureBoundPassesThrough() {
+        // The whole point of the separation: 0.045 is a legitimate *fitted* scale even though
+        // no pinch may reach it.
+        #expect(StageTransform.representableScale(0.045) == 0.045)
+        #expect(StageTransform(scale: 0.045).scale == 0.045)
+    }
+
+    @Test("a negative or subnormal scale cannot reach a transform")
+    func aNegativeOrSubnormalScaleCannotReachATransform() {
+        for hostile in [-5.0, -1e-300, 5e-324, 0.0] {
+            let transform = StageTransform(scale: hostile)
+
+            #expect(transform.scale == StageTransform.minimumRepresentableScale)
+            #expect(transform.scale > 0, "a non-positive scale would invert or collapse the stage")
         }
     }
 }

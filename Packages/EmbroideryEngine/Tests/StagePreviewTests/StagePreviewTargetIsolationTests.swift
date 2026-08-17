@@ -42,4 +42,29 @@ struct StagePreviewTargetIsolationTests {
 
         #expect(list.stitches == [previewStitch(2, 3, PreviewColor.red)])
     }
+
+    /// US-305's draw plan is the newest thing on this boundary and the most likely
+    /// to acquire a `CGFloat`: it exists precisely so the app can stroke it into a
+    /// `Canvas`, which makes "just use `CGPoint` here" the obvious shortcut. Bound
+    /// to explicit function types in this file's existing style, so taking that
+    /// shortcut stops the test target compiling instead of quietly widening ADR-022.
+    ///
+    /// The plan carries **indices**, not geometry, which is the deeper reason it can
+    /// stay Foundation-only — and also why it cannot violate ADR-021's rule against
+    /// retaining an `ArraySlice` across an append. There is no slice to retain.
+    @Test("the draw plan's boundary is Double-based package types, not CoreGraphics")
+    func theDrawPlanBoundaryIsPackageTypes() {
+        let plan: (StitchDisplayList) -> StitchDrawPlan = StitchDrawPlan.entire(of:)
+        let classify: (PreviewStitch, PreviewStitch) -> StitchSegmentStyle =
+            StitchSegmentStyle.classifying(from:to:)
+        let width: (Double) -> Double = StitchDrawMetrics.threadWidth(atScale:)
+        let fit: (StageBox?) -> StageBox = StageGeometry.fitTarget(including:)
+
+        let list = displayList([previewStitch(0, 0), previewStitch(10, 0)])
+
+        #expect(plan(list) == StitchDrawPlan.entire(of: list))
+        #expect(classify(list.stitches[0], list.stitches[1]) == .thread)
+        #expect(width(1) == StitchDrawMetrics.threadWidth(atScale: 1))
+        #expect(fit(list.bounds) == StageGeometry.box)
+    }
 }
