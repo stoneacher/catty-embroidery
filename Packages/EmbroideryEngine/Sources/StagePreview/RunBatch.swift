@@ -83,4 +83,27 @@ public struct RunBatch: Hashable, Sendable {
         }
         return batch
     }
+
+    /// Merges one tick's batch into this frame's batch.
+    ///
+    /// A frame may run more than one tick (`RunBudget.ticksPerFrame`), and the
+    /// view model must still see **one** update — so the ticks are merged here
+    /// rather than yielded separately. With the default `ticksPerFrame = 1` this
+    /// runs once per frame and is the identity on an empty accumulator.
+    ///
+    /// This fold lived in the test target until US-306, as
+    /// `PreviewFixtures.foldBatches`, whose own comment said it folded batches
+    /// "the way US-306's driver will". It is hoisted rather than duplicated so the
+    /// ADR-018 partition tests exercise the real fold instead of a parallel copy
+    /// that could drift from it.
+    ///
+    /// The needle and the requested name are **carried forward** when the tick
+    /// supplies neither: a tick that only stitches must not blank the pose, and a
+    /// finalize request from an earlier tick of the same frame must survive a
+    /// later one that makes none.
+    public mutating func absorb(_ tick: RunBatch) {
+        stitches += tick.stitches
+        needle = tick.needle ?? needle
+        requestedDesignName = tick.requestedDesignName ?? requestedDesignName
+    }
 }

@@ -19,11 +19,34 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     let sample: SampleProgram?
 
     let display: StitchDisplayList
+
+    /// Where the run is. Drives the transport button's title and symbol, and whether the
+    /// stitch-limit notice appears.
+    ///
+    /// Deliberately **not** the whole `PreviewRunState`: that value also holds the export
+    /// model, and a view that took it would retain an up-to-200 000-record
+    /// `EmbroideryStream` per frame for nothing. See `RootView.stage`.
+    let runState: RunState
+
     let needle: PreviewNeedle?
     let renderer: Renderer
 
+    /// The transport actions. Closures rather than a reference to the view model, so this
+    /// view stays testable by hosting it and knows nothing about how a run is driven.
+    let onPlay: () -> Void
+    let onStop: () -> Void
+
     private var state: StageContentState {
-        .resolving(hasSelection: sample != nil, hasStitches: !display.isEmpty)
+        .resolving(
+            hasSelection: sample != nil,
+            hasStitches: !display.isEmpty,
+            isRunning: runState.isRunning
+        )
+    }
+
+    /// The run stopped because it produced more stitches than the preview will draw.
+    private var reachedStitchLimit: Bool {
+        runState == .finished(.stitchLimitReached)
     }
 
     /// True when the design reaches outside the 100 mm hoop.
@@ -36,9 +59,17 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     }
 
     var body: some View {
+        // Order of degradation, and it is deliberate: the canvas gives up space first,
+        // then the notices scroll, and the transport button never shrinks.
         VStack(spacing: 12) {
             canvasSlot
-            captionBlock
+            noticeScroller
+            StageTransportRow(
+                runState: runState,
+                hasSelection: sample != nil,
+                onPlay: onPlay,
+                onStop: onStop
+            )
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -46,6 +77,16 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(sample.map { Text($0.displayName) } ?? Text(.stageTitle))
         .navigationBarTitleDisplayMode(.inline)
+        // Twice per run at most, and semantic rather than an impact weight, so it honours
+        // the system haptics setting for free. It matters here because the screen's
+        // content is a slow animation: a finish can be *felt* instead of watched for.
+        .sensoryFeedback(trigger: runState) { _, new in
+            switch new {
+            case .running: .start
+            case .finished: .stop
+            case .idle: nil
+            }
+        }
     }
 
     /// The canvas keeps an identical frame in all three states, so nothing reflows when
@@ -154,38 +195,88 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         }
     }
 
-    /// Outside the canvas, so semantic — and the only text that scales with type size.
-    private var captionBlock: some View {
-        VStack(spacing: 4) {
-            Text(Self.hoopSizeDescription)
-                .font(.caption)
+    /// The caption and both notices, in a scroll view **whose content is all text**.
+    ///
+    /// This is the distinction `StagePlaceholderView` recorded and US-305 half applied: a
+    /// flexible canvas inside a scroll view gets an unbounded height proposal and must
+    /// never be wrapped, but a fixed-ideal *text* block must be, or an AX5 pane squeezes it
+    /// into truncation. `.basedOnSize` means it does not bounce or read as scrollable until
+    /// it genuinely overflows.
+    ///
+    /// The transport row is deliberately **outside** it: a screen's primary action must not
+    /// be reachable only by scrolling.
+    private var noticeScroller: some View {
+        ScrollView(.vertical) {
+            VStack(spacing: 4) {
+                Text(Self.hoopSizeDescription)
+                    .font(.caption)
 
-            if leavesTheHoop {
-                // Beyond the story's acceptance criteria, deliberately (Sebastian's
-                // call). The criteria make the overflow *visible* — unclipped, and the
-                // fit zooms out — but both cues are sight-only, and nothing else in M3
-                // reports it: US-308 gates export on `assembledStream().count > 1`,
-                // which is hoop-independent. Without this line a VoiceOver user is never
-                // told at all.
-                //
-                // Not an error: the design still draws in full and still exports.
-                // The title/icon closure form, not `Label(_:systemImage:)`: the latter
-                // takes a `StringProtocol`, which would mean resolving the resource to a
-                // `String` here and losing the `Text`-level localisation.
-                Label {
-                    Text(.stageOutsideHoop)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle")
+                if leavesTheHoop {
+                    // Beyond the story's acceptance criteria, deliberately (Sebastian's
+                    // call). The criteria make the overflow *visible* — unclipped, and the
+                    // fit zooms out — but both cues are sight-only, and nothing else in M3
+                    // reports it: US-308 gates export on `assembledStream().count > 1`,
+                    // which is hoop-independent. Without this line a VoiceOver user is
+                    // never told at all.
+                    //
+                    // Not an error: the design still draws in full and still exports.
+                    // The title/icon closure form, not `Label(_:systemImage:)`: the latter
+                    // takes a `StringProtocol`, which would mean resolving the resource to
+                    // a `String` here and losing the `Text`-level localisation.
+                    Label {
+                        Text(.stageOutsideHoop)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                    }
+                    .font(.footnote)
                 }
-                .font(.footnote)
+
+                if reachedStitchLimit {
+                    limitNotice
+                }
             }
+            .frame(maxWidth: .infinity)
         }
+        .scrollBounceBehavior(.basedOnSize)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
         // Without this, a height-constrained proposal makes `Text` ellipsise instead of
         // wrapping — the same guard `SamplePickerView`'s rows and the old placeholder
         // both needed.
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// Why the run stopped, and only for the one ending that needs saying.
+    ///
+    /// `.programFinished` and `.stoppedByUser` explain themselves — the design ran out, or
+    /// the user pressed the button — and in both cases the button's own title changes to
+    /// "Play Again", which is the cue the accessibility criterion relies on.
+    /// `.stitchLimitReached` is the one ending with no cause on screen, and a design that
+    /// simply stopped is indistinguishable from a bug.
+    ///
+    /// **`display.count`, not `RunBudget.maxStitchesPerRun`.** They are different numbers:
+    /// `step()` returns one atomic batch the driver cannot split, so the final frame
+    /// overshoots the cap — and without any global bound once several scripts run. The
+    /// count is what is on screen; the cap is an implementation detail the user never
+    /// agreed to.
+    ///
+    /// `stop.circle`, not the `exclamationmark.triangle` above: both notices can be visible
+    /// at once (an out-of-hoop `forever` design), and two identical triangles carrying
+    /// different meanings is worse than no icon. It also echoes the transport symbol the
+    /// user just pressed, and this is not a warning — the stitches shown are real and the
+    /// design still exports.
+    ///
+    /// It lives in the *scrolling* region rather than beside the button: at AX5 this
+    /// sentence is three or four lines, and in the pinned row it would compete for space
+    /// the button must not lose. Adjacency — visual and in VoiceOver order — survives
+    /// either way.
+    private var limitNotice: some View {
+        Label {
+            Text(.stageRunLimitNotice(display.count))
+        } icon: {
+            Image(systemName: "stop.circle")
+        }
+        .font(.footnote)
     }
 
     /// "Hoop 100 mm × 100 mm" — moved here verbatim from `StagePlaceholderView`.
@@ -240,7 +331,13 @@ private struct StageFieldView: View {
 #Preview("Nothing selected") {
     NavigationStack {
         StageView(
-            sample: nil, display: StitchDisplayList(), needle: nil, renderer: CanvasStitchRenderer()
+            sample: nil,
+            display: StitchDisplayList(),
+            runState: .idle,
+            needle: nil,
+            renderer: CanvasStitchRenderer(),
+            onPlay: {},
+            onStop: {}
         )
     }
 }
@@ -250,8 +347,11 @@ private struct StageFieldView: View {
         StageView(
             sample: SampleLibrary.all.first,
             display: StitchDisplayList(),
+            runState: .idle,
             needle: nil,
-            renderer: CanvasStitchRenderer()
+            renderer: CanvasStitchRenderer(),
+            onPlay: {},
+            onStop: {}
         )
     }
 }

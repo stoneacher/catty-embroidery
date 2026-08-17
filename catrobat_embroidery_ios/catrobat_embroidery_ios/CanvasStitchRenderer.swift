@@ -17,11 +17,83 @@ struct CanvasStitchRenderer: StagePreviewRenderer {
         needle: PreviewNeedle?,
         viewport: ViewSize
     ) -> some View {
-        // `needle` is ignored: US-305 has no run, so it is always nil, and US-306 owns
-        // the indicator's appearance and its accessibility. Drawing a provisional
-        // crosshair now would pre-empt that decision with no criterion to judge it by.
-        _ = needle
-        return CanvasStitchLayers(display: display, transform: transform, viewport: viewport)
+        // **The needle is a sibling layer, not a branch inside `CanvasStitchLayers`, and
+        // that is what protects ADR-009's cache structurally rather than by comment.**
+        // The pose changes every frame; if it could reach `BakeKey` the settled raster
+        // would re-bake per frame and the cache would be worse than no cache at all.
+        // `CanvasStitchLayers` has no `needle` property, so no bake key field *can*
+        // depend on one — the requirement is unrepresentable instead of merely avoided.
+        //
+        // ADR-024's own review is the cautionary precedent: its Increase Contrast claim
+        // was documented in `StageChrome` and in the ADR while the code did the opposite,
+        // precisely because it rested on a comment.
+        //
+        // Cost, stated rather than hidden: one extra full-viewport compositing layer per
+        // frame, for US-309 to measure. `PreviewNeedle` is `Hashable`, so a tick that
+        // only stitches leaves this layer's inputs equal and SwiftUI can skip it.
+        ZStack {
+            CanvasStitchLayers(display: display, transform: transform, viewport: viewport)
+            NeedleLayer(needle: needle, transform: transform)
+        }
+    }
+}
+
+/// The needle: drawn every frame, never baked.
+///
+/// Two inks rather than one, and the halo is load-bearing rather than decorative. The
+/// needle sits *on top of the design*, so the binding constraint is not the two stage
+/// fields — it is every possible thread colour. Measured: `needleCore` alone clears the
+/// paper at 6.97:1 and the mat at 5.18:1, but it is only 2.10:1 against black, which is
+/// `ColorState`'s default and therefore the app's commonest thread. With the white halo
+/// the pair spans the whole luminance range and the **worst background anywhere in it**
+/// still clears 3.17:1 against one of the two inks. That is a proved bound over the
+/// colour space, not a spot check, and it is what makes the halo non-optional.
+private struct NeedleLayer: View {
+    let needle: PreviewNeedle?
+    let transform: StageTransform
+
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        Canvas { context, _ in
+            guard let needle,
+                  let outline = NeedleGlyph.outline(
+                      at: transform.viewPoint(of: needle.update.position),
+                      heading: needle.update.heading
+                  )
+            else { return }
+
+            var path = Path()
+            path.addLines(outline.map { CGPoint(x: $0.x, y: $0.y) })
+            path.closeSubpath()
+
+            // Halo first, stroked *centred* on the outline, so the fill covers its inner
+            // half and exactly `haloWidth / 2` survives outside the silhouette. One path,
+            // two draws — no second geometry that could drift from the first.
+            context.stroke(
+                path,
+                with: .color(StageChrome.needleHalo),
+                style: StrokeStyle(
+                    lineWidth: contrast == .increased
+                        ? NeedleGlyph.increasedContrastHaloWidth
+                        : NeedleGlyph.haloWidth,
+                    lineCap: .round,
+                    lineJoin: .round
+                )
+            )
+            context.fill(path, with: .color(StageChrome.needleCore))
+        }
+        // **This is how "must not be announced continuously by VoiceOver" is satisfied:
+        // by there being nothing to announce.** A `Canvas` has no child views, and the
+        // stage already exposes itself as a single element with a *static* label.
+        //
+        // US-307 owns the real summary and must not undo this: an `accessibilityValue`
+        // keyed on the pose would be re-read on every frame, which is exactly the
+        // continuous announcement the criterion forbids.
+        .accessibilityHidden(true)
+        // Without this the sibling layer sits above the stitch canvas and swallows
+        // US-307's pinch and pan.
+        .allowsHitTesting(false)
     }
 }
 

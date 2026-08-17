@@ -75,6 +75,26 @@ struct StageViewWiringTests {
         return list
     }
 
+    /// Builds the stage with the story's new parameters defaulted, so that adding one
+    /// more does not mean editing every call site again — and so each test states only
+    /// the input it is about.
+    private static func stage(
+        display: StitchDisplayList,
+        needle: PreviewNeedle?,
+        renderer: RecordingRenderer,
+        runState: RunState = .running
+    ) -> some View {
+        StageView(
+            sample: SampleLibrary.all.first,
+            display: display,
+            runState: runState,
+            needle: needle,
+            renderer: renderer,
+            onPlay: {},
+            onStop: {}
+        )
+    }
+
     /// Item 1.
     ///
     /// **The transform is checked against the viewport the renderer was actually
@@ -90,7 +110,7 @@ struct StageViewWiringTests {
         let list = Self.drawnList()
 
         Self.hosting(
-            StageView(sample: SampleLibrary.all.first, display: list, needle: nil, renderer: renderer),
+            Self.stage(display: list, needle: nil, renderer: renderer),
             at: CGSize(width: 390, height: 700)
         )
 
@@ -117,16 +137,58 @@ struct StageViewWiringTests {
         )
 
         Self.hosting(
-            StageView(
-                sample: SampleLibrary.all.first,
-                display: Self.drawnList(),
-                needle: needle,
-                renderer: renderer
-            ),
+            Self.stage(display: Self.drawnList(), needle: needle, renderer: renderer),
             at: CGSize(width: 390, height: 700)
         )
 
         #expect(renderer.invocations.last?.needle == needle)
+    }
+
+    /// US-306: whatever needle it is given reaches the renderer unchanged, including `nil`.
+    ///
+    /// **This deliberately no longer claims to pin the "hidden once finished" rule.** An
+    /// earlier version did, and could not fail: it recomputed the rule
+    /// (`RunState.finished(…).isRunning ? needle : nil`) in its own body and then asserted the
+    /// result, so it stayed green even if `RootView` dropped the condition altogether
+    /// (`swift-code-reviewer`). The rule now lives in `PreviewRunState.visibleNeedle` and is
+    /// pinned in the package by `PreviewRunStateTests.theNeedleIsVisibleOnlyWhileRunning`.
+    /// What is left for this test is the wiring: a `nil` pose is passed through rather than
+    /// substituted for something.
+    @Test func aNilNeedleReachesTheRendererUnchanged() {
+        let renderer = RecordingRenderer()
+
+        Self.hosting(
+            Self.stage(
+                display: Self.drawnList(),
+                needle: nil,
+                renderer: renderer,
+                runState: .finished(.programFinished)
+            ),
+            at: CGSize(width: 390, height: 700)
+        )
+
+        #expect(renderer.invocations.last?.needle == nil)
+    }
+
+    /// US-306: the design stays drawn after the run ends.
+    ///
+    /// Catroid's precedent is the same — `StageListener.render()` calls `stage.draw()`
+    /// whenever `!finished`, regardless of pause — and it is what makes "press stop and
+    /// still have my design" true on screen rather than only in the model.
+    @Test func theRendererStillDrawsAfterTheRunFinishes() {
+        let renderer = RecordingRenderer()
+
+        Self.hosting(
+            Self.stage(
+                display: Self.drawnList(),
+                needle: nil,
+                renderer: renderer,
+                runState: .finished(.stoppedByUser)
+            ),
+            at: CGSize(width: 390, height: 700)
+        )
+
+        #expect(!renderer.invocations.isEmpty, "a finished run must keep its design on screen")
     }
 
     /// Item 8. The "never invoked" half is what a screenshot cannot claim: a renderer
@@ -136,11 +198,11 @@ struct StageViewWiringTests {
         let renderer = RecordingRenderer()
 
         Self.hosting(
-            StageView(
-                sample: SampleLibrary.all.first,
-                display: StitchDisplayList(),
-                needle: nil,
-                renderer: renderer
+            // `.idle` explicitly: since US-306 a *running* design with no stitches yet
+            // resolves to `.drawn`, so the press-play state is now specifically the
+            // not-yet-started one.
+            Self.stage(
+                display: StitchDisplayList(), needle: nil, renderer: renderer, runState: .idle
             ),
             at: CGSize(width: 390, height: 700)
         )
@@ -154,15 +216,43 @@ struct StageViewWiringTests {
 @Suite("Stage content state")
 struct StageContentStateTests {
     @Test func nothingSelectedIsTheNoSelectionState() {
-        #expect(StageContentState.resolving(hasSelection: false, hasStitches: false) == .noSelection)
+        #expect(
+            StageContentState.resolving(
+                hasSelection: false, hasStitches: false, isRunning: false
+            ) == .noSelection
+        )
     }
 
     @Test func aSelectionWithNoStitchesIsTheReadyState() {
-        #expect(StageContentState.resolving(hasSelection: true, hasStitches: false) == .notRun)
+        #expect(
+            StageContentState.resolving(
+                hasSelection: true, hasStitches: false, isRunning: false
+            ) == .notRun
+        )
     }
 
     @Test func aSelectionWithStitchesIsDrawn() {
-        #expect(StageContentState.resolving(hasSelection: true, hasStitches: true) == .drawn)
+        #expect(
+            StageContentState.resolving(
+                hasSelection: true, hasStitches: true, isRunning: false
+            ) == .drawn
+        )
+    }
+
+    /// A running design with no stitches **yet** must not say "Press play".
+    ///
+    /// Reachable from a legal program: a script whose first bricks are `wait` emits
+    /// nothing for its first ticks, so the canvas would show the press-play empty state
+    /// while the button directly beneath it said **Stop** — a screen contradicting
+    /// itself. Not visible on the bundled samples, because sample 1 emits 51 stitches on
+    /// its very first tick, which is exactly why it needs a test rather than a
+    /// screenshot. (Found by `swift-ui-design` during this story.)
+    @Test func aRunningDesignWithNoStitchesYetIsAlreadyDrawn() {
+        #expect(
+            StageContentState.resolving(
+                hasSelection: true, hasStitches: false, isRunning: true
+            ) == .drawn
+        )
     }
 
     /// Not reachable today — nothing clears a selection, and only a selected sample
@@ -170,6 +260,10 @@ struct StageContentStateTests {
     /// *showing the stitches*: real content on screen beats telling the user nothing
     /// is selected while their design is visibly there.
     @Test func stitchesWithoutASelectionStillDraw() {
-        #expect(StageContentState.resolving(hasSelection: false, hasStitches: true) == .drawn)
+        #expect(
+            StageContentState.resolving(
+                hasSelection: false, hasStitches: true, isRunning: false
+            ) == .drawn
+        )
     }
 }

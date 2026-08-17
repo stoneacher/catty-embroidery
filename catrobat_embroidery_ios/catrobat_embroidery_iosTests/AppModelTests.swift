@@ -1,5 +1,7 @@
 @testable import catrobat_embroidery_ios
+import EmbroideryEngine
 import Samples
+import StagePreview
 import Testing
 
 /// The app's selection state: what the picker shows, what selecting does, and
@@ -166,5 +168,47 @@ struct AppModelTests {
 
         #expect(model.isSelected(chosen))
         #expect(!model.isSelected(other))
+    }
+
+    /// Choosing a design discards whatever the previous one left on the stage.
+    ///
+    /// **Driven from `select(_:)`, not from a view.** ADR-023 records that `RootView`
+    /// swaps navigation containers on a horizontal size-class change, and the natural
+    /// view-side spellings for this — `.onChange(of:initial:)`, `.task(id:)` — re-fire
+    /// when the surviving container is rebuilt, which on an iPad window resize would
+    /// wipe a design the user had just finished watching. `select(_:)` already has
+    /// exactly one writer and says so; this belongs there.
+    /// **Seeded by a real run, not by a direct `apply`.** An earlier version called
+    /// `model.runner.apply(...)` to put a stitch on the stage, which stopped working the
+    /// moment `PreviewRunState.apply` began refusing updates outside a running run — and,
+    /// more importantly, it never exercised the thing that actually goes wrong here, which is
+    /// a *live* run's buffered frames arriving after the reset (`swift-code-reviewer`).
+    ///
+    /// `AppModel` owns a `RunViewModel` with the real display pacing, so this waits for a few
+    /// real frames rather than injecting anything: at 1/60 s a handful of frames is a few tens
+    /// of milliseconds, and `squareCoil` stitches on its very first tick.
+    @Test(.timeLimit(.minutes(1)))
+    func selectingASampleDiscardsThePreviousRun() async throws {
+        let model = AppModel()
+        let chosen = try #require(SampleLibrary.all.first)
+
+        model.runner.play(chosen.program)
+        for _ in 0 ..< 100_000 where model.runner.run.display.isEmpty {
+            await Task.yield()
+        }
+        try #require(!model.runner.run.display.isEmpty, "the run must have something to discard")
+
+        model.select(chosen)
+
+        #expect(model.runner.run.state == .idle)
+        #expect(model.runner.run.display.isEmpty)
+
+        // And it stays discarded once the orphaned consumer has had its turns.
+        for _ in 0 ..< 5000 {
+            await Task.yield()
+        }
+        #expect(model.runner.run.state == .idle)
+        #expect(model.runner.run.display.isEmpty)
+        #expect(model.runner.run.exportModel == nil)
     }
 }
