@@ -72,6 +72,37 @@ enum StageChrome {
 
     /// The dash, in view points. Constant for the same reason as the width.
     static let travelDash: [CGFloat] = [3, 3]
+
+    /// The needle's core. **Fixed, like everything else inside the canvas.**
+    ///
+    /// A dark crimson rather than the intuitive amber: `#f59e0b` at *full* opacity is
+    /// 1.49:1 against the paper and 1.11:1 against the mat, which extends ADR-024's
+    /// rejection of it — measured there at 45% over the field, about 1.2:1 — to every
+    /// opacity. Nor a mid red: `#dc2626` clears the paper at 3.36:1 and fails the mat at
+    /// 2.50:1.
+    ///
+    /// **The binding constraint is not the two fields, it is every thread colour**,
+    /// because the needle is drawn on top of the design. Paired with a white halo the two
+    /// inks span the whole luminance range, and the worst background anywhere in that
+    /// range — a mid grey near `#919191` — still clears 3.17:1 against one of them. That
+    /// bound is what selects this value: it requires relative luminance ≤ 0.0667, and
+    /// `#991b1b`, one Tailwind step lighter, misses it at 2.88:1 despite passing both
+    /// fields.
+    ///
+    /// Black would win on contrast alone (14.61:1 on paper) and is **rejected on
+    /// identity**: black is the commonest thread, so a black needle is the one ink
+    /// guaranteed to be indistinguishable from the design in a still screenshot.
+    static let needleCore = Color(red: 127 / 255, green: 29 / 255, blue: 29 / 255)
+
+    /// The needle's halo — load-bearing, not decoration.
+    ///
+    /// The core is only 2.10:1 against black thread and 1.50:1 against the sample
+    /// palette's `#1d4ed8`; against white thread the roles swap and the core carries it at
+    /// 10.02:1. There is also no dark ink that satisfies the universal bound *and*
+    /// separates from `hoopOutline` by luminance — every candidate lands within about
+    /// 1.2:1 of it — so the halo is what stops the needle reading as chrome where it
+    /// crosses the hoop line, at 11.71:1. The internal core-to-halo edge is 10.02:1.
+    static let needleHalo = Color(red: 1, green: 1, blue: 1)
 }
 
 extension Color {

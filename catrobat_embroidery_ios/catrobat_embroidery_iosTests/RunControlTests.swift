@@ -10,6 +10,14 @@ import Testing
 /// hosted view, and a screenshot cannot show what VoiceOver would say.
 @Suite("Run control")
 struct RunControlTests {
+    /// The one part of the ≥ 44 pt criterion a test can reach. That the modifier is
+    /// actually applied is checked by review and by the screenshot — see the constant's own
+    /// doc comment, which declines to claim more.
+    @Test("the touch-target floor is at least the HIG minimum")
+    func theTouchTargetFloorIsAtLeastTheHIGMinimum() {
+        #expect(RunControl.minimumTouchTarget >= 44)
+    }
+
     @Test("with no design selected the control is disabled")
     func withNoSelectionTheControlIsDisabled() {
         #expect(!RunControl.appearance(for: .idle, hasSelection: false).isEnabled)

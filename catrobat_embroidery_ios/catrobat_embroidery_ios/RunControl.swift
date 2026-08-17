@@ -14,6 +14,16 @@ import SwiftUI
 /// of bolted on, and it avoids the AX5 wrapping problem two side-by-side titled
 /// buttons would create.
 enum RunControl {
+    /// The HIG's minimum touch target, as a **floor the row is built from** rather than a
+    /// property it is asserted to have afterwards.
+    ///
+    /// Stated honestly, because two comments in this repo have already overclaimed and been
+    /// retracted: no test here can read a hosted `Button`'s hit region — XCUITest is
+    /// forbidden by CLAUDE.md, and the UI definition of done uses screenshots instead. So
+    /// what is *checkable* is this constant; that it is actually applied is verified by
+    /// review and by the definition-of-done screenshot. This comment claims no more.
+    static let minimumTouchTarget: Double = 44
+
     /// The visible title doubles as the accessibility label. Deliberately: one
     /// catalog entry cannot disagree with itself, whereas a separate
     /// `accessibilityLabel` is free to drift from the title next to it.
