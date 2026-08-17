@@ -200,10 +200,11 @@ public struct InterpreterDriver: Sendable {
 /// it is the thing that observes `Task.isCancelled` and emits the terminal update carrying
 /// `assembledStream()`. Cancelling the consumer instead — the natural reading of "the run
 /// `Task` is cancellable", and what cancelling a `for await` task or a `.task {}` does —
-/// leaves the interpreter running to its natural end or the stitch cap, so no
-/// `.stoppedByUser` terminal is ever produced; and once the buffer drains, the cancelled
-/// consumer's suspended `next()` returns `nil`, so anything the producer yields afterwards
-/// is lost. Export-after-stop would fail the way Catty's does while every unit test that
+/// **does** stop the producer, through the stream's `onTermination` — what it loses is the
+/// *delivery*. The producer observes the cancellation, builds the `.stoppedByUser` terminal
+/// carrying `assembledStream()`, and yields it into a stream nobody is reading. The run stops
+/// either way; only the app's knowledge of how it stopped, and its export model, are lost.
+/// Export-after-stop would fail the way Catty's does while every unit test that
 /// inspects the producer in isolation still passed.
 ///
 /// **Correction (2026-08-17, in-loop review):** an earlier version of this comment argued

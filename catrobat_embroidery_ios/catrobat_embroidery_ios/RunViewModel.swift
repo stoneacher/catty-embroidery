@@ -118,11 +118,10 @@ final class RunViewModel {
     /// still costs only one, because the driver re-checks cancellation after the frame and the
     /// frame's stitches ride out on the terminal itself.
     ///
-    /// Cancelling the consumer here — the obvious reading of "stop the run" — would leave the
-    /// interpreter running to its natural end or the stitch cap and produce no
-    /// `.stoppedByUser` terminal at all, because the producer is the only task that observes
-    /// cancellation. That is the Catty `Stage.stopProject()` failure reproduced: the design
-    /// survives, the export model does not.
+    /// Cancelling the consumer here — the obvious reading of "stop the run" — would stop the run
+    /// too, through the stream's `onTermination`, but the terminal update would be yielded into a
+    /// stream nobody is reading. The design survives; the completion reason and the export model
+    /// do not. That is the Catty `Stage.stopProject()` failure reproduced.
     func stop() {
         session?.stop()
     }

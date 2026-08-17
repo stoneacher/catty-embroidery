@@ -2,12 +2,18 @@ import EmbroideryEngine
 
 /// A run's last word: why it ended, and the export model as of that moment.
 ///
-/// **`exportModel` is non-optional and has no default, and that is the entire
-/// design.** US-306's criterion is that the terminal batch always carries
-/// `assembledStream()` — on natural finish, on the stitch cap, *and* on
-/// cancellation. Written as three code paths that each remember to call it, that
-/// is a discipline; written like this it is a type, and terminating a run without
-/// an export model is unrepresentable.
+/// **`exportModel` is non-optional and has no default**, so terminating a run without *an*
+/// export model is unrepresentable. That is what the type buys, and it is worth having: no
+/// completion path can be added later that forgets the field exists.
+///
+/// **It is not the whole criterion, and an earlier version of this comment said it was.**
+/// US-306 asks that the terminal carry `assembledStream()` specifically, and no type can
+/// promise that — `RunTermination(reason:exportModel:)` compiles with any `EmbroideryStream`,
+/// including a sentinel. What delivers the stronger property is that every path funnels
+/// through one private `terminal(_:of:batch:)` which calls `assembledStream()`, plus the tests
+/// that compare the delivered model against an independently stepped interpreter. Codex round
+/// 3 found that the tests had only asserted "non-empty", and round 4 that this comment still
+/// claimed the type did the work.
 ///
 /// The hazard it closes is concrete rather than hypothetical. Catty's
 /// `Stage.stopProject()` calls `removeAllChildren()` and
