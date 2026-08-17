@@ -73,8 +73,11 @@ public struct InterpreterDriver: Sendable {
         var stitchesThisRun = 0
 
         while true {
-            // Checked once per frame, before any `step()`. A single check is what
-            // keeps the terminal update unconditional — see `RunPacing`.
+            // Checked before any `step()`, so a stop that lands while the producer is parked
+            // in pacing costs no further work. There is a **second** check after the frame —
+            // see `completionReason` — because this one alone lost a stop to the stitch cap.
+            // Both are `Task.isCancelled` rather than a thrown error, which is what keeps
+            // cancellation to a single mechanism (see `RunPacing`).
             if Task.isCancelled {
                 continuation.yield(terminal(.stoppedByUser, of: run, batch: .empty))
                 return
@@ -240,9 +243,17 @@ public struct RunSession: Sendable {
         self.task = task
     }
 
-    /// Asks the run to stop. The terminal update — carrying
-    /// `RunCompletion.stoppedByUser` and the export model — is still produced and
-    /// still delivered.
+    /// Asks the run to stop. The terminal update — carrying `RunCompletion.stoppedByUser` and
+    /// the export model — is produced, and **delivered to a consumer that is still
+    /// consuming**.
+    ///
+    /// That qualification is load-bearing rather than pedantic (Codex round 2): a consumer
+    /// which has itself been cancelled or dropped terminates the stream, `onTermination`
+    /// cancels the producer, and the terminal `yield` then returns `.terminated` and goes
+    /// nowhere. That is the right outcome for a discarded run — no terminal is wanted — but it
+    /// means the guarantee is about production plus a retained consumer, not about delivery
+    /// unconditionally. `RunViewModel.stop()` keeps its consumer alive for exactly this
+    /// reason.
     public func stop() {
         task.cancel()
     }

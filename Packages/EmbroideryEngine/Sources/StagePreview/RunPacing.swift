@@ -4,14 +4,28 @@
 /// `Sendable` is load-bearing, not decorative: the driver captures its pacing
 /// into a detached `Task`.
 public protocol RunPacing: Sendable {
-    /// Suspends until the next frame should be produced.
+    /// Suspends until the next frame should be produced, **or until the task is
+    /// cancelled, whichever comes first**.
     ///
-    /// **Non-throwing on purpose.** A `throws` requirement would give
-    /// cancellation two paths — a thrown `CancellationError` and the driver's own
-    /// `Task.isCancelled` check — and two paths means one of them eventually
-    /// skips the terminal update that carries the export model. An
-    /// implementation that sleeps swallows the cancellation error and lets the
-    /// driver's single check own the decision.
+    /// **The cancellation half is a requirement, not a courtesy, and the run's central
+    /// guarantee depends on it.** The producer observes cancellation between frames, so an
+    /// implementation that stays suspended through a cancellation parks the producer
+    /// permanently: `stop()` then never reaches the next check, never emits
+    /// `.stoppedByUser`, and the export model the story promises after a stop is never
+    /// produced at all. Codex round 2 found exactly that hole — via this package's own
+    /// gated test double, which had been written to ignore cancellation deliberately.
+    ///
+    /// `Task.sleep` satisfies this for free (it throws on cancellation); a hand-rolled
+    /// gate must use `withTaskCancellationHandler` or equivalent. The requirement is stated
+    /// here because it cannot be enforced by the type — see
+    /// `InterpreterDriverTests.aRunStoppedWhileParkedInPacingStillTerminates`, which is the
+    /// contract's test.
+    ///
+    /// **Non-throwing on purpose.** A `throws` requirement would give cancellation two
+    /// paths — a thrown `CancellationError` and the driver's own `Task.isCancelled` check —
+    /// and two paths means one of them eventually skips the terminal update. An
+    /// implementation swallows its own cancellation error and lets the driver's single check
+    /// own the decision.
     func waitForNextFrame() async
 }
 

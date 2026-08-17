@@ -164,7 +164,7 @@ struct RunViewModelTests {
         await Self.settle(until: { !model.run.display.isEmpty })
 
         model.stop()
-        await pacing.grant()
+        // No grant: `stop()` alone must wake a producer parked in pacing (Codex round 2).
         await Self.settle(until: { model.run.state == .finished(.stoppedByUser) })
 
         #expect(model.run.state == .finished(.stoppedByUser))
@@ -246,10 +246,18 @@ struct RunViewModelTests {
         #expect(model.run.display.count == 2976, "one run's worth of stitches, not two")
     }
 
-    /// The interleaving Codex round 1 constructed, which the `.running` guard alone does not
-    /// close: **reset, then start a new run, then let the old run's buffered frames arrive.**
-    /// The new run is `.running`, so nothing about its *state* rejects them — only the session
-    /// identity does.
+    /// The interleaving Codex round 1 constructed: **reset, then start a new run, then let the
+    /// old run's buffered frames arrive.** The new run is `.running`, so nothing about its
+    /// *state* rejects them.
+    ///
+    /// **What this test does and does not prove**, because round 2 checked: it pins the
+    /// observable property — exactly one run's stitches survive — but it does **not** isolate
+    /// the generation guard, and it stays green if that guard is deleted. `discard()` cancels
+    /// the old consumer, so its buffered update exits at `Task.isCancelled` before the
+    /// generation comparison is ever reached. In the code as it stands the cancellation check
+    /// is what closes this case; the generation is defence in depth that keeps the property
+    /// true if a suspension point were ever introduced between that check and `apply`. No
+    /// current test can tell the two apart, and saying so is better than implying one does.
     @Test("a reset run's buffered frames do not land in the run started after it",
           .timeLimit(.minutes(1)))
     func aResetRunsFramesDoNotLandInTheRunStartedAfterIt() async {
@@ -294,21 +302,42 @@ final class NotificationCounter {
 /// Pacing the test drives frame by frame. See
 /// `RunViewModelTests.stoppingMidRunKeepsTheDesignAndTheExportModel` for why this is
 /// duplicated from the package's test target rather than shared.
+/// **Cancellation-responsive**, matching `RunPacing`'s documented contract. A gate that stays
+/// suspended through a cancellation parks the producer permanently, so `stop()` never reaches
+/// the next check and never emits `.stoppedByUser` — the hole Codex round 2 found through the
+/// package's equivalent double.
 actor GatedPacing: RunPacing {
     private var credits = 0
     private var waiting: CheckedContinuation<Void, Never>?
 
+    /// Lets one more frame be produced: resume a parked producer, **or** bank a credit —
+    /// never both. Doing both hands out two frames for one grant, which made the
+    /// frame-by-frame observation test race ahead of its own arming.
     func grant() {
-        if let continuation = waiting {
-            waiting = nil
-            continuation.resume()
-        } else {
+        if !resumeWaiter() {
             credits += 1
         }
     }
 
     nonisolated func waitForNextFrame() async {
-        await gate()
+        await withTaskCancellationHandler {
+            await gate()
+        } onCancel: {
+            Task { await self.releaseOnCancellation() }
+        }
+    }
+
+    private func releaseOnCancellation() {
+        resumeWaiter()
+    }
+
+    /// Resumes a parked producer, reporting whether there was one.
+    @discardableResult
+    private func resumeWaiter() -> Bool {
+        guard let continuation = waiting else { return false }
+        waiting = nil
+        continuation.resume()
+        return true
     }
 
     private func gate() async {
@@ -316,8 +345,15 @@ actor GatedPacing: RunPacing {
             credits -= 1
             return
         }
+        if Task.isCancelled {
+            return
+        }
         await withCheckedContinuation { continuation in
-            waiting = continuation
+            if Task.isCancelled {
+                continuation.resume()
+            } else {
+                waiting = continuation
+            }
         }
     }
 }

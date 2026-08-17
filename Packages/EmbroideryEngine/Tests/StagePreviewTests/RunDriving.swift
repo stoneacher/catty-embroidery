@@ -93,26 +93,46 @@ func stitchEventCount(of program: Program) -> Int {
 ///
 /// An `actor` because the driver's detached producer and the test body both touch it.
 ///
-/// Note that `withCheckedContinuation` is **not** cancellation-aware, which is
-/// deliberate here: after `stop()` the producer stays parked in the gate until the
-/// test grants one more frame, so the test controls exactly when the cancellation is
-/// observed instead of racing it.
+/// **Cancellation-responsive, which it was not at first and had to become.** The gate
+/// originally used a bare `withCheckedContinuation` and a comment calling that "deliberate",
+/// so a producer parked here stayed parked through a `stop()` — it could never reach the next
+/// cancellation check and never emit `.stoppedByUser`. Codex round 2 found the hole through
+/// this very double: the guarantee `RunPacing` documents was being violated by the package's
+/// own test helper, and the stop tests hid it by granting a frame after stopping.
+/// `withTaskCancellationHandler` releases the gate on cancellation, so `stop()` alone is now
+/// enough — which makes the stop tests stronger, since they no longer help the producer along.
 actor GatedRunPacing: RunPacing {
     private var credits = 0
     private var waiting: CheckedContinuation<Void, Never>?
 
-    /// Lets one more frame be produced.
+    /// Lets one more frame be produced: resume a parked producer, **or** bank a credit —
+    /// never both. Doing both hands out two frames for one grant, which made the
+    /// frame-by-frame observation test race ahead of its own arming.
     func grant() {
-        if let continuation = waiting {
-            waiting = nil
-            continuation.resume()
-        } else {
+        if !resumeWaiter() {
             credits += 1
         }
     }
 
     nonisolated func waitForNextFrame() async {
-        await gate()
+        await withTaskCancellationHandler {
+            await gate()
+        } onCancel: {
+            Task { await self.releaseOnCancellation() }
+        }
+    }
+
+    private func releaseOnCancellation() {
+        resumeWaiter()
+    }
+
+    /// Resumes a parked producer, reporting whether there was one.
+    @discardableResult
+    private func resumeWaiter() -> Bool {
+        guard let continuation = waiting else { return false }
+        waiting = nil
+        continuation.resume()
+        return true
     }
 
     private func gate() async {
@@ -120,8 +140,17 @@ actor GatedRunPacing: RunPacing {
             credits -= 1
             return
         }
+        // Already cancelled: never park, or the producer would wait for a credit that the
+        // cancellation path has no reason to supply.
+        if Task.isCancelled {
+            return
+        }
         await withCheckedContinuation { continuation in
-            waiting = continuation
+            if Task.isCancelled {
+                continuation.resume()
+            } else {
+                waiting = continuation
+            }
         }
     }
 }

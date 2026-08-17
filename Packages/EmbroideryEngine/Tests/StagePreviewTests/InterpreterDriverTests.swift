@@ -74,8 +74,10 @@ struct InterpreterDriverTests {
         }
 
         session.stop()
-        // One more credit so the parked producer wakes and observes the cancellation.
-        await pacing.grant()
+        // **No grant here, deliberately.** An earlier version granted one more frame so the
+        // parked producer would wake — which is precisely what hid the fact that a
+        // cancellation-deaf gate parks the producer forever (Codex round 2). `stop()` alone
+        // must be enough.
         while let update = await iterator.next() {
             drained.updates.append(update)
         }
@@ -87,6 +89,38 @@ struct InterpreterDriverTests {
         // reason.
         #expect(!drained.stitches.isEmpty)
         #expect((drained.termination?.exportModel.count ?? 0) > 0)
+    }
+
+    /// The `RunPacing` contract's test: **a run stopped while the producer is parked in
+    /// pacing still terminates**, with no further help from the test.
+    ///
+    /// Codex round 2 found this hole through this package's own gated double, which had been
+    /// written to ignore cancellation "deliberately": a producer suspended in
+    /// `waitForNextFrame()` never reached the next `Task.isCancelled` check, so `stop()`
+    /// produced no `.stoppedByUser` and no export model — the story's central criterion,
+    /// defeated by an injected implementation rather than by the driver. The requirement cannot
+    /// be expressed in the protocol's type, so it is documented there and pinned here.
+    ///
+    /// A `forever` program, so nothing but the stop can end the run.
+    @Test("a run stopped while parked in pacing still terminates", .timeLimit(.minutes(1)))
+    func aRunStoppedWhileParkedInPacingStillTerminates() async {
+        let pacing = GatedRunPacing()
+        let driver = InterpreterDriver(pacing: pacing)
+        let session = driver.start(interpreter(foreverProgram()))
+
+        var iterator = session.updates.makeAsyncIterator()
+        // The first frame needs no credit; after yielding it the producer parks in the gate.
+        _ = await iterator.next()
+
+        session.stop()
+
+        var updates: [RunUpdate] = []
+        while let update = await iterator.next() {
+            updates.append(update)
+        }
+
+        #expect(updates.compactMap(\.termination).count == 1)
+        #expect(updates.compactMap(\.termination).first?.reason == .stoppedByUser)
     }
 
     // MARK: - The stitch cap
