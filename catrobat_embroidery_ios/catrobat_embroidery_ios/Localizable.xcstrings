@@ -121,6 +121,54 @@
         }
       }
     },
+    "stage.run.limit.notice": {
+      "comment": "Shown beneath the preview when a design was stopped because it produced more stitches than the preview will draw — typically a design that repeats forever. %lld is the number of stitches reached. Not an error: the stitches shown are real and the design can still be exported.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview stopped after %lld stitches."
+          }
+        }
+      }
+    },
+    "stage.run.play": {
+      "comment": "Title of the button that starts stitching the design in the on-screen preview. A verb in the imperative — this is the transport control on a design that has not run yet. It is also the button's VoiceOver label, so it must read as an action, not as a noun.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play"
+          }
+        }
+      }
+    },
+    "stage.run.play.again": {
+      "comment": "Title of the button that restarts a preview that has finished, replacing the previous run. Deliberately distinct from stage.run.play: a VoiceOver user who cannot see the finished design learns from this label alone that the run has ended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play Again"
+          }
+        }
+      }
+    },
+    "stage.run.stop": {
+      "comment": "Title of the button that stops the running preview. The same button as stage.run.play, which swaps to this while a design is being stitched. Stopping keeps the stitches already made and the design stays exportable, so avoid a word that implies cancelling or discarding.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        }
+      }
+    },
     "stage.title": {
       "comment": "Title of the screen showing the embroidery stage — the area where a design's stitches are drawn. On iPad this labels the detail pane.",
       "extractionState": "manual",

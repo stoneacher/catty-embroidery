@@ -36,7 +36,14 @@ struct AppStringsTests {
             (.stageReadyTitle, "stage.ready.title"),
             (.stageReadyDescription, "stage.ready.description"),
             (.stageOutsideHoop, "stage.outside.hoop"),
-            (.stageCanvasAccessibilityLabel, "stage.canvas.accessibility.label")
+            (.stageCanvasAccessibilityLabel, "stage.canvas.accessibility.label"),
+            // US-306. Three titles for one button, which is why they are listed
+            // separately rather than folded together: `RunControlTests` additionally
+            // pins that they are pairwise *distinct*, and that property is what a
+            // VoiceOver user relies on to tell a finished run from one not yet started.
+            (.stageRunPlay, "stage.run.play"),
+            (.stageRunStop, "stage.run.stop"),
+            (.stageRunPlayAgain, "stage.run.play.again")
         ]
 
         for entry in entries {
@@ -76,5 +83,29 @@ struct AppStringsTests {
             rendered != "\(side) × \(side)",
             "the catalog entry kept its separator but lost its literal text"
         )
+    }
+
+    /// The stitch-limit notice is parameterised, so it needs the same treatment as the
+    /// hoop-size string rather than the `≠ key` check: `xcstringstool`'s fallback for a
+    /// missing entry is `defaultValue: "\(arg1)"`, which leaves the number and drops
+    /// every word around it — and there is then no key left in the output to compare
+    /// against.
+    ///
+    /// A `%lld` argument rather than `%@`: the count is an integer, and passing it as a
+    /// string would push number formatting out of the catalog and into Swift, where a
+    /// locale's digits and grouping separator are no longer the translator's to control.
+    @Test func theStitchLimitNoticeKeepsItsLiteralPartsAroundTheCount() {
+        let rendered = String(localized: .stageRunLimitNotice(200_000))
+
+        #expect(!rendered.isEmpty)
+        // The number survives, in whatever form the locale formats it — asserting the
+        // exact digits would be asserting a locale, so this checks only that the
+        // argument was substituted at all.
+        let hasDigit = rendered.contains { $0.isNumber }
+        let hasLetter = rendered.contains { $0.isLetter }
+
+        #expect(hasDigit)
+        // And the words around it survive: a collapsed entry would be the bare number.
+        #expect(hasLetter, "the entry collapsed to its argument")
     }
 }

@@ -47,6 +47,20 @@ final class AppModel {
         SampleLibrary.all
     }
 
+    /// The run this window's stage shows.
+    ///
+    /// Owned here — above `RootView` — and deliberately not `@State` in `StageView`.
+    /// ADR-023 records that `RootView` swaps one navigation container for another on a
+    /// horizontal size-class change and tears down whichever it leaves; a run held
+    /// inside either container would be cancelled, and a finished design lost, by an
+    /// iPad window resize. That is the hazard US-304 was written to fix, and putting the
+    /// run in a view would reintroduce it one story later.
+    ///
+    /// `let`, not `var`: the identity never changes. Starting over is
+    /// `RunViewModel.reset()`, not a new instance, so nothing can be observing the old
+    /// one.
+    let runner = RunViewModel()
+
     /// The chosen sample, or `nil` before the first tap.
     ///
     /// `private(set)` so every mutation goes through `select(_:)` and the

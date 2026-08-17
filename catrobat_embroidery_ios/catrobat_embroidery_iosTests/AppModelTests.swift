@@ -1,5 +1,7 @@
 @testable import catrobat_embroidery_ios
+import EmbroideryEngine
 import Samples
+import StagePreview
 import Testing
 
 /// The app's selection state: what the picker shows, what selecting does, and
@@ -166,5 +168,27 @@ struct AppModelTests {
 
         #expect(model.isSelected(chosen))
         #expect(!model.isSelected(other))
+    }
+
+    /// Choosing a design discards whatever the previous one left on the stage.
+    ///
+    /// **Driven from `select(_:)`, not from a view.** ADR-023 records that `RootView`
+    /// swaps navigation containers on a horizontal size-class change, and the natural
+    /// view-side spellings for this — `.onChange(of:initial:)`, `.task(id:)` — re-fire
+    /// when the surviving container is rebuilt, which on an iPad window resize would
+    /// wipe a design the user had just finished watching. `select(_:)` already has
+    /// exactly one writer and says so; this belongs there.
+    @Test func selectingASampleDiscardsThePreviousRun() throws {
+        let model = AppModel()
+        let chosen = try #require(SampleLibrary.all.first)
+        model.runner.apply(RunUpdate(batch: RunBatch(stitches: [
+            PreviewStitch(position: StagePoint(x: 1, y: 1), color: .black)
+        ])))
+        #expect(!model.runner.run.display.isEmpty, "the run must have something to discard")
+
+        model.select(chosen)
+
+        #expect(model.runner.run.state == .idle)
+        #expect(model.runner.run.display.isEmpty)
     }
 }

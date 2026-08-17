@@ -1,4 +1,5 @@
 import Interpreter
+import StagePreview
 
 /// The clock the app runs programs with.
 ///
@@ -21,6 +22,16 @@ import Interpreter
 /// to protect. Verified by compiling the isolated version against the app
 /// target rather than reasoned about (in-loop review, 2026-08-11).
 nonisolated enum AppRunClock {
+    /// The one number the tick and the frame both come from.
+    ///
+    /// **They must be derived from a single value, not set to equal values.** ADR-018
+    /// leaves what a tick *means* to the app; M3's answer is "one displayed frame", and
+    /// that answer is only true while the interpreter's `tickDelta` and the driver's
+    /// frame duration agree. Two literals could drift, and the symptom would be a
+    /// `wait(1)` brick that no longer reads as one second — a wrongness nobody would
+    /// think to look for in a clock.
+    static let frameSeconds = 1.0 / 60.0
+
     /// One tick per frame at 60 Hz.
     ///
     /// Note what this does **not** promise: the interpreter is not paced by it.
@@ -28,5 +39,11 @@ nonisolated enum AppRunClock {
     /// worst case is 3,000,002 events), so US-306's driver governs how many
     /// ticks a frame gets — the frame budget bounds the tick count, not the
     /// batch size.
-    static let preview = InterpreterClock(tickDelta: 1.0 / 60.0)
+    static let preview = InterpreterClock(tickDelta: frameSeconds)
+
+    /// How long the driver waits between frames — the wall-clock counterpart of
+    /// `preview`'s logical tick, and the only place in the app where a run touches
+    /// real time. The package stays wall-clock-free; `DisplayRunPacing` is handed the
+    /// interval rather than knowing one.
+    static let pacing = DisplayRunPacing(frameDuration: .seconds(frameSeconds))
 }
