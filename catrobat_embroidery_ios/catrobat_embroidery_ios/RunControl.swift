@@ -24,9 +24,24 @@ enum RunControl {
     }
 
     static func appearance(for state: RunState, hasSelection: Bool) -> Appearance {
-        // Red-phase stub.
-        _ = state
-        _ = hasSelection
-        return Appearance(symbol: "play.fill", title: .stageRunPlay, isEnabled: false)
+        switch state {
+        case .idle:
+            Appearance(symbol: "play.fill", title: .stageRunPlay, isEnabled: hasSelection)
+        case .running:
+            // Enabled regardless of `hasSelection`: a run in flight must always be
+            // stoppable. The combination cannot arise today — nothing clears a
+            // selection — but a control the user cannot use to stop a machine
+            // metaphor is the wrong way to be wrong.
+            Appearance(symbol: "stop.fill", title: .stageRunStop, isEnabled: true)
+        case .finished:
+            // One title for all three completion reasons: to this button they mean the
+            // same thing — the run is over, and pressing it starts a new one. Why it
+            // ended is the notice line's job, not the control's.
+            //
+            // Distinct from `.idle`'s title on purpose. "Play" for both would leave a
+            // VoiceOver user unable to tell a design that has finished from one that
+            // has not started, which is the only cue they have.
+            Appearance(symbol: "play.fill", title: .stageRunPlayAgain, isEnabled: hasSelection)
+        }
     }
 }

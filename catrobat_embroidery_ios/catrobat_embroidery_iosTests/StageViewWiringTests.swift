@@ -75,6 +75,26 @@ struct StageViewWiringTests {
         return list
     }
 
+    /// Builds the stage with the story's new parameters defaulted, so that adding one
+    /// more does not mean editing every call site again — and so each test states only
+    /// the input it is about.
+    private static func stage(
+        display: StitchDisplayList,
+        needle: PreviewNeedle?,
+        renderer: RecordingRenderer,
+        runState: RunState = .running
+    ) -> some View {
+        StageView(
+            sample: SampleLibrary.all.first,
+            display: display,
+            runState: runState,
+            needle: needle,
+            renderer: renderer,
+            onPlay: {},
+            onStop: {}
+        )
+    }
+
     /// Item 1.
     ///
     /// **The transform is checked against the viewport the renderer was actually
@@ -90,7 +110,7 @@ struct StageViewWiringTests {
         let list = Self.drawnList()
 
         Self.hosting(
-            StageView(sample: SampleLibrary.all.first, display: list, needle: nil, renderer: renderer),
+            Self.stage(display: list, needle: nil, renderer: renderer),
             at: CGSize(width: 390, height: 700)
         )
 
@@ -117,16 +137,32 @@ struct StageViewWiringTests {
         )
 
         Self.hosting(
-            StageView(
-                sample: SampleLibrary.all.first,
-                display: Self.drawnList(),
-                needle: needle,
-                renderer: renderer
-            ),
+            Self.stage(display: Self.drawnList(), needle: needle, renderer: renderer),
             at: CGSize(width: 390, height: 700)
         )
 
         #expect(renderer.invocations.last?.needle == needle)
+    }
+
+    /// US-306: the design stays drawn after the run ends.
+    ///
+    /// Catroid's precedent is the same — `StageListener.render()` calls `stage.draw()`
+    /// whenever `!finished`, regardless of pause — and it is what makes "press stop and
+    /// still have my design" true on screen rather than only in the model.
+    @Test func theRendererStillDrawsAfterTheRunFinishes() {
+        let renderer = RecordingRenderer()
+
+        Self.hosting(
+            Self.stage(
+                display: Self.drawnList(),
+                needle: nil,
+                renderer: renderer,
+                runState: .finished(.stoppedByUser)
+            ),
+            at: CGSize(width: 390, height: 700)
+        )
+
+        #expect(!renderer.invocations.isEmpty, "a finished run must keep its design on screen")
     }
 
     /// Item 8. The "never invoked" half is what a screenshot cannot claim: a renderer
@@ -136,12 +172,7 @@ struct StageViewWiringTests {
         let renderer = RecordingRenderer()
 
         Self.hosting(
-            StageView(
-                sample: SampleLibrary.all.first,
-                display: StitchDisplayList(),
-                needle: nil,
-                renderer: renderer
-            ),
+            Self.stage(display: StitchDisplayList(), needle: nil, renderer: renderer),
             at: CGSize(width: 390, height: 700)
         )
 

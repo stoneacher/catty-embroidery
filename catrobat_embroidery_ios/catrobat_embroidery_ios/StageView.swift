@@ -19,11 +19,30 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     let sample: SampleProgram?
 
     let display: StitchDisplayList
+
+    /// Where the run is. Drives the transport button's title and symbol, and whether the
+    /// stitch-limit notice appears.
+    ///
+    /// Deliberately **not** the whole `PreviewRunState`: that value also holds the export
+    /// model, and a view that took it would retain an up-to-200 000-record
+    /// `EmbroideryStream` per frame for nothing. See `RootView.stage`.
+    let runState: RunState
+
     let needle: PreviewNeedle?
     let renderer: Renderer
 
+    /// The transport actions. Closures rather than a reference to the view model, so this
+    /// view stays testable by hosting it and knows nothing about how a run is driven.
+    let onPlay: () -> Void
+    let onStop: () -> Void
+
     private var state: StageContentState {
         .resolving(hasSelection: sample != nil, hasStitches: !display.isEmpty)
+    }
+
+    /// The run stopped because it produced more stitches than the preview will draw.
+    private var reachedStitchLimit: Bool {
+        runState == .finished(.stitchLimitReached)
     }
 
     /// True when the design reaches outside the 100 mm hoop.
@@ -39,6 +58,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         VStack(spacing: 12) {
             canvasSlot
             captionBlock
+            transportRow
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -188,6 +208,65 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// The transport button, and the notice explaining a run that stopped itself.
+    ///
+    /// **Below the caption rather than in the toolbar**, for three reasons that are not
+    /// interchangeable with a `.toolbar` item: thumb reach on an iPhone-first app; it
+    /// appears in the definition-of-done screenshots in both size classes; and the ≥ 44 pt
+    /// criterion is provable **by construction** here — an explicit `frame` plus
+    /// `contentShape` — where a toolbar item's hit area is the system's to decide and
+    /// nothing in a test could measure it.
+    private var transportRow: some View {
+        VStack(spacing: 8) {
+            if reachedStitchLimit {
+                // Beyond the story's acceptance criteria, on the same footing as US-305's
+                // out-of-hoop caption (Sebastian's call). Without it a `forever` design
+                // simply stops, and neither a sighted nor a VoiceOver user is told why.
+                //
+                // Not an error styling: the stitches shown are real and the design still
+                // exports.
+                Text(.stageRunLimitNotice(display.count))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            transportButton
+        }
+    }
+
+    private var transportButton: some View {
+        let appearance = RunControl.appearance(for: runState, hasSelection: sample != nil)
+
+        return Button {
+            if runState.isRunning {
+                onStop()
+            } else {
+                onPlay()
+            }
+        } label: {
+            // The visible title **is** the accessibility label — one catalog entry cannot
+            // disagree with itself, where a separate `.accessibilityLabel` beside a title
+            // is free to drift from it. The title/icon closure form rather than
+            // `Label(_:systemImage:)`, whose `StringProtocol` overload would force
+            // resolving the resource to a `String` here and lose `Text`-level
+            // localisation.
+            Label {
+                Text(appearance.title)
+            } icon: {
+                Image(systemName: appearance.symbol)
+            }
+            // Grows with type size and wraps rather than truncating at AX5 — the same
+            // guard the caption block needs.
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(!appearance.isEnabled)
+    }
+
     /// "Hoop 100 mm × 100 mm" — moved here verbatim from `StagePlaceholderView`.
     ///
     /// `usage: .asProvided` is deliberate: the default lets the formatter pick the
@@ -240,7 +319,13 @@ private struct StageFieldView: View {
 #Preview("Nothing selected") {
     NavigationStack {
         StageView(
-            sample: nil, display: StitchDisplayList(), needle: nil, renderer: CanvasStitchRenderer()
+            sample: nil,
+            display: StitchDisplayList(),
+            runState: .idle,
+            needle: nil,
+            renderer: CanvasStitchRenderer(),
+            onPlay: {},
+            onStop: {}
         )
     }
 }
@@ -250,8 +335,11 @@ private struct StageFieldView: View {
         StageView(
             sample: SampleLibrary.all.first,
             display: StitchDisplayList(),
+            runState: .idle,
             needle: nil,
-            renderer: CanvasStitchRenderer()
+            renderer: CanvasStitchRenderer(),
+            onPlay: {},
+            onStop: {}
         )
     }
 }

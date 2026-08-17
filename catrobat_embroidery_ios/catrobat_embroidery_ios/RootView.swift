@@ -1,3 +1,4 @@
+import StagePreview
 import SwiftUI
 
 /// The app's root, adaptive by size class from the start (ADR-010).
@@ -62,27 +63,37 @@ struct RootView: View {
         }
     }
 
-    /// Both call sites build the stage the same way, so they cannot drift apart — and the
-    /// drain is attached here rather than in `StageView`, which should not know that its
-    /// stitches currently come from a placeholder producer.
+    /// Both call sites build the stage the same way, so they cannot drift apart.
     ///
-    /// `task(id: model.selection)` keys on the whole selection, **generation included**.
-    /// That is what `SampleSelection`'s counter was added for: re-selecting the design
-    /// already selected re-fires this, where keying on `selection?.sample.id` would dedupe
-    /// and silently do nothing — the exact trap `SampleSelection`'s doc comment warns
-    /// about, in the spelling most likely to be reached for.
+    /// **US-305's `.task(id: model.selection)` drain is gone**, and nothing replaced it
+    /// here. The run is started by the user pressing play, and it is discarded by
+    /// `AppModel.select(_:)` — deliberately not by a view modifier keyed on the
+    /// selection. `.task(id:)` and `.onChange(of:initial:)` both re-fire when this view
+    /// rebuilds its navigation container after a horizontal size-class change (ADR-023),
+    /// so either would wipe a finished design on an iPad window resize.
+    ///
+    /// The needle is passed **only while the run is running**. A needle parked on a
+    /// finished design would imply the machine is still working on it.
+    ///
+    /// The display list and the run state are handed over **separately, never as the
+    /// whole `PreviewRunState`**. That value also holds the export model — an
+    /// `EmbroideryStream` of up to 200 000 records — and putting it into the view
+    /// hierarchy would make every frame retain a copy of an array nothing on screen
+    /// reads. US-308 takes the export model from the view model directly.
     private var stage: some View {
         StageView(
             sample: model.selection?.sample,
-            display: model.display,
-            needle: nil,
-            renderer: CanvasStitchRenderer()
+            display: model.runner.run.display,
+            runState: model.runner.run.state,
+            needle: model.runner.run.state.isRunning ? model.runner.run.needle : nil,
+            renderer: CanvasStitchRenderer(),
+            onPlay: {
+                if let program = model.selection?.program {
+                    model.runner.play(program)
+                }
+            },
+            onStop: { model.runner.stop() }
         )
-        .task(id: model.selection) {
-            // Synchronous and on the main actor, which US-306 must not be. Acceptable
-            // only because M3's samples are small; see `AppModel.drainSelectionForPreview`.
-            model.drainSelectionForPreview()
-        }
     }
 }
 

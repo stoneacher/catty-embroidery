@@ -1,11 +1,13 @@
 // `Observation`, not `SwiftUI`: the model is the app's state, and nothing here
 // needs a view type. Keeping SwiftUI out of this file is what lets the tests
 // exercise it as a plain object.
-import EmbroideryEngine
-import Interpreter
+// The engine, interpreter and preview imports went with the temporary drain US-305
+// left here: this file no longer touches a stitch, an interpreter or a display list —
+// `RunViewModel` owns all three. Worth noting rather than silently tidying, because
+// the narrowing is the point: the app's selection state and the app's run are separate
+// concerns again.
 import Observation
 import Samples
-import StagePreview
 
 /// The app's state above the navigation containers: what can be picked, what is
 /// picked, and how deep the compact stack is.
@@ -111,54 +113,17 @@ final class AppModel {
     /// That is deliberate rather than a leak: it means a window resized down to
     /// compact opens on the design the user had selected, which is how UIKit's
     /// own split-view collapse behaves.
+    /// It also **discards whatever the previous design left on the stage**, and it does
+    /// so here rather than in a view. The view-side spellings — `.onChange(of:
+    /// initial:)`, `.task(id:)` — re-fire when `RootView` rebuilds a navigation
+    /// container after a horizontal size-class change (ADR-023), so on an iPad window
+    /// resize they would wipe a design the user had just watched finish. This method
+    /// already has exactly one writer; the reset belongs with it.
     func select(_ sample: SampleProgram) {
         selection = SampleSelection(sample: sample, generation: nextGeneration)
         nextGeneration += 1
         path = [.stage]
-    }
-
-    /// What the stage draws.
-    ///
-    /// **Temporary, and US-306 deletes this property together with the method below.**
-    /// US-305 renders a display list but has no *producer*: the run driver is US-306's,
-    /// and it depends on this story for the surface it renders into. Without something
-    /// here the new renderer could only ever show the press-play state, so its four
-    /// definition-of-done screenshots would evidence an empty hoop and ADR-009's whole
-    /// rendering strategy would reach `main` never having drawn a stitch on a device.
-    /// Sebastian's call, recorded in the story under "Scope decisions".
-    private(set) var display = StitchDisplayList()
-
-    /// Bounds the temporary drain below. M3's bundled samples finish in far fewer ticks
-    /// than this; the cap exists so a future sample with an unbounded loop cannot hang
-    /// the main actor rather than because any real number was chosen.
-    @ObservationIgnored private static let previewTickCap = 20000
-
-    /// Runs the selected sample to completion, synchronously, and keeps every stitch.
-    ///
-    /// **This is not what US-306 will do, and the differences are the point of the note.**
-    /// It runs to completion instead of one tick per frame, so nothing animates; it runs
-    /// on the main actor, which US-306 must not do because a single `step()` can emit
-    /// millions of events; and it has no run state, so there is nothing to start, stop or
-    /// report. It exists only so this story's renderer can be *seen*.
-    ///
-    /// It does honour two things that are not temporary, because getting them wrong here
-    /// would mislead the next story: events are folded through `RunBatch.reducing` rather
-    /// than read directly (so the app performs none of ADR-015's colour reasoning), and
-    /// the display list is appended to rather than rebuilt, which is what keeps
-    /// ADR-021's append-only prefix intact.
-    ///
-    /// `settledCount` is deliberately left at zero: advancing the watermark is US-306's
-    /// job, and a settling policy invented here would be a second one to unpick.
-    func drainSelectionForPreview() {
-        display.reset()
-        guard let program = selection?.program else { return }
-
-        var interpreter = Interpreter(program: program, clock: AppRunClock.preview)
-        var ticks = 0
-        while ticks < Self.previewTickCap, case let .ticked(events) = interpreter.step() {
-            display.append(contentsOf: RunBatch.reducing(events).stitches)
-            ticks += 1
-        }
+        runner.reset()
     }
 
     /// Whether `sample` is the current selection — the row highlight and the

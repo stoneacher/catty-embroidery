@@ -44,19 +44,53 @@ final class RunViewModel {
     }
 
     /// Starts `program` from the beginning.
+    ///
+    /// A fresh `Interpreter` per play, which is the whole of "reset is one assignment":
+    /// the interpreter is a `Sendable` value type, so starting over is constructing one,
+    /// not unpicking an object graph.
     func play(_ program: Program) {
-        // Red-phase stub.
-        _ = program
+        discard()
+        run.begin()
+
+        let session = driver.start(Interpreter(program: program, clock: AppRunClock.preview))
+        self.session = session
+
+        // A plain `Task {}`, deliberately — the opposite of the driver's producer. This
+        // one *should* inherit `@MainActor`, because its whole job is to mutate observed
+        // state, and hopping actors per batch would serialise the run behind a queue.
+        // The work it awaits happens off-actor inside the driver.
+        consumer = Task { [weak self] in
+            for await update in session.updates {
+                self?.apply(update)
+            }
+        }
     }
 
     /// Asks the run to stop, keeping the stitches made so far and the export model.
+    ///
+    /// **Cancels the producer only.** The consumer keeps draining until the stream
+    /// finishes on its own, one element later, because that last element is the terminal
+    /// update carrying `assembledStream()`. Cancelling the consumer here — the obvious
+    /// reading of "stop the run" — would make `AsyncStream.Iterator.next()` return `nil`
+    /// and silently drop it, so the design would survive the stop but the export model
+    /// would not. That is the Catty `Stage.stopProject()` failure, reproduced.
     func stop() {
-        // Red-phase stub.
+        session?.stop()
     }
 
     /// Discards the run entirely — for a new selection, not for a user stop.
     func reset() {
-        // Red-phase stub.
+        discard()
+        run.reset()
+    }
+
+    /// Tears down both tasks. Unlike `stop()`, this *does* cancel the consumer: the run
+    /// is being thrown away, so there is no terminal update worth waiting for.
+    private func discard() {
+        session?.stop()
+        session = nil
+        consumer?.cancel()
+        consumer = nil
     }
 
     /// The single mutation per batch.
