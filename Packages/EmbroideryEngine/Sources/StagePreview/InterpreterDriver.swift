@@ -84,21 +84,23 @@ public struct InterpreterDriver: Sendable {
             carriedNeedle = frame.batch.needle
             stitchesThisRun += frame.batch.stitches.count
 
-            // Precedence is explicit: on the frame where a program both finishes and
-            // crosses the cap, finishing wins. A design that completed is not one that
-            // was cut short, and telling the user otherwise would be wrong in the one
-            // direction that matters.
+            // **Cancellation is re-checked here, after the frame, not only at the top of
+            // the loop.** A `stop()` landing *during* a long frame was otherwise lost to the
+            // cap: the frame would finish, cross `maxStitchesPerRun`, and report
+            // `.stitchLimitReached` to a user who had pressed Stop (Codex round 1). See
+            // `completionReason` for why cancellation wins over the cap but not over a
+            // genuine completion.
             //
             // `run.isFinished` rather than spending another `step()` to discover
             // `.finished`: that extra tick is what would make a `wait(1)` occupy 61
             // frames instead of 60.
-            let reason: RunCompletion? = if frame.programFinished || run.isFinished {
-                .programFinished
-            } else if stitchesThisRun >= budget.maxStitchesPerRun {
-                .stitchLimitReached
-            } else {
-                nil
-            }
+            let reason = completionReason(
+                programFinished: frame.programFinished,
+                interpreterIsFinished: run.isFinished,
+                cancelled: Task.isCancelled,
+                stitchesThisRun: stitchesThisRun,
+                budget: budget
+            )
 
             guard let reason else {
                 continuation.yield(RunUpdate(batch: frame.batch))
@@ -134,6 +136,41 @@ public struct InterpreterDriver: Sendable {
             }
         }
         return FrameOutcome(batch: batch, programFinished: false)
+    }
+
+    /// Which completion reason wins when more than one is true on the same frame.
+    ///
+    /// **A pure function so the precedence is a table a test can enumerate**, rather than an
+    /// `if`-chain inside the producer loop that only an interleaving could exercise. Codex
+    /// round 1 found the ordering wrong for a `stop()` that lands *during* a long frame: the
+    /// loop checked cancellation only at the top, so a frame that also crossed the stitch cap
+    /// reported `.stitchLimitReached` and the user who pressed Stop was told the preview had
+    /// hit a limit.
+    ///
+    /// The precedence is **completion → cancellation → cap**, and the middle term is the fix.
+    /// Cancellation deliberately does *not* win over natural completion, which is a narrowing
+    /// of what that finding implied: if the program genuinely finished on the frame the user
+    /// pressed Stop, then the design is *whole*, and `.programFinished` is both true and
+    /// strictly more informative — reporting `.stoppedByUser` would suggest a partial design
+    /// the user does not have. The cap is different: it is an app-imposed limit, so when the
+    /// user has also asked to stop, their intent is the honest account of why the run ended,
+    /// and it suppresses a limit notice for a run they ended themselves.
+    static func completionReason(
+        programFinished: Bool,
+        interpreterIsFinished: Bool,
+        cancelled: Bool,
+        stitchesThisRun: Int,
+        budget: RunBudget
+    ) -> RunCompletion? {
+        if programFinished || interpreterIsFinished {
+            .programFinished
+        } else if cancelled {
+            .stoppedByUser
+        } else if stitchesThisRun >= budget.maxStitchesPerRun {
+            .stitchLimitReached
+        } else {
+            nil
+        }
     }
 
     /// The terminal update. Funnelled through one function so that no completion path

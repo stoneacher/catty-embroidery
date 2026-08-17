@@ -135,6 +135,11 @@ struct PreviewRunStateTests {
             run.apply(update)
         }
         let first = run.display.stitches
+        // Captured before the second run, so the comparison below is against a *value* rather
+        // than against itself. An earlier version asserted
+        // `run.display.colorRuns == run.display.colorRuns`, which is tautological and could
+        // not detect a colour-run regression at all (Codex round 1).
+        let firstColorRuns = run.display.colorRuns
 
         run.reset()
         run.begin()
@@ -143,8 +148,9 @@ struct PreviewRunStateTests {
         }
 
         #expect(run.display.stitches == first)
-        #expect(run.display.colorRuns == run.display.colorRuns)
+        #expect(run.display.colorRuns == firstColorRuns)
         #expect(!first.isEmpty)
+        #expect(!firstColorRuns.isEmpty)
     }
 
     /// `begin()` after a finished run must clear it, or pressing play again would draw
@@ -164,11 +170,16 @@ struct PreviewRunStateTests {
 
     // MARK: - Only a running run accepts updates
 
-    /// **The structural half of the fix for a discarded run's updates landing in the next
-    /// one** (`swift-code-reviewer`). A cancelled consumer keeps receiving elements already
-    /// buffered in the `AsyncStream` — cancellation marks the stream terminal but does not
-    /// discard `pending`, measured directly — so the app-side `Task.isCancelled` check stops
-    /// the *work* while this makes the corruption unrepresentable.
+    /// **One half of the fix for a discarded run's updates landing in the next one**
+    /// (`swift-code-reviewer`). A cancelled consumer keeps receiving elements already buffered
+    /// in the `AsyncStream` — cancellation marks the stream terminal but does not discard
+    /// `pending`, measured directly.
+    ///
+    /// This guard covers updates arriving while the run is `.idle` or `.finished`. It
+    /// deliberately does **not** claim to distinguish *sessions*: `begin()` A, `reset()`,
+    /// `begin()` B leaves B `.running`, so A's late frames would be accepted here (Codex round
+    /// 1 refuted the stronger claim an earlier version of this comment made). Telling one run
+    /// from another needs an identity the update does not carry — `RunViewModel.generation`.
     @Test("an update applied before the run begins is ignored")
     func anUpdateBeforeBeginIsIgnored() {
         var run = PreviewRunState()

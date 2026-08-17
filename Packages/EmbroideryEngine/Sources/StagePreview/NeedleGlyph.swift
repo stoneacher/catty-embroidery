@@ -79,7 +79,17 @@ public enum NeedleGlyph {
     public static func outline(at tip: ViewPoint, heading: Double) -> [ViewPoint]? {
         guard tip.x.isFinite, tip.y.isFinite, heading.isFinite else { return nil }
 
-        let radians = heading * .pi / 180
+        // **A finite heading is not enough to give finite geometry**, which is why the angle is
+        // reduced before it is scaled. `heading * .pi / 180` *overflows to infinity* for a
+        // heading near `.greatestFiniteMagnitude`, and `sin`/`cos` of infinity are NaN — so the
+        // guard above passed and the function returned non-finite points anyway, contradicting
+        // its own contract (Codex round 1). The normal interpreter path normalises headings, so
+        // the stage was insulated; this is a `public` API and its guard should not depend on
+        // that.
+        //
+        // A remainder rather than a clamp, because rotation is periodic: reducing modulo 360
+        // is exact for the angle's *meaning*, not a degradation of it.
+        let radians = heading.truncatingRemainder(dividingBy: 360) * .pi / 180
         let sine = sin(radians)
         let cosine = cos(radians)
 

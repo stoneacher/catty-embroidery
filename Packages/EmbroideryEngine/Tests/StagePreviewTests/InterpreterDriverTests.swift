@@ -1,5 +1,8 @@
 import Samples
-import StagePreview
+// `@testable` for `InterpreterDriver.completionReason` alone, which is deliberately
+// **internal**: it is the run's completion-precedence table, not API. Making it public to
+// test it would widen the boundary `StagePreviewTargetIsolationTests` exists to pin.
+@testable import StagePreview
 import Testing
 
 @Suite("Interpreter driver")
@@ -146,6 +149,36 @@ struct InterpreterDriverTests {
         #expect(RunBudget.display.ticksPerFrame == 1)
         #expect(RunBudget.display.maxStitchesPerFrame == 2000)
         #expect(RunBudget.display.maxStitchesPerRun == 200_000)
+    }
+
+    // MARK: - Completion precedence
+
+    /// The precedence table, enumerated — because the interesting cases are the ones where two
+    /// reasons are true at once, and only an interleaving would reach them through the driver.
+    ///
+    /// Codex round 1 found the ordering wrong: cancellation was checked only at the top of the
+    /// loop, so a `stop()` landing *during* a long frame that also crossed the cap reported
+    /// `.stitchLimitReached` to a user who had pressed Stop.
+    @Test("completion beats cancellation, and cancellation beats the cap")
+    func completionPrecedence() {
+        let budget = RunBudget(maxStitchesPerRun: 100)
+        let reason = InterpreterDriver.completionReason
+
+        // Nothing true yet.
+        #expect(reason(false, false, false, 0, budget) == nil)
+        // Each alone.
+        #expect(reason(true, false, false, 0, budget) == .programFinished)
+        #expect(reason(false, true, false, 0, budget) == .programFinished)
+        #expect(reason(false, false, true, 0, budget) == .stoppedByUser)
+        #expect(reason(false, false, false, 100, budget) == .stitchLimitReached)
+        // **Cancellation beats the cap** — the finding. The user's own stop is the honest
+        // account of why the run ended, and it suppresses a limit notice for a run they ended.
+        #expect(reason(false, false, true, 100, budget) == .stoppedByUser)
+        // **Completion beats cancellation** — deliberately narrowing what the finding implied.
+        // If the program genuinely finished on the frame Stop was pressed, the design is whole,
+        // and `.stoppedByUser` would suggest a partial design the user does not have.
+        #expect(reason(true, false, true, 100, budget) == .programFinished)
+        #expect(reason(false, true, true, 100, budget) == .programFinished)
     }
 
     // MARK: - Oversize ticks

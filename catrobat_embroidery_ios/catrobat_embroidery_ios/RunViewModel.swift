@@ -31,10 +31,22 @@ final class RunViewModel {
     /// The producer. `stop()` cancels **this** and nothing else.
     @ObservationIgnored private var session: RunSession?
 
-    /// The consumer. Cancelled only when a run is discarded, never by `stop()`:
-    /// `AsyncStream.Iterator.next()` returns `nil` in a cancelled task, so cancelling
-    /// the consumer would drop the terminal update that carries the export model.
+    /// The consumer. Cancelled only when a run is discarded, never by `stop()` — the
+    /// producer is the only task that can *decide* to stop, because it is what observes
+    /// cancellation and emits the terminal update carrying the export model.
     @ObservationIgnored private var consumer: Task<Void, Never>?
+
+    /// Which run a delivered update belongs to.
+    ///
+    /// **This, not `Task.isCancelled`, is what makes a stale update impossible.** Cancelling
+    /// the consumer does not stop buffered elements from arriving (measured), and
+    /// `PreviewRunState`'s "only a running run accepts updates" guard is not sufficient
+    /// either: `begin()` A, `reset()`, `begin()` B leaves B `.running`, so A's late frames
+    /// would be accepted (Codex round 1 constructed exactly that). A generation captured by
+    /// the consumer closure and compared on delivery is what closes it, whatever the
+    /// cancellation timing — the same device `SampleSelection.generation` uses to tell two
+    /// selections of the same design apart.
+    @ObservationIgnored private var generation = 0
 
     /// Injectable so tests supply immediate or gated pacing. Defaults to the display
     /// pacing, whose interval is derived from the same number as
@@ -51,6 +63,9 @@ final class RunViewModel {
     func play(_ program: Program) {
         discard()
         run.begin()
+
+        generation += 1
+        let mine = generation
 
         let session = driver.start(Interpreter(program: program, clock: AppRunClock.preview))
         self.session = session
@@ -75,25 +90,34 @@ final class RunViewModel {
                 // US-308's input (`swift-code-reviewer`). Reachable by picking a new sample
                 // while a run is in flight.
                 //
-                // `PreviewRunState.apply` additionally refuses updates unless the run is
-                // `.running`, which makes the corruption unrepresentable; this stops the
-                // wasted work rather than merely its effect.
+                // `PreviewRunState.apply` additionally refuses updates outside a running
+                // run, which closes the reset-then-late-frame case. It is **not** sufficient
+                // on its own — `begin()` A, `reset()`, `begin()` B leaves B `.running` — which
+                // is what the generation check below is for.
                 if Task.isCancelled {
                     return
                 }
-                self?.apply(update)
+                // The identity check, which is the one that actually holds: see `generation`.
+                guard let self, generation == mine else {
+                    return
+                }
+                apply(update)
             }
         }
     }
 
     /// Asks the run to stop, keeping the stitches made so far and the export model.
     ///
-    /// **Cancels the producer only.** The consumer keeps draining until the stream
-    /// finishes on its own, one element later, because that last element is the terminal
-    /// update carrying `assembledStream()`. Cancelling the consumer here — the obvious
-    /// reading of "stop the run" — would make `AsyncStream.Iterator.next()` return `nil`
-    /// and silently drop it, so the design would survive the stop but the export model
-    /// would not. That is the Catty `Stage.stopProject()` failure, reproduced.
+    /// **Cancels the producer only.** The consumer keeps draining until the stream finishes
+    /// on its own — **one or two** elements later, since the producer observes cancellation
+    /// between frames and a `stop()` landing inside a frame yields that frame's ordinary
+    /// update before the terminal.
+    ///
+    /// Cancelling the consumer here — the obvious reading of "stop the run" — would leave the
+    /// interpreter running to its natural end or the stitch cap and produce no
+    /// `.stoppedByUser` terminal at all, because the producer is the only task that observes
+    /// cancellation. That is the Catty `Stage.stopProject()` failure reproduced: the design
+    /// survives, the export model does not.
     func stop() {
         session?.stop()
     }
@@ -119,6 +143,9 @@ final class RunViewModel {
     /// Tears down both tasks. Unlike `stop()`, this *does* cancel the consumer: the run
     /// is being thrown away, so there is no terminal update worth waiting for.
     private func discard() {
+        // Bumping the generation is what invalidates any update still in flight, including
+        // after a plain `reset()` with no new `play()` behind it.
+        generation += 1
         session?.stop()
         session = nil
         consumer?.cancel()

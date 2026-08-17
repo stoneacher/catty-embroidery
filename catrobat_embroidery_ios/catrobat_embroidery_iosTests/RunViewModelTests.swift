@@ -246,6 +246,29 @@ struct RunViewModelTests {
         #expect(model.run.display.count == 2976, "one run's worth of stitches, not two")
     }
 
+    /// The interleaving Codex round 1 constructed, which the `.running` guard alone does not
+    /// close: **reset, then start a new run, then let the old run's buffered frames arrive.**
+    /// The new run is `.running`, so nothing about its *state* rejects them — only the session
+    /// identity does.
+    @Test("a reset run's buffered frames do not land in the run started after it",
+          .timeLimit(.minutes(1)))
+    func aResetRunsFramesDoNotLandInTheRunStartedAfterIt() async {
+        let model = Self.immediateModel()
+        let program = SampleLibrary[.squareCoil].program
+
+        model.play(program)
+        // Buffer the whole of run A while the consumer gets no turn.
+        Self.blockingSleep(0.2)
+        model.reset()
+        // Run B begins immediately, still inside the same synchronous region, so A's frames
+        // are all still queued and B is `.running` when they arrive.
+        model.play(program)
+        await Self.settle(until: { model.run.state == .finished(.programFinished) })
+
+        #expect(model.run.display.count == 2976, "exactly one run's stitches")
+        #expect(model.run.exportModel != nil)
+    }
+
     /// Playing twice must not draw the second run on top of the first.
     @Test("playing again replaces the previous run rather than adding to it",
           .timeLimit(.minutes(1)))

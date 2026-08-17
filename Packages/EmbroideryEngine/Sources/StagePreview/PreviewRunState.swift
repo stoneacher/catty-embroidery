@@ -83,9 +83,16 @@ public struct PreviewRunState: Equatable, Sendable {
     /// measured directly — so a discarded run's frames arrive after the run that replaced it
     /// has already begun. Without this, picking a new design mid-run appended the previous
     /// design's stitches to the new one, and a buffered *terminal* published the discarded
-    /// design's export model, which is US-308's input (`swift-code-reviewer`). The app also
-    /// checks `Task.isCancelled` to stop the wasted work; this is what makes the corruption
-    /// unrepresentable rather than dependent on that check being present.
+    /// design's export model, which is US-308's input (`swift-code-reviewer`).
+    ///
+    /// **What this guard does and does not give you**, stated precisely because an earlier
+    /// version of this comment claimed it made the corruption "unrepresentable" and Codex
+    /// round 1 refuted that by construction: it rejects any update arriving while the run is
+    /// `.idle` or `.finished`, which covers a late frame after a `reset()` or after a natural
+    /// finish. It does **not** distinguish *sessions* — `begin()` A, `reset()`, `begin()` B
+    /// leaves B `.running`, so A's late frames would be accepted here. Telling one run from
+    /// another needs an identity the update does not carry, so that check lives where the
+    /// identity is known: `RunViewModel.generation`.
     ///
     /// Every statement here is O(batch), never O(display) *within this value*: appending is
     /// amortised O(1) per stitch and the watermark arithmetic is constant. The qualifier

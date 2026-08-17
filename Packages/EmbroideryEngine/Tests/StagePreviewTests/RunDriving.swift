@@ -39,10 +39,12 @@ struct DrainedRun {
 /// Consumes a session to completion.
 ///
 /// **The consumer is never cancelled**, which is the whole reason `RunSession.stop()`
-/// cancels only the producer: `AsyncStream.Iterator.next()` returns `nil` in a
-/// cancelled task, so a cancelled consumer would drop the terminal update carrying
-/// the export model — the exact failure US-306's export-after-stop criterion exists
-/// to prevent, and one that no producer-side test could see.
+/// cancels only the producer: the producer is the only task that observes cancellation and
+/// emits the terminal update carrying the export model, so cancelling the consumer would
+/// leave the run going and produce no `.stoppedByUser` at all — the exact failure US-306's
+/// export-after-stop criterion exists to prevent, and one that no producer-side test could
+/// see. (Note that cancelling a consumer does *not* stop buffered elements arriving; that
+/// premise was retracted after being measured. See `RunViewModel.generation`.)
 func drain(_ session: RunSession) async -> DrainedRun {
     var drained = DrainedRun()
     for await update in session.updates {

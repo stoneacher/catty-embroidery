@@ -112,6 +112,33 @@ struct NeedleGlyphTests {
         #expect(NeedleGlyph.outline(at: tip, heading: 0) == nil)
     }
 
+    /// A *finite* heading whose radian conversion overflows must still give finite geometry.
+    ///
+    /// `heading * .pi / 180` overflows to infinity near `.greatestFiniteMagnitude`, and
+    /// `sin`/`cos` of infinity are NaN — so the finiteness guard passed and the function
+    /// returned non-finite points, contradicting its own contract (Codex round 1). The normal
+    /// interpreter path normalises headings, so only the public API was exposed.
+    @Test("an extreme but finite heading still yields finite geometry",
+          arguments: [Double.greatestFiniteMagnitude, -Double.greatestFiniteMagnitude, 1e300, 1e17])
+    func anExtremeFiniteHeadingStillYieldsFiniteGeometry(_ heading: Double) throws {
+        let outline = try #require(NeedleGlyph.outline(at: ViewPoint(x: 5, y: 5), heading: heading))
+
+        #expect(outline.allSatisfy { $0.x.isFinite && $0.y.isFinite })
+    }
+
+    /// Rotation is periodic, so reducing the angle must not change the glyph.
+    @Test("headings a full turn apart produce the same glyph", arguments: [0.0, 37.5, 210])
+    func headingsAFullTurnApartProduceTheSameGlyph(_ heading: Double) throws {
+        let tip = ViewPoint(x: 3, y: 4)
+        let base = try #require(NeedleGlyph.outline(at: tip, heading: heading))
+        let wrapped = try #require(NeedleGlyph.outline(at: tip, heading: heading + 720))
+
+        for (lhs, rhs) in zip(base, wrapped) {
+            #expect(abs(lhs.x - rhs.x) < 1e-9)
+            #expect(abs(lhs.y - rhs.y) < 1e-9)
+        }
+    }
+
     @Test("a non-finite heading yields no glyph")
     func aNonFiniteHeadingYieldsNoGlyph() {
         #expect(NeedleGlyph.outline(at: ViewPoint(x: 1, y: 1), heading: .nan) == nil)
