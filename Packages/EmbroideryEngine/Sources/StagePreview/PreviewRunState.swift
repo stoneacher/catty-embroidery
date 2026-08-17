@@ -52,19 +52,61 @@ public struct PreviewRunState: Equatable, Sendable {
 
     public init() {}
 
-    /// Begins a run: clears the previous one and moves to `.running`.
+    /// Begins a run: clears whatever the previous one left and moves to `.running`.
+    ///
+    /// Clearing here rather than trusting the caller is what stops a second play
+    /// drawing on top of the first. It deliberately does **not** bump `revision`,
+    /// which counts `apply(_:)` calls so that it can be compared against a batch
+    /// count.
     public mutating func begin() {
-        // Red-phase stub.
+        clear()
+        state = .running
     }
 
     /// Folds one update in — the single mutation per frame.
+    ///
+    /// Every statement here is O(batch), never O(display): appending is amortised
+    /// O(1) per stitch and the watermark arithmetic is constant. At the 50 000-stitch
+    /// exit criterion anything that rescanned the list would be quadratic.
     public mutating func apply(_ update: RunUpdate) {
-        // Red-phase stub.
-        _ = update
+        display.append(contentsOf: update.batch.stitches)
+
+        // Carried forward when the batch moved no needle, so a tick that only
+        // stitches does not blank the pose.
+        if let needle = update.batch.needle {
+            self.needle = needle
+        }
+
+        if let termination = update.termination {
+            state = .finished(termination.reason)
+            exportModel = termination.exportModel
+        }
+
+        // Quantised to `settleChunk`, so the renderer's cached raster is rebuilt a
+        // handful of times per run rather than once per frame. `markSettled` is
+        // monotonic and clamped, so repeating the same value between chunk crossings
+        // costs nothing and changes nothing — which is exactly why the raster's bake
+        // key does not churn.
+        display.markSettled(upTo: display.count - display.count % Self.settleChunk)
+
+        revision += 1
     }
 
     /// Returns to `.idle` and clears everything a run produced.
+    ///
+    /// One assignment per property and no teardown, because the interpreter is a
+    /// value type and lives in the driver: there is no object graph to unpick.
+    /// Contrast Catroid's three separate resets (`embroideryPatternManager.clear()`
+    /// twice, `resetDrawingState()`, `resetEmbroideryThreadColor()`) and Catty's
+    /// reload-from-disk.
     public mutating func reset() {
-        // Red-phase stub.
+        clear()
+        state = .idle
+    }
+
+    private mutating func clear() {
+        display.reset()
+        needle = nil
+        exportModel = nil
     }
 }
