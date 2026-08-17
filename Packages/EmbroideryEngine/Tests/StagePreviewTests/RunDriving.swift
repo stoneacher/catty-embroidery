@@ -1,3 +1,4 @@
+import EmbroideryEngine
 import Interpreter
 import ProgramModel
 import StagePreview
@@ -80,6 +81,19 @@ func stitchEventCount(of program: Program) -> Int {
             }
             return false
         }
+}
+
+/// The `EmbroideryStream` a program assembles when run to completion, derived **without the
+/// driver** — so a test can assert that the terminal update carries the interpreter's actual
+/// assembled model rather than merely *some* non-empty stream.
+///
+/// Codex round 3: every terminal test asserted only `exportModel.count > 0`, which a fixed
+/// non-empty sentinel would satisfy. The story's criterion asks for `assembledStream()`
+/// specifically, so it needs an independent value to compare against.
+func assembledStream(of program: Program) -> EmbroideryStream {
+    var subject = interpreter(program)
+    _ = tickBatches(&subject)
+    return subject.assembledStream()
 }
 
 /// Pacing a test drives frame by frame.

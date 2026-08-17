@@ -38,13 +38,18 @@ final class RunViewModel {
 
     /// Which run a delivered update belongs to.
     ///
-    /// **This, not `Task.isCancelled`, is what makes a stale update impossible.** Cancelling
-    /// the consumer does not stop buffered elements from arriving (measured), and
-    /// `PreviewRunState`'s "only a running run accepts updates" guard is not sufficient
-    /// either: `begin()` A, `reset()`, `begin()` B leaves B `.running`, so A's late frames
-    /// would be accepted (Codex round 1 constructed exactly that). A generation captured by
-    /// the consumer closure and compared on delivery is what closes it, whatever the
-    /// cancellation timing — the same device `SampleSelection.generation` uses to tell two
+    /// **Defence in depth, and deliberately labelled as such.** Two earlier versions of this
+    /// comment claimed generation was *the* thing preventing stale updates; it is not, and
+    /// Codex rounds 2 and 3 both had to say so. In the code as it stands the `Task.isCancelled`
+    /// check below is what closes the case, because every generation change is coupled to a
+    /// `discard()` that cancels the old consumer, and there is no suspension point between that
+    /// check and `apply`.
+    ///
+    /// What the generation adds is independence from that coupling: it keeps stale frames out
+    /// if a suspension is ever introduced between the check and the apply, or if a future path
+    /// bumps the generation without cancelling. No test through the public API can distinguish
+    /// the two today — confirmed in round 3 — so this says so rather than implying a test
+    /// proves it. The device is the one `SampleSelection.generation` uses to tell two
     /// selections of the same design apart.
     @ObservationIgnored private var generation = 0
 
@@ -97,7 +102,7 @@ final class RunViewModel {
                 if Task.isCancelled {
                     return
                 }
-                // The identity check, which is the one that actually holds: see `generation`.
+                // Defence in depth rather than the load-bearing check — see `generation`.
                 guard let self, generation == mine else {
                     return
                 }
@@ -108,10 +113,10 @@ final class RunViewModel {
 
     /// Asks the run to stop, keeping the stitches made so far and the export model.
     ///
-    /// **Cancels the producer only.** The consumer keeps draining until the stream finishes
-    /// on its own — **one or two** elements later, since the producer observes cancellation
-    /// between frames and a `stop()` landing inside a frame yields that frame's ordinary
-    /// update before the terminal.
+    /// **Cancels the producer only.** The consumer keeps draining until the stream finishes on
+    /// its own — usually one element later, occasionally two. A stop landing inside a frame
+    /// still costs only one, because the driver re-checks cancellation after the frame and the
+    /// frame's stitches ride out on the terminal itself.
     ///
     /// Cancelling the consumer here — the obvious reading of "stop the run" — would leave the
     /// interpreter running to its natural end or the stitch cap and produce no

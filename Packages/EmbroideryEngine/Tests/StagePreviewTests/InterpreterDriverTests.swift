@@ -21,8 +21,11 @@ struct InterpreterDriverTests {
         #expect(drained.termination?.reason == .programFinished)
         #expect(drained.stitches.count == expected)
         #expect(drained.terminalCount == 1)
-        // The export model is present on a natural finish too, not only after a stop.
-        #expect((drained.termination?.exportModel.count ?? 0) > 0)
+        // **Exact equality against an independently stepped interpreter**, not merely
+        // "non-empty". Asserting `count > 0` would hold for any fixed non-empty sentinel, so it
+        // proved the terminal carried *an* export model rather than *the assembled* one, which
+        // is what the story's criterion asks for (Codex round 3).
+        #expect(drained.termination?.exportModel == assembledStream(of: sample.program))
     }
 
     /// The literals, pinned separately from the derivation above.
@@ -145,7 +148,20 @@ struct InterpreterDriverTests {
         // ticks, and one tick of this program adds two stitches.
         #expect(drained.stitches.count >= 400)
         #expect(drained.stitches.count <= 402)
-        #expect((drained.termination?.exportModel.count ?? 0) > 0)
+
+        // A truncated run has no precomputable assembled stream, so the discriminating claim
+        // here is a *difference*: two different caps must produce different export models. A
+        // fixed sentinel — the thing `count > 0` could not rule out — would produce identical
+        // ones (Codex round 3).
+        let longer = await driveToCompletion(
+            foreverProgram(), budget: RunBudget(maxStitchesPerRun: 800)
+        )
+        #expect(longer.termination?.reason == .stitchLimitReached)
+        #expect(drained.termination?.exportModel != longer.termination?.exportModel)
+        #expect(
+            (drained.termination?.exportModel.count ?? 0)
+                < (longer.termination?.exportModel.count ?? 0)
+        )
     }
 
     /// A degenerate budget must not produce a run that can never end.

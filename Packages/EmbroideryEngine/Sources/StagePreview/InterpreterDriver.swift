@@ -216,10 +216,16 @@ public struct InterpreterDriver: Sendable {
 /// false premise had a second cost, because it is what made a discarded run's buffered
 /// frames look impossible. See `RunViewModel`.
 ///
-/// The consumer therefore keeps draining until the stream finishes on its own. That is **one
-/// or two elements** after `stop()`, not one: cancellation is observed at the top of the
-/// loop, so a `stop()` landing inside `runFrame` yields that frame's ordinary update first
-/// and the terminal on the next pass.
+/// The consumer therefore keeps draining until the stream finishes on its own — **usually one
+/// element, occasionally two.**
+///
+/// The usual case is one, and a stop landing *inside* a frame is part of it: cancellation is
+/// re-checked after the frame, so that frame's stitches ride out on the terminal rather than
+/// in a separate update. Two occurs only for a stop landing in the narrow window between the
+/// completion check and the ordinary yield, where the ordinary update is already committed.
+/// (An earlier version of this comment gave the in-frame case as the example of two. That was
+/// true before round 1 added the post-frame check and false afterwards — a fix invalidating its
+/// neighbour's comment, found in round 3.)
 public struct RunSession: Sendable {
     /// Single-consumer, unbounded buffering.
     ///
