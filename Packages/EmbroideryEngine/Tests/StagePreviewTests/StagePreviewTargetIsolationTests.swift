@@ -67,4 +67,39 @@ struct StagePreviewTargetIsolationTests {
         #expect(width(1) == StitchDrawMetrics.threadWidth(atScale: 1))
         #expect(fit(list.bounds) == StageGeometry.box)
     }
+
+    /// US-306's run machinery is the next thing on this boundary, and it is the most
+    /// likely to acquire an app dependency: a run has a state machine, and
+    /// `@Observable`/`Observation` is the obvious reach for it. It must stay out, or
+    /// ADR-022 widens and the whole run stops being testable under `swift test`.
+    ///
+    /// Bound to explicit function types in this file's style, so the *shape* of the
+    /// boundary is a compile-time claim. `Duration` is stdlib, not Foundation, which is
+    /// what lets `DisplayRunPacing` express a frame length here at all.
+    @Test("the run boundary is package types and stdlib, with no Observation or Foundation")
+    func theRunBoundaryIsPackageTypesAndStdlib() {
+        // The mutating members are bound as two-parameter function types, with the
+        // receiver as an `inout` parameter of the *function type*. Swift forbids
+        // unapplied references to `mutating` methods, and an escaping closure cannot
+        // capture an `inout` parameter — this shape is what remains, and it still does
+        // the job these bindings exist for: the file stops compiling if any of these
+        // signatures starts mentioning an app or CoreGraphics type.
+        let apply: (inout PreviewRunState, RunUpdate) -> Void = { $0.apply($1) }
+        let absorb: (inout RunBatch, RunBatch) -> Void = { $0.absorb($1) }
+        let pace: (DisplayRunPacing) -> Duration = \.frameDuration
+        // Bound for the signature alone; starting a run needs an async context, which
+        // `InterpreterDriverTests` provides.
+        let start: (InterpreterDriver, Interpreter) -> RunSession = { $0.start($1) }
+        _ = start
+
+        var batch = RunBatch.empty
+        absorb(&batch, RunBatch(stitches: [previewStitch(1, 1)]))
+        var run = PreviewRunState()
+        apply(&run, RunUpdate(batch: batch))
+
+        #expect(batch.stitches.count == 1)
+        #expect(run.display.count == 1)
+        #expect(pace(DisplayRunPacing(frameDuration: .seconds(1))) == .seconds(1))
+        #expect(InterpreterDriver(pacing: ImmediateRunPacing()).budget == .display)
+    }
 }

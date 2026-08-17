@@ -15,19 +15,24 @@ enum PreviewColor {
     static let blue = ThreadColor(red: 0, green: 0, blue: 255)
 }
 
-/// Folds per-tick batches the way US-306's driver will: accumulate the
-/// stitches, carry the needle pose forward, and keep the last terminal marker.
-/// This *is* the subject of the ADR-018 partition tests, so it lives here once
-/// rather than being written out inside each of them.
+/// Folds per-tick batches the way the driver does.
+///
+/// **The fold itself is now production code** — `RunBatch.absorb(_:)`, hoisted in
+/// US-306 out of this file, where it had been a stand-in whose own comment said
+/// so. This wrapper stays because the ADR-018 partition tests read better against
+/// a named result than against an accumulator they assemble themselves, but it no
+/// longer *implements* anything: a drift between the driver's fold and the tests'
+/// is now impossible rather than merely unlikely.
 func foldBatches(_ batches: [[InterpreterEvent]]) -> FoldedRun {
-    var folded = FoldedRun()
+    var accumulated = RunBatch.empty
     for events in batches {
-        let batch = RunBatch.reducing(events, from: folded.needle)
-        folded.stitches += batch.stitches
-        folded.needle = batch.needle
-        folded.requestedName = batch.requestedDesignName ?? folded.requestedName
+        accumulated.absorb(RunBatch.reducing(events, from: accumulated.needle))
     }
-    return folded
+    return FoldedRun(
+        stitches: accumulated.stitches,
+        needle: accumulated.needle,
+        requestedName: accumulated.requestedDesignName
+    )
 }
 
 /// The result of `foldBatches`. A struct rather than a 3-tuple: SwiftLint caps
@@ -74,6 +79,77 @@ func tickBatches(_ interpreter: inout Interpreter) -> [[InterpreterEvent]] {
         batches.append(events)
     }
     return batches
+}
+
+// MARK: - US-306 run fixtures
+
+/// A program that never terminates on its own: a running stitch inside a
+/// `forever` loop, so every tick adds stitches without bound.
+///
+/// The stitch cap, not a tick cap, is what stops it — which is the point. A
+/// long-waiting program is not a runaway one, and ticks are a poor proxy for the
+/// thing that actually grows.
+func foreverProgram() -> Program {
+    singleObjectProgram([
+        .runningStitch(length: .number(5)),
+        .forever,
+        .moveNSteps(.number(10)),
+        .loopEnd
+    ])
+}
+
+/// `threads` concurrent scripts that each emit a large batch **in the same tick**,
+/// then a small one.
+///
+/// Two things about this fixture are load-bearing, and a simpler version of it
+/// would make the test that uses it vacuous:
+///
+/// - **Every thread's big move lands in the same tick.** ADR-018 round-robins one
+///   action brick per thread per tick, so each thread spends tick 0 activating its
+///   triple stitch and they all execute their `moveNSteps` on tick 1. That is what
+///   makes `step()`'s summation over runnable threads observable: measured at
+///   eight threads × `moveNSteps(1000)`, one tick emits **24 008 stitches**. A
+///   one-thread version of this test would pass against an implementation that
+///   assumed a per-thread ceiling.
+/// - **There is work *after* the oversize move** (`tail`). Without it the run
+///   finishes inside the same frame, and the "the frame ended at the budget rather
+///   than running its remaining ticks" assertion has nothing left to observe.
+///
+/// Triple stitch because it emits three points per segment, so the batch gets
+/// large with a small step count and the test stays fast (3.1 ms in release).
+/// Distinct `zIndex` per object: they are separate layers, so nothing here should
+/// be compared against the export model — clause B and the layer boundaries fire
+/// (ADR-021).
+func oversizeProgram(threads: Int, steps: Double, tail: Double) -> Program {
+    let objects = (0 ..< threads).map { index in
+        Object(
+            name: "Thread \(index)",
+            startX: Double(index) * 50,
+            startY: 0,
+            zIndex: index,
+            scripts: [Script(bricks: [
+                .tripleStitch(length: .number(1)),
+                .moveNSteps(.number(steps)),
+                .moveNSteps(.number(tail))
+            ])]
+        )
+    }
+    return Program(scenes: [Scene(objects: objects)])
+}
+
+/// A bare `wait(1)`: 60 ticks at `tickDelta = 1/60`, and nothing else.
+func waitProgram(seconds: Double = 1) -> Program {
+    singleObjectProgram([.wait(seconds: .number(seconds))])
+}
+
+/// A `wait(1)` with a stitching brick on either side, so an off-by-one cannot hide
+/// in the first or the terminal frame.
+func bracketedWaitProgram() -> Program {
+    singleObjectProgram([
+        .runningStitch(length: .number(5)),
+        .wait(seconds: .number(1)),
+        .moveNSteps(.number(10))
+    ])
 }
 
 /// Two objects on **different layers**, serialized by a wait so the first
