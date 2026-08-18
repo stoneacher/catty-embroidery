@@ -82,7 +82,8 @@ struct StageViewWiringTests {
         display: StitchDisplayList,
         needle: PreviewNeedle?,
         renderer: RecordingRenderer,
-        runState: RunState = .running
+        runState: RunState = .running,
+        zoom: Binding<StageZoom> = .constant(StageZoom())
     ) -> some View {
         StageView(
             sample: SampleLibrary.all.first,
@@ -90,6 +91,8 @@ struct StageViewWiringTests {
             runState: runState,
             needle: needle,
             renderer: renderer,
+            summary: .empty,
+            zoom: zoom,
             onPlay: {},
             onStop: {}
         )
@@ -128,6 +131,46 @@ struct StageViewWiringTests {
             StageGeometry.fitTarget(including: list.bounds), in: invocation.viewport
         )
         #expect(invocation.transform == expected)
+    }
+
+    /// US-307: the renderer draws through the **user's** transform once there is one, not
+    /// through the fit.
+    ///
+    /// The half of criterion 1 no package test can reach: `StageZoomTests` proves the zoom
+    /// value resolves correctly, and this proves the view actually asks it. A view that kept
+    /// calling `StageTransform.fitting` directly would pass every package test and ignore
+    /// every gesture.
+    @Test func theRendererIsHandedTheZoomsTransformRatherThanTheFit() {
+        let renderer = RecordingRenderer()
+        let list = Self.drawnList()
+        var zoomed = StageZoom()
+
+        // Hosted twice: once fitted to learn the viewport, then zoomed about its centre — so
+        // the expected transform is derived from the viewport the view really measured rather
+        // than from a guess about SwiftUI's layout arithmetic.
+        Self.hosting(
+            Self.stage(display: list, needle: nil, renderer: renderer),
+            at: CGSize(width: 390, height: 700)
+        )
+        guard let viewport = renderer.invocations.last?.viewport else {
+            #expect(Bool(false), "the fitted pass must reach the renderer")
+            return
+        }
+        let fitted = StageTransform.fitting(
+            StageGeometry.fitTarget(including: list.bounds), in: viewport
+        )
+        zoomed.commit(magnification: 3, anchor: viewport.center, pan: .zero, fitting: fitted)
+
+        renderer.invocations.removeAll()
+        Self.hosting(
+            Self.stage(
+                display: list, needle: nil, renderer: renderer, zoom: .constant(zoomed)
+            ),
+            at: CGSize(width: 390, height: 700)
+        )
+
+        #expect(renderer.invocations.last?.transform == zoomed.resolved(fitting: fitted))
+        #expect(renderer.invocations.last?.transform != fitted, "the zoom was ignored")
     }
 
     @Test func theRendererIsHandedTheNeedleUnchanged() {

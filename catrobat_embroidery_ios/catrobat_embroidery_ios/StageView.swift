@@ -31,6 +31,18 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     let needle: PreviewNeedle?
     let renderer: Renderer
 
+    /// What the stage holds, in words, for the VoiceOver summary. Taken from the run's phase
+    /// rather than recomputed here, because the phase is what guarantees it changes only on
+    /// run-state transitions — the story's headline requirement, and one a view recomputing
+    /// per body evaluation would break silently.
+    let summary: StageSummary
+
+    /// The user's zoom and pan. A binding, because the value is owned by `AppModel` above
+    /// `RootView`: ADR-023 records that the size-class swap tears down whichever navigation
+    /// container it leaves, and `RootView` builds this view at **two** call sites, so `@State`
+    /// here would be two independent zooms that disagree.
+    @Binding var zoom: StageZoom
+
     /// The transport actions. Closures rather than a reference to the view model, so this
     /// view stays testable by hosting it and knows nothing about how a run is driven.
     let onPlay: () -> Void
@@ -100,7 +112,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         ZStack {
             switch state {
             case .drawn:
-                drawnStage
+                drawnStage(sample: sample)
             case .notRun, .noSelection:
                 emptyStage
             }
@@ -110,37 +122,22 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    /// `GeometryReader` is where the viewport comes from, and it is the reason the wiring
-    /// tests have to host this view: its closure does not run when `body` is merely read.
-    private var drawnStage: some View {
-        GeometryReader { proxy in
-            let viewport = ViewSize(proxy.size)
-            let transform = StageTransform.fitting(
-                StageGeometry.fitTarget(including: display.bounds), in: viewport
-            )
-
-            ZStack {
-                StageFieldView(transform: transform)
-                renderer.makeBody(
-                    display: display, transform: transform, needle: needle, viewport: viewport
-                )
-            }
-            // US-307 owns the real summary — design name, stitch count, colours, size in
-            // mm — and its adjustable actions. Until then this is a **name with no
-            // value**: a placeholder value would be a lie, and leaving it unset means
-            // there is nothing to un-say later.
-            //
-            // Deliberately not `accessibilityHidden`. The canvas is the whole content of
-            // the screen, so hiding it would make the screen read as empty and the design
-            // undiscoverable; the caption does not carry what the canvas carries (which
-            // is why hiding the *hoop shape* in `StagePlaceholderView` was correct and
-            // this would not be); and a hidden element cannot receive US-307's
-            // adjustable action, so hiding would silently defer work this comment makes
-            // explicit instead.
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(.stageCanvasAccessibilityLabel))
-            .accessibilityAddTraits(.isImage)
-        }
+    /// The drawn state, extracted to `StageCanvas` in US-307.
+    ///
+    /// **The extraction was forced rather than chosen**: this file was 43 lines below
+    /// SwiftLint's hard 400 (CI runs `--strict`) and the gestures plus the accessibility
+    /// summary are more than that. The seam is a real one — everything that moved is about
+    /// *inspecting* the design, everything left is about its state and its absence.
+    private func drawnStage(sample: SampleProgram?) -> some View {
+        StageCanvas(
+            display: display,
+            runState: runState,
+            needle: needle,
+            renderer: renderer,
+            summary: summary,
+            designName: sample.map { String(localized: $0.displayName) },
+            zoom: $zoom
+        )
     }
 
     /// Both empty states, in the app's existing dashed-hoop idiom.
@@ -297,37 +294,6 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     }
 }
 
-/// The hoop and the two fields, drawn beneath whatever the renderer produces.
-///
-/// **The hoop is an outline and is not clipped to.** Nothing here masks the renderer, so a
-/// design that leaves the hoop stays visible — and because the mat is a *different fill*
-/// rather than just empty space, out-of-hoop stitches read as sitting off the fabric.
-/// That is how the user learns the boundary exists before export tells them.
-private struct StageFieldView: View {
-    let transform: StageTransform
-
-    @Environment(\.colorSchemeContrast) private var contrast
-
-    var body: some View {
-        Canvas { context, size in
-            context.fill(
-                Path(CGRect(origin: .zero, size: size)), with: .color(StageChrome.outsideField)
-            )
-
-            let hoop = transform.viewRect(of: StageGeometry.box)
-            context.fill(Path(hoop), with: .color(StageChrome.hoopField))
-            context.stroke(
-                Path(hoop),
-                with: .color(StageChrome.hoopOutline),
-                lineWidth: contrast == .increased ? 2 : StageChrome.hoopLineWidth
-            )
-        }
-        // Decorative: the caption below states the hoop's size, which is everything this
-        // shape carries. Same reasoning as `StagePlaceholderView`'s outline.
-        .accessibilityHidden(true)
-    }
-}
-
 #Preview("Nothing selected") {
     NavigationStack {
         StageView(
@@ -336,6 +302,8 @@ private struct StageFieldView: View {
             runState: .idle,
             needle: nil,
             renderer: CanvasStitchRenderer(),
+            summary: .empty,
+            zoom: .constant(StageZoom()),
             onPlay: {},
             onStop: {}
         )
@@ -350,6 +318,8 @@ private struct StageFieldView: View {
             runState: .idle,
             needle: nil,
             renderer: CanvasStitchRenderer(),
+            summary: .empty,
+            zoom: .constant(StageZoom()),
             onPlay: {},
             onStop: {}
         )

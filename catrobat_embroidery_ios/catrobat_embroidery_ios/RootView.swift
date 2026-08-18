@@ -91,6 +91,12 @@ struct RootView: View {
             runState: model.runner.run.state,
             needle: model.runner.run.visibleNeedle,
             renderer: CanvasStitchRenderer(),
+            // From the run's phase, which is what makes it change on run-state transitions
+            // only. Recomputing it here — the obvious alternative — would rebuild it on every
+            // body evaluation, i.e. once per batch, which is exactly what US-307's headline
+            // criterion forbids and what makes VoiceOver unusable.
+            summary: model.runner.run.summary,
+            zoom: $model.zoom,
             onPlay: {
                 if let program = model.selection?.program {
                     model.runner.play(program)

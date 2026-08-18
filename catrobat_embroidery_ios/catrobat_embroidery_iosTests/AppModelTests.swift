@@ -211,4 +211,31 @@ struct AppModelTests {
         #expect(model.runner.run.display.isEmpty)
         #expect(model.runner.run.exportModel == nil)
     }
+
+    /// US-307: a new selection arrives fitted.
+    ///
+    /// Inheriting the previous design's zoom would show a corner of something the user has
+    /// not seen whole yet, and the zoom was chosen against a fit that no longer applies. It
+    /// lives in `select(_:)` rather than in an `.onChange` for the reason the run's reset
+    /// does: the view-side spellings re-fire when `RootView` rebuilds a navigation container
+    /// after a horizontal size-class change (ADR-023), so on an iPad resize they would
+    /// discard a zoom the user had just set.
+    @Test func selectingADesignReturnsTheStageToTheFit() throws {
+        let model = AppModel()
+        let first = try #require(model.samples.first)
+        let second = try #require(model.samples.dropFirst().first)
+        model.select(first)
+
+        let fit = StageTransform.fitting(
+            StageGeometry.box, in: ViewSize(width: 390, height: 500)
+        )
+        model.zoom.commit(
+            magnification: 4, anchor: ViewPoint(x: 100, y: 100), pan: .zero, fitting: fit
+        )
+        #expect(!model.zoom.isFollowingFit, "premise: the stage is zoomed")
+
+        model.select(second)
+
+        #expect(model.zoom.isFollowingFit)
+    }
 }
