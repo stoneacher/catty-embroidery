@@ -41,7 +41,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     /// `RootView`: ADR-023 records that the size-class swap tears down whichever navigation
     /// container it leaves, and `RootView` builds this view at **two** call sites, so `@State`
     /// here would be two independent zooms that disagree.
-    @Binding var zoom: StageZoom
+    @Binding var interaction: StageInteraction
 
     /// The transport actions. Closures rather than a reference to the view model, so this
     /// view stays testable by hosting it and knows nothing about how a run is driven.
@@ -136,7 +136,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             renderer: renderer,
             summary: summary,
             designName: sample.map { String(localized: $0.displayName) },
-            zoom: $zoom
+            interaction: $interaction
         )
     }
 
@@ -303,7 +303,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             needle: nil,
             renderer: CanvasStitchRenderer(),
             summary: .empty,
-            zoom: .constant(StageZoom()),
+            interaction: .constant(StageInteraction()),
             onPlay: {},
             onStop: {}
         )
@@ -319,7 +319,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             needle: nil,
             renderer: CanvasStitchRenderer(),
             summary: .empty,
-            zoom: .constant(StageZoom()),
+            interaction: .constant(StageInteraction()),
             onPlay: {},
             onStop: {}
         )

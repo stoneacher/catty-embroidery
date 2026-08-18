@@ -83,7 +83,7 @@ struct StageViewWiringTests {
         needle: PreviewNeedle?,
         renderer: RecordingRenderer,
         runState: RunState = .running,
-        zoom: Binding<StageZoom> = .constant(StageZoom())
+        interaction: Binding<StageInteraction> = .constant(StageInteraction())
     ) -> some View {
         StageView(
             sample: SampleLibrary.all.first,
@@ -92,7 +92,7 @@ struct StageViewWiringTests {
             needle: needle,
             renderer: renderer,
             summary: .empty,
-            zoom: zoom,
+            interaction: interaction,
             onPlay: {},
             onStop: {}
         )
@@ -145,7 +145,7 @@ struct StageViewWiringTests {
     @Test func theRendererIsHandedTheZoomsTransformRatherThanTheFit() {
         let renderer = RecordingRenderer()
         let list = Self.drawnList()
-        var zoomed = StageZoom()
+        var zoomed = StageInteraction()
 
         // Hosted twice: once fitted to learn the viewport, then zoomed about its centre — so
         // the expected transform is derived from the viewport the view really measured rather
@@ -161,17 +161,17 @@ struct StageViewWiringTests {
         let fitted = StageTransform.fitting(
             StageGeometry.fitTarget(including: list.bounds), in: viewport
         )
-        zoomed.commit(magnification: 3, anchor: viewport.center, pan: .zero, fitting: fitted)
+        zoomed.commit(StageGesture(magnification: 3), fitting: fitted, in: viewport)
 
         renderer.invocations.removeAll()
         Self.hosting(
             Self.stage(
-                display: list, needle: nil, renderer: renderer, zoom: .constant(zoomed)
+                display: list, needle: nil, renderer: renderer, interaction: .constant(zoomed)
             ),
             at: CGSize(width: 390, height: 700)
         )
 
-        #expect(renderer.invocations.last?.transform == .settled(zoomed.resolved(fitting: fitted)))
+        #expect(renderer.invocations.last?.transform == .settled(zoomed.baseline(fitting: fitted)))
         #expect(
             renderer.invocations.last?.transform != .settled(fitted), "the zoom was ignored"
         )
@@ -365,7 +365,7 @@ struct StageAccessibilityWiringTests {
                 renderer: CanvasStitchRenderer(),
                 summary: .empty,
                 designName: "Octagon Rosette",
-                zoom: .constant(StageZoom())
+                interaction: .constant(StageInteraction())
             )
         )
         window.rootViewController = controller

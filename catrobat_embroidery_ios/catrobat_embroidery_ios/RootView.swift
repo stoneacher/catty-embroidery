@@ -96,7 +96,7 @@ struct RootView: View {
             // body evaluation, i.e. once per batch, which is exactly what US-307's headline
             // criterion forbids and what makes VoiceOver unusable.
             summary: model.runner.run.summary,
-            zoom: $model.zoom,
+            interaction: $model.interaction,
             onPlay: {
                 if let program = model.selection?.program {
                     model.runner.play(program)

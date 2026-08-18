@@ -7,11 +7,11 @@
 // the narrowing is the point: the app's selection state and the app's run are separate
 // concerns again.
 //
-// **`StagePreview` came back in US-307, and only for `StageZoom`** — a `Sendable` value,
-// not a stitch, an interpreter or a display list, so the narrowing above still holds as
+// **`StagePreview` came back in US-307, and only for `StageInteraction`** — a `Sendable`
+// value, not a stitch, an interpreter or a display list, so the narrowing above still holds as
 // stated. It is here because the zoom must outlive the ADR-023 container swap and because
-// `RootView` builds the stage at two call sites; see `zoom`. Recorded rather than left for
-// a reader to notice the comment above had quietly stopped being true.
+// `RootView` builds the stage at two call sites; see `interaction`. Recorded rather than left
+// for a reader to notice the comment above had quietly stopped being true.
 import Observation
 import Samples
 import StagePreview
@@ -70,18 +70,18 @@ final class AppModel {
     /// one.
     let runner = RunViewModel()
 
-    /// How far into the design this window's stage is zoomed, and where it is panned.
+    /// Where this window's stage is zoomed and panned to, and what is currently happening to
+    /// it.
     ///
     /// Owned here for the same ADR-023 reason the run is, plus one this story adds:
     /// `RootView` builds the stage at **two** call sites — the split view's detail column and
-    /// the stack's navigation destination — so a zoom held as `@State` in the stage would be
+    /// the stack's navigation destination — so state held as `@State` in the stage would be
     /// two independent values, and an iPad window resized across the size-class boundary
     /// would show the other one.
     ///
-    /// A plain `Sendable` value rather than a second `@Observable` class: a zoom owns no
-    /// tasks and no lifecycle, so a reference type would be an abstraction with nothing to
-    /// justify it.
-    var zoom = StageZoom()
+    /// A plain `Sendable` value rather than a second `@Observable` class: it owns no tasks and
+    /// no lifecycle, so a reference type would be an abstraction with nothing to justify it.
+    var interaction = StageInteraction()
 
     /// The chosen sample, or `nil` before the first tap.
     ///
@@ -149,7 +149,7 @@ final class AppModel {
         // against a fit that no longer applies. Here rather than in an `.onChange`, for the
         // reason the run's reset is here: the view-side spellings re-fire on the ADR-023
         // container rebuild.
-        zoom.fitToContent()
+        interaction.followFit()
     }
 
     /// Whether `sample` is the current selection — the row highlight and the

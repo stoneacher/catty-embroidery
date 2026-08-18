@@ -80,25 +80,24 @@ struct StagePreviewTargetIsolationTests {
     /// SwiftUI's type here is exactly what this test forbids.
     @Test("the zoom boundary is Double-based package types, not CoreGraphics or SwiftUI")
     func theZoomBoundaryIsPackageTypes() {
-        let commit: (inout StageZoom, Double, ViewPoint, ViewPoint, StageTransform) -> Void = {
-            $0.commit(magnification: $1, anchor: $2, pan: $3, fitting: $4)
+        let commit: (inout StageInteraction, StageGesture, StageTransform, ViewSize) -> Void = {
+            $0.commit($1, fitting: $2, in: $3)
         }
-        let adjust: (inout StageZoom, StageZoomAdjustment, StageTransform, ViewSize) -> Void = {
+        let adjust: (inout StageInteraction, StageZoomAdjustment, StageTransform, ViewSize) -> Void = {
             $0.adjust($1, fitting: $2, in: $3)
         }
-        let resolve: (StageZoom) -> (StageTransform) -> StageTransform = { $0.resolved(fitting:) }
-        let magnify: (StageZoom) -> (StageTransform) -> Double = { $0.magnification(fitting:) }
+        let rendering: (StageInteraction) -> (StageGesture?, StageTransform, ViewSize)
+            -> StageRenderTransform = { subject in
+                { subject.rendering(gesture: $0, fitting: $1, in: $2) }
+            }
+        let magnify: (StageInteraction) -> (StageGesture?, StageTransform, ViewSize)
+            -> Double = { subject in
+                { subject.magnification(gesture: $0, fitting: $1, in: $2) }
+            }
         let bound: (StageTransform) -> StageZoomBounds = StageZoomBounds.init(fitting:)
         let clamp: (StageZoomBounds) -> (Double) -> Double = { $0.clamping }
         let interpolate: (StageTransform) -> (StageTransform, Double) -> StageTransform = {
             $0.interpolated(to:progress:)
-        }
-        let preview: (StageZoom) -> (Double, ViewPoint, ViewPoint, StageTransform)
-            -> StageTransform = { subject in
-                { subject.previewing(magnification: $0, anchor: $1, pan: $2, fitting: $3) }
-            }
-        let render: (StageTransform, StageTransform) -> StageRenderTransform = {
-            StageRenderTransform.live(bake: $0, current: $1)
         }
         let unit: (Double, Double, ViewSize) -> ViewPoint = ViewPoint.init(unitX:unitY:in:)
         let summarise: (StitchDisplayList, EmbroideryStream?) -> StageSummary =
@@ -106,20 +105,21 @@ struct StagePreviewTargetIsolationTests {
 
         let viewport = ViewSize(width: 390, height: 500)
         let fit = StageTransform.fitting(StageGeometry.box, in: viewport)
-        var zoom = StageZoom()
+        var interaction = StageInteraction()
 
-        commit(&zoom, 2, viewport.center, .zero, fit)
-        #expect(resolve(zoom)(fit) == zoom.resolved(fitting: fit))
-        #expect(magnify(zoom)(fit) == zoom.magnification(fitting: fit))
+        commit(&interaction, StageGesture(magnification: 2), fit, viewport)
+        #expect(
+            rendering(interaction)(nil, fit, viewport)
+                == interaction.rendering(gesture: nil, fitting: fit, in: viewport)
+        )
+        #expect(
+            magnify(interaction)(nil, fit, viewport)
+                == interaction.magnification(gesture: nil, fitting: fit, in: viewport)
+        )
 
-        adjust(&zoom, .zoomIn, fit, viewport)
+        adjust(&interaction, .zoomIn, fit, viewport)
         #expect(clamp(bound(fit))(1) == StageZoomBounds(fitting: fit).clamping(1))
         #expect(interpolate(fit)(fit, 0.5) == fit.interpolated(to: fit, progress: 0.5))
-        #expect(
-            preview(zoom)(1, viewport.center, .zero, fit)
-                == zoom.previewing(magnification: 1, anchor: viewport.center, pan: .zero, fitting: fit)
-        )
-        #expect(render(fit, fit).bake == fit)
         #expect(unit(0.5, 0.5, viewport) == viewport.center)
         #expect(summarise(StitchDisplayList(), nil) == .empty)
     }

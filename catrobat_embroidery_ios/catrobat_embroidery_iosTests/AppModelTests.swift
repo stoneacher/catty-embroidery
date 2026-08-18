@@ -229,13 +229,13 @@ struct AppModelTests {
         let fit = StageTransform.fitting(
             StageGeometry.box, in: ViewSize(width: 390, height: 500)
         )
-        model.zoom.commit(
-            magnification: 4, anchor: ViewPoint(x: 100, y: 100), pan: .zero, fitting: fit
+        model.interaction.commit(
+            StageGesture(magnification: 4), fitting: fit, in: ViewSize(width: 390, height: 500)
         )
-        #expect(!model.zoom.isFollowingFit, "premise: the stage is zoomed")
+        #expect(!model.interaction.isFollowingFit, "premise: the stage is zoomed")
 
         model.select(second)
 
-        #expect(model.zoom.isFollowingFit)
+        #expect(model.interaction.isFollowingFit)
     }
 }
