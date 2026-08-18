@@ -155,7 +155,7 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
 
     /// Whether a gesture or the fit animation is in flight.
     private var isInteracting: Bool {
-        live != LiveGesture() || settling != nil
+        live.isActive || settling != nil
     }
 
     /// The transform this frame draws with: the committed one, moved by whatever gesture is
@@ -170,7 +170,7 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
         fitting fitted: StageTransform,
         in viewport: ViewSize
     ) -> StageTransform {
-        guard live != LiveGesture() else { return committed }
+        guard live.isActive else { return committed }
         var moved = zoom
         moved.overriding(committed)
         return moved.previewing(
@@ -193,6 +193,7 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
         MagnifyGesture()
             .simultaneously(with: DragGesture())
             .updating($live) { value, state, _ in
+                state.isActive = true
                 if let pinch = value.first {
                     state.magnification = pinch.magnification
                     state.anchor = pinch.startAnchor
@@ -201,13 +202,18 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                     state.pan = pan.translation
                 }
             }
+            .onChanged { _ in
+                // **A gesture ends the fit animation at its destination, at the moment the
+                // gesture starts.** Without this the two disagree: the frame is drawn from the
+                // interpolated transform while `commit` reads `zoom`, which still holds the
+                // *pre-animation* value — so interrupting a reset from 4× and releasing jumped
+                // from "halfway to fit, plus your drag" to "4×, plus your drag" (Codex round
+                // 3). Finishing the fit first means the gesture starts from what the animation
+                // was heading for, so the only movement the user did not ask for happens at
+                // the instant they touched the screen, which is the honest place for it.
+                settleImmediately()
+            }
             .onEnded { value in
-                // Cancels any fit animation in flight, so its completion cannot undo this
-                // commit. Both halves matter: the token invalidates the pending completion,
-                // and clearing `settling` stops a half-finished spring drawing over a
-                // transform that has just moved underneath it.
-                settleGeneration &+= 1
-                settling = nil
 
                 zoom.commit(
                     // `CGFloat` → `Double` explicitly: the package takes `Double` so that no
@@ -267,6 +273,18 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
         }
     }
 
+    /// Ends a fit animation immediately, at the destination it was heading for.
+    ///
+    /// Bumping the generation is what stops the in-flight completion handler running later and
+    /// undoing whatever replaced it.
+    private func settleImmediately() {
+        guard settling != nil else { return }
+
+        settleGeneration &+= 1
+        zoom.fitToContent()
+        settling = nil
+    }
+
     /// One activation of the adjustable action.
     ///
     /// **Deliberately not animated.** Criterion 8 names the double-tap transition and only
@@ -278,6 +296,13 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
         fitting fitted: StageTransform,
         in viewport: ViewSize
     ) {
+        // For the reason the gesture does it: otherwise the pending completion calls
+        // `fitToContent()` 0.35 s later and silently discards the adjustment, and the animation
+        // keeps rendering the old value in the meantime (Codex round 3). Reachable through the
+        // "Fit to Hoop" action followed immediately by an increment, which is an ordinary thing
+        // for a VoiceOver user to do.
+        settleImmediately()
+
         switch direction {
         case .increment: zoom.adjust(.zoomIn, fitting: fitted, in: viewport)
         case .decrement: zoom.adjust(.zoomOut, fitting: fitted, in: viewport)
@@ -289,6 +314,17 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
 
 /// A gesture's absolute state since it began. See `StageCanvas.live`.
 struct LiveGesture: Equatable {
+    /// Whether a gesture is actually in flight.
+    ///
+    /// **Lifecycle, not values, and the difference has now bitten twice.** Liveness was first
+    /// inferred from `current == committed` and then from `live != LiveGesture()`; both are
+    /// value comparisons, and both report "settled" for a gesture that is still very much
+    /// happening — a centred pinch taken to 2× and returned to exactly 1× with no pan is
+    /// `LiveGesture()` again while both fingers are down (Codex rounds 2 and 3). SwiftUI sets
+    /// this in `.updating` and resets it for us when the gesture ends, including a
+    /// system-cancelled one, so it tracks the thing itself rather than a symptom of it.
+    var isActive = false
+
     var magnification: CGFloat = 1
     var anchor: UnitPoint = .center
 

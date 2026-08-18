@@ -62,6 +62,30 @@ struct StageAccessibilityTests {
         #expect(value.contains { $0.isLetter }, "the entry collapsed to its arguments")
     }
 
+    /// **A square, single-colour fixture cannot discriminate, and the one above is both.**
+    ///
+    /// Codex round 3: with `98.6 × 98.6` and one colour, passing the width for both size
+    /// arguments — or dropping the colour phrase entirely — leaves the test above green. This
+    /// fixture makes every fact distinguishable: three stitches, two colours, 10 mm by 20 mm,
+    /// so each number must reach the value on its own.
+    @Test func everyFactReachesTheValueIndependently() {
+        let summary = StageSummary(
+            stitchCount: 3, colorCount: 2, widthInMillimetres: 10, heightInMillimetres: 20
+        )
+
+        let value = StageAccessibility.value(
+            summary: summary, state: .finished(.programFinished), magnification: 1
+        )
+
+        #expect(value.contains("3"), value.asComment)
+        #expect(value.contains("2"), value.asComment)
+        #expect(value.contains("10"), value.asComment)
+        #expect(value.contains("20"), value.asComment)
+        // And the two dimensions are not the same number repeated.
+        #expect(value.components(separatedBy: "10").count == 2, value.asComment)
+        #expect(value.components(separatedBy: "20").count == 2, value.asComment)
+    }
+
     /// **The resolution of criteria 5 and 6's contradiction**, asserted rather than left in a
     /// comment: a running stage does not claim a stitch count, because the only count it
     /// could have — the one captured at `idle → running` — is zero for the whole run.

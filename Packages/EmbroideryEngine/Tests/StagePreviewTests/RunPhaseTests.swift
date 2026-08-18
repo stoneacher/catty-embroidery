@@ -21,8 +21,16 @@ struct RunPhaseTests {
         await driveToCompletion(SampleLibrary[.octagonRosette].program)
     }
 
-    /// The criterion's letter, on a real sample.
-    @Test("the summary is rebuilt once per state transition, not once per batch")
+    /// The criterion's letter, on a real sample — and **what this number is and is not**.
+    ///
+    /// `revision` counts *observable* changes to the phase, not invocations of the summary
+    /// builder. Codex round 3: adding a discarded `StageSummary(...)` to every `apply` would
+    /// leave this at 2 and every assertion here green, while constructing 139 summaries. That
+    /// gap is real and is not worth closing with instrumentation, because the thing the
+    /// criterion protects is what VoiceOver *announces* — which is driven by the value
+    /// changing, not by how often it was computed. `theSummaryIsIdenticalAcrossEveryBatch`
+    /// below is the assertion that covers that, and the two are quoted together for a reason.
+    @Test("the summary changes once per state transition, not once per batch")
     func theSummaryIsRebuiltOncePerTransition() async {
         let drained = await Self.drainedRosette()
         var run = PreviewRunState()
