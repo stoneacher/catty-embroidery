@@ -2,7 +2,7 @@
 
 **Epic**: E4 Stage & preview | **Estimate**: ~3 h | **Depends on**: US-302, US-305, **US-306**
 
-**Status**: Implemented 2026-08-18 — 632 engine tests (up from 581) and 64 app tests (up from 48), SwiftLint `--strict` clean, six screenshots. Planned with `swift-architect` and `swift-ui-design`; **the planning pass corrected six things in the criteria below**, marked **planning correction** inline, and Sebastian took four scope decisions recorded under "Scope decisions". Review and close-out below.
+**Status**: Implemented 2026-08-19 — **649 engine tests** (up from 581) and 65 app tests (up from 48), SwiftLint `--strict` clean, seven screenshots. Planned with `swift-architect` and `swift-ui-design`; **the planning pass corrected six things in the criteria below**, marked **planning correction** inline, and Sebastian took four scope decisions recorded under "Scope decisions". Review and close-out below. **Two review layers, and the second reshaped the story**: an in-loop `swift-code-reviewer` pass (4 Important, all reproduced, all fixed) and a `/codex-review` loop that ran **8 rounds — 24 findings, none rejected, Medium throughout**. Six rounds found a defect in the same area and four were the same conceptual mistake, so the **interaction layer was rewritten rather than patched a seventh time** (ADR-028's corrections). Sebastian also found **two defects in the running app that no automated layer here could see**, both existing only *during* a gesture.
 
 **Story**: As a user, I want to pinch and drag the stage to inspect stitches closely; and as a VoiceOver user, I want one spoken summary of what the stage holds rather than tens of thousands of elements.
 
