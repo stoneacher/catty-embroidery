@@ -30,7 +30,16 @@ public struct StageInteraction: Equatable, Sendable {
     public enum Phase: Equatable, Sendable {
         case idle
         /// A double-tap or the "Fit to Hoop" action, animating from one transform to another.
-        case settling(from: StageTransform, to: StageTransform, progress: Double)
+        ///
+        /// **`id` is identity, not bookkeeping, and leaving it out was a real defect.** The
+        /// rewrite claimed that making `finishSettling` idempotent replaced the generation
+        /// token it deleted. It does not: idempotence protects a late completion only when
+        /// *nothing* is settling, and cannot tell "my animation" from "a newer one". Begin A,
+        /// interrupt it with a gesture, begin B, and A's completion then finds B's `.settling`
+        /// phase and ends it early (Codex round 7). The token was never bookkeeping — it was
+        /// ownership — and the improvement over the original is that it now lives *inside the
+        /// value*, where a test can reach it, rather than as a `@State` counter in a view.
+        case settling(id: Int, from: StageTransform, to: StageTransform, progress: Double)
     }
 
     /// The user's explicit transform, or `nil` while the stage follows the fit.
@@ -41,6 +50,10 @@ public struct StageInteraction: Equatable, Sendable {
     public private(set) var settled: StageTransform?
 
     public private(set) var phase: Phase = .idle
+
+    /// Hands out the next animation's identity. Monotonic, so an id is never reused and a
+    /// completion from an animation two interruptions ago cannot match.
+    private var nextSettlingID = 0
 
     /// One activation of the adjustable action, as a **multiplicative** factor.
     ///
@@ -72,9 +85,31 @@ public struct StageInteraction: Equatable, Sendable {
         switch phase {
         case .idle:
             settled ?? fit
-        case let .settling(from, to, progress):
+        case let .settling(_, from, to, progress):
             from.interpolated(to: to, progress: progress)
         }
+    }
+
+    /// The baseline with the animation's progress supplied from outside.
+    ///
+    /// **The view owns the interpolation, because only SwiftUI can produce it.** A
+    /// `StageTransform` is not animatable and a `Canvas`'s drawing closure is not either, so
+    /// `withAnimation` around a mutation of this value animates *nothing* — it snaps. The view
+    /// wraps the canvas in an `Animatable` shim whose `animatableData` is the progress, and
+    /// feeds the interpolated value back in here, which is what makes the reset re-stroke at
+    /// each step rather than jump. (The first rewrite deleted that shim and, with it, the
+    /// animation; the tests could not see it because they only ever observed progress 0 and 1 —
+    /// Codex round 7.)
+    public func baseline(fitting fit: StageTransform, settlingAt progress: Double) -> StageTransform {
+        guard case let .settling(_, from, to, _) = phase else { return baseline(fitting: fit) }
+        return from.interpolated(to: to, progress: progress)
+    }
+
+    /// The progress the *model* holds — the endpoint `withAnimation` is moving toward, which
+    /// the view's shim interpolates from.
+    public var settlingProgress: Double {
+        guard case let .settling(_, _, _, progress) = phase else { return 0 }
+        return progress
     }
 
     /// **The one place the bake/draw split is decided.**
@@ -84,15 +119,20 @@ public struct StageInteraction: Equatable, Sendable {
     /// gesture or an animation is in flight the frame is re-stroked at `current` and the
     /// raster's key stays on `bake`, so the settled prefix is rasterised once, on commit, and
     /// the frame can still reveal content the canvas had not drawn (ADR-028).
+    /// - Parameter settlingAt: the animation's interpolated progress, supplied by the view's
+    ///   `Animatable` shim. Ignored unless a fit animation is in flight.
     public func rendering(
         gesture: StageGesture?,
         fitting fit: StageTransform,
-        in viewport: ViewSize
+        in viewport: ViewSize,
+        settlingAt progress: Double = 1
     ) -> StageRenderTransform {
         guard gesture != nil || isSettling else { return .settled(baseline(fitting: fit)) }
         return .live(
             bake: settled ?? fit,
-            current: transform(with: gesture, fitting: fit, in: viewport)
+            current: transform(
+                with: gesture, fitting: fit, in: viewport, settlingAt: progress
+            )
         )
     }
 
@@ -100,9 +140,10 @@ public struct StageInteraction: Equatable, Sendable {
     public func transform(
         with gesture: StageGesture?,
         fitting fit: StageTransform,
-        in viewport: ViewSize
+        in viewport: ViewSize,
+        settlingAt progress: Double = 1
     ) -> StageTransform {
-        let committed = baseline(fitting: fit)
+        let committed = baseline(fitting: fit, settlingAt: progress)
         guard let gesture, !gesture.isIdentity else { return committed }
         return moved(by: gesture, from: committed, fitting: fit, in: viewport)
     }
@@ -144,31 +185,35 @@ public struct StageInteraction: Equatable, Sendable {
 
     /// Begins the double-tap / "Fit to Hoop" animation. Returns `false` when there is nothing to
     /// animate, so the caller does not start a spring that would render one frame and stop.
-    @discardableResult
-    public mutating func beginSettling(fitting fit: StageTransform) -> Bool {
+    /// Returns the new animation's identity, or `nil` when there is nothing to animate — the
+    /// caller passes it back to `finishSettling(_:)` so a late completion can prove it owns the
+    /// animation it is ending.
+    public mutating func beginSettling(fitting fit: StageTransform) -> Int? {
         // A second activation while the first is still running would otherwise animate from the
         // pre-animation transform and snap backwards past what is on screen.
         interrupt()
-        guard !isFollowingFit else { return false }
+        guard !isFollowingFit else { return nil }
 
-        phase = .settling(from: settled ?? fit, to: fit, progress: 0)
-        return true
+        nextSettlingID += 1
+        phase = .settling(id: nextSettlingID, from: settled ?? fit, to: fit, progress: 0)
+        return nextSettlingID
     }
 
     /// Drives the animation. Ignored unless a fit animation is actually in flight, so a
     /// completion arriving after an interruption cannot restart one.
     public mutating func settlingProgressed(to progress: Double) {
-        guard case let .settling(from, to, _) = phase else { return }
-        phase = .settling(from: from, to: to, progress: progress)
+        guard case let .settling(id, from, to, _) = phase else { return }
+        phase = .settling(id: id, from: from, to: to, progress: progress)
     }
 
-    /// Ends the animation by adopting its destination — the fit.
+    /// Ends the animation `id` by adopting its destination — the fit.
     ///
-    /// **Idempotent, which is what replaces the generation token.** A stale completion handler
-    /// from an interrupted animation finds `phase == .idle` and does nothing, so there is no
-    /// counter to keep in step and no way to disarm the wrong one.
-    public mutating func finishSettling() {
-        guard isSettling else { return }
+    /// **Ownership, not merely idempotence.** Being inert when nothing is settling is not
+    /// enough: a completion from an interrupted animation would otherwise end whichever
+    /// animation happens to be running now (Codex round 7). The id it was handed at
+    /// `beginSettling` is what makes "mine" checkable.
+    public mutating func finishSettling(_ id: Int) {
+        guard case let .settling(current, _, _, _) = phase, current == id else { return }
         phase = .idle
         settled = nil
     }
@@ -179,7 +224,8 @@ public struct StageInteraction: Equatable, Sendable {
     /// double-tap. One method, so "what happens when you interrupt a fit" has one answer instead
     /// of one per caller.
     public mutating func interrupt() {
-        finishSettling()
+        guard case let .settling(id, _, _, _) = phase else { return }
+        finishSettling(id)
     }
 
     /// One activation of the accessibility adjustable action.

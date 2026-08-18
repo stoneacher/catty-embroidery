@@ -67,13 +67,27 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
             // One question, one answer, and it lives in the package: what to draw with, what the
             // raster may be keyed on, and whether anything is in flight at all. The view no
             // longer decides any of that by comparing transforms.
-            let render = interaction.rendering(gesture: gesture, fitting: fitted, in: viewport)
-
-            ZStack {
-                StageFieldView(transform: render.current)
-                renderer.makeBody(
-                    display: display, transform: render, needle: needle, viewport: viewport
+            // **The shim is what makes the fit animation an animation.** A `StageTransform` is
+            // not animatable and neither is a `Canvas`'s drawing closure, so `withAnimation`
+            // around a mutation of `interaction` animates nothing at all — the reset snaps. An
+            // `Animatable` view whose `animatableData` is the progress is the one thing SwiftUI
+            // will interpolate, and its body then re-strokes the canvas at each step, which is
+            // also what lets a zoom-out reveal content the previous frame had off-screen.
+            //
+            // Deleting it during the interaction-layer rewrite silently turned the reset into a
+            // snap, and no test could see it because they only ever observed progress 0 and 1
+            // (Codex round 7).
+            SettlingProgress(progress: interaction.settlingProgress) { animated in
+                let render = interaction.rendering(
+                    gesture: gesture, fitting: fitted, in: viewport, settlingAt: animated
                 )
+
+                ZStack {
+                    StageFieldView(transform: render.current)
+                    renderer.makeBody(
+                        display: display, transform: render, needle: needle, viewport: viewport
+                    )
+                }
             }
             // **The mat, painted behind the canvas rather than inside it.**
             //
@@ -170,7 +184,7 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     /// Reduce Motion passes `nil`, which is a legal animation meaning "instantly", so one call
     /// site serves both branches with no branch of its own.
     private func resetToFit(fitting fitted: StageTransform) {
-        guard interaction.beginSettling(fitting: fitted) else { return }
+        guard let settling = interaction.beginSettling(fitting: fitted) else { return }
 
         // Animating a `Double` *inside* the value is what makes the canvas re-stroke at each
         // step rather than sliding an already-rendered layer — SwiftUI interpolates the
@@ -180,9 +194,10 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
         withAnimation(StageMotion.fitAnimation(reduceMotion: reduceMotion)) {
             interaction.settlingProgressed(to: 1)
         } completion: {
-            // Inert if anything took over in the meantime — no token to keep in step, because
-            // `finishSettling` does nothing unless a fit animation is still in flight.
-            interaction.finishSettling()
+            // The id proves this completion owns the animation it is ending. Being inert when
+            // nothing is settling is not enough — without it, a completion from an interrupted
+            // animation ends whichever animation happens to be running now.
+            interaction.finishSettling(settling)
         }
     }
 
@@ -202,5 +217,28 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
         case .decrement: interaction.adjust(.zoomOut, fitting: fitted, in: viewport)
         @unknown default: break
         }
+    }
+}
+
+/// Re-renders its content at each step of the fit animation.
+///
+/// The only `Animatable` conformance in the stage, and it exists because SwiftUI will
+/// interpolate a `Double` and nothing else here: `StageTransform` is not animatable, and a
+/// `Canvas` re-strokes from whatever it is handed rather than tweening. Conforming on the
+/// progress gives SwiftUI something it *can* interpolate, and the body turns each interpolated
+/// value back into a transform through `StageInteraction`.
+///
+/// It is passed straight through when nothing is settling, so it costs a closure call at rest.
+struct SettlingProgress<Content: View>: View, Animatable {
+    var progress: Double
+    @ViewBuilder let content: (Double) -> Content
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    var body: some View {
+        content(progress)
     }
 }

@@ -27,16 +27,95 @@ struct StageInteractionTransitionTests {
 
         let started = interaction.beginSettling(fitting: Self.fit)
 
-        #expect(started)
+        #expect(started != nil)
         #expect(interaction.isSettling)
         #expect(interaction.baseline(fitting: Self.fit) == zoomed, "progress 0 is where it started")
 
         interaction.settlingProgressed(to: 1)
         #expect(interaction.baseline(fitting: Self.fit) == Self.fit)
 
-        interaction.finishSettling()
+        interaction.finishSettling(started ?? -1)
         #expect(interaction.isFollowingFit)
         #expect(!interaction.isSettling)
+    }
+
+    /// **Mid-animation, the frame is live and the raster is not composited.**
+    ///
+    /// Codex round 7 mutated `rendering` to ignore `isSettling` and all 22 interaction tests
+    /// stayed green — which would let the stale raster be drawn under a reset instead of
+    /// re-stroking at the interpolated transform, reintroducing exactly the "content does not
+    /// return into frame" failure ADR-028 records. Every assertion here fails under that
+    /// mutation.
+    @Test("a settling stage renders live, at the interpolated transform, keyed on the old bake")
+    func aSettlingStageRendersLive() {
+        var interaction = StageInteraction()
+        interaction.commit(Self.pinch(4), fitting: Self.fit, in: Self.viewport)
+        let zoomed = interaction.baseline(fitting: Self.fit)
+        _ = interaction.beginSettling(fitting: Self.fit)
+
+        let render = interaction.rendering(
+            gesture: nil, fitting: Self.fit, in: Self.viewport, settlingAt: 0.25
+        )
+
+        #expect(!render.canUseRaster, "a reset must re-stroke, not composite a stale raster")
+        #expect(render.bake == zoomed, "the raster stays keyed on where it was baked")
+        #expect(
+            render.current == interaction.baseline(fitting: Self.fit, settlingAt: 0.25),
+            "the frame is drawn at the interpolated transform"
+        )
+        #expect(render.current != zoomed)
+        #expect(render.current != Self.fit)
+    }
+
+    /// **An intermediate step is a real intermediate transform.**
+    ///
+    /// Codex round 7 mutated `settlingProgressed` to store 1 always — a visible snap instead of
+    /// an animation — and every test stayed green, because the suite only ever observed
+    /// progress 0 and 1. This asserts a quarter of the way is a quarter of the way.
+    @Test("a quarter of the way through is a quarter of the way")
+    func anIntermediateStepInterpolates() {
+        var interaction = StageInteraction()
+        interaction.commit(Self.pinch(4), fitting: Self.fit, in: Self.viewport)
+        let zoomed = interaction.baseline(fitting: Self.fit)
+        _ = interaction.beginSettling(fitting: Self.fit)
+
+        interaction.settlingProgressed(to: 0.25)
+
+        #expect(interaction.settlingProgress == 0.25)
+        #expect(interaction.baseline(fitting: Self.fit) == zoomed.interpolated(to: Self.fit, progress: 0.25))
+        // Strictly between the endpoints, which a snap to either would fail.
+        #expect(interaction.baseline(fitting: Self.fit) != zoomed)
+        #expect(interaction.baseline(fitting: Self.fit) != Self.fit)
+    }
+
+    /// **A completion must own the animation it ends.**
+    ///
+    /// Codex round 7: idempotence alone protects a late completion only when *nothing* is
+    /// settling. Begin A, interrupt it with a gesture, begin B, and A's completion found B's
+    /// phase and ended it early — the animation the user is watching stops a third of the way
+    /// through. The id handed out at `beginSettling` is what makes "mine" checkable.
+    @Test("a completion from an interrupted animation cannot end a newer one")
+    func aStaleCompletionCannotEndANewerAnimation() {
+        var interaction = StageInteraction()
+        interaction.commit(Self.pinch(4), fitting: Self.fit, in: Self.viewport)
+        let first = interaction.beginSettling(fitting: Self.fit)
+        interaction.settlingProgressed(to: 0.5)
+        interaction.commit(Self.pan(x: 20, y: 0), fitting: Self.fit, in: Self.viewport)
+        let second = interaction.beginSettling(fitting: Self.fit)
+
+        #expect(first != nil)
+        #expect(second != nil)
+        #expect(first != second, "premise: the two animations have distinct identities")
+
+        // A's completion arrives late, while B is running.
+        interaction.finishSettling(first ?? -1)
+
+        #expect(interaction.isSettling, "B must still be animating")
+
+        // And B's own completion still works.
+        interaction.finishSettling(second ?? -1)
+        #expect(!interaction.isSettling)
+        #expect(interaction.isFollowingFit)
     }
 
     /// A fitted stage has nothing to animate, and the caller is told so rather than starting a
@@ -47,7 +126,7 @@ struct StageInteractionTransitionTests {
 
         let started = interaction.beginSettling(fitting: Self.fit)
 
-        #expect(!started)
+        #expect(started == nil)
         #expect(!interaction.isSettling)
     }
 
@@ -62,7 +141,7 @@ struct StageInteractionTransitionTests {
 
         let restarted = interaction.beginSettling(fitting: Self.fit)
 
-        #expect(!restarted)
+        #expect(restarted == nil)
         #expect(interaction.isFollowingFit, "the interrupted settle adopted its destination")
         #expect(interaction.baseline(fitting: Self.fit) == Self.fit)
     }
@@ -89,14 +168,14 @@ struct StageInteractionTransitionTests {
     func anAdjustmentDuringTheAnimationSurvives() {
         var interaction = StageInteraction()
         interaction.commit(Self.pinch(4), fitting: Self.fit, in: Self.viewport)
-        _ = interaction.beginSettling(fitting: Self.fit)
+        let stale = interaction.beginSettling(fitting: Self.fit)
         interaction.settlingProgressed(to: 0.5)
 
         interaction.adjust(.zoomIn, fitting: Self.fit, in: Self.viewport)
         let adjusted = interaction.baseline(fitting: Self.fit)
 
         // The stale completion arrives late and must not undo it.
-        interaction.finishSettling()
+        interaction.finishSettling(stale ?? -1)
 
         #expect(interaction.baseline(fitting: Self.fit) == adjusted)
         #expect(!interaction.isFollowingFit)
@@ -109,12 +188,12 @@ struct StageInteractionTransitionTests {
     func aStaleCompletionIsInert() {
         var interaction = StageInteraction()
         interaction.commit(Self.pinch(4), fitting: Self.fit, in: Self.viewport)
-        _ = interaction.beginSettling(fitting: Self.fit)
+        let stale = interaction.beginSettling(fitting: Self.fit)
         interaction.settlingProgressed(to: 0.5)
         interaction.commit(Self.pan(x: 20, y: 0), fitting: Self.fit, in: Self.viewport)
         let afterGesture = interaction
 
-        interaction.finishSettling()
+        interaction.finishSettling(stale ?? -1)
         interaction.settlingProgressed(to: 1)
 
         #expect(interaction == afterGesture)
@@ -233,6 +312,11 @@ struct StageInteractionTransitionTests {
 
         #expect(interaction.isFollowingFit)
         #expect(!interaction.isSettling)
-        #expect(interaction == StageInteraction())
+        #expect(interaction.baseline(fitting: Self.fit) == Self.fit)
+        // **Not `== StageInteraction()`**, which is what this asserted first and is wrong: the
+        // settling id counter is monotonic and deliberately survives a reset. Were it to go
+        // back to zero, an id could be reused and a completion from before the reset could
+        // match a *later* animation — the very ownership bug the id exists to prevent.
+        #expect(interaction != StageInteraction())
     }
 }
