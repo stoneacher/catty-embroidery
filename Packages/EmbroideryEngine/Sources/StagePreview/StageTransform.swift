@@ -283,8 +283,28 @@ public struct StageTransform: Hashable, Sendable {
     /// opposite sign. There is always one more intermediate term; there is only
     /// one result.
     public func pinched(by factor: Double, about anchor: ViewPoint) -> StageTransform {
+        pinched(by: factor, about: anchor, within: .gestureDefault)
+    }
+
+    /// The same anchored zoom, clamped into `bounds` instead of the absolute gesture range.
+    ///
+    /// **One implementation, two entry points**, deliberately: everything the four review
+    /// rounds hardened lives here — recompute the translation from the *clamped* scale so
+    /// the anchor stays pinned when the clamp bites; guard the computed translation rather
+    /// than any intermediate product; refuse an unrepresentable zoom rather than collapsing
+    /// it. A second copy taking bounds would be a second place for those to rot, and the
+    /// two-argument overload above is now literally this function at `.gestureDefault`.
+    ///
+    /// `bounds` exists because `fitting` can legitimately return a scale *below*
+    /// `minimumScale` for an out-of-hoop design that exports perfectly well — see
+    /// `StageZoomBounds`.
+    public func pinched(
+        by factor: Double,
+        about anchor: ViewPoint,
+        within bounds: StageZoomBounds
+    ) -> StageTransform {
         let anchored = stagePoint(of: anchor)
-        let zoomed = Self.clampedScale(scale * factor)
+        let zoomed = bounds.clamping(scale * factor)
         let translated = ViewPoint(
             x: anchor.x - anchored.x * zoomed,
             y: anchor.y - Self.flippingY(anchored.y) * zoomed
@@ -303,5 +323,28 @@ public struct StageTransform: Hashable, Sendable {
         let translated = ViewPoint(x: translation.x + delta.x, y: translation.y + delta.y)
         guard translated.x.isFinite, translated.y.isFinite else { return self }
         return StageTransform(scale: scale, translation: translated)
+    }
+
+    /// The view-space similarity that carries **this** transform's rendering onto `other`'s,
+    /// inside `viewport`.
+    ///
+    /// What it is for: animating a transform change. A `StageTransform` in `@State` is not
+    /// animatable — `Canvas` re-strokes from whatever it is handed — so the double-tap reset
+    /// runs on `.scaleEffect`/`.offset` over the already-rendered canvas and swaps the
+    /// transform at completion. This is that delta.
+    ///
+    /// **No y-flip appears here, and that is a derived fact rather than an omission.** Both
+    /// mappings apply `flippingY`, so composing one with the other's inverse cancels it: the
+    /// result is a uniform positive scale plus a translation, in y-down view space.
+    ///
+    /// `nil` when the delta cannot be represented — the ratio times a distant translation
+    /// overflows — so a caller falls back to swapping the transform without animating, which
+    /// is always correct. Refusing rather than returning `.identity`, for the same reason
+    /// `pinched` refuses: an identity delta would draw the old pixels in the wrong place and
+    /// call it success.
+    public func viewDelta(to other: StageTransform, in viewport: ViewSize) -> ViewDelta? {
+        // Red-phase stub.
+        _ = (other, viewport)
+        return nil
     }
 }

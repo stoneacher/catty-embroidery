@@ -16,7 +16,34 @@ import EmbroideryEngine
 /// one observed stored property, so applying an update is necessarily one
 /// mutation however many stitches it carries.
 public struct PreviewRunState: Equatable, Sendable {
-    public private(set) var state: RunState = .idle
+    /// Where the run is **and** the accessibility summary, together in one value that only
+    /// a transition may write.
+    ///
+    /// They are bundled rather than sitting side by side because US-307 requires the summary
+    /// to change only when the state does, and `private(set)` inside *this* type would not
+    /// stop `apply(_:)` assigning it every frame. `RunPhase` is a separate type precisely so
+    /// that `private` means something here. See its doc comment for what that proves and
+    /// what it does not.
+    public private(set) var phase = RunPhase()
+
+    /// Where the run is. Forwarded, so the ~40 existing `run.state` assertions and every
+    /// call site are untouched by the hoist.
+    public var state: RunState {
+        phase.state
+    }
+
+    /// What the stage holds, for the accessibility summary. Rebuilt on transitions only.
+    public var summary: StageSummary {
+        phase.summary
+    }
+
+    /// How many times the summary was rebuilt — i.e. how many state transitions there have
+    /// been. Compare against `revision`, which counts batches: 2 against 139 for
+    /// `octagonRosette`.
+    public var summaryRevision: Int {
+        phase.revision
+    }
+
     public private(set) var display = StitchDisplayList()
     public private(set) var needle: PreviewNeedle?
 
@@ -60,7 +87,7 @@ public struct PreviewRunState: Equatable, Sendable {
     /// count.
     public mutating func begin() {
         clear()
-        state = .running
+        phase.enter(.running, summarising: display, exportModel: exportModel)
     }
 
     /// The pose the stage should draw, or `nil` when no run is in flight.
@@ -110,9 +137,16 @@ public struct PreviewRunState: Equatable, Sendable {
             self.needle = needle
         }
 
+        // **After the append, and that ordering is load-bearing.** The terminal update
+        // carries stitches of its own, so entering the terminal state first would summarise
+        // a display list one frame short — an off-by-one nobody would see on screen and a
+        // VoiceOver user would be told. Pinned by
+        // `theTerminalSummaryIncludesTheTerminalBatch` rather than by this comment.
         if let termination = update.termination {
-            state = .finished(termination.reason)
             exportModel = termination.exportModel
+            phase.enter(
+                .finished(termination.reason), summarising: display, exportModel: exportModel
+            )
         }
 
         // Quantised to `settleChunk`, so the renderer's cached raster is rebuilt a
@@ -138,7 +172,7 @@ public struct PreviewRunState: Equatable, Sendable {
     /// reload-from-disk.
     public mutating func reset() {
         clear()
-        state = .idle
+        phase.enter(.idle, summarising: display, exportModel: exportModel)
     }
 
     private mutating func clear() {

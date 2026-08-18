@@ -68,6 +68,50 @@ struct StagePreviewTargetIsolationTests {
         #expect(fit(list.bounds) == StageGeometry.box)
     }
 
+    /// US-307's zoom is the newest thing on this boundary and by far the most exposed: it
+    /// exists to be driven by `MagnifyGesture` and `DragGesture`, whose values arrive as
+    /// `CGFloat`, `CGSize` and `UnitPoint`. Taking any of those into the package would be the
+    /// obvious shortcut and would move the milestone's "zoom/pan transform math is
+    /// unit-tested" exit criterion behind a simulator boot.
+    ///
+    /// Bound to explicit function types in this file's style, so the shortcut stops the test
+    /// target compiling instead of quietly widening ADR-022. `ViewPoint(unitX:unitY:in:)` is
+    /// the deliberate answer to the `UnitPoint` half — two `Double`s, because naming
+    /// SwiftUI's type here is exactly what this test forbids.
+    @Test("the zoom boundary is Double-based package types, not CoreGraphics or SwiftUI")
+    func theZoomBoundaryIsPackageTypes() {
+        let commit: (inout StageZoom, Double, ViewPoint, ViewPoint, StageTransform) -> Void = {
+            $0.commit(magnification: $1, anchor: $2, pan: $3, fitting: $4)
+        }
+        let adjust: (inout StageZoom, StageZoomAdjustment, StageTransform, ViewSize) -> Void = {
+            $0.adjust($1, fitting: $2, in: $3)
+        }
+        let resolve: (StageZoom) -> (StageTransform) -> StageTransform = { $0.resolved(fitting:) }
+        let magnify: (StageZoom) -> (StageTransform) -> Double = { $0.magnification(fitting:) }
+        let bound: (StageTransform) -> StageZoomBounds = StageZoomBounds.init(fitting:)
+        let clamp: (StageZoomBounds) -> (Double) -> Double = { $0.clamping }
+        let delta: (StageTransform) -> (StageTransform, ViewSize) -> ViewDelta? = {
+            $0.viewDelta(to:in:)
+        }
+        let unit: (Double, Double, ViewSize) -> ViewPoint = ViewPoint.init(unitX:unitY:in:)
+        let summarise: (StitchDisplayList, EmbroideryStream?) -> StageSummary =
+            StageSummary.init(display:exportModel:)
+
+        let viewport = ViewSize(width: 390, height: 500)
+        let fit = StageTransform.fitting(StageGeometry.box, in: viewport)
+        var zoom = StageZoom()
+
+        commit(&zoom, 2, viewport.center, .zero, fit)
+        #expect(resolve(zoom)(fit) == zoom.resolved(fitting: fit))
+        #expect(magnify(zoom)(fit) == zoom.magnification(fitting: fit))
+
+        adjust(&zoom, .zoomIn, fit, viewport)
+        #expect(clamp(bound(fit))(1) == StageZoomBounds(fitting: fit).clamping(1))
+        #expect(delta(fit)(fit, viewport) == fit.viewDelta(to: fit, in: viewport))
+        #expect(unit(0.5, 0.5, viewport) == viewport.center)
+        #expect(summarise(StitchDisplayList(), nil) == .empty)
+    }
+
     /// US-306's run machinery is the next thing on this boundary, and it is the most
     /// likely to acquire an app dependency: a run has a state machine, and
     /// `@Observable`/`Observation` is the obvious reach for it. It must stay out, or
