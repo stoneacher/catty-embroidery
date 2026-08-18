@@ -88,49 +88,54 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                         display: display, transform: render, needle: needle, viewport: viewport
                     )
                 }
-            }
-            // **The mat, painted behind the canvas rather than inside it.**
-            //
-            // `StageFieldView` fills the canvas with the mat, but only across the canvas's own
-            // bounds; a design panned far enough leaves the field's edge visible, and before
-            // this the pane's grouped-background grey showed through (reported by Sebastian
-            // from the running app). Behind everything, this can only ever be the colour the
-            // stage's outside already is.
-            .background(StageChrome.outsideField)
-            // Grabbable across the whole slot rather than only where ink was stroked.
-            .contentShape(Rectangle())
-            .gesture(inspectGesture(viewport: viewport, fitted: fitted))
-            // **A separate modifier, not part of the composition above.** The drag's default
-            // 10 pt minimum distance is what lets these coexist — a double tap never moves,
-            // so the drag never claims it. That makes the pan's threshold load-bearing for a
-            // criterion that looks unrelated to it, and it is **measured, not assumed**:
-            // building with `DragGesture(minimumDistance: 0)` — which would have removed the
-            // threshold and with it the pan's start-jump — made the double-tap a byte-for-byte
-            // no-op on the simulator.
-            .onTapGesture(count: 2) { resetToFit(fitting: fitted) }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(StageAccessibility.label(designName: designName))
-            .accessibilityValue(
-                StageAccessibility.value(
-                    summary: summary,
-                    state: runState,
-                    magnification: interaction.magnification(
-                        gesture: gesture, fitting: fitted, in: viewport
+                // **The mat, painted behind the canvas rather than inside it.**
+                //
+                // `StageFieldView` fills the canvas with the mat, but only across the canvas's
+                // own bounds; a design panned far enough leaves the field's edge visible, and
+                // before this the pane's grouped-background grey showed through (reported by
+                // Sebastian from the running app).
+                .background(StageChrome.outsideField)
+                // Grabbable across the whole slot rather than only where ink was stroked.
+                .contentShape(Rectangle())
+                // **The handlers live inside the shim so they can see `animated`.**
+                //
+                // The model's stored progress jumps to 1 the instant `withAnimation` runs; only
+                // this closure receives the interpolated value. A handler outside it would
+                // interrupt the animation at its *destination*, snapping the stage from what the
+                // user can see to the fit before their gesture applied (Codex round 8).
+                // Re-creating the gestures per animation frame costs nothing a run does not
+                // already cost — `body` re-evaluates once per batch throughout a run, and
+                // gestures are values.
+                .gesture(inspectGesture(viewport: viewport, fitted: fitted, settlingAt: animated))
+                // **A separate modifier, not part of the composition above.** The drag's default
+                // 10 pt minimum distance is what lets these coexist — a double tap never moves,
+                // so the drag never claims it. Measured, not assumed: building with
+                // `DragGesture(minimumDistance: 0)` made the double-tap a byte-for-byte no-op.
+                .onTapGesture(count: 2) { resetToFit(fitting: fitted, settlingAt: animated) }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(StageAccessibility.label(designName: designName))
+                .accessibilityValue(
+                    StageAccessibility.value(
+                        summary: summary,
+                        state: runState,
+                        magnification: interaction.magnification(
+                            gesture: gesture, fitting: fitted, in: viewport
+                        )
                     )
                 )
-            )
-            .accessibilityHint(StageAccessibility.hint(for: runState))
-            .accessibilityAddTraits(.isImage)
-            // Criterion 7: zoom without gestures, for VoiceOver and Switch Control.
-            .accessibilityAdjustableAction { direction in
-                adjust(direction, fitting: fitted, in: viewport)
-            }
-            // **Required rather than a nicety.** Double-tap-to-fit is unreachable with
-            // VoiceOver running — a double tap is VoiceOver's own activate gesture — and
-            // Switch Control has no double tap at all. Without this, a user who zooms in has
-            // no way back, which would make criterion 7 deliver a trap instead of a feature.
-            .accessibilityAction(named: Text(.stageCanvasAccessibilityActionFit)) {
-                resetToFit(fitting: fitted)
+                .accessibilityHint(StageAccessibility.hint(for: runState))
+                .accessibilityAddTraits(.isImage)
+                // Criterion 7: zoom without gestures, for VoiceOver and Switch Control.
+                .accessibilityAdjustableAction { direction in
+                    adjust(direction, fitting: fitted, in: viewport, settlingAt: animated)
+                }
+                // **Required rather than a nicety.** Double-tap-to-fit is unreachable with
+                // VoiceOver running — a double tap is VoiceOver's own activate gesture — and
+                // Switch Control has no double tap at all. Without this, a user who zooms in
+                // has no way back, which would make criterion 7 a trap instead of a feature.
+                .accessibilityAction(named: Text(.stageCanvasAccessibilityActionFit)) {
+                    resetToFit(fitting: fitted, settlingAt: animated)
+                }
             }
         }
     }
@@ -142,14 +147,20 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     /// `.updating` only records what SwiftUI reports; every decision about what that *means* —
     /// whether it is live, what it moves from, whether it changed anything — belongs to
     /// `StageInteraction` and is tested there.
-    private func inspectGesture(viewport: ViewSize, fitted: StageTransform) -> some Gesture {
+    private func inspectGesture(
+        viewport: ViewSize,
+        fitted: StageTransform,
+        settlingAt progress: Double
+    ) -> some Gesture {
         MagnifyGesture()
             .simultaneously(with: DragGesture())
             .updating($gesture) { value, state, _ in
                 state = Self.reading(value)
             }
             .onEnded { value in
-                interaction.commit(Self.reading(value), fitting: fitted, in: viewport)
+                interaction.commit(
+                    Self.reading(value), fitting: fitted, in: viewport, settlingAt: progress
+                )
             }
     }
 
@@ -183,7 +194,10 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     ///
     /// Reduce Motion passes `nil`, which is a legal animation meaning "instantly", so one call
     /// site serves both branches with no branch of its own.
-    private func resetToFit(fitting fitted: StageTransform) {
+    private func resetToFit(fitting fitted: StageTransform, settlingAt progress: Double) {
+        // A reset while one is already running takes over from what is on screen, so a repeated
+        // double-tap cannot jump backwards past the frame the user is looking at.
+        interaction.interrupt(settlingAt: progress)
         guard let settling = interaction.beginSettling(fitting: fitted) else { return }
 
         // Animating a `Double` *inside* the value is what makes the canvas re-stroke at each
@@ -210,11 +224,14 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     private func adjust(
         _ direction: AccessibilityAdjustmentDirection,
         fitting fitted: StageTransform,
-        in viewport: ViewSize
+        in viewport: ViewSize,
+        settlingAt progress: Double
     ) {
         switch direction {
-        case .increment: interaction.adjust(.zoomIn, fitting: fitted, in: viewport)
-        case .decrement: interaction.adjust(.zoomOut, fitting: fitted, in: viewport)
+        case .increment:
+            interaction.adjust(.zoomIn, fitting: fitted, in: viewport, settlingAt: progress)
+        case .decrement:
+            interaction.adjust(.zoomOut, fitting: fitted, in: viewport, settlingAt: progress)
         @unknown default: break
         }
     }

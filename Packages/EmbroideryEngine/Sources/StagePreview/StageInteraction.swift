@@ -170,14 +170,20 @@ public struct StageInteraction: Equatable, Sendable {
     /// A user who deliberately zoomed keeps their transform either way, including one that
     /// happens to coincide with the fit, because a later refit must not move something they
     /// placed.
+    /// - Parameter settlingAt: the fit animation's *visible* progress, if one is in flight.
+    ///   Required because the model's stored progress jumps to 1 the moment `withAnimation`
+    ///   runs — only the view's `Animatable` shim holds the interpolated value — so without it
+    ///   an interruption adopts the destination and the stage snaps from what the user can see
+    ///   to the fit before the gesture applies (Codex round 8).
     public mutating func commit(
         _ gesture: StageGesture,
         fitting fit: StageTransform,
-        in viewport: ViewSize
+        in viewport: ViewSize,
+        settlingAt progress: Double = 1
     ) {
-        // A gesture always ends any animation, at the destination the animation was heading
-        // for — so the commit and the frame the user last saw start from the same place.
-        interrupt()
+        // A gesture always ends any animation — at what is on screen, not at where the
+        // animation was going.
+        interrupt(settlingAt: progress)
 
         guard !(gesture.isIdentity && isFollowingFit) else { return }
         settled = moved(by: gesture, from: settled ?? fit, fitting: fit, in: viewport)
@@ -223,9 +229,16 @@ public struct StageInteraction: Equatable, Sendable {
     /// Called by anything that takes over — a gesture, an accessibility adjustment, a second
     /// double-tap. One method, so "what happens when you interrupt a fit" has one answer instead
     /// of one per caller.
-    public mutating func interrupt() {
-        guard case let .settling(id, _, _, _) = phase else { return }
-        finishSettling(id)
+    /// - Parameter progress: the animation's *visible* progress. At 1 — a completed animation,
+    ///   or a caller with nothing on screen to preserve — the destination is adopted and the
+    ///   stage goes back to following the fit. Below 1 the interpolated transform becomes the
+    ///   user's explicit one, because they took control of a stage that was mid-flight and what
+    ///   they see is what they should keep.
+    public mutating func interrupt(settlingAt progress: Double = 1) {
+        guard case let .settling(_, from, to, _) = phase else { return }
+
+        phase = .idle
+        settled = progress >= 1 ? nil : from.interpolated(to: to, progress: progress)
     }
 
     /// One activation of the accessibility adjustable action.
@@ -236,9 +249,10 @@ public struct StageInteraction: Equatable, Sendable {
     public mutating func adjust(
         _ direction: StageZoomAdjustment,
         fitting fit: StageTransform,
-        in viewport: ViewSize
+        in viewport: ViewSize,
+        settlingAt progress: Double = 1
     ) {
-        interrupt()
+        interrupt(settlingAt: progress)
 
         let factor = switch direction {
         case .zoomIn: Self.adjustmentStep

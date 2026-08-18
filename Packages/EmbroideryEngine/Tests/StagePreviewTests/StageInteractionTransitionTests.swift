@@ -118,6 +118,66 @@ struct StageInteractionTransitionTests {
         #expect(interaction.isFollowingFit)
     }
 
+    /// **The case the real SwiftUI path takes, and the one every other test here missed.**
+    ///
+    /// `withAnimation` sets the model's progress to 1 *immediately*; only the view's
+    /// `Animatable` shim holds the interpolated value. So the honest reproduction of an
+    /// interruption is stored progress 1 with a visible progress of 0.5 — and every earlier test
+    /// drove `settlingProgressed(to: 0.5)`, making the two agree and hiding the discontinuity
+    /// (Codex round 8). Interrupting must adopt what is on **screen**, not the destination.
+    @Test("interrupting an animation adopts the visible transform, not its destination")
+    func interruptingAdoptsTheVisibleTransform() {
+        var interaction = StageInteraction()
+        interaction.commit(Self.pinch(4), fitting: Self.fit, in: Self.viewport)
+        let zoomed = interaction.baseline(fitting: Self.fit)
+        _ = interaction.beginSettling(fitting: Self.fit)
+        interaction.settlingProgressed(to: 1)
+
+        let visible = interaction.baseline(fitting: Self.fit, settlingAt: 0.5)
+        interaction.commit(
+            Self.pan(x: 20, y: 0), fitting: Self.fit, in: Self.viewport, settlingAt: 0.5
+        )
+
+        #expect(interaction.baseline(fitting: Self.fit) == visible.dragged(by: ViewPoint(x: 20, y: 0)))
+        // Which is neither endpoint plus the drag — the two failures this forbids.
+        #expect(interaction.baseline(fitting: Self.fit) != Self.fit.dragged(by: ViewPoint(x: 20, y: 0)))
+        #expect(interaction.baseline(fitting: Self.fit) != zoomed.dragged(by: ViewPoint(x: 20, y: 0)))
+    }
+
+    /// The same for the accessibility path, which had the identical defect.
+    @Test("an adjustment mid-animation zooms from the visible transform")
+    func adjustingMidAnimationUsesTheVisibleTransform() {
+        var interaction = StageInteraction()
+        interaction.commit(Self.pinch(4), fitting: Self.fit, in: Self.viewport)
+        _ = interaction.beginSettling(fitting: Self.fit)
+        interaction.settlingProgressed(to: 1)
+        let visible = interaction.baseline(fitting: Self.fit, settlingAt: 0.5)
+
+        interaction.adjust(.zoomIn, fitting: Self.fit, in: Self.viewport, settlingAt: 0.5)
+
+        let expected = visible.pinched(
+            by: StageInteraction.adjustmentStep,
+            about: Self.viewport.center,
+            within: StageZoomBounds(fitting: Self.fit)
+        )
+        #expect(interaction.baseline(fitting: Self.fit) == expected)
+    }
+
+    /// A *completed* animation still adopts the destination and goes back to following the fit —
+    /// the guard is on progress, so it must not turn every completion into an explicit
+    /// transform, which would silently disable the refit.
+    @Test("a completed animation still returns to following the fit")
+    func aCompletedAnimationFollowsTheFit() {
+        var interaction = StageInteraction()
+        interaction.commit(Self.pinch(4), fitting: Self.fit, in: Self.viewport)
+        _ = interaction.beginSettling(fitting: Self.fit)
+
+        interaction.interrupt(settlingAt: 1)
+
+        #expect(interaction.isFollowingFit)
+        #expect(!interaction.isSettling)
+    }
+
     /// A fitted stage has nothing to animate, and the caller is told so rather than starting a
     /// spring that renders one frame and stops.
     @Test("settling an already-fitted stage does nothing and says so")
