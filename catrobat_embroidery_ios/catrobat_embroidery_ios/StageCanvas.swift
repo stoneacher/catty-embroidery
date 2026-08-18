@@ -52,9 +52,13 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     /// taking over. A cancelled gesture cannot leave the canvas stuck scaled.
     @GestureState private var live = LiveGesture()
 
-    /// The double-tap reset, mid-flight. `@State`, not `@GestureState`: it is app-initiated
-    /// motion with a completion, not a gesture.
-    @State private var settling = ViewDelta.identity
+    /// The fit animation in flight, or `nil`.
+    ///
+    /// Holds the two endpoints and a progress the animation drives, rather than a rendered
+    /// layer's scale and offset. That is the difference between animating *what is drawn* and
+    /// animating *the drawing*: only the first can bring content that was off-screen back
+    /// into frame, which a zoom-out to fit does by definition.
+    @State private var settling: SettlingFit?
 
     /// Which fit animation a completion handler belongs to.
     ///
@@ -79,46 +83,32 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
             let fitted = StageTransform.fitting(
                 StageGeometry.fitTarget(including: display.bounds), in: viewport
             )
-            let transform = zoom.resolved(fitting: fitted)
+            let committed = zoom.resolved(fitting: fitted)
 
-            ZStack {
-                StageFieldView(transform: transform)
-                renderer.makeBody(
-                    display: display, transform: transform, needle: needle, viewport: viewport
-                )
+            StageInterpolatedCanvas(
+                progress: settling?.progress ?? 0,
+                from: settling?.from ?? committed,
+                to: settling?.to ?? committed
+            ) { animated in
+                let current = liveTransform(committed: animated, fitting: fitted, in: viewport)
+                let render: StageRenderTransform = current == committed
+                    ? .settled(committed)
+                    : .live(bake: committed, current: current)
+
+                ZStack {
+                    StageFieldView(transform: current)
+                    renderer.makeBody(
+                        display: display, transform: render, needle: needle, viewport: viewport
+                    )
+                }
             }
-            // **Criterion 3, and it is satisfied by what is *absent* here.** These two
-            // modifiers scale the already-rendered canvas on the GPU; the `StageTransform`
-            // they sit over is untouched until the gesture ends. So
-            // `CanvasStitchLayers.BakeKey` — which reads the transform — cannot change
-            // mid-gesture, and the settled raster is re-baked exactly once, on commit,
-            // rather than sixty times a second. "Re-rasterised on gesture end" is therefore
-            // true by construction rather than by timing.
+            // **The mat, painted behind the canvas rather than inside it.**
             //
-            // The accepted, stated trade-off: for the duration of a pinch-in the whole
-            // canvas is magnified pixels, so it is soft until the fingers lift. Everything
-            // fixed in view points — the needle, the hoop outline, the travel dash — grows
-            // with the blit and snaps back at commit. That is a direct consequence of
-            // ADR-027 fixing the needle in view points, and the alternative (scaling only
-            // the stitch layer) is worse: the needle would visibly detach from the stitch it
-            // is sewing.
-            .scaleEffect(effectScale, anchor: effectAnchor)
-            .offset(effectOffset)
-            // **The mat, painted behind the moving layer** — and it has to be here, *after*
-            // the two effects, rather than inside the `ZStack` above.
-            //
-            // `StageFieldView` fills the canvas with the mat, but it is part of the layer the
-            // gesture moves, so a pan or a pinch-out drags it away from the edge it was
-            // covering and exposes the pane behind: the newly revealed strip flashed the
-            // grouped-background grey for the duration of the gesture and only turned into mat
-            // when the commit re-rendered the field at the new transform (reported by
-            // Sebastian from the running app; my own "the mat fills the vacated area" note was
-            // taken from a *committed* screenshot and wrongly generalised to the gesture).
-            //
-            // `.background` is applied to the *layout* bounds, which geometry effects do not
-            // change — so this stays still while the content it sits behind scales and slides,
-            // which is exactly what a mat should do. Fixed rather than semantic, per ADR-024:
-            // this is inside the canvas.
+            // `StageFieldView` fills the canvas with the mat, but only across the canvas's own
+            // bounds; a design panned far enough leaves the field's edge visible, and before
+            // this the pane's grouped-background grey showed through (reported by Sebastian
+            // from the running app). Behind everything, this can only ever be the colour the
+            // stage's outside already is.
             .background(StageChrome.outsideField)
             // Grabbable across the whole slot rather than only where ink was stroked.
             .contentShape(Rectangle())
@@ -129,9 +119,8 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
             // criterion that looks unrelated to it, and it is **measured, not assumed**:
             // building with `DragGesture(minimumDistance: 0)` — which would have removed the
             // threshold and with it the pan's start-jump — made the double-tap a byte-for-byte
-            // no-op on the simulator. So the jump `LiveGesture.pan` documents is the price of
-            // this line, not an oversight.
-            .onTapGesture(count: 2) { resetToFit(from: transform, to: fitted, in: viewport) }
+            // no-op on the simulator.
+            .onTapGesture(count: 2) { resetToFit(from: committed, to: fitted, in: viewport) }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(StageAccessibility.label(designName: designName))
             .accessibilityValue(
@@ -152,9 +141,32 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
             // Switch Control has no double tap at all. Without this, a user who zooms in has
             // no way back, which would make criterion 7 deliver a trap instead of a feature.
             .accessibilityAction(named: Text(.stageCanvasAccessibilityActionFit)) {
-                resetToFit(from: transform, to: fitted, in: viewport)
+                resetToFit(from: committed, to: fitted, in: viewport)
             }
         }
+    }
+
+    /// The transform this frame draws with: the committed one, moved by whatever gesture is
+    /// in flight.
+    ///
+    /// **Computed through `StageZoom.previewing`, which is the same function `commit` calls.**
+    /// The frame the user sees and the transform they get on release are therefore one
+    /// computation rather than two that must agree — a property this story had already got
+    /// wrong in the opposite direction once.
+    private func liveTransform(
+        committed: StageTransform,
+        fitting fitted: StageTransform,
+        in viewport: ViewSize
+    ) -> StageTransform {
+        guard live != LiveGesture() else { return committed }
+        var moved = zoom
+        moved.overriding(committed)
+        return moved.previewing(
+            magnification: Double(live.magnification),
+            anchor: ViewPoint(unitX: live.anchor.x, unitY: live.anchor.y, in: viewport),
+            pan: ViewPoint(live.pan),
+            fitting: fitted
+        )
     }
 
     // MARK: - Gestures
@@ -180,10 +192,10 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
             .onEnded { value in
                 // Cancels any fit animation in flight, so its completion cannot undo this
                 // commit. Both halves matter: the token invalidates the pending completion,
-                // and clearing `settling` stops a half-finished spring being composited over
-                // a transform that has just moved underneath it.
+                // and clearing `settling` stops a half-finished spring drawing over a
+                // transform that has just moved underneath it.
                 settleGeneration &+= 1
-                settling = .identity
+                settling = nil
 
                 zoom.commit(
                     // `CGFloat` → `Double` explicitly: the package takes `Double` so that no
@@ -211,32 +223,35 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
 
     /// Double-tap, and the "Fit to Hoop" accessibility action.
     ///
-    /// Animated on the same `.scaleEffect`/`.offset` channel the gesture uses, because a
-    /// `StageTransform` in state is not animatable — `Canvas` simply re-strokes from whatever
-    /// it is handed, so `withAnimation` around the assignment animates nothing. The delta is
-    /// pure package math; this only runs it and swaps the transform at completion.
+    /// **Animates a `Double` and re-strokes the canvas at each step**, rather than sliding the
+    /// already-rendered canvas with `.scaleEffect`/`.offset`. The first version did the
+    /// latter, and it could not work: a reset from a zoomed-in view is a zoom *out*, which by
+    /// definition brings content into frame that the canvas never drew, so the animation
+    /// played over a layer with blank edges until it finished. Re-stroking costs a frame's
+    /// worth of `Path` building per step — at M3's counts, nothing; at 50 000, US-309's to
+    /// measure, and it is the same mid-gesture path that story is already told to measure.
     ///
-    /// Reduce Motion passes `nil`, which is a legal animation meaning "instantly", so one
-    /// call site serves both branches with no branch of its own.
+    /// The bake key stays on the committed transform throughout, so the settled raster is
+    /// **not** rebuilt during the animation; it is rebuilt once, when the transform swaps at
+    /// completion.
+    ///
+    /// Reduce Motion passes `nil`, which is a legal animation meaning "instantly", so one call
+    /// site serves both branches with no branch of its own.
     private func resetToFit(from current: StageTransform, to fitted: StageTransform, in viewport: ViewSize) {
         guard !zoom.isFollowingFit else { return }
-        guard let delta = current.viewDelta(to: fitted, in: viewport) else {
-            // Unrepresentable delta: swap without animating, which is always correct.
-            zoom.fitToContent()
-            return
-        }
 
         settleGeneration &+= 1
         let generation = settleGeneration
+        settling = SettlingFit(from: current, to: fitted, progress: 0)
 
         withAnimation(StageMotion.fitAnimation(reduceMotion: reduceMotion)) {
-            settling = delta
+            settling?.progress = 1
         } completion: {
             // A gesture that committed while this spring was running has already bumped the
             // generation; finishing the fit here would throw that commit away.
             guard settleGeneration == generation else { return }
             zoom.fitToContent()
-            settling = .identity
+            settling = nil
         }
     }
 
@@ -258,38 +273,6 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
         }
     }
 
-    // MARK: - The live effect channel
-
-    /// Whether a gesture is in flight, which is what selects between the two channels.
-    private var isGesturing: Bool {
-        live != LiveGesture()
-    }
-
-    /// **A disjunction, not a product**, and it had to become one.
-    ///
-    /// The first version multiplied the gesture's magnification by the settling animation's
-    /// and applied the result about `live.anchor`. An earlier comment claimed the two are
-    /// "never both in flight"; `swift-code-reviewer` measured that they can be — `.gesture`
-    /// stays live for the whole spring, so a flick-pan finishing inside it overlaps — and
-    /// `ViewDelta`'s contract is *scale about the viewport centre*, so the product was
-    /// additionally anchored on the wrong point whenever they did overlap. Choosing one
-    /// channel makes the claim true instead of asserted, and the gesture wins because it is
-    /// the one the user's fingers are on.
-    private var effectScale: CGFloat {
-        isGesturing ? live.magnification : settling.scale
-    }
-
-    /// `.center` for the settling channel, because that is the anchor `ViewDelta` is
-    /// defined about; the gesture's own anchor otherwise.
-    private var effectAnchor: UnitPoint {
-        isGesturing ? live.anchor : .center
-    }
-
-    private var effectOffset: CGSize {
-        isGesturing
-            ? live.pan
-            : CGSize(width: settling.translation.x, height: settling.translation.y)
-    }
 }
 
 /// A gesture's absolute state since it began. See `StageCanvas.live`.
@@ -354,5 +337,39 @@ private struct StageFieldView: View {
         // Decorative: the caption below states the hoop's size, which is everything this
         // shape carries. Same reasoning as `StagePlaceholderView`'s outline.
         .accessibilityHidden(true)
+    }
+}
+
+/// A fit animation in flight: where it started, where it is going, and how far along it is.
+struct SettlingFit: Equatable {
+    let from: StageTransform
+    let to: StageTransform
+    var progress: Double
+}
+
+/// Re-renders its content at an interpolated transform for each step of an animation.
+///
+/// **The reason this exists rather than a `.scaleEffect`.** SwiftUI can only animate values it
+/// can interpolate, and a `StageTransform` is not one — `Canvas` re-strokes from whatever it is
+/// handed. Conforming to `Animatable` on a plain `Double` gives SwiftUI something it *can*
+/// interpolate, and the body then asks the package for the transform at that point. The result
+/// is that the canvas is genuinely re-drawn at each step, which is what lets a zoom-out reveal
+/// content that was previously outside the canvas's bounds.
+///
+/// `progress` is passed straight through when no animation is running (`from == to`), so this
+/// costs a closure call and nothing else in the common case.
+struct StageInterpolatedCanvas<Content: View>: View, Animatable {
+    var progress: Double
+    let from: StageTransform
+    let to: StageTransform
+    @ViewBuilder let content: (StageTransform) -> Content
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    var body: some View {
+        content(from.interpolated(to: to, progress: progress))
     }
 }

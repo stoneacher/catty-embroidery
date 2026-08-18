@@ -90,8 +90,15 @@ struct StagePreviewTargetIsolationTests {
         let magnify: (StageZoom) -> (StageTransform) -> Double = { $0.magnification(fitting:) }
         let bound: (StageTransform) -> StageZoomBounds = StageZoomBounds.init(fitting:)
         let clamp: (StageZoomBounds) -> (Double) -> Double = { $0.clamping }
-        let delta: (StageTransform) -> (StageTransform, ViewSize) -> ViewDelta? = {
-            $0.viewDelta(to:in:)
+        let interpolate: (StageTransform) -> (StageTransform, Double) -> StageTransform = {
+            $0.interpolated(to:progress:)
+        }
+        let preview: (StageZoom) -> (Double, ViewPoint, ViewPoint, StageTransform)
+            -> StageTransform = { subject in
+                { subject.previewing(magnification: $0, anchor: $1, pan: $2, fitting: $3) }
+            }
+        let render: (StageTransform, StageTransform) -> StageRenderTransform = {
+            StageRenderTransform.live(bake: $0, current: $1)
         }
         let unit: (Double, Double, ViewSize) -> ViewPoint = ViewPoint.init(unitX:unitY:in:)
         let summarise: (StitchDisplayList, EmbroideryStream?) -> StageSummary =
@@ -107,7 +114,12 @@ struct StagePreviewTargetIsolationTests {
 
         adjust(&zoom, .zoomIn, fit, viewport)
         #expect(clamp(bound(fit))(1) == StageZoomBounds(fitting: fit).clamping(1))
-        #expect(delta(fit)(fit, viewport) == fit.viewDelta(to: fit, in: viewport))
+        #expect(interpolate(fit)(fit, 0.5) == fit.interpolated(to: fit, progress: 0.5))
+        #expect(
+            preview(zoom)(1, viewport.center, .zero, fit)
+                == zoom.previewing(magnification: 1, anchor: viewport.center, pan: .zero, fitting: fit)
+        )
+        #expect(render(fit, fit).bake == fit)
         #expect(unit(0.5, 0.5, viewport) == viewport.center)
         #expect(summarise(StitchDisplayList(), nil) == .empty)
     }

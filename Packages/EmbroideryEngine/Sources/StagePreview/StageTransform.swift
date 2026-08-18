@@ -325,47 +325,32 @@ public struct StageTransform: Hashable, Sendable {
         return StageTransform(scale: scale, translation: translated)
     }
 
-    /// The view-space similarity that carries **this** transform's rendering onto `other`'s,
-    /// inside `viewport`.
+    /// This transform blended toward `other` by `progress`, clamped to `[0, 1]`.
     ///
-    /// What it is for: animating a transform change. A `StageTransform` in `@State` is not
-    /// animatable — `Canvas` re-strokes from whatever it is handed — so the double-tap reset
-    /// runs on `.scaleEffect`/`.offset` over the already-rendered canvas and swaps the
-    /// transform at completion. This is that delta.
+    /// **What makes an animated transform change possible at all.** A `StageTransform` in
+    /// `@State` is not animatable — `Canvas` re-strokes from whatever it is handed and there
+    /// is nothing between two of them to interpolate — so the double-tap reset animates a
+    /// `Double` and asks for the transform at each step. Re-stroking every frame is the
+    /// point, not a cost to be avoided: sliding an already-rendered layer instead cannot
+    /// reveal content the canvas never drew, which is the defect this method exists to fix.
     ///
-    /// **No y-flip appears here, and that is a derived fact rather than an omission.** Both
-    /// mappings apply `flippingY`, so composing one with the other's inverse cancels it: the
-    /// result is a uniform positive scale plus a translation, in y-down view space.
+    /// Linear in scale rather than geometric. A geometric blend is the better-looking zoom
+    /// over wide ranges, and it is not what this is for: the reset spans one screenful of
+    /// zoom for 0.35 s, where the two are indistinguishable, and linear keeps the endpoints
+    /// exact without a `log`/`exp` pair whose round-trip would need its own finiteness
+    /// argument.
     ///
-    /// `nil` when the delta cannot be represented — the ratio times a distant translation
-    /// overflows — so a caller falls back to swapping the transform without animating, which
-    /// is always correct. Refusing rather than returning `.identity`, for the same reason
-    /// `pinched` refuses: an identity delta would draw the old pixels in the wrong place and
-    /// call it success.
-    public func viewDelta(to other: StageTransform, in viewport: ViewSize) -> ViewDelta? {
-        // Solving `other = delta ∘ self` over view space gives a ratio of scales and the
-        // translation left over once this transform's own placement is scaled out. Both
-        // mappings apply `flippingY`, so the two flips cancel and no sign appears here.
-        //
-        // Pinned by `ViewDeltaTests.theDeltaMapsSourceOntoDestination`, which is the only
-        // test that can pin it: a dedicated "no y-flip" test used to be cited here and
-        // **could not fail**, because a flipped delta is not representable in `ViewDelta`'s
-        // single scalar. Negating the `offsetY` below produces 15 failures, all of them in
-        // the differential test (`swift-code-reviewer`).
-        let ratio = other.scale / scale
-        let residualX = other.translation.x - ratio * translation.x
-        let residualY = other.translation.y - ratio * translation.y
-
-        // Re-anchored on the viewport's centre, because that is the anchor `ViewDelta`
-        // documents and `.scaleEffect(_, anchor: .center)` applies.
-        let centre = viewport.center
-        let offsetX = residualX - centre.x * (1 - ratio)
-        let offsetY = residualY - centre.y * (1 - ratio)
-
-        // The **results**, not the intermediate products — the lesson `centringOffset` and
-        // `pinched` each had to learn twice: there is always one more term, and only one
-        // result.
-        guard ratio.isFinite, ratio > 0, offsetX.isFinite, offsetY.isFinite else { return nil }
-        return ViewDelta(scale: ratio, translation: ViewPoint(x: offsetX, y: offsetY))
+    /// Total by construction — every arithmetic result flows through the `init` chokepoint,
+    /// which is what guarantees the animation cannot produce an unusable transform partway.
+    public func interpolated(to other: StageTransform, progress: Double) -> StageTransform {
+        let blend = progress.isNaN ? 1 : Swift.min(Swift.max(progress, 0), 1)
+        return StageTransform(
+            scale: scale + (other.scale - scale) * blend,
+            translation: ViewPoint(
+                x: translation.x + (other.translation.x - translation.x) * blend,
+                y: translation.y + (other.translation.y - translation.y) * blend
+            )
+        )
     }
+
 }

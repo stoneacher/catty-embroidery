@@ -28,7 +28,7 @@ struct StageViewWiringTests {
     /// to stay within SwiftLint's one-level nesting limit.
     private struct Invocation {
         let display: StitchDisplayList
-        let transform: StageTransform
+        let transform: StageRenderTransform
         let needle: PreviewNeedle?
         let viewport: ViewSize
     }
@@ -39,7 +39,7 @@ struct StageViewWiringTests {
 
         func makeBody(
             display: StitchDisplayList,
-            transform: StageTransform,
+            transform: StageRenderTransform,
             needle: PreviewNeedle?,
             viewport: ViewSize
         ) -> EmptyView {
@@ -130,7 +130,9 @@ struct StageViewWiringTests {
         let expected = StageTransform.fitting(
             StageGeometry.fitTarget(including: list.bounds), in: invocation.viewport
         )
-        #expect(invocation.transform == expected)
+        // `.settled`, because nothing is in flight: a stage at rest bakes and draws with the
+        // same transform, which is what lets the cached raster be used at all.
+        #expect(invocation.transform == .settled(expected))
     }
 
     /// US-307: the renderer draws through the **user's** transform once there is one, not
@@ -169,8 +171,10 @@ struct StageViewWiringTests {
             at: CGSize(width: 390, height: 700)
         )
 
-        #expect(renderer.invocations.last?.transform == zoomed.resolved(fitting: fitted))
-        #expect(renderer.invocations.last?.transform != fitted, "the zoom was ignored")
+        #expect(renderer.invocations.last?.transform == .settled(zoomed.resolved(fitting: fitted)))
+        #expect(
+            renderer.invocations.last?.transform != .settled(fitted), "the zoom was ignored"
+        )
     }
 
     @Test func theRendererIsHandedTheNeedleUnchanged() {

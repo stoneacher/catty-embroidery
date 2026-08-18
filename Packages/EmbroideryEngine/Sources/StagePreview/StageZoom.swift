@@ -80,9 +80,39 @@ public struct StageZoom: Equatable, Sendable {
         pan: ViewPoint,
         fitting fit: StageTransform
     ) {
-        settled = resolved(fitting: fit)
+        settled = previewing(
+            magnification: magnification, anchor: anchor, pan: pan, fitting: fit
+        )
+    }
+
+    /// Where a gesture *would* land if it ended now — the transform to draw the current frame
+    /// with, while the gesture is still in flight.
+    ///
+    /// **The same function `commit` uses, deliberately.** The frame the user sees mid-gesture
+    /// and the transform they get when they lift their fingers are then the same computation
+    /// rather than two that have to agree, so the content cannot shift at commit. That
+    /// property had already been got wrong once the other way round — the first version
+    /// subtracted the drag's threshold live and not at commit, and the content jumped forward
+    /// on release — so it is worth having by construction rather than by care.
+    public func previewing(
+        magnification: Double,
+        anchor: ViewPoint,
+        pan: ViewPoint,
+        fitting fit: StageTransform
+    ) -> StageTransform {
+        resolved(fitting: fit)
             .pinched(by: magnification, about: anchor, within: StageZoomBounds(fitting: fit))
             .dragged(by: pan)
+    }
+
+    /// Treats `transform` as the settled one, without committing anything.
+    ///
+    /// Exists for the mid-gesture preview: the frame is drawn from the committed transform
+    /// *as the animation currently has it*, which during a fit animation is not
+    /// `settled`. Keeping this on the value rather than letting the view reach for
+    /// `previewing`'s internals is what stops the view assembling transforms itself.
+    public mutating func overriding(_ transform: StageTransform) {
+        settled = transform
     }
 
     /// Back to following the fit — the double-tap, and the "Fit to Hoop" accessibility

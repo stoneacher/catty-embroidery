@@ -13,7 +13,7 @@ import SwiftUI
 struct CanvasStitchRenderer: StagePreviewRenderer {
     func makeBody(
         display: StitchDisplayList,
-        transform: StageTransform,
+        transform: StageRenderTransform,
         needle: PreviewNeedle?,
         viewport: ViewSize
     ) -> some View {
@@ -33,7 +33,7 @@ struct CanvasStitchRenderer: StagePreviewRenderer {
         // only stitches leaves this layer's inputs equal and SwiftUI can skip it.
         ZStack {
             CanvasStitchLayers(display: display, transform: transform, viewport: viewport)
-            NeedleLayer(needle: needle, transform: transform)
+            NeedleLayer(needle: needle, transform: transform.current)
         }
     }
 }
@@ -101,7 +101,7 @@ private struct NeedleLayer: View {
 /// on top, per frame.
 private struct CanvasStitchLayers: View {
     let display: StitchDisplayList
-    let transform: StageTransform
+    let transform: StageRenderTransform
     let viewport: ViewSize
 
     /// Below this many settled stitches, baking costs more than it saves — one bake plus
@@ -169,7 +169,12 @@ private struct CanvasStitchLayers: View {
         BakeKey(
             settledCount: display.settledCount,
             resetCount: display.resetCount,
-            transform: transform,
+            // **`bake`, never `current`.** This is the whole of "the settled raster is
+            // re-rasterised on gesture end rather than per frame": while a gesture or the fit
+            // animation is live, `bake` holds still, so this key does too and `onChange` does
+            // not fire. Keying on `current` would rebuild the raster every frame — strictly
+            // worse than having no cache at all.
+            transform: transform.bake,
             width: viewport.width,
             height: viewport.height,
             increasedContrast: contrast == .increased
@@ -185,12 +190,17 @@ private struct CanvasStitchLayers: View {
             // the type system says so, and a future caller framing the renderer smaller
             // would get the seam with no test able to see it. Falling back to `.entire`
             // makes the assumption self-enforcing (`swift-code-reviewer`, US-305).
-            if let baked, baked.key == bakeKey, Self.matches(size, viewport) {
+            // `canUseRaster` is false while a gesture or the fit animation is in flight: the
+            // raster's pixels were baked at `bake`, so compositing them under a tail stroked
+            // at `current` would misplace them. Stroking everything is correct at any
+            // transform and is what makes the frame able to *reveal* content the previous
+            // frame had off-screen — the thing moving an already-rendered layer cannot do.
+            if transform.canUseRaster, let baked, baked.key == bakeKey, Self.matches(size, viewport) {
                 context.draw(baked.image, in: CGRect(origin: .zero, size: size))
                 Self.stroke(
                     .live(of: display),
                     of: display.stitches,
-                    transform: transform,
+                    transform: transform.current,
                     travelOpacity: travelOpacity,
                     into: &context
                 )
@@ -198,7 +208,7 @@ private struct CanvasStitchLayers: View {
                 Self.stroke(
                     .entire(of: display),
                     of: display.stitches,
-                    transform: transform,
+                    transform: transform.current,
                     travelOpacity: travelOpacity,
                     into: &context
                 )
@@ -221,6 +231,9 @@ private struct CanvasStitchLayers: View {
             return
         }
 
+        // Baked at `bake`, which is where the key says it is. During a gesture this branch
+        // is not reached at all, because the key has not changed.
+        let bakeTransform = transform.bake
         let plan = StitchDrawPlan.settled(of: display)
         // `Array(prefix)`, an **explicit copy**, and not `display.stitches` or a slice of
         // it. The renderer closure escapes and outlives this call, so capturing the
@@ -229,7 +242,6 @@ private struct CanvasStitchLayers: View {
         // ADR-021 measured that and calls the explicit copy the *cheaper* option, not
         // the more expensive one.
         let settledPoints = Array(display.stitches[..<settled])
-        let transform = transform
         let travelOpacity = travelOpacity
         let size = CGSize(width: viewport.width, height: viewport.height)
 
@@ -239,7 +251,7 @@ private struct CanvasStitchLayers: View {
                 Self.stroke(
                     plan,
                     of: settledPoints,
-                    transform: transform,
+                    transform: bakeTransform,
                     travelOpacity: travelOpacity,
                     into: &context
                 )

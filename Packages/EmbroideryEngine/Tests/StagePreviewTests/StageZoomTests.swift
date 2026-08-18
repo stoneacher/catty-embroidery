@@ -140,6 +140,56 @@ struct StageZoomTests {
         once.commit(magnification: 2, anchor: anchor, pan: .zero, fitting: Self.fit)
         #expect(twice != once, "were these equal, committing per callback would be harmless")
     }
+    /// **The mid-gesture frame and the committed transform are the same computation.**
+    ///
+    /// `previewing` is what the view draws each frame with while fingers are down, and
+    /// `commit` is what it stores when they lift. If they could differ, the content would
+    /// shift at release — which this story already shipped once, when a threshold subtraction
+    /// applied to one and not the other. Asserted over a spread rather than one case, because
+    /// the failure would be a small offset a single sample could miss.
+    @Test("what a gesture previews is exactly what it commits")
+    func previewMatchesCommitExactly() {
+        let cases = [
+            Gesture(magnification: 1, anchor: ViewPoint(x: 0, y: 0), pan: ViewPoint(x: 0, y: 0)),
+            Gesture(magnification: 2.5, anchor: ViewPoint(x: 300, y: 120), pan: ViewPoint(x: -60, y: 40)),
+            Gesture(magnification: 0.4, anchor: ViewPoint(x: 10, y: 480), pan: ViewPoint(x: 200, y: -150)),
+            Gesture(magnification: 1e6, anchor: ViewPoint(x: 195, y: 250), pan: ViewPoint(x: 5, y: 5)),
+            Gesture(magnification: 1e-6, anchor: ViewPoint(x: 195, y: 250), pan: ViewPoint(x: -5, y: -5))
+        ]
+
+        for gesture in cases {
+            let (magnification, anchor, pan) = (gesture.magnification, gesture.anchor, gesture.pan)
+            var zoom = StageZoom()
+            let previewed = zoom.previewing(
+                magnification: magnification, anchor: anchor, pan: pan, fitting: Self.fit
+            )
+
+            zoom.commit(magnification: magnification, anchor: anchor, pan: pan, fitting: Self.fit)
+
+            #expect(
+                zoom.resolved(fitting: Self.fit) == previewed,
+                "preview and commit disagree at \(magnification)x"
+            )
+        }
+    }
+
+    /// Previewing is **pure**: drawing a frame must not move the stage, or a gesture would
+    /// compound against itself once per frame — the exact bug the single commit exists to
+    /// prevent, arriving through the preview instead.
+    @Test("previewing a gesture leaves the zoom untouched")
+    func previewingDoesNotMutate() {
+        var zoom = StageZoom()
+        zoom.commit(magnification: 2, anchor: Self.viewport.center, pan: .zero, fitting: Self.fit)
+        let before = zoom
+
+        for _ in 0 ..< 10 {
+            _ = zoom.previewing(
+                magnification: 3, anchor: Self.viewport.center, pan: .zero, fitting: Self.fit
+            )
+        }
+
+        #expect(zoom == before)
+    }
 
     @Test("committing a pan moves the stage by exactly the pan")
     func committingAPanMovesByExactlyThePan() {
@@ -207,4 +257,12 @@ struct StageZoomTests {
         let narrow = StageTransform.fitting(StageGeometry.box, in: ViewSize(width: 200, height: 200))
         #expect(zoom.magnification(fitting: narrow) != zoom.magnification(fitting: Self.fit))
     }
+}
+
+/// One gesture's worth of input. A named value rather than a tuple, because SwiftLint caps
+/// tuples at two members and the labels are worth having at the call sites anyway.
+private struct Gesture {
+    let magnification: Double
+    let anchor: ViewPoint
+    let pan: ViewPoint
 }

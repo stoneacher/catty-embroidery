@@ -38,9 +38,8 @@ public struct ViewPoint: Hashable, Sendable {
 ///
 /// The two *mapping* directions remain viewport-free — the translation already carries
 /// wherever the content was placed — but this type is no longer read by `fitting` alone, as
-/// an earlier version of this comment said: US-307 added `viewDelta(to:in:)`,
-/// `StageZoom.adjust(_:fitting:in:)`, `ViewDelta.apply(to:in:)` and
-/// `ViewPoint(unitX:unitY:in:)`, each of which needs the viewport to place something
+/// an earlier version of this comment said: US-307 added `StageZoom.adjust(_:fitting:in:)`
+/// and `ViewPoint(unitX:unitY:in:)`, each of which needs the viewport to place something
 /// relative to its centre (`swift-code-reviewer`).
 public struct ViewSize: Hashable, Sendable {
     public var width: Double
