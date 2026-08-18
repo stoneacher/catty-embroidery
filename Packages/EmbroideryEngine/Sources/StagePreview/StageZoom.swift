@@ -80,40 +80,60 @@ public struct StageZoom: Equatable, Sendable {
         pan: ViewPoint,
         fitting fit: StageTransform
     ) {
-        let next = previewing(
-            magnification: magnification, anchor: anchor, pan: pan, fitting: fit
-        )
+        guard let next = moved(magnification: magnification, anchor: anchor, pan: pan, fitting: fit)
+        else { return }
 
-        // **A gesture that changed nothing must not take the stage off the fit.**
-        //
-        // Pinch to 2× and back to exactly 1× with no pan, then lift: the committed transform
-        // equals the fit, but storing it makes `settled` non-`nil` and the stage stops
-        // following. The design then stays framed for the *old* viewport through a rotation or
-        // an iPad resize — the precise failure `nil`-means-follow-fit exists to prevent, now
-        // triggered by a gesture that did nothing (Codex round 4).
-        //
-        // Only while already following: a user who deliberately zoomed and then made a
-        // net-zero gesture keeps their explicit transform, because theirs is not the fit.
-        guard settled != nil || next != fit else { return }
         settled = next
     }
 
     /// Where a gesture *would* land if it ended now — the transform to draw the current frame
     /// with, while the gesture is still in flight.
     ///
-    /// **The same function `commit` uses, deliberately.** The frame the user sees mid-gesture
-    /// and the transform they get when they lift their fingers are then the same computation
-    /// rather than two that have to agree, so the content cannot shift at commit. That
-    /// property had already been got wrong once the other way round — the first version
-    /// subtracted the drag's threshold live and not at commit, and the content jumped forward
-    /// on release — so it is worth having by construction rather than by care.
+    /// **The same decision `commit` makes, deliberately.** The frame the user sees mid-gesture
+    /// and the transform they get when they lift their fingers come from one function, so the
+    /// content cannot shift at commit. That property had already been got wrong once — a
+    /// threshold subtracted live and not at commit — and then nearly lost again by one ULP,
+    /// when an earlier version of the identity guard skipped the *store* without also
+    /// short-circuiting the *preview*.
     public func previewing(
         magnification: Double,
         anchor: ViewPoint,
         pan: ViewPoint,
         fitting fit: StageTransform
     ) -> StageTransform {
-        resolved(fitting: fit)
+        moved(magnification: magnification, anchor: anchor, pan: pan, fitting: fit)
+            ?? resolved(fitting: fit)
+    }
+
+    /// Where a gesture puts the stage, or `nil` when it puts it exactly where it already was.
+    ///
+    /// **`nil` means "a gesture that changed nothing", and it is decided from the gesture's own
+    /// inputs rather than by comparing transforms.** Pinch to 2× and back to exactly 1× with no
+    /// pan and the result *is* the fit — but storing it makes `settled` non-`nil`, so the stage
+    /// stops following and the design stays framed for a viewport a later rotation or resize
+    /// has already replaced (Codex round 4).
+    ///
+    /// The first attempt asked `next != fit`, an exact comparison over `Double`s, and it fails
+    /// for an asymmetric fit: `pinched(by: 1)` recomputes the translation through a different
+    /// expression and lands one ULP away, so the guard did not fire and the freeze came back
+    /// (Codex round 5, reproduced — the two transforms print identically and compare unequal).
+    /// A tolerance would have been the obvious next patch and the wrong one; "did the user's
+    /// fingers do anything" is an exact question about the inputs, and asking it directly
+    /// removes the floating-point comparison instead of tuning it.
+    ///
+    /// Only while already following the fit: a user who deliberately zoomed keeps their
+    /// explicit transform, including one that happens to coincide with the fit, because a later
+    /// refit must not silently move something they placed.
+    private func moved(
+        magnification: Double,
+        anchor: ViewPoint,
+        pan: ViewPoint,
+        fitting fit: StageTransform
+    ) -> StageTransform? {
+        if settled == nil, magnification == 1, pan == .zero {
+            return nil
+        }
+        return resolved(fitting: fit)
             .pinched(by: magnification, about: anchor, within: StageZoomBounds(fitting: fit))
             .dragged(by: pan)
     }

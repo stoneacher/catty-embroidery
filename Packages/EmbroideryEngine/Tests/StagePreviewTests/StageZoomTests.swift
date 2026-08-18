@@ -208,6 +208,39 @@ struct StageZoomTests {
         #expect(zoom.resolved(fitting: narrow) == narrow)
     }
 
+    /// **The same property for a fit whose arithmetic does not round identically.**
+    ///
+    /// Codex round 5: the first version of this guard compared the committed transform against
+    /// the fit, and `pinched(by: 1)` recomputes the translation through a different expression
+    /// — for this asymmetric content it lands one ULP away, so the comparison said "different",
+    /// the transform was stored, and the freeze returned. The centred-hoop fixture above cannot
+    /// see it, because there the two expressions round to the same bits. This content and
+    /// anchor are Codex's reproducer, kept verbatim.
+    @Test("an identity gesture keeps following an asymmetric fit too")
+    func anIdentityGestureKeepsFollowingAnAsymmetricFit() {
+        let viewport = ViewSize(width: 390, height: 700)
+        let content = StageBox(
+            minX: -250, minY: -250, maxX: 2729.909673862173, maxY: 10178.013339079671
+        )
+        let fit = StageTransform.fitting(StageGeometry.fitTarget(including: content), in: viewport)
+        let anchor = ViewPoint(
+            unitX: 0.7428600790437042, unitY: 0.8085507065239618, in: viewport
+        )
+        var zoom = StageZoom()
+
+        zoom.commit(magnification: 1, anchor: anchor, pan: .zero, fitting: fit)
+
+        #expect(zoom.isFollowingFit)
+        // **The premise that makes this fixture different from the centred one**, asserted
+        // against the operation itself rather than through `previewing`, which now
+        // short-circuits an identity gesture and would hide it: re-deriving the transform lands
+        // a ULP away, so an equality comparison is not a usable test for "did nothing".
+        #expect(
+            fit.pinched(by: 1, about: anchor, within: StageZoomBounds(fitting: fit)) != fit,
+            "premise: re-deriving the transform must differ, or this fixture proves nothing"
+        )
+    }
+
     /// The other half: an identity gesture must not *undo* a zoom the user chose.
     @Test("an identity gesture leaves an explicit transform explicit")
     func anIdentityGestureKeepsAnExplicitTransform() {
