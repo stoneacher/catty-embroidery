@@ -47,10 +47,8 @@ public struct RunPhase: Equatable, Sendable {
         summarising display: StitchDisplayList,
         exportModel: EmbroideryStream?
     ) {
-        // Red-phase stub. The state moves, so US-306's existing run tests keep their
-        // meaning and this story's red is not their red; the summary and its revision are
-        // this story's work and stay unbuilt.
         self.state = state
-        _ = (display, exportModel)
+        summary = StageSummary(display: display, exportModel: exportModel)
+        revision += 1
     }
 }

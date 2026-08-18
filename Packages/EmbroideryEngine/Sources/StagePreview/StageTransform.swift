@@ -343,8 +343,24 @@ public struct StageTransform: Hashable, Sendable {
     /// `pinched` refuses: an identity delta would draw the old pixels in the wrong place and
     /// call it success.
     public func viewDelta(to other: StageTransform, in viewport: ViewSize) -> ViewDelta? {
-        // Red-phase stub.
-        _ = (other, viewport)
-        return nil
+        // Solving `other = delta ∘ self` over view space gives a ratio of scales and the
+        // translation left over once this transform's own placement is scaled out. Both
+        // mappings apply `flippingY`, so the two flips cancel and no sign appears here —
+        // pinned by `ViewDeltaTests.theDeltaCarriesNoYFlip` rather than left to this comment.
+        let ratio = other.scale / scale
+        let residualX = other.translation.x - ratio * translation.x
+        let residualY = other.translation.y - ratio * translation.y
+
+        // Re-anchored on the viewport's centre, because that is the anchor `ViewDelta`
+        // documents and `.scaleEffect(_, anchor: .center)` applies.
+        let centre = viewport.center
+        let offsetX = residualX - centre.x * (1 - ratio)
+        let offsetY = residualY - centre.y * (1 - ratio)
+
+        // The **results**, not the intermediate products — the lesson `centringOffset` and
+        // `pinched` each had to learn twice: there is always one more term, and only one
+        // result.
+        guard ratio.isFinite, ratio > 0, offsetX.isFinite, offsetY.isFinite else { return nil }
+        return ViewDelta(scale: ratio, translation: ViewPoint(x: offsetX, y: offsetY))
     }
 }

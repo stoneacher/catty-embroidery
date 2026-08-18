@@ -61,8 +61,39 @@ public struct StageSummary: Equatable, Sendable {
     /// Total for every input: a stream with no records has no bounding box, an empty
     /// display list has no bounds, and both fall through to zeros rather than trapping.
     public init(display: StitchDisplayList, exportModel: EmbroideryStream?) {
-        // Red-phase stub.
-        _ = (display, exportModel)
-        self = .empty
+        stitchCount = display.count
+        // O(runs), not O(stitches): the runs are already a gapless partition by colour, so
+        // the distinct colours are among their labels and nothing has to scan 50 000 stitches
+        // to find them.
+        colorCount = Set(display.colorRuns.map(\.color)).count
+
+        let extent = Self.extentInMillimetres(display: display, exportModel: exportModel)
+        widthInMillimetres = extent.width
+        heightInMillimetres = extent.height
+    }
+
+    /// The design's size, preferring the export model. Returns zeros rather than trapping for
+    /// every empty or degenerate input.
+    private static func extentInMillimetres(
+        display: StitchDisplayList,
+        exportModel: EmbroideryStream?
+    ) -> (width: Double, height: Double) {
+        if let box = exportModel?.boundingBox {
+            let units = StageGeometry.millimetresPerEmbroideryUnit
+            return (
+                width: Double(box.max.x - box.min.x) * units,
+                height: Double(box.max.y - box.min.y) * units
+            )
+        }
+
+        // No export model yet — a run in flight, or one that produced no records at all.
+        // `bounds` is already `nil` when nothing finite has been stitched and drops a
+        // non-finite edge per axis, so an ADR-021 divergence #5 coordinate cannot make the
+        // spoken size an infinity.
+        guard let bounds = display.bounds else { return (0, 0) }
+        return (
+            width: bounds.width * StageGeometry.millimetresPerPoint,
+            height: bounds.height * StageGeometry.millimetresPerPoint
+        )
     }
 }

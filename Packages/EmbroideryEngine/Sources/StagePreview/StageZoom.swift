@@ -61,9 +61,7 @@ public struct StageZoom: Equatable, Sendable {
     /// guaranteed positive and finite by the `StageTransform` chokepoint, so this cannot
     /// divide by zero.
     public func magnification(fitting fit: StageTransform) -> Double {
-        // Red-phase stub.
-        _ = fit
-        return 0
+        resolved(fitting: fit).scale / fit.scale
     }
 
     /// Folds a finished gesture in: pinch about `anchor`, then pan by `pan`.
@@ -82,14 +80,15 @@ public struct StageZoom: Equatable, Sendable {
         pan: ViewPoint,
         fitting fit: StageTransform
     ) {
-        // Red-phase stub.
-        _ = (magnification, anchor, pan, fit)
+        settled = resolved(fitting: fit)
+            .pinched(by: magnification, about: anchor, within: StageZoomBounds(fitting: fit))
+            .dragged(by: pan)
     }
 
     /// Back to following the fit — the double-tap, and the "Fit to Hoop" accessibility
     /// action that is the only route back for a VoiceOver or Switch Control user.
     public mutating func fitToContent() {
-        // Red-phase stub.
+        settled = nil
     }
 
     /// One activation of the adjustable action.
@@ -109,7 +108,16 @@ public struct StageZoom: Equatable, Sendable {
         fitting fit: StageTransform,
         in viewport: ViewSize
     ) {
-        // Red-phase stub.
-        _ = (direction, fit, viewport)
+        let factor = switch direction {
+        case .zoomIn: Self.adjustmentStep
+        case .zoomOut: 1 / Self.adjustmentStep
+        }
+
+        // Straight through `pinched`, so the anchoring and the clamp are the same code a
+        // gesture uses. An adjustable action that had its own arithmetic would be a second
+        // place for the anchor to drift, and it is the path with no visual feedback loop to
+        // catch it.
+        settled = resolved(fitting: fit)
+            .pinched(by: factor, about: viewport.center, within: StageZoomBounds(fitting: fit))
     }
 }

@@ -61,16 +61,42 @@ struct RunPhaseTests {
     }
 
     /// **The ordering bug this pins is invisible on screen and audible to a VoiceOver user.**
-    /// The terminal update carries stitches of its own, so entering the terminal state before
-    /// appending them would summarise a design one frame short. Asserted against the display
-    /// list the same run ended with, not against a literal.
+    /// A terminal update that carries stitches of its own would be summarised one frame short
+    /// if the state were entered before the append.
+    ///
+    /// **Synthetic, and it has to be.** The obvious version of this test drives a real sample
+    /// and asserts the premise that its terminal batch carries stitches — measured, it carries
+    /// **zero**: a program that finishes on its own does so on a step that emitted nothing, so
+    /// the ordering is unobservable through either bundled sample and the test would have been
+    /// vacuous while looking thorough. (Found by running it: the premise assertion was the one
+    /// thing that failed in the green run.) The path is real all the same — ADR-027 records
+    /// that a stop landing inside a frame rides that frame's stitches out on the terminal
+    /// itself, which is `.stoppedByUser` and is what this fixture is.
     @Test("the terminal summary counts the terminal batch's own stitches")
-    func theTerminalSummaryIncludesTheTerminalBatch() async {
-        let drained = await Self.drainedRosette()
-        let terminal = drained.updates.last
-        #expect(terminal?.termination != nil, "premise: the last update is the terminal one")
-        #expect((terminal?.batch.stitches.count ?? 0) > 0, "premise: it carries stitches")
+    func theTerminalSummaryIncludesTheTerminalBatch() {
+        var run = PreviewRunState()
+        run.begin()
+        run.apply(RunUpdate(batch: RunBatch(stitches: [previewStitch(0, 0)])))
 
+        run.apply(
+            RunUpdate(
+                batch: RunBatch(stitches: [previewStitch(50, 0), previewStitch(50, 50)]),
+                termination: RunTermination(reason: .stoppedByUser, exportModel: EmbroideryStream())
+            )
+        )
+
+        #expect(run.display.count == 3, "premise: the terminal batch carried two stitches")
+        #expect(run.summary.stitchCount == 3, "entering the state before the append gives 1")
+    }
+
+    /// The same claim for a run that ends on its own: the summary describes the whole design.
+    ///
+    /// Weaker than the ordering test above — this sample's terminal batch is empty, so it
+    /// cannot distinguish the two orderings — but it is the one that pins the *number* a
+    /// VoiceOver user actually hears for sample 1.
+    @Test("a finished run's summary counts every stitch the run drew")
+    func aFinishedRunCountsEveryStitch() async {
+        let drained = await Self.drainedRosette()
         var run = PreviewRunState()
         run.begin()
         for update in drained.updates {

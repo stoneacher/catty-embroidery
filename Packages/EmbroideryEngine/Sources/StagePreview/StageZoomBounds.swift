@@ -52,9 +52,10 @@ public struct StageZoomBounds: Equatable, Sendable {
     /// maximumScale]` by `StageTransform.init`, so no sanitising is needed here and none
     /// is done: a second clamp would be a second place to disagree.
     public init(fitting fit: StageTransform) {
-        // Red-phase stub.
-        self.init(minimum: 0, maximum: 0)
-        _ = fit
+        self.init(
+            minimum: Swift.min(fit.scale, StageTransform.minimumScale),
+            maximum: StageTransform.maximumScale
+        )
     }
 
     /// Clamps into these bounds.
@@ -64,8 +65,7 @@ public struct StageZoomBounds: Equatable, Sendable {
     /// non-finite value to the floor turned an enormous zoom *in* into the maximum zoom
     /// *out* (US-302, Codex round 5).
     public func clamping(_ scale: Double) -> Double {
-        // Red-phase stub.
-        _ = scale
-        return 0
+        guard !scale.isNaN else { return minimum }
+        return Swift.min(Swift.max(scale, minimum), maximum)
     }
 }

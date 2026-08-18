@@ -42,9 +42,13 @@ public struct ViewDelta: Equatable, Sendable {
     /// was derived from, rather than against a re-spelling of its own arithmetic. See
     /// `ViewDeltaTests`.
     public func apply(to point: ViewPoint, in viewport: ViewSize) -> ViewPoint {
-        // Red-phase stub.
-        _ = point
-        _ = viewport
-        return .zero
+        // Scale about the viewport's centre, then translate — the exact composition
+        // `.scaleEffect(_, anchor: .center)` followed by `.offset(_)` performs, so this
+        // function and the two modifiers cannot mean different things.
+        let centre = viewport.center
+        return ViewPoint(
+            x: centre.x + (point.x - centre.x) * scale + translation.x,
+            y: centre.y + (point.y - centre.y) * scale + translation.y
+        )
     }
 }
