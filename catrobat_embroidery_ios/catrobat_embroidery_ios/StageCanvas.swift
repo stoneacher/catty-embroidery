@@ -171,13 +171,20 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
         in viewport: ViewSize
     ) -> StageTransform {
         guard live.isActive else { return committed }
-        var moved = zoom
-        moved.overriding(committed)
-        return moved.previewing(
+
+        // **The baseline is passed, never faked.** An earlier version copied `zoom` and called
+        // `overriding(committed)` so the animation's interpolated transform could act as the
+        // starting point — which set `settled`, so the copy was no longer "following the fit"
+        // and the identity guard inside `previewing` could not fire. The frame then re-derived
+        // a transform one ULP from the fit while `commit`, using the real `zoom`, kept the fit
+        // exactly: preview and commit disagreed at release, which is the regression round 5
+        // had just removed, reappearing one layer up (Codex round 6).
+        return zoom.previewing(
             magnification: Double(live.magnification),
             anchor: ViewPoint(unitX: live.anchor.x, unitY: live.anchor.y, in: viewport),
             pan: ViewPoint(live.pan),
-            fitting: fitted
+            fitting: fitted,
+            from: committed
         )
     }
 

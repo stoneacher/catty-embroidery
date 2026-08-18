@@ -95,14 +95,18 @@ public struct StageZoom: Equatable, Sendable {
     /// threshold subtracted live and not at commit — and then nearly lost again by one ULP,
     /// when an earlier version of the identity guard skipped the *store* without also
     /// short-circuiting the *preview*.
+    /// - Parameter baseline: what the gesture moves *from*, when that is not the resolved
+    ///   transform — the fit animation's interpolated value, for the one or two frames where a
+    ///   gesture and an animation overlap. Defaults to the resolved transform.
     public func previewing(
         magnification: Double,
         anchor: ViewPoint,
         pan: ViewPoint,
-        fitting fit: StageTransform
+        fitting fit: StageTransform,
+        from baseline: StageTransform? = nil
     ) -> StageTransform {
-        moved(magnification: magnification, anchor: anchor, pan: pan, fitting: fit)
-            ?? resolved(fitting: fit)
+        moved(magnification: magnification, anchor: anchor, pan: pan, fitting: fit, from: baseline)
+            ?? baseline ?? resolved(fitting: fit)
     }
 
     /// Where a gesture puts the stage, or `nil` when it puts it exactly where it already was.
@@ -128,24 +132,15 @@ public struct StageZoom: Equatable, Sendable {
         magnification: Double,
         anchor: ViewPoint,
         pan: ViewPoint,
-        fitting fit: StageTransform
+        fitting fit: StageTransform,
+        from baseline: StageTransform? = nil
     ) -> StageTransform? {
         if settled == nil, magnification == 1, pan == .zero {
             return nil
         }
-        return resolved(fitting: fit)
+        return (baseline ?? resolved(fitting: fit))
             .pinched(by: magnification, about: anchor, within: StageZoomBounds(fitting: fit))
             .dragged(by: pan)
-    }
-
-    /// Treats `transform` as the settled one, without committing anything.
-    ///
-    /// Exists for the mid-gesture preview: the frame is drawn from the committed transform
-    /// *as the animation currently has it*, which during a fit animation is not
-    /// `settled`. Keeping this on the value rather than letting the view reach for
-    /// `previewing`'s internals is what stops the view assembling transforms itself.
-    public mutating func overriding(_ transform: StageTransform) {
-        settled = transform
     }
 
     /// Back to following the fit — the double-tap, and the "Fit to Hoop" accessibility

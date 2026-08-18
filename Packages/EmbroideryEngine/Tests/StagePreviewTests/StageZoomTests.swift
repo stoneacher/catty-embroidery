@@ -241,6 +241,49 @@ struct StageZoomTests {
         )
     }
 
+    /// **The baseline must not smuggle away "following the fit".**
+    ///
+    /// Codex round 6: the view needs a gesture to start from the fit animation's interpolated
+    /// transform for the frame or two where a gesture and an animation overlap, and it did that
+    /// by copying the zoom and forcing `settled` — which made the copy explicit, so the identity
+    /// guard could not fire, so the frame re-derived a transform one ULP from the fit while
+    /// `commit` kept the fit exactly. The baseline is a parameter now, and this pins that
+    /// passing one does not change whether the stage is following.
+    @Test("an explicit baseline does not make an identity gesture effectful")
+    func anExplicitBaselineKeepsTheIdentityGuard() {
+        let zoom = StageZoom()
+        let baseline = StageTransform(scale: 0.4, translation: ViewPoint(x: 12, y: -8))
+
+        let previewed = zoom.previewing(
+            magnification: 1,
+            anchor: Self.viewport.center,
+            pan: .zero,
+            fitting: Self.fit,
+            from: baseline
+        )
+
+        // The baseline is returned untouched, not re-derived through `pinched`.
+        #expect(previewed == baseline)
+    }
+
+    /// And a baseline *is* honoured for a gesture that did something — otherwise the frame
+    /// would jump back to the resolved transform the moment the user moved.
+    @Test("a real gesture moves from the baseline it was given")
+    func aRealGestureMovesFromTheBaseline() {
+        let zoom = StageZoom()
+        let baseline = StageTransform(scale: 0.4, translation: ViewPoint(x: 12, y: -8))
+        let anchor = Self.viewport.center
+
+        let previewed = zoom.previewing(
+            magnification: 2, anchor: anchor, pan: .zero, fitting: Self.fit, from: baseline
+        )
+
+        let expected = baseline
+            .pinched(by: 2, about: anchor, within: StageZoomBounds(fitting: Self.fit))
+        #expect(previewed == expected)
+        #expect(previewed != zoom.previewing(magnification: 2, anchor: anchor, pan: .zero, fitting: Self.fit))
+    }
+
     /// The other half: an identity gesture must not *undo* a zoom the user chose.
     @Test("an identity gesture leaves an explicit transform explicit")
     func anIdentityGestureKeepsAnExplicitTransform() {

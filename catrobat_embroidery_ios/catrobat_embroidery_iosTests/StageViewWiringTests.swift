@@ -314,3 +314,82 @@ struct StageContentStateTests {
         )
     }
 }
+
+/// US-307 criterion 7, at the only layer that can prove it: **the accessibility controls are
+/// actually attached to the canvas.**
+///
+/// `StageAccessibilityTests` proves the *strings* are right, and could not prove this — deleting
+/// `.accessibilityAdjustableAction` or the named "Fit to Hoop" action from `StageCanvas` leaves
+/// every one of them green while removing the feature outright (Codex round 6). That is
+/// acceptance-critical: the adjustable action is the only way a VoiceOver or Switch Control user
+/// can zoom at all, and the named action is their only way back.
+///
+/// It walks the hosted view's real accessibility tree, which is what VoiceOver reads, rather
+/// than inspecting SwiftUI values — so it fails for a modifier that is present but ineffective,
+/// not merely for one that is absent.
+@MainActor
+@Suite("Stage accessibility wiring")
+struct StageAccessibilityWiringTests {
+    /// Every accessibility element under `root`, depth-first.
+    private static func elements(under root: NSObject) -> [NSObject] {
+        var found: [NSObject] = []
+        if root.isAccessibilityElement {
+            found.append(root)
+        }
+        for index in 0 ..< (root.accessibilityElementCount()) {
+            if let child = root.accessibilityElement(at: index) as? NSObject {
+                found.append(contentsOf: elements(under: child))
+            }
+        }
+        if let view = root as? UIView {
+            for subview in view.subviews {
+                found.append(contentsOf: elements(under: subview))
+            }
+        }
+        return found
+    }
+
+    private static func hostedCanvas() -> [NSObject] {
+        var list = StitchDisplayList()
+        list.append(contentsOf: [
+            PreviewStitch(position: StagePoint(x: 0, y: 0), color: .black),
+            PreviewStitch(position: StagePoint(x: 40, y: 20), color: .black)
+        ])
+
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
+        let controller = UIHostingController(
+            rootView: StageCanvas(
+                display: list,
+                runState: .finished(.programFinished),
+                needle: nil,
+                renderer: CanvasStitchRenderer(),
+                summary: .empty,
+                designName: "Octagon Rosette",
+                zoom: .constant(StageZoom())
+            )
+        )
+        window.rootViewController = controller
+        window.isHidden = false
+        controller.view.frame = window.bounds
+        window.layoutIfNeeded()
+        controller.view.layoutIfNeeded()
+
+        return elements(under: controller.view)
+    }
+
+    @Test func theCanvasExposesOneElementCarryingTheSummary() {
+        let canvas = Self.hostedCanvas().filter { $0.accessibilityLabel?.isEmpty == false }
+
+        #expect(canvas.count == 1, "the canvas must be a single accessibility element")
+        #expect(canvas.first?.accessibilityLabel?.contains("Octagon Rosette") == true)
+    }
+
+    /// Criterion 7's two halves, both of which the string tests cannot see.
+    @Test func theCanvasOffersTheAdjustableActionAndTheNamedFitAction() {
+        let canvas = Self.hostedCanvas().filter { $0.accessibilityLabel?.isEmpty == false }.first
+
+        #expect(canvas?.accessibilityTraits.contains(.adjustable) == true, "zoom is unreachable without gestures")
+        let named = canvas?.accessibilityCustomActions?.map(\.name) ?? []
+        #expect(!named.isEmpty, "there is no way back to the fit without gestures")
+    }
+}
