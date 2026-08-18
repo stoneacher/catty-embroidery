@@ -23,7 +23,12 @@ protocol StagePreviewRenderer {
 
     /// - Parameters:
     ///   - display: what has been stitched, append-only (ADR-021).
-    ///   - transform: stage → view mapping, already fitted by `StageView`.
+    ///   - transform: the stage → view mapping for this frame, and — separately — the one
+    ///     any cached raster may be keyed on. The two differ while a gesture or the fit
+    ///     animation is in flight, which is what lets the frame be re-stroked at the live
+    ///     transform without rebuilding the settled raster sixty times a second. Was a bare
+    ///     `StageTransform` in US-305; widened in US-307, when moving the *rendered layer*
+    ///     instead turned out to be unable to reveal anything the canvas had not drawn.
     ///   - needle: the needle's pose. **Always `nil` in US-305** — nothing in this
     ///     story produces a run, and US-306 owns the needle indicator's appearance and
     ///     accessibility. It is in the signature from the start anyway, because adding
@@ -33,7 +38,7 @@ protocol StagePreviewRenderer {
     ///   - viewport: the size the renderer has to fill, in view points.
     func makeBody(
         display: StitchDisplayList,
-        transform: StageTransform,
+        transform: StageRenderTransform,
         needle: PreviewNeedle?,
         viewport: ViewSize
     ) -> Body

@@ -64,3 +64,16 @@ extension ViewSize {
         self.init(width: size.width, height: size.height)
     }
 }
+
+extension ViewPoint {
+    /// A gesture translation, on the way in to `StageZoom.commit`.
+    ///
+    /// `DragGesture.Value.translation` is a `CGSize` — a displacement, not a position — and
+    /// this is the whole of the conversion. It lives beside the other bridges rather than in
+    /// the stage view because a `CGSize` reaching `StagePreview` is exactly what ADR-022's
+    /// isolation test forbids, and because the view's job is to compose gestures, not to
+    /// re-type their values.
+    init(_ translation: CGSize) {
+        self.init(x: translation.width, y: translation.height)
+    }
+}

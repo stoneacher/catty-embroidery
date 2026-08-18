@@ -28,7 +28,7 @@ struct StageViewWiringTests {
     /// to stay within SwiftLint's one-level nesting limit.
     private struct Invocation {
         let display: StitchDisplayList
-        let transform: StageTransform
+        let transform: StageRenderTransform
         let needle: PreviewNeedle?
         let viewport: ViewSize
     }
@@ -39,7 +39,7 @@ struct StageViewWiringTests {
 
         func makeBody(
             display: StitchDisplayList,
-            transform: StageTransform,
+            transform: StageRenderTransform,
             needle: PreviewNeedle?,
             viewport: ViewSize
         ) -> EmptyView {
@@ -82,7 +82,8 @@ struct StageViewWiringTests {
         display: StitchDisplayList,
         needle: PreviewNeedle?,
         renderer: RecordingRenderer,
-        runState: RunState = .running
+        runState: RunState = .running,
+        interaction: Binding<StageInteraction> = .constant(StageInteraction())
     ) -> some View {
         StageView(
             sample: SampleLibrary.all.first,
@@ -90,6 +91,8 @@ struct StageViewWiringTests {
             runState: runState,
             needle: needle,
             renderer: renderer,
+            summary: .empty,
+            interaction: interaction,
             onPlay: {},
             onStop: {}
         )
@@ -127,7 +130,51 @@ struct StageViewWiringTests {
         let expected = StageTransform.fitting(
             StageGeometry.fitTarget(including: list.bounds), in: invocation.viewport
         )
-        #expect(invocation.transform == expected)
+        // `.settled`, because nothing is in flight: a stage at rest bakes and draws with the
+        // same transform, which is what lets the cached raster be used at all.
+        #expect(invocation.transform == .settled(expected))
+    }
+
+    /// US-307: the renderer draws through the **user's** transform once there is one, not
+    /// through the fit.
+    ///
+    /// The half of criterion 1 no package test can reach: `StageZoomTests` proves the zoom
+    /// value resolves correctly, and this proves the view actually asks it. A view that kept
+    /// calling `StageTransform.fitting` directly would pass every package test and ignore
+    /// every gesture.
+    @Test func theRendererIsHandedTheZoomsTransformRatherThanTheFit() {
+        let renderer = RecordingRenderer()
+        let list = Self.drawnList()
+        var zoomed = StageInteraction()
+
+        // Hosted twice: once fitted to learn the viewport, then zoomed about its centre — so
+        // the expected transform is derived from the viewport the view really measured rather
+        // than from a guess about SwiftUI's layout arithmetic.
+        Self.hosting(
+            Self.stage(display: list, needle: nil, renderer: renderer),
+            at: CGSize(width: 390, height: 700)
+        )
+        guard let viewport = renderer.invocations.last?.viewport else {
+            #expect(Bool(false), "the fitted pass must reach the renderer")
+            return
+        }
+        let fitted = StageTransform.fitting(
+            StageGeometry.fitTarget(including: list.bounds), in: viewport
+        )
+        zoomed.commit(StageGesture(magnification: 3), fitting: fitted, in: viewport)
+
+        renderer.invocations.removeAll()
+        Self.hosting(
+            Self.stage(
+                display: list, needle: nil, renderer: renderer, interaction: .constant(zoomed)
+            ),
+            at: CGSize(width: 390, height: 700)
+        )
+
+        #expect(renderer.invocations.last?.transform == .settled(zoomed.baseline(fitting: fitted)))
+        #expect(
+            renderer.invocations.last?.transform != .settled(fitted), "the zoom was ignored"
+        )
     }
 
     @Test func theRendererIsHandedTheNeedleUnchanged() {
@@ -267,3 +314,21 @@ struct StageContentStateTests {
         )
     }
 }
+
+// **A `StageAccessibilityWiringTests` suite lived here and has been removed.** It hosted the
+// canvas, walked the real accessibility tree, and asserted the element carried the summary, the
+// `.adjustable` trait and a named custom action — closing the blind spot both reviewers named,
+// and proven falsifiable by deleting the modifiers.
+//
+// It passed here, repeatedly, and **failed on CI**, and I could not reproduce the failure on
+// this machine even after restarting the simulator. A hosted view's accessibility hierarchy is
+// published lazily and only once the accessibility server is engaged, which is true of a
+// machine that has been running UI-automation tooling all session and not of a clean runner.
+// So the local green was an artefact of my own earlier tooling rather than evidence — and a
+// fix I cannot reproduce a failure for is a fix I cannot verify, which this repo does not ship.
+//
+// The blind spot is therefore **stated rather than covered**: deleting `.accessibilityValue`,
+// the adjustable action or the named fit action from `StageCanvas` leaves every string test
+// green. The manual VoiceOver pass in the story's definition of done is what covers it, and
+// that pass is outstanding. A UI test target would close it properly; there is none, and adding
+// one is not this story's to do.

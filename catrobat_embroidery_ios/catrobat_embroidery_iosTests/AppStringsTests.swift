@@ -43,7 +43,16 @@ struct AppStringsTests {
             // VoiceOver user relies on to tell a finished run from one not yet started.
             (.stageRunPlay, "stage.run.play"),
             (.stageRunStop, "stage.run.stop"),
-            (.stageRunPlayAgain, "stage.run.play.again")
+            (.stageRunPlayAgain, "stage.run.play.again"),
+            // US-307. Two hints, not three: `.idle` is unreachable on the drawn canvas and
+            // shares the stopped hint, so a third entry would be copy no user could hear.
+            // They are listed individually rather than folded together because
+            // `StageAccessibilityTests` additionally pins that they are distinct, which is
+            // what criterion 5's "the hint describes the run state" actually asks for.
+            (.stageCanvasAccessibilityValueStitching, "stage.canvas.accessibility.value.stitching"),
+            (.stageCanvasAccessibilityHintRunning, "stage.canvas.accessibility.hint.running"),
+            (.stageCanvasAccessibilityHintFinished, "stage.canvas.accessibility.hint.finished"),
+            (.stageCanvasAccessibilityActionFit, "stage.canvas.accessibility.action.fit")
         ]
 
         for entry in entries {
@@ -117,5 +126,59 @@ struct AppStringsTests {
         let singular = String(localized: .stageRunLimitNotice(1))
         #expect(singular != rendered, "the entry has no plural variations")
         #expect(singular.contains { $0.isLetter })
+    }
+
+    /// US-307's accessibility entries, in the collapse-detection idiom this file established
+    /// for the hoop caption: when an entry goes missing, `xcstringstool` generates
+    /// `defaultValue: "\(arg1)…"`, so the *literal parts vanish* and only the substituted
+    /// values remain. "≠ key" cannot catch that, because no key is left in the output.
+    @Test func theCanvasAccessibilityEntriesKeepTheirLiteralPartsAroundTheirArguments() {
+        let named = String(localized: .stageCanvasAccessibilityLabelNamed("Octagon Rosette"))
+        #expect(named.contains("Octagon Rosette"))
+        #expect(named != "Octagon Rosette", "the entry collapsed to its argument")
+
+        let size = String(localized: .stageCanvasAccessibilitySize("10 millimetres", "20 millimetres"))
+        #expect(size.contains("10 millimetres"))
+        #expect(size.contains("20 millimetres"))
+        // A separator survives between them — the whole point of the entry, and what a
+        // collapsed fallback loses.
+        #expect(size != "10 millimetres20 millimetres")
+
+        let zoom = String(localized: .stageCanvasAccessibilityZoom("300%"))
+        #expect(zoom.contains("300%"))
+        #expect(zoom != "300%")
+
+        let zoomed = String(localized: .stageCanvasAccessibilityValueZoomed("Zoom 300%.", "3 stitches"))
+        #expect(zoomed.contains("Zoom 300%."))
+        #expect(zoomed.contains("3 stitches"))
+
+        let value = String(localized: .stageCanvasAccessibilityValue("a", "b", "c"))
+        #expect(value.contains("a"))
+        #expect(value.contains("b"))
+        #expect(value.contains("c"))
+        #expect(value != "abc", "the entry collapsed to its arguments")
+    }
+
+    /// Both counts in the summary are pluralised **independently**.
+    ///
+    /// Asserted per count rather than over the composed sentence: a single assertion on the
+    /// whole value passes when only one of the two entries has variations, which is exactly
+    /// the half-done state a reviewer would miss. Languages with dual and paucal forms cannot
+    /// be translated correctly from a single form, and the plural *categories* are the
+    /// translator's to add — what this pins is that the entries have variations at all.
+    @Test func bothSummaryCountsArePluralisedIndependently() {
+        let oneStitch = String(localized: .stageCanvasAccessibilityStitches(1))
+        let manyStitches = String(localized: .stageCanvasAccessibilityStitches(3194))
+        #expect(oneStitch != manyStitches, "stage.canvas.accessibility.stitches has no plural variations")
+        #expect(oneStitch.contains { $0.isLetter })
+
+        let oneColour = String(localized: .stageCanvasAccessibilityColors(1))
+        let manyColours = String(localized: .stageCanvasAccessibilityColors(4))
+        #expect(oneColour != manyColours, "stage.canvas.accessibility.colors has no plural variations")
+        #expect(oneColour.contains { $0.isLetter })
+
+        // And the two entries are not the same string, which a copy-paste of one key into
+        // both call sites would make them.
+        #expect(oneStitch != oneColour)
     }
 }

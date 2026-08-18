@@ -1,3 +1,5 @@
+import EmbroideryEngine
+
 /// ADR-007's virtual stage, in code for the first time: centre origin, y-up,
 /// 500 × 500 points, 1 pt = 2 embroidery units = 0.2 mm — about a 100 × 100 mm
 /// consumer hoop.
@@ -25,6 +27,17 @@ public enum StageGeometry {
 
     /// 100 mm on a side, i.e. the hoop the stage is modelled on.
     public static let sideInMillimetres: Double = sideInPoints * millimetresPerPoint
+
+    /// 0.1 mm — the other half of ADR-007's unit chain, for reading a size off the *export*
+    /// model, whose coordinates are integer embroidery units rather than stage points.
+    ///
+    /// **Derived, never re-typed as `0.1`.** The chain is 1 stage point = 2 embroidery units
+    /// = 0.2 mm, so this is the point value divided by the engine's own conversion factor;
+    /// writing the literal would be a third independent statement of a relationship two
+    /// constants already fix, and the day one of them changed the third would keep
+    /// compiling.
+    public static let millimetresPerEmbroideryUnit: Double =
+        millimetresPerPoint / EmbroideryPoint.stitchPointUnitFactor
 
     /// The hoop outline, centred on the origin.
     public static let box = StageBox(

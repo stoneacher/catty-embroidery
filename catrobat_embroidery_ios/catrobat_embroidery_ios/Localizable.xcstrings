@@ -37,6 +37,66 @@
         }
       }
     },
+    "stage.canvas.accessibility.action.fit": {
+      "comment": "Name of an accessibility action on the embroidery stage that returns the view to showing the whole design at once, undoing any zoom or pan. Spoken by VoiceOver and listed in the Switch Control actions menu, so it must read as an action the user can invoke. This is the only way to undo a zoom for users who cannot double-tap the stage: with VoiceOver running a double tap means \"activate\", and Switch Control has no double tap at all. \"Hoop\" is the frame that holds the fabric in an embroidery machine. Keep it consistent with stage.canvas.accessibility.hint.finished, which names it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fit to Hoop"
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.colors": {
+      "comment": "One part of the VoiceOver description of the embroidery stage, e.g. \"1 colour\". %lld is the number of *distinct* thread colours in the design, not the number of colour changes — a design that switches red, blue, red uses two colours. Spoken aloud, never shown on screen. Add the plural categories your language needs.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld colour"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld colours"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.hint.finished": {
+      "comment": "VoiceOver hint for the embroidery stage whenever a design is not currently being stitched. A hint says what the user can do here; what the stage holds is spoken separately as its value. \"Fit to Hoop\" must match the name of the action stage.canvas.accessibility.action.fit exactly, or the hint will name an action the user cannot find. Describe the result of adjusting rather than naming a gesture — VoiceOver, Switch Control and keyboard users each reach it differently and the system already explains how.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adjust to zoom the design in and out, or use Fit to Hoop to see all of it."
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.hint.running": {
+      "comment": "VoiceOver hint for the embroidery stage while a design is being stitched. A hint says what the user can do here. Mentions that stitching is in progress because that is useful alongside the actions, though it is also spoken as the stage's value for users who have turned hints off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stitching in progress. Adjust to zoom the design in and out."
+          }
+        }
+      }
+    },
     "stage.canvas.accessibility.label": {
       "comment": "Spoken by VoiceOver for the drawing area that shows the embroidery design. A short name for the area only - the description of what it contains (stitch count, colours, size) is added in a later version and is not part of this string.",
       "extractionState": "manual",
@@ -45,6 +105,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "Embroidery stage"
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.label.named": {
+      "comment": "Spoken by VoiceOver as the name of the drawing area that shows the embroidery design, once a design has been chosen. %1$@ is the design's name, already translated. This names the area; what it contains is spoken separately as the area's value. It is read every time the user moves focus here, so keep it short.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Embroidery stage, %1$@"
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.size": {
+      "comment": "The width and height of the finished embroidery design, spoken by VoiceOver as part of the stage's description, e.g. \"98.6 millimetres by 98.6 millimetres\". Both arguments are already-formatted lengths that include their unit name spelled out in full, localized for the reader's region. Do not add a unit, and do not state the unit once for both numbers: its spelling and position change with the number in many languages. The word between them is a dimension separator (width by height) and is spoken aloud, so use a word rather than the multiplication sign used in the visible hoop caption.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ by %2$@"
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.stitches": {
+      "comment": "One part of the VoiceOver description of the embroidery stage, e.g. \"3,194 stitches\". %lld is the number of stitches drawn — \"stitches\" are the individual needle penetrations that make up an embroidery design. Spoken aloud, never shown on screen, so prefer a natural spoken form over an abbreviation. Add the plural categories your language needs.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld stitch"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld stitches"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.value": {
+      "comment": "Spoken by VoiceOver as the contents of the embroidery stage once a design has finished stitching. %1$@ is the number of stitches, %2$@ the number of thread colours and %3$@ the design's size — all three arrive already translated and formatted. The separators are what make VoiceOver pause between the parts: use the punctuation and spacing your language reads naturally aloud. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$@, %3$@"
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.value.stitching": {
+      "comment": "Spoken by VoiceOver as the contents of the embroidery stage while a design is being stitched. Deliberately carries no counts: this description is only re-read when a run starts or ends, so any number here would be spoken once at the start and be wrong for the rest of the run. Say that stitching is happening now — a user who has turned VoiceOver hints off has no other way to learn it from the stage itself.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stitching."
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.value.zoomed": {
+      "comment": "Wraps the VoiceOver description of the embroidery stage once the user has zoomed in or out. %1$@ is the zoom level, %2$@ the description of what the stage holds; both arrive already translated. The zoom level comes first on purpose: VoiceOver re-reads this whole description after every zoom step, so the part that changed has to be heard before the user swipes on. Arguments are positional and may be reordered if that reads better aloud.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.zoom": {
+      "comment": "How far the user has zoomed into the embroidery stage, spoken by VoiceOver after each zoom step. %1$@ is an already-formatted percentage, localized for the reader's region — do not add a percent sign. 100 per cent means the whole design fits on screen. Spoken, never shown on screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoom %1$@."
           }
         }
       }
