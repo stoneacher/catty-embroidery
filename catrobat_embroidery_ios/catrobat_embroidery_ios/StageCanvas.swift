@@ -8,13 +8,19 @@ import SwiftUI
 /// coherent seam: everything here is about *looking at* the design, where what remains in
 /// `StageView` is about the design's state and what to say when there is none.
 ///
-/// **There is no transform arithmetic in this file**, which is US-307's first criterion.
-/// Every number that goes into a `StageTransform` is produced by a pure method in
-/// `StagePreview` — the fit, the anchored pinch, the pan, the adjustable step, the animation
-/// delta — and what is left here is composing gestures and handing their values over. The
-/// two conversions that do happen (`CGSize` → `ViewPoint`, `UnitPoint`'s two `Double`s →
-/// `ViewPoint`) are bridges rather than math, and both live outside this file so ADR-022's
-/// isolation test can see them.
+/// **No arithmetic in this file reaches a `StageTransform`**, which is US-307's first
+/// criterion, stated at the width it actually holds. Every number that goes *into* a
+/// transform is produced by a pure method in `StagePreview` — the fit, the anchored pinch,
+/// the pan, the adjustable step, the animation delta — and the two conversions on the way in
+/// (`CGSize` → `ViewPoint`, `UnitPoint`'s two `Double`s → `ViewPoint`) are bridges rather
+/// than math, living outside this file so ADR-022's isolation test can see them.
+///
+/// The broader claim — "no transform arithmetic here at all" — was made first and was not
+/// true: the effect channel below composes `.scaleEffect`/`.offset` by hand, and an earlier
+/// version also subtracted the drag's threshold before handing the pan over, which is
+/// exactly the arithmetic that turned out to be wrong (see `LiveGesture.pan`). The effect
+/// composition stays, because it is view-space presentation that never reaches a transform;
+/// the subtraction is gone.
 struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     let display: StitchDisplayList
     let runState: RunState
@@ -37,7 +43,9 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     /// cumulative from the gesture's start, so folding each callback in as a delta would
     /// compound them: a pinch whose callbacks read 2, 2, 2 would land at 8× for fingers that
     /// only ever asked for 2×. Holding the absolute value and committing once is what avoids
-    /// that, and `StageZoomTests.onlyTheFinalCumulativeValueIsApplied` is what pins it.
+    /// that; `StageZoomTests.committingTwiceCompounds` pins the package half (commit is not
+    /// idempotent, so the caller must call it once), and the view half is verified on the
+    /// simulator, since no unit test can observe how many times a gesture calls it.
     ///
     /// `@GestureState` rather than `@State`, because it resets itself when a gesture ends —
     /// including one the system cancels for an incoming call, a backgrounding, or VoiceOver
@@ -47,6 +55,17 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     /// The double-tap reset, mid-flight. `@State`, not `@GestureState`: it is app-initiated
     /// motion with a completion, not a gesture.
     @State private var settling = ViewDelta.identity
+
+    /// Which fit animation a completion handler belongs to.
+    ///
+    /// **Not defensive.** `withAnimation(_:completionCriteria:_:completion:)` fires its
+    /// completion unconditionally, and `.gesture` stays live for the whole 0.35 s spring — so
+    /// a flick-pan finishing inside that window committed into `zoom` and was then silently
+    /// overwritten by `fitToContent()`. Measured by `swift-code-reviewer` with the spring
+    /// widened to 6 s: a pan committed mid-animation left the hoop at exactly the fitted
+    /// edge, i.e. the commit was gone. A flick-pan is comfortably under 350 ms, so the
+    /// window is narrow and reachable rather than theoretical.
+    @State private var settleGeneration = 0
 
     /// The single gate ADR-027 asks this story to reuse rather than add a second of. The
     /// *policy* lives in `StageMotion`; this is just the environment read, which is per-view
@@ -83,15 +102,35 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
             // ADR-027 fixing the needle in view points, and the alternative (scaling only
             // the stitch layer) is worse: the needle would visibly detach from the stitch it
             // is sewing.
-            .scaleEffect(scaleEffect(for: live), anchor: live.anchor)
-            .offset(offset(for: live))
+            .scaleEffect(effectScale, anchor: effectAnchor)
+            .offset(effectOffset)
+            // **The mat, painted behind the moving layer** — and it has to be here, *after*
+            // the two effects, rather than inside the `ZStack` above.
+            //
+            // `StageFieldView` fills the canvas with the mat, but it is part of the layer the
+            // gesture moves, so a pan or a pinch-out drags it away from the edge it was
+            // covering and exposes the pane behind: the newly revealed strip flashed the
+            // grouped-background grey for the duration of the gesture and only turned into mat
+            // when the commit re-rendered the field at the new transform (reported by
+            // Sebastian from the running app; my own "the mat fills the vacated area" note was
+            // taken from a *committed* screenshot and wrongly generalised to the gesture).
+            //
+            // `.background` is applied to the *layout* bounds, which geometry effects do not
+            // change — so this stays still while the content it sits behind scales and slides,
+            // which is exactly what a mat should do. Fixed rather than semantic, per ADR-024:
+            // this is inside the canvas.
+            .background(StageChrome.outsideField)
             // Grabbable across the whole slot rather than only where ink was stroked.
             .contentShape(Rectangle())
             .gesture(inspectGesture(viewport: viewport, fitted: fitted))
             // **A separate modifier, not part of the composition above.** The drag's default
             // 10 pt minimum distance is what lets these coexist — a double tap never moves,
             // so the drag never claims it. That makes the pan's threshold load-bearing for a
-            // criterion that looks unrelated to it.
+            // criterion that looks unrelated to it, and it is **measured, not assumed**:
+            // building with `DragGesture(minimumDistance: 0)` — which would have removed the
+            // threshold and with it the pan's start-jump — made the double-tap a byte-for-byte
+            // no-op on the simulator. So the jump `LiveGesture.pan` documents is the price of
+            // this line, not an oversight.
             .onTapGesture(count: 2) { resetToFit(from: transform, to: fitted, in: viewport) }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(StageAccessibility.label(designName: designName))
@@ -135,24 +174,24 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                     state.anchor = pinch.startAnchor
                 }
                 if let pan = value.second {
-                    // The drag's threshold distance arrives in the first translation, so
-                    // applying it raw would jump the content by 10 pt at pan start. The
-                    // origin is subtracted out instead; the price, stated, is that the
-                    // finger leads the content by that much for the rest of the pan.
-                    if state.panOrigin == nil {
-                        state.panOrigin = pan.translation
-                    }
                     state.pan = pan.translation
                 }
             }
             .onEnded { value in
+                // Cancels any fit animation in flight, so its completion cannot undo this
+                // commit. Both halves matter: the token invalidates the pending completion,
+                // and clearing `settling` stops a half-finished spring being composited over
+                // a transform that has just moved underneath it.
+                settleGeneration &+= 1
+                settling = .identity
+
                 zoom.commit(
                     // `CGFloat` → `Double` explicitly: the package takes `Double` so that no
                     // CoreGraphics type crosses ADR-022's boundary, and an implicit widening
                     // is exactly the shortcut the isolation test exists to make impossible.
                     magnification: Double(value.first?.magnification ?? 1),
                     anchor: anchorPoint(of: value.first, in: viewport),
-                    pan: ViewPoint(liveOffset(of: value.second)),
+                    pan: ViewPoint(value.second?.translation ?? .zero),
                     fitting: fitted
                 )
             }
@@ -166,15 +205,6 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     private func anchorPoint(of pinch: MagnifyGesture.Value?, in viewport: ViewSize) -> ViewPoint {
         guard let pinch else { return viewport.center }
         return ViewPoint(unitX: pinch.anchorUnitX, unitY: pinch.anchorUnitY, in: viewport)
-    }
-
-    private func liveOffset(of drag: DragGesture.Value?) -> CGSize {
-        guard let drag else { return .zero }
-        let origin = live.panOrigin ?? .zero
-        return CGSize(
-            width: drag.translation.width - origin.width,
-            height: drag.translation.height - origin.height
-        )
     }
 
     // MARK: - Programmatic transform changes
@@ -196,9 +226,15 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
             return
         }
 
+        settleGeneration &+= 1
+        let generation = settleGeneration
+
         withAnimation(StageMotion.fitAnimation(reduceMotion: reduceMotion)) {
             settling = delta
         } completion: {
+            // A gesture that committed while this spring was running has already bumped the
+            // generation; finishing the fit here would throw that commit away.
+            guard settleGeneration == generation else { return }
             zoom.fitToContent()
             settling = .identity
         }
@@ -224,18 +260,35 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
 
     // MARK: - The live effect channel
 
-    /// The gesture's magnification and the reset animation's, multiplied — they are never
-    /// both in flight, so this is a union rather than a composition.
-    private func scaleEffect(for live: LiveGesture) -> CGFloat {
-        live.magnification * settling.scale
+    /// Whether a gesture is in flight, which is what selects between the two channels.
+    private var isGesturing: Bool {
+        live != LiveGesture()
     }
 
-    private func offset(for live: LiveGesture) -> CGSize {
-        let origin = live.panOrigin ?? .zero
-        return CGSize(
-            width: live.pan.width - origin.width + settling.translation.x,
-            height: live.pan.height - origin.height + settling.translation.y
-        )
+    /// **A disjunction, not a product**, and it had to become one.
+    ///
+    /// The first version multiplied the gesture's magnification by the settling animation's
+    /// and applied the result about `live.anchor`. An earlier comment claimed the two are
+    /// "never both in flight"; `swift-code-reviewer` measured that they can be — `.gesture`
+    /// stays live for the whole spring, so a flick-pan finishing inside it overlaps — and
+    /// `ViewDelta`'s contract is *scale about the viewport centre*, so the product was
+    /// additionally anchored on the wrong point whenever they did overlap. Choosing one
+    /// channel makes the claim true instead of asserted, and the gesture wins because it is
+    /// the one the user's fingers are on.
+    private var effectScale: CGFloat {
+        isGesturing ? live.magnification : settling.scale
+    }
+
+    /// `.center` for the settling channel, because that is the anchor `ViewDelta` is
+    /// defined about; the gesture's own anchor otherwise.
+    private var effectAnchor: UnitPoint {
+        isGesturing ? live.anchor : .center
+    }
+
+    private var effectOffset: CGSize {
+        isGesturing
+            ? live.pan
+            : CGSize(width: settling.translation.x, height: settling.translation.y)
     }
 }
 
@@ -244,9 +297,21 @@ struct LiveGesture: Equatable {
     var magnification: CGFloat = 1
     var anchor: UnitPoint = .center
 
-    /// `nil` until the drag's first callback, which already carries the recognizer's
-    /// threshold distance.
-    var panOrigin: CGSize?
+    /// The drag's translation, **including the recognizer's threshold distance**.
+    ///
+    /// An earlier version subtracted the first callback's translation so the content would
+    /// not jump by the ~10 pt threshold when a pan starts. That was wrong in a way only
+    /// measurement found: `@GestureState` has already reset by the time `onEnded` runs, so
+    /// the origin read there was always `nil` and the *commit* used the raw translation while
+    /// the *live* offset had subtracted it — moving the content forward by the threshold at
+    /// finger-lift, which is a worse artefact than the one it was avoiding and the opposite
+    /// of what the comment claimed (`swift-code-reviewer`, measured at 101 pt committed for a
+    /// 101 pt drag whose live offset had shown 91).
+    ///
+    /// Not subtracting anywhere is the fix: live and committed are then the *same* number by
+    /// construction rather than by two pieces of code agreeing. The price is the jump the
+    /// subtraction existed to avoid, now paid at pan **start**, where it reads as the drag
+    /// catching rather than as the content slipping after the finger stops.
     var pan: CGSize = .zero
 }
 

@@ -44,12 +44,12 @@ struct AppStringsTests {
             (.stageRunPlay, "stage.run.play"),
             (.stageRunStop, "stage.run.stop"),
             (.stageRunPlayAgain, "stage.run.play.again"),
-            // US-307. The three hints are listed individually rather than folded
-            // together because `StageAccessibilityTests` additionally pins that they are
-            // pairwise distinct, which is what criterion 5's "the hint describes the run
-            // state" actually asks for.
+            // US-307. Two hints, not three: `.idle` is unreachable on the drawn canvas and
+            // shares the stopped hint, so a third entry would be copy no user could hear.
+            // They are listed individually rather than folded together because
+            // `StageAccessibilityTests` additionally pins that they are distinct, which is
+            // what criterion 5's "the hint describes the run state" actually asks for.
             (.stageCanvasAccessibilityValueStitching, "stage.canvas.accessibility.value.stitching"),
-            (.stageCanvasAccessibilityHintIdle, "stage.canvas.accessibility.hint.idle"),
             (.stageCanvasAccessibilityHintRunning, "stage.canvas.accessibility.hint.running"),
             (.stageCanvasAccessibilityHintFinished, "stage.canvas.accessibility.hint.finished"),
             (.stageCanvasAccessibilityActionFit, "stage.canvas.accessibility.action.fit")

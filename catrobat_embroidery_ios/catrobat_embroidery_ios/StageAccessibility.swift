@@ -59,11 +59,19 @@ enum StageAccessibility {
     /// Hints are spoken last, after a delay, and can be switched off entirely (VoiceOver →
     /// Verbosity → Speak Hints) — which is why the run state is carried in the *value* as
     /// well rather than only here.
+    ///
+    /// **`.idle` shares the finished hint rather than owning one, because it is unreachable
+    /// here.** The canvas exists only in `StageContentState.drawn`, which needs
+    /// `hasStitches || isRunning`, and the sole route to `.idle` is `PreviewRunState.reset()`
+    /// — which empties the display list on its way. So `.idle` with something drawn cannot
+    /// happen. A third catalog entry did ship briefly; it was a full sentence heading for ~75
+    /// Crowdin translators that no user could ever hear, and it is deleted rather than
+    /// documented (`swift-code-reviewer`). The switch stays exhaustive, so a fourth `RunState`
+    /// case would still be a compile error here.
     static func hint(for state: RunState) -> String {
         switch state {
         case .running: String(localized: .stageCanvasAccessibilityHintRunning)
-        case .idle: String(localized: .stageCanvasAccessibilityHintIdle)
-        case .finished: String(localized: .stageCanvasAccessibilityHintFinished)
+        case .idle, .finished: String(localized: .stageCanvasAccessibilityHintFinished)
         }
     }
 

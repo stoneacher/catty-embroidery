@@ -111,31 +111,34 @@ struct StageZoomTests {
         }
     }
 
-    /// **A cumulative gesture must land where its final value says, not where the product of
-    /// its callbacks says.** `MagnifyGesture.Value.magnification` is absolute since the
-    /// gesture began, so an implementation that folded each callback in as a delta would
-    /// reach 2 × 2 × 2 = 8 for a pinch whose callbacks read 2, then 2, then 2 — and the
-    /// user's fingers only ever asked for 2. This is the defect the single-commit design
-    /// exists to prevent, and it is invisible to a test that commits once.
-    @Test("only the gesture's final cumulative value is applied, never the product")
-    func onlyTheFinalCumulativeValueIsApplied() {
+    /// **`commit` compounds, which is why the caller must call it once per gesture.**
+    ///
+    /// This replaces a test that could not fail. The original meant to assert "only the
+    /// gesture's final cumulative value is applied, never the product", looped over 1.4, 1.8
+    /// and 2.0 — and re-created the subject *inside* the loop, so the whole loop was the
+    /// single commit it compared against and the assertion reduced to `once == once`
+    /// (`swift-code-reviewer`; deleting that one line makes it fail at 5.04×, exactly the
+    /// number its own comment predicted).
+    ///
+    /// It could not be repaired in place, because the property it named is not this type's.
+    /// `commit` is *supposed* to compound — that is what folding a gesture into a transform
+    /// means — and "applied exactly once" is a fact about how many times the **view** calls
+    /// it, which no package test can observe. So what is pinned here is the contract the view
+    /// relies on, written as the thing that breaks if the view ever commits per callback; the
+    /// view's half is measured on the simulator instead.
+    @Test("commit compounds, so a gesture must be committed exactly once")
+    func committingTwiceCompounds() {
         let anchor = ViewPoint(x: 195, y: 250)
-        var stepwise = StageZoom()
-        for magnification in [1.4, 1.8, 2.0] {
-            stepwise = StageZoom()
-            stepwise.commit(
-                magnification: magnification, anchor: anchor, pan: .zero, fitting: Self.fit
-            )
-        }
+        var twice = StageZoom()
+
+        twice.commit(magnification: 2, anchor: anchor, pan: .zero, fitting: Self.fit)
+        twice.commit(magnification: 2, anchor: anchor, pan: .zero, fitting: Self.fit)
+
+        #expect(abs(twice.magnification(fitting: Self.fit) - 4) < 1e-9)
 
         var once = StageZoom()
-        once.commit(magnification: 2.0, anchor: anchor, pan: .zero, fitting: Self.fit)
-
-        #expect(stepwise == once)
-        #expect(
-            abs(stepwise.magnification(fitting: Self.fit) - 2) < 1e-9,
-            "a cumulative 2× must be 2×, not 5.04×"
-        )
+        once.commit(magnification: 2, anchor: anchor, pan: .zero, fitting: Self.fit)
+        #expect(twice != once, "were these equal, committing per callback would be harmless")
     }
 
     @Test("committing a pan moves the stage by exactly the pan")

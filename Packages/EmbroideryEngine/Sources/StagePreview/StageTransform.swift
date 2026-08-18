@@ -345,8 +345,13 @@ public struct StageTransform: Hashable, Sendable {
     public func viewDelta(to other: StageTransform, in viewport: ViewSize) -> ViewDelta? {
         // Solving `other = delta ∘ self` over view space gives a ratio of scales and the
         // translation left over once this transform's own placement is scaled out. Both
-        // mappings apply `flippingY`, so the two flips cancel and no sign appears here —
-        // pinned by `ViewDeltaTests.theDeltaCarriesNoYFlip` rather than left to this comment.
+        // mappings apply `flippingY`, so the two flips cancel and no sign appears here.
+        //
+        // Pinned by `ViewDeltaTests.theDeltaMapsSourceOntoDestination`, which is the only
+        // test that can pin it: a dedicated "no y-flip" test used to be cited here and
+        // **could not fail**, because a flipped delta is not representable in `ViewDelta`'s
+        // single scalar. Negating the `offsetY` below produces 15 failures, all of them in
+        // the differential test (`swift-code-reviewer`).
         let ratio = other.scale / scale
         let residualX = other.translation.x - ratio * translation.x
         let residualY = other.translation.y - ratio * translation.y

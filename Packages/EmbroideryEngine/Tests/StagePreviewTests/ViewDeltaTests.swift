@@ -57,20 +57,16 @@ struct ViewDeltaTests {
         }
     }
 
-    /// **The flip cancels, and that is a derived fact worth its own test.** Both transforms
-    /// apply `flippingY`, so the delta between them is a *positive* uniform scale in y-down
-    /// view space. A delta that had inherited one flip would map the design mirrored — and
-    /// the differential test above would catch it, but not say what went wrong.
-    @Test("the delta carries no y-flip, so its scale is positive")
-    func theDeltaCarriesNoYFlip() throws {
-        let from = StageTransform(scale: 0.6, translation: ViewPoint(x: 195, y: 250))
-        let to = StageTransform(scale: 2.4, translation: ViewPoint(x: 100, y: 100))
-
-        let delta = try #require(from.viewDelta(to: to, in: Self.viewport))
-
-        #expect(delta.scale > 0)
-        #expect(abs(delta.scale - to.scale / from.scale) < 1e-12)
-    }
+    // **A `theDeltaCarriesNoYFlip` test used to sit here; it has been deleted rather than
+    // repaired.** It asserted `delta.scale > 0` and that the scale equalled
+    // `to.scale / from.scale`. Neither can fail: `ViewDelta` holds a single scalar, so a
+    // delta that had inherited a flip is not representable in the type, and both scales are
+    // positive by the `StageTransform` chokepoint — while the second assertion merely
+    // re-spelled the implementation's own `ratio` line. Proven by negating `offsetY` in
+    // `viewDelta`: 15 failures, **all** in `theDeltaMapsSourceOntoDestination`, while the
+    // flip test stayed green through the one error its name promised to catch
+    // (`swift-code-reviewer`). The differential test above already covers the property, and
+    // a second test that cannot fail only makes the suite look thorough.
 
     @Test("the delta from a transform to itself is the identity")
     func theDeltaToItselfIsTheIdentity() throws {

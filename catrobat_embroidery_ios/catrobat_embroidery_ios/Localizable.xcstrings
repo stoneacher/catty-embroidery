@@ -74,25 +74,13 @@
       }
     },
     "stage.canvas.accessibility.hint.finished": {
-      "comment": "VoiceOver hint for the embroidery stage once a design has finished stitching. A hint says what the user can do here. \"Fit to Hoop\" must match the name of the action stage.canvas.accessibility.action.fit exactly, or the hint will name an action the user cannot find.",
+      "comment": "VoiceOver hint for the embroidery stage whenever a design is not currently being stitched. A hint says what the user can do here; what the stage holds is spoken separately as its value. \"Fit to Hoop\" must match the name of the action stage.canvas.accessibility.action.fit exactly, or the hint will name an action the user cannot find. Describe the result of adjusting rather than naming a gesture — VoiceOver, Switch Control and keyboard users each reach it differently and the system already explains how.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Adjust to zoom the design in and out, or use Fit to Hoop to see all of it."
-          }
-        }
-      }
-    },
-    "stage.canvas.accessibility.hint.idle": {
-      "comment": "VoiceOver hint for the embroidery stage before a design has been run. A hint says what the user can do here; what the stage holds is spoken separately as its value. Describe the result of adjusting rather than naming a gesture — VoiceOver, Switch Control and keyboard users each reach it differently and the system already explains how.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adjust to zoom the design in and out."
           }
         }
       }

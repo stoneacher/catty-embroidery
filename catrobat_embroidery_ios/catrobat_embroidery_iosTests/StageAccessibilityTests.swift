@@ -165,17 +165,24 @@ struct StageAccessibilityTests {
 
     // MARK: - Hint
 
-    /// Criterion 5 asks the hint to describe the run state as well as the actions, so the
-    /// three states must be distinguishable rather than one string reused.
-    @Test func theHintDiffersForEveryRunState() {
-        let hints = [
-            StageAccessibility.hint(for: .idle),
-            StageAccessibility.hint(for: .running),
-            StageAccessibility.hint(for: .finished(.programFinished))
-        ]
+    /// Criterion 5 asks the hint to describe the run state as well as the actions, so a
+    /// running stage and a stopped one must be distinguishable rather than one string reused.
+    ///
+    /// **Two hints, not three**, and the earlier three-way version is why this comment exists:
+    /// it asserted `.idle` was distinct, which kept a catalog entry alive that no user can
+    /// ever hear — the canvas only exists once something is drawn, and the only route to
+    /// `.idle` clears the display on the way (`swift-code-reviewer`). A test can keep dead
+    /// copy alive just as easily as it can pin live behaviour.
+    @Test func theHintDistinguishesARunningStageFromAStoppedOne() {
+        let running = StageAccessibility.hint(for: .running)
+        let finished = StageAccessibility.hint(for: .finished(.programFinished))
 
-        #expect(Set(hints).count == 3)
-        #expect(hints.allSatisfy { !$0.isEmpty })
+        #expect(running != finished)
+        #expect(!running.isEmpty)
+        #expect(!finished.isEmpty)
+        // `.idle` is unreachable on the drawn canvas, so it shares the stopped hint rather
+        // than owning copy of its own.
+        #expect(StageAccessibility.hint(for: .idle) == finished)
     }
 
     /// The completion reason is a *notice* on screen, not a difference in what the stage can

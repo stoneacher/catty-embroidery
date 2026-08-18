@@ -13,12 +13,14 @@
 /// absorbing the difference into the translation. One less field is one less thing for a call
 /// site to get wrong.
 ///
-/// It is also the mid-gesture channel. `.scaleEffect`/`.offset` during a pinch is ADR-009's
-/// "settled stitches rasterized to a cached image once counts grow" being blitted through the
-/// transform as a GPU scale — and because the *transform* is untouched until the gesture ends,
-/// `CanvasStitchLayers.BakeKey` cannot churn and the raster is re-baked exactly once, on
-/// commit. That makes US-307's "re-rasterised on gesture end" true by construction rather than
-/// by timing.
+/// **It is the reset channel only, not the mid-gesture one** — an earlier version of this
+/// comment claimed both (`swift-code-reviewer`). A gesture drives `.scaleEffect`/`.offset`
+/// straight from SwiftUI's own `CGFloat`/`CGSize`; no `ViewDelta` is constructed while fingers
+/// are down. The two do share the *modifiers*, and the mechanism that made this type necessary
+/// is the same one that makes the gesture work: because the `StageTransform` is untouched
+/// until a gesture ends, `CanvasStitchLayers.BakeKey` cannot churn and the raster is re-baked
+/// exactly once, on commit — US-307's "re-rasterised on gesture end", true by construction
+/// rather than by timing. That is a fact about the *channel*, not about this type.
 public struct ViewDelta: Equatable, Sendable {
     /// View points per view point. Always positive: a similarity that mirrored the stage
     /// could not come from two `StageTransform`s, whose single y-flip is shared.
