@@ -80,9 +80,22 @@ public struct StageZoom: Equatable, Sendable {
         pan: ViewPoint,
         fitting fit: StageTransform
     ) {
-        settled = previewing(
+        let next = previewing(
             magnification: magnification, anchor: anchor, pan: pan, fitting: fit
         )
+
+        // **A gesture that changed nothing must not take the stage off the fit.**
+        //
+        // Pinch to 2× and back to exactly 1× with no pan, then lift: the committed transform
+        // equals the fit, but storing it makes `settled` non-`nil` and the stage stops
+        // following. The design then stays framed for the *old* viewport through a rotation or
+        // an iPad resize — the precise failure `nil`-means-follow-fit exists to prevent, now
+        // triggered by a gesture that did nothing (Codex round 4).
+        //
+        // Only while already following: a user who deliberately zoomed and then made a
+        // net-zero gesture keeps their explicit transform, because theirs is not the fit.
+        guard settled != nil || next != fit else { return }
+        settled = next
     }
 
     /// Where a gesture *would* land if it ended now — the transform to draw the current frame

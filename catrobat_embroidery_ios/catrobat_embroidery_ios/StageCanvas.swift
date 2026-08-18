@@ -256,6 +256,12 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     /// Reduce Motion passes `nil`, which is a legal animation meaning "instantly", so one call
     /// site serves both branches with no branch of its own.
     private func resetToFit(from current: StageTransform, to fitted: StageTransform, in viewport: ViewSize) {
+        // A second double-tap while the first is still animating would otherwise start from
+        // `zoom` — which still holds the *pre-animation* transform — and snap backwards past
+        // what is on screen before animating forward again (Codex round 4). Finishing the
+        // animation first makes the repeat a no-op, because the stage is then already fitted.
+        settleImmediately()
+
         guard !zoom.isFollowingFit else { return }
 
         settleGeneration &+= 1

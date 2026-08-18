@@ -191,6 +191,36 @@ struct StageZoomTests {
         #expect(zoom == before)
     }
 
+    /// **A gesture that nets out to nothing leaves the stage following the fit.**
+    ///
+    /// Codex round 4: pinching to 2× and back to exactly 1× stored a transform equal to the
+    /// fit, which is non-`nil` and therefore stops the refit — so the next rotation or window
+    /// resize would keep the design framed for the viewport it no longer has.
+    @Test("an identity gesture does not take the stage off the fit")
+    func anIdentityGestureKeepsFollowingTheFit() {
+        var zoom = StageZoom()
+
+        zoom.commit(magnification: 1, anchor: Self.viewport.center, pan: .zero, fitting: Self.fit)
+
+        #expect(zoom.isFollowingFit)
+        // The property that makes it matter: a changed viewport still refits.
+        let narrow = StageTransform.fitting(StageGeometry.box, in: ViewSize(width: 200, height: 200))
+        #expect(zoom.resolved(fitting: narrow) == narrow)
+    }
+
+    /// The other half: an identity gesture must not *undo* a zoom the user chose.
+    @Test("an identity gesture leaves an explicit transform explicit")
+    func anIdentityGestureKeepsAnExplicitTransform() {
+        var zoom = StageZoom()
+        zoom.commit(magnification: 3, anchor: Self.viewport.center, pan: .zero, fitting: Self.fit)
+        let zoomed = zoom.resolved(fitting: Self.fit)
+
+        zoom.commit(magnification: 1, anchor: Self.viewport.center, pan: .zero, fitting: Self.fit)
+
+        #expect(!zoom.isFollowingFit)
+        #expect(zoom.resolved(fitting: Self.fit) == zoomed)
+    }
+
     @Test("committing a pan moves the stage by exactly the pan")
     func committingAPanMovesByExactlyThePan() {
         var zoom = StageZoom()

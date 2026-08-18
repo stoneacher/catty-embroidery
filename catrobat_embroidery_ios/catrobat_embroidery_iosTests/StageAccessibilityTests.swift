@@ -62,15 +62,19 @@ struct StageAccessibilityTests {
         #expect(value.contains { $0.isLetter }, "the entry collapsed to its arguments")
     }
 
-    /// **A square, single-colour fixture cannot discriminate, and the one above is both.**
+    /// **A square, single-colour fixture cannot discriminate, and the original was both.**
     ///
     /// Codex round 3: with `98.6 × 98.6` and one colour, passing the width for both size
-    /// arguments — or dropping the colour phrase entirely — leaves the test above green. This
-    /// fixture makes every fact distinguishable: three stitches, two colours, 10 mm by 20 mm,
-    /// so each number must reach the value on its own.
+    /// arguments — or dropping the colour phrase entirely — left the test above green.
+    ///
+    /// **The first replacement still could not catch a dropped colour phrase** (Codex round
+    /// 4): it used two colours against a 10 × 20 design, and `contains("2")` is satisfied by
+    /// the *20*. Every number in the fixture now has a digit that appears nowhere else, which
+    /// is the property the test needs and neither earlier version had — seven colours is
+    /// unrealistic and that is the point.
     @Test func everyFactReachesTheValueIndependently() {
         let summary = StageSummary(
-            stitchCount: 3, colorCount: 2, widthInMillimetres: 10, heightInMillimetres: 20
+            stitchCount: 3, colorCount: 7, widthInMillimetres: 10, heightInMillimetres: 20
         )
 
         let value = StageAccessibility.value(
@@ -78,7 +82,7 @@ struct StageAccessibilityTests {
         )
 
         #expect(value.contains("3"), value.asComment)
-        #expect(value.contains("2"), value.asComment)
+        #expect(value.contains("7"), value.asComment)
         #expect(value.contains("10"), value.asComment)
         #expect(value.contains("20"), value.asComment)
         // And the two dimensions are not the same number repeated.
