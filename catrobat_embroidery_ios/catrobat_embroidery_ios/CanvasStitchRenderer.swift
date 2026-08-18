@@ -158,6 +158,19 @@ private struct CanvasStitchLayers: View {
         /// distinction is the whole reason ADR-024's "the raster survives an appearance
         /// switch" argument had to be re-checked when contrast became a drawing input.
         let increasedContrast: Bool
+
+        /// **Whether an interaction is in flight, and it belongs in the key even though it
+        /// changes nothing about the pixels.**
+        ///
+        /// Without it the deferred bake can be lost outright (Codex round 2). `settledCount`
+        /// is part of this key, so a run advancing it during a gesture fires `onChange` while
+        /// live; the bake is skipped. If the gesture then *ends at the transform it started
+        /// from* — pan out and back, or pinch to 1x — the committed key equals the one already
+        /// observed while live, `onChange` does not fire again, and the raster is never built:
+        /// the renderer stays on the full-stroke path indefinitely, until some unrelated key
+        /// input happens to change. Including liveness makes the live-to-settled edge a key
+        /// change in its own right, which is exactly the moment the bake should happen.
+        let isLive: Bool
     }
 
     private struct Baked {
@@ -177,7 +190,8 @@ private struct CanvasStitchLayers: View {
             transform: transform.bake,
             width: viewport.width,
             height: viewport.height,
-            increasedContrast: contrast == .increased
+            increasedContrast: contrast == .increased,
+            isLive: !transform.canUseRaster
         )
     }
 

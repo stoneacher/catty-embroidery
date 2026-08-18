@@ -80,20 +80,43 @@ public struct StageSummary: Equatable, Sendable {
     ) -> (width: Double, height: Double) {
         if let box = exportModel?.boundingBox {
             let units = StageGeometry.millimetresPerEmbroideryUnit
-            return (
-                width: Double(box.max.x - box.min.x) * units,
-                height: Double(box.max.y - box.min.y) * units
-            )
+            // `subtractingReportingOverflow`, because these are `Int`s and an overflow here
+            // would **trap** — a crash, in an accessibility summary. Not reachable through a
+            // run: ADR-020's move guard drops any step longer than `maxInterpolatedMoveInUnits`
+            // (measured — a stream handed ±1e18 keeps one stitch and rejects the other), and
+            // the record count is bounded by `maxStitchesPerRun` besides. But
+            // `EmbroideryStream` is public and this is one line.
+            let (width, widthOverflowed) = box.max.x.subtractingReportingOverflow(box.min.x)
+            let (height, heightOverflowed) = box.max.y.subtractingReportingOverflow(box.min.y)
+            if !widthOverflowed, !heightOverflowed {
+                return (width: Double(width) * units, height: Double(height) * units)
+            }
+            return unmeasurable
         }
 
         // No export model yet — a run in flight, or one that produced no records at all.
         // `bounds` is already `nil` when nothing finite has been stitched and drops a
         // non-finite edge per axis, so an ADR-021 divergence #5 coordinate cannot make the
         // spoken size an infinity.
-        guard let bounds = display.bounds else { return (0, 0) }
-        return (
-            width: bounds.width * StageGeometry.millimetresPerPoint,
-            height: bounds.height * StageGeometry.millimetresPerPoint
-        )
+        guard let bounds = display.bounds else { return unmeasurable }
+
+        let width = bounds.width * StageGeometry.millimetresPerPoint
+        let height = bounds.height * StageGeometry.millimetresPerPoint
+
+        // **Two finite edges can still have an infinite span.** `bounds` drops a *non-finite*
+        // coordinate per axis, so both edges here are finite — but `maxX − minX` overflows for
+        // a design spanning the `Double` range, and the summary is spoken, so the user would
+        // hear an infinity (Codex round 2, reproduced: a list holding ±greatestFiniteMagnitude
+        // reported `inf` mm). Reachable through the display list specifically, because ADR-021
+        // divergence #5 lets it hold coordinates the export stream rejects.
+        //
+        // Reported as unmeasurable rather than clamped: a design that large has no size any
+        // number would convey, and 0 is what every other "nothing to state" case reports.
+        guard width.isFinite, height.isFinite else { return unmeasurable }
+        return (width: width, height: height)
     }
+
+    /// No size that can honestly be stated — an empty design, or one too large for a `Double`
+    /// to span.
+    private static let unmeasurable = (width: 0.0, height: 0.0)
 }

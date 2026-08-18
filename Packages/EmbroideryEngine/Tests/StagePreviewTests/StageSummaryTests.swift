@@ -136,6 +136,24 @@ struct StageSummaryTests {
         #expect(summary.heightInMillimetres == 0)
     }
 
+    /// **Two finite edges, an infinite span.** The test below covers an already-infinite
+    /// coordinate being dropped; this covers the case that survives that drop — both edges
+    /// finite, their *difference* overflowing. Codex round 2 reproduced it at `inf` mm, and
+    /// the value is spoken, so a VoiceOver user would have heard an infinity.
+    @Test("a span too large for a Double is reported as unmeasurable, not as an infinity")
+    func anOverflowingSpanIsUnmeasurable() {
+        var list = StitchDisplayList()
+        list.append(previewStitch(-.greatestFiniteMagnitude, 0))
+        list.append(previewStitch(.greatestFiniteMagnitude, 0))
+
+        let summary = StageSummary(display: list, exportModel: nil)
+
+        #expect(summary.widthInMillimetres.isFinite)
+        #expect(summary.widthInMillimetres == 0)
+        // The count is still real — only the size is unstatable.
+        #expect(summary.stitchCount == 2)
+    }
+
     /// ADR-021 divergence #5 lets a coordinate the stream *rejects* reach the display trace,
     /// and `changeXBy` accumulates to infinity from a legal program. `StitchDisplayList.bounds`
     /// already drops a non-finite edge per axis; this pins that the summary inherits that

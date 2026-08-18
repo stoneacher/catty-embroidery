@@ -91,9 +91,16 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                 to: settling?.to ?? committed
             ) { animated in
                 let current = liveTransform(committed: animated, fitting: fitted, in: viewport)
-                let render: StageRenderTransform = current == committed
-                    ? .settled(committed)
-                    : .live(bake: committed, current: current)
+                // **Liveness is whether an interaction is in flight, not whether the two
+                // transforms happen to differ.** Comparing them looks equivalent and is not:
+                // a gesture returned to its own baseline mid-pinch, or the first frame of a
+                // fit animation, makes them equal while fingers are still down — and the
+                // renderer would then treat the frame as settled and rasterise into the
+                // middle of the gesture, which is the work the split exists to defer (Codex
+                // round 2).
+                let render: StageRenderTransform = isInteracting
+                    ? .live(bake: committed, current: current)
+                    : .settled(committed)
 
                 ZStack {
                     StageFieldView(transform: current)
@@ -144,6 +151,11 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                 resetToFit(from: committed, to: fitted, in: viewport)
             }
         }
+    }
+
+    /// Whether a gesture or the fit animation is in flight.
+    private var isInteracting: Bool {
+        live != LiveGesture() || settling != nil
     }
 
     /// The transform this frame draws with: the committed one, moved by whatever gesture is
