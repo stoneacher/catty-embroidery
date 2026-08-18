@@ -102,6 +102,29 @@ struct TransformInterpolationTests {
         #expect(Self.from.interpolated(to: Self.to, progress: .nan) == Self.to)
     }
 
+    /// **The endpoints hold for translations far enough apart to overflow their difference.**
+    ///
+    /// Codex round 1: `other − self` is an infinity for two *finite* translations at opposite
+    /// extremes, `∞ × 0` is NaN, and the chokepoint sanitises NaN to zero — so progress 0
+    /// returned a transform at the origin rather than the one it started from. Reproduced at
+    /// `±greatestFiniteMagnitude` before the fix. The ordinary endpoint test above cannot see
+    /// it, because its translations are small enough to subtract.
+    @Test("the endpoints survive translations whose difference overflows")
+    func endpointsSurviveOverflowingDifferences() {
+        let far = StageTransform(scale: 1, translation: ViewPoint(x: .greatestFiniteMagnitude, y: 0))
+        let opposite = StageTransform(
+            scale: 1, translation: ViewPoint(x: -.greatestFiniteMagnitude, y: 0)
+        )
+
+        #expect(far.interpolated(to: opposite, progress: 0) == far)
+        #expect(far.interpolated(to: opposite, progress: 1) == opposite)
+        // And the scale axis, which overflows the same way.
+        let tiny = StageTransform(scale: StageTransform.minimumRepresentableScale)
+        let huge = StageTransform(scale: StageTransform.maximumScale)
+        #expect(tiny.interpolated(to: huge, progress: 0) == tiny)
+        #expect(tiny.interpolated(to: huge, progress: 1) == huge)
+    }
+
     /// Every step is a real, usable transform — the `init` chokepoint sees each one, so the
     /// animation cannot produce a frame the renderer would have to defend against.
     @Test("every step of an interpolation is finite and in range")

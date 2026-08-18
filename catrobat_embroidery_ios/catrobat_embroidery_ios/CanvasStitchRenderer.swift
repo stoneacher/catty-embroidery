@@ -225,6 +225,18 @@ private struct CanvasStitchLayers: View {
     /// Bakes the settled prefix, or throws the raster away if there is not enough of it
     /// to be worth one.
     private func rebakeIfWorthwhile() {
+        // **Deferred while a gesture or the fit animation is in flight**, even though the key
+        // changed. `settledCount` is part of the key and a *run* advances it, so a pan held
+        // while the design is still stitching would rasterise the settled prefix mid-gesture —
+        // work whose result cannot even be composited until the gesture ends, spent at the one
+        // moment the frame budget is tightest (Codex round 1). ADR-028's policy is that the
+        // raster stays still until commit; this is what makes that true rather than
+        // true-of-the-transform-only.
+        //
+        // Nothing is lost by waiting: the key still differs at commit, so `onChange` fires
+        // again and the bake happens then.
+        guard transform.canUseRaster else { return }
+
         let settled = display.settledCount
         guard settled >= Self.bakingThreshold else {
             baked = nil

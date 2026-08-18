@@ -47,8 +47,26 @@ public struct RunPhase: Equatable, Sendable {
         summarising display: StitchDisplayList,
         exportModel: EmbroideryStream?
     ) {
+        let rebuilt = StageSummary(display: display, exportModel: exportModel)
+
+        // **Nothing observable changed, so nothing is recorded as having changed.**
+        //
+        // `reset()` is called on an already-idle run in ordinary use — `AppModel.select(_:)`
+        // does it for the first selection — and unconditionally entering `.idle` from `.idle`
+        // bumped `revision` for a transition that did not happen, making the count this story
+        // asserts on literally false (Codex round 1).
+        //
+        // The guard is on the **pair** rather than the state alone so that it means "nothing
+        // observable changed" rather than "the state repeated". Those coincide today — a
+        // restart mid-run leaves both `.running` and `.empty`, because a running summary
+        // carries no counts — and the pair is what stays correct if that ever stops being
+        // true. An earlier version of this comment claimed the opposite, that a mid-run
+        // restart "must still rebuild"; the test written to pin that claim failed against it,
+        // which is how the claim was caught.
+        guard state != self.state || rebuilt != summary else { return }
+
         self.state = state
-        summary = StageSummary(display: display, exportModel: exportModel)
+        summary = rebuilt
         revision += 1
     }
 }

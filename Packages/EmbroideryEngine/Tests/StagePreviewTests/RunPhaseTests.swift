@@ -158,6 +158,53 @@ struct RunPhaseTests {
         #expect(run.state == .idle)
     }
 
+    /// **A reset that resets nothing is not a transition.**
+    ///
+    /// Codex round 1: `reset()` on an already-idle run entered `.idle` from `.idle` and bumped
+    /// the count anyway, so `summaryRevision == number of transitions` — the claim this
+    /// story's headline criterion is asserted against — was literally false. Reachable in
+    /// ordinary use: `AppModel.select(_:)` calls `runner.reset()` for the *first* selection,
+    /// when the run has never started.
+    @Test("resetting a run that never started is not counted as a transition")
+    func resettingAFreshRunIsNotATransition() {
+        var run = PreviewRunState()
+
+        run.reset()
+        run.reset()
+
+        #expect(run.summaryRevision == 0)
+        #expect(run.state == .idle)
+        #expect(run.summary == .empty)
+    }
+
+    /// **Restarting mid-run is not a transition either, and working out why is the point.**
+    ///
+    /// This test was written expecting the opposite — that a second `begin()` must rebuild
+    /// because it clears the display — and it failed, which is how a false claim in
+    /// `RunPhase.enter`'s own comment was caught. A *running* summary carries no counts by
+    /// design (criteria 5 and 6 are irreconcilable otherwise), so before and after the restart
+    /// the state is `.running` and the summary is `.empty`: nothing a VoiceOver user could
+    /// hear has changed, and the guard is right to say so. What did change — the display list
+    /// — is asserted here so the restart is not mistaken for a no-op.
+    @Test("restarting mid-run clears the design without counting as a transition")
+    func restartingMidRunIsNotATransition() async {
+        let drained = await Self.drainedRosette()
+        var run = PreviewRunState()
+        run.begin()
+        for update in drained.updates where update.termination == nil {
+            run.apply(update)
+        }
+        #expect(run.state == .running, "premise: still running")
+        #expect(!run.display.isEmpty, "premise: the run drew something")
+        let revisionBeforeRestart = run.summaryRevision
+
+        run.begin()
+
+        #expect(run.summaryRevision == revisionBeforeRestart)
+        #expect(run.display.isEmpty, "the restart must still clear the design")
+        #expect(run.summary == .empty)
+    }
+
     /// `apply` refuses updates outside a running run (ADR-027's guard against a discarded
     /// run's buffered frames). A refused update must not rebuild the summary either —
     /// otherwise a stale frame arriving after a reset would republish the discarded design's

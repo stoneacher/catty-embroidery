@@ -344,6 +344,21 @@ public struct StageTransform: Hashable, Sendable {
     /// which is what guarantees the animation cannot produce an unusable transform partway.
     public func interpolated(to other: StageTransform, progress: Double) -> StageTransform {
         let blend = progress.isNaN ? 1 : Swift.min(Swift.max(progress, 0), 1)
+
+        // **The endpoints are returned, not computed** — the doc above promises they are
+        // exact, and computing them is not. `other − self` overflows to an infinity for two
+        // finite translations far enough apart, `∞ × 0` is NaN, and `init` then sanitises the
+        // NaN to zero: interpolating from `+greatestFiniteMagnitude` to
+        // `−greatestFiniteMagnitude` at progress 0 returned **0** rather than the transform it
+        // started from (Codex round 1, reproduced). The animation swaps to the real transform
+        // at completion, so a wrong endpoint is a visible jump at both ends of the spring.
+        //
+        // Intermediate steps at those magnitudes are still degraded to the `init` chokepoint's
+        // finite fallback, which is the documented behaviour for a placement no viewport can
+        // express — but the endpoints are now exact by construction rather than by arithmetic.
+        if blend == 0 { return self }
+        if blend == 1 { return other }
+
         return StageTransform(
             scale: scale + (other.scale - scale) * blend,
             translation: ViewPoint(
