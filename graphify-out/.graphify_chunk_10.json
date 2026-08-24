@@ -1,0 +1,259 @@
+{
+  "nodes": [
+    {
+      "id": "docs_screenshots_us_307_dark",
+      "label": "US-307 Dark Mode Stage Screenshot",
+      "file_type": "image",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_dark_run_screen",
+      "label": "Embroidery Run/Preview Screen",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_dark_dark_mode_appearance",
+      "label": "Dark Mode Appearance",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_dark_stage_canvas",
+      "label": "Stitch Preview Stage Canvas",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_dark_octagon_rosette_design",
+      "label": "Octagon Rosette Design",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_dark_hoop_boundary",
+      "label": "Hoop Boundary 100 mm x 100 mm",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_dark_play_again_button",
+      "label": "Play Again Button",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_dark_navigation_bar",
+      "label": "Navigation Bar with Back Button and Title",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_dark_fabric_neutral_stage",
+      "label": "Fabric-Neutral Stage in Dark Chrome",
+      "file_type": "rationale",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_dark_fit_to_hoop_zoom",
+      "label": "Fit-to-Hoop Zoom Baseline",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_screenshots_us_307_dark",
+      "target": "docs_user_stories_milestone_3_us_307_zoom_pan_and_accessibility_us_307",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark",
+      "target": "docs_screenshots_us_307_dark_run_screen",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark",
+      "target": "docs_screenshots_us_307_dark_dark_mode_appearance",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_run_screen",
+      "target": "docs_screenshots_us_307_dark_stage_canvas",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_run_screen",
+      "target": "docs_screenshots_us_307_dark_navigation_bar",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_run_screen",
+      "target": "docs_screenshots_us_307_dark_play_again_button",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_stage_canvas",
+      "target": "docs_screenshots_us_307_dark_octagon_rosette_design",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_stage_canvas",
+      "target": "docs_screenshots_us_307_dark_hoop_boundary",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_dark_mode_appearance",
+      "target": "docs_screenshots_us_307_dark_fabric_neutral_stage",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_fabric_neutral_stage",
+      "target": "docs_screenshots_us_307_dark_stage_canvas",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_stage_canvas",
+      "target": "docs_screenshots_us_307_dark_fit_to_hoop_zoom",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_fit_to_hoop_zoom",
+      "target": "docs_user_stories_milestone_3_us_307_zoom_pan_and_accessibility_us_307",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_dark_mode_appearance",
+      "target": "docs_user_stories_milestone_3_us_307_zoom_pan_and_accessibility_us_307",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.65,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_dark_play_again_button",
+      "target": "docs_screenshots_us_307_dark_octagon_rosette_design",
+      "relation": "shares_data_with",
+      "confidence": "AMBIGUOUS",
+      "confidence_score": 0.25,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/dark.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

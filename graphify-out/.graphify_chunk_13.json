@@ -1,0 +1,290 @@
+{
+  "nodes": [
+    {
+      "id": "docs_screenshots_us_307_mid_drag",
+      "label": "US-307 Screenshot: Mid-Drag Pan",
+      "file_type": "image",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_stage_preview_screen",
+      "label": "Stitch Preview Stage Screen",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_pan_gesture",
+      "label": "Pan (Drag) Gesture In Progress",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_zoomed_stage_canvas",
+      "label": "Zoomed Stage Canvas With Offset Content",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_hoop_boundary",
+      "label": "Hoop Boundary Rectangle",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_hoop_size_caption",
+      "label": "Hoop 100 mm x 100 mm Caption",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_octagon_rosette_design",
+      "label": "Octagon Rosette Stitch Design",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_play_again_button",
+      "label": "Play Again Primary Button",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_back_button",
+      "label": "Circular Back Navigation Button",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_navigation_title",
+      "label": "Design Title Header (Octagon Rosette)",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_screenshots_us_307_mid_drag_run_terminal_state",
+      "label": "Finished Run Terminal State",
+      "file_type": "concept",
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_screenshots_us_307_mid_drag",
+      "target": "docs_user_stories_milestone_3_us_307_zoom_pan_and_accessibility_us_307",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag",
+      "target": "docs_screenshots_us_307_mid_drag_stage_preview_screen",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag",
+      "target": "docs_screenshots_us_307_mid_drag_pan_gesture",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_stage_preview_screen",
+      "target": "docs_screenshots_us_307_mid_drag_zoomed_stage_canvas",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_stage_preview_screen",
+      "target": "docs_screenshots_us_307_mid_drag_navigation_title",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_stage_preview_screen",
+      "target": "docs_screenshots_us_307_mid_drag_back_button",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_stage_preview_screen",
+      "target": "docs_screenshots_us_307_mid_drag_hoop_size_caption",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_stage_preview_screen",
+      "target": "docs_screenshots_us_307_mid_drag_play_again_button",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_zoomed_stage_canvas",
+      "target": "docs_screenshots_us_307_mid_drag_hoop_boundary",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_zoomed_stage_canvas",
+      "target": "docs_screenshots_us_307_mid_drag_octagon_rosette_design",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_pan_gesture",
+      "target": "docs_screenshots_us_307_mid_drag_zoomed_stage_canvas",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_pan_gesture",
+      "target": "docs_user_stories_milestone_3_us_307_zoom_pan_and_accessibility_us_307",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_hoop_boundary",
+      "target": "docs_screenshots_us_307_mid_drag_hoop_size_caption",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_play_again_button",
+      "target": "docs_screenshots_us_307_mid_drag_run_terminal_state",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_run_terminal_state",
+      "target": "docs_screenshots_us_307_mid_drag_octagon_rosette_design",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_screenshots_us_307_mid_drag_pan_gesture",
+      "target": "docs_screenshots_us_307_mid_drag_hoop_boundary",
+      "relation": "conceptually_related_to",
+      "confidence": "AMBIGUOUS",
+      "confidence_score": 0.3,
+      "source_file": "/Users/stoneacher/Desktop/remotes/bachelor/catty-embroidery/docs/screenshots/us-307/mid-drag.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 0,
+  "output_tokens": 0
+}
