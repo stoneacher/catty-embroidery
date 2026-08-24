@@ -283,8 +283,28 @@ public struct StageTransform: Hashable, Sendable {
     /// opposite sign. There is always one more intermediate term; there is only
     /// one result.
     public func pinched(by factor: Double, about anchor: ViewPoint) -> StageTransform {
+        pinched(by: factor, about: anchor, within: .gestureDefault)
+    }
+
+    /// The same anchored zoom, clamped into `bounds` instead of the absolute gesture range.
+    ///
+    /// **One implementation, two entry points**, deliberately: everything the four review
+    /// rounds hardened lives here — recompute the translation from the *clamped* scale so
+    /// the anchor stays pinned when the clamp bites; guard the computed translation rather
+    /// than any intermediate product; refuse an unrepresentable zoom rather than collapsing
+    /// it. A second copy taking bounds would be a second place for those to rot, and the
+    /// two-argument overload above is now literally this function at `.gestureDefault`.
+    ///
+    /// `bounds` exists because `fitting` can legitimately return a scale *below*
+    /// `minimumScale` for an out-of-hoop design that exports perfectly well — see
+    /// `StageZoomBounds`.
+    public func pinched(
+        by factor: Double,
+        about anchor: ViewPoint,
+        within bounds: StageZoomBounds
+    ) -> StageTransform {
         let anchored = stagePoint(of: anchor)
-        let zoomed = Self.clampedScale(scale * factor)
+        let zoomed = bounds.clamping(scale * factor)
         let translated = ViewPoint(
             x: anchor.x - anchored.x * zoomed,
             y: anchor.y - Self.flippingY(anchored.y) * zoomed
@@ -304,4 +324,48 @@ public struct StageTransform: Hashable, Sendable {
         guard translated.x.isFinite, translated.y.isFinite else { return self }
         return StageTransform(scale: scale, translation: translated)
     }
+
+    /// This transform blended toward `other` by `progress`, clamped to `[0, 1]`.
+    ///
+    /// **What makes an animated transform change possible at all.** A `StageTransform` in
+    /// `@State` is not animatable — `Canvas` re-strokes from whatever it is handed and there
+    /// is nothing between two of them to interpolate — so the double-tap reset animates a
+    /// `Double` and asks for the transform at each step. Re-stroking every frame is the
+    /// point, not a cost to be avoided: sliding an already-rendered layer instead cannot
+    /// reveal content the canvas never drew, which is the defect this method exists to fix.
+    ///
+    /// Linear in scale rather than geometric. A geometric blend is the better-looking zoom
+    /// over wide ranges, and it is not what this is for: the reset spans one screenful of
+    /// zoom for 0.35 s, where the two are indistinguishable, and linear keeps the endpoints
+    /// exact without a `log`/`exp` pair whose round-trip would need its own finiteness
+    /// argument.
+    ///
+    /// Total by construction — every arithmetic result flows through the `init` chokepoint,
+    /// which is what guarantees the animation cannot produce an unusable transform partway.
+    public func interpolated(to other: StageTransform, progress: Double) -> StageTransform {
+        let blend = progress.isNaN ? 1 : Swift.min(Swift.max(progress, 0), 1)
+
+        // **The endpoints are returned, not computed** — the doc above promises they are
+        // exact, and computing them is not. `other − self` overflows to an infinity for two
+        // finite translations far enough apart, `∞ × 0` is NaN, and `init` then sanitises the
+        // NaN to zero: interpolating from `+greatestFiniteMagnitude` to
+        // `−greatestFiniteMagnitude` at progress 0 returned **0** rather than the transform it
+        // started from (Codex round 1, reproduced). The animation swaps to the real transform
+        // at completion, so a wrong endpoint is a visible jump at both ends of the spring.
+        //
+        // Intermediate steps at those magnitudes are still degraded to the `init` chokepoint's
+        // finite fallback, which is the documented behaviour for a placement no viewport can
+        // express — but the endpoints are now exact by construction rather than by arithmetic.
+        if blend == 0 { return self }
+        if blend == 1 { return other }
+
+        return StageTransform(
+            scale: scale + (other.scale - scale) * blend,
+            translation: ViewPoint(
+                x: translation.x + (other.translation.x - translation.x) * blend,
+                y: translation.y + (other.translation.y - translation.y) * blend
+            )
+        )
+    }
+
 }

@@ -22,8 +22,10 @@ struct StageTransportRow: View {
     let onPlay: () -> Void
     let onStop: () -> Void
 
-    /// Read in exactly one place in this story — the symbol morph below. Named here so
-    /// US-307 reuses this gate for its transform springs instead of adding a second one.
+    /// The environment read; the *policy* it feeds lives in `StageMotion`, which is what
+    /// US-307 reuses. Two views reading this key is per-view resolution working as intended —
+    /// what must not be duplicated is the decision about what the setting suppresses, and
+    /// that decision now has exactly one home.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -41,11 +43,10 @@ struct StageTransportRow: View {
             } icon: {
                 Image(systemName: appearance.symbol)
                     // The symbol morph is decoration, so Reduce Motion takes it. The
-                    // symbol still *changes* — it just does not animate. This is the one
-                    // place US-306 reads the setting, and it is the hook US-307 should
-                    // reuse for its transform springs rather than introducing a second,
-                    // ungated one.
-                    .contentTransition(reduceMotion ? .identity : .symbolEffect(.replace))
+                    // symbol still *changes* — it just does not animate. The decision moved
+                    // to `StageMotion` in US-307, so this view and the stage's fit
+                    // transition cannot disagree about what the setting means.
+                    .contentTransition(StageMotion.symbolTransition(reduceMotion: reduceMotion))
             }
             // Explicit, so no ancestor style can collapse this to an icon-only button and
             // take the visible title — and therefore the accessibility label — with it.

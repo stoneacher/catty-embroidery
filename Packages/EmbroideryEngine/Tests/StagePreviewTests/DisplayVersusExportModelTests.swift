@@ -298,4 +298,63 @@ struct DisplayVersusExportModelTests {
             #expect(!EmbroideryStream.requiresTraversal(from: previous, to: next))
         }
     }
+
+    // MARK: - US-307 item 6: the two size sources agree
+
+    /// The size in millimetres may be read from either model, and for a design with no
+    /// rejected coordinates the two must agree — which is what lets the summary prefer the
+    /// export model without the spoken figure jumping when a run ends.
+    ///
+    /// **They agree to a tolerance, not exactly, and the bound is derived rather than
+    /// picked.** The export path rounds each coordinate to a whole embroidery unit through
+    /// `javaRound`, whose error per edge is in (−0.5, +0.5]; a span is a difference of two
+    /// edges, so its error is strictly within ±1 unit = **±0.1 mm**. Measured on this sample:
+    /// 98.5676 mm from the display bounds against 98.6 mm from the export model, a gap of
+    /// 0.032 mm — three times inside the bound.
+    ///
+    /// Per this suite's own standing rule, the preconditions that make agreement *possible*
+    /// are asserted first. Without them the equality would be accidental agreement dressed up
+    /// as an invariant, and would go quietly vacuous the day a sample started interpolating.
+    @Test("the summary's size agrees between the display list and the export model")
+    func theSummarySizeAgreesBetweenBothModels() async throws {
+        let drained = await driveToCompletion(SampleLibrary[.octagonRosette].program)
+        var run = PreviewRunState()
+        run.begin()
+        for update in drained.updates {
+            run.apply(update)
+        }
+        let exported = try #require(run.exportModel)
+
+        // Preconditions: nothing interpolated, nothing jumped, nothing was rejected — so the
+        // two models describe the same point set and a size comparison means something.
+        #expect(run.display.count == exported.count)
+        #expect(exported.stitches.allSatisfy { !$0.isJump })
+        #expect(
+            run.display.stitches.allSatisfy { EmbroideryPoint(converting: $0.position) != nil }
+        )
+
+        let fromExport = StageSummary(display: run.display, exportModel: exported)
+        let fromDisplay = StageSummary(display: run.display, exportModel: nil)
+
+        // **Both sizes are real before they are compared.** Without this the test is green
+        // for a summary that reports zeros from both sources — 0 agrees with 0 to any
+        // tolerance — which is the "what could be deleted while this stays green" failure
+        // this repo has now hit nine times across two stories. Caught here by running the
+        // red phase and reading which suites *passed*.
+        #expect(abs(fromExport.widthInMillimetres - 98.6) < 0.05)
+        #expect(abs(fromDisplay.widthInMillimetres - 98.6) < 0.05)
+
+        #expect(
+            abs(fromExport.widthInMillimetres - fromDisplay.widthInMillimetres) < 0.1,
+            "width \(fromExport.widthInMillimetres) vs \(fromDisplay.widthInMillimetres)"
+        )
+        #expect(
+            abs(fromExport.heightInMillimetres - fromDisplay.heightInMillimetres) < 0.1,
+            "height \(fromExport.heightInMillimetres) vs \(fromDisplay.heightInMillimetres)"
+        )
+        // The counts are read from the display list either way, which is the documented
+        // asymmetry — so switching source cannot change them at all.
+        #expect(fromExport.stitchCount == fromDisplay.stitchCount)
+        #expect(fromExport.colorCount == fromDisplay.colorCount)
+    }
 }
