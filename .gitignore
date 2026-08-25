@@ -89,3 +89,9 @@ playground.xcworkspace
 
 # Throwaway git worktrees created by isolated review agents
 .claude/worktrees/
+
+# graphify knowledge graph — derived, rebuilt at milestone close.
+# Only the audit report is tracked (it is what diffs meaningfully between milestones);
+# graph.json, the HTML viewer and the extraction cache are not.
+graphify-out/*
+!graphify-out/GRAPH_REPORT.md
