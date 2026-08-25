@@ -3,9 +3,11 @@ import Foundation
 import Testing
 
 /// US-211 / ADR-025: the DST header's fixed-width fields are a *serialization*
-/// boundary, not a programmer-error backstop. `DSTHeader.appendField` ends in a
-/// `precondition`, so a design the Tajima header cannot describe kills the
-/// process — and three fields are reachable from ordinary input: the 4-wide
+/// boundary, not a programmer-error backstop. `DSTHeader.appendField` used to
+/// end in a `precondition`, so a design the Tajima header could not describe
+/// killed the process — and three fields are reachable from ordinary input,
+/// which is what made it a serialization decision rather than a bug fix: the
+/// 4-wide
 /// extents (`+X`/`-X`/`+Y`/`-Y`, > 9999 units), the 2-wide `CO` (> 99 colour
 /// blocks) and the 6-wide `ST` (> 999,999 stitches).
 ///
@@ -17,7 +19,7 @@ import Testing
 /// becomes an error a caller handles.
 ///
 /// ADR-019 screening: every input here sits *deliberately on* a field-width
-/// boundary — 9999/10000, 99/100, 999,999/1,000,001 — because that is the
+/// boundary — 9999/10000, 99/100, 999,999/1,000,000 — because that is the
 /// subject of the story rather than an accident of it. ADR-019's screening
 /// question is answered yes; its *deciding* question (how far the exact value
 /// sits from the boundary, in ulps) does not apply, because the comparison is
@@ -183,14 +185,19 @@ struct DSTFieldWidthChokepointTests {
     /// test would pass on emission order rather than on the `ST` check. That
     /// recipe is recorded in ADR-025 and deliberately not committed: 1.4 s and
     /// 134 MB for a number this one establishes in 0.5 s.
+    ///
+    /// **1,000,000, not 1,000,001** — the first value needing a seventh byte,
+    /// so `999,999`/`1,000,000` is the pair that actually bounds the field. An
+    /// earlier version used 1,000,001, which a regression accepting exactly
+    /// 1,000,000 would have passed (Codex round 1).
     @Test("a stitch count past six digits throws")
     func stitchCountBeyondSixDigitsThrows() {
         var stream = EmbroideryStream()
-        for index in 0 ..< 1_000_001 {
+        for index in 0 ..< 1_000_000 {
             stream.addStitch(at: StagePoint(x: index.isMultiple(of: 2) ? 0 : 0.5, y: 0))
         }
         #expect(throws: DSTSerializationError.fieldOverflow(
-            field: .stitchCount, value: "1000001", limit: 999_999
+            field: .stitchCount, value: "1000000", limit: 999_999
         )) {
             _ = try DSTHeader(stream: stream, name: "overflow")
         }
@@ -235,6 +242,40 @@ struct DSTFieldWidthChokepointTests {
         // Catalog (ADR-011, US-303's no-hardcoded-strings rule).
         #expect("\(value) colour blocks; DST allows \(limit)" == "118 colour blocks; DST allows 99")
     }
+
+    /// ADR-025 argues the header's `Int` extent subtractions are unreachable at
+    /// overflow magnitudes, and leans on a coordinate at the very edge of the
+    /// conversion range to show it. That claim had no test until Codex round 1
+    /// named the gap: a single stitch converting to exactly `Int.min` has no
+    /// second point to subtract against, so every extent is 0 and the header is
+    /// ordinary. It is the *pair* of far-apart coordinates that ADR-020 refuses,
+    /// which is why the subtraction never sees a large operand.
+    @Test("a single stitch at the conversion limit serializes with zero extents")
+    func aSingleStitchAtTheConversionLimitSerializes() throws {
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: Double(Int.min) / 2, y: 0))
+        try #require(stream.firstStitchPosition?.x == Int.min)
+
+        let fields = try Self.fields(in: DSTHeader(stream: stream, name: "limit").bytes)
+        #expect(fields["+X"] == "0")
+        #expect(fields["-X"] == "0")
+        #expect(fields["AX"] == "0")
+        #expect(fields["ST"] == "1")
+    }
+
+    // MARK: - Accepted coverage gaps, stated rather than left silent
+    //
+    // Named by Codex round 1 and declined with reasons, not overlooked:
+    //
+    // - `DSTFile`'s record loop is never exercised at the maximum successful
+    //   `ST`. The 999,999 test is header-only, because field widths live in the
+    //   header and the loop is orthogonal to them; covering it costs a further
+    //   0.3 s and 17 MB. The emission-order proof (ADR-025) is what makes the
+    //   loop safe there, and it is static rather than measured.
+    // - The two exit tests would pass if stream construction silently became a
+    //   no-op, since they only establish "does not trap". Their typed-error
+    //   siblings close that: those assert the exact emitted value ("100",
+    //   "12000"), which an empty stream cannot produce.
 
     // MARK: - Helpers
 
