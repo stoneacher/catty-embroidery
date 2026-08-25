@@ -24,7 +24,7 @@ struct SampleArtifactDumpTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
         let measured = run(sample)
-        let file = DSTFile(stream: measured.stream, name: sample.program.name)
+        let file = try DSTFile(stream: measured.stream, name: sample.program.name)
         let url = directory.appendingPathComponent("\(sample.id.resourceName).dst")
         try file.write(to: url)
 

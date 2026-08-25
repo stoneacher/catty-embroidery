@@ -14,8 +14,8 @@ struct InterpolationTests {
     /// returns its 3-byte records (header and end-of-file record stripped).
     /// Replaced the pre-US-106 hand-rolled record sequence so these tests
     /// exercise the real serialization path.
-    private func records(for stream: EmbroideryStream) -> [[UInt8]] {
-        let body = Array(DSTFile(stream: stream, name: "test").data.dropFirst(512).dropLast(3))
+    private func records(for stream: EmbroideryStream) throws -> [[UInt8]] {
+        let body = Array(try DSTFile(stream: stream, name: "test").data.dropFirst(512).dropLast(3))
         return stride(from: 0, to: body.count, by: 3).map { Array(body[$0 ..< $0 + 3]) }
     }
 
@@ -235,7 +235,7 @@ struct InterpolationTests {
         ))
         let fixture = try Data(contentsOf: url)
         let fixtureRecords = fixture.dropFirst(512).dropLast(3)
-        expectBytesEqual(records(for: stream).flatMap(\.self), fixtureRecords)
+        expectBytesEqual(try records(for: stream).flatMap(\.self), fixtureRecords)
     }
 
     @Test("Emitted deltas telescope to the exact converted target and stay encodable")
@@ -244,7 +244,7 @@ struct InterpolationTests {
         stream.addStitch(at: StagePoint(x: 0, y: 0))
         stream.addStitch(at: StagePoint(x: 123.4, y: -250.1))
 
-        let deltas = records(for: stream).map(DSTRecordDecoder.decode)
+        let deltas = try records(for: stream).map(DSTRecordDecoder.decode)
         let target = try #require(EmbroideryPoint(converting: StagePoint(x: 123.4, y: -250.1)))
         #expect(deltas.reduce(0) { $0 + $1.dx } == target.x)
         #expect(deltas.reduce(0) { $0 + $1.dy } == target.y)

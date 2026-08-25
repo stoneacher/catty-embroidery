@@ -98,7 +98,7 @@ struct GoldenSquareBytesTests {
     }
 
     @Test("a design wholly in negative space writes extents relative to its first stitch")
-    func displacedSquareWritesExtentsRelativeToItsFirstStitch() {
+    func displacedSquareWritesExtentsRelativeToItsFirstStitch() throws {
         // Composition, **not** a unique mutant kill — the first draft of this
         // comment claimed one and mutation testing disproved it. Replacing
         // `abs(min(box.min.x - first.x, 0))` with `abs(box.min.x)` dies in
@@ -117,7 +117,7 @@ struct GoldenSquareBytesTests {
         // specifically as what the Catty fixtures cannot cover.
         var interpreter = Interpreter(program: GoldenSquare.displacedProgram, clock: clock)
         _ = interpreter.run(maxTicks: 100)
-        let header = Array(DSTFile(stream: interpreter.assembledStream(), name: GoldenSquare.designName)
+        let header = Array(try DSTFile(stream: interpreter.assembledStream(), name: GoldenSquare.designName)
             .data.prefix(512))
 
         // Magnitudes only, relative to the first stitch (ADR-012). The mutant

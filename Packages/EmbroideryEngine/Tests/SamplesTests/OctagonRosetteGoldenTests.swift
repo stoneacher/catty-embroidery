@@ -85,8 +85,8 @@ struct OctagonRosetteGoldenTests {
 
     /// 512-byte header + 3 bytes per record + the 3-byte end-of-file record.
     @Test("the serialized file is 10 097 bytes")
-    func dstByteLength() {
-        let file = DSTFile(stream: measured.stream, name: SampleLibrary[.octagonRosette].program.name)
+    func dstByteLength() throws {
+        let file = try DSTFile(stream: measured.stream, name: SampleLibrary[.octagonRosette].program.name)
         #expect(file.data.count == 512 + 3 * 3194 + 3)
     }
 
@@ -154,7 +154,8 @@ struct OctagonRosetteGoldenTests {
         #expect(bounds.maxY - bounds.minY == reference.maxY - reference.minY)
 
         let name = SampleLibrary[.octagonRosette].program.name
-        #expect(DSTFile(stream: rotatedStream, name: name).data.count
-            == DSTFile(stream: measured.stream, name: name).data.count)
+        let rotatedFile = try DSTFile(stream: rotatedStream, name: name)
+        let referenceFile = try DSTFile(stream: measured.stream, name: name)
+        #expect(rotatedFile.data.count == referenceFile.data.count)
     }
 }

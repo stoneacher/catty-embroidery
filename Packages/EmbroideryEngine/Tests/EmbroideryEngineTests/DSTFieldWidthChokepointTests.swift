@@ -47,7 +47,7 @@ struct DSTFieldWidthChokepointTests {
             var stream = EmbroideryStream()
             stream.addStitch(at: StagePoint(x: 0, y: 0))
             stream.addStitch(at: StagePoint(x: 6000, y: 0))
-            _ = DSTHeader(stream: stream, name: "overflow")
+            _ = try? DSTHeader(stream: stream, name: "overflow")
         }
     }
 
@@ -60,25 +60,7 @@ struct DSTFieldWidthChokepointTests {
             for _ in 0 ..< 99 {
                 stream.addColorChange()
             }
-            _ = DSTHeader(stream: stream, name: "overflow")
-        }
-    }
-
-    @Test("a stitch count past six digits does not kill the process")
-    func anOversizeStitchCountDoesNotKillTheProcess() async {
-        // Isolated to one violated field on purpose. The ADR-020 cap move
-        // (0 -> 60,500,000 stage points) also overflows `ST`, at 2,500,003
-        // stitches, but it overflows `+X` too — and since `ST` is emitted
-        // first, such a test would pass on emission order rather than on the
-        // `ST` check. Alternating 1 unit apart dodges dedup inside a 1-unit
-        // extent. Recorded in ADR-025, not committed: the cap move costs 1.4 s
-        // and 134 MB for a number this recipe establishes in 0.5 s.
-        await #expect(processExitsWith: .success) {
-            var stream = EmbroideryStream()
-            for index in 0 ..< 1_000_001 {
-                stream.addStitch(at: StagePoint(x: index.isMultiple(of: 2) ? 0 : 0.5, y: 0))
-            }
-            _ = DSTHeader(stream: stream, name: "overflow")
+            _ = try? DSTHeader(stream: stream, name: "overflow")
         }
     }
 
@@ -151,6 +133,107 @@ struct DSTFieldWidthChokepointTests {
         let fields = try Self.fields(in: DSTHeader(stream: stream, name: "stitches").bytes)
         #expect(fields["ST"] == "999999")
         #expect(fields["+X"] == "1")
+    }
+
+    // MARK: - The chosen semantics: a typed error naming field, value and limit
+
+    @Test("an extent past four digits throws, naming the extent it overflowed")
+    func extentBeyondFourDigitsThrowsNamingTheExtent() {
+        var positive = EmbroideryStream()
+        positive.addStitch(at: StagePoint(x: 0, y: 0))
+        positive.addStitch(at: StagePoint(x: 6000, y: 0))
+        #expect(throws: DSTSerializationError.fieldOverflow(
+            field: .extentPlusX, value: "12000", limit: 9999
+        )) {
+            _ = try DSTHeader(stream: positive, name: "overflow")
+        }
+
+        // The mirror case names the opposite field, so the error distinguishes
+        // direction and not merely magnitude — ADR-012 writes extents as
+        // magnitudes, so "12000" is the value in both.
+        var negative = EmbroideryStream()
+        negative.addStitch(at: StagePoint(x: 0, y: 0))
+        negative.addStitch(at: StagePoint(x: -6000, y: 0))
+        #expect(throws: DSTSerializationError.fieldOverflow(
+            field: .extentMinusX, value: "12000", limit: 9999
+        )) {
+            _ = try DSTHeader(stream: negative, name: "overflow")
+        }
+    }
+
+    @Test("a colour-block count past two digits throws")
+    func colorBlockCountBeyondTwoDigitsThrows() {
+        var stream = EmbroideryStream()
+        for _ in 0 ..< 99 {
+            stream.addColorChange()
+        }
+        #expect(throws: DSTSerializationError.fieldOverflow(
+            field: .colorBlocks, value: "100", limit: 99
+        )) {
+            _ = try DSTHeader(stream: stream, name: "overflow")
+        }
+    }
+
+    /// Replaces an exit test rather than joining one: a trap would terminate
+    /// the whole run, so a test that observes the throw has already proved the
+    /// process survived — and this recipe costs ~0.5 s, which is not worth
+    /// paying twice. Isolated to one violated field on purpose: the ADR-020
+    /// cap move (0 -> 60,500,000 stage points) overflows `ST` at 2,500,003
+    /// stitches *and* overflows `+X`, and since `ST` is emitted first such a
+    /// test would pass on emission order rather than on the `ST` check. That
+    /// recipe is recorded in ADR-025 and deliberately not committed: 1.4 s and
+    /// 134 MB for a number this one establishes in 0.5 s.
+    @Test("a stitch count past six digits throws")
+    func stitchCountBeyondSixDigitsThrows() {
+        var stream = EmbroideryStream()
+        for index in 0 ..< 1_000_001 {
+            stream.addStitch(at: StagePoint(x: index.isMultiple(of: 2) ? 0 : 0.5, y: 0))
+        }
+        #expect(throws: DSTSerializationError.fieldOverflow(
+            field: .stitchCount, value: "1000001", limit: 999_999
+        )) {
+            _ = try DSTHeader(stream: stream, name: "overflow")
+        }
+    }
+
+    /// AC 2 names *both* initializers, because `DSTHeader.init` is public and
+    /// so is a second trapping entry point independent of `DSTFile`.
+    @Test("DSTFile propagates the header's error unchanged")
+    func dstFilePropagatesTheHeaderError() {
+        var stream = EmbroideryStream()
+        for _ in 0 ..< 99 {
+            stream.addColorChange()
+        }
+        #expect(throws: DSTSerializationError.fieldOverflow(
+            field: .colorBlocks, value: "100", limit: 99
+        )) {
+            _ = try DSTFile(stream: stream, name: "overflow")
+        }
+    }
+
+    /// The point of throwing rather than being failable (US-211): a caller can
+    /// say *which* limit was hit. `Optional` cannot carry that.
+    @Test("a caller can tell which field overflowed, and render the limit")
+    func aCallerCanTellWhichFieldOverflowed() throws {
+        var stream = EmbroideryStream()
+        for _ in 0 ..< 117 {
+            stream.addColorChange()
+        }
+
+        let error = try #require(throws: DSTSerializationError.self) {
+            _ = try DSTHeader(stream: stream, name: "many colours")
+        }
+        guard case let .fieldOverflow(field, value, limit) = error else {
+            Issue.record("expected a field overflow")
+            return
+        }
+        #expect(field == .colorBlocks)
+        #expect(field.width == 2)
+
+        // US-308 composes its message from the payload; the engine asserts the
+        // data and never a user-facing string, which stays in the app's String
+        // Catalog (ADR-011, US-303's no-hardcoded-strings rule).
+        #expect("\(value) colour blocks; DST allows \(limit)" == "118 colour blocks; DST allows 99")
     }
 
     // MARK: - Helpers

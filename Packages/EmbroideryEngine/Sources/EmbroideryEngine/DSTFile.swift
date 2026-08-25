@@ -21,8 +21,13 @@ public struct DSTFile: Hashable, Sendable {
 
     /// Serializes `stream` under the given design name (sanitized and
     /// truncated to 15 characters by `DSTHeader`).
-    public init(stream: EmbroideryStream, name: String) {
-        var bytes = DSTHeader(stream: stream, name: name).bytes
+    ///
+    /// - Throws: `DSTSerializationError.fieldOverflow` when the design is
+    ///   larger than a header field can describe (US-211, ADR-025). Only the
+    ///   header can fail: the record loop's deltas are kept encodable by the
+    ///   stream itself (ADR-020).
+    public init(stream: EmbroideryStream, name: String) throws {
+        var bytes = try DSTHeader(stream: stream, name: name).bytes
         bytes.reserveCapacity(512 + 3 * stream.count + 3)
 
         var previous: EmbroideryPoint?

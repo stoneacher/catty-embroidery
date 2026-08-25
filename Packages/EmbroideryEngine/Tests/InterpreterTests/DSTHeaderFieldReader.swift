@@ -129,7 +129,7 @@ func runAndSerialize(_ program: Program, clock: InterpreterClock) throws -> Gold
     let events = interpreter.run(maxTicks: 100)
     let stream = interpreter.assembledStream()
     let name = try #require(finalizedDesignName(events))
-    return GoldenProgramRun(file: DSTFile(stream: stream, name: name), stream: stream, events: events)
+    return GoldenProgramRun(file: try DSTFile(stream: stream, name: name), stream: stream, events: events)
 }
 
 /// The design name a run asked to be written under, from its own events.

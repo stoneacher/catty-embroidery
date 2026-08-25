@@ -61,7 +61,7 @@ struct GoldenSquareManualPathTests {
         #expect(manual.count == goldenSquareRecords.count)
         try expectBytesEqual(
             runAndSerialize(GoldenSquare.program, clock: clock).file.data,
-            DSTFile(stream: manual, name: GoldenSquare.designName).data
+            try DSTFile(stream: manual, name: GoldenSquare.designName).data
         )
     }
 
@@ -87,7 +87,7 @@ struct GoldenSquareManualPathTests {
         #expect(EmbroideryPoint(converting: StagePoint(x: residue, y: residue)) == EmbroideryPoint(x: 0, y: 0))
         let stream = handBuiltStream(residue: residue)
         #expect(stream.count == goldenSquareRecords.count)
-        try expectBytesEqual(DSTFile(stream: stream, name: GoldenSquare.designName).data, goldenSquareFixture())
+        try expectBytesEqual(try DSTFile(stream: stream, name: GoldenSquare.designName).data, goldenSquareFixture())
     }
 
     @Test("a tack centre equal to the last path point dedups away, and the file loses a record")
@@ -101,7 +101,7 @@ struct GoldenSquareManualPathTests {
         let stream = handBuiltStream(residue: 0)
         #expect(stream.count == goldenSquareRecords.count - 1)
 
-        let file = DSTFile(stream: stream, name: GoldenSquare.designName)
+        let file = try DSTFile(stream: stream, name: GoldenSquare.designName)
         #expect(file.data.count == 512 + 3 * (goldenSquareRecords.count - 1) + 3)
         #expect(dstHeaderField(Array(file.data.prefix(512)), .stitchCount) == "21")
         #expect(try file.data != goldenSquareFixture())
@@ -120,6 +120,6 @@ struct GoldenSquareManualPathTests {
         #expect(EmbroideryPoint(converting: StagePoint(x: 0.25, y: 0.25)) == EmbroideryPoint(x: 1, y: 1))
         let stream = handBuiltStream(residue: 0.25)
         #expect(stream.count == goldenSquareRecords.count)
-        #expect(try DSTFile(stream: stream, name: GoldenSquare.designName).data != goldenSquareFixture())
+        #expect(try try DSTFile(stream: stream, name: GoldenSquare.designName).data != goldenSquareFixture())
     }
 }
