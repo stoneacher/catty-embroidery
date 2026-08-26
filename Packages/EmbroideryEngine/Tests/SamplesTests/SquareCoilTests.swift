@@ -16,9 +16,9 @@ struct SquareCoilTests {
     /// The DST header is read rather than inferred from `colorChangeCount`, since
     /// `CO == 2` is what the acceptance criterion actually states.
     @Test("one effective colour change, so the header reads CO 2")
-    func headerColourCountIsTwo() {
+    func headerColourCountIsTwo() throws {
         #expect(measured.stream.colorChangeCount == 1)
-        let header = DSTHeader(stream: measured.stream, name: SampleLibrary[.squareCoil].program.name)
+        let header = try DSTHeader(stream: measured.stream, name: SampleLibrary[.squareCoil].program.name)
         #expect(coField(of: header) == 2)
     }
 
@@ -58,12 +58,12 @@ struct SquareCoilTests {
     /// The derivation: `1 + 3 × (1 + 2 + … + 44) + 5` — one anchor, three points
     /// per interval over the 44 growing sides, and the five-point `sewUp` tack.
     @Test("2976 records and 9443 bytes, derived rather than observed")
-    func recordAndByteCountsArePinned() {
+    func recordAndByteCountsArePinned() throws {
         let intervals = (1 ... 44).reduce(0, +)
         #expect(measured.stream.count == 1 + 3 * intervals + 5)
         #expect(measured.stream.count == 2976)
 
-        let file = DSTFile(stream: measured.stream, name: SampleLibrary[.squareCoil].program.name)
+        let file = try DSTFile(stream: measured.stream, name: SampleLibrary[.squareCoil].program.name)
         #expect(file.data.count == 9443)
     }
 

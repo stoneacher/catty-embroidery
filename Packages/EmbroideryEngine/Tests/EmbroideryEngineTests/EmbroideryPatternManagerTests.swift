@@ -17,7 +17,7 @@ struct EmbroideryPatternManagerTests {
     // first emitted stitch, and invalid hex is a full no-op.
 
     @Test("Setting a differing color flags the next stitch and counts in CO")
-    func differingColorFlagsNextStitch() {
+    func differingColorFlagsNextStitch() throws {
         var manager = EmbroideryPatternManager()
         manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: actor)
         manager.setThreadColor(hexString: "#FF0000", for: actor)
@@ -34,7 +34,7 @@ struct EmbroideryPatternManagerTests {
 
         // CO counts color *blocks* = changes + 1 (US-104, ADR-012). The CO
         // field sits at fixed offsets 31..<36 (pinned by DSTHeaderTests).
-        let header = DSTHeader(stream: stream, name: "us110")
+        let header = try DSTHeader(stream: stream, name: "us110")
         #expect(Array(header.bytes[31 ..< 36]) == Array("CO:".utf8) + [UInt8(ascii: "2"), 0x00])
     }
 
@@ -148,7 +148,7 @@ struct EmbroideryPatternManagerTests {
     }
 
     @Test("In-layer changes and a layer boundary sum into one CO count")
-    func changesAndBoundarySumInCO() {
+    func changesAndBoundarySumInCO() throws {
         // Layer 0: black → red → blue (two armed changes), then a stitch on
         // layer 1. Clause D connects the layers (distance < 121) and the
         // assembler inserts the boundary change + join jump, so the machine
@@ -176,7 +176,7 @@ struct EmbroideryPatternManagerTests {
         #expect(stream.stitches.map(\.color) == [.black, red, blue, blue, blue, blue, blue])
         #expect(stream.colorChangeCount == 3)
 
-        let header = DSTHeader(stream: stream, name: "us110")
+        let header = try DSTHeader(stream: stream, name: "us110")
         #expect(Array(header.bytes[31 ..< 36]) == Array("CO:".utf8) + [UInt8(ascii: "4"), 0x00])
     }
 

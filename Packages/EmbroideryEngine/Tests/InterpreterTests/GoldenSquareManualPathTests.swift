@@ -61,7 +61,7 @@ struct GoldenSquareManualPathTests {
         #expect(manual.count == goldenSquareRecords.count)
         try expectBytesEqual(
             runAndSerialize(GoldenSquare.program, clock: clock).file.data,
-            DSTFile(stream: manual, name: GoldenSquare.designName).data
+            try DSTFile(stream: manual, name: GoldenSquare.designName).data
         )
     }
 
@@ -101,7 +101,7 @@ struct GoldenSquareManualPathTests {
         let stream = handBuiltStream(residue: 0)
         #expect(stream.count == goldenSquareRecords.count - 1)
 
-        let file = DSTFile(stream: stream, name: GoldenSquare.designName)
+        let file = try DSTFile(stream: stream, name: GoldenSquare.designName)
         #expect(file.data.count == 512 + 3 * (goldenSquareRecords.count - 1) + 3)
         #expect(dstHeaderField(Array(file.data.prefix(512)), .stitchCount) == "21")
         #expect(try file.data != goldenSquareFixture())

@@ -9,7 +9,7 @@ struct LayerBoundaryByteOrderTests {
     private let actor = ActorID(0)
 
     @Test("The inter-layer boundary keeps its record order through the real serializer")
-    func layerBoundaryRecordOrderSurvivesSerialization() {
+    func layerBoundaryRecordOrderSurvivesSerialization() throws {
         // US-210 moved the boundary emission from eager (trailing the previous
         // layer, plus a leading jump on the next) to lazy (both on the first op
         // of the next layer that survives the ADR-020 guards). The structured
@@ -26,7 +26,7 @@ struct LayerBoundaryByteOrderTests {
         manager.addStitch(at: StagePoint(x: 5, y: 0), layer: 0, actor: actor)
         manager.addStitch(at: StagePoint(x: 10, y: 0), layer: 1, actor: actor)
 
-        let data = DSTFile(stream: manager.assembled(), name: "layers").data
+        let data = try DSTFile(stream: manager.assembled(), name: "layers").data
         let body = Array(data.dropFirst(512).dropLast(3))
         let records = stride(from: 0, to: body.count, by: 3)
             .map { DSTRecordDecoder.decode(Array(body[$0 ..< $0 + 3])) }

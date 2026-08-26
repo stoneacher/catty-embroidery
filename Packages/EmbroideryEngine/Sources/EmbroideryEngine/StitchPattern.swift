@@ -20,7 +20,8 @@ public struct NeedleUpdate: Hashable, Sendable {
 /// materializing the stitches, while Swift's `Int(_:)` would trap — neither
 /// accident is ported; the update is rejected outright. A million stitches is
 /// two orders of magnitude past any legitimate design (DST's stitch-count
-/// header field itself caps at seven digits).
+/// header field itself caps at six digits, and past that serialization throws
+/// rather than trapping — ADR-025, which pins that this bound stays put).
 let maxStitchesPerUpdate = 1_000_000.0
 
 /// A pure stitch-generating state machine (Catroid `RunningStitchType`).

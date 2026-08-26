@@ -193,10 +193,10 @@ struct GoldenProgramStarTests {
     }
 
     @Test("one change means the DST header declares two colour blocks: CO = changes + 1")
-    func headerDeclaresTwoColorBlocks() {
+    func headerDeclaresTwoColorBlocks() throws {
         // The AC's "at the header level", taken literally, without straying into
         // US-209's pattern→stream→bytes scope: only the CO field is read.
-        let header = DSTHeader(stream: run().stream, name: GoldenStar.designName)
+        let header = try DSTHeader(stream: run().stream, name: GoldenStar.designName)
         // At a fixed offset rather than by searching for "CO:", which would also
         // match a design name containing it: `appendField` writes `TAG:` + value
         // + padding + \n + 0x1A, so LA occupies 3 + 15 + 2 = 20 bytes and ST the

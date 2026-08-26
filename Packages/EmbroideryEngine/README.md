@@ -21,7 +21,7 @@ manager.addStitch(at: StagePoint(x: 50, y: 60), layer: 0, actor: actor)
 let stream = manager.assembled()
 
 // Export to a machine-readable DST file
-let file = DSTFile(stream: stream, name: "MyDesign")
+let file = try DSTFile(stream: stream, name: "MyDesign")
 
 // Write to disk or compare bytes
 let designURL = URL.temporaryDirectory.appending(path: "MyDesign.dst")
@@ -162,12 +162,14 @@ let first = stream.firstStitchPosition
 
 Long moves (exceeding ±121 embroidery units on either axis) are automatically interpolated into jump stitches per US-105. At an exact ±121-unit boundary the guard's difference rounding and the record's position rounding can disagree by one unit; the guard decides on both, so such a move splits rather than encoding an out-of-range delta (ADR-020 — Catroid shares the asymmetry and silently emits a corrupt record instead). Dedup removes stitches at the last recorded stage position. A stitch whose coordinates cannot be converted (non-finite, or past the ×2 conversion's `Int` range) or whose move is too long to split into a bounded number of jumps emits nothing and leaves the stream untouched, armed flags included.
 
+ADR-020's last open item is closed by US-211: the header's field widths were the next reachable crash on this path, and they now throw (ADR-025). The 1,000,000-split cap stays where it is — once serialization throws, an oversize stitch count is a handled error rather than something interpolation has to prevent.
+
 See [ADR-012](../../docs/DECISIONS.md) for interpolation, rounding, and byte-level semantics.
 
 **DSTFile** — The complete, serialized Tajima DST file (512-byte header + 3-byte records + 0x00 0x00 0xF3 terminator).
 
 ```swift
-let file = DSTFile(stream: stream, name: "MyDesign")
+let file = try DSTFile(stream: stream, name: "MyDesign")
 
 // Primary API: compare or persist directly
 let bytes: Data = file.data
@@ -176,16 +178,16 @@ let bytes: Data = file.data
 try file.write(to: url)
 ```
 
-The file name is sanitized to ASCII and truncated to 15 characters (Catroid's limit). Building a file does no I/O.
+The file name is sanitized to ASCII and truncated to 15 characters (Catroid's limit). Building a file does no I/O, but it can fail: a design larger than a fixed-width header field can describe throws `DSTSerializationError.fieldOverflow(field:value:limit:)` (US-211, ADR-025), which names the field, the value and the limit so a caller can say *which* limit was hit.
 
-**DSTHeader** — The 512-byte DST file header, derived from stream metadata. Public for introspection; normally used only by `DSTFile`.
+**DSTHeader** — The 512-byte DST file header, derived from stream metadata. Public for introspection; normally used only by `DSTFile`. Being public makes it a serialization entry point in its own right, so it throws the same error as `DSTFile`.
 
 ```swift
-let header = DSTHeader(stream: stream, name: "Design")
+let header = try DSTHeader(stream: stream, name: "Design")
 let headerBytes = header.bytes
 ```
 
-Fields include: design name (LA), stitch count (ST), color blocks (CO), extent magnitudes (+X, −X, +Y, −Y), net displacement from first to last stitch (AX, AY), and padding.
+Fields include: design name (LA), stitch count (ST), color blocks (CO), extent magnitudes (+X, −X, +Y, −Y), net displacement from first to last stitch (AX, AY), and padding — enumerated as `DSTHeader.Field`, which carries each field's fixed `width` and `limit` in emission order. Three are reachable from ordinary input and throw rather than trap: the 4-wide extents, the 2-wide `CO` and the 6-wide `ST`. `LA`, `AX` and `AY` cannot overflow (ADR-025).
 
 **DSTStitchRecord** — One 3-byte Tajima DST record: a relative movement up to ±121 units per axis, plus jump / color-change flags.
 

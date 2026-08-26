@@ -4,25 +4,27 @@ import Testing
 
 /// Story item 7 — the cheap early canary for US-211.
 ///
-/// `DSTHeader.appendField` **preconditions** on field width today, so an overflow
-/// traps the whole test process rather than throwing (ADR-020's open item). This
-/// suite is therefore an existence proof, not an error-handling test: every sample
-/// must stay inside the field widths.
+/// `DSTHeader.appendField` used to **precondition** on field width, so an
+/// overflow trapped the whole test process rather than throwing (ADR-020's open
+/// item). This suite is an existence proof, not an error-handling test: every
+/// sample must stay inside the field widths.
 ///
-/// Once US-211 lands and `DSTFile.init`/`DSTHeader.init` become throwing
-/// (ADR-025), these calls gain `try` and the assertions below stay exactly as
-/// they are — they already assert the values, not the absence of a trap.
+/// US-211 landed and both initializers now throw (ADR-025). The prediction this
+/// comment carried held exactly: the calls gained `try` and every assertion
+/// below is unchanged, because they already asserted the values rather than the
+/// absence of a trap. The error handling itself is
+/// `DSTFieldWidthChokepointTests`'.
 @Suite("Sample DST serialization")
 struct SampleDSTTests {
     @Test("every sample serializes without tripping a header field width", arguments: SampleLibrary.all)
     func buildsADSTFile(_ sample: SampleProgram) throws {
         let measured = run(sample)
-        let file = DSTFile(stream: measured.stream, name: sample.program.name)
+        let file = try DSTFile(stream: measured.stream, name: sample.program.name)
 
         // 512-byte header + 3 bytes per record + the 3-byte end-of-file record.
         #expect(file.data.count == 512 + 3 * measured.stream.count + 3)
 
-        let header = DSTHeader(stream: measured.stream, name: sample.program.name)
+        let header = try DSTHeader(stream: measured.stream, name: sample.program.name)
         let stitchCount = try #require(stField(of: header))
         #expect(stitchCount == measured.stream.count)
         #expect(stitchCount <= 999_999, "ST is 6 digits wide")

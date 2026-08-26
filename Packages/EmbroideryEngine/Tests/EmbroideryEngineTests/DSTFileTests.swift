@@ -14,7 +14,7 @@ struct DSTFileTests {
     @Test("reproduces the stitch.dst fixture byte-for-byte")
     func goldenStitch() throws {
         let stream = Self.makeStream([(0, 0), (250, 0)])
-        let file = DSTFile(stream: stream, name: "stitch")
+        let file = try DSTFile(stream: stream, name: "stitch")
         try expectBytesEqual(file.data, Self.fixtureData("stitch"))
     }
 
@@ -28,7 +28,7 @@ struct DSTFileTests {
     @Test("reproduces color_change.dst through the ADR-013 flag transposition")
     func goldenColorChange() throws {
         let stream = Self.makeStream([(0, 0), (250, 0), (0, 0), (0, 250)], colorChangeBefore: 2)
-        let file = DSTFile(stream: stream, name: "EmbroideryStitchColorChange")
+        let file = try DSTFile(stream: stream, name: "EmbroideryStitchColorChange")
 
         var expected = try Array(Self.fixtureData("color_change"))
         let dupFlagOffset = 512 + 8 * 3 + 2
@@ -45,12 +45,12 @@ struct DSTFileTests {
     /// flags and record encoding. All five golden points sit at (0,0), so
     /// the records are pure flag bytes.
     @Test("a manager's five-point golden serializes to the expected records")
-    func managerFivePointGoldenBytes() {
+    func managerFivePointGoldenBytes() throws {
         var manager = EmbroideryPatternManager()
         manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 0, actor: ActorID(0))
         manager.addStitch(at: StagePoint(x: 0, y: 0), layer: 1, actor: ActorID(0))
 
-        let data = DSTFile(stream: manager.assembled(), name: "layers").data
+        let data = try DSTFile(stream: manager.assembled(), name: "layers").data
         #expect(data.count == 512 + 5 * 3 + 3)
         #expect(Array(data.dropFirst(512)) == [
             0x00, 0x00, 0x03, // plain
@@ -65,15 +65,15 @@ struct DSTFileTests {
     // MARK: - Structure
 
     @Test("an empty stream produces header + end-of-file record only")
-    func emptyStream() {
-        let file = DSTFile(stream: EmbroideryStream(), name: "empty")
+    func emptyStream() throws {
+        let file = try DSTFile(stream: EmbroideryStream(), name: "empty")
         #expect(file.data.count == 515)
         #expect(Array(file.data.suffix(3)) == [0x00, 0x00, 0xF3])
     }
 
     @Test("a single stitch emits one zero-delta plain record")
     func singleStitch() throws {
-        let file = DSTFile(stream: Self.makeStream([(10, -20)]), name: "one")
+        let file = try DSTFile(stream: Self.makeStream([(10, -20)]), name: "one")
         // #require, not #expect: indexing short data would crash the test
         // process and hide every other result (US-105 journal lesson).
         try #require(file.data.count == 518)
@@ -83,7 +83,7 @@ struct DSTFileTests {
     @Test("the end-of-file record appears exactly once, at the end")
     func terminatorOnlyAtEnd() throws {
         let stream = Self.makeStream([(0, 0), (250, 0), (0, 0), (0, 250)], colorChangeBefore: 2)
-        let data = DSTFile(stream: stream, name: "term").data
+        let data = try DSTFile(stream: stream, name: "term").data
         try #require(data.count >= 515)
         #expect(Array(data.suffix(3)) == [0x00, 0x00, 0xF3])
         let bytes = Array(data)
@@ -93,17 +93,18 @@ struct DSTFileTests {
     }
 
     @Test("the first 512 bytes are the stream's DST header")
-    func headerPrefix() {
+    func headerPrefix() throws {
         let stream = Self.makeStream([(0, 0), (30, 40)])
-        let file = DSTFile(stream: stream, name: "head")
-        expectBytesEqual(file.data.prefix(512), DSTHeader(stream: stream, name: "head").bytes)
+        let file = try DSTFile(stream: stream, name: "head")
+        let header = try DSTHeader(stream: stream, name: "head")
+        expectBytesEqual(file.data.prefix(512), header.bytes)
     }
 
     // MARK: - write(to:)
 
     @Test("write(to:) persists exactly the in-memory data")
     func writeToURL() throws {
-        let file = DSTFile(stream: Self.makeStream([(0, 0), (250, 0)]), name: "stitch")
+        let file = try DSTFile(stream: Self.makeStream([(0, 0), (250, 0)]), name: "stitch")
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("dst")
@@ -114,8 +115,8 @@ struct DSTFileTests {
     }
 
     @Test("write(to:) throws when the destination directory does not exist")
-    func writeToMissingDirectory() {
-        let file = DSTFile(stream: Self.makeStream([(0, 0)]), name: "nowhere")
+    func writeToMissingDirectory() throws {
+        let file = try DSTFile(stream: Self.makeStream([(0, 0)]), name: "nowhere")
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
             .appendingPathComponent("missing.dst")

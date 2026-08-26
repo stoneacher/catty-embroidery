@@ -12,7 +12,7 @@ struct DSTHeaderTests {
     @Test("reproduces the stitch.dst fixture header byte-for-byte")
     func goldenStitchHeader() throws {
         let stream = Self.makeStream([(0, 0), (250, 0)])
-        let header = DSTHeader(stream: stream, name: "stitch")
+        let header = try DSTHeader(stream: stream, name: "stitch")
         #expect(try header.bytes == (Self.fixtureHeaderBytes("stitch")))
     }
 
@@ -26,7 +26,7 @@ struct DSTHeaderTests {
             [(0, 0), (250, 0), (0, 0), (0, 250)],
             colorChangeBefore: 2
         )
-        let header = DSTHeader(stream: stream, name: "EmbroideryStitchColorChange")
+        let header = try DSTHeader(stream: stream, name: "EmbroideryStitchColorChange")
         #expect(try header.bytes == (Self.fixtureHeaderBytes("color_change")))
     }
 
@@ -34,7 +34,7 @@ struct DSTHeaderTests {
 
     @Test("numeric fields are NUL-padded, the label keeps space padding")
     func fieldPadding() throws {
-        let header = DSTHeader(stream: Self.makeStream([(0, 0)]), name: "abc")
+        let header = try DSTHeader(stream: Self.makeStream([(0, 0)]), name: "abc")
         let fields = try Self.fields(in: header.bytes)
         #expect(fields["LA"] == Self.ascii("abc", paddedTo: 15, with: 0x20))
         #expect(fields["ST"] == Self.ascii("1", paddedTo: 6, with: 0x00))
@@ -46,7 +46,7 @@ struct DSTHeaderTests {
     /// known offset (LA ends at 18, ST at 29, … PD at 122).
     @Test("every field ends with newline + 0x1A at its fixed offset")
     func fieldTerminators() throws {
-        let header = DSTHeader(stream: Self.makeStream([(0, 0)]), name: "abc").bytes
+        let header = try DSTHeader(stream: Self.makeStream([(0, 0)]), name: "abc").bytes
         try #require(header.count == 512)
         for offset in [18, 29, 36, 45, 54, 63, 72, 82, 92, 102, 112, 122] {
             #expect(header[offset] == 0x0A)
@@ -114,7 +114,7 @@ struct DSTHeaderTests {
 
     @Test("names are sanitized deterministically", arguments: zip(rawNames, sanitizedLabels))
     func nameSanitization(name: String, label: String) throws {
-        let header = DSTHeader(stream: Self.makeStream([(0, 0)]), name: name)
+        let header = try DSTHeader(stream: Self.makeStream([(0, 0)]), name: name)
         let fields = try Self.fields(in: header.bytes)
         #expect(fields["LA"] == Self.ascii(label, paddedTo: 15, with: 0x20))
     }
@@ -122,14 +122,14 @@ struct DSTHeaderTests {
     // MARK: - Length invariant
 
     @Test("header is exactly 512 bytes with space fill after the content")
-    func lengthAndFillInvariant() {
+    func lengthAndFillInvariant() throws {
         let streams = [
             EmbroideryStream(),
             Self.makeStream([(0, 0)]),
             Self.makeStream([(0, 0), (-120, -50), (30, 20)], colorChangeBefore: 2)
         ]
         for stream in streams {
-            let bytes = DSTHeader(stream: stream, name: "AnyName").bytes
+            let bytes = try DSTHeader(stream: stream, name: "AnyName").bytes
             #expect(bytes.count == 512)
             #expect(bytes.dropFirst(124).allSatisfy { $0 == 0x20 })
         }
