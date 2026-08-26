@@ -13,6 +13,12 @@ import Testing
 /// `appendField`'s layout changes, these offsets must be re-derived by hand and
 /// the change noticed, rather than silently tracking it.
 ///
+/// **US-211 gave the writer a public near-twin: `DSTHeader.Field`** carries the
+/// same tags, the same widths and the same pad rule, and eight of its cases are
+/// named identically to this enum's. Making this reader use it would destroy the
+/// oracle, which is the whole point of the paragraph above — so the resemblance
+/// is a hazard, not an invitation. `Field` carries the reciprocal warning.
+///
 /// The precise claim, since a looser one would be false: this is independent of the
 /// writer's *code*, not of its ADR-012-pinned *layout*. The widths below are
 /// transcribed from the same Tajima field sizes `DSTHeader` writes, so the reader

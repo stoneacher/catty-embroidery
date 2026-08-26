@@ -96,7 +96,8 @@ struct DSTFileTests {
     func headerPrefix() throws {
         let stream = Self.makeStream([(0, 0), (30, 40)])
         let file = try DSTFile(stream: stream, name: "head")
-        expectBytesEqual(file.data.prefix(512), try DSTHeader(stream: stream, name: "head").bytes)
+        let header = try DSTHeader(stream: stream, name: "head")
+        expectBytesEqual(file.data.prefix(512), header.bytes)
     }
 
     // MARK: - write(to:)

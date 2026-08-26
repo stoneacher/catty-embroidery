@@ -42,10 +42,10 @@ public struct DSTHeader: Hashable, Sendable {
         try Self.appendField(&bytes, .extentMinusX, "\(abs(min(box.min.x - first.x, 0)))")
         try Self.appendField(&bytes, .extentPlusY, "\(max(box.max.y - first.y, 0))")
         try Self.appendField(&bytes, .extentMinusY, "\(abs(min(box.min.y - first.y, 0)))")
-        try Self.appendField(&bytes, .axisX, "\(last.x - first.x)")
-        try Self.appendField(&bytes, .axisY, "\(last.y - first.y)")
-        try Self.appendField(&bytes, .maxX, "0")
-        try Self.appendField(&bytes, .maxY, "0")
+        try Self.appendField(&bytes, .endOffsetX, "\(last.x - first.x)")
+        try Self.appendField(&bytes, .endOffsetY, "\(last.y - first.y)")
+        try Self.appendField(&bytes, .multiVolumeX, "0")
+        try Self.appendField(&bytes, .multiVolumeY, "0")
         try Self.appendField(&bytes, .previousDesign, "*****")
         bytes += Array(repeating: 0x20, count: 512 - bytes.count)
         self.bytes = bytes
@@ -98,6 +98,25 @@ public extension DSTHeader {
     /// `DSTFileConstants.DST_HEADER`). The order is contractual — see
     /// `DSTHeader.init` and ADR-025 — and `CaseIterable` follows it, so a
     /// caller can render the fields as the file lays them out.
+    /// **Not for use by the test oracles.** `InterpreterTests`'
+    /// `DSTHeaderFieldReader` and `EmbroideryEngineTests`' `DSTFileReader` carry
+    /// the same tags and widths as hard-coded literals *deliberately*, so that a
+    /// wrong value or a shifted layout is caught by something that does not
+    /// share the writer's definitions. Rewiring either onto this enum would
+    /// remove the independence it exists for.
+    ///
+    /// Names follow the reference's *meaning*, not its field tags, because
+    /// ADR-012 makes cross-referencing Catroid a routine activity and a name
+    /// that means something else there is a trap. `AX`/`AY` are `endOffsetX`/
+    /// `endOffsetY` — Catroid computes them as `lastX - firstX` (`deltaX`) and
+    /// this repo's own test oracle already calls them that
+    /// (`DSTHeaderFieldReader`). They are emphatically *not* "axis" anything, as
+    /// an earlier draft of this enum called them. `MX`/`MY` are
+    /// `multiVolumeX`/`multiVolumeY` — conventionally Tajima's multi-volume
+    /// design offset, unused here and written as a literal `0` by both
+    /// references and by us; no ADR pins their semantics. They must not be
+    /// called `maxX`/`maxY`, which in Catroid's `DSTHeader.kt` are the
+    /// bounding-box maxima feeding `+X`/`+Y` — a different field entirely.
     enum Field: String, CaseIterable, Sendable {
         case label = "LA"
         case stitchCount = "ST"
@@ -106,10 +125,10 @@ public extension DSTHeader {
         case extentMinusX = "-X"
         case extentPlusY = "+Y"
         case extentMinusY = "-Y"
-        case axisX = "AX"
-        case axisY = "AY"
-        case maxX = "MX"
-        case maxY = "MY"
+        case endOffsetX = "AX"
+        case endOffsetY = "AY"
+        case multiVolumeX = "MX"
+        case multiVolumeY = "MY"
         case previousDesign = "PD"
 
         /// The field's fixed byte width.
@@ -119,19 +138,33 @@ public extension DSTHeader {
             case .stitchCount: 6
             case .colorBlocks: 2
             case .extentPlusX, .extentMinusX, .extentPlusY, .extentMinusY: 4
-            case .axisX, .axisY, .maxX, .maxY, .previousDesign: 5
+            case .endOffsetX, .endOffsetY, .multiVolumeX, .multiVolumeY, .previousDesign: 5
             }
         }
 
         /// The largest value the field can express as a non-negative decimal.
         ///
-        /// Exact for every field `DSTSerializationError` is reachable from —
+        /// Exact for the six fields `DSTSerializationError` is reachable from —
         /// `stitchCount`, `colorBlocks` and the four extents, all non-negative
-        /// counts. It is *not* the bound on the signed `axisX`/`axisY` (which
-        /// reach only -9999 on the negative side) nor a character count for
-        /// `label`; those three cannot overflow, per ADR-025.
+        /// counts. It is **meaningless for the other six**, which cannot
+        /// overflow (ADR-025) and whose domains are not non-negative decimals:
+        /// `label` is a character count, `endOffsetX`/`endOffsetY` are signed
+        /// and reach only −9999 on the negative side, and
+        /// `multiVolumeX`/`multiVolumeY`/`previousDesign` are constants. Read it
+        /// only off an error, where those six never appear.
+        ///
+        /// Written as a table rather than `pow(10, width)` or a fold: the four
+        /// distinct widths are exact literals here, whereas a fold multiplying
+        /// by ten would overflow `Int` at width 19 — a trap, in the one file
+        /// whose entire story was removing one.
         public var limit: Int {
-            (0 ..< width).reduce(1) { product, _ in product * 10 } - 1
+            switch self {
+            case .colorBlocks: 99
+            case .extentPlusX, .extentMinusX, .extentPlusY, .extentMinusY: 9_999
+            case .endOffsetX, .endOffsetY, .multiVolumeX, .multiVolumeY, .previousDesign: 99_999
+            case .stitchCount: 999_999
+            case .label: 999_999_999_999_999
+            }
         }
 
         /// Numeric fields pad with NUL, the label with space (ADR-012).

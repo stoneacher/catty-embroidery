@@ -62,7 +62,7 @@ struct DSTHeaderTests {
     @Test("negative extents are written as magnitudes")
     func negativeExtentMagnitudes() throws {
         let stream = Self.makeStream([(0, 0), (-120, -50), (30, 20)])
-        let fields = try Self.fields(in: try DSTHeader(stream: stream, name: "neg").bytes)
+        let fields = try Self.fields(in: DSTHeader(stream: stream, name: "neg").bytes)
         #expect(fields["+X"] == Self.ascii("60", paddedTo: 4, with: 0x00))
         #expect(fields["-X"] == Self.ascii("240", paddedTo: 4, with: 0x00))
         #expect(fields["+Y"] == Self.ascii("40", paddedTo: 4, with: 0x00))
@@ -78,7 +78,7 @@ struct DSTHeaderTests {
     @Test("extents and AX/AY are relative to the first stitch")
     func nonOriginFirstStitch() throws {
         let stream = Self.makeStream([(10, 5), (0, 0), (60, 50), (20, 45)])
-        let fields = try Self.fields(in: try DSTHeader(stream: stream, name: "rel").bytes)
+        let fields = try Self.fields(in: DSTHeader(stream: stream, name: "rel").bytes)
         #expect(fields["ST"] == Self.ascii("4", paddedTo: 6, with: 0x00))
         #expect(fields["+X"] == Self.ascii("100", paddedTo: 4, with: 0x00))
         #expect(fields["-X"] == Self.ascii("20", paddedTo: 4, with: 0x00))
@@ -90,7 +90,7 @@ struct DSTHeaderTests {
 
     @Test("an empty stream produces a zeroed header with CO:1")
     func emptyStreamHeader() throws {
-        let fields = try Self.fields(in: try DSTHeader(stream: EmbroideryStream(), name: "empty").bytes)
+        let fields = try Self.fields(in: DSTHeader(stream: EmbroideryStream(), name: "empty").bytes)
         #expect(fields["ST"] == Self.ascii("0", paddedTo: 6, with: 0x00))
         #expect(fields["CO"] == Self.ascii("1", paddedTo: 2, with: 0x00))
         for tag in ["+X", "-X", "+Y", "-Y"] {

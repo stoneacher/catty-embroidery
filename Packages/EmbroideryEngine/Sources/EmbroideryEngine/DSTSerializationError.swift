@@ -16,5 +16,13 @@ public enum DSTSerializationError: Error, Equatable, Sendable {
     /// Only the first violation in emission order is reported, which is
     /// deterministic and is what keeps `DSTHeader`'s extent arithmetic inside
     /// `Int` (ADR-025): a design busting both `ST` and `+X` is told about `ST`.
+    ///
+    /// `limit` is carried rather than computed from `field`, so a caller can
+    /// assert it independently of `Field.limit` — the deliberate cost being
+    /// that a *constructed* error can pair a field with the wrong limit. The
+    /// engine only ever emits `field.limit`. Note also that
+    /// `localizedDescription` is the unhelpful Foundation default: this is data
+    /// for a caller to render, not a message to log (ADR-011 keeps user-facing
+    /// wording in the app's String Catalog).
     case fieldOverflow(field: DSTHeader.Field, value: String, limit: Int)
 }

@@ -42,6 +42,18 @@ struct DSTFieldWidthChokepointTests {
     //
     // An exit-test body runs in a fresh process and must not capture the
     // enclosing context — the constraint `DSTStitchRecordTests` documents.
+    //
+    // These two survive even though ADR-025's own subsumption rule ("where a
+    // throwing test covers the same recipe, that test subsumes the exit test")
+    // would retire them: both recipes are duplicated exactly by
+    // `extentBeyondFourDigitsThrowsNamingTheExtent` and
+    // `colorBlockCountBeyondTwoDigitsThrows`. They are kept for **diagnostic
+    // localisation**, which the in-loop review demonstrated by reinstating the
+    // `precondition` ahead of the throw: the whole run then dies with
+    // `Process … exited with unexpected signal code 5`, because the in-process
+    // throwing tests hit the trap. These two name the regression instead, at
+    // 0.008 s each. The expensive `ST` exit test was still retired, because
+    // 0.5 s is too much to pay for the same localisation.
 
     @Test("an extent past four digits does not kill the process")
     func anOversizeExtentDoesNotKillTheProcess() async {
@@ -263,6 +275,45 @@ struct DSTFieldWidthChokepointTests {
         #expect(fields["ST"] == "1")
     }
 
+    /// `Field`'s declaration order is a **contract** (ADR-025), and until the
+    /// in-loop review it had no coverage at all: reversing all twelve cases
+    /// passed the entire suite, while reordering the same two fields inside
+    /// `init` failed 29 assertions across 8 golden suites. So the *emission*
+    /// order is well protected by the goldens and the *enum's* order was
+    /// protected by nothing — even though `Field`'s own doc comment invites a
+    /// caller to iterate `allCases` and render fields "as the file lays them
+    /// out", which US-308 may well do.
+    ///
+    /// The tags are read by walking the terminators, independently of
+    /// `allCases`, so this compares two orders rather than deriving one from
+    /// the other. It also pins ADR-025's two order guarantees directly instead
+    /// of by golden side effect: `ST` before the extents, extents before
+    /// `AX`/`AY`.
+    @Test("Field.allCases is the file's own field order")
+    func caseOrderMatchesEmissionOrder() throws {
+        var stream = EmbroideryStream()
+        stream.addStitch(at: StagePoint(x: 0, y: 0))
+        let bytes = try DSTHeader(stream: stream, name: "order").bytes
+
+        var tags: [String] = []
+        var index = 0
+        while index < 124 {
+            tags.append(Self.ascii(bytes[index ..< index + 2]))
+            var end = index + 3
+            while end < 124, bytes[end] != 0x0A {
+                end += 1
+            }
+            index = end + 2
+        }
+
+        #expect(tags == DSTHeader.Field.allCases.map(\.rawValue))
+        let stitchCount = try #require(tags.firstIndex(of: "ST"))
+        let firstExtent = try #require(tags.firstIndex(of: "+X"))
+        let firstAxis = try #require(tags.firstIndex(of: "AX"))
+        #expect(stitchCount < firstExtent)
+        #expect(firstExtent < firstAxis)
+    }
+
     // MARK: - Accepted coverage gaps, stated rather than left silent
     //
     // Named by Codex round 1 and declined with reasons, not overlooked:
@@ -278,6 +329,17 @@ struct DSTFieldWidthChokepointTests {
     //   "12000"), which an empty stream cannot produce.
 
     // MARK: - Helpers
+
+    /// Header bytes are ASCII by construction — the writer emits ASCII tags,
+    /// decimal digits and a label already folded to ASCII by `sanitized(_:)` —
+    /// so decoding cannot fail and the result is not an `Optional` needing a
+    /// `#require`. Built from scalars rather than `String(decoding:as:)`
+    /// because the two gates disagree there: the compiler calls a `#require`
+    /// on the failable `String(bytes:encoding:)` redundant, while SwiftLint's
+    /// `optional_data_string_conversion` rejects the non-failable form.
+    private static func ascii(_ bytes: some Sequence<UInt8>) -> String {
+        String(bytes.map { Character(UnicodeScalar($0)) })
+    }
 
     /// Splits the header's 124 content bytes into tag -> value, dropping the
     /// in-field padding and the `\n` + 0x1A terminator. Deliberately local: it
@@ -295,7 +357,7 @@ struct DSTFieldWidthChokepointTests {
                 end += 1
             }
             let value = header[(index + 3) ..< end].filter { $0 != 0x00 && $0 != 0x20 }
-            result[tag] = try #require(String(bytes: value, encoding: .utf8))
+            result[tag] = Self.ascii(value)
             index = end + 2
         }
         return result

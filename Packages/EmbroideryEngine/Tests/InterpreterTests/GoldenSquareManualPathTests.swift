@@ -87,7 +87,7 @@ struct GoldenSquareManualPathTests {
         #expect(EmbroideryPoint(converting: StagePoint(x: residue, y: residue)) == EmbroideryPoint(x: 0, y: 0))
         let stream = handBuiltStream(residue: residue)
         #expect(stream.count == goldenSquareRecords.count)
-        try expectBytesEqual(try DSTFile(stream: stream, name: GoldenSquare.designName).data, goldenSquareFixture())
+        try expectBytesEqual(DSTFile(stream: stream, name: GoldenSquare.designName).data, goldenSquareFixture())
     }
 
     @Test("a tack centre equal to the last path point dedups away, and the file loses a record")
@@ -120,6 +120,6 @@ struct GoldenSquareManualPathTests {
         #expect(EmbroideryPoint(converting: StagePoint(x: 0.25, y: 0.25)) == EmbroideryPoint(x: 1, y: 1))
         let stream = handBuiltStream(residue: 0.25)
         #expect(stream.count == goldenSquareRecords.count)
-        #expect(try try DSTFile(stream: stream, name: GoldenSquare.designName).data != goldenSquareFixture())
+        #expect(try DSTFile(stream: stream, name: GoldenSquare.designName).data != goldenSquareFixture())
     }
 }

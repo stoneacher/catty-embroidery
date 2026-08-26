@@ -14,7 +14,7 @@ struct DSTRoundTripTests {
         stream.addStitch(at: StagePoint(x: 0, y: 0))
         stream.addStitch(at: StagePoint(x: 250, y: 0))
 
-        let decoded = try DSTFileReader.read(try DSTFile(stream: stream, name: "stitch").data)
+        let decoded = try DSTFileReader.read(DSTFile(stream: stream, name: "stitch").data)
         try Self.expectMatches(decoded, stream)
         #expect(decoded.headerValue("CO") == 1)
     }
@@ -29,7 +29,7 @@ struct DSTRoundTripTests {
         stream.addStitch(at: StagePoint(x: 30, y: 20), color: ThreadColor(red: 255, green: 0, blue: 0))
         stream.addStitch(at: StagePoint(x: -40, y: -35), color: ThreadColor(red: 255, green: 0, blue: 0))
 
-        let decoded = try DSTFileReader.read(try DSTFile(stream: stream, name: "flags").data)
+        let decoded = try DSTFileReader.read(DSTFile(stream: stream, name: "flags").data)
         try Self.expectMatches(decoded, stream)
         #expect(decoded.headerValue("CO") == 2)
     }
