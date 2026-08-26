@@ -153,8 +153,9 @@ public extension DSTHeader {
         /// `multiVolumeX`/`multiVolumeY`/`previousDesign` are constants. Read it
         /// only off an error, where those six never appear.
         ///
-        /// Written as a table rather than `pow(10, width)` or a fold: the four
-        /// distinct widths are exact literals here, whereas a fold multiplying
+        /// Written as a table rather than `pow(10, width)` or a fold: the five
+        /// distinct widths (2, 4, 5, 6, 15) are exact literals here, whereas a
+        /// fold multiplying
         /// by ten would overflow `Int` at width 19 — a trap, in the one file
         /// whose entire story was removing one.
         public var limit: Int {
