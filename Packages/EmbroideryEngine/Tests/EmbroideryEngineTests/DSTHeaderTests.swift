@@ -105,11 +105,27 @@ struct DSTHeaderTests {
 
     /// Non-ASCII scalars become "_", then the result truncates to 15 chars;
     /// an empty name stays empty (all space padding).
+    ///
+    /// The last two rows were added by US-308, which depends on this method
+    /// staying a *mangling backstop* while `DesignName` becomes the *rejecting*
+    /// layer in front of it (ADR-026). Each pins one thing that story reasons
+    /// from, and neither was covered before:
+    ///
+    /// - `"a/b:c"` passes through **untouched**. The file name rejects `/`
+    ///   (`DSTFileNameProblem.prohibitedCharacter`) and the label accepts it, and
+    ///   that same character reaching two different verdicts is what "the file
+    ///   name is sanitized independently of the header label" means concretely.
+    /// - `"  pad  "` keeps its **leading** whitespace. That is why `DesignName`
+    ///   trims on input rather than trusting the engine to: untrimmed input
+    ///   reaches the machine verbatim. The *trailing* spaces are deliberately
+    ///   not asserted — the field is space-padded to 15, so they are
+    ///   indistinguishable from padding, which is itself the reason an
+    ///   all-whitespace name is `.empty` rather than valid.
     private static let rawNames = [
-        "", "stitch", "EmbroideryStitchColorChange", "Nähen⭐"
+        "", "stitch", "EmbroideryStitchColorChange", "Nähen⭐", "a/b:c", "  pad  "
     ]
     private static let sanitizedLabels = [
-        "", "stitch", "EmbroideryStitc", "N_hen_"
+        "", "stitch", "EmbroideryStitc", "N_hen_", "a/b:c", "  pad"
     ]
 
     @Test("names are sanitized deterministically", arguments: zip(rawNames, sanitizedLabels))
