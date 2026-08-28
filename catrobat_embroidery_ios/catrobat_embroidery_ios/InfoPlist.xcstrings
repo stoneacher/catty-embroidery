@@ -1,0 +1,18 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "uttype.dst.description" : {
+      "comment" : "Human-readable name of the .dst file type this app exports, shown by the Files app, Finder and the share sheet beside a shared file. \"Tajima\" is the name of the company whose format this is and \"DST\" is the format's file extension — both are proper names and must not be translated. Only the word for a design or pattern should be translated. Keep it short: it appears in a file-info row, not a sentence.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tajima Embroidery Design"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.2"
+}

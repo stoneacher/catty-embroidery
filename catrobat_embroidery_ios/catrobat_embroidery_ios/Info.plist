@@ -4,13 +4,66 @@
   Info.plist — Embroidery Designer for iOS
   Copyright (C) 2026 The Catrobat Team. Licensed under AGPL-3.0.
 
-  Deliberately empty (US-303). GENERATE_INFOPLIST_FILE stays YES, so Xcode
-  merges the generated keys into this file at build time and nothing here needs
-  to duplicate them. The file exists because US-308 must declare
-  UTExportedTypeDeclarations for .dst — an array of dictionaries with no
-  INFOPLIST_KEY_* build-setting form. Editing this XML is a normal file change,
-  not a project-file change, so it needs no second Xcode session.
+  GENERATE_INFOPLIST_FILE stays YES, so Xcode merges the generated keys into
+  this file at build time and nothing here needs to duplicate them. The file
+  exists (US-303) because UTExportedTypeDeclarations is an array of
+  dictionaries with no INFOPLIST_KEY_* build-setting form. Editing this XML is
+  a normal file change, not a project-file change, so it needs no Xcode
+  session — confirmed by US-308, which is also why InfoPlist.xcstrings beside
+  it works with no project edit.
+
+  US-308 (ADR-026) adds the exported `.dst` declaration below. Four things
+  about it are decisions rather than boilerplate:
+
+  - **Exported, not imported.** Apple's guidance says to declare an *exported*
+    type when your app is "the canonical source of information for that type",
+    and an *imported* type for "a proprietary file format the system doesn't
+    declare". Tajima DST is really the latter — but the imported path also
+    says to reuse the originator's identifier, and no declared DST identifier
+    exists anywhere: neither Catroid nor Catty declares a `.dst` type at all,
+    and the simulator resolves `.dst` to a dynamic `dyn.ah62d4rv4ge80k65y`
+    placeholder (measured). The practical difference is Launch Services
+    ranking, which ADR-011 does not want, so exported stands with the
+    reasoning written down rather than the tension silently resolved.
+
+  - **UTTypeConformsTo lists public.data AND public.content.** `public.data`
+    is what lets Finder and the Files app represent a stored item at all;
+    `public.content` is what Apple documents as the conformance that allows
+    sharing over AirDrop — and this story exists to share the file, so
+    omitting it would break the headline use case on the most likely
+    destination. (Catty's `.catrobat` entry, the only prior art available, is
+    an *imported* declaration listing public.data/public.archive with no
+    public.content — a structural template only.)
+
+  - **No LSHandlerRank.** ADR-011: we open nothing, so we claim nothing.
+
+  - **UTTypeDescription is a localisation key**, resolved from
+    InfoPlist.xcstrings. `UTTypeDeclarationTests` asserts it does not fall
+    back to the key, which is the same `≠ key` check AppStringsTests makes.
 -->
 <plist version="1.0">
-<dict/>
+<dict>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>org.catrobat.embroiderydesigner.dst</string>
+			<key>UTTypeDescription</key>
+			<string>uttype.dst.description</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>dst</string>
+					<string>DST</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+</dict>
 </plist>
