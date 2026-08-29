@@ -4,17 +4,25 @@ import Foundation
 /// than normalised, so that what the user typed is what the machine displays (US-308).
 ///
 /// **This is a rejecting layer in front of a mangling backstop, and both are wanted.**
-/// `DSTHeader.sanitized(_:)` already maps non-ASCII scalars to `_` and truncates to 15,
-/// and it stays exactly as it is — pinned by `DSTHeaderTests.nameSanitization`, which
-/// US-308 extended with the two rows this type's design reasons from: `"a/b:c"` reaching
-/// the label untouched, and `"  pad  "` keeping its leading whitespace. The division of
-/// labour:
+/// `DSTHeader.sanitized(_:)` maps every scalar outside printable ASCII to `_` and truncates
+/// to 15 — pinned by `DSTHeaderTests.nameSanitization`, which US-308 extended with four rows:
+/// `"a/b:c"` reaching the label untouched, `"  pad  "` keeping its leading whitespace, and
+/// two carrying ASCII control bytes.
+///
+/// **The backstop's rule was widened to match this type's, not left alone.** An earlier
+/// version of this comment said it maps "non-ASCII" and "stays exactly as it is"; a
+/// cross-vendor round showed that let `0x0A` and `0x1A` — the header's own field
+/// terminators — straight into the `LA` field through the public `DSTFile.init`. Both layers
+/// now apply the same character rule, reached from opposite ends: here so the user sees what
+/// they typed, there so no caller can corrupt the field structure. The division of labour is
+/// unchanged:
 ///
 /// - *Here*: input a **user** can see and fix is refused, and the reason names the count
 ///   or the offending character, so the field can say what is wrong while they type.
 /// - *There*: input **no user typed** — an imported `.catrobat` project name, a future
 ///   CLI argument, an M5 project title — is silently normalised, so that no caller
-///   anywhere can emit a 16-byte or non-ASCII `LA` field.
+///   anywhere can emit an over-long `LA` field or one carrying a byte outside printable
+///   ASCII.
 ///
 /// ADR-026 records why they are not collapsed into one. The short version: requiring a
 /// `DesignName` in `DSTFile.init` would make the backstop unreachable and would ripple

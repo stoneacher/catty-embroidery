@@ -3,14 +3,15 @@ import Testing
 
 /// US-308 test item 1 — the design name the DST `LA` field can carry verbatim.
 ///
-/// **`DesignName` is a rejecting layer in front of a mangling backstop that already
-/// exists.** `DSTHeader.sanitized(_:)` silently maps non-ASCII to `_` and truncates to
-/// 15, and it stays exactly as it is (`DSTHeaderTests.sanitisationBackstopIsUnchanged`
-/// pins that). The division of labour: this type refuses input a *user* can see and fix,
-/// naming what is wrong; the header normalises input no user typed, so that no caller
-/// anywhere — M4/M5, a `.catrobat` importer, a future CLI — can emit a 16-byte or
-/// non-ASCII `LA` field. Two layers on purpose, and ADR-026 records why they are not
-/// collapsed into one.
+/// **`DesignName` is a rejecting layer in front of a mangling backstop.**
+/// `DSTHeader.sanitized(_:)` silently maps everything outside printable ASCII to `_` and
+/// truncates to 15 — pinned by `DSTHeaderTests.nameSanitization`, not by a
+/// `sanitisationBackstopIsUnchanged` test, which an earlier version of this comment cited
+/// and which never existed. The division of labour: this type refuses input a *user* can
+/// see and fix, naming what is wrong; the header normalises input no user typed, so that no
+/// caller anywhere — M4/M5, a `.catrobat` importer, a future CLI — can emit an over-long
+/// `LA` field or one carrying a byte the format's own field terminators use. Two layers on
+/// purpose, and ADR-026 records why they are not collapsed into one.
 ///
 /// Every test here asserts the **payload**, not merely that validation failed. A test
 /// that only checked "is not valid" would pass against a validator that rejects

@@ -62,6 +62,26 @@ final class TemporaryDSTFileWriter: DSTFileWriting {
     }
 
     func removeAll() {
+        Self.remove(directory)
+    }
+
+    /// The last resort, for the path no `discard()` reaches: the owning window closing.
+    ///
+    /// A cross-vendor round found that `RunViewModel.discard()` — the chokepoint every
+    /// *live* abandonment passes through — is not the only way a run ends. Closing an iPad
+    /// window releases its `AppModel`, and nothing then removed the session directory. Firing
+    /// `onRunDiscarded` from `RunViewModel.deinit` would not have helped: `AppModel` captures
+    /// itself weakly there, so by that point the closure is a no-op. The object that *owns*
+    /// the directory is the one that can always clean it up.
+    ///
+    /// `nonisolated static` because `deinit` is nonisolated under Swift 6 and could not call
+    /// the main-actor `removeAll()`; the URL is a `let` and `Sendable`, so handing it over is
+    /// safe.
+    deinit {
+        Self.remove(directory)
+    }
+
+    private nonisolated static func remove(_ directory: URL) {
         try? FileManager.default.removeItem(at: directory)
     }
 }

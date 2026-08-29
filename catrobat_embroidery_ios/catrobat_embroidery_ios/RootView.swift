@@ -116,9 +116,11 @@ struct RootView: View {
             ),
             designName: $exporter.name,
             nameValidation: model.exporter.validatedName,
-            // `model.play()` rather than `runner.play(program)`: starting a run must also
-            // discard the file the *last* run prepared, and that pairing belongs with the
-            // model that owns both. See `AppModel.play()`.
+            // `model.play()` only because it resolves the selection. The exporter cleanup is
+            // **not** this call's doing — it hangs off `RunViewModel.onRunDiscarded`, so a
+            // direct `runner.play(_:)` would be equally safe. An earlier version of this
+            // comment claimed the pairing lived here; cross-vendor round 3 pointed out that
+            // round 2 had already moved it.
             onPlay: { model.play() },
             onStop: { model.runner.stop() },
             onCommitName: { model.commitName() }

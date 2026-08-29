@@ -144,6 +144,34 @@ struct DSTHeaderTests {
         #expect(fields["LA"] == Self.ascii(label, paddedTo: 15, with: 0x20))
     }
 
+    /// **The whole forbidden ASCII domain, not three samples of it.** A cross-vendor round
+    /// pointed out that the rows above cover LF, NUL and SUB, so a regression selectively
+    /// preserving TAB, CR, another C0 control or DEL would pass every one of them. This walks
+    /// all 33 non-printable ASCII bytes and both ends of the printable range.
+    ///
+    /// It asserts on the emitted `LA` bytes rather than on `sanitized` directly, because that
+    /// method is `private` — and asserting where the bytes actually land is the stronger
+    /// claim anyway.
+    @Test("every non-printable ASCII byte is replaced, and every printable one survives")
+    func theWholeASCIIDomainIsClassified() throws {
+        for value in 0x00 ... 0x7F {
+            let character = Character(UnicodeScalar(UInt8(value)))
+            let header = try DSTHeader(stream: Self.makeStream([(0, 0)]), name: "a\(character)b")
+            let label = try #require(Self.fields(in: header.bytes)["LA"])
+
+            let isPrintable = (0x20 ... 0x7E).contains(value)
+            let expected = isPrintable ? "a\(character)b" : "a_b"
+            #expect(
+                label == Self.ascii(expected, paddedTo: 15, with: 0x20),
+                "byte 0x\(String(value, radix: 16))"
+            )
+            // The point of the rule: no field terminator, and nothing a C string would cut.
+            #expect(label.contains(0x0A) == false)
+            #expect(label.contains(0x1A) == false)
+            #expect(label.contains(0x00) == false)
+        }
+    }
+
     // MARK: - Length invariant
 
     @Test("header is exactly 512 bytes with space fill after the content")
