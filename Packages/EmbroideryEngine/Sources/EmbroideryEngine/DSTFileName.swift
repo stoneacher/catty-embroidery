@@ -44,12 +44,20 @@ public struct DSTFileName: Hashable, Sendable {
         "\(stem).\(Self.fileExtension)"
     }
 
-    /// Characters that make the write fail rather than merely look odd.
+    /// Scalars that make the write fail rather than merely look odd.
     ///
     /// Deliberately short. Everything else that was probed — `:`, DEL, newline,
     /// non-ASCII — writes fine on Darwin, and refusing it would be inventing a rule the
     /// filesystem does not have and coupling this type to the label's ASCII limit.
-    private static let prohibited: Set<Character> = ["/", "\0"]
+    ///
+    /// **`Unicode.Scalar`, not `Character`, and that is a bug fix rather than a preference.**
+    /// A cross-vendor review found `"a/\u{0301}b"` passing validation: `/` followed by a
+    /// combining acute is a *single* `Character` that is not equal to `Character("/")`, so a
+    /// grapheme-level check waves the path separator straight through and the write then
+    /// fails on a directory nobody created. It is the second location of the same
+    /// grapheme-versus-scalar mistake the in-loop review found in `DesignName` — fixed
+    /// there, missed here.
+    private static let prohibited: Set<Unicode.Scalar> = ["/", "\0"]
 
     private init(stem: String) {
         self.stem = stem
@@ -71,8 +79,8 @@ public struct DSTFileName: Hashable, Sendable {
         guard !trimmed.isEmpty else {
             return .failure(.empty)
         }
-        if let offender = trimmed.first(where: { prohibited.contains($0) }) {
-            return .failure(.prohibitedCharacter(offender))
+        if let offender = trimmed.unicodeScalars.first(where: { prohibited.contains($0) }) {
+            return .failure(.prohibitedCharacter(Character(offender)))
         }
 
         // Constructed before measuring, because the bound is on the whole file name and
@@ -99,14 +107,20 @@ public struct DSTFileName: Hashable, Sendable {
     ///
     /// **Total, and the parameter type is what makes it total.** It takes a `DesignName`
     /// rather than a `String` so the result needs no `Result`: a validated design name is
-    /// non-empty, ASCII and at most 15 characters, so substituting one ASCII character for
-    /// another leaves a stem that is still non-empty and still at most 15 bytes — both
-    /// bounds well inside `maximumByteLength`. A `String` overload could be handed 300
+    /// non-empty, **printable ASCII** and at most 15 characters, so substituting one ASCII
+    /// scalar for another leaves a stem that is still non-empty and still at most 15 bytes —
+    /// both bounds well inside `maximumByteLength`. The "printable" half is load-bearing:
+    /// under the earlier `Character.isASCII` rule a 15-character name could be 28
+    /// bytes. A `String` overload could be handed 300
     /// bytes of emoji and would have to be failable, so there deliberately is not one.
     public static func sanitising(_ designName: DesignName) -> DSTFileName {
-        DSTFileName(
-            stem: String(designName.value.map { prohibited.contains($0) ? "_" : $0 })
-        )
+        // Scalar-wise like `validating(_:)`, though here it changes nothing: a `DesignName`
+        // is printable ASCII, so every `Character` is already exactly one scalar. Written
+        // the same way so the two cannot drift, which is how the grapheme bug survived in
+        // one of them and not the other.
+        DSTFileName(stem: String(String.UnicodeScalarView(
+            designName.value.unicodeScalars.map { prohibited.contains($0) ? "_" : $0 }
+        )))
     }
 }
 

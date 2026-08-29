@@ -93,6 +93,22 @@ final class AppModel {
         }
     }
 
+    /// Starts the selected design from the beginning, throwing away whatever the last run
+    /// prepared.
+    ///
+    /// **The discard is why this is a method rather than two lines in the view.** A
+    /// cross-vendor review found Play Again leaving `exporter.state == .ready(oldURL)` — and
+    /// that URL still holding the *previous* run — while the new run had already cleared the
+    /// design. `ExportControl` masked it (`.running`, then `.notRun`), so nothing wrong could
+    /// be shared through today's UI, but ADR-026 says the temp file goes when the design does,
+    /// and it did not. Containment by a composed view is not the same as the invariant
+    /// holding.
+    func play() {
+        guard let program = selection?.program else { return }
+        exporter.discard()
+        runner.play(program)
+    }
+
     /// Rewrites the file under the name the user has just committed.
     ///
     /// Called on submit and on focus loss, **never per keystroke**: the name goes into the

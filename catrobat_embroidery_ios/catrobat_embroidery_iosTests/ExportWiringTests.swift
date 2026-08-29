@@ -137,6 +137,28 @@ struct ExportWiringTests {
         #expect(model.exporter.state == .idle)
     }
 
+    /// **Play Again must throw the previous export away**, which a cross-vendor review found
+    /// it did not: `state` stayed `.ready(oldURL)` with that URL still holding the finished
+    /// design, while the new run had already cleared the stage. `ExportControl` masked it, so
+    /// nothing wrong could be shared — but a view masking a broken model invariant is not the
+    /// invariant holding, and ADR-026 says the file goes when the design does.
+    @Test("replaying discards the file the previous run prepared", .timeLimit(.minutes(1)))
+    func replayingDiscardsThePreparedFile() async {
+        let writer = RecordingDSTFileWriter()
+        let model = Self.immediateModel(writer: writer)
+
+        model.select(SampleLibrary[.squareCoil])
+        model.play()
+        await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
+        #expect(model.exporter.state != .idle, "the premise: a file was prepared")
+
+        model.play()
+
+        // Checked immediately, before the replacement run can terminate and prepare again:
+        // the window this closes is precisely "while the new run is in flight".
+        #expect(model.exporter.state == .idle)
+    }
+
     // MARK: - End to end
 
     /// The whole thread, through the objects the app actually wires together: pick a design,

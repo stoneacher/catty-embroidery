@@ -50,6 +50,31 @@ struct DSTFileNameTests {
         }
     }
 
+    /// **The grapheme bypass a cross-vendor review found.** `/` followed by a combining
+    /// acute is a *single* `Character` that is not equal to `Character("/")`, so a
+    /// grapheme-level membership check waved the path separator straight through — and the
+    /// write then failed on a directory nobody created. Same grapheme-versus-scalar mistake
+    /// the in-loop review had already found in `DesignName`, surviving here because only one
+    /// of the two was fixed.
+    @Test("rejects a path separator hidden inside a grapheme cluster")
+    func separatorInsideAGraphemeIsRejected() {
+        let raw = "a/\u{0301}b"
+        #expect(raw.count == 3, "the trap: the slash and the accent are one Character")
+        #expect(raw.contains("/") == false, "…so a grapheme-wise search does not find it")
+        #expect(raw.unicodeScalars.contains("/"), "…but the path separator is still in there")
+        #expect(throws: DSTFileNameProblem.prohibitedCharacter("/")) {
+            try DSTFileName.validating(raw).get()
+        }
+    }
+
+    /// The same for NUL, so the fix cannot be a special case for one scalar.
+    @Test("rejects NUL hidden inside a grapheme cluster")
+    func nulInsideAGraphemeIsRejected() {
+        #expect(throws: DSTFileNameProblem.prohibitedCharacter("\0")) {
+            try DSTFileName.validating("a\u{0}\u{0301}b").get()
+        }
+    }
+
     // MARK: - Empty (Catroid's bug)
 
     /// Catroid's `sanitizeFileName` has no empty check and produces a file literally

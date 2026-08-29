@@ -116,11 +116,10 @@ struct RootView: View {
             ),
             designName: $exporter.name,
             nameValidation: model.exporter.validatedName,
-            onPlay: {
-                if let program = model.selection?.program {
-                    model.runner.play(program)
-                }
-            },
+            // `model.play()` rather than `runner.play(program)`: starting a run must also
+            // discard the file the *last* run prepared, and that pairing belongs with the
+            // model that owns both. See `AppModel.play()`.
+            onPlay: { model.play() },
             onStop: { model.runner.stop() },
             onCommitName: { model.commitName() }
         )

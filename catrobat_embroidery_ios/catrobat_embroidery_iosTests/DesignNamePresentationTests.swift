@@ -28,10 +28,22 @@ struct DesignNamePresentationTests {
     /// **Every accessibility size stacks, and every standard size does not.** Enumerated
     /// rather than sampled, so a threshold moved by one step cannot slip through between two
     /// chosen examples.
+    ///
+    /// **The expected set is spelled out rather than derived from `isAccessibilitySize`**,
+    /// which is what the implementation itself uses — a cross-vendor review pointed out that
+    /// the first version recomputed the production expression and so could not fail for any
+    /// implementation written in terms of it. Listing the five cases makes the test an
+    /// independent statement of the rule.
     @Test("the rule is exactly the accessibility-sizes boundary")
     func theRuleIsTheAccessibilityBoundary() {
+        let stacking: Set<DynamicTypeSize> = [
+            .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5
+        ]
+        // Guards the list against the enum growing a case nobody classified here.
+        #expect(stacking.count + 7 == DynamicTypeSize.allCases.count)
+
         for size in DynamicTypeSize.allCases {
-            let expected: Axis = size.isAccessibilitySize ? .vertical : .horizontal
+            let expected: Axis = stacking.contains(size) ? .vertical : .horizontal
             #expect(DesignNameFieldLayout.axis(for: size) == expected, "\(size)")
         }
     }
