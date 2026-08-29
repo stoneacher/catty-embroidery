@@ -55,6 +55,37 @@ struct ExportWiringTests {
         #expect(reported.first == runner.run.exportModel)
     }
 
+    /// **The guard that an in-loop review deleted without breaking anything.**
+    /// `RunViewModel.apply` reads `isRunning` *before* folding, so an update carrying a
+    /// terminal that `PreviewRunState` rejects is not announced. Through the app's own wiring
+    /// the producer never yields after a terminal, so the guard is defence in depth — but
+    /// deleting it was invisible to all 114 tests, and a rule with no test is a rule that
+    /// will be "simplified" away. Driving `apply` directly is the one way to reach it.
+    @Test("a terminal update applied to an already-finished run announces nothing")
+    func aSecondTerminalIsNotAnnounced() async {
+        let runner = RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing()))
+        var reported = 0
+        runner.onRunTerminated = { _ in reported += 1 }
+
+        runner.play(SampleLibrary[.squareCoil].program)
+        await Self.settle(until: { runner.run.state == .finished(.programFinished) })
+        #expect(reported == 1)
+
+        // The run is `.finished`, so `PreviewRunState.apply` drops this — and the callback
+        // must not fire for a termination the state never accepted.
+        // Any non-empty stream: the assertion is about how many times the callback fires,
+        // not about what it carries. (`assembledStream(of:)` is a package *test* helper, and
+        // SwiftPM forbids reaching one test target from another.)
+        runner.apply(RunUpdate(
+            batch: RunBatch(),
+            termination: RunTermination(
+                reason: .stoppedByUser, exportModel: Self.threeStitchStream()
+            )
+        ))
+
+        #expect(reported == 1, "a rejected terminal was announced anyway")
+    }
+
     // MARK: - Selection
 
     /// **The default name comes from `SampleID.resourceName`, not from `displayName`.**

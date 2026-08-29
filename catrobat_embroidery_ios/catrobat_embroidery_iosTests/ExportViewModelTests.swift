@@ -87,7 +87,11 @@ struct ExportViewModelTests {
         subject.name = "Second"
         subject.prepare(exportModel: Self.threeStitchStream())
 
-        #expect(writer.removeAllCount == 2, "once before each write")
+        // Three, not two: the write-time cleanup for each prepare, **plus** the one the
+        // name edit itself triggers — a prepared file stops being offered the moment the
+        // name stops matching it. Counted rather than ignored, because the number is what
+        // shows the invalidation fired.
+        #expect(writer.removeAllCount == 3)
         #expect(writer.written.count == 2)
         #expect(writer.written.last?.name.value == "Second.dst")
     }
@@ -139,6 +143,41 @@ struct ExportViewModelTests {
 
         #expect(subject.state == .idle)
         #expect(writer.written.isEmpty)
+    }
+
+    /// **Editing the name invalidates the prepared file**, because the name is in the `LA`
+    /// bytes and not only in the file name. An in-loop review found the model happily
+    /// offering `Alpha.dst` while `name` read "Beta" — closed then only by `StageView`
+    /// hiding the share row during editing, which is a view condition guarding a model
+    /// invariant. Now the model holds it on its own.
+    @Test("editing the name stops offering the file built from the old one")
+    func editingTheNameInvalidatesThePreparedFile() {
+        let writer = RecordingDSTFileWriter()
+        let subject = ExportViewModel(writer: writer)
+        subject.name = "Alpha"
+        subject.prepare(exportModel: Self.threeStitchStream())
+        #expect(subject.state != .idle)
+
+        subject.name = "Beta"
+
+        #expect(subject.state == .idle, "a file named Alpha was still on offer")
+    }
+
+    /// The control: an edit that leaves the *validated* name unchanged keeps the file. A
+    /// trailing space is trimmed away, so it changes nothing that reaches the bytes, and
+    /// throwing the file away for it would make the share button flicker on every keystroke
+    /// the user immediately undoes.
+    @Test("an edit that does not change the validated name keeps the file")
+    func acosmeticEditKeepsThePreparedFile() throws {
+        let writer = RecordingDSTFileWriter()
+        let subject = ExportViewModel(writer: writer)
+        subject.name = "Alpha"
+        subject.prepare(exportModel: Self.threeStitchStream())
+        let url = try #require(writer.written.first?.url)
+
+        subject.name = "Alpha "
+
+        #expect(subject.state == .ready(url))
     }
 
     // MARK: - Failure (item 3's second half)
@@ -200,6 +239,28 @@ struct ExportViewModelTests {
         }
     }
 
+    /// **A failure after a success leaves nothing shareable**, which is the sequence no
+    /// other test covers: every other one starts from a fresh view model. The previous file
+    /// survives on disk (`prepare` builds the header before it clears anything), but the
+    /// state no longer offers it — so `.ready` and "a file that describes this design"
+    /// cannot come apart.
+    @Test("a failure after a success stops offering the previous file")
+    func aFailureAfterASuccessStopsOfferingTheOldFile() throws {
+        let writer = RecordingDSTFileWriter()
+        let subject = ExportViewModel(writer: writer)
+        subject.name = "Rose"
+        subject.prepare(exportModel: Self.threeStitchStream())
+        let firstURL = try #require(writer.written.first?.url)
+        #expect(subject.state == .ready(firstURL))
+
+        subject.prepare(exportModel: Self.hundredColorBlockStream())
+
+        #expect(writer.written.count == 1, "the failing attempt wrote nothing")
+        if case .ready = subject.state {
+            Issue.record("a stale URL is still on offer after a failure")
+        }
+    }
+
     // MARK: - The message (item 6b)
 
     /// US-211's error carries `limit`, and this is where it becomes a sentence a user can
@@ -222,6 +283,27 @@ struct ExportViewModelTests {
     /// Three different overflowing fields must not produce one generic sentence: a design
     /// with too many stitches, too many colours, or too large an extent are different
     /// problems with different fixes.
+    /// **All four extent fields share one sentence, and all four are asserted.** An in-loop
+    /// review routed three of them to the generic "unknown" message and the whole suite
+    /// stayed green, because only `.extentPlusX` was ever passed — so a design too far in
+    /// −X, +Y or −Y would silently have lost its specific message.
+    @Test("every extent field reads as a size problem", arguments: [
+        DSTHeader.Field.extentPlusX, .extentMinusX, .extentPlusY, .extentMinusY
+    ])
+    func everyExtentFieldReadsAsASizeProblem(field: DSTHeader.Field) {
+        let message = String(localized: ExportError.serialization(
+            .fieldOverflow(field: field, value: "10000", limit: 9999)
+        ).message)
+        let plusX = String(localized: ExportError.serialization(
+            .fieldOverflow(field: .extentPlusX, value: "10000", limit: 9999)
+        ).message)
+
+        #expect(message == plusX, "the axis is not something a user can act on differently")
+        #expect(message != String(localized: ExportError.serialization(
+            .fieldOverflow(field: .previousDesign, value: "*", limit: 9999)
+        ).message), "fell through to the generic message")
+    }
+
     @Test("the three reachable overflow fields produce distinct messages")
     func theReachableFieldsReadDifferently() {
         let stitches = String(localized: ExportError.serialization(

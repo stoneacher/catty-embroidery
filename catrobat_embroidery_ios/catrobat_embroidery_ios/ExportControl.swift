@@ -117,6 +117,26 @@ enum ExportControl {
 }
 
 extension ExportControl.Readiness {
+    /// Every reason that dims the control **and owes an explanation**.
+    ///
+    /// It exists because the tests that claim to cover "the whole enum" cannot: `Readiness`
+    /// has associated values, so it is not `CaseIterable`, and an in-loop review proved the
+    /// point by adding a tenth case with a `nil` hint and watching the suite stay green. The
+    /// exhaustive `switch` in `hint` forces a *compile-time* decision for a new case, but
+    /// `nil` is a legal answer there — so this list is the one obvious place a new case has
+    /// to be added, sitting next to the type rather than in a test file.
+    ///
+    /// **This is a chokepoint, not an impossibility**, and it is labelled that way for the
+    /// reason `RunPhase` labels its own: a case omitted from this list is still
+    /// representable. What it buys is that the omission is visible next to the enum instead
+    /// of only in a screenshot.
+    static var reasonsOwingAHint: [Self] {
+        [
+            .running, .notRun, .tooFewStitches, .nothingEmbroiderable,
+            .nameEmpty, .nameInvalid, .failed(.writeFailed)
+        ]
+    }
+
     var isEnabled: Bool {
         shareURL != nil
     }

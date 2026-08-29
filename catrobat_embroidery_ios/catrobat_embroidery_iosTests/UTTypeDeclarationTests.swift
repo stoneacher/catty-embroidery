@@ -32,8 +32,13 @@ import UniformTypeIdentifiers
 struct UTTypeDeclarationTests {
     /// Sanity check on the premise, so a failure below cannot be misread as a plist
     /// problem when it is really a hosting problem: these tests run *inside* the app.
+    ///
+    /// Deliberately **not** named `testsAreHostedByTheApp`: SwiftFormat's redundant-`test`-
+    /// prefix rule strips the leading `test`, silently leaving `sAreHostedByTheApp` in the
+    /// source — which is what it was called until an in-loop review read it back out of the
+    /// test report and asked.
     @Test("the tests run in the app process that carries the declaration")
-    func sAreHostedByTheApp() {
+    func hostAppCarriesTheDeclaration() {
         #expect(Bundle.main.bundleIdentifier == "org.catrobat.embroiderydesigner")
     }
 

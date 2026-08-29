@@ -53,7 +53,7 @@ struct DesignNamePresentationTests {
     func eachProblemReadsDifferently() {
         let empty = String(localized: DesignNameProblem.empty.message)
         let tooLong = String(localized: DesignNameProblem.tooLong(count: 20, limit: 15).message)
-        let character = String(localized: DesignNameProblem.nonASCII(character: "ö").message)
+        let character = String(localized: DesignNameProblem.unsupportedCharacter("ö").message)
 
         #expect(Set([empty, tooLong, character]).count == 3)
         for message in [empty, tooLong, character] {
@@ -73,7 +73,7 @@ struct DesignNamePresentationTests {
 
     @Test("the character message quotes the offending character")
     func theCharacterMessageQuotesTheCharacter() {
-        #expect(String(localized: DesignNameProblem.nonASCII(character: "ö").message).contains("ö"))
+        #expect(String(localized: DesignNameProblem.unsupportedCharacter("ö").message).contains("ö"))
     }
 
     /// **An invisible offender is named by code point instead.** A non-breaking space or a
@@ -84,21 +84,34 @@ struct DesignNamePresentationTests {
     @Test("an invisible character is named by its code point")
     func anInvisibleCharacterIsNamedByCodePoint() {
         let nonBreakingSpace = String(
-            localized: DesignNameProblem.nonASCII(character: "\u{00A0}").message
+            localized: DesignNameProblem.unsupportedCharacter("\u{00A0}").message
         )
         #expect(nonBreakingSpace.contains("U+00A0"))
 
         let zeroWidth = String(
-            localized: DesignNameProblem.nonASCII(character: "\u{200B}").message
+            localized: DesignNameProblem.unsupportedCharacter("\u{200B}").message
         )
         #expect(zeroWidth.contains("U+200B"))
+    }
+
+    /// **An ASCII control character is named by code point too.** Added after an in-loop
+    /// review broadened the validator's rule from "non-ASCII" to "outside printable ASCII":
+    /// `0x1A` is ASCII, is the header's own field terminator, and shows nothing at all in a
+    /// text field, so quoting it directly would produce a message that appears to quote an
+    /// empty string.
+    @Test("an ASCII control character is named by its code point")
+    func aControlCharacterIsNamedByCodePoint() {
+        let message = String(
+            localized: DesignNameProblem.unsupportedCharacter("\u{1A}").message
+        )
+        #expect(message.contains("U+001A"))
     }
 
     /// The control: an ordinary visible character is *not* rendered as a code point, or the
     /// test above would pass against a mapping that code-pointed everything.
     @Test("a visible character is shown as itself, not as a code point")
     func aVisibleCharacterIsShownAsItself() {
-        let message = String(localized: DesignNameProblem.nonASCII(character: "ö").message)
+        let message = String(localized: DesignNameProblem.unsupportedCharacter("ö").message)
         #expect(message.contains("U+") == false)
     }
 }

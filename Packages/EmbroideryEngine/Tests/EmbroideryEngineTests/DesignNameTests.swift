@@ -49,14 +49,14 @@ struct DesignNameTests {
         }
     }
 
-    // MARK: - ASCII
+    // MARK: - The character rule
 
     /// The offending character is named, because "invalid character" leaves a user
     /// hunting through a string whose problem may be invisible — a combining accent, a
     /// non-breaking space, a smart quote the keyboard substituted.
     @Test("rejects non-ASCII, naming the offending character")
     func nonASCIIIsRejected() {
-        #expect(throws: DesignNameProblem.nonASCII(character: "ö")) {
+        #expect(throws: DesignNameProblem.unsupportedCharacter( "ö")) {
             try DesignName.validating("Rösé").get()
         }
     }
@@ -65,19 +65,19 @@ struct DesignNameTests {
     /// and a user fixing them left to right sees progress.
     @Test("names the first offending character, not any offending character")
     func firstOffenderIsNamed() {
-        #expect(throws: DesignNameProblem.nonASCII(character: "ü")) {
+        #expect(throws: DesignNameProblem.unsupportedCharacter( "ü")) {
             try DesignName.validating("aüb¿c").get()
         }
     }
 
-    /// **ASCII is checked before length**, and the order is a UX decision rather than an
+    /// **The character rule is checked before length**, and the order is a UX decision rather than an
     /// accident. A 19-character name containing "ö" reports the "ö": the character can
     /// never be stored whatever the length, so reporting length first would have the user
     /// delete characters and fail again. Deterministic first-violation reporting is the
     /// same discipline ADR-025 pins for the header's fields.
     @Test("a name that is both too long and non-ASCII reports the character")
     func asciiIsCheckedBeforeLength() {
-        #expect(throws: DesignNameProblem.nonASCII(character: "ö")) {
+        #expect(throws: DesignNameProblem.unsupportedCharacter( "ö")) {
             try DesignName.validating("Rösé Röse Röse Röse").get()
         }
     }
@@ -88,6 +88,58 @@ struct DesignNameTests {
     @Test("printable ASCII punctuation is accepted, including / and :")
     func punctuationIsAccepted() throws {
         #expect(try DesignName.validating("a/b:c-d_e").get().value == "a/b:c-d_e")
+    }
+
+    /// **The defect an in-loop review found, and the reason this rule is "printable ASCII"
+    /// rather than `Character.isASCII`.** `Character.isASCII` is `asciiValue != nil`, and
+    /// `asciiValue` special-cases the `"\r\n"` grapheme cluster to `0x0A` — so `isASCII`
+    /// reports CRLF as **one ASCII character**. Under that rule this name validated as 15
+    /// characters and measured **28 bytes**, the header truncated it to 15 *scalars*, and
+    /// the "carried verbatim" promise was false in exactly the silent-truncation way this
+    /// story exists to replace.
+    @Test("a CRLF cluster is refused, though Character.isASCII calls it ASCII")
+    func crlfIsRefused() {
+        let name = "a" + String(repeating: "\r\n", count: 13) + "b"
+        #expect(name.count == 15, "the trap: fifteen Characters…")
+        #expect(name.utf8.count == 28, "…and twenty-eight bytes")
+        #expect(throws: DesignNameProblem.unsupportedCharacter("\r\n")) {
+            try DesignName.validating(name).get()
+        }
+    }
+
+    /// **Two of these are the header's own field terminators.** `appendField` closes every
+    /// field with `0x0A 0x1A`, so a label containing either would corrupt the structure a
+    /// reader scans for; `0x00` truncates any C string the value reaches. All of them are
+    /// ASCII, which is why the case is not called `nonASCII`.
+    @Test("ASCII control characters are refused", arguments: [
+        "\u{00}", "\u{0A}", "\u{1A}", "\u{7F}", "\u{09}"
+    ] as [Character])
+    func controlCharactersAreRefused(offender: Character) {
+        #expect(offender.isASCII, "the trap: every one of these is ASCII")
+        #expect(throws: DesignNameProblem.unsupportedCharacter(offender)) {
+            try DesignName.validating("a\(offender)b").get()
+        }
+    }
+
+    /// The control: the whole printable range is accepted, so the rule above cannot be
+    /// satisfied by a validator that refuses everything unusual.
+    @Test("every printable ASCII character is accepted")
+    func everyPrintableCharacterIsAccepted() {
+        for value in 0x20 ... 0x7E {
+            let character = Character(UnicodeScalar(UInt8(value)))
+            #expect(throws: Never.self) { try DesignName.validating("a\(character)b").get() }
+        }
+    }
+
+    /// **Fifteen characters are now genuinely fifteen bytes**, the invariant the CRLF defect
+    /// falsified and the reason `maximumLength` can be called both a character and a byte
+    /// bound.
+    @Test("an accepted name's character count equals its byte count")
+    func acceptedNamesAreOneBytePerCharacter() throws {
+        for raw in ["Rose", "a/b:c-d_e", "123456789012345", "~!@#$%^&*()"] {
+            let name = try DesignName.validating(raw).get()
+            #expect(name.value.count == name.value.utf8.count, "\(raw)")
+        }
     }
 
     // MARK: - Empty and whitespace (scope decision 2)

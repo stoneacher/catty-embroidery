@@ -143,6 +143,13 @@ struct StageNotices<NameField: View>: View {
             Image(systemName: "square.and.arrow.up.trianglebadge.exclamationmark")
         }
         .font(.footnote)
+        // **Opted out of the block's `.secondary`, after an in-loop review.** The other two
+        // notices are commentary on a design that is fine; this one says the design cannot
+        // leave the app, and it was rendering in the same chrome grey as "Hoop 100 mm ×
+        // 100 mm" while the name field's smaller problem got full contrast. `.primary`
+        // rather than a colour: the icon already carries the meaning, so nothing here
+        // depends on colour alone.
+        .foregroundStyle(.primary)
     }
 
     /// The field, opted out of the two styles the notices above depend on.

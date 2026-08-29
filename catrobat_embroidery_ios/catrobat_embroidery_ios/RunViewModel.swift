@@ -182,9 +182,15 @@ final class RunViewModel {
         let wasRunning = run.state.isRunning
         run.apply(update)
 
-        // Exactly once by construction: `exportModel` is written only at termination, and a
-        // terminated run is no longer `.running`, so a second terminal update cannot pass the
-        // guard above.
+        // **Exactly once, and this guard is defence in depth rather than the load-bearing
+        // reason** — the same honest treatment `generation` above needed after two rounds of
+        // review. What actually makes it once is the producer: every terminal path in
+        // `InterpreterDriver` is `yield(terminal); return` with `finish()` in a `defer`, so
+        // no update can follow a terminal through the app's own wiring. An in-loop review
+        // deleted `wasRunning` entirely and the whole app suite stayed green, which is the
+        // measurement behind that wording. What the guard adds is independence from the
+        // driver's shape: a second terminal, or a stale one from a discarded run reaching a
+        // `.finished` state, is rejected here rather than announced.
         if wasRunning, let model = run.exportModel {
             onRunTerminated?(model)
         }

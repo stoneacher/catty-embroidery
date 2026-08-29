@@ -30,9 +30,22 @@ import Observation
 final class ExportViewModel {
     /// What the field holds, raw and unvalidated — bound directly to the `TextField`, so it
     /// must accept anything the user can type. Validation is a *view* of it.
-    var name = ""
+    ///
+    /// Editing it **invalidates a prepared file**, because the name goes into the `LA`
+    /// bytes: without this, the model can offer `Alpha.dst` while the field reads "Beta",
+    /// and the user shares the wrong name *and* the wrong bytes. An in-loop review found
+    /// that window open — closed today only by `StageView` hiding the share row while the
+    /// field has focus, which is a **view** condition guarding a **model** invariant, and
+    /// untested besides.
+    var name = "" {
+        didSet { discardIfPreparedNameIsStale() }
+    }
 
     private(set) var state: ExportState = .idle
+
+    /// The name the file on disk was actually built from — the only thing that can tell a
+    /// prepared file apart from the field's current contents.
+    @ObservationIgnored private var preparedName: DesignName?
 
     @ObservationIgnored private let writer: any DSTFileWriting
 
@@ -80,14 +93,33 @@ final class ExportViewModel {
             return
         }
 
-        // Only now, once there is definitely something to write. Ordering matters: clearing
-        // first would delete a perfectly good previous file on the way to failing.
+        // Only now, once there is definitely something to write.
+        //
+        // **What this ordering buys, stated accurately after an in-loop review corrected it**:
+        // no filesystem side effect from a pre-flight rejection — which is what
+        // `overflowFailsPreflight`'s `removeAllCount == 0` pins. It does *not* buy "the
+        // previous file survives a failure for the user": the file does survive on disk, but
+        // `state` is overwritten with `.failed`, so nothing can reach it and it lingers until
+        // the next successful `prepare()` or a `discard()`. The property that matters is the
+        // one that holds either way — `.ready` and "a file describing this design" cannot come
+        // apart, because `removeAll()` always precedes `write` and a throwing write sets
+        // `.failed`.
         writer.removeAll()
         do {
             state = try .ready(writer.write(file, named: DSTFileName.sanitising(designName)))
+            preparedName = designName
         } catch {
             state = .failed(.writeFailed)
         }
+    }
+
+    /// Drops a prepared file the moment the name stops matching it.
+    ///
+    /// Only from `.ready` — a `.failed` or `.idle` state has nothing to invalidate — so the
+    /// repeated keystrokes after the first are a single comparison each.
+    private func discardIfPreparedNameIsStale() {
+        guard case .ready = state, (try? validatedName.get()) != preparedName else { return }
+        discard()
     }
 
     /// Throws the prepared file away — for a new selection or a discarded run, where the
@@ -95,5 +127,6 @@ final class ExportViewModel {
     func discard() {
         writer.removeAll()
         state = .idle
+        preparedName = nil
     }
 }

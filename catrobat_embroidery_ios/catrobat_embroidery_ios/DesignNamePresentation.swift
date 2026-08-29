@@ -49,7 +49,7 @@ extension DesignNameProblem {
         // already shows it, and a message repeating it is noise.
         case let .tooLong(_, limit):
             .stageNameErrorTooLong(limit)
-        case let .nonASCII(character):
+        case let .unsupportedCharacter(character):
             .stageNameErrorCharacter(Self.describing(character))
         }
     }
@@ -57,8 +57,9 @@ extension DesignNameProblem {
     /// Renders the offending character for display, falling back to its code point when it
     /// has nothing to show.
     ///
-    /// **The fallback is the case that actually happens.** A non-breaking space from a web
-    /// paste, or a zero-width space, quoted directly would produce `“ ” cannot be stored` —
+    /// **The fallback is the case that actually happens.** A control character from a paste,
+    /// a non-breaking space, or a zero-width space, quoted directly would produce
+    /// `“ ” cannot be stored` —
     /// a message that appears to quote nothing, about a character the user cannot see in the
     /// field either. The code point at least identifies it.
     ///
@@ -66,8 +67,15 @@ extension DesignNameProblem {
     /// grapheme cluster whose first scalar is ASCII (`e` + a combining accent) is reported
     /// by the accent, which is the part that cannot be stored.
     private static func describing(_ character: Character) -> String {
+        // **Broadened after an in-loop review.** The rule is now printable ASCII, so the
+        // offender can be an ASCII *control* character — `0x0A` and `0x1A` are the header's
+        // own field terminators — and those are invisible without being whitespace or
+        // default-ignorable, which is all the first version checked.
         let isInvisible = character.unicodeScalars.allSatisfy { scalar in
-            scalar.properties.isWhitespace || scalar.properties.isDefaultIgnorableCodePoint
+            scalar.properties.isWhitespace
+                || scalar.properties.isDefaultIgnorableCodePoint
+                || scalar.properties.generalCategory == .control
+                || scalar.properties.generalCategory == .format
         }
         guard isInvisible, let scalar = character.unicodeScalars.first else {
             return String(character)

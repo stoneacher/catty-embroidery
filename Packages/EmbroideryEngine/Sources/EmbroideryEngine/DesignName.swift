@@ -24,7 +24,7 @@ import Foundation
 /// 15 is Catroid's limit and the `LA` field's width — **not** Catty's 16 (ADR-012).
 public struct DesignName: Hashable, Sendable {
     /// The `LA` field's width, in characters. Equal to its width in bytes, because
-    /// `validating(_:)` rejects non-ASCII before it measures length — see there.
+    /// `validating(_:)` admits only printable ASCII before it measures length — see there.
     public static let maximumLength = 15
 
     /// The validated name: trimmed, non-empty, ASCII, at most 15 characters.
@@ -52,16 +52,20 @@ public struct DesignName: Hashable, Sendable {
     /// violation is reported, in a fixed order, which is the same determinism ADR-025
     /// pins for the header's fields.
     ///
-    /// **The order is `empty`, then ASCII, then length**, and the middle step is a UX
-    /// decision worth stating: a 19-character name containing `ö` reports the `ö`,
+    /// **The order is `empty`, then the character rule, then length**, and the middle step
+    /// is a UX decision worth stating: a 19-character name containing `ö` reports the `ö`,
     /// because that character can never be stored whatever the length, so reporting
     /// length first would have the user delete characters and fail again.
     ///
-    /// Checking ASCII before length also earns the invariant this type advertises:
-    /// once every `Character` is a single ASCII scalar, 15 characters *are* 15 bytes, so
-    /// `maximumLength` is simultaneously a character and a byte bound. That is the same
-    /// argument `DSTHeader.sanitized` makes for mapping before truncating, and it is why
-    /// the two steps cannot be swapped here either.
+    /// Checking characters before length also earns the invariant this type advertises —
+    /// but **only because the rule is printable ASCII rather than `Character.isASCII`**,
+    /// which is the trap an in-loop review caught here. `Character.isASCII` is
+    /// `asciiValue != nil`, and `asciiValue` **special-cases the `"\r\n"` grapheme cluster
+    /// to `0x0A`** — so under that rule a "15-character" name measured **28 bytes**, the
+    /// header truncated it to 15 *scalars*, and the type's "carried verbatim" promise was
+    /// false in exactly the silent-truncation way this story exists to replace. Requiring
+    /// every scalar to be printable makes 15 characters genuinely 15 bytes, which is the
+    /// same argument `DSTHeader.sanitized` makes for mapping before truncating.
     ///
     /// Trimming happens before the length check, so 15 characters padded with spaces is
     /// valid rather than 17-and-too-long — otherwise the user is told to delete
@@ -74,13 +78,22 @@ public struct DesignName: Hashable, Sendable {
             // indistinguishable from an empty one.
             return .failure(.empty)
         }
-        if let offender = trimmed.first(where: { !$0.isASCII }) {
-            return .failure(.nonASCII(character: offender))
+        if let offender = trimmed.first(where: { !Self.isPrintableASCII($0) }) {
+            return .failure(.unsupportedCharacter(offender))
         }
         guard trimmed.count <= maximumLength else {
             return .failure(.tooLong(count: trimmed.count, limit: maximumLength))
         }
         return .success(DesignName(unchecked: trimmed))
+    }
+
+    /// Every scalar in `0x20`–`0x7E`.
+    ///
+    /// **Every scalar, not `Character.isASCII`** — see `validating(_:)`. Checking the
+    /// cluster's scalars is what rejects `"\r\n"`, which `isASCII` reports as a single
+    /// ASCII character.
+    private static func isPrintableASCII(_ character: Character) -> Bool {
+        character.unicodeScalars.allSatisfy { (0x20 ... 0x7E).contains($0.value) }
     }
 }
 
@@ -96,11 +109,19 @@ public enum DesignNameProblem: Error, Hashable, Sendable {
     /// Empty, or nothing but whitespace.
     case empty
 
-    /// `character` is the **first** non-ASCII character in reading order, so a user
-    /// fixing them left to right sees progress. It is named rather than merely counted
-    /// because the offender is often invisible — a combining accent, a non-breaking
-    /// space, or a smart quote the keyboard substituted for the one that was typed.
-    case nonASCII(character: Character)
+    /// A character the `LA` field cannot carry: anything outside printable ASCII
+    /// (`0x20`–`0x7E`).
+    ///
+    /// **Not named `nonASCII`, because that would be false.** `0x00`, `0x0A`, `0x1A` and
+    /// `0x7F` are all ASCII and all refused — the middle two are the header's *own* field
+    /// terminators, so a name containing them would corrupt the field structure a reader
+    /// scans for, and `0x00` truncates any C string the value reaches.
+    ///
+    /// The payload is the **first** offender in reading order, so a user fixing them left
+    /// to right sees progress. It is named rather than merely counted because the offender
+    /// is usually invisible — a control character from a paste, a non-breaking space, or a
+    /// smart quote the keyboard substituted for the one that was typed.
+    case unsupportedCharacter(Character)
 
     /// `count` is the **trimmed** length, matching what `normalised(_:)` gives the
     /// counter, so the field cannot show one number while the error implies another.

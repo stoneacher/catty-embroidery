@@ -114,16 +114,21 @@ struct ExportControlTests {
         #expect(readiness.hint == nil, "an enabled control explains itself")
     }
 
-    /// **Everything else is disabled and everything else has a hint.** Asserted over the
-    /// whole enum rather than case by case, so a tenth case added later cannot ship silently
-    /// without one — the gap this repo would otherwise find in a screenshot, or not at all.
+    /// **Everything else is disabled and everything else has a hint.**
+    ///
+    /// An earlier version of this comment claimed to assert "over the whole enum, so a tenth
+    /// case cannot ship silently without one". **That was false and an in-loop review proved
+    /// it** by adding a tenth case with a `nil` hint and watching this suite stay green:
+    /// `Readiness` carries associated values, so it is not `CaseIterable`, and any list of it
+    /// is hand-written. The list now lives on the type as `reasonsOwingAHint` rather than
+    /// here, which does not make the omission impossible — it makes it visible next to the
+    /// enum. Stated at its real strength, because overstating exactly this kind of claim is a
+    /// finding class this repo counts.
     @Test("every disabled reason except a missing selection carries a hint")
     func everyDisabledReasonExplainsItself() {
         let url = URL.temporaryDirectory.appending(path: "Rose.dst")
-        let all: [ExportControl.Readiness] = [
-            .noSelection, .notRun, .running, .tooFewStitches, .nothingEmbroiderable,
-            .nameEmpty, .nameInvalid, .failed(.writeFailed), .ready(url)
-        ]
+        let all: [ExportControl.Readiness] =
+            ExportControl.Readiness.reasonsOwingAHint + [.noSelection, .ready(url)]
 
         for readiness in all {
             switch readiness {
@@ -147,10 +152,7 @@ struct ExportControlTests {
     /// screenshot could never catch the fallback.
     @Test("every hint resolves rather than falling back to its key")
     func everyHintResolves() {
-        let readinesses: [ExportControl.Readiness] = [
-            .notRun, .running, .tooFewStitches, .nothingEmbroiderable,
-            .nameEmpty, .nameInvalid, .failed(.writeFailed)
-        ]
+        let readinesses = ExportControl.Readiness.reasonsOwingAHint
         var seen: Set<String> = []
 
         for readiness in readinesses {
@@ -167,6 +169,29 @@ struct ExportControlTests {
         // Distinctness in one assertion: seven reasons that say the same thing would be
         // seven reasons the user cannot tell apart.
         #expect(seen.count == readinesses.count, "two reasons share a sentence")
+    }
+
+    /// **A failed export is said out loud, not only spoken.** The acceptance criterion is
+    /// that US-211's overflow surfaces "with the design still on screen" — so a sighted user
+    /// needs the sentence *visibly*, not only in a VoiceOver hint. An in-loop review moved
+    /// `.failed` into `notice`'s nil group and the whole 114-test suite stayed green, which
+    /// is what this test now closes.
+    @Test("a failed export gets a visible notice, not only a hint")
+    func aFailureIsSaidOutLoud() throws {
+        let readiness = ExportControl.Readiness.failed(.writeFailed)
+        let notice = try #require(readiness.notice, "a failure with no visible explanation")
+        #expect(String(localized: notice) == String(localized: try #require(readiness.hint)))
+    }
+
+    /// Every reason that carries a visible notice carries the *same* sentence as its hint,
+    /// so the two can never drift — and the reasons that carry none are the ones the screen
+    /// already explains.
+    @Test("notices and hints never disagree")
+    func noticesAgreeWithHints() throws {
+        for readiness in ExportControl.Readiness.reasonsOwingAHint {
+            guard let notice = readiness.notice else { continue }
+            #expect(String(localized: notice) == String(localized: try #require(readiness.hint)))
+        }
     }
 
     /// A failed export speaks the error's own message, so US-211's limit reaches the user
