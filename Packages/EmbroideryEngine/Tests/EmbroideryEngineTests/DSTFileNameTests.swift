@@ -143,4 +143,57 @@ struct DSTFileNameTests {
     func extensionIsLowercase() {
         #expect(DSTFileName.fileExtension == "dst")
     }
+
+    // MARK: - Deriving a file name from a design name
+
+    /// **The independence bites when you try to use one as the other**, which is how this
+    /// method was found: `DesignName` accepts `/` (the `LA` field carries it untouched) and
+    /// `DSTFileName` rejects it, so `validating(designName.value)` can fail for a name the
+    /// user was told was fine. Deriving needs a *sanitising* path — Catroid's
+    /// `sanitizeFileName`, which is the one thing that method gets right — while
+    /// `validating(_:)` stays the strict check for input that is a file name to begin with.
+    @Test("a design name containing a path separator still yields a usable file name")
+    func derivingReplacesTheSeparatorTheLabelKeeps() throws {
+        let label = try DesignName.validating("a/b").get()
+        #expect(label.value == "a/b", "the label keeps it")
+        #expect(DSTFileName.sanitising(label).value == "a_b.dst", "the file name does not")
+    }
+
+    /// **Total by construction, and the argument type is what makes it so.** It takes a
+    /// `DesignName` rather than a `String` precisely so the result needs no `Result`: a
+    /// validated design name is non-empty, ASCII and at most 15 characters, so after
+    /// substitution the stem is still non-empty and still at most 15 bytes — both bounds
+    /// this suite pins elsewhere. A `String` overload could be handed 300 bytes of emoji and
+    /// would have to fail.
+    @Test("every valid design name yields a valid file name", arguments: [
+        "a/b", "Rose", "a b", "...", "----", "0", "123456789012345", "a/b/c/d"
+    ])
+    func derivingIsTotalOverValidDesignNames(raw: String) throws {
+        let label = try DesignName.validating(raw).get()
+        let derived = DSTFileName.sanitising(label)
+
+        // The round trip: whatever sanitising produced must itself pass the strict check.
+        #expect(throws: Never.self) {
+            try DSTFileName.validating(derived.stem).get()
+        }
+        #expect(derived.value.utf8.count <= DSTFileName.maximumByteLength)
+        #expect(derived.stem.isEmpty == false)
+    }
+
+    /// A name that is nothing but separators would sanitise to nothing but underscores —
+    /// still a usable name, and specifically **not** empty, which is the case Catroid ships
+    /// as a file called `.dst`.
+    @Test("a name of nothing but separators becomes underscores rather than nothing")
+    func allSeparatorsBecomeUnderscores() throws {
+        let label = try DesignName.validating("///").get()
+        #expect(DSTFileName.sanitising(label).value == "___.dst")
+    }
+
+    /// Ordinary names pass through unchanged — without this, an implementation that
+    /// replaced every character would satisfy every other test here.
+    @Test("an ordinary design name is used verbatim")
+    func ordinaryNamesAreUnchanged() throws {
+        let label = try DesignName.validating("Octagon Rose").get()
+        #expect(DSTFileName.sanitising(label).value == "Octagon Rose.dst")
+    }
 }

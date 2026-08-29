@@ -229,6 +229,66 @@
         }
       }
     },
+    "stage.export.error.color.limit": {
+      "comment": "Shown under the stage, and spoken as the disabled Share button's hint, when the design cannot be written because the DST format's colour-block field is too narrow. %lld is the format's limit. A \"colour block\" is one stretch of a single thread colour: the first colour, plus one more after every colour change - so the limit is one FEWER colour changes than the number given. Do not translate this as \"colours\": a design alternating red and blue has two colours but many blocks. Deliberately not pluralised - the argument is a fixed property of the file format (always 99), never a variable count.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design has too many colour blocks for a DST file, which allows %lld."
+          }
+        }
+      }
+    },
+    "stage.export.error.size.limit": {
+      "comment": "Shown under the stage, and spoken as the disabled Share button's hint, when the design cannot be written because the DST format's extent fields are too narrow. %@ is an already-formatted length including its unit, localized for the reader's region - do not add a unit and do not convert it. The DST format measures a design outward from its FIRST stitch rather than from its centre, which is why the sentence says so.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design is too large for a DST file, which reaches at most %@ from the first stitch in any direction."
+          }
+        }
+      }
+    },
+    "stage.export.error.stitch.limit": {
+      "comment": "Shown under the stage, and spoken as the disabled Share button's hint, when the design cannot be written because the DST format's stitch-count field is too narrow. %lld is the format's limit. \"Stitches\" are the individual needle penetrations that make up a design. The design stays on screen and can still be run again - this is not a crash and not a lost design. Deliberately not pluralised - the argument is a fixed property of the file format (always 999999), never a variable count.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design has too many stitches for a DST file, which allows %lld."
+          }
+        }
+      }
+    },
+    "stage.export.error.unknown": {
+      "comment": "Shown under the stage, and spoken as the disabled Share button's hint, when the design cannot be written for a reason with no more specific message. A fallback for completeness: it covers the six header fields that ADR-025 records as unable to overflow, so users are not expected to see it. It exists instead of inventing copy for six unreachable states. The design stays on screen and can still be run again.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design cannot be saved as a DST file."
+          }
+        }
+      }
+    },
+    "stage.export.error.write.failed": {
+      "comment": "Shown under the stage when the finished design could not be written to a temporary file before sharing - a full disk, for example. Distinct from the messages about the file format's limits: nothing is wrong with the design itself, so trying again is worth suggesting.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The design could not be saved. Try again."
+          }
+        }
+      }
+    },
     "stage.hoop.size": {
       "comment": "Physical size of the embroidery hoop the stage represents, e.g. \"Hoop 100 mm × 100 mm\". Both arguments are already-formatted lengths including their unit, localized for the reader's region — do not add a unit. The separator is the multiplication sign U+00D7, not the letter x. Arguments are positional and may be reordered.",
       "extractionState": "manual",

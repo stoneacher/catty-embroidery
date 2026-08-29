@@ -86,6 +86,28 @@ public struct DSTFileName: Hashable, Sendable {
         }
         return .success(candidate)
     }
+
+    /// Derives a file name from a validated design name, replacing what the filesystem
+    /// cannot carry rather than refusing it.
+    ///
+    /// **This exists because the two fields really are independent**, which only becomes
+    /// concrete when you try to use one as the other: `DesignName` accepts `/` — the `LA`
+    /// field carries it untouched, measured — and `validating(_:)` rejects it, so deriving
+    /// through the strict path would fail for a name the user was just told was fine.
+    /// Sanitising is Catroid's `sanitizeFileName`, which is the one thing that method gets
+    /// right; the empty check it lacks is unnecessary here, for the reason below.
+    ///
+    /// **Total, and the parameter type is what makes it total.** It takes a `DesignName`
+    /// rather than a `String` so the result needs no `Result`: a validated design name is
+    /// non-empty, ASCII and at most 15 characters, so substituting one ASCII character for
+    /// another leaves a stem that is still non-empty and still at most 15 bytes — both
+    /// bounds well inside `maximumByteLength`. A `String` overload could be handed 300
+    /// bytes of emoji and would have to be failable, so there deliberately is not one.
+    public static func sanitising(_ designName: DesignName) -> DSTFileName {
+        DSTFileName(
+            stem: String(designName.value.map { prohibited.contains($0) ? "_" : $0 })
+        )
+    }
 }
 
 /// Why a file name was refused (US-308).
