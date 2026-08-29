@@ -106,10 +106,10 @@ struct DSTHeaderTests {
     /// Non-ASCII scalars become "_", then the result truncates to 15 chars;
     /// an empty name stays empty (all space padding).
     ///
-    /// The last two rows were added by US-308, which depends on this method
-    /// staying a *mangling backstop* while `DesignName` becomes the *rejecting*
-    /// layer in front of it (ADR-026). Each pins one thing that story reasons
-    /// from, and neither was covered before:
+    /// Rows five and six were added by US-308, which depends on this method staying a
+    /// *mangling backstop* while `DesignName` becomes the *rejecting* layer in front of it
+    /// (ADR-026). Each pins one thing that story reasons from, and neither was covered
+    /// before:
     ///
     /// - `"a/b:c"` passes through **untouched**. The file name rejects `/`
     ///   (`DSTFileNameProblem.prohibitedCharacter`) and the label accepts it, and

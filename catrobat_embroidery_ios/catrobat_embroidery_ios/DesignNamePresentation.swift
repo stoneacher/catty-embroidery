@@ -63,9 +63,13 @@ extension DesignNameProblem {
     /// a message that appears to quote nothing, about a character the user cannot see in the
     /// field either. The code point at least identifies it.
     ///
-    /// Only the *first* scalar is named, matching `DesignName`'s "first offender" rule; a
-    /// grapheme cluster whose first scalar is ASCII (`e` + a combining accent) is reported
-    /// by the accent, which is the part that cannot be stored.
+    /// **The whole grapheme is shown, not the offending scalar** — an earlier version of
+    /// this comment claimed the opposite, and cross-vendor round 4 falsified it: for
+    /// `"e\u{0301}"`, `DesignName` reports the entire cluster `é`, and the visible `e` makes
+    /// the invisibility test above false, so this returns `é`. That is the better answer
+    /// anyway — it is what the user sees in the field — but the comment was describing code
+    /// that does not exist. The code-point fallback applies only when the *whole* cluster has
+    /// nothing to show.
     private static func describing(_ character: Character) -> String {
         // **Broadened after an in-loop review.** The rule is now printable ASCII, so the
         // offender can be an ASCII *control* character — `0x0A` and `0x1A` are the header's
