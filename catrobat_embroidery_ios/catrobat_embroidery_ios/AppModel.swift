@@ -91,21 +91,24 @@ final class AppModel {
         runner.onRunTerminated = { [weak self] model in
             self?.exporter.prepare(exportModel: model)
         }
+        // The other half of the lifecycle, and structural rather than conventional: the
+        // prepared file goes whenever the run it describes goes, however that happens.
+        runner.onRunDiscarded = { [weak self] in
+            self?.exporter.discard()
+        }
     }
 
     /// Starts the selected design from the beginning, throwing away whatever the last run
     /// prepared.
     ///
-    /// **The discard is why this is a method rather than two lines in the view.** A
-    /// cross-vendor review found Play Again leaving `exporter.state == .ready(oldURL)` — and
-    /// that URL still holding the *previous* run — while the new run had already cleared the
-    /// design. `ExportControl` masked it (`.running`, then `.notRun`), so nothing wrong could
-    /// be shared through today's UI, but ADR-026 says the temp file goes when the design does,
-    /// and it did not. Containment by a composed view is not the same as the invariant
-    /// holding.
+    /// Round 1 of the cross-vendor review found Play Again leaving `exporter.state ==
+    /// .ready(oldURL)` — that URL still holding the *previous* run — while the new run had
+    /// already cleared the design. The discard lives on `RunViewModel.onRunDiscarded` rather
+    /// than here, because round 2 pointed out that putting it in this method left the
+    /// invariant as a convention: `runner.play(_:)` and `runner.reset()` are both reachable
+    /// directly. This method now only resolves the selection.
     func play() {
         guard let program = selection?.program else { return }
-        exporter.discard()
         runner.play(program)
     }
 
@@ -196,11 +199,10 @@ final class AppModel {
         selection = SampleSelection(sample: sample, generation: nextGeneration)
         nextGeneration += 1
         path = [.stage]
+        // `reset()` discards the run, which fires `onRunDiscarded` and takes the previous
+        // design's file with it. Leaving the file would offer a share button that sends the
+        // *last* design — the staleness ADR-023 exists to prevent, one layer up.
         runner.reset()
-        // The previous design's file goes with the previous design. Leaving it would offer a
-        // share button that sends the *last* design — the staleness ADR-023 exists to
-        // prevent, one layer up.
-        exporter.discard()
         // **`SampleID.resourceName`, not `sample.displayName`.** `displayName` is a
         // `LocalizedStringResource` from the `Samples` bundle, and "Octagon Rosette" is
         // *exactly* 15 characters in English — so any locale whose translation is one

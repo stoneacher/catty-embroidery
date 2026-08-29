@@ -159,6 +159,35 @@ struct ExportWiringTests {
         #expect(model.exporter.state == .idle)
     }
 
+    /// **The same invariant, reached without going through `AppModel`.** Round 2 of the
+    /// cross-vendor review pointed out that putting the discard in `AppModel.play()` left it
+    /// a *convention*: `runner.play(_:)` and `runner.reset()` are both reachable directly,
+    /// and this very suite calls the former. The discard now hangs off
+    /// `RunViewModel.onRunDiscarded`, the one chokepoint both paths already pass through, so
+    /// these two calls cannot leave a prepared file behind either.
+    @Test("discarding a run through the runner alone still drops the file",
+          .timeLimit(.minutes(1)))
+    func theRunnerAloneAlsoDiscardsTheFile() async {
+        let writer = RecordingDSTFileWriter()
+        let model = Self.immediateModel(writer: writer)
+        model.select(SampleLibrary[.squareCoil])
+
+        model.runner.play(SampleLibrary[.squareCoil].program)
+        await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
+        #expect(model.exporter.state != .idle, "the premise: a file was prepared")
+
+        // Bypassing `AppModel.play()` entirely.
+        model.runner.play(SampleLibrary[.squareCoil].program)
+        #expect(model.exporter.state == .idle, "a replay through the runner kept the old file")
+
+        await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
+        #expect(model.exporter.state != .idle)
+
+        // And a bare reset, which starts no run at all.
+        model.runner.reset()
+        #expect(model.exporter.state == .idle, "a reset through the runner kept the old file")
+    }
+
     // MARK: - End to end
 
     /// The whole thread, through the objects the app actually wires together: pick a design,

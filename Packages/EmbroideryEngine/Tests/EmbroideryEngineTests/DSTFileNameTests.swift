@@ -67,8 +67,13 @@ struct DSTFileNameTests {
         }
     }
 
-    /// The same for NUL, so the fix cannot be a special case for one scalar.
-    @Test("rejects NUL hidden inside a grapheme cluster")
+    /// **Characterisation, not a regression test — round 2 corrected my labelling.** I wrote
+    /// this as "the same for NUL, so the fix cannot be a special case for one scalar", but
+    /// U+0000 is a Unicode control and *forces* a grapheme boundary, so `"a\u{0}\u{0301}b"`
+    /// never hides the NUL inside a larger `Character` and the old implementation already
+    /// rejected it. It would have been green before the fix. Kept, relabelled, because the
+    /// fact it records is worth having; it is not evidence for the fix.
+    @Test("NUL cannot hide inside a grapheme cluster in the first place")
     func nulInsideAGraphemeIsRejected() {
         #expect(throws: DSTFileNameProblem.prohibitedCharacter("\0")) {
             try DSTFileName.validating("a\u{0}\u{0301}b").get()

@@ -121,11 +121,20 @@ struct DSTHeaderTests {
     ///   not asserted — the field is space-padded to 15, so they are
     ///   indistinguishable from padding, which is itself the reason an
     ///   all-whitespace name is `.empty` rather than valid.
+    /// The last two rows were added by US-308's **cross-vendor round 2**, which found the
+    /// backstop passing ASCII *control* bytes straight through: `DSTFile(name: "A\nB")`
+    /// emitted an `LA` value beginning `41 0A 42`, and `0x0A` — with `0x1A` — is this
+    /// header's own field terminator, so a scanning reader ends the field early and
+    /// misparses everything after it. `DesignName` refuses them at the app boundary, but
+    /// `DSTFile.init(stream:name:)` is public and takes a `String`, which is precisely the
+    /// caller the backstop exists for. No test had sent a control byte down the direct path.
     private static let rawNames = [
-        "", "stitch", "EmbroideryStitchColorChange", "Nähen⭐", "a/b:c", "  pad  "
+        "", "stitch", "EmbroideryStitchColorChange", "Nähen⭐", "a/b:c", "  pad  ",
+        "A\nB", "a\u{0}b\u{1A}c"
     ]
     private static let sanitizedLabels = [
-        "", "stitch", "EmbroideryStitc", "N_hen_", "a/b:c", "  pad"
+        "", "stitch", "EmbroideryStitc", "N_hen_", "a/b:c", "  pad",
+        "A_B", "a_b_c"
     ]
 
     @Test("names are sanitized deterministically", arguments: zip(rawNames, sanitizedLabels))

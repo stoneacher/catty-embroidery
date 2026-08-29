@@ -153,6 +153,7 @@ final class RunViewModel {
         // Bumping the generation is what invalidates any update still in flight, including
         // after a plain `reset()` with no new `play()` behind it.
         generation += 1
+        onRunDiscarded?()
         session?.stop()
         session = nil
         consumer?.cancel()
@@ -170,6 +171,19 @@ final class RunViewModel {
     ///
     /// `@ObservationIgnored` because it is a wiring detail, not state anyone renders.
     @ObservationIgnored var onRunTerminated: ((EmbroideryStream) -> Void)?
+
+    /// Called whenever a run is thrown away — by `play()` starting a new one, or by
+    /// `reset()`.
+    ///
+    /// **Hooked to `discard()` rather than to `play()`, and that is the whole point.** Round
+    /// 1 of the cross-vendor review found Play Again leaving the previous export alive; the
+    /// first fix put `exporter.discard()` in `AppModel.play()`, and round 2 pointed out that
+    /// this left the invariant as a *convention*: `runner.play(program)` and `runner.reset()`
+    /// are both reachable directly, and one of the story's own tests calls the former.
+    /// `discard()` is the one chokepoint both paths already go through, so hanging it here
+    /// makes "the prepared file goes when the design does" (ADR-026) hold however the run is
+    /// discarded.
+    @ObservationIgnored var onRunDiscarded: (() -> Void)?
 
     /// The single mutation per batch.
     func apply(_ update: RunUpdate) {
