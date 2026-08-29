@@ -190,36 +190,52 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     /// coordinate, drawn but not exportable, and by US-308's own criteria that message
     /// belongs to export.
     private var emptyStage: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(.tertiary, style: StrokeStyle(lineWidth: 2, dash: [6, 6]))
-                // Keeps the hoop's own proportions, so the placeholder reads as a hoop
-                // rather than as an empty box the width of the pane — which is what it
-                // looked like on iPad when this was left to fill the slot. The ratio comes
-                // from the box rather than a literal `1` for the reason
-                // `StagePlaceholderView` gave: hard-coding it would let this view quietly
-                // disagree with `StageGeometry` if the stage ever stopped being square.
-                //
-                // The *drawn* state deliberately does not do this — there the transform
-                // owns fitting, and constraining the canvas would fight it.
-                .aspectRatio(
-                    StageGeometry.box.width / StageGeometry.box.height, contentMode: .fit
-                )
-                .accessibilityHidden(true)
-
-            if state == .notRun {
-                ContentUnavailableView(
-                    String(localized: .stageReadyTitle),
-                    systemImage: "play.circle",
-                    description: Text(.stageReadyDescription)
-                )
-            } else {
-                ContentUnavailableView(
-                    String(localized: .stageEmptyTitle),
-                    systemImage: "circle.dashed",
-                    description: Text(.stageEmptyDescription)
-                )
+        RoundedRectangle(cornerRadius: 12)
+            .strokeBorder(.tertiary, style: StrokeStyle(lineWidth: 2, dash: [6, 6]))
+            // Keeps the hoop's own proportions, so the placeholder reads as a hoop
+            // rather than as an empty box the width of the pane — which is what it
+            // looked like on iPad when this was left to fill the slot. The ratio comes
+            // from the box rather than a literal `1` for the reason
+            // `StagePlaceholderView` gave: hard-coding it would let this view quietly
+            // disagree with `StageGeometry` if the stage ever stopped being square.
+            //
+            // The *drawn* state deliberately does not do this — there the transform
+            // owns fitting, and constraining the canvas would fight it.
+            .aspectRatio(
+                StageGeometry.box.width / StageGeometry.box.height, contentMode: .fit
+            )
+            // **Before the overlay, so it hides the dashes and not the words.** Moving it
+            // after would take the `ContentUnavailableView` out of the accessibility tree
+            // with it, which is the whole content of this state.
+            .accessibilityHidden(true)
+            // **An overlay rather than a `ZStack` sibling**, which is what actually fixes
+            // the cramped text: as siblings the label was sized by the *slot* while the
+            // dashes were sized by the aspect-fitted square, so on a pane wider than it is
+            // tall the two had different widths and the description ran into — and past —
+            // the border. As an overlay the label is bounded by the frame it is drawn
+            // inside, so the inset below is measured from the dashes themselves.
+            .overlay {
+                unavailableView
+                    .padding(.horizontal, 24)
             }
+    }
+
+    /// Both empty states' content. Extracted only so `emptyStage` stays readable now that
+    /// the dashes carry an overlay.
+    @ViewBuilder
+    private var unavailableView: some View {
+        if state == .notRun {
+            ContentUnavailableView(
+                String(localized: .stageReadyTitle),
+                systemImage: "play.circle",
+                description: Text(.stageReadyDescription)
+            )
+        } else {
+            ContentUnavailableView(
+                String(localized: .stageEmptyTitle),
+                systemImage: "circle.dashed",
+                description: Text(.stageEmptyDescription)
+            )
         }
     }
 
