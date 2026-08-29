@@ -85,7 +85,13 @@ struct RootView: View {
     /// hierarchy would make every frame retain a copy of an array nothing on screen
     /// reads. US-308 takes the export model from the view model directly.
     private var stage: some View {
-        StageView(
+        // A local `@Bindable` because `AppModel.exporter` is a `let` reference — the identity
+        // never changes, so `$model.exporter` would be projecting a constant. `@Bindable`
+        // projects the *observable class's* own properties instead, which is what `name`
+        // needs to be: a two-way binding into the object that also validates it.
+        @Bindable var exporter = model.exporter
+
+        return StageView(
             sample: model.selection?.sample,
             display: model.runner.run.display,
             runState: model.runner.run.state,
@@ -97,12 +103,26 @@ struct RootView: View {
             // criterion forbids and what makes VoiceOver unusable.
             summary: model.runner.run.summary,
             interaction: $model.interaction,
+            // Resolved here, from the four facts only the model holds. `ExportControl` is
+            // where the precedence between them lives and is tested — a view choosing among
+            // them inline would have no test at all, which is the argument `RunControl`
+            // already makes for the transport button.
+            exportReadiness: ExportControl.readiness(
+                hasSelection: model.selection != nil,
+                runState: model.runner.run.state,
+                eligibility: model.runner.run.exportEligibility,
+                name: model.exporter.validatedName,
+                exportState: model.exporter.state
+            ),
+            designName: $exporter.name,
+            nameValidation: model.exporter.validatedName,
             onPlay: {
                 if let program = model.selection?.program {
                     model.runner.play(program)
                 }
             },
-            onStop: { model.runner.stop() }
+            onStop: { model.runner.stop() },
+            onCommitName: { model.commitName() }
         )
     }
 }

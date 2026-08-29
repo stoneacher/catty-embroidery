@@ -55,7 +55,12 @@ custom_rules:
     # `label:` is deliberately NOT in the labelled-argument branch: it is generic
     # enough that a non-UI `Metadata(label: "run")` would be flagged. `prompt:`
     # and the title labels are UI-specific.
-    regex: "(\\b(Text|Label|Button|Toggle|Section|TextField|SecureField|ContentUnavailableView|NavigationLink|Picker|Stepper|Slider|Menu|Link|navigationTitle|navigationBarTitle|accessibilityLabel|accessibilityHint|accessibilityValue|confirmationDialog|alert|help)\\s*\\(\\s*#*\")|(\\b(prompt|titleKey|titleResource):\\s*#*\")"
+    # `ShareLink` and `SharePreview` added by US-308, the first story to use
+    # either. `ShareLink("Share", item:)` with a literal sailed past every branch
+    # above until they were listed — the rule is a name list, so a new
+    # title-taking view is invisible to it until someone remembers. Worth knowing
+    # when the next one arrives.
+    regex: "(\\b(Text|Label|Button|Toggle|Section|TextField|SecureField|ContentUnavailableView|NavigationLink|Picker|Stepper|Slider|Menu|Link|ShareLink|SharePreview|navigationTitle|navigationBarTitle|accessibilityLabel|accessibilityHint|accessibilityValue|confirmationDialog|alert|help)\\s*\\(\\s*#*\")|(\\b(prompt|titleKey|titleResource):\\s*#*\")"
     excluded_match_kinds:
       - comment
       - doccomment

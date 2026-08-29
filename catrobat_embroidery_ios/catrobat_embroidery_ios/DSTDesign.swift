@@ -11,7 +11,12 @@ import Foundation
 /// requirement. A probe written during planning failed to compile — *"main actor-isolated
 /// let 'dstID' can not be referenced from a nonisolated context"* — until both the type and
 /// the identifier were marked `nonisolated`. Keep it that way.
-nonisolated struct DSTDesign {
+/// `Sendable` is spelled out here rather than left implicit, and it has to be: `Transferable`
+/// refines `Sendable`, and Swift 6 requires a `Sendable` conformance to be declared in the
+/// same file as the type — so `extension DSTDesign: Transferable` in the next file over
+/// fails to compile ("conformance to 'Sendable' must occur in the same source file") unless
+/// this is already here. Not `@unchecked`: a struct holding one `URL` is genuinely sendable.
+nonisolated struct DSTDesign: Sendable {
     /// The exported type identifier, declared in `Info.plist` under
     /// `UTExportedTypeDeclarations` (ADR-026, scope decision 1).
     ///
