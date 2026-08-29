@@ -1,3 +1,6 @@
+// `EmbroideryEngine` arrives with US-308: `onRunTerminated` hands the export model out, and
+// naming its type is the whole of this file's contact with the engine.
+import EmbroideryEngine
 import Interpreter
 import Observation
 import ProgramModel
@@ -156,8 +159,34 @@ final class RunViewModel {
         consumer = nil
     }
 
+    /// Called once, when a run reaches a terminal state, with the export model it produced.
+    ///
+    /// **A closure here rather than an `.onChange` in a view**, for the reason
+    /// `AppModel.select(_:)` already records for the run reset and the fit: the view-side
+    /// spellings re-fire when `RootView` rebuilds a navigation container after a horizontal
+    /// size-class change (ADR-023), so an iPad window resize would re-prepare the export —
+    /// writing a file again for a design nobody touched. The run is what knows it has
+    /// terminated, so the run is what says so.
+    ///
+    /// `@ObservationIgnored` because it is a wiring detail, not state anyone renders.
+    @ObservationIgnored var onRunTerminated: ((EmbroideryStream) -> Void)?
+
     /// The single mutation per batch.
     func apply(_ update: RunUpdate) {
+        // **Read before, not from the update.** `PreviewRunState.apply` refuses updates
+        // outside a running run — the guard that keeps a discarded run's buffered frames out
+        // — so an update carrying a terminal may be dropped entirely. Firing off
+        // `update.termination` would announce a termination the state never accepted, and
+        // hand US-308 the *discarded* design's export model: precisely the Critical the
+        // in-loop review found in US-306, arriving through a new door.
+        let wasRunning = run.state.isRunning
         run.apply(update)
+
+        // Exactly once by construction: `exportModel` is written only at termination, and a
+        // terminated run is no longer `.running`, so a second terminal update cannot pass the
+        // guard above.
+        if wasRunning, let model = run.exportModel {
+            onRunTerminated?(model)
+        }
     }
 }

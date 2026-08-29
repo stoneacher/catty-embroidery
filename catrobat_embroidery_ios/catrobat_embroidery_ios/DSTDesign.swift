@@ -1,7 +1,9 @@
 import Foundation
 
-/// The exported `.dst` content type this app declares, and (from the next slice) the
-/// `Transferable` a `ShareLink` hands to the system.
+/// A prepared `.dst` file, and the exported content type this app declares for it.
+///
+/// The `Transferable` conformance a `ShareLink` hands to the system lives in
+/// `DSTDesign+Transferable.swift`.
 ///
 /// **`nonisolated`, and that is required rather than tidy.** The project sets
 /// `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, so everything here is main-actor isolated
@@ -9,7 +11,7 @@ import Foundation
 /// requirement. A probe written during planning failed to compile — *"main actor-isolated
 /// let 'dstID' can not be referenced from a nonisolated context"* — until both the type and
 /// the identifier were marked `nonisolated`. Keep it that way.
-nonisolated enum DSTDesign {
+nonisolated struct DSTDesign {
     /// The exported type identifier, declared in `Info.plist` under
     /// `UTExportedTypeDeclarations` (ADR-026, scope decision 1).
     ///
@@ -26,4 +28,13 @@ nonisolated enum DSTDesign {
     /// compare the plist against itself and pass with any identifier, including a
     /// misspelt one.
     static let contentTypeIdentifier = "org.catrobat.embroiderydesigner.dst"
+
+    /// The file, **already written** — `ExportViewModel.prepare()` puts it on disk when a
+    /// run terminates or a name is committed, long before this value is constructed.
+    ///
+    /// So this type carries a location and never a recipe: the `FileRepresentation` closure
+    /// has nothing to build, which is exactly what planning correction 14 bought. A closure
+    /// that wrote the file would report its failures to the *system* share UI instead of to
+    /// us, and `ExportError`'s localised messages would be unreachable.
+    let url: URL
 }
