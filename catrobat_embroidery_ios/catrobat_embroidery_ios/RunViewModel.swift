@@ -1,3 +1,6 @@
+// `EmbroideryEngine` arrives with US-308: `onRunTerminated` hands the export model out, and
+// naming its type is the whole of this file's contact with the engine.
+import EmbroideryEngine
 import Interpreter
 import Observation
 import ProgramModel
@@ -150,14 +153,60 @@ final class RunViewModel {
         // Bumping the generation is what invalidates any update still in flight, including
         // after a plain `reset()` with no new `play()` behind it.
         generation += 1
+        onRunDiscarded?()
         session?.stop()
         session = nil
         consumer?.cancel()
         consumer = nil
     }
 
+    /// Called once, when a run reaches a terminal state, with the export model it produced.
+    ///
+    /// **A closure here rather than an `.onChange` in a view**, for the reason
+    /// `AppModel.select(_:)` already records for the run reset and the fit: the view-side
+    /// spellings re-fire when `RootView` rebuilds a navigation container after a horizontal
+    /// size-class change (ADR-023), so an iPad window resize would re-prepare the export —
+    /// writing a file again for a design nobody touched. The run is what knows it has
+    /// terminated, so the run is what says so.
+    ///
+    /// `@ObservationIgnored` because it is a wiring detail, not state anyone renders.
+    @ObservationIgnored var onRunTerminated: ((EmbroideryStream) -> Void)?
+
+    /// Called whenever a run is thrown away — by `play()` starting a new one, or by
+    /// `reset()`.
+    ///
+    /// **Hooked to `discard()` rather than to `play()`, and that is the whole point.** Round
+    /// 1 of the cross-vendor review found Play Again leaving the previous export alive; the
+    /// first fix put `exporter.discard()` in `AppModel.play()`, and round 2 pointed out that
+    /// this left the invariant as a *convention*: `runner.play(program)` and `runner.reset()`
+    /// are both reachable directly, and one of the story's own tests calls the former.
+    /// `discard()` is the one chokepoint both paths already go through, so hanging it here
+    /// makes "the prepared file goes when the design does" (ADR-026) hold however the run is
+    /// discarded.
+    @ObservationIgnored var onRunDiscarded: (() -> Void)?
+
     /// The single mutation per batch.
     func apply(_ update: RunUpdate) {
+        // **Read before, not from the update.** `PreviewRunState.apply` refuses updates
+        // outside a running run — the guard that keeps a discarded run's buffered frames out
+        // — so an update carrying a terminal may be dropped entirely. Firing off
+        // `update.termination` would announce a termination the state never accepted, and
+        // hand US-308 the *discarded* design's export model: precisely the Critical the
+        // in-loop review found in US-306, arriving through a new door.
+        let wasRunning = run.state.isRunning
         run.apply(update)
+
+        // **Exactly once, and this guard is defence in depth rather than the load-bearing
+        // reason** — the same honest treatment `generation` above needed after two rounds of
+        // review. What actually makes it once is the producer: every terminal path in
+        // `InterpreterDriver` is `yield(terminal); return` with `finish()` in a `defer`, so
+        // no update can follow a terminal through the app's own wiring. An in-loop review
+        // deleted `wasRunning` entirely and the whole app suite stayed green, which is the
+        // measurement behind that wording. What the guard adds is independence from the
+        // driver's shape: a second terminal, or a stale one from a discarded run reaching a
+        // `.finished` state, is rejected here rather than announced.
+        if wasRunning, let model = run.exportModel {
+            onRunTerminated?(model)
+        }
     }
 }

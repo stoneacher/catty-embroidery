@@ -51,8 +51,22 @@ public struct DSTHeader: Hashable, Sendable {
         self.bytes = bytes
     }
 
-    /// Replaces every non-ASCII scalar with "_" and truncates to Catroid's
-    /// 15-character label limit; an empty name stays empty.
+    /// Replaces every scalar outside **printable ASCII** (`0x20`–`0x7E`) with "_" and
+    /// truncates to Catroid's 15-character label limit; an empty name stays empty.
+    ///
+    /// **"Printable", not merely "ASCII", and the difference is structural.** A
+    /// cross-vendor review (US-308) pointed out that `isASCII` let control bytes through,
+    /// so `DSTFile(stream:name: "A\nB")` emitted an `LA` value beginning `41 0A 42` —
+    /// and `0x0A`, with `0x1A`, is this header's **own field terminator** (`appendField`),
+    /// so a scanning reader would end the field early and misparse everything after it.
+    /// `0x00` truncates any C string the value reaches. `DesignName` refuses all of them
+    /// at the app boundary, but `DSTFile.init(stream:name:)` is deliberately public and
+    /// takes a `String`, which is exactly the caller this backstop exists for — ADR-026
+    /// claims no direct caller can emit a malformed `LA`, and that claim was false for
+    /// control bytes until this line said "printable".
+    ///
+    /// Nothing else changes: every byte the previous rule preserved that is *printable*
+    /// is still preserved, which is why the goldens are byte-identical.
     ///
     /// The order matters: mapping over `unicodeScalars` *before* `prefix(15)`
     /// is what makes `LA` unable to overflow, since every surviving `Character`
@@ -60,7 +74,11 @@ public struct DSTHeader: Hashable, Sendable {
     /// `prefix` ahead of the `map` would make it a live trap, because
     /// `appendField` counts UTF-8 bytes where `prefix` counts characters.
     private static func sanitized(_ name: String) -> String {
-        String(name.unicodeScalars.map { $0.isASCII ? Character($0) : "_" }.prefix(15))
+        String(
+            name.unicodeScalars
+                .map { (0x20 ... 0x7E).contains($0.value) ? Character($0) : "_" }
+                .prefix(15)
+        )
     }
 
     /// Appends one `TAG:value` field left-justified to the field's fixed width

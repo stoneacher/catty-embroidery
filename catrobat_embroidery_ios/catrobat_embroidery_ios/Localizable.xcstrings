@@ -229,6 +229,150 @@
         }
       }
     },
+    "stage.export.error.color.limit": {
+      "comment": "Shown under the stage, and spoken as the disabled Share button's hint, when the design cannot be written because the DST format's colour-block field is too narrow. %lld is the format's limit. A \"colour block\" is one stretch of a single thread colour: the first colour, plus one more after every colour change - so the limit is one FEWER colour changes than the number given. Do not translate this as \"colours\": a design alternating red and blue has two colours but many blocks. Deliberately not pluralised - the argument is a fixed property of the file format (always 99), never a variable count.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design has too many colour blocks for a DST file, which allows %lld."
+          }
+        }
+      }
+    },
+    "stage.export.error.size.limit": {
+      "comment": "Shown under the stage, and spoken as the disabled Share button's hint, when the design cannot be written because the DST format's extent fields are too narrow. %@ is an already-formatted length including its unit, localized for the reader's region - do not add a unit and do not convert it. The DST format measures a design outward from its FIRST stitch rather than from its centre, which is why the sentence says so.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design is too large for a DST file, which reaches at most %@ from the first stitch in any direction."
+          }
+        }
+      }
+    },
+    "stage.export.error.stitch.limit": {
+      "comment": "Shown under the stage, and spoken as the disabled Share button's hint, when the design cannot be written because the DST format's stitch-count field is too narrow. %lld is the format's limit. \"Stitches\" are the individual needle penetrations that make up a design. The design stays on screen and can still be run again - this is not a crash and not a lost design. Deliberately not pluralised - the argument is a fixed property of the file format (always 999999), never a variable count.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design has too many stitches for a DST file, which allows %lld."
+          }
+        }
+      }
+    },
+    "stage.export.error.unknown": {
+      "comment": "Shown under the stage, and spoken as the disabled Share button's hint, when the design cannot be written for a reason with no more specific message. A fallback for completeness: it covers the six header fields that ADR-025 records as unable to overflow, so users are not expected to see it. It exists instead of inventing copy for six unreachable states. The design stays on screen and can still be run again.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design cannot be saved as a DST file."
+          }
+        }
+      }
+    },
+    "stage.export.error.write.failed": {
+      "comment": "Shown under the stage when the finished design could not be written to a temporary file before sharing - a full disk, for example. Distinct from the messages about the file format's limits: nothing is wrong with the design itself, so trying again is worth suggesting.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The design could not be saved. Try again."
+          }
+        }
+      }
+    },
+    "stage.export.hint.name.empty": {
+      "comment": "VoiceOver hint on the dimmed Share button when the design-name field is empty. Points at the field above the button; keep it consistent with stage.name.error.empty without repeating its whole sentence.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a design name first."
+          }
+        }
+      }
+    },
+    "stage.export.hint.name.invalid": {
+      "comment": "VoiceOver hint on the dimmed Share button when the design name breaks a rule - too long, or a character the file format cannot store. Deliberately does not repeat which rule: the message under the field says that, and this is spoken after the field has already been read.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The design name needs fixing first."
+          }
+        }
+      }
+    },
+    "stage.export.hint.not.run": {
+      "comment": "VoiceOver hint on the dimmed Share button, when a design has been chosen but not yet run. Says why the button cannot be used and what to do about it. \"Play\" must match stage.run.play exactly, or the hint names a button the user cannot find. There is no way to export a design mid-run, so this is the whole reason.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available once the design has been stitched. Press Play."
+          }
+        }
+      }
+    },
+    "stage.export.hint.running": {
+      "comment": "VoiceOver hint on the dimmed Share button while a design is being stitched. Both endings produce an exportable file, which is why Stop is named - stopping keeps the stitches. \"Stop\" must match stage.run.stop exactly.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available when the design finishes, or when you press Stop."
+          }
+        }
+      }
+    },
+    "stage.export.nothing.embroiderable": {
+      "comment": "Shown under the stage, and spoken as the dimmed Share button's hint, when a design draws on screen but produces no stitches a machine could sew - every position it asked for was outside what the file format can represent. Not a run failure: the design is still on screen and can still be run again. Distinguish it from the empty state, which means nothing was drawn at all.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing in this design can be embroidered."
+          }
+        }
+      }
+    },
+    "stage.export.share": {
+      "comment": "Title of the button that sends the finished design out through the system share sheet, and also the button's VoiceOver label. \"DST\" is the name of the Tajima file format embroidery machines read - keep it in Latin letters and uppercase, as file-format names are not translated. A verb in the imperative, matching stage.run.play.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share DST File"
+          }
+        }
+      }
+    },
+    "stage.export.too.few.stitches": {
+      "comment": "Shown under the stage, and spoken as the dimmed Share button's hint, when a design ran but produced fewer than two stitches - so there is nothing a machine could sew. \"Stitches\" are the individual needle penetrations. Covers both a design that stitched nothing and one that stitched a single point; they are one sentence to a reader even though they are different facts.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A design needs at least two stitches before it can be embroidered."
+          }
+        }
+      }
+    },
     "stage.hoop.size": {
       "comment": "Physical size of the embroidery hoop the stage represents, e.g. \"Hoop 100 mm × 100 mm\". Both arguments are already-formatted lengths including their unit, localized for the reader's region — do not add a unit. The separator is the multiplication sign U+00D7, not the letter x. Arguments are positional and may be reordered.",
       "extractionState": "manual",
@@ -237,6 +381,114 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hoop %1$@ × %2$@"
+          }
+        }
+      }
+    },
+    "stage.name.accessibility.hint": {
+      "comment": "VoiceOver hint for the design-name field. Spoken once when focus lands, so it states the rules rather than the current count - the count is deliberately never announced per keystroke. %lld is the maximum number of characters. \"Unaccented Latin letters\" means ASCII: the embroidery file format can only store those in its label field. Say the restriction as a property of the file format, never as a judgement about the reader's language.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Up to %lld character. Unaccented Latin letters, digits and basic punctuation only."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Up to %lld characters. Unaccented Latin letters, digits and basic punctuation only."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "stage.name.counter": {
+      "comment": "Live character counter beside the design-name field, e.g. \"14/15\". %1$lld is how many characters the user has typed, %2$lld the maximum allowed. Use the separator your language reads naturally between a count and a total; some languages prefer a word. Arguments are positional and may be reordered. Hidden from VoiceOver on purpose (the field's hint states the limit instead), so it need not read well aloud - but keep it short, because at large text sizes it moves onto its own line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "stage.name.error.character": {
+      "comment": "Shown under the design-name field when the name contains a character the DST file format cannot store. %1$@ is the offending character itself, already surrounded by this string's own quotation marks - use the quotation marks your language uses. For a character with no visible shape the argument arrives as a Unicode code point like \"U+0009\" instead. The rule is a property of the embroidery file format - it stores only unaccented Latin letters, digits and basic punctuation - so word it as a limit of the format, never as something wrong with the reader's language.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%1$@” cannot be stored in a DST file name."
+          }
+        }
+      }
+    },
+    "stage.name.error.empty": {
+      "comment": "Shown under the design-name field when it is empty. Explains a requirement rather than reporting a mistake: an unnamed design produces a file with a blank label, which is what the Android and older iOS apps do and what this app exists not to do.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a name so the file has one."
+          }
+        }
+      }
+    },
+    "stage.name.error.too.long": {
+      "comment": "Shown under the design-name field when the name is longer than the file format allows. %lld is the limit. The counter beside the field already shows how many characters were typed, so do not repeat that number here.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "A design name can be at most %lld character."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "A design name can be at most %lld characters."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "stage.name.label": {
+      "comment": "Visible label of the text field where the user names their embroidery design, on the stage screen. The name is written into the DST file's own label field, which an embroidery machine displays. Also the field's VoiceOver label, so it must read as a name for the field, not as an instruction. Keep it short - it sits above a field only 15 characters wide.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Design name"
+          }
+        }
+      }
+    },
+    "stage.name.prompt": {
+      "comment": "Placeholder inside the design-name field, shown only when the field is empty. An instruction, not an example name. Do not translate it as a default name - an empty name is not allowed and the user must type something.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name this design"
           }
         }
       }

@@ -52,7 +52,16 @@ struct AppStringsTests {
             (.stageCanvasAccessibilityValueStitching, "stage.canvas.accessibility.value.stitching"),
             (.stageCanvasAccessibilityHintRunning, "stage.canvas.accessibility.hint.running"),
             (.stageCanvasAccessibilityHintFinished, "stage.canvas.accessibility.hint.finished"),
-            (.stageCanvasAccessibilityActionFit, "stage.canvas.accessibility.action.fit")
+            (.stageCanvasAccessibilityActionFit, "stage.canvas.accessibility.action.fit"),
+            // US-308. Only the three non-parameterised, non-hint entries are listed here.
+            // The seven disabled-reason hints are covered by
+            // `ExportControlTests.everyHintResolves`, which additionally asserts they are
+            // pairwise distinct; the five error messages by `ExportViewModelTests`; and the
+            // three name-problem messages by `DesignNamePresentationTests`. Listing them
+            // twice would be two places to update and one to forget.
+            (.stageExportShare, "stage.export.share"),
+            (.stageNameLabel, "stage.name.label"),
+            (.stageNamePrompt, "stage.name.prompt")
         ]
 
         for entry in entries {

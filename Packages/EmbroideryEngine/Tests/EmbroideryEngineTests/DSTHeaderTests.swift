@@ -105,11 +105,36 @@ struct DSTHeaderTests {
 
     /// Non-ASCII scalars become "_", then the result truncates to 15 chars;
     /// an empty name stays empty (all space padding).
+    ///
+    /// Rows five and six were added by US-308, which depends on this method staying a
+    /// *mangling backstop* while `DesignName` becomes the *rejecting* layer in front of it
+    /// (ADR-026). Each pins one thing that story reasons from, and neither was covered
+    /// before:
+    ///
+    /// - `"a/b:c"` passes through **untouched**. The file name rejects `/`
+    ///   (`DSTFileNameProblem.prohibitedCharacter`) and the label accepts it, and
+    ///   that same character reaching two different verdicts is what "the file
+    ///   name is sanitized independently of the header label" means concretely.
+    /// - `"  pad  "` keeps its **leading** whitespace. That is why `DesignName`
+    ///   trims on input rather than trusting the engine to: untrimmed input
+    ///   reaches the machine verbatim. The *trailing* spaces are deliberately
+    ///   not asserted — the field is space-padded to 15, so they are
+    ///   indistinguishable from padding, which is itself the reason an
+    ///   all-whitespace name is `.empty` rather than valid.
+    /// The last two rows were added by US-308's **cross-vendor round 2**, which found the
+    /// backstop passing ASCII *control* bytes straight through: `DSTFile(name: "A\nB")`
+    /// emitted an `LA` value beginning `41 0A 42`, and `0x0A` — with `0x1A` — is this
+    /// header's own field terminator, so a scanning reader ends the field early and
+    /// misparses everything after it. `DesignName` refuses them at the app boundary, but
+    /// `DSTFile.init(stream:name:)` is public and takes a `String`, which is precisely the
+    /// caller the backstop exists for. No test had sent a control byte down the direct path.
     private static let rawNames = [
-        "", "stitch", "EmbroideryStitchColorChange", "Nähen⭐"
+        "", "stitch", "EmbroideryStitchColorChange", "Nähen⭐", "a/b:c", "  pad  ",
+        "A\nB", "a\u{0}b\u{1A}c"
     ]
     private static let sanitizedLabels = [
-        "", "stitch", "EmbroideryStitc", "N_hen_"
+        "", "stitch", "EmbroideryStitc", "N_hen_", "a/b:c", "  pad",
+        "A_B", "a_b_c"
     ]
 
     @Test("names are sanitized deterministically", arguments: zip(rawNames, sanitizedLabels))
@@ -117,6 +142,34 @@ struct DSTHeaderTests {
         let header = try DSTHeader(stream: Self.makeStream([(0, 0)]), name: name)
         let fields = try Self.fields(in: header.bytes)
         #expect(fields["LA"] == Self.ascii(label, paddedTo: 15, with: 0x20))
+    }
+
+    /// **The whole forbidden ASCII domain, not three samples of it.** A cross-vendor round
+    /// pointed out that the rows above cover LF, NUL and SUB, so a regression selectively
+    /// preserving TAB, CR, another C0 control or DEL would pass every one of them. This walks
+    /// all 33 non-printable ASCII bytes and both ends of the printable range.
+    ///
+    /// It asserts on the emitted `LA` bytes rather than on `sanitized` directly, because that
+    /// method is `private` — and asserting where the bytes actually land is the stronger
+    /// claim anyway.
+    @Test("every non-printable ASCII byte is replaced, and every printable one survives")
+    func theWholeASCIIDomainIsClassified() throws {
+        for value in 0x00 ... 0x7F {
+            let character = Character(UnicodeScalar(UInt8(value)))
+            let header = try DSTHeader(stream: Self.makeStream([(0, 0)]), name: "a\(character)b")
+            let label = try #require(Self.fields(in: header.bytes)["LA"])
+
+            let isPrintable = (0x20 ... 0x7E).contains(value)
+            let expected = isPrintable ? "a\(character)b" : "a_b"
+            #expect(
+                label == Self.ascii(expected, paddedTo: 15, with: 0x20),
+                "byte 0x\(String(value, radix: 16))"
+            )
+            // The point of the rule: no field terminator, and nothing a C string would cut.
+            #expect(label.contains(0x0A) == false)
+            #expect(label.contains(0x1A) == false)
+            #expect(label.contains(0x00) == false)
+        }
     }
 
     // MARK: - Length invariant

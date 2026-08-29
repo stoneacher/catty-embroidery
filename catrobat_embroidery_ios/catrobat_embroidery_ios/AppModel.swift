@@ -68,7 +68,63 @@ final class AppModel {
     /// `let`, not `var`: the identity never changes. Starting over is
     /// `RunViewModel.reset()`, not a new instance, so nothing can be observing the old
     /// one.
-    let runner = RunViewModel()
+    let runner: RunViewModel
+
+    /// The design's name and the file prepared from it (US-308).
+    ///
+    /// Owned here for the third time for the same ADR-023 reason as `runner` and
+    /// `interaction`: a name held as `@State` in the stage would be lost on an iPad window
+    /// resize, and — since `RootView` builds the stage at two call sites — would be two
+    /// different names that disagree.
+    let exporter: ExportViewModel
+
+    /// Both are injectable so tests can supply immediate pacing and a recording writer;
+    /// the defaults are what the app runs with.
+    init(runner: RunViewModel = RunViewModel(), exporter: ExportViewModel = ExportViewModel()) {
+        self.runner = runner
+        self.exporter = exporter
+
+        // The export is prepared when the run *ends*, which is what a `ShareLink` needs:
+        // it takes its item at construction time, so there is nothing to hand it unless the
+        // file already exists. See `ExportViewModel` for why that is forced rather than
+        // chosen.
+        runner.onRunTerminated = { [weak self] model in
+            self?.exporter.prepare(exportModel: model)
+        }
+        // The other half of the lifecycle, and structural rather than conventional: the
+        // prepared file goes whenever the run it describes goes, however that happens.
+        runner.onRunDiscarded = { [weak self] in
+            self?.exporter.discard()
+        }
+    }
+
+    /// Starts the selected design from the beginning, throwing away whatever the last run
+    /// prepared.
+    ///
+    /// Round 1 of the cross-vendor review found Play Again leaving `exporter.state ==
+    /// .ready(oldURL)` — that URL still holding the *previous* run — while the new run had
+    /// already cleared the design. The discard lives on `RunViewModel.onRunDiscarded` rather
+    /// than here, because round 2 pointed out that putting it in this method left the
+    /// invariant as a convention: `runner.play(_:)` and `runner.reset()` are both reachable
+    /// directly. This method now only resolves the selection.
+    func play() {
+        guard let program = selection?.program else { return }
+        runner.play(program)
+    }
+
+    /// Rewrites the file under the name the user has just committed.
+    ///
+    /// Called on submit and on focus loss, **never per keystroke**: the name goes into the
+    /// `LA` bytes as well as the file name, so every commit genuinely invalidates the
+    /// previous file and a per-keystroke call would write one file per character.
+    ///
+    /// A no-op before anything has run, which is not merely defensive — there is no design
+    /// to serialise, and a file named after one that does not exist is a lie the share
+    /// control would then offer.
+    func commitName() {
+        guard let model = runner.run.exportModel else { return }
+        exporter.prepare(exportModel: model)
+    }
 
     /// Where this window's stage is zoomed and panned to, and what is currently happening to
     /// it.
@@ -143,7 +199,19 @@ final class AppModel {
         selection = SampleSelection(sample: sample, generation: nextGeneration)
         nextGeneration += 1
         path = [.stage]
+        // `reset()` discards the run, which fires `onRunDiscarded` and takes the previous
+        // design's file with it. Leaving the file would offer a share button that sends the
+        // *last* design — the staleness ADR-023 exists to prevent, one layer up.
         runner.reset()
+        // **`SampleID.resourceName`, not `sample.displayName`.** `displayName` is a
+        // `LocalizedStringResource` from the `Samples` bundle, and "Octagon Rosette" is
+        // *exactly* 15 characters in English — so any locale whose translation is one
+        // character longer, or not Latin at all, would open this screen already showing a
+        // validation error the user did not cause. `resourceName` is ASCII, locale-
+        // independent, and already the canonical file stem. It reuses a persistence token as
+        // a default machine label, which is defensible precisely because `LA` is a machine
+        // label rather than UI copy (ADR-026).
+        exporter.name = sample.id.resourceName
         // A new design arrives fitted. Inheriting the previous design's 4× zoom would show a
         // corner of something the user has not seen whole yet — and the zoom was chosen
         // against a fit that no longer applies. Here rather than in an `.onChange`, for the

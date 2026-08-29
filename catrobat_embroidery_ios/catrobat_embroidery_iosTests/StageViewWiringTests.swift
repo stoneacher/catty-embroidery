@@ -83,7 +83,8 @@ struct StageViewWiringTests {
         needle: PreviewNeedle?,
         renderer: RecordingRenderer,
         runState: RunState = .running,
-        interaction: Binding<StageInteraction> = .constant(StageInteraction())
+        interaction: Binding<StageInteraction> = .constant(StageInteraction()),
+        exportReadiness: ExportControl.Readiness = .notRun
     ) -> some View {
         StageView(
             sample: SampleLibrary.all.first,
@@ -93,8 +94,14 @@ struct StageViewWiringTests {
             renderer: renderer,
             summary: .empty,
             interaction: interaction,
+            // US-308's four. Defaulted for the reason this helper exists: these tests are
+            // about what reaches the *renderer*, and none of them is about export.
+            exportReadiness: exportReadiness,
+            designName: .constant("OctagonRosette"),
+            nameValidation: DesignName.validating("OctagonRosette"),
             onPlay: {},
-            onStop: {}
+            onStop: {},
+            onCommitName: {}
         )
     }
 

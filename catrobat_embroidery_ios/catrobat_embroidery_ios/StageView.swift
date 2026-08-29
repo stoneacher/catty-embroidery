@@ -1,3 +1,4 @@
+import EmbroideryEngine
 import Samples
 import StagePreview
 import SwiftUI
@@ -43,10 +44,31 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     /// here would be two independent zooms that disagree.
     @Binding var interaction: StageInteraction
 
+    /// What the share affordance offers and, when it offers nothing, why — resolved by
+    /// `ExportControl` rather than re-derived here, so the visible notice and the spoken hint
+    /// cannot disagree.
+    let exportReadiness: ExportControl.Readiness
+
+    /// The design's name, owned by `AppModel` (ADR-023) and edited here.
+    @Binding var designName: String
+
+    /// The name's verdict. Passed in rather than computed, so the field, the counter and the
+    /// share control all read one value.
+    let nameValidation: Result<DesignName, DesignNameProblem>
+
     /// The transport actions. Closures rather than a reference to the view model, so this
     /// view stays testable by hosting it and knows nothing about how a run is driven.
     let onPlay: () -> Void
     let onStop: () -> Void
+
+    /// Called when the name is committed — on submit and on focus loss, **never per
+    /// keystroke**, because the name goes into the `LA` bytes and every commit rewrites the
+    /// file.
+    let onCommitName: () -> Void
+
+    /// Declared here rather than in `DesignNameField`, because focus *loss* is what triggers
+    /// the commit and only the owner of the state can watch for it.
+    @FocusState private var isNameFocused: Bool
 
     private var state: StageContentState {
         .resolving(
@@ -54,11 +76,6 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             hasStitches: !display.isEmpty,
             isRunning: runState.isRunning
         )
-    }
-
-    /// The run stopped because it produced more stitches than the preview will draw.
-    private var reachedStitchLimit: Bool {
-        runState == .finished(.stitchLimitReached)
     }
 
     /// True when the design reaches outside the 100 mm hoop.
@@ -71,11 +88,25 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     }
 
     var body: some View {
-        // Order of degradation, and it is deliberate: the canvas gives up space first,
-        // then the notices scroll, and the transport button never shrinks.
+        // Order of degradation, and it is deliberate: the canvas gives up space first, then
+        // the notices scroll, and **both** pinned action rows never shrink. US-308 added the
+        // second row; the sentence above used to say "the transport button", singular.
         VStack(spacing: 12) {
             canvasSlot
-            noticeScroller
+            notices
+            // Above the transport row, not below it: the transport button is this screen's
+            // primary action and stays nearest the thumb. `.bordered` against its
+            // `.borderedProminent` keeps exactly one prominent control, which is what
+            // `RunControl` records as the reason there is one transport button rather than
+            // two side-by-side titled ones.
+            //
+            // Hidden while the name is being edited. At AX4–AX5 with the keyboard raised the
+            // two pinned rows plus the canvas floor exceed a short device's height, and there
+            // is no outer `ScrollView` to absorb it (`canvasSlot`). You cannot share a name
+            // you are still typing, and the keyboard's Done key is the way out.
+            if !isNameFocused, sample != nil {
+                StageExportRow(readiness: exportReadiness)
+            }
             StageTransportRow(
                 runState: runState,
                 hasSelection: sample != nil,
@@ -159,138 +190,86 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     /// coordinate, drawn but not exportable, and by US-308's own criteria that message
     /// belongs to export.
     private var emptyStage: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(.tertiary, style: StrokeStyle(lineWidth: 2, dash: [6, 6]))
-                // Keeps the hoop's own proportions, so the placeholder reads as a hoop
-                // rather than as an empty box the width of the pane — which is what it
-                // looked like on iPad when this was left to fill the slot. The ratio comes
-                // from the box rather than a literal `1` for the reason
-                // `StagePlaceholderView` gave: hard-coding it would let this view quietly
-                // disagree with `StageGeometry` if the stage ever stopped being square.
-                //
-                // The *drawn* state deliberately does not do this — there the transform
-                // owns fitting, and constraining the canvas would fight it.
-                .aspectRatio(
-                    StageGeometry.box.width / StageGeometry.box.height, contentMode: .fit
-                )
-                .accessibilityHidden(true)
+        RoundedRectangle(cornerRadius: 12)
+            .strokeBorder(.tertiary, style: StrokeStyle(lineWidth: 2, dash: [6, 6]))
+            // Keeps the hoop's own proportions, so the placeholder reads as a hoop
+            // rather than as an empty box the width of the pane — which is what it
+            // looked like on iPad when this was left to fill the slot. The ratio comes
+            // from the box rather than a literal `1` for the reason
+            // `StagePlaceholderView` gave: hard-coding it would let this view quietly
+            // disagree with `StageGeometry` if the stage ever stopped being square.
+            //
+            // The *drawn* state deliberately does not do this — there the transform
+            // owns fitting, and constraining the canvas would fight it.
+            .aspectRatio(
+                StageGeometry.box.width / StageGeometry.box.height, contentMode: .fit
+            )
+            // **Before the overlay, so it hides the dashes and not the words.** Moving it
+            // after would take the `ContentUnavailableView` out of the accessibility tree
+            // with it, which is the whole content of this state.
+            .accessibilityHidden(true)
+            // **An overlay rather than a `ZStack` sibling**, which is what actually fixes
+            // the cramped text: as siblings the label was sized by the *slot* while the
+            // dashes were sized by the aspect-fitted square, so on a pane wider than it is
+            // tall the two had different widths and the description ran into — and past —
+            // the border. As an overlay the label is bounded by the frame it is drawn
+            // inside, so the inset below is measured from the dashes themselves.
+            .overlay {
+                unavailableView
+                    .padding(.horizontal, 24)
+            }
+    }
 
-            if state == .notRun {
-                ContentUnavailableView(
-                    String(localized: .stageReadyTitle),
-                    systemImage: "play.circle",
-                    description: Text(.stageReadyDescription)
+    /// Both empty states' content. Extracted only so `emptyStage` stays readable now that
+    /// the dashes carry an overlay.
+    @ViewBuilder
+    private var unavailableView: some View {
+        if state == .notRun {
+            ContentUnavailableView(
+                String(localized: .stageReadyTitle),
+                systemImage: "play.circle",
+                description: Text(.stageReadyDescription)
+            )
+        } else {
+            ContentUnavailableView(
+                String(localized: .stageEmptyTitle),
+                systemImage: "circle.dashed",
+                description: Text(.stageEmptyDescription)
+            )
+        }
+    }
+
+    /// The caption, the notices and the design-name field, extracted to `StageNotices` in
+    /// US-308 — the third extraction this file's 400-line SwiftLint ceiling has forced, after
+    /// `StageTransportRow` and `StageCanvas`. The seam is a real one: everything that moved is
+    /// *text about* the design, everything left is the design itself and its absence.
+    ///
+    /// The field is a slot rather than three more parameters on `StageNotices`, because
+    /// `@FocusState.Binding` can only come from the view that declares the `@FocusState` —
+    /// and the commit it drives belongs here, next to `onCommitName`.
+    private var notices: some View {
+        StageNotices(
+            display: display,
+            runState: runState,
+            leavesTheHoop: leavesTheHoop,
+            exportNotice: exportReadiness.notice
+        ) {
+            if sample != nil {
+                DesignNameField(
+                    name: $designName,
+                    validation: nameValidation,
+                    isFocused: $isNameFocused
                 )
-            } else {
-                ContentUnavailableView(
-                    String(localized: .stageEmptyTitle),
-                    systemImage: "circle.dashed",
-                    description: Text(.stageEmptyDescription)
-                )
+                .onSubmit(onCommitName)
             }
         }
-    }
-
-    /// The caption and both notices, in a scroll view **whose content is all text**.
-    ///
-    /// This is the distinction `StagePlaceholderView` recorded and US-305 half applied: a
-    /// flexible canvas inside a scroll view gets an unbounded height proposal and must
-    /// never be wrapped, but a fixed-ideal *text* block must be, or an AX5 pane squeezes it
-    /// into truncation. `.basedOnSize` means it does not bounce or read as scrollable until
-    /// it genuinely overflows.
-    ///
-    /// The transport row is deliberately **outside** it: a screen's primary action must not
-    /// be reachable only by scrolling.
-    private var noticeScroller: some View {
-        ScrollView(.vertical) {
-            VStack(spacing: 4) {
-                Text(Self.hoopSizeDescription)
-                    .font(.caption)
-
-                if leavesTheHoop {
-                    // Beyond the story's acceptance criteria, deliberately (Sebastian's
-                    // call). The criteria make the overflow *visible* — unclipped, and the
-                    // fit zooms out — but both cues are sight-only, and nothing else in M3
-                    // reports it: US-308 gates export on `assembledStream().count > 1`,
-                    // which is hoop-independent. Without this line a VoiceOver user is
-                    // never told at all.
-                    //
-                    // Not an error: the design still draws in full and still exports.
-                    // The title/icon closure form, not `Label(_:systemImage:)`: the latter
-                    // takes a `StringProtocol`, which would mean resolving the resource to
-                    // a `String` here and losing the `Text`-level localisation.
-                    Label {
-                        Text(.stageOutsideHoop)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle")
-                    }
-                    .font(.footnote)
-                }
-
-                if reachedStitchLimit {
-                    limitNotice
-                }
+        // Focus *loss* is the second commit trigger, and it has to be watched from the owner
+        // of the state. Only on losing it: gaining focus commits nothing.
+        .onChange(of: isNameFocused) { _, focused in
+            if !focused {
+                onCommitName()
             }
-            .frame(maxWidth: .infinity)
         }
-        .scrollBounceBehavior(.basedOnSize)
-        .foregroundStyle(.secondary)
-        .multilineTextAlignment(.center)
-        // Without this, a height-constrained proposal makes `Text` ellipsise instead of
-        // wrapping — the same guard `SamplePickerView`'s rows and the old placeholder
-        // both needed.
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    /// Why the run stopped, and only for the one ending that needs saying.
-    ///
-    /// `.programFinished` and `.stoppedByUser` explain themselves — the design ran out, or
-    /// the user pressed the button — and in both cases the button's own title changes to
-    /// "Play Again", which is the cue the accessibility criterion relies on.
-    /// `.stitchLimitReached` is the one ending with no cause on screen, and a design that
-    /// simply stopped is indistinguishable from a bug.
-    ///
-    /// **`display.count`, not `RunBudget.maxStitchesPerRun`.** They are different numbers:
-    /// `step()` returns one atomic batch the driver cannot split, so the final frame
-    /// overshoots the cap — and without any global bound once several scripts run. The
-    /// count is what is on screen; the cap is an implementation detail the user never
-    /// agreed to.
-    ///
-    /// `stop.circle`, not the `exclamationmark.triangle` above: both notices can be visible
-    /// at once (an out-of-hoop `forever` design), and two identical triangles carrying
-    /// different meanings is worse than no icon. It also echoes the transport symbol the
-    /// user just pressed, and this is not a warning — the stitches shown are real and the
-    /// design still exports.
-    ///
-    /// It lives in the *scrolling* region rather than beside the button: at AX5 this
-    /// sentence is three or four lines, and in the pinned row it would compete for space
-    /// the button must not lose. Adjacency — visual and in VoiceOver order — survives
-    /// either way.
-    private var limitNotice: some View {
-        Label {
-            Text(.stageRunLimitNotice(display.count))
-        } icon: {
-            Image(systemName: "stop.circle")
-        }
-        .font(.footnote)
-    }
-
-    /// "Hoop 100 mm × 100 mm" — moved here verbatim from `StagePlaceholderView`.
-    ///
-    /// `usage: .asProvided` is deliberate: the default lets the formatter pick the
-    /// locale's preferred unit and rendered this as "10 cm × 10 cm", which is
-    /// arithmetically right and wrong for the domain — ADR-007 defines the stage in
-    /// millimetres, DST is a millimetre-based format, and machine vendors specify hoops
-    /// in millimetres. The number and the unit abbreviation are still localized; only the
-    /// *choice* of unit is pinned.
-    ///
-    /// Computed rather than stored, because both the measurement formatting and the
-    /// catalog lookup depend on a locale that can change while the app runs.
-    static var hoopSizeDescription: String {
-        let side = Measurement(value: StageGeometry.sideInMillimetres, unit: UnitLength.millimeters)
-            .formatted(.measurement(width: .abbreviated, usage: .asProvided))
-        return String(localized: LocalizedStringResource.stageHoopSize(side, side))
     }
 }
 
@@ -304,8 +283,12 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             renderer: CanvasStitchRenderer(),
             summary: .empty,
             interaction: .constant(StageInteraction()),
+            exportReadiness: .noSelection,
+            designName: .constant(""),
+            nameValidation: DesignName.validating(""),
             onPlay: {},
-            onStop: {}
+            onStop: {},
+            onCommitName: {}
         )
     }
 }
@@ -320,8 +303,12 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             renderer: CanvasStitchRenderer(),
             summary: .empty,
             interaction: .constant(StageInteraction()),
+            exportReadiness: .notRun,
+            designName: .constant("OctagonRosette"),
+            nameValidation: DesignName.validating("OctagonRosette"),
             onPlay: {},
-            onStop: {}
+            onStop: {},
+            onCommitName: {}
         )
     }
 }
