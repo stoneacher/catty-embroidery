@@ -289,6 +289,90 @@
         }
       }
     },
+    "stage.export.hint.name.empty": {
+      "comment": "VoiceOver hint on the dimmed Share button when the design-name field is empty. Points at the field above the button; keep it consistent with stage.name.error.empty without repeating its whole sentence.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a design name first."
+          }
+        }
+      }
+    },
+    "stage.export.hint.name.invalid": {
+      "comment": "VoiceOver hint on the dimmed Share button when the design name breaks a rule - too long, or a character the file format cannot store. Deliberately does not repeat which rule: the message under the field says that, and this is spoken after the field has already been read.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The design name needs fixing first."
+          }
+        }
+      }
+    },
+    "stage.export.hint.not.run": {
+      "comment": "VoiceOver hint on the dimmed Share button, when a design has been chosen but not yet run. Says why the button cannot be used and what to do about it. \"Play\" must match stage.run.play exactly, or the hint names a button the user cannot find. There is no way to export a design mid-run, so this is the whole reason.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available once the design has been stitched. Press Play."
+          }
+        }
+      }
+    },
+    "stage.export.hint.running": {
+      "comment": "VoiceOver hint on the dimmed Share button while a design is being stitched. Both endings produce an exportable file, which is why Stop is named - stopping keeps the stitches. \"Stop\" must match stage.run.stop exactly.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available when the design finishes, or when you press Stop."
+          }
+        }
+      }
+    },
+    "stage.export.nothing.embroiderable": {
+      "comment": "Shown under the stage, and spoken as the dimmed Share button's hint, when a design draws on screen but produces no stitches a machine could sew - every position it asked for was outside what the file format can represent. Not a run failure: the design is still on screen and can still be run again. Distinguish it from the empty state, which means nothing was drawn at all.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing in this design can be embroidered."
+          }
+        }
+      }
+    },
+    "stage.export.share": {
+      "comment": "Title of the button that sends the finished design out through the system share sheet, and also the button's VoiceOver label. \"DST\" is the name of the Tajima file format embroidery machines read - keep it in Latin letters and uppercase, as file-format names are not translated. A verb in the imperative, matching stage.run.play.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share DST File"
+          }
+        }
+      }
+    },
+    "stage.export.too.few.stitches": {
+      "comment": "Shown under the stage, and spoken as the dimmed Share button's hint, when a design ran but produced fewer than two stitches - so there is nothing a machine could sew. \"Stitches\" are the individual needle penetrations. Covers both a design that stitched nothing and one that stitched a single point; they are one sentence to a reader even though they are different facts.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A design needs at least two stitches before it can be embroidered."
+          }
+        }
+      }
+    },
     "stage.hoop.size": {
       "comment": "Physical size of the embroidery hoop the stage represents, e.g. \"Hoop 100 mm × 100 mm\". Both arguments are already-formatted lengths including their unit, localized for the reader's region — do not add a unit. The separator is the multiplication sign U+00D7, not the letter x. Arguments are positional and may be reordered.",
       "extractionState": "manual",
