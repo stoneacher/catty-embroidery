@@ -28,7 +28,7 @@ struct DesignNameField: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    /// Counter beside the field, or beneath it at accessibility sizes.
+    /// Label and counter side by side, or stacked at accessibility sizes.
     ///
     /// **`AnyLayout`, never `if`/`else`.** An `if`/`else` builds two different view trees, so
     /// a Dynamic Type change while the field is focused would destroy the `TextField` and
@@ -45,14 +45,35 @@ struct DesignNameField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            title
-            arrangement {
-                field
-                counter
-            }
+            header
+            field
             if case let .failure(problem) = validation {
                 problemLine(problem)
             }
+        }
+    }
+
+    /// The label, with the counter trailing it on the same line.
+    ///
+    /// **The counter sits here rather than beside the field, and that is a correction**
+    /// (Sebastian, on the running app). Beside the field it took width *from* the field, so
+    /// the field alone stopped short of the right margin while the canvas, the caption and
+    /// both action rows above and below it ran the full width — the row read as off-centre
+    /// because it genuinely was narrower than everything around it. On the label line the
+    /// counter costs the field nothing: the field spans the column like everything else, and
+    /// the count stays visually attached to what it counts.
+    ///
+    /// It also makes the Dynamic Type story simpler rather than harder. The counter can no
+    /// longer squeeze the field at *any* size, so the AX1 rule now guards the **label** row
+    /// — where the consequence of running out of width is a wrapped label, not a truncated
+    /// name. See `DesignNameFieldLayout`.
+    private var header: some View {
+        arrangement {
+            title
+                // Expands in the horizontal arrangement, pushing the counter to the trailing
+                // edge; harmless in the vertical one, where it just fills the column.
+                .frame(maxWidth: .infinity, alignment: .leading)
+            counter
         }
     }
 
@@ -97,6 +118,8 @@ struct DesignNameField: View {
 
     /// "13/15", counted the way the validator counts (`DesignNameFieldLayout`), so the
     /// counter cannot read 15/15 while validation reports `.tooLong`.
+    ///
+    /// Trailing the label rather than the field — see `header` for why.
     ///
     /// **Hidden from VoiceOver, deliberately.** VoiceOver already echoes each typed
     /// character; a counter in the value would make every keystroke read "a … 13 of 15".

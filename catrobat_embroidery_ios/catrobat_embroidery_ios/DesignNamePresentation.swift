@@ -10,18 +10,27 @@ import SwiftUI
 /// Motion: hoist the decision out of `body` so it is both testable and impossible for two
 /// views to disagree about.
 enum DesignNameFieldLayout {
-    /// Whether the counter sits beside the field or beneath it.
+    /// Whether the counter sits beside the **label** or beneath it.
     ///
-    /// **`ViewThatFits` cannot express this**, which is worth pinning before someone
-    /// "simplifies" the `AnyLayout` away: a `TextField` is horizontally greedy with no
-    /// meaningful ideal width, so a horizontal candidate either always fits or never does.
-    /// The switch has to be driven by a value, and this is it.
+    /// **It used to govern the field's row, and moving it is the better fix** (Sebastian, on
+    /// the running app): with the counter beside the field, the field was narrower than
+    /// every other element in the column and the row read as off-centre. The counter now
+    /// trails the label, so the field always spans the column — which means **a name can no
+    /// longer be truncated by the counter at any size**, and this rule guards a wrapped
+    /// label instead of a clipped name. US-308's definition of done said "the counter moves
+    /// below the field at AX1"; it now moves below the *label*, and the truncation that
+    /// criterion existed to prevent is unreachable by construction rather than avoided at
+    /// one threshold.
     ///
-    /// The threshold is the accessibility-sizes boundary, and the arithmetic behind it:
-    /// on a 393 pt compact width, minus 32 pt of padding and 8 pt of spacing, 353 pt is
-    /// shared between field and counter. At AX1 the counter ("14/15" at scaled caption) is
-    /// about 55 pt, leaving roughly 298 pt — about twelve characters of 28 pt text, so a
-    /// 15-character name truncates. That is the truncation the criterion forbids.
+    /// **`ViewThatFits` still cannot express it**, which is worth pinning before someone
+    /// "simplifies" the `AnyLayout` away: the label is given `maxWidth: .infinity` so it
+    /// pushes the counter to the trailing edge, and a greedy candidate always "fits". The
+    /// switch has to be driven by a value, and this is it.
+    ///
+    /// The threshold is the accessibility-sizes boundary. At AX1 on a 393 pt compact width,
+    /// "Design name" and "14/15" at scaled caption need roughly 300 pt together against the
+    /// 361 pt available — close enough that a longer translation of the label overruns it,
+    /// which is what stacking avoids.
     static func axis(for size: DynamicTypeSize) -> Axis {
         size.isAccessibilitySize ? .vertical : .horizontal
     }
