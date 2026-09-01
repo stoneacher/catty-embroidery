@@ -32,12 +32,21 @@ struct AppModelTests {
     /// and is not duplicated here. The new claim is that the **picker's own
     /// source** is non-empty, which is what makes the list's empty state
     /// unreachable rather than merely unlikely.
+    ///
+    /// **US-309 made this property stop being a pass-through in debug builds**, and the
+    /// assertion is narrowed rather than deleted: the library's samples must still appear,
+    /// in library order, at the *front*. What may follow them is the measurement fixture,
+    /// which `SyntheticHarnessTests` owns; what may not is a reorder, a filter or a
+    /// duplicate. Stated as a prefix rather than as equality so the claim keeps its meaning
+    /// in both configurations instead of being weakened to whatever both happen to satisfy.
     @Test func thePickerOffersEverySampleInLibraryOrderAndNoneTwice() {
         let model = AppModel()
         let ids = model.samples.map(\.id)
+        let library = SampleLibrary.all.map(\.id)
 
         #expect(!ids.isEmpty)
-        #expect(ids == SampleLibrary.all.map(\.id))
+        #expect(ids.prefix(library.count) == ArraySlice(library))
+        #expect(ids.count <= library.count + 1, "the picker adds at most US-309's fixture")
         #expect(Set(ids).count == ids.count, "a sample appears twice: \(ids)")
     }
 

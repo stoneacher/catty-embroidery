@@ -1,5 +1,6 @@
 import EmbroideryEngine
 import ProgramModel
+import Samples
 import StagePreview
 
 /// US-309's measurement fixture: a 50 000-stitch design, in both of the shapes the story
@@ -103,67 +104,21 @@ enum SyntheticDesign {
 
     /// The exact number of stitch events `program()` emits.
     ///
-    /// **Pinned as a literal, the way the bundled samples' figures are.** A bound alone lets
-    /// the count drift within it and takes the measurement's premise along with it; a pinned
-    /// literal makes a drift name itself instead of moving both sides of an equation at once.
+    /// Pinned as a literal, the way the bundled samples' figures are — but pinned *here* as
+    /// well as in `Samples`, and the duplication is deliberate. The package constant states
+    /// what the builder produces; this suite's assertions state what the story needs. If a
+    /// later change moved one, the two would disagree and name the drift instead of moving
+    /// the goalposts and the measurement together.
     static let programStitchCount = 50_001
 
     /// The same hatch, walked by the interpreter.
     ///
-    /// **Every constant below is chosen half a stitch length off a `floor(distance / length)`
-    /// boundary (ADR-019), and that is what makes the count reproducible.** A row of 401
-    /// stage points at a stitch length of 2 is 200.5 lengths, so the trig error a 90° turn
-    /// introduces — and the sub-length surplus the running stitch carries from the previous
-    /// row — can move the quotient by a large multiple of an ulp without moving the floor.
-    /// The obvious parameters (a row that is a whole number of stitch lengths) sit *on* the
-    /// boundary, where an error of one ulp costs a stitch per row and 250 stitches per run.
-    ///
-    /// The row spacing is deliberately **shorter than the stitch length**, so the move
-    /// between rows emits nothing at all and leaves the running stitch's anchor where the row
-    /// ended. That is what keeps every row worth exactly 200 stitches rather than 200 plus a
-    /// spacing stitch whose position depends on the previous row's remainder.
-    ///
-    /// `.runningStitch(length: 2)` and not `1.5`: the brick reads its length through
-    /// `interpretInteger` (ADR-017), so a fractional length is truncated — and at 0.5 it
-    /// truncates to zero, which `RunningStitchPattern` treats as degenerate and emits
-    /// **five** stitches for the whole design.
+    /// **Delegated to `Samples`, not reimplemented here.** The app has to link this program —
+    /// the screenshots and the device capture are of the real screen — and a test target is
+    /// not linkable from an app. A second copy in this file would be the copy the guards in
+    /// `SyntheticDesignTests` actually check, while the app ran a different one: every test
+    /// green, and a 3 000-stitch capture.
     static func program() -> Program {
-        var bricks: [Brick] = [
-            .runningStitch(length: .number(stitchLength)),
-            .repeatLoop(times: .number(Double(rowPairs)))
-        ]
-        // One iteration is two rows and one full spacing pair, so the loop leaves the needle
-        // facing the way it started and the hatch stays a hatch.
-        bricks += [
-            .moveNSteps(.number(width)),
-            .turnLeft(.number(90)),
-            .moveNSteps(.number(rowSpacing)),
-            .turnLeft(.number(90)),
-            .moveNSteps(.number(width)),
-            .turnRight(.number(90)),
-            .moveNSteps(.number(rowSpacing)),
-            .turnRight(.number(90))
-        ]
-        bricks.append(.loopEnd)
-
-        return Program(
-            name: "US-309 Synthetic",
-            scenes: [Scene(objects: [Object(
-                name: "Needle",
-                startX: -halfWidth,
-                startY: -halfHeight,
-                // ADR-007: 0 degrees is up, so 90 faces the first row along +x.
-                startHeading: 90,
-                zIndex: 0,
-                scripts: [Script(header: .whenStarted, bricks: bricks)]
-            )])]
-        )
+        makeUS309SyntheticProgram()
     }
-
-    /// 2, and integral on purpose — see `program()`.
-    private static let stitchLength: Double = 2
-    /// Shorter than `stitchLength`, so the inter-row move emits nothing.
-    private static let rowSpacing: Double = 1.5
-    /// 125 iterations × 2 rows × 200 stitches = 50 000, plus the running stitch's anchor.
-    private static let rowPairs = 125
 }

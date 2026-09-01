@@ -32,7 +32,7 @@ struct SampleLibraryTests {
     func idsAreUniqueAndTotal() {
         let ids = SampleLibrary.all.map(\.id)
         #expect(Set(ids).count == ids.count, "duplicate sample id in SampleLibrary.all")
-        #expect(Set(ids) == Set(SampleID.allCases))
+        #expect(Set(ids) == Set(SampleID.shipping))
     }
 
     /// The keys are derived from the id so the two cannot drift. Pinning the

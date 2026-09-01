@@ -1,5 +1,6 @@
 import EmbroideryEngine
 import Interpreter
+import Samples
 import StagePreview
 import Testing
 
@@ -67,6 +68,9 @@ struct SyntheticDesignTests {
         let count = stitchEventCount(of: SyntheticDesign.program())
         #expect(count == SyntheticDesign.programStitchCount)
         #expect(count >= 50_000)
+        // The package states the same number for itself. Two independent statements of one
+        // fact, so a drift in either names itself rather than moving both sides at once.
+        #expect(count == us309SyntheticStitchCount)
     }
 
     @Test("the program stays inside ADR-007's stage")

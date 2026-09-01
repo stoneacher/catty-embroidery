@@ -24,3 +24,12 @@
    sample picker. "triple stitch" is an embroidery stitch type that sews each
    segment three times. */
 "sample.squareCoil.description" = "A square spiral in triple stitch, winding outward in two colours.";
+
+/* Display name of US-309's measurement fixture, shown in the sample picker in
+   debug builds only. "50k" is fifty thousand stitches; the design exists to
+   measure rendering performance, not to be stitched. */
+"sample.us309Synthetic.name" = "Synthetic 50k";
+
+/* One-line description of the measurement fixture, shown under its name in the
+   sample picker in debug builds only. */
+"sample.us309Synthetic.description" = "A 50 000-stitch hatch. Measures the stage, not a design.";

@@ -1,4 +1,5 @@
 @testable import catrobat_embroidery_ios
+import EmbroideryEngine
 import Interpreter
 import Samples
 import StagePreview
