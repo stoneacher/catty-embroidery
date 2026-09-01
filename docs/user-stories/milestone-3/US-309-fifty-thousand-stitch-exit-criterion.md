@@ -71,3 +71,58 @@ Every red in this story was a compile failure, so the bounds are proved by mutat
 ## Ink/Stitch verification
 
 **Not needed.** This story changes no DST bytes: no serialization code is touched, the goldens are byte-identical with no re-blessing, and `settleChunk` is a watermark constant with no effect on `assembledStream()`. Stated explicitly rather than left unsaid.
+
+## Review findings — in-loop `swift-code-reviewer` pass, 2026-09-01 — **AWAITING TRIAGE**
+
+Recorded verbatim in substance, **not yet triaged and not yet fixed**. Session stopped here deliberately; next session triages these, then opens the PR and runs `/codex-review`. Verification the reviewer ran independently: 735 engine tests green, SwiftLint `--strict` clean over 225 files, and — a bonus — the hand-off's `-configuration Release SWIFT_ACTIVE_COMPILATION_CONDITIONS='DEBUG'` command **built successfully with zero warnings**, which turns ADR-029's "one flag reaches the package targets too" from assertion into evidence.
+
+**No Critical findings. Five Important.**
+
+### I1 — `settleChunk`'s doc block describes the implementation that was *reverted*, and names a symbol that does not exist
+`PreviewRunState.swift:73-74, :81, :210-212`. Three statements contradict the shipped code: "now a floor rather than the whole rule" (it is still the whole rule), "a design under `settleChunk × maximumBakesPerRun`…" (**`maximumBakesPerRun` does not exist** — two hits repo-wide, both in these comments), and "US-309 tuned it **from a fixed chunk to a proportional one**" (flatly false). ADR-029 gets it right; this is stale prose left by the abandoned proportional attempt, sitting directly above the line a future reader will change. **Failure: a later story "restores" the proportional chunk that ADR-029 records as measured-worse — the negative result undone by its own comment.** `:84-114` is additionally an orphan `///` block, separated by a blank line from `settleWatermark(for:)`, so it documents nothing and DocC drops it silently.
+
+### I2 — The display link can outlive its capture window; the class comment claims the opposite
+`FrameTimeRecorder.swift:24, :43-49, :70-72`; `StageView.swift:159-164`; `AppModel.swift:220-227`. `:24` says the link is invalidated "in `stop()` **and in `deinit`**" — there is no `deinit`. `:43-48` correctly explains why there cannot be one, and that is precisely the bug: `recorder → link → proxy → recorder` makes a *recording* recorder immortal, and `stop()` is the only release path. **Failure: press Record, then tap Back or pick another design — `runner.reset()` drops `StageContentState` to `.notRun`, the readout disappears, nothing calls `stop()`, and the link keeps firing at 60 Hz for the rest of the process**, appending past the reservation into an unbounded array on the main thread *during every subsequent capture*. The instrument contaminates its own second capture, on the one device session that costs a person's afternoon. Fix candidates: `.onDisappear { recorder.stop() }`, or a `weak` proxy that invalidates when the recorder is gone.
+
+### I3 — The readout re-evaluates its body once per displayed frame, inside the frame it measures
+`FrameTimeRecorder.swift:41, :95`; `FrameTimeReadout.swift:29-37, :46-48`. `intervals` is a stored property of an `@Observable` class, so each append fires `withMutation`; `caption` reads `frameCount` and registers the dependency. Every display-link callback therefore re-runs two `String(format:)` calls and re-renders a `.regularMaterial` blur **overlaid on the canvas being measured**, at 60 Hz, while the stage is otherwise completely static. This contradicts `FrameTimeRecorder.swift:15-16` ("one subtraction and one append"). **Failure: capture 3 comes back marginal and rung 1 of the fallback ladder is taken to fix a cost the instrument introduced.** Cleanest fix: `@ObservationIgnored` on `intervals` plus a static "capturing…" while recording — zero body evaluations during a window — and retract the cost sentence.
+
+### I4 — Hand-off capture 5 is not executable as written on a fresh launch
+`us-309-device-handoff.md:64` says "Record before pressing Play", but the Record capsule exists only when `state == .drawn` (`StageView.swift:161`), which needs `hasStitches || isRunning`. After launch → select the fixture, the display is empty, so there is **no Record button** until a first run has left stitches. **Failure: a tester on borrowed hardware follows the protocol literally, finds no button, and loses the one capture documented as "where the bake spikes live".**
+
+### I5 — Backgrounding mid-capture produces a bogus FAIL with no indication
+`FrameTimeRecorder.swift:91-96`. `previousTimestamp` survives resign-active, and the link stops delivering while inactive, so the whole gap becomes one interval → `worst` in the seconds → automatic FAIL of both halves. Across five to nine ≥ 10 s holds this will happen at least once, and the hand-off's "if the bar is missed, take the ladder from rung 1" sends it to the wrong destination.
+
+### Suggestions — guards that can pass one-sidedly
+1. `StitchDrawPlanScalingTests.swift:43` — `segments <= tail + 1` is one-sided, and it is the assertion ADR-029 quotes as *the* discriminating test. A mutant returning `[]` from `strokes(for:of:within:)` gives `segments == 0` and passes; dots and strokes come from two independent loops. Add `#expect(segments >= tail)`.
+2. `StitchDrawPlanScalingTests.swift:64-69 vs :79` — the comment says "a bound rather than a bare inequality so it cannot pass on noise"; the assertion **is** a bare inequality. Measured spread is 300×, so a `≥ 10×` bound is honest and still slack. Add it or retract the sentence.
+3. `BakeSchedulingTests.swift:101` — four of five counts are exact multiples of `settleChunk`, so `tail == 0` for four; a `settleWatermark` with no quantisation at all passes four sub-cases. Use `6_001 / 20_500 / 49_999 / 200_123`.
+4. `FrameTimeRecorderTests.swift:84` — asserts `>= 600` where the code documents 2 400; bites only against no reservation at all.
+5. `BakeSchedulingTests.swift:87, :165`, `PreviewRunStateAtScaleTests.swift:70` — three assertions compare an observed `settledCount` against the very function `apply` calls, i.e. **restatements by this story's own definition**. Each is paired with something that does bite, so nothing is unguarded, but they are the remaining instances of the pattern the mutation exercise was about.
+
+No test on the branch is vacuous outright.
+
+### Suggestions — dangling references
+- `FrameTimeStatistics.swift:14` and `FrameTimeStatisticsTests.swift:14` both name **`FrameTimeProbe`**, which does not exist (it is `FrameTimeProxy`).
+- `BakeSchedulingTests.swift:66-80` carries two stacked doc paragraphs saying the same thing — an editing leftover.
+- `SampleLibraryTests.swift:33` is still named "covers every `SampleID` case" while it now asserts coverage of `SampleID.shipping`; in DEBUG those are different claims and the name is the false one.
+- `SampleLibrary.swift:13-14` documents the subscript as "total by construction — `all` covers every `SampleID`". In DEBUG it does not, so the `preconditionFailure` this comment calls unreachable is the trap.
+
+### Reachability check the reviewer ran on the `#if DEBUG` `SampleID` case
+- **The `preconditionFailure` is not reachable today**: no call site passes `.us309Synthetic` to `SampleLibrary[…]`; `ExportWiringTests` iterates `shipping`, `SampleLibraryTests` iterates `all`, everything else names shipping cases literally.
+- No `allCases` iteration in either target touches `SampleID` any more.
+- **No persistence exists in the app target** (no `AppStorage`/`SceneStorage`/`UserDefaults`/`JSONEncoder`), so the debug-only raw value cannot be written where M5 would read it. **But that is a property of today's app, not an enforced invariant** — a `#if DEBUG` case in a `Codable` `String`-raw-value enum documented as an M5 persistence token stays a live trap (a DEBUG-written token is undecodable in Release). ADR-029 currently frames it only as "compiled out of Release, so it cannot reach a user"; worth one more sentence.
+- The two localisation keys are in the **shipping** `Localizable.strings` (they cannot be `#if DEBUG`-ed) and are not covered by `keysFollowTheIDFormat`. They will go to Crowdin for ~75 languages. Harmless; prefix them if that matters.
+
+### Two notes on the instruments
+- **`isLongEnoughToQuote` does not need the refresh rate it claims it cannot know**: the sum of the intervals *is* the capture's wall-clock length, so `reduce(0,+) >= 10_000` is AC3's "≥ 10 s" with no refresh-rate assumption. `FrameTimeReadout.swift:47` currently hard-codes `/ 60` in the one place the tester reads while deciding when to press Stop.
+- **The ProMotion hedging is moot today**: `Info.plist` does not set `CADisableMinimumFrameDurationOnPhone`, so iOS caps this app's display link at 60 Hz even on a 13 Pro. The 2 400 reservation is 40 s, not 20, and 600 frames really is 10 s. Conservative today — but if that key is ever added, the `/60` arithmetic and the 600-frame threshold both go wrong silently, in opposite directions from what the comments predict.
+
+### Caveat on the verified build command
+`SWIFT_ACTIVE_COMPILATION_CONDITIONS='DEBUG'` **replaces rather than appends**. The app target's own value is `"DEBUG $(inherited)"` so nothing is lost there, but package targets lose `SWIFT_PACKAGE` — safe here only because no first-party source uses `#if SWIFT_PACKAGE` (grepped: zero hits). The safer spelling is `'$(inherited) DEBUG'`, and the failure it prevents would land on the device session rather than in CI. **The hand-off should say so.**
+
+### Confirmed correct
+- **`settleWatermark(for:)` is behaviour-preserving**, verified by reading: identical to the previous inline expression for every `count ≥ 0`, with the `max(1,)` guard moved rather than dropped.
+- **Concurrency is clean under Swift 6**: recorder and proxy are both `@MainActor`, the link is added to `.main` in `.common`, and the Release+DEBUG build emitted zero warnings.
+- **`FrameTimeStatistics`' nearest-rank implementation is right** at n = 1, 100 and 1000.
+- Every ADR-029 "Decision" bullet was checked against the code and found supported. **The only ADR-029 claim that outruns the code is inherited from I1** — the ADR correctly says "the fixed chunk stays" while the source it points at says it became proportional.
