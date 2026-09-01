@@ -39,32 +39,50 @@ private let stitchLength: Double = 2
 /// 125 iterations × 2 rows × 200 stitches = 50 000, plus the running stitch's anchor.
 private let rowPairs = 125
 
+/// The bands the hatch is divided into, in order.
+///
+/// **Colour bands rather than one flat colour, for two reasons that are both about not
+/// measuring the wrong thing.** Visually, fifty thousand stitches in a 100 mm hoop is a solid
+/// fill — the first version of this design screenshotted as a black rectangle, in which
+/// nothing about the render could be seen at all, fitted or zoomed. And per-frame planning
+/// cost is linear in the number of **colour runs**, not in the stitch count
+/// (`StitchDrawPlanScalingTests`), so a single-run design is the one shape that leaves that
+/// dependence entirely unexercised at scale.
+///
+/// Five, not fifty: enough to read as bands and to put the multi-run path under the
+/// measurement, few enough that the run walk stays far away from being the dominant cost —
+/// which would make the fixture measure its own colouring instead of the renderer.
+///
+/// They must differ as parsed `ThreadColor`s or ADR-015 makes each set a silent no-op and the
+/// design ships one block.
+private let bandColors = ["#1d4ed8", "#0d9488", "#65a30d", "#f59e0b", "#dc2626"]
+
 /// The exact number of stitch events this program emits.
 ///
 /// Pinned as a literal the way the bundled samples' figures are: a bound alone lets the count
 /// drift within it and takes the measurement's premise along with it.
 public let us309SyntheticStitchCount = 50_001
 
-/// A boustrophedon hatch that fills ADR-007's stage and stitches 50 001 times over roughly
-/// seventeen seconds at ADR-018's one tick per displayed frame.
+/// The number of maximal colour runs the design stitches — one per band.
+///
+/// Pinned because it is an independent variable of the measurement, not a decoration: the
+/// per-frame planning cost is linear in this number.
+public let us309SyntheticColorRunCount = 5
+
+/// A boustrophedon hatch that fills ADR-007's stage in five colour bands and stitches 50 001
+/// times over roughly seventeen seconds at ADR-018's one tick per displayed frame.
 public func makeUS309SyntheticProgram() -> Program {
-    var bricks: [Brick] = [
-        .runningStitch(length: .number(stitchLength)),
-        .repeatLoop(times: .number(Double(rowPairs)))
-    ]
-    // One iteration is two rows and two spacing moves, so the loop leaves the needle facing
-    // the way it started and the hatch stays a hatch rather than drifting into a spiral.
-    bricks += [
-        .moveNSteps(.number(rowWidth)),
-        .turnLeft(.number(90)),
-        .moveNSteps(.number(rowSpacing)),
-        .turnLeft(.number(90)),
-        .moveNSteps(.number(rowWidth)),
-        .turnRight(.number(90)),
-        .moveNSteps(.number(rowSpacing)),
-        .turnRight(.number(90))
-    ]
-    bricks.append(.loopEnd)
+    var bricks: [Brick] = [.runningStitch(length: .number(stitchLength))]
+
+    // One `repeatLoop` per band, each preceded by its colour — the US-208 shape. Setting the
+    // colour *inside* one loop would re-set the same colour every iteration, which ADR-015
+    // makes a no-op each time, at the cost of 125 extra ticks and an unclear partition.
+    for hex in bandColors {
+        bricks.append(.setThreadColor(hex: hex))
+        bricks.append(.repeatLoop(times: .number(Double(rowPairs / bandColors.count))))
+        bricks += rowPair()
+        bricks.append(.loopEnd)
+    }
 
     return Program(
         name: "US309 Synthetic",
@@ -78,5 +96,20 @@ public func makeUS309SyntheticProgram() -> Program {
             scripts: [Script(header: .whenStarted, bricks: bricks)]
         )])]
     )
+}
+
+/// Two rows and the two spacing moves between them, so one iteration leaves the needle facing
+/// the way it started and the hatch stays a hatch rather than drifting into a spiral.
+private func rowPair() -> [Brick] {
+    [
+        .moveNSteps(.number(rowWidth)),
+        .turnLeft(.number(90)),
+        .moveNSteps(.number(rowSpacing)),
+        .turnLeft(.number(90)),
+        .moveNSteps(.number(rowWidth)),
+        .turnRight(.number(90)),
+        .moveNSteps(.number(rowSpacing)),
+        .turnRight(.number(90))
+    ]
 }
 #endif

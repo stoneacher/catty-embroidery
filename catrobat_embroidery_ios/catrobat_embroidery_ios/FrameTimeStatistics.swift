@@ -14,12 +14,25 @@ import Foundation
 /// delivers one callback per displayed frame — is confined to `FrameTimeProbe`, which does
 /// nothing but forward a duration into here.
 struct FrameTimeStatistics: Equatable {
-    /// One 60 Hz frame, in milliseconds. The p99 bar.
-    static let frameBudgetMilliseconds = 1_000.0 / 60
+    /// The p99 bar: **16.67 ms, the criterion's own figure, deliberately not `1000.0 / 60`.**
+    ///
+    /// The difference is 3.3 µs and it decides the result. A display link on a 60 Hz display
+    /// reports intervals of a nominal 16.6667 ms with sub-microsecond jitter, and that jitter
+    /// is not symmetric about the nominal period — so comparing against the exact period is a
+    /// knife-edge that a *perfect* capture loses. Measured, on the simulator rehearsal before
+    /// any device was involved: a capture of 1 196 frames, every one of them on time, came
+    /// back `med 16.7 p95 16.7 p99 16.7 max 16.7 · FAIL`.
+    ///
+    /// AC3 states the bar as 16.67 ms. Taking the criterion at its word is both the honest
+    /// reading and the one with the 3.3 µs of slack that a real display needs — and it is why
+    /// the constant is written as the criterion writes it rather than derived from the
+    /// refresh rate.
+    static let frameBudgetMilliseconds = 16.67
 
-    /// Two frames. A frame at or past this is a *dropped* frame — the thing the "no frame
-    /// exceeds" half of the bar exists to catch, and the thing an average hides.
-    static let droppedFrameMilliseconds = 2 * frameBudgetMilliseconds
+    /// A frame past this is a *dropped* frame — the thing the "no frame exceeds" half of the
+    /// bar catches and an average hides. 33.3 ms, again the criterion's figure rather than
+    /// twice the nominal period, for the same reason.
+    static let droppedFrameMilliseconds = 33.3
 
     /// AC3's window: ≥ 10 s, which at 60 Hz is 600 frames.
     static let quotableFrameCount = 600

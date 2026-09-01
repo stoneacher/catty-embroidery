@@ -69,6 +69,20 @@ struct FrameTimeStatisticsTests {
         #expect(!stats.meetsSixtyFps)
     }
 
+    /// **The regression this bar was born from.** A display running at exactly 60 Hz reports
+    /// a nominal 16.6667 ms per frame; deriving the budget from the refresh rate rather than
+    /// taking AC3's stated 16.67 ms made a flawless capture fail on float noise, which the
+    /// simulator rehearsal caught before any device was involved (1 196 frames, all on time,
+    /// reported FAIL).
+    @Test("a nominal sixty-hertz capture passes the bar")
+    func aNominalSixtyHertzCapturePassesTheBar() throws {
+        let nominal = 1_000.0 / 60
+        let stats = try #require(FrameTimeStatistics(
+            millisecondsPerFrame: (0 ..< 1_200).map { nominal + Double($0 % 3) * 1e-9 }
+        ))
+        #expect(stats.meetsSixtyFps)
+    }
+
     @Test("a capture inside the bar passes it")
     func aCaptureInsideTheBarPassesIt() throws {
         let stats = try #require(FrameTimeStatistics(millisecondsPerFrame: Array(repeating: 16.0, count: 600)))

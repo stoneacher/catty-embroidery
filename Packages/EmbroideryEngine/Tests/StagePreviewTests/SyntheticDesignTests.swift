@@ -91,6 +91,25 @@ struct SyntheticDesignTests {
         #expect(tickBatches(&subject).count >= 600)
     }
 
+    /// The design stitches in bands, and the count is pinned.
+    ///
+    /// **Not decoration.** Per-frame planning cost is linear in the colour-run count
+    /// (`StitchDrawPlanScalingTests`), so a single-run fixture would leave the one dependence
+    /// ADR-009's claim actually has entirely unexercised at scale — while also screenshotting
+    /// as a featureless black rectangle, which is what the first version of this design did.
+    @Test("the program stitches in five colour bands")
+    func theProgramStitchesInFiveColourBands() {
+        var subject = interpreter(SyntheticDesign.program())
+        var list = StitchDisplayList()
+        for events in tickBatches(&subject) {
+            list.append(contentsOf: RunBatch.reducing(events).stitches)
+        }
+        #expect(list.colorRuns.count == us309SyntheticColorRunCount)
+        // Roughly equal bands, so no run is a sliver that makes the multi-run path vacuous.
+        let smallest = list.colorRuns.map(\.range.count).min() ?? 0
+        #expect(smallest >= list.count / (us309SyntheticColorRunCount * 2))
+    }
+
     /// The two halves must describe the same design, or the story measures one thing and
     /// screenshots another.
     @Test("both halves of the fixture reach the same scale")
