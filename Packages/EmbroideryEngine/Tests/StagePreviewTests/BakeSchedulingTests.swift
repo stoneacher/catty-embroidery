@@ -70,12 +70,39 @@ struct BakeSchedulingTests {
     /// a handful. That claim was measured against M3's real samples, which reach 3 194
     /// stitches and bake three times; it does not survive the design this story exists to
     /// run.
+    /// **The bake count, recorded as the number it is.**
+    ///
+    /// `settleChunk`'s own comment said the raster is rebuilt "a handful of times per run".
+    /// That was measured against M3's 3 194-stitch samples, where it is three; at the scale
+    /// this story exists to run it is **fifty**, and the last of them plans the entire
+    /// design on one frame. The two tests below are the measurement AC5 asks for; this one
+    /// pins what the shipped policy actually does, so the device session has a baseline to
+    /// tune against rather than a claim.
     @Test("a fifty-thousand-stitch run bakes once per settle chunk")
     func aFiftyThousandStitchRunBakesOncePerSettleChunk() {
         let bakes = observedWatermarks(reaching: 50_000)
+
         #expect(bakes.count == 50_000 / PreviewRunState.settleChunk)
-        #expect(bakes.last == 50_000)
         #expect(bakes.first == PreviewRunState.settleChunk)
+        #expect(bakes.last == PreviewRunState.settleWatermark(for: 50_000))
+        // Fifty is not a handful. Stated as an expectation rather than a comment so the
+        // sentence cannot quietly stop being true.
+        #expect(bakes.count > 10, "\(bakes.count) bakes — the 'handful' claim does not survive 50k")
+    }
+
+    /// The live tail the shipped policy leaves is bounded by a **constant**, not a fraction.
+    ///
+    /// This is the half of the trade-off that argues *for* the fixed chunk, and it is why
+    /// US-309 did not raise it on the headless evidence alone: the per-frame cost ADR-009
+    /// claims is small is exactly this tail, and a geometric schedule — which would bound
+    /// the bake count — buys that by letting the tail reach a third of the design.
+    @Test("the shipped policy leaves a live tail bounded by a constant")
+    func theShippedPolicyLeavesALiveTailBoundedByAConstant() {
+        for count in [3_194, 6_000, 20_000, 50_000, 200_000] {
+            let tail = count - PreviewRunState.settleWatermark(for: count)
+            #expect(tail < PreviewRunState.settleChunk,
+                    "a \(count)-stitch design left a \(tail)-stitch live tail")
+        }
     }
 
     /// The total settled-plan work across a whole run, as a function of the chunk.
@@ -135,7 +162,7 @@ struct BakeSchedulingTests {
             run.apply(RunUpdate(batch: RunBatch(stitches: slice)))
         }
         #expect(run.display.count == 50_000)
-        #expect(run.display.settledCount == 50_000)
+        #expect(run.display.settledCount == PreviewRunState.settleWatermark(for: 50_000))
     }
 
     private func totalPlanWork(over list: StitchDisplayList, chunk: Int) -> Duration {

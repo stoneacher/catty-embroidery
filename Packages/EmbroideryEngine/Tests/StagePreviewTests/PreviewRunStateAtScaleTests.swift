@@ -54,10 +54,11 @@ struct PreviewRunStateAtScaleTests {
         """)
     }
 
-    /// The precondition AC3's capture protocol depends on: after the run, the whole design
-    /// is settled, so "50 000 settled" is a state the device session can actually reach.
-    @Test("a finished fifty-thousand-stitch run settles to the settle chunk")
-    func aFinishedFiftyThousandStitchRunSettlesToTheSettleChunk() async {
+    /// The precondition AC3's capture protocol depends on: after the run, the design is
+    /// settled to the policy's watermark, so a "50 000 settled" capture is a state the device
+    /// session can actually reach rather than one it has to contrive.
+    @Test("a finished fifty-thousand-stitch run settles to the policy's watermark")
+    func aFinishedFiftyThousandStitchRunSettlesToThePolicysWatermark() async {
         let drained = await driveToCompletion(SyntheticDesign.program())
 
         var run = PreviewRunState()
@@ -66,8 +67,7 @@ struct PreviewRunStateAtScaleTests {
             run.apply(update)
         }
 
-        let chunk = PreviewRunState.settleChunk
-        #expect(run.display.settledCount == run.display.count - run.display.count % chunk)
+        #expect(run.display.settledCount == PreviewRunState.settleWatermark(for: run.display.count))
         #expect(run.display.settledCount >= 50_000)
     }
 
