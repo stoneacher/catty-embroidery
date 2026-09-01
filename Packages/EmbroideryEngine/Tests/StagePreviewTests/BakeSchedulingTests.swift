@@ -23,11 +23,36 @@ import Testing
 /// requirement: a bare tuned number would be the magic constant the criterion forbids.
 @Suite("US-309 bake scheduling", .serialized, .timeLimit(.minutes(1)))
 struct BakeSchedulingTests {
-    /// The watermarks a run of `count` stitches actually bakes at, under the shipped policy.
+    /// The watermarks a run actually bakes at, **observed** by driving a real
+    /// `PreviewRunState` and recording every distinct value of `settledCount`.
     ///
-    /// Derived from `PreviewRunState`'s own rule rather than restated, so a change to the
-    /// policy moves this suite instead of leaving it asserting history.
-    private func watermarks(reaching count: Int, chunk: Int) -> [Int] {
+    /// Observed rather than derived, and that distinction was found by mutation rather than
+    /// by reasoning: the first version of this helper restated the quantisation rule, and a
+    /// mutant that quantised `apply` to three chunks instead of one **passed** it, because
+    /// the test and the code were computing the same wrong thing from the same constant.
+    /// Its doc comment claimed it was derived from `PreviewRunState`'s own rule. It was not.
+    private func observedWatermarks(reaching count: Int) -> [Int] {
+        var run = PreviewRunState()
+        run.begin()
+        var seen: [Int] = []
+        let stitches = SyntheticDesign.stitches(count: count)
+        for start in stride(from: 0, to: stitches.count, by: 250) {
+            let slice = Array(stitches[start ..< min(start + 250, stitches.count)])
+            run.apply(RunUpdate(batch: RunBatch(stitches: slice)))
+            if run.display.settledCount > 0, seen.last != run.display.settledCount {
+                seen.append(run.display.settledCount)
+            }
+        }
+        return seen
+    }
+
+    /// The watermarks a *hypothetical* chunk would bake at.
+    ///
+    /// A model, and labelled one: `settleChunk` is a `static let`, so the tuning comparison
+    /// below cannot observe an alternative policy the way `observedWatermarks` observes the
+    /// shipped one. It is used only where the two chunks are compared against each other, so
+    /// a shared error cancels rather than misleads.
+    private func modelledWatermarks(reaching count: Int, chunk: Int) -> [Int] {
         var seen: [Int] = []
         for total in stride(from: chunk, through: count, by: chunk) {
             let settled = total - total % chunk
@@ -47,9 +72,10 @@ struct BakeSchedulingTests {
     /// run.
     @Test("a fifty-thousand-stitch run bakes once per settle chunk")
     func aFiftyThousandStitchRunBakesOncePerSettleChunk() {
-        let bakes = watermarks(reaching: 50_000, chunk: PreviewRunState.settleChunk)
+        let bakes = observedWatermarks(reaching: 50_000)
         #expect(bakes.count == 50_000 / PreviewRunState.settleChunk)
         #expect(bakes.last == 50_000)
+        #expect(bakes.first == PreviewRunState.settleChunk)
     }
 
     /// The total settled-plan work across a whole run, as a function of the chunk.
@@ -113,7 +139,7 @@ struct BakeSchedulingTests {
     }
 
     private func totalPlanWork(over list: StitchDisplayList, chunk: Int) -> Duration {
-        let marks = watermarks(reaching: list.count, chunk: chunk)
+        let marks = modelledWatermarks(reaching: list.count, chunk: chunk)
         return fastest {
             for mark in marks {
                 var settled = list

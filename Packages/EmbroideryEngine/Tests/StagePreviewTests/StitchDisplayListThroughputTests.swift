@@ -15,14 +15,25 @@ import Testing
 ///
 /// - An absolute bound is not expressible as a trait. `TimeLimitTrait.Duration.seconds` is
 ///   `@available(*, unavailable)` — the compiler says so — so `.timeLimit` is a
-///   minute-granularity hang net and nothing finer. It is applied below as exactly that.
+///   minute-granularity net and nothing finer. **And it is a weaker net than it looks**:
+///   measured against the quadratic mutant, it records `Time limit was exceeded: 60.000
+///   seconds` and then lets the synchronous body run to completion, more than ten further
+///   minutes. It is kept as a backstop, but what actually keeps this suite fast under a
+///   regression is `fastest(within:)`'s budget.
 /// - `.serialized` orders tests *within* a suite; it does not buy exclusive CPU, so a bare
 ///   ceiling would be a flake generator on a loaded machine.
 /// - The 5 k ↔ 50 k ratio the criterion's wording suggests is **floor-limited**: at 5 k the
 ///   cost is dominated by allocation constants, so in a release build that ratio measures
 ///   3.7 against a linear prediction of 10 and tells you nothing. Between two large
-///   anchors it behaves: 25 k → 100 k measures **4.00** against a linear 4 and a quadratic
-///   16.
+///   anchors it behaves: a 4× step measures **4.0** against a linear 4 and a quadratic 16.
+/// - The ratio anchors are 6 250 → 25 000, which is a **failure-mode** choice rather than an
+///   accuracy one: the ratio is equally clean at any 4× pair, but the time a guard takes to
+///   go *red* is set by how slow the bad implementation is, not by how fast the good one is.
+///   Measured on the quadratic mutant in a debug build — which is what `swift test` and the
+///   pre-commit gate run — one 50 000-append run costs **~180 s**, against 5.7 ms for the
+///   real implementation. At 25 000 it is ~45 s. So the discriminating assertions are made
+///   where a regression announces itself in under a minute, and the criterion's own literal
+///   50 000 figure is kept below as a ceiling that is simply slower to go red.
 ///
 /// The bound is therefore 8 — a factor of two clear of linear in one direction and of
 /// quadratic in the other. A rescanning `append` measures 16.4.
@@ -33,8 +44,8 @@ struct StitchDisplayListThroughputTests {
 
     @Test("appending is linear in stitch count, not quadratic")
     func appendingIsLinearInStitchCount() {
-        let small = batches(of: 25_000)
-        let large = batches(of: 100_000)
+        let small = batches(of: 6_250)
+        let large = batches(of: 25_000)
 
         let smallTime = fastest { appendAll(small) }
         let largeTime = fastest { appendAll(large) }
@@ -44,7 +55,7 @@ struct StitchDisplayListThroughputTests {
             ratio <= 8,
             """
             a 4× stitch count cost \(String(format: "%.2f", ratio))× the time \
-            (25 000: \(milliseconds(smallTime)), 100 000: \(milliseconds(largeTime))) — \
+            (6 250: \(milliseconds(smallTime)), 25 000: \(milliseconds(largeTime))) — \
             linear is 4, quadratic is 16
             """
         )
@@ -52,10 +63,15 @@ struct StitchDisplayListThroughputTests {
 
     /// The criterion's literal shape, kept as a **second and deliberately generous net**.
     ///
-    /// The ceiling is two orders of magnitude above the measured debug cost (5.7 ms), so it
-    /// cannot flake on a loaded machine; a rescanning `append` costs ~19 s here and fails it
-    /// by a factor of 95. It exists because a ratio alone would stay green if *both*
-    /// anchors regressed by the same factor.
+    /// The ceiling is more than an order of magnitude above the measured debug cost (5.7 ms),
+    /// so it cannot flake on a loaded machine. It exists because a ratio alone would stay
+    /// green if *both* anchors regressed by the same factor.
+    ///
+    /// **This is the slow one, and deliberately so.** A rescanning `append` takes ~180 s to
+    /// reach this assertion — the regression's own cost, not the guard's — where the ratio
+    /// tests above are red inside a minute. It is kept at 50 000 because that is the figure
+    /// AC6 names, and a guard that asserts at a smaller scale than the criterion is a guard
+    /// for a different criterion.
     @Test("fifty thousand stitches in one thousand batches stays within the documented bound")
     func fiftyThousandStitchesInOneThousandBatchesStaysWithinTheBound() {
         let work = batches(of: 50_000)
@@ -70,8 +86,8 @@ struct StitchDisplayListThroughputTests {
     /// nothing to rescan.
     @Test("colour-run maintenance does not rescan")
     func colourRunMaintenanceDoesNotRescan() {
-        let small = batches(of: 25_000, colorRuns: 500)
-        let large = batches(of: 100_000, colorRuns: 2_000)
+        let small = batches(of: 6_250, colorRuns: 500)
+        let large = batches(of: 25_000, colorRuns: 2_000)
 
         let smallTime = fastest { appendAll(small) }
         let largeTime = fastest { appendAll(large) }
@@ -89,9 +105,14 @@ struct StitchDisplayListThroughputTests {
     // MARK: - Fixtures
 
     /// The stitches, pre-built and pre-split, so the measurement times `append` and not the
-    /// fixture: building 100 000 `PreviewStitch`es costs more than appending them.
+    /// fixture: building the stitches costs more than appending them.
+    ///
+    /// **`SyntheticDesign.stitches`, never `SyntheticDesign.displayList`** — the fixture must
+    /// not be produced by the function under guard, or a regression in that function makes
+    /// the *setup* pathological and the suite hangs before it can assert anything. Measured
+    /// on the quadratic mutant: 400 s without reaching an assertion.
     private func batches(of count: Int, colorRuns: Int = 1) -> [[PreviewStitch]] {
-        let stitches = Array(SyntheticDesign.displayList(count: count, colorRuns: colorRuns).stitches)
+        let stitches = SyntheticDesign.stitches(count: count, colorRuns: colorRuns)
         let size = max(1, count / Self.batchCount)
         return stride(from: 0, to: stitches.count, by: size).map {
             Array(stitches[$0 ..< min($0 + size, stitches.count)])
