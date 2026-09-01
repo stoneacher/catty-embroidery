@@ -24,19 +24,28 @@ import Testing
 ///   ceiling would be a flake generator on a loaded machine.
 /// - The 5 k ↔ 50 k ratio the criterion's wording suggests is **floor-limited**: at 5 k the
 ///   cost is dominated by allocation constants, so in a release build that ratio measures
-///   3.7 against a linear prediction of 10 and tells you nothing. Between two large
-///   anchors it behaves: a 4× step measures **4.0** against a linear 4 and a quadratic 16.
-/// - The ratio anchors are 6 250 → 25 000, which is a **failure-mode** choice rather than an
-///   accuracy one: the ratio is equally clean at any 4× pair, but the time a guard takes to
-///   go *red* is set by how slow the bad implementation is, not by how fast the good one is.
-///   Measured on the quadratic mutant in a debug build — which is what `swift test` and the
-///   pre-commit gate run — one 50 000-append run costs **~180 s**, against 5.7 ms for the
-///   real implementation. At 25 000 it is ~45 s. So the discriminating assertions are made
-///   where a regression announces itself in under a minute, and the criterion's own literal
-///   50 000 figure is kept below as a ceiling that is simply slower to go red.
+///   3.7 against a linear prediction of 10 and tells you nothing.
+/// - **The step is 16×, and the bound is the geometric mean of the two predictions.** For a
+///   step of k, linear predicts k and quadratic predicts k², so the bound that is equally
+///   far from both *in log space* — which is the space this question lives in — is k^1.5.
+///   The first version used a 4× step and a bound of 8, leaving only a factor of two of
+///   headroom in each direction, and **CI refuted it**: on the unmutated implementation the
+///   hosted runner measured **9.62×** for a 4× step (6 250: 1.730 ms, 25 000: 16.653 ms)
+///   where this machine measures 3.45–3.71× (0.88 ms → 3.27 ms). The per-element cost is
+///   not constant across sizes on every machine — the larger buffer leaves cache — so a
+///   wall-clock ratio conflates algorithmic complexity with the memory hierarchy unless the
+///   step is wide enough to swamp it. At 16× the predictions are 16 and 256, the bound is
+///   64, and even the runner's ~2.4× per-element inflation lands near 38.
+/// - The anchors are also a **failure-mode** choice: the time a guard takes to go *red* is
+///   set by how slow the bad implementation is, not by how fast the good one is. On the
+///   quadratic mutant in a debug build — which is what `swift test` and the pre-commit gate
+///   run — one 50 000-append run costs **~180 s** against 5.7 ms for the real
+///   implementation, and ~45 s at 25 600. So the discriminating assertions are made where a
+///   regression announces itself in under a minute, and the criterion's own literal 50 000
+///   figure is kept below as a ceiling that is simply slower to go red.
 ///
-/// The bound is therefore 8 — a factor of two clear of linear in one direction and of
-/// quadratic in the other. A rescanning `append` measures 16.4.
+/// A rescanning `append` measures a ratio in the thousands at this step, against a bound of
+/// 64 and a healthy 16.
 @Suite("US-309 display-list throughput", .serialized, .timeLimit(.minutes(1)))
 struct StitchDisplayListThroughputTests {
     /// The batch size the criterion names: 50 000 stitches in 1 000 batches.
@@ -44,19 +53,19 @@ struct StitchDisplayListThroughputTests {
 
     @Test("appending is linear in stitch count, not quadratic")
     func appendingIsLinearInStitchCount() {
-        let small = batches(of: 6_250)
-        let large = batches(of: 25_000)
+        let small = batches(of: 1_600)
+        let large = batches(of: 25_600)
 
         let smallTime = fastest { appendAll(small) }
         let largeTime = fastest { appendAll(large) }
         let ratio = seconds(largeTime) / seconds(smallTime)
 
         #expect(
-            ratio <= 8,
+            ratio <= 64,
             """
-            a 4× stitch count cost \(String(format: "%.2f", ratio))× the time \
-            (6 250: \(milliseconds(smallTime)), 25 000: \(milliseconds(largeTime))) — \
-            linear is 4, quadratic is 16
+            a 16× stitch count cost \(String(format: "%.2f", ratio))× the time \
+            (1 600: \(milliseconds(smallTime)), 25 600: \(milliseconds(largeTime))) — \
+            linear is 16, quadratic is 256
             """
         )
     }
@@ -86,18 +95,19 @@ struct StitchDisplayListThroughputTests {
     /// nothing to rescan.
     @Test("colour-run maintenance does not rescan")
     func colourRunMaintenanceDoesNotRescan() {
-        let small = batches(of: 6_250, colorRuns: 500)
-        let large = batches(of: 25_000, colorRuns: 2_000)
+        let small = batches(of: 1_600, colorRuns: 128)
+        let large = batches(of: 25_600, colorRuns: 2_048)
 
         let smallTime = fastest { appendAll(small) }
         let largeTime = fastest { appendAll(large) }
         let ratio = seconds(largeTime) / seconds(smallTime)
 
         #expect(
-            ratio <= 8,
+            ratio <= 64,
             """
-            a 4× stitch count at a 4× run count cost \(String(format: "%.2f", ratio))× the time \
-            (\(milliseconds(smallTime)) → \(milliseconds(largeTime)))
+            a 16× stitch count at a 16× run count cost \(String(format: "%.2f", ratio))× the \
+            time (\(milliseconds(smallTime)) → \(milliseconds(largeTime))) — \
+            linear is 16, quadratic is 256
             """
         )
     }
