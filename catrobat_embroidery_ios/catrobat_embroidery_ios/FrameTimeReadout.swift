@@ -105,15 +105,28 @@
         /// refresh whether or not SwiftUI redrew anything, so a settled, static stage can
         /// report a flawless 60 fps having asked the renderer for nothing at all: that
         /// capture describes the display's cadence, which was never in question, rather than
-        /// ADR-009's claim, which is (Codex round 1, finding 1). The threshold is deliberately
-        /// generous — far fewer draws than frames still shows the renderer ran; near-zero
-        /// shows it did not.
+        /// ADR-009's claim, which is (Codex round 1, finding 1).
+        ///
+        /// **Two verdicts rather than one, and zero is tested separately from the ratio.**
+        /// The first spelling was `draws < stats.frameCount / 10`, which is integer division:
+        /// any capture under ten frames has a threshold of **0**, so `draws == 0` compared
+        /// `0 < 0` and such a capture was scored `PASS`/`FAIL` — the guard switched itself off
+        /// exactly where the evidence is thinnest. Zero draws is now its own case and needs no
+        /// threshold. The ratio case is kept for a capture that *did* render but spent most of
+        /// its frames idle, and it says so rather than claiming nothing was drawn: those frame
+        /// times are still mostly the display's, so the tail cannot be read as the renderer's.
+        /// `draws * 10 < frameCount` rather than a division, so nothing truncates.
         private func verdict(_ stats: FrameTimeStatistics) -> String {
             if recorder.wasInterrupted {
                 return "INTERRUPTED — discard and re-capture"
             }
-            if let draws = recorder.drawCount, draws < stats.frameCount / 10 {
-                return "NO DRAWS — measures the display, not the renderer"
+            if let draws = recorder.drawCount {
+                if draws == 0 {
+                    return "NO DRAWS — measures the display, not the renderer"
+                }
+                if draws * 10 < stats.frameCount {
+                    return "MOSTLY IDLE — \(draws) draws in \(stats.frameCount) frames"
+                }
             }
             let bar = stats.meetsSixtyFps ? "PASS" : "FAIL"
             return "\(bar)\(stats.isLongEnoughToQuote ? "" : " (short)")"

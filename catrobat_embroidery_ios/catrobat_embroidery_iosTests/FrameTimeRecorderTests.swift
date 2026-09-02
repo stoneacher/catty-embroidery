@@ -303,4 +303,28 @@ struct FrameTimeRecorderTests {
         #expect(recorder.drawCount == nil)
         #expect(recorder.nominalFrameMilliseconds == nil)
     }
+
+    /// A short capture with no draws is still a no-draw capture.
+    ///
+    /// **The regression this pins was mine, found while waiting on the verification round.**
+    /// The first draw guard read `draws < stats.frameCount / 10` — integer division, so a
+    /// capture of fewer than ten frames had a threshold of zero, `0 < 0` was false, and the
+    /// guard silently switched itself off precisely where the evidence is thinnest. Zero is
+    /// now its own case and needs no threshold at all.
+    @Test("a short capture with no draws is not scored as a pass")
+    func aShortCaptureWithNoDrawsIsNotScoredAsAPass() throws {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        // Five frames, all perfectly on time, nothing drawn.
+        for index in 0 ... 5 {
+            recorder.record(timestamp: Double(index) * 0.016)
+        }
+        let stats = try #require(recorder.stop())
+
+        #expect(stats.frameCount == 5)
+        #expect(stats.frameCount / 10 == 0, "the truncation the old threshold relied on")
+        #expect(recorder.drawCount == 0)
+        // The numbers would read as a pass; the draw count is what says they mean nothing.
+        #expect(stats.meetsSixtyFps)
+    }
 }
