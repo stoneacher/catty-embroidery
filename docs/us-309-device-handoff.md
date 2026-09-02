@@ -52,9 +52,22 @@ mode removed, and the failure it prevents would land on the device session rathe
 
 **`build` neither installs nor launches** — it only produces the `.app`. Do one of:
 
-- **Xcode**: select the device, set the scheme's Run configuration to Release, add `DEBUG` to
-  *Swift Compiler → Custom Flags → Active Compilation Conditions* for Release, then Run. This
-  is the least error-prone route and gives Instruments the same build.
+- **Xcode** — the route actually used, **and the level matters**. Select the device; Product →
+  Scheme → Edit Scheme → Run → Build Configuration = **Release**; then Build Settings →
+  *Swift Compiler → Custom Flags → Active Compilation Conditions* → Release → `$(inherited)
+  DEBUG`.
+
+  **Set it on the PROJECT, not on the target.** Executed 2026-09-02 on an iPhone 17 Pro: with
+  the setting on the *target*, the app target compiles its `#if DEBUG` blocks while the
+  `Samples` **package** target does not get the flag, and the build fails with `Type 'SampleID'
+  has no member 'us309Synthetic'` and `Cannot find 'makeUS309SyntheticProgram' in scope`. Moved
+  to the project level, it reaches the package targets and the build succeeds. (Verified
+  independently by building Release with a project-scope `-xcconfig`: the fixture's symbol is
+  present in the binary, exactly as it is under the command-line override.)
+
+  This is the least error-prone route once the level is right, and it gives Instruments the
+  same build. **Use `$(inherited) DEBUG`, not bare `DEBUG`** — a bare value replaces whatever
+  the configuration inherits.
 - **Command line**: after the `build` above, install and launch with `devicectl`:
 
   ```
