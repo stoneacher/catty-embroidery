@@ -121,7 +121,7 @@ struct FrameTimeRecorderTests {
     ///
     /// `CADisplayLink` stops delivering while the app is inactive, but timestamps keep
     /// advancing, so without the suspension the gap arrived as one multi-second interval:
-    /// straight into `worst`, failing both halves of the bar. Across the five-to-nine ≥ 10 s
+    /// straight into `worst`, failing both halves of the bar. Across the eleven ≥ 10 s
     /// holds the hand-off asks for this happens at least once, and the hand-off's answer to a
     /// missed bar is to start tuning constants — the wrong destination for a measurement of
     /// nothing.

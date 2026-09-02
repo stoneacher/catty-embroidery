@@ -229,6 +229,8 @@ and gets a backlog story rather than being taken here.
 
 ## Bring back
 
-The 5 (then 9) statistic rows, the two `.trace` bundles, the device `assembled()` numbers, and
+**Eleven statistic rows** — the five numbered captures, then six more from the three tuning
+rows above (2 captures × 3 rows). The earlier "5 (then 9)" was arithmetic for the old
+four-capture tuning grid and no longer matches the table. The two `.trace` bundles, the device `assembled()` numbers, and
 the two screenshots. Everything else — the headless guards, the simulator rehearsal, the tuning
 *shape* — is already done and does not need the device.

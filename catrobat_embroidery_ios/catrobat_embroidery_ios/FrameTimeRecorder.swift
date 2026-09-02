@@ -48,7 +48,7 @@
         /// from a real one.** A `CADisplayLink` stops delivering while the app is inactive but
         /// `previousTimestamp` survives, so without this the whole background gap arrived as one
         /// interval — seconds long, straight into `worst`, failing both halves of the bar. Over
-        /// the five-to-nine ≥ 10 s holds the hand-off asks for, that happens at least once, and
+        /// the eleven ≥ 10 s holds the hand-off asks for, that happens at least once, and
         /// it would send the tester down ADR-029's fallback ladder after a measurement of
         /// nothing. `noteSuspended()` now drops the gap and this flag says a capture was touched.
         private(set) var wasInterrupted = false
