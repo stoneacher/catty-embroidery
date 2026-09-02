@@ -79,6 +79,26 @@ struct StitchDrawPlanScalingTests {
         #expect(segments <= Self.tail + 1)
     }
 
+    /// The timing corroboration of the structural assertion above — **and its bound is set
+    /// from what a regression looks like, not from what a quiet machine measures.**
+    ///
+    /// It measured 1.00 locally and was bounded at 1.25; CI then measured **2.31 on
+    /// unmutated code**, which `swift-code-reviewer`'s reviewer counterpart had predicted
+    /// almost exactly ("very little slack", Codex round 1 finding 5). That is the fourth
+    /// wall-clock ratio on this branch a hosted runner has refuted, and the cause is always
+    /// the same: the denominator here is a **0.041 ms** operation, so contention moves the
+    /// ratio far more than any plausible regression does.
+    ///
+    /// So the bound is placed between the two things it has to tell apart rather than just
+    /// above the local measurement. A `live(of:)` that became O(n) in the settled count —
+    /// the realistic regression, e.g. copying the whole stitch array per call, which the
+    /// structural assertion above cannot see — reads **~10×** at this 10× step. Healthy code
+    /// reads 1.00 locally and has been seen at 2.31 under load. **5 sits between them**, with
+    /// twice the headroom over observed noise and half the signal of a real regression.
+    ///
+    /// This test is deliberately the *weaker* of the pair: what actually proves AC4's claim is
+    /// `theLivePlanTouchesOnlyTheLiveWindow`, which is structural and cannot flake. This one
+    /// exists only to catch a cost that is invisible in the plan's shape.
     @Test("the live plan costs the same at five thousand and fifty thousand settled")
     func theLivePlanCostsTheSameAtFiveThousandAndFiftyThousandSettled() {
         let small = list(settled: 5_000)
@@ -89,10 +109,11 @@ struct StitchDrawPlanScalingTests {
         let ratio = seconds(largeTime) / seconds(smallTime)
 
         #expect(
-            ratio <= 1.25,
+            ratio <= 5,
             """
             a 10× settled count cost \(String(format: "%.2f", ratio))× the per-frame planning \
-            (5 000: \(milliseconds(smallTime)), 50 000: \(milliseconds(largeTime)))
+            (5 000: \(milliseconds(smallTime)), 50 000: \(milliseconds(largeTime))) — \
+            an O(n) regression would read ~10×, healthy code 1.00–2.31
             """
         )
     }
@@ -158,8 +179,17 @@ struct StitchDrawPlanScalingTests {
     /// `StageRenderTransform.canUseRaster` is false, so the renderer takes the
     /// `.entire(of:)` branch **every frame** and re-strokes the whole design. This records
     /// what that costs as a number, so the device session knows which capture is the one at
-    /// risk. Deliberately not bounded — the bound belongs to the device, and a wall-clock
-    /// ceiling here would be a flake.
+    /// risk. Deliberately **not** bounded as an absolute — the absolute belongs to the device,
+    /// and a wall-clock ceiling here would be a flake.
+    ///
+    /// The ratio *is* bounded, and at 2.5 rather than nearer the ~10× that genuinely linear
+    /// work gives at a 10× step. Lowered pre-emptively: this comparison's denominator is an
+    /// `entire`-plan of 5 000 stitches at roughly **0.045 ms**, the same fragile magnitude as
+    /// the two bounds a hosted runner has already refuted on this branch (Codex round 1
+    /// finding 5 predicted both). Contention that inflates a 0.045 ms denominator by 2.5×
+    /// would drag a healthy 10× down through a bound of 4; 2.5 keeps four-fold margin either
+    /// side while still failing the regression that matters, which is `.entire` quietly
+    /// ceasing to plan the whole design and reading ~1×.
     @Test("the entire plan is linear in stitch count, and that is the mid-gesture cost")
     func theEntirePlanIsLinearInStitchCount() {
         let small = list(settled: 5_000)
@@ -170,7 +200,7 @@ struct StitchDrawPlanScalingTests {
         let ratio = seconds(largeTime) / seconds(smallTime)
 
         #expect(
-            ratio >= 4,
+            ratio >= 2.5,
             """
             the mid-gesture full re-stroke is expected to scale with the design: \
             5 000 → \(milliseconds(smallTime)), 50 000 → \(milliseconds(largeTime)), \
