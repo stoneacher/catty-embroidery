@@ -11,8 +11,8 @@ import Testing
 ///
 /// The statistics are a pure function of a duration array so they can be tested without a
 /// display, a device or a frame. What cannot be unit-tested — that `CADisplayLink` delivers
-/// one callback per displayed frame — is confined to `FrameTimeProbe`, which does nothing
-/// but forward.
+/// one callback per displayed frame — is confined to `FrameTimeProxy`, which does nothing
+/// but forward a timestamp.
 @Suite("US-309 frame-time statistics")
 struct FrameTimeStatisticsTests {
     /// Nearest-rank, and pinned against hand-computed values rather than against a second
@@ -99,14 +99,35 @@ struct FrameTimeStatisticsTests {
         #expect(FrameTimeStatistics(millisecondsPerFrame: []) == nil)
     }
 
-    /// AC3 asks for a ≥ 10 s window; at 60 Hz that is 600 frames. Reported rather than
-    /// enforced — the recorder cannot know the display's refresh rate — but reported so a
-    /// short capture cannot be quoted as if it satisfied the criterion.
+    /// AC3 asks for a ≥ 10 s window, and this asserts it **as a duration**.
+    ///
+    /// The frame-count spelling this replaces read 600 frames as ten seconds and was wrong in
+    /// both directions at once: 600 real 16 ms frames are **9.6 s**, so a capture it called
+    /// quotable was short, and 600 frames on a 120 Hz display are **5 s**, so it would have
+    /// endorsed a capture at half the window. The sum of the intervals is the capture's own
+    /// wall-clock length, so no refresh-rate assumption is needed to ask the question the
+    /// criterion actually asks.
     @Test("a capture reports whether it is long enough to quote")
     func aCaptureReportsWhetherItIsLongEnoughToQuote() throws {
         let short = try #require(FrameTimeStatistics(millisecondsPerFrame: Array(repeating: 16.0, count: 300)))
-        let long = try #require(FrameTimeStatistics(millisecondsPerFrame: Array(repeating: 16.0, count: 600)))
-        #expect(!short.isLongEnoughToQuote)
-        #expect(long.isLongEnoughToQuote)
+        let long = try #require(FrameTimeStatistics(millisecondsPerFrame: Array(repeating: 16.0, count: 700)))
+        #expect(!short.isLongEnoughToQuote, "4.8 s is not the window")
+        #expect(long.isLongEnoughToQuote, "11.2 s is")
+        #expect(abs(long.totalMilliseconds - 11_200) < 0.001)
+    }
+
+    /// The case that tells the duration rule apart from the frame-count rule it replaced.
+    ///
+    /// 600 frames at 8.3 ms is a five-second capture on a ProMotion display. The old
+    /// `frameCount >= 600` test called it quotable — under-reporting the window by half in
+    /// exactly the situation its own comment hedged about — and this pins that it no longer
+    /// does. It is also not academic: the `Info.plist` key that caps this app at 60 Hz is
+    /// absent today, so adding `CADisableMinimumFrameDurationOnPhone` later would have made
+    /// every ProMotion capture silently half-length.
+    @Test("six hundred frames on a 120 Hz display is not a ten-second window")
+    func sixHundredFramesOnAOneHundredTwentyHertzDisplayIsNotATenSecondWindow() throws {
+        let promotion = try #require(FrameTimeStatistics(millisecondsPerFrame: Array(repeating: 8.3, count: 600)))
+        #expect(promotion.frameCount >= FrameTimeStatistics.quotableFrameCount)
+        #expect(!promotion.isLongEnoughToQuote, "4.98 s cannot be quoted as AC3's window")
     }
 }

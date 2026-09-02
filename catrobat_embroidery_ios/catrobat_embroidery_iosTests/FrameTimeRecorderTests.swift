@@ -77,11 +77,15 @@ struct FrameTimeRecorderTests {
     /// A recorder that reallocates mid-capture perturbs the very frames it is measuring, and
     /// it would do so at geometrically spaced moments — which is to say, it would inject
     /// outliers into the tail, the only part of the distribution the criterion reads.
+    /// The literal 2 400 rather than `quotableFrameCount`, which is 600: asserting the
+    /// smaller number bit only against *no* reservation at all, while the code documents a
+    /// buffer sized for a 120 Hz display over the whole window plus headroom. A literal also
+    /// cannot restate the formula it is checking.
     @Test("the buffer is preallocated for a full capture")
     func theBufferIsPreallocatedForAFullCapture() {
         let recorder = FrameTimeRecorder()
         recorder.start()
-        #expect(recorder.reservedCapacity >= FrameTimeStatistics.quotableFrameCount)
+        #expect(recorder.reservedCapacity >= 2_400)
     }
 
     /// A capture with no frames at all yields no statistics — never a flattering zero.
@@ -98,15 +102,98 @@ struct FrameTimeRecorderTests {
     func stoppingPublishesTheCapturesStatistics() throws {
         let recorder = FrameTimeRecorder()
         recorder.start()
-        for index in 0 ... 600 {
+        // 701 timestamps, so 700 intervals of 16 ms — 11.2 s, a real window. 600 would be
+        // 9.6 s and would not be quotable, which is the whole point of measuring the window
+        // in seconds rather than in frames.
+        for index in 0 ... 700 {
             recorder.record(timestamp: Double(index) * 0.016)
         }
         _ = recorder.stop()
 
         let published = try #require(recorder.statistics)
-        #expect(published.frameCount == 600)
+        #expect(published.frameCount == 700)
         #expect(published.isLongEnoughToQuote)
         #expect(published.meetsSixtyFps)
         #expect(!recorder.isRecording)
+    }
+
+    /// **I5: backgrounding mid-capture must not be reported as a dropped frame.**
+    ///
+    /// `CADisplayLink` stops delivering while the app is inactive, but timestamps keep
+    /// advancing, so without the suspension the gap arrived as one multi-second interval:
+    /// straight into `worst`, failing both halves of the bar. Across the five-to-nine ≥ 10 s
+    /// holds the hand-off asks for this happens at least once, and the hand-off's answer to a
+    /// missed bar is to start tuning constants — the wrong destination for a measurement of
+    /// nothing.
+    @Test("a capture interrupted by backgrounding does not record the gap")
+    func aCaptureInterruptedByBackgroundingDoesNotRecordTheGap() throws {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        recorder.record(timestamp: 1.000)
+        recorder.record(timestamp: 1.016)
+
+        recorder.noteSuspended()
+        // A callback can still arrive between resign-active and the link actually pausing;
+        // it must neither record nor re-seed the baseline, or the gap comes back.
+        recorder.record(timestamp: 1.032)
+        recorder.noteResumed()
+
+        // Forty seconds later, the app is frontmost again.
+        recorder.record(timestamp: 41.000)
+        recorder.record(timestamp: 41.016)
+
+        let stats = try #require(recorder.stop())
+        #expect(stats.frameCount == 2, "the frames on either side of the gap, and not the gap")
+        #expect(stats.worst < 20, "a 40-second interval means the gap was measured as a frame")
+    }
+
+    /// And the capture says so, because a silently-clean interruption is the other half of
+    /// the bug: the tester needs to know to discard it rather than to read it.
+    @Test("an interrupted capture is flagged as interrupted")
+    func anInterruptedCaptureIsFlaggedAsInterrupted() {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        recorder.record(timestamp: 1.000)
+        recorder.noteSuspended()
+        recorder.noteResumed()
+        _ = recorder.stop()
+
+        #expect(recorder.wasInterrupted)
+    }
+
+    /// A fresh capture is not still wearing the last one's interruption.
+    @Test("starting a capture clears the previous interruption")
+    func startingACaptureClearsThePreviousInterruption() {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        recorder.noteSuspended()
+        _ = recorder.stop()
+        #expect(recorder.wasInterrupted)
+
+        recorder.start()
+        #expect(!recorder.wasInterrupted)
+    }
+
+    /// Scene-phase changes outside a capture are not an interruption of anything.
+    @Test("backgrounding between captures flags nothing")
+    func backgroundingBetweenCapturesFlagsNothing() {
+        let recorder = FrameTimeRecorder()
+        recorder.noteSuspended()
+        recorder.noteResumed()
+
+        #expect(!recorder.wasInterrupted)
+    }
+
+    /// **I2: `stop()` is idempotent and safe on a recorder that never ran.**
+    ///
+    /// The fix for the immortal display link routes `onDisappear` into `stop()`, which fires
+    /// on every teardown of the readout — including ones where no capture was running. It
+    /// must not resurrect a published result or trap.
+    @Test("stopping a recorder that never recorded is harmless")
+    func stoppingARecorderThatNeverRecordedIsHarmless() {
+        let recorder = FrameTimeRecorder()
+        #expect(recorder.stop() == nil)
+        #expect(!recorder.isRecording)
+        #expect(recorder.statistics == nil)
     }
 }

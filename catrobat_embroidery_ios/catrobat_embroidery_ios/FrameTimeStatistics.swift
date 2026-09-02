@@ -11,8 +11,8 @@ import Foundation
 ///
 /// A pure function of an array of frame durations, so the whole of it is testable without a
 /// device, a display or a frame. What genuinely cannot be unit-tested — that `CADisplayLink`
-/// delivers one callback per displayed frame — is confined to `FrameTimeProbe`, which does
-/// nothing but forward a duration into here.
+/// delivers one callback per displayed frame — is confined to `FrameTimeProxy`, which does
+/// nothing but forward a timestamp into here.
 struct FrameTimeStatistics: Equatable {
     /// The p99 bar: **16.67 ms, the criterion's own figure, deliberately not `1000.0 / 60`.**
     ///
@@ -34,10 +34,21 @@ struct FrameTimeStatistics: Equatable {
     /// twice the nominal period, for the same reason.
     static let droppedFrameMilliseconds = 33.3
 
-    /// AC3's window: ≥ 10 s, which at 60 Hz is 600 frames.
+    /// AC3's window: **≥ 10 s, measured as time.**
+    static let quotableMilliseconds = 10_000.0
+
+    /// The same window expressed in frames, for **sizing the recorder's buffer only** — a
+    /// reservation has to be made in elements before any frame has arrived. It is not the
+    /// quotability test: see `isLongEnoughToQuote`.
     static let quotableFrameCount = 600
 
     let frameCount: Int
+
+    /// The capture's wall-clock length. The intervals *are* the elapsed time, so this is a
+    /// sum rather than an estimate — which is what lets `isLongEnoughToQuote` drop the
+    /// refresh-rate assumption it used to carry.
+    let totalMilliseconds: Double
+
     let median: Double
     let p95: Double
     let p99: Double
@@ -51,6 +62,7 @@ struct FrameTimeStatistics: Equatable {
         guard !durations.isEmpty else { return nil }
         let sorted = durations.sorted()
         frameCount = sorted.count
+        totalMilliseconds = durations.reduce(0, +)
         median = Self.nearestRank(sorted, quantile: 0.50)
         p95 = Self.nearestRank(sorted, quantile: 0.95)
         p99 = Self.nearestRank(sorted, quantile: 0.99)
@@ -70,11 +82,19 @@ struct FrameTimeStatistics: Equatable {
 
     /// Whether the capture is long enough to be quoted as satisfying AC3's ≥ 10 s window.
     ///
-    /// Reported rather than enforced — this type cannot know the display's refresh rate, and
-    /// on a 120 Hz device 600 frames is five seconds, not ten. It exists so a short capture
-    /// cannot be tabulated as if it met the criterion.
+    /// **A duration, not a frame count, and the earlier comment here was wrong to say it had
+    /// to be a count.** It claimed this type "cannot know the display's refresh rate", which
+    /// is true and irrelevant: the sum of the intervals is the capture's own wall-clock
+    /// length, so ≥ 10 s is checkable with no assumption about the rate at all. The frame
+    /// count spelling read 600 frames as ten seconds, which on a 120 Hz device is five —
+    /// under-reporting the window in exactly the case the hedge was written for.
+    ///
+    /// Reported rather than enforced: it exists so a short capture cannot be tabulated as if
+    /// it met the criterion. It is also what makes the hand-off's "hold for ten seconds"
+    /// self-correcting, now that the readout no longer counts frames on screen while the
+    /// capture is running.
     var isLongEnoughToQuote: Bool {
-        frameCount >= Self.quotableFrameCount
+        totalMilliseconds >= Self.quotableMilliseconds
     }
 
     /// Nearest-rank: the smallest value at or below which at least `quantile` of the samples
