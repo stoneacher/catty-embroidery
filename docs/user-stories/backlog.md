@@ -50,6 +50,56 @@ emitted, and both are met. ADR-026 records the finding.
 
 ---
 
+## US-313 — Zoom and pan do not feel native: no live two-finger centroid
+
+**Epic**: E4 Stage & preview | **Estimate**: ~5 h | **Discovered**: 2026-09-02, US-309 device session (Sebastian, iPhone 17 Pro)
+
+**Problem**, in the user's words: "pinching really only zooms in/out of the canvas and does not
+register side-to-side movements in parallel", against the behaviour every iOS user has from
+Maps and Photos — where two fingers zoom **and** translate at once, about the point between
+them, continuously.
+
+**This is not a missing `.simultaneously`.** `StageCanvas.inspectGesture` already composes
+`MagnifyGesture().simultaneously(with: DragGesture())` and already reads `startAnchor`. Two
+concrete things make it feel wrong, and they are separable:
+
+1. **`DragGesture` is a single-touch recogniser.** Native two-finger manipulation pans by the
+   *centroid* of the two touches; SwiftUI's `DragGesture` has no concept of one. With two
+   fingers down its translation is not the midpoint, so lateral movement during a pinch is
+   largely dropped — exactly the symptom reported.
+2. **`startAnchor` is captured once, at gesture start.** Zoom is therefore anchored where the
+   pinch *began* rather than following the fingers as they move, so content drifts away from
+   under the touch during a long pinch.
+
+`DragGesture`'s default 10 pt `minimumDistance` compounds both, and ADR-028 records why it
+cannot simply be set to zero: `minimumDistance: 0` claims the touch and makes the double-tap
+reset a byte-for-byte no-op. That trade was measured, not assumed.
+
+**The tension to resolve first, and it is an ADR-level decision.** The idiomatic fix is UIKit
+interop — either `UIScrollView` via `UIViewRepresentable` (free centroid zoom, rubber-banding,
+momentum) or a `UIPinchGestureRecognizer`/`UIPanGestureRecognizer` pair with simultaneous
+recognition, reading `location(in:)` for the live centroid. **Both conflict with ADR-028's
+load-bearing decision that the transform is written once, in `onEnded`, and never during the
+gesture.** That single commit is what makes "the settled raster re-bakes exactly once per
+gesture" *structural rather than timed* (ADR-028, criterion 3), and it is what lets
+`StageZoom.commit` drop a whole state machine. A scroll view writes continuously. So this
+story cannot be taken as a UI change alone: it must either preserve the single-commit property
+under a continuous recogniser, or ADR-028 must be revisited with its consequences re-derived.
+
+**Sequencing against US-309.** US-309 measured the mid-gesture path on an iPhone 17 Pro at
+**median 69.1 ms, p99 136.2 ms** per drawn frame at 50 000 stitches — roughly 14 fps, a
+decisive miss of ADR-009's bar. A *better* gesture makes that path more prominent, not less,
+because users will hold gestures longer and expect momentum. **Take ADR-029's fallback ladder
+rung 2 (decimate the mid-gesture `.entire` plan) before or with this story**, or a more
+responsive gesture will simply expose the rendering cost more often.
+
+**Not scheduled**: it is a genuine usability gap rather than a defect — the gestures work, they
+are merely not idiomatic — and it carries an ADR revision. It wants a planning session that can
+weigh the single-commit invariant against native feel, with the M3 exit criterion already
+answered.
+
+---
+
 **Otherwise empty.** The mechanism worked as designed and is worth recording:
 
 - **US-211 — DST serialization field-width chokepoint.** Specified here at discovery time on

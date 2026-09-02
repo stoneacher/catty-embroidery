@@ -514,4 +514,22 @@ One further lead for the device session, from the animating capture above: the w
 
 Relatedly, the recorder now reports the display's **nominal refresh rate**, because iOS may drop a display link to 30, 20 or 15 Hz under Low Power Mode, a critical thermal state, or the "Limit Frame Rate" accessibility setting. At 30 Hz every interval is ~33.3 ms and a renderer doing no work fails *both* halves of AC3's bar — an unforced FAIL indistinguishable from a real one, and the hand-off now fixes the device conditions and asks for the rate to be recorded.
 
+**THE DEVICE MEASUREMENT, taken 2026-09-02 on an iPhone 17 Pro (A19-class, iOS 26.6), Release build with `DEBUG`, 60 Hz link confirmed in every capture.** Three captures, quantiles over **drawn frames only**:
+
+| capture | drawn | med | p95 | p99 | worst | verdict |
+|---|---|---|---|---|---|---|
+| animating to 50 000 | 251 | 16.669 | 16.670 | 16.670 | 16.703 @13.5 s | **PASS** |
+| **50 000, mid-gesture** | 312 | **69.1** | **118.8** | **136.2** | **166.2 @13.8 s** | **FAIL** |
+| 50 000 settled, still | **0** | 16.669 | 16.669 | 16.669 | 16.725 @12.8 s | NO DRAWS |
+
+**ADR-009's bet holds for the settled and animating paths and fails mid-gesture.** The animating capture passes on device with no dropped frame anywhere. The mid-gesture capture is a median of **69.1 ms** — about **14 fps** — which is what ADR-028's removal of the blit implies: while a gesture is live `canUseRaster` is false and every frame re-strokes all 50 000 stitches. The headless figure was 0.45 ms of *planning*; the remaining ~68 ms is the `Path` build and 50 000 ellipses, which no `swift test` could have measured.
+
+**The failure is decisive despite the hardware being wrong for the criterion.** AC2 asks for A15-class; an iPhone 17 Pro is several generations faster. A *pass* there would say nothing about an A15 — but a **fail** cannot be blamed on the device, so the negative result stands without an A15. An A15 is still required later, to confirm a fix.
+
+**The ladder is re-ordered by the data.** Rung 1 tunes `settleChunk`, which governs *baking* — and the gesture path never bakes, so rung 1 cannot touch this failure. **Rung 2 — decimate the mid-gesture `.entire` plan — is the actual target**, followed by `Path` reuse and then Metal. Backlog US-313 (native two-finger gesture) is sequenced *after* or *with* rung 2, since a more responsive gesture exposes this cost more often rather than less.
+
+**Two findings about the criterion itself, recorded rather than acted on.** (1) **The `p99 ≤ 16.67 ms` half has no discriminating power at 60 Hz.** The animating capture was taken twice: the first read `FAIL`, the second `PASS`, same scenario, decided in the *third decimal* by display-link jitter about a 16.6667 ms period. The half that carries information is "no frame exceeds 33.3 ms", which the animating capture clears by a factor of two. (2) **The settled capture would have read `PASS` under the pre-review instrument** — p99 16.669 is under the bar and its worst frame, 16.725 ms, is *worse than the animating capture's* while the renderer ran **zero** times. That is the false positive this ADR's draw counting exists to prevent, now demonstrated on hardware rather than argued. **The bar is not reworded** (AC8 forbids exactly that); both are open questions for the author.
+
+An incidental corroboration worth keeping: `drawn=251` on the device and `drawn=251` on the simulator, from different machines and different capture lengths — because the draw count is set by the batch count, not by speed. Two independent platforms agreeing on it is evidence the counter measures what it claims.
+
 **Consequences**: the exit criterion's headless half is on the pre-commit gate and defended on every commit; its device half is a stated hand-off with a fixed protocol (`docs/us-309-device-handoff.md`). The measurement build is a **Release** build with `DEBUG` defined on the command line — command-line build settings are global overrides, so one flag reaches the package targets too — which keeps the optimiser on while leaving the fixture and the recorder reachable. ADR-021's `assembled()` figure is corrected in place: it was a Mac number presented with an unstated ~2.6× A15 extrapolation.

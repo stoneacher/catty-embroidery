@@ -52,22 +52,22 @@ mode removed, and the failure it prevents would land on the device session rathe
 
 **`build` neither installs nor launches** — it only produces the `.app`. Do one of:
 
-- **Xcode** — the route actually used, **and the level matters**. Select the device; Product →
-  Scheme → Edit Scheme → Run → Build Configuration = **Release**; then Build Settings →
-  *Swift Compiler → Custom Flags → Active Compilation Conditions* → Release → `$(inherited)
-  DEBUG`.
+- **Command line — the only route that works.** *(Corrected 2026-09-02, after being executed.
+  An earlier version of this file recorded an Xcode route as verified; it is not, and the
+  correction is the useful part.)* `SWIFT_ACTIVE_COMPILATION_CONDITIONS` set in **Xcode's build
+  settings reaches the app target but not the SwiftPM package targets**, at *either* level:
+  - on the **target**, the app target compiles its `#if DEBUG` blocks against a `Samples`
+    package that lacks the flag, and the build fails with `Type 'SampleID' has no member
+    'us309Synthetic'` and `Cannot find 'makeUS309SyntheticProgram' in scope`;
+  - on the **project**, the same three errors;
+  - and if the target-level value is *blanked* rather than deleted — or left as an
+    `[arch=*]` variant of `""` — it overrides the project value and **the build silently
+    succeeds with the fixture absent**, which is worse, because the picker simply has no
+    "Synthetic 50k" row and nothing says why.
 
-  **Set it on the PROJECT, not on the target.** Executed 2026-09-02 on an iPhone 17 Pro: with
-  the setting on the *target*, the app target compiles its `#if DEBUG` blocks while the
-  `Samples` **package** target does not get the flag, and the build fails with `Type 'SampleID'
-  has no member 'us309Synthetic'` and `Cannot find 'makeUS309SyntheticProgram' in scope`. Moved
-  to the project level, it reaches the package targets and the build succeeds. (Verified
-  independently by building Release with a project-scope `-xcconfig`: the fixture's symbol is
-  present in the binary, exactly as it is under the command-line override.)
-
-  This is the least error-prone route once the level is right, and it gives Instruments the
-  same build. **Use `$(inherited) DEBUG`, not bare `DEBUG`** — a bare value replaces whatever
-  the configuration inherits.
+  Only a **command-line** override is global enough to reach the package targets. A
+  project-scope `-xcconfig` also works, and is *not* evidence that the Xcode UI setting does —
+  that inference was made during this session and was wrong.
 - **Command line**: after the `build` above, install and launch with `devicectl`:
 
   ```

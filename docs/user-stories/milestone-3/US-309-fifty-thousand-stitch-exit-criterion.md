@@ -12,7 +12,16 @@ ADR-009 was decided on reference analysis (Catty's node-per-stitch collapse, Cat
 
 ## Acceptance criteria
 - [x] `SyntheticDesign` in `StagePreview` builds a 50 000-stitch display list directly, **and** — separately — a program that animates up to 50k, so both the steady state and the production path are measured. — **planning correction: not one type, and not in `StagePreview`.** The program half needs `ProgramModel`, which `StagePreview` does **not** declare; `import ProgramModel` from there compiles only via SwiftPM's implicit transitive import, which would make ADR-022's dependency list a lie `StagePreviewTargetIsolationTests` cannot see. The program builder is `makeUS309SyntheticProgram()` in **`Samples`** — which the app can link, and which needs `ProgramModel` only, so ADR-016's arrow is untouched — and the display-list half is `SyntheticDesign` in **`StagePreviewTests`**. **Measurement correction: the fixture must not build its input with the code it guards.** Built through `StitchDisplayList.append`, the quadratic mutation made *setup* quadratic, outside any measured region, and the suite ran 400 s without reaching an assertion; `SyntheticDesign.stitches` now builds the array directly.
-- [ ] Frame times measured **on device** (A15-class) in a **Release** build, with before/after numbers recorded for the thesis. Simulator numbers are noted as non-authoritative. — **outstanding**, and the only outstanding item. Protocol fixed in `docs/us-309-device-handoff.md`, including the signing gap (no `DEVELOPMENT_TEAM` is set) and the build command: Release **with `DEBUG` defined on the command line**, since command-line settings are global overrides and therefore reach the package targets too. **Planning correction: "before/after" had no referent** — nothing had ever been measured on device — so it is restated as *baseline → tuned*. The simulator rehearsal ran and is recorded as non-authoritative. **The `PASS` it originally recorded — `n=1381 med 16.7 p95 16.7 p99 16.7 max 16.7 · PASS` — has since been shown to be a capture in which the renderer drew nothing at all** (Codex round 1, finding 1), so it is superseded rather than merely non-authoritative. The rehearsal now reads: static `n=1048 drawn=0 … NO DRAWS`, animating `n=2123 drawn=251 … p95 61.9 p99 66.5 max 75.7@23.8s · FAIL`.
+- [~] Frame times measured **on device** in a **Release** build, with before/after numbers recorded for the thesis. Simulator numbers are noted as non-authoritative. — **MEASURED 2026-09-02 on an iPhone 17 Pro (A19-class, iOS 26.6)**, Release with `DEBUG`, `60Hz` confirmed in every capture. Quantiles over drawn frames:
+
+  | capture | drawn | med | p95 | p99 | worst | verdict |
+  |---|---|---|---|---|---|---|
+  | animating to 50 000 | 251 | 16.669 | 16.670 | 16.670 | 16.703 @13.5 s | **PASS** |
+  | **50 000, mid-gesture** | 312 | **69.1** | **118.8** | **136.2** | **166.2 @13.8 s** | **FAIL** |
+  | 50 000 settled, still | **0** | 16.669 | 16.669 | 16.669 | 16.725 @12.8 s | NO DRAWS |
+
+  **Left `[~]` rather than `[x]` because the criterion says A15-class and this is not that.** The distinction matters asymmetrically and is worth stating precisely: a *pass* on an A19 says nothing about an A15, but the **mid-gesture failure cannot be blamed on the device**, so the negative result stands without one. An A15 is still owed — to confirm a fix, not to establish the problem. **Planning correction: "before/after" had no referent** — nothing had ever been measured on device — so it was restated as *baseline → tuned*; the baseline now exists and the tuning is the fallback ladder's work.
+
 - [x] **"60 fps" has an explicit pass/fail definition, stated before measuring** — otherwise a capture with periodic dropped frames satisfies every other item here (Codex round 1). The bar: over a ≥ 10 s capture at 50k settled, the **99th-percentile frame time ≤ 16.67 ms** and **no frame exceeds 33.3 ms** (i.e. no dropped frame doubles). Report median, p95, p99 and worst frame, not an average — an average hides exactly the stutter this criterion exists to catch. — `FrameTimeStatistics` is that bar in code, with the sharpest test being a capture whose median is an untroubled 8 ms and which fails anyway. **Measurement correction: the constants are 16.67 and 33.3 verbatim, deliberately not `1000.0/60` and twice it.** The 3.3 µs difference decides the result: a display link on a 60 Hz display reports a nominal 16.6667 ms with jitter that is not symmetric about the period, so a *perfect* capture loses a knife-edge comparison. Caught by the simulator rehearsal before any device was involved — 1 196 frames, every one on time, `FAIL`. Pinned by `aNominalSixtyHertzCapturePassesTheBar`. **Review correction (2026-09-02): the ≥ 10 s half of this bar was being checked as a frame count, and wrongly.** `frameCount >= 600` reads 600 frames as ten seconds; 600 real 16 ms frames are **9.6 s**, so it endorsed captures shorter than the window, and on a 120 Hz display 600 frames is **5 s**. It is now the sum of the intervals against 10 000 ms, which is the same question with no refresh-rate assumption in it.
 - [x] **Per-frame work is shown to be independent of total stitch count**, with a numeric tolerance rather than "≈". — **planning correction, twice over.** (a) *The claim as written is false.* Per-frame work is independent of the **settled** count at a **fixed colour-run count**, and **grows with the colour-run count**: `StitchDrawPlan.planning` walks `colorRuns` twice, so a design changing colour every stitch has `colorRuns == count` and a per-frame cost that grows with n after all — re-measured, with each figure attached to its fixture: **0.041 ms at one colour run, 0.246 ms at 1 000, 9.791 ms at 50 000**. *(The original wording said "linear" and quoted "0.0013 ms against 0.3945 ms, a 300× spread"; both were corrected — the figures named no fixture and misled a reviewer into a refuted bound, and what the assertions establish is **not-quadratic over the measured range** rather than linearity, since an O(r log r) implementation passes them.)* Both halves are now asserted. (b) *The device cannot discriminate it*, so it is not asked to: the difference between a 5k and a 50k settled frame is one copy-on-write of the display buffer — measured at **12.7 µs, 0.08 % of a frame** — plus a larger raster to composite, and a p99 comparison would read "the same" whether ADR-009 held or not. The assertion moved to the fast gate, where the ratio measures **1.00** against a 1.25 bound, and the *discriminating* form is structural rather than timed: at 50 000 settled with a 100-stitch tail the live plan touches exactly 100 dots and ≤ 101 segments.
 - [~] The rasterisation threshold and the re-rasterisation policy (including the mid-gesture blit from US-307) are tuned by measurement, and the chosen constants are documented **with the measurement that justified them**. — **planning correction: the mid-gesture blit does not exist.** ADR-028's correction deleted it; while a gesture is live `canUseRaster` is false and the frame re-strokes everything, so there is no blit to tune. Retargeted to the full re-stroke US-307 actually left behind, measured at **0.45 ms of planning at 50k against 0.0013 ms settled, 350×**. **Measurement correction: the policy's *shape* was tuned; the constant deliberately was not.** The bake schedule is **Θ(n²/chunk)** — fifty full rasterisations to 50 000, 26.4 ms of plan work against 5.4 ms at chunk 5 000 — but the obvious proportional fix measured **worse** (176 bakes at `count/8`), and a geometric one bounds the bake count only by letting the live tail reach a third of the design. The trade is one-dimensional, and its *balance point* depends on GPU work nothing headless can measure, so the constant is the device session's first knob. (The earlier wording here said "both sides are GPU-bound" — corrected; see F7.) What landed is `PreviewRunState.settleWatermark(for:)`: the rule is a public pure function, assertable rather than only observable. Full reasoning in ADR-029.
@@ -381,4 +390,42 @@ That is a converging *size* of defect but a stable *kind*: each fix lands where 
 ### R5-F6 (Low) — the status line predated round 4 and overclaimed closure
 
 **Accepted.** It said review was complete through round 3, reported 183 app tests, and said "This story closes that" of ADR-009's bet while the authoritative device capture is outstanding. Now: five rounds, 191 app tests, and the bet closed only in its headless half.
+
+## Device measurement — 2026-09-02, iPhone 17 Pro
+
+**The exit criterion is answered: ADR-009's bet holds for the settled and animating paths and fails mid-gesture.** Full numbers and the ladder re-ordering are in ADR-029; this section records what the session itself produced.
+
+### Results
+
+| capture | drawn | med | p95 | p99 | worst | verdict |
+|---|---|---|---|---|---|---|
+| animating to 50 000 | 251 | 16.669 | 16.670 | 16.670 | 16.703 @13.5 s | **PASS** |
+| **50 000, mid-gesture** | 312 | **69.1** | **118.8** | **136.2** | **166.2 @13.8 s** | **FAIL** |
+| 50 000 settled, still | **0** | 16.669 | 16.669 | 16.669 | 16.725 @12.8 s | NO DRAWS |
+
+Screenshot of the third: `docs/screenshots/us-309/03-device-50k-settled-no-draws.jpg`. It is the most useful of the three for the thesis, because it is the instrument declining to score itself.
+
+### What the session proved about the instrument, not the renderer
+
+- **The settled capture would have read `PASS` before the review loop.** Its p99 of 16.669 is under the bar and its worst frame — **16.725 ms, worse than the animating capture's 16.703** — is nowhere near 33.3. Without `drawn=0` it is a clean 60 fps at 50 000 stitches, and the renderer ran **zero times**. Five rounds of cross-vendor review existed to prevent exactly this number entering the thesis, and here it is, produced on hardware.
+- **`drawn=251` on device and `drawn=251` on the simulator.** Different machines, different capture lengths, identical draw count — because it is set by the batch count, not by speed. Two platforms agreeing is evidence the counter measures what it claims.
+- **The instrument could not read its own bar at one decimal.** The first animating capture came back `med 16.7 p95 16.7 p99 16.7 max 16.7 · FAIL`, which is indistinguishable from a pass: everything in [16.65, 16.75) prints as `16.7` while the bar sits at 16.67. Fixed to three decimals mid-session, and the retake read `PASS` at p99 16.670. **An instrument whose printed precision is coarser than the threshold it reports against cannot be read** — found by measuring, not by review.
+
+### Two open questions for the author, deliberately not acted on
+
+1. **The `p99 ≤ 16.67 ms` half of the bar has no discriminating power at 60 Hz.** The same scenario read `FAIL` then `PASS` across two captures, decided in the third decimal by jitter about a 16.6667 ms period. The informative half is "no frame exceeds 33.3 ms".
+2. **A capture that renders nothing satisfies the numeric bar.** Handled today by labelling rather than by the bar.
+
+**Neither was fixed by rewording the criterion** — AC8 forbids precisely that, and both are author decisions.
+
+### Hand-off items still open
+
+- **The A15-class capture**, to confirm a fix once rung 2 lands. Not needed for the negative result.
+- **Instruments traces** of the animating and mid-gesture captures.
+- **The zoomed screenshot**, and the device `assembled()` timing (whose LLDB recipe has failed review five times and remains unexecuted).
+- Screenshots of the animating and mid-gesture capsules were not kept; only the settled one was.
+
+### Backlog raised from the session
+
+**US-313 — zoom and pan do not feel native.** Reported from the device: pinch does not register lateral movement in parallel, against Maps-like behaviour. Not a missing `.simultaneously` — `DragGesture` is single-touch and has no centroid, and `startAnchor` is fixed at gesture start. Carries an ADR-028 tension (its single `onEnded` commit versus a continuous recogniser) and is sequenced after ladder rung 2.
 
