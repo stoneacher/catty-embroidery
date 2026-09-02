@@ -122,8 +122,18 @@
             String(format: "%.1f", milliseconds / 1_000)
         }
 
+        /// Frame times to **three** decimals, and that is not fussiness.
+        ///
+        /// The bar is `p99 <= 16.67 ms` and a 60 Hz link's true period is 16.6667 ms, so a
+        /// passing capture and a failing one differ in the **third** decimal. At one decimal
+        /// both print `16.7`: the first device capture came back `med 16.7 p95 16.7 p99 16.7
+        /// max 16.7 · FAIL` and the readout could not say whether that was a renderer miss or
+        /// jitter a hundredth of a millisecond over the line. An instrument whose printed
+        /// precision is coarser than the threshold it reports against cannot be read.
+        ///
+        /// Durations stay at one decimal — nobody needs microseconds on a capture window.
         private func ms(_ value: Double) -> String {
-            String(format: "%.1f", value)
+            String(format: "%.3f", value)
         }
     }
 #endif
