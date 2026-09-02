@@ -29,9 +29,17 @@ overrides, so the one flag reaches the SwiftPM targets too, which is why `Sample
 xcodebuild -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj \
   -scheme catrobat_embroidery_ios -configuration Release \
   -destination 'platform=iOS,name=<device>' \
-  SWIFT_ACTIVE_COMPILATION_CONDITIONS='DEBUG' \
+  SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited) DEBUG' \
   build
 ```
+
+**`$(inherited)` is not decoration.** A command-line build setting *replaces* the target's own
+value rather than appending to it. The app target's is `"DEBUG $(inherited)"`, so nothing is
+lost there — but the SwiftPM targets lose `SWIFT_PACKAGE`, which is safe today only because no
+first-party source tests `#if SWIFT_PACKAGE` (grepped: zero hits) and would stop being safe
+without warning. The bare `SWIFT_ACTIVE_COMPILATION_CONDITIONS='DEBUG'` spelling was verified
+to build with zero warnings on 2026-09-01; `$(inherited)` is the same build with the failure
+mode removed, and the failure it prevents would land on the device session rather than in CI.
 
 Record the exact command used in the results table. Prefer the XcodeBuildMCP device tools over
 raw `xcodebuild` where they are available.
@@ -52,8 +60,25 @@ tail. The on-screen readout prints all four plus `PASS`/`FAIL` and flags a short
 Launch, pick **Synthetic 50k** (last row in the picker), press Play. The run takes ~17 s and
 settles to 50 000. The **Record / Stop** capsule sits at the bottom of the canvas.
 
+**The capsule does not exist on a fresh launch.** It is rendered only in the `.drawn` state,
+which needs `hasStitches || isRunning` — so after launch → select the fixture the canvas is
+empty and there is no Record button. Press **Play once** before looking for it. This matters
+only for capture 5, which asks you to record *before* pressing Play: do a first run, let it
+finish (the stitches stay on the canvas, so the capsule stays), then press **Record** and
+press **Play** again to re-run. The second run replaces the first, and recording is already
+armed when it starts.
+
 For each capture: press **Record**, hold the stated condition for the stated window, press
 **Stop**, photograph or screenshot the readout.
+
+**The readout shows a constant `capturing… hold ≥ 10 s, then Stop` while a capture runs** — it
+deliberately does not count frames on screen, because doing so re-rendered a blurred capsule
+over the canvas under measurement sixty times a second and put the instrument inside its own
+distribution. Time the window yourself; the result line prints the capture's length in seconds
+and marks anything under ten with `(short)`, so a mistimed hold is caught rather than quoted.
+If the app loses the foreground mid-capture the result reads
+**`INTERRUPTED — discard and re-capture`**: that capture measured the background gap, not the
+renderer, and must not be read as a `FAIL` or taken to the fallback ladder.
 
 | # | Condition | What to do | Window |
 |---|---|---|---|
@@ -61,7 +86,7 @@ For each capture: press **Record**, hold the stated condition for the stated win
 | 2 | 20 000 settled | as above at ~20k | ≥ 10 s |
 | 3 | **50 000 settled** | run to completion, hold still | ≥ 10 s |
 | 4 | 50 000, **mid-gesture** | continuous slow pinch and pan for the whole window | ≥ 10 s |
-| 5 | 50 000, **animating** | Record before pressing Play, Stop at the end | whole run |
+| 5 | 50 000, **animating** | run once so the capsule appears, then Record → Play → Stop at the end | whole run |
 
 Captures 1–3 are AC4's table. **Capture 4 is the one at risk** — ADR-028 removed the
 mid-gesture blit, so every frame re-strokes the entire design (0.45 ms of planning alone at
