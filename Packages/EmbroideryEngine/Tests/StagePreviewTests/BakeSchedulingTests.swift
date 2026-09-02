@@ -21,7 +21,18 @@ import Testing
 ///
 /// This suite pins the shape and the chosen constant *together*, which is AC5's real
 /// requirement: a bare tuned number would be the magic constant the criterion forbids.
-@Suite("US-309 bake scheduling", .serialized, .timeLimit(.minutes(1)))
+///
+/// **What this suite does *not* cover, stated because the names used to imply it did** (Codex
+/// round 4). Everything here observes `PreviewRunState`'s watermark — the *schedule*. The
+/// renderer's response to that schedule is `CanvasStitchLayers.onChange(of: bakeKey)` in the
+/// app target, and `BakeKey` is `private` inside a `private` view, so nothing in this package
+/// can see it. Deleting `settledCount` from `BakeKey`, or making `rebakeIfWorthwhile` return
+/// immediately, would leave **every assertion in this file green** while the shipped renderer
+/// baked zero times. The tests are now named for the watermark rather than for bakes, and the
+/// integration is a genuine coverage gap rather than a covered one: closing it would mean
+/// widening production visibility purely for a test, which is a decision for the device
+/// session's outcome rather than for this story.
+@Suite("US-309 settle scheduling", .serialized, .timeLimit(.minutes(1)))
 struct BakeSchedulingTests {
     /// The watermarks a run actually bakes at, **observed** by driving a real
     /// `PreviewRunState` and recording every distinct value of `settledCount`.
@@ -63,7 +74,8 @@ struct BakeSchedulingTests {
         return seen
     }
 
-    /// **The bake count, recorded as the number it is.**
+    /// **The watermark-advance count, recorded as the number it is** — one bake each, *if*
+    /// the renderer is wired to the watermark, which this suite cannot see (see the suite doc).
     ///
     /// `settleChunk`'s own comment said the raster is rebuilt "a handful of times per run".
     /// That was measured against M3's 3 194-stitch samples, where it is three; at the scale
@@ -71,8 +83,8 @@ struct BakeSchedulingTests {
     /// design on one frame. The two tests below are the measurement AC5 asks for; this one
     /// pins what the shipped policy actually does, so the device session has a baseline to
     /// tune against rather than a claim.
-    @Test("a fifty-thousand-stitch run bakes once per settle chunk")
-    func aFiftyThousandStitchRunBakesOncePerSettleChunk() {
+    @Test("a fifty-thousand-stitch run advances the watermark once per settle chunk")
+    func aFiftyThousandStitchRunAdvancesTheWatermarkOncePerSettleChunk() {
         let bakes = observedWatermarks(reaching: 50_000)
 
         #expect(bakes.count == 50_000 / PreviewRunState.settleChunk)
@@ -143,7 +155,7 @@ struct BakeSchedulingTests {
     /// refuted bounds, and this is the fifth.
     ///
     /// The flake-proof half of the claim is elsewhere and is structural:
-    /// `aFiftyThousandStitchRunBakesOncePerSettleChunk` pins the bake *count* by observing a
+    /// `aFiftyThousandStitchRunAdvancesTheWatermarkOncePerSettleChunk` pins the bake *count* by observing a
     /// real `PreviewRunState`, and no timing can perturb it.
     @Test("a larger settle chunk costs proportionally less total bake work")
     func aLargerSettleChunkCostsProportionallyLessTotalBakeWork() {

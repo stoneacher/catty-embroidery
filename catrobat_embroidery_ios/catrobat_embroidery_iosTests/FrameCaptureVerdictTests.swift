@@ -23,7 +23,7 @@ struct FrameCaptureVerdictTests {
     @Test("a capture in which nothing was drawn is not a pass, however perfect its frames")
     func aCaptureInWhichNothingWasDrawnIsNotAPass() {
         let perfect = stats(Array(repeating: 16.0, count: 700))
-        let verdict = FrameCaptureVerdict.of(all: perfect, drawn: nil, wasInterrupted: false)
+        let verdict = FrameCaptureVerdict.of(all: perfect, drawn: nil, totalDraws: 0, wasInterrupted: false)
 
         #expect(verdict == .noDraws)
         #expect(!verdict.isAboutTheRenderer)
@@ -39,6 +39,7 @@ struct FrameCaptureVerdictTests {
         let verdict = FrameCaptureVerdict.of(
             all: stats(Array(repeating: 16.0, count: 5)),
             drawn: nil,
+            totalDraws: 0,
             wasInterrupted: false
         )
         #expect(verdict == .noDraws)
@@ -57,7 +58,7 @@ struct FrameCaptureVerdictTests {
 
         // The whole capture's p99 is inside the budget only because the idle frames dominate.
         #expect(all?.median == 16.0)
-        let verdict = FrameCaptureVerdict.of(all: all, drawn: drawn, wasInterrupted: false)
+        let verdict = FrameCaptureVerdict.of(all: all, drawn: drawn, totalDraws: 150, wasInterrupted: false)
         #expect(verdict == .measured(passed: false, quotableWindow: true))
         #expect(verdict.isAboutTheRenderer)
     }
@@ -68,6 +69,7 @@ struct FrameCaptureVerdictTests {
         let verdict = FrameCaptureVerdict.of(
             all: stats(Array(repeating: 16.0, count: 700)),
             drawn: stats(Array(repeating: 16.0, count: 200)),
+            totalDraws: 200,
             wasInterrupted: false
         )
         #expect(verdict == .measured(passed: true, quotableWindow: true))
@@ -81,6 +83,7 @@ struct FrameCaptureVerdictTests {
         let verdict = FrameCaptureVerdict.of(
             all: stats(Array(repeating: 16.0, count: 625)),
             drawn: stats([16.0]),
+            totalDraws: 1,
             wasInterrupted: false
         )
         #expect(verdict == .tooFewDraws(count: 1))
@@ -88,21 +91,31 @@ struct FrameCaptureVerdictTests {
     }
 
     /// The threshold is where p99 stops being the maximum, and it is checked at its own edge.
+    ///
+    /// **Against the literal 100, not against `minimumDrawnFrames`** (Codex round 4). The
+    /// first version built its inputs from `minimumDrawnFrames - 1` and `minimumDrawnFrames`,
+    /// so changing the production constant to 2 left it green — a restatement, and the third
+    /// on this branch. The literal is justified rather than arbitrary: nearest-rank p99 is
+    /// `ceil(0.99n)`, which equals `n` (the maximum) for every n below 100 and first becomes
+    /// `n - 1` at exactly 100, so 100 is where p99 stops being a second name for `worst`.
     @Test("the drawn-frame threshold is exact at its boundary")
     func theDrawnFrameThresholdIsExactAtItsBoundary() {
+        #expect(FrameCaptureVerdict.minimumDrawnFrames == 100, "the literals below assume it")
         let all = stats(Array(repeating: 16.0, count: 700))
-        let justUnder = FrameCaptureVerdict.minimumDrawnFrames - 1
+        let justUnder = 99
         #expect(
             FrameCaptureVerdict.of(
                 all: all,
                 drawn: stats(Array(repeating: 16.0, count: justUnder)),
+                totalDraws: justUnder,
                 wasInterrupted: false
             ) == .tooFewDraws(count: justUnder)
         )
         #expect(
             FrameCaptureVerdict.of(
                 all: all,
-                drawn: stats(Array(repeating: 16.0, count: FrameCaptureVerdict.minimumDrawnFrames)),
+                drawn: stats(Array(repeating: 16.0, count: 100)),
+                totalDraws: 100,
                 wasInterrupted: false
             ) == .measured(passed: true, quotableWindow: true)
         )
@@ -116,6 +129,7 @@ struct FrameCaptureVerdictTests {
         let verdict = FrameCaptureVerdict.of(
             all: stats(Array(repeating: 16.0, count: 100)), // 1.6 s — short
             drawn: stats(Array(repeating: 16.0, count: 100)),
+            totalDraws: 100,
             wasInterrupted: false
         )
         #expect(verdict == .measured(passed: true, quotableWindow: false))
@@ -128,6 +142,7 @@ struct FrameCaptureVerdictTests {
         let verdict = FrameCaptureVerdict.of(
             all: stats(Array(repeating: 16.0, count: 700)),
             drawn: stats(Array(repeating: 16.0, count: 700)),
+            totalDraws: 700,
             wasInterrupted: true
         )
         #expect(verdict == .interrupted)
@@ -138,7 +153,7 @@ struct FrameCaptureVerdictTests {
     /// drew nothing — different problems with different fixes.
     @Test("no frames is distinguished from no draws")
     func noFramesIsDistinguishedFromNoDraws() {
-        #expect(FrameCaptureVerdict.of(all: nil, drawn: nil, wasInterrupted: false) == .nothingCaptured)
+        #expect(FrameCaptureVerdict.of(all: nil, drawn: nil, totalDraws: 0, wasInterrupted: false) == .nothingCaptured)
     }
 
     /// Every case reads differently, so a screenshot of the row is unambiguous about what was
@@ -149,6 +164,7 @@ struct FrameCaptureVerdictTests {
             FrameCaptureVerdict.interrupted,
             .nothingCaptured,
             .noDraws,
+            .drawsNotMeasured(count: 2),
             .tooFewDraws(count: 3),
             .measured(passed: true, quotableWindow: true),
             .measured(passed: false, quotableWindow: true),
@@ -157,5 +173,51 @@ struct FrameCaptureVerdictTests {
 
         #expect(Set(labels).count == labels.count)
         #expect(labels.allSatisfy { !$0.isEmpty })
+    }
+
+    /// **Insufficient evidence must withhold a PASS, not mask a FAIL** (Codex round 4).
+    ///
+    /// Fifty drawn frames every one of which took 50 ms violate the 33.3 ms dropped-frame
+    /// limit outright — that is not an inconclusive result, it is the one result the criterion
+    /// exists to surface. The earlier ordering checked the sample count first and reported
+    /// `tooFewDraws`, hiding a conclusive failure behind a caveat about statistics.
+    @Test("a conclusive failure is reported even from few drawn frames")
+    func aConclusiveFailureIsReportedEvenFromFewDrawnFrames() {
+        let verdict = FrameCaptureVerdict.of(
+            all: stats(Array(repeating: 16.0, count: 700)),
+            drawn: stats(Array(repeating: 50.0, count: 50)),
+            totalDraws: 50,
+            wasInterrupted: false
+        )
+        #expect(verdict == .measured(passed: false, quotableWindow: true))
+        #expect(verdict.isAboutTheRenderer, "50 frames over the limit is evidence, not noise")
+    }
+
+    /// The same few frames *passing* stay inconclusive: the asymmetry is the point.
+    @Test("few drawn frames cannot produce a pass")
+    func fewDrawnFramesCannotProduceAPass() {
+        let verdict = FrameCaptureVerdict.of(
+            all: stats(Array(repeating: 16.0, count: 700)),
+            drawn: stats(Array(repeating: 16.0, count: 50)),
+            totalDraws: 50,
+            wasInterrupted: false
+        )
+        #expect(verdict == .tooFewDraws(count: 50))
+    }
+
+    /// **A draw with no measurable interval is not "no draws"** (Codex round 4). A render
+    /// finishing between `start()` and the first callback, or after the last one, has no
+    /// interval to belong to — but saying nothing was drawn would be false, and attributing it
+    /// forward would put a 50 ms cost on a 16 ms interval.
+    @Test("draws outside any timed interval are reported as unmeasured, not absent")
+    func drawsOutsideAnyTimedIntervalAreReportedAsUnmeasuredNotAbsent() {
+        let verdict = FrameCaptureVerdict.of(
+            all: stats(Array(repeating: 16.0, count: 700)),
+            drawn: nil,
+            totalDraws: 2,
+            wasInterrupted: false
+        )
+        #expect(verdict == .drawsNotMeasured(count: 2))
+        #expect(!verdict.isAboutTheRenderer)
     }
 }

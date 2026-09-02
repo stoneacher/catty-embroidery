@@ -147,7 +147,7 @@ Measured on the simulator before the hand-off, as the illustration:
 | 50k animating | `n=2123 drawn=251 60Hz med 16.7 p95 61.9 p99 66.5 max 75.7@23.8s · 37.0 s · FAIL` |
 
 Same fixture, same device, `PASS`-shaped numbers against a `FAIL`, and a p99 of 16.7 against
-49.7 ms. Non-authoritative for the bar (a host GPU is not an A15) but the difference is
+66.5 ms. Non-authoritative for the bar (a host GPU is not an A15) but the difference is
 structural. **If your capture 3 comes back `NO DRAWS`, that is correct behaviour, not a bug.**
 
 So:
@@ -158,10 +158,14 @@ So:
   SwiftUI redraws once per batch. Only a live gesture plausibly redraws every frame. That is
   why the readout's quantiles are taken over the drawn frames rather than all of them. The
   thesis sentence about ADR-009 rests on these two captures' **drawn** figures.
-- **Captures 1–3 prove something narrower** and should be reported as such: a settled stage
-  introduces no background stutter, and per-frame cost does not grow with the settled count.
-  (The *independence* claim itself is already proved headlessly and structurally —
-  `StitchDrawPlanScalingTests` — which is where it belongs; see ADR-029.)
+- **Captures 1–3 prove something much narrower** and must be reported as such: **a settled
+  stage triggers no redraws, and the display keeps up while nothing is being drawn.** They do
+  **not** show that per-frame cost is independent of the settled count — with `drawn=0` the
+  renderer never ran, so mutating its per-draw work from O(1) to O(n) would leave these
+  captures identical (Codex round 4). That independence claim is proved **headlessly and
+  structurally** by `StitchDrawPlanScalingTests`, which asserts the live plan's dot and segment
+  *indices* at 5 000, 20 000 and 50 000 settled; it is not a device measurement and does not
+  need to be. See ADR-029.
 - **The Instruments trace is not an optional cross-check on 4 and 5, it is required**: it is the
   only mechanism here that observes the rendering pipeline directly rather than inferring it.
 
@@ -217,24 +221,19 @@ naive proportional version measured *worse* (176 bakes instead of 50).
   version of this recipe named the display list, which has no such method. The stage does not
   retain a pattern manager either: the interpreter builds one internally and the app only ever
   sees `assembledStream()`'s result. So build the input in the debugger rather than fishing
-  for it. Pause anywhere in the app (a breakpoint on `AppModel.select` will do) and run this as
-  **one** expression — `e -l Swift --` does not open a multi-line prompt, so the whole thing
-  goes on the continuation of a single `expr` using `--` and a brace block:
+  for it. Pause anywhere in the app (a breakpoint on `AppModel.select` will do) and paste these
+  two commands:
 
   ```
-  (lldb) e -l Swift -- import EmbroideryEngine; import Foundation
-  (lldb) e -l Swift -- do {
-    var m = EmbroideryPatternManager()
-    let actor = ActorID(0)
-    for i in 0 ..< 50_000 {                      // 1_000 / 10_000 / 50_000 in turn
-      m.addStitch(at: StagePoint(x: Double(i % 200) * 0.4, y: Double(i / 200) * 0.4),
-                  layer: 0, actor: actor)
-    }
-    let t = Date()
-    for _ in 0 ..< 20 { _ = m.assembled() }
-    print("\(-t.timeIntervalSinceNow / 20 * 1000) ms")
-  }
+  (lldb) e -l Swift -- import EmbroideryEngine
+  (lldb) e -l Swift -- var m = EmbroideryPatternManager(); let a = ActorID(0); for i in 0 ..< 50_000 { m.addStitch(at: StagePoint(x: Double(i % 200) * 0.4, y: Double(i / 200) * 0.4), layer: 0, actor: a) }; let t0 = CFAbsoluteTimeGetCurrent(); for _ in 0 ..< 20 { _ = m.assembled() }; print("\((CFAbsoluteTimeGetCurrent() - t0) / 20 * 1000) ms")
   ```
+
+  **One line per command, and that is not a style choice.** LLDB's `expression` takes either a
+  single-line argument or an interactive multi-line entry it prompts for; a `do {` typed after
+  `e -l Swift --` ends the command there, and the `var`, `for` and closing-brace lines that
+  follow are then read as separate *debugger* commands and fail (Codex round 4). Semicolons on
+  one line avoid the question. Change `50_000` to `1_000` and `10_000` for the other two rows.
 
   Three details that a shorter recipe gets wrong. **`var`, not `let`** — `addStitch` is
   `mutating`. **The point has to change every iteration**: `addStitch` dedups a stitch at the

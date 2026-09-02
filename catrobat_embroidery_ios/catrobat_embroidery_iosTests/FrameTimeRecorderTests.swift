@@ -304,4 +304,25 @@ struct FrameTimeRecorderTests {
         #expect(abs(reported - 33.333) < 0.01, "reported \(reported) ms — the last frame won")
     }
 
+    /// **The even-count case, which is where the hand-rolled median was wrong** (Codex round
+    /// 4). `sorted[count / 2]` picks the *upper* middle on an even count: 400 samples at
+    /// 8.33 ms and 400 at 16.67 ms reported 16.67 ms — 60 Hz — where this file's own
+    /// nearest-rank rule gives the lower middle, 8.33 ms. Both existing tests used odd counts,
+    /// so the path was untested. The rate now comes from `FrameTimeStatistics`, so there is
+    /// one median implementation rather than two that disagree.
+    @Test("the reported rate uses nearest-rank on an even number of samples")
+    func theReportedRateUsesNearestRankOnAnEvenNumberOfSamples() {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        for index in 0 ..< 400 {
+            recorder.record(timestamp: Double(index) * 0.0083, frameDuration: 1.0 / 120)
+        }
+        for index in 400 ..< 800 {
+            recorder.record(timestamp: Double(index) * 0.0083, frameDuration: 1.0 / 60)
+        }
+        _ = recorder.stop()
+
+        let reported = recorder.nominalFrameMilliseconds ?? 0
+        #expect(abs(reported - 8.333) < 0.01, "reported \(reported) ms — the upper middle won")
+    }
 }

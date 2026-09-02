@@ -12,7 +12,7 @@
     /// **The quantiles are over the frames in which the canvas actually drew.** A display-link
     /// callback fires on every refresh whether or not SwiftUI drew anything, and the measured
     /// captures show the canvas drawing on a small minority of refreshes even mid-run — 251
-    /// draws in 1 932 frames — so a p99 over *all* frames is mostly a p99 of frames in which
+    /// draws in 2 123 frames — so a p99 over *all* frames is mostly a p99 of frames in which
     /// nothing happened, and it flatters the renderer by exactly the idle fraction. `drawn=`
     /// is on the row beside `n=` so the two can never be confused, and a capture with no
     /// drawn frame at all is labelled rather than scored (`FrameCaptureVerdict`).
@@ -90,6 +90,7 @@
             let verdict = FrameCaptureVerdict.of(
                 all: all,
                 drawn: recorder.drawnStatistics,
+                totalDraws: recorder.drawCount ?? 0,
                 wasInterrupted: recorder.wasInterrupted
             )
             let counts = "n=\(all.frameCount) drawn=\(recorder.drawnStatistics?.frameCount ?? 0)\(nominal)"

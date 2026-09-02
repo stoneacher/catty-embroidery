@@ -90,6 +90,7 @@ struct FrameTimeDrawAccountingTests {
         #expect(FrameCaptureVerdict.of(
             all: stats,
             drawn: recorder.drawnStatistics,
+            totalDraws: recorder.drawCount ?? 0,
             wasInterrupted: recorder.wasInterrupted
         ) == .noDraws)
     }
@@ -156,25 +157,35 @@ struct FrameTimeDrawAccountingTests {
         #expect(drawn.worstAtMilliseconds < all.totalMilliseconds)
     }
 
-    /// **A draw between `start()` and the first callback is not lost** (Codex round 3).
+    /// **A draw before the first callback is counted but not attributed** (Codex rounds 3
+    /// and 4, and the two rounds wanted opposite things until the third answer appeared).
     ///
-    /// The first callback has no baseline and records no interval, so advancing
-    /// `previousDrawCount` there consumed any draw that had happened since `start()` — and a
-    /// capture whose only rendering fell in that window came back `NO DRAWS`, the most
-    /// misleading answer available. The draw is now attributed to the first interval the
-    /// recorder can actually measure, which is where its cost landed.
-    @Test("a draw before the first callback is attributed, not consumed")
-    func aDrawBeforeTheFirstCallbackIsAttributedNotConsumed() throws {
+    /// Round 3 found the draw was silently consumed, so a capture whose only rendering fell
+    /// there reported `NO DRAWS`. Carrying it *forward* onto the next interval fixed that and
+    /// introduced something worse: a 50 ms render then wore the following 16 ms interval's
+    /// duration, so the capture recorded a cheap frame for expensive work. The draw genuinely
+    /// has no interval — the first callback only establishes the baseline — so it is neither
+    /// attributed nor hidden: `drawCount` sees it, `drawnStatistics` does not, and the verdict
+    /// says `DRAWS NOT MEASURED` rather than the false `NO DRAWS`.
+    @Test("a draw before the first callback is counted but not attributed to a later interval")
+    func aDrawBeforeTheFirstCallbackIsCountedButNotAttributed() {
         let recorder = FrameTimeRecorder()
         recorder.start()
         StageDrawCounter.record()          // the renderer drew before any callback arrived
         recorder.record(timestamp: 0.000)  // seeds the baseline, records no interval
-        recorder.record(timestamp: 0.050)  // the first measurable interval
-        _ = recorder.stop()
+        recorder.record(timestamp: 0.050)  // a measurable interval, in which nothing drew
+        let all = recorder.stop()
 
-        let drawn = try #require(recorder.drawnStatistics, "the draw was consumed by the baseline callback")
-        #expect(drawn.frameCount == 1)
-        #expect(abs(drawn.worst - 50) < 0.001)
+        #expect(recorder.drawCount == 1, "the draw happened and must be counted")
+        #expect(recorder.drawnStatistics == nil, "it belongs to no measured interval")
+        #expect(
+            FrameCaptureVerdict.of(
+                all: all,
+                drawn: recorder.drawnStatistics,
+                totalDraws: recorder.drawCount ?? 0,
+                wasInterrupted: false
+            ) == .drawsNotMeasured(count: 1)
+        )
     }
 
     /// Draws that happened while the app was away belong to no measured interval, so they must

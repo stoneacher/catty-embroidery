@@ -14,6 +14,17 @@
         case nothingCaptured
         /// Frames arrived but the renderer never drew: this measures the display, not us.
         case noDraws
+        /// The renderer drew, but no draw fell inside a measurable interval.
+        ///
+        /// **Distinct from `noDraws`, which would be a false statement.** A draw between
+        /// `start()` and the first callback — or between the last callback and `stop()` — has
+        /// no interval to belong to: the first callback only establishes the baseline, and
+        /// after the last one nothing more is timed. Attributing such a draw *forward* to the
+        /// next interval was the previous behaviour and it was worse than losing it, because
+        /// a 50 ms render then wore the following 16 ms interval's duration and a capture
+        /// reported a cheap frame for expensive work (Codex round 4). So the draw is not
+        /// attributed, and this case says so rather than claiming nothing was drawn.
+        case drawsNotMeasured(count: Int)
         /// The renderer drew, but in too few frames for order statistics to mean anything.
         ///
         /// **A distinct verdict, because `PASS` and `NO DRAWS` are both wrong here.** With one
@@ -31,7 +42,7 @@
         /// **`drawn` rather than `all` decides the bar, and that is the whole point of this
         /// type.** A `CADisplayLink` callback fires on every display refresh whether or not
         /// SwiftUI drew anything, and the measured captures show the renderer drawing on a small
-        /// *minority* of refreshes even while a run is animating: **251 draws in 1 932 frames.**
+        /// *minority* of refreshes even while a run is animating: **251 draws in 2 123 frames.**
         /// So a p99 over all frames is mostly a p99 of frames in which nothing happened, and it
         /// flatters the renderer by exactly the fraction of idle frames — which is how a settled
         /// stage reported a flawless 60 fps while drawing nothing at all.
@@ -49,6 +60,7 @@
         static func of(
             all: FrameTimeStatistics?,
             drawn: FrameTimeStatistics?,
+            totalDraws: Int,
             wasInterrupted: Bool
         ) -> FrameCaptureVerdict {
             if wasInterrupted {
@@ -57,14 +69,27 @@
             guard let all else {
                 return .nothingCaptured
             }
-            guard let drawn else {
+            guard totalDraws > 0 else {
                 return .noDraws
+            }
+            guard let drawn else {
+                return .drawsNotMeasured(count: totalDraws)
+            }
+            // **A conclusive failure is conclusive at any sample size, and this order is the
+            // point** (Codex round 4). Insufficient evidence must withhold a *pass*, not mask
+            // a failure already observed: fifty drawn frames every one of which took 50 ms
+            // violate the 33.3 ms limit outright, and reporting that as "inconclusive" hides
+            // the one result the criterion exists to surface. So the bar is evaluated first
+            // and only a *passing* capture has to clear the sample-count floor.
+            let window = all.isLongEnoughToQuote
+            if !drawn.meetsSixtyFps {
+                return .measured(passed: false, quotableWindow: window)
             }
             guard drawn.frameCount >= minimumDrawnFrames else {
                 return .tooFewDraws(count: drawn.frameCount)
             }
             // The window is a property of the capture; the bar is a property of the drawn frames.
-            return .measured(passed: drawn.meetsSixtyFps, quotableWindow: all.isLongEnoughToQuote)
+            return .measured(passed: true, quotableWindow: window)
         }
 
         /// How many drawn frames the quantiles need before they are worth quoting.
@@ -88,6 +113,8 @@
                 "no frames"
             case .noDraws:
                 "NO DRAWS — measures the display, not the renderer"
+            case let .drawsNotMeasured(count):
+                "DRAWS NOT MEASURED (\(count)) — outside any timed interval"
             case let .tooFewDraws(count):
                 "TOO FEW DRAWS (\(count)) — need \(Self.minimumDrawnFrames) for a tail"
             case let .measured(passed, quotableWindow):

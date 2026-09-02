@@ -58,7 +58,7 @@
         /// **This, not `statistics`, is the number that says anything about the renderer.**
         /// A display-link callback fires on every refresh whether or not SwiftUI drew, and
         /// the measured captures show the canvas drawing on a small *minority* of refreshes
-        /// even mid-run — 251 draws in 1 932 frames — so a p99 over all frames is mostly a
+        /// even mid-run — 251 draws in 2 123 frames — so a p99 over all frames is mostly a
         /// p99 of frames in which nothing happened (Codex round 2, finding 1). `nil` when the
         /// capture contained no drawn frame at all, which is the settled-stage case.
         private(set) var drawnStatistics: FrameTimeStatistics?
@@ -204,9 +204,13 @@
             isRecording = false
             // The **median** reported period, not the last one: a capture that ran at 30 Hz
             // and ended at 60 must not be labelled 60 Hz (Codex round 3).
-            if !frameDurations.isEmpty {
-                nominalFrameMilliseconds = frameDurations.sorted()[frameDurations.count / 2]
-            }
+            //
+            // Computed by `FrameTimeStatistics` rather than by a hand-rolled
+            // `sorted()[count / 2]`, which picks the *upper* middle on an even count and so
+            // disagreed with this file's own nearest-rank rule — on 400 samples at 8.33 ms
+            // and 400 at 16.67 ms it reported 60 Hz where nearest-rank gives 120 (Codex round
+            // 4). Reusing the tested implementation is also one fewer median in the codebase.
+            nominalFrameMilliseconds = FrameTimeStatistics(millisecondsPerFrame: frameDurations)?.median
             drawCount = StageDrawCounter.count - drawsAtStart
             statistics = FrameTimeStatistics(millisecondsPerFrame: intervals)
             drawnStatistics = FrameTimeStatistics(
@@ -226,13 +230,18 @@
         func record(timestamp: CFTimeInterval, frameDuration: CFTimeInterval? = nil) {
             guard isRecording, !isSuspended else { return }
             let draws = StageDrawCounter.count
-            // **`previousDrawCount` is advanced only where an interval is actually recorded**
-            // (Codex round 3). Advancing it in a `defer` meant the first callback — which has
-            // no baseline and records nothing — silently consumed any draw that happened
-            // between `start()` and it, so a capture whose only rendering fell in that window
-            // reported `NO DRAWS`. Left un-advanced, that draw is attributed to the first
-            // interval the recorder can actually measure, which is where its cost landed.
-            defer { previousTimestamp = timestamp }
+            // **Advanced on every callback, so a draw is never attributed to an interval it
+            // did not happen in.** Round 3 left it un-advanced on the baseline callback, so a
+            // draw from before the first callback was carried *forward* onto the next
+            // interval — and a 50 ms render then wore the following 16 ms interval's duration,
+            // making the capture report a cheap frame for expensive work (Codex round 4).
+            // Such a draw genuinely has no interval to belong to, and losing it silently was
+            // the other wrong answer: `drawCount` counts it, so `FrameCaptureVerdict` can say
+            // `DRAWS NOT MEASURED` instead of the false `NO DRAWS`.
+            defer {
+                previousTimestamp = timestamp
+                previousDrawCount = draws
+            }
             // Accumulated unobserved and published once at `stop()`. Assigning the observable
             // `nominalFrameMilliseconds` here would fire `withMutation` on **every callback** —
             // reintroducing precisely the per-frame body evaluation that I3 removed — and it
@@ -250,7 +259,6 @@
                 drawnIntervals.append(milliseconds)
                 drawnOffsets.append(elapsedMilliseconds)
             }
-            previousDrawCount = draws
             elapsedMilliseconds += milliseconds
         }
 
