@@ -53,6 +53,16 @@
         /// nothing. `noteSuspended()` now drops the gap and this flag says a capture was touched.
         private(set) var wasInterrupted = false
 
+        /// The bar, evaluated over the frames in which the canvas actually drew.
+        ///
+        /// **This, not `statistics`, is the number that says anything about the renderer.**
+        /// A display-link callback fires on every refresh whether or not SwiftUI drew, and
+        /// the measured captures show the canvas drawing on a small *minority* of refreshes
+        /// even mid-run — 251 draws in 1 932 frames — so a p99 over all frames is mostly a
+        /// p99 of frames in which nothing happened (Codex round 2, finding 1). `nil` when the
+        /// capture contained no drawn frame at all, which is the settled-stage case.
+        private(set) var drawnStatistics: FrameTimeStatistics?
+
         /// Canvas draw passes during the last completed capture.
         ///
         /// **The number that says whether the capture measured the renderer or the display.**
@@ -62,7 +72,7 @@
         /// before any capture. See `StageDrawCounter`.
         private(set) var drawCount: Int?
 
-        /// The display's nominal frame interval in milliseconds, sampled from the live link.
+        /// The display's **actual** frame interval in milliseconds, sampled in the callback.
         ///
         /// **Reported because the bar is absolute and the refresh rate is not guaranteed.**
         /// iOS may drop a display link to 30, 20 or 15 Hz under Low Power Mode, a critical
@@ -70,8 +80,16 @@
         /// interval is ~33.3 ms, so a renderer doing essentially no work fails **both**
         /// halves of AC3's bar — an unforced FAIL indistinguishable from the real thing
         /// (Codex round 1, finding 3). With this on screen the tester sees 33.3 and knows to
-        /// check the device rather than to start down the fallback ladder. `nil` before any
-        /// capture.
+        /// check the device rather than to start down the fallback ladder.
+        ///
+        /// **From `targetTimestamp - timestamp`, not from `CADisplayLink.duration`.** The
+        /// first version read `duration`, which Apple documents as based on the **maximum**
+        /// frame rate — so on a link policy-throttled to 30 Hz it can still report ~16.67 ms,
+        /// printing `60Hz` beside the very `FAIL` this field exists to explain (Codex round 2,
+        /// finding 2). It is also undefined until the selector has fired at least once, so
+        /// reading it at `stop()` after a capture that caught nothing could publish a
+        /// meaningless positive value. `targetTimestamp - timestamp` is the actual frame
+        /// duration and is only ever read inside a callback. `nil` before any capture.
         private(set) var nominalFrameMilliseconds: Double?
 
         /// Frames recorded in the capture currently running.
@@ -88,6 +106,15 @@
         }
 
         @ObservationIgnored private var intervals: [Double] = []
+        /// The subset of `intervals` during which the canvas drew at least once.
+        ///
+        /// **Tagged as each interval is recorded, because a draw *count* cannot be
+        /// apportioned afterwards.** An aggregate of draws over a whole capture says how many
+        /// there were and nothing about which frames contained them, so no ratio over it can
+        /// separate the renderer's frames from the display's. One integer comparison per
+        /// callback can.
+        @ObservationIgnored private var drawnIntervals: [Double] = []
+        @ObservationIgnored private var previousDrawCount = 0
         @ObservationIgnored private var previousTimestamp: CFTimeInterval?
         /// True between losing and regaining the foreground. While set, callbacks record nothing
         /// **and do not re-seed `previousTimestamp`**, so the gap cannot be reconstructed from
@@ -133,10 +160,14 @@
             stopLink()
             intervals.removeAll(keepingCapacity: true)
             intervals.reserveCapacity(Self.capacity)
+            drawnIntervals.removeAll(keepingCapacity: true)
+            drawnIntervals.reserveCapacity(Self.capacity)
             previousTimestamp = nil
+            previousDrawCount = StageDrawCounter.count
             isSuspended = !isActive
             wasInterrupted = !isActive
             statistics = nil
+            drawnStatistics = nil
             drawCount = nil
             nominalFrameMilliseconds = nil
             drawsAtStart = StageDrawCounter.count
@@ -153,14 +184,11 @@
         /// Ends the capture and publishes its statistics, or `nil` if it caught no frames.
         @discardableResult
         func stop() -> FrameTimeStatistics? {
-            // Sampled before the link goes: `duration` is only meaningful on a live link.
-            if let link, link.duration > 0 {
-                nominalFrameMilliseconds = link.duration * 1_000
-            }
             stopLink()
             isRecording = false
             drawCount = StageDrawCounter.count - drawsAtStart
             statistics = FrameTimeStatistics(millisecondsPerFrame: intervals)
+            drawnStatistics = FrameTimeStatistics(millisecondsPerFrame: drawnIntervals)
             return statistics
         }
 
@@ -171,11 +199,26 @@
         /// when the previous frame was displayed, so the first callback of a capture has nothing
         /// to subtract from and deliberately records nothing; emitting a sample there would put
         /// the interval since the epoch into the capture.
-        func record(timestamp: CFTimeInterval) {
+        func record(timestamp: CFTimeInterval, frameDuration: CFTimeInterval? = nil) {
             guard isRecording, !isSuspended else { return }
-            defer { previousTimestamp = timestamp }
+            let draws = StageDrawCounter.count
+            defer {
+                previousTimestamp = timestamp
+                previousDrawCount = draws
+            }
+            // The link reports its actual period only once it has fired, so this arrives from
+            // the callback rather than being read off the link at `stop()`.
+            if let frameDuration, frameDuration > 0 {
+                nominalFrameMilliseconds = frameDuration * 1000
+            }
             guard let previous = previousTimestamp else { return }
-            intervals.append((timestamp - previous) * 1000)
+            let milliseconds = (timestamp - previous) * 1000
+            intervals.append(milliseconds)
+            // Did the canvas draw during the interval that produced this frame? Tagged here
+            // because it cannot be recovered from the totals afterwards.
+            if draws > previousDrawCount {
+                drawnIntervals.append(milliseconds)
+            }
         }
 
         /// The app lost the foreground: stop recording and mark the capture.
@@ -229,7 +272,10 @@
                 link.invalidate()
                 return
             }
-            recorder.record(timestamp: link.timestamp)
+            recorder.record(
+                timestamp: link.timestamp,
+                frameDuration: link.targetTimestamp - link.timestamp
+            )
         }
     }
 #endif

@@ -66,7 +66,17 @@ struct StitchDrawPlanScalingTests {
                 stroke.segmentStarts.allSatisfy { $0 >= settled - 1 },
                 "a segment starts below the watermark: \(stroke.segmentStarts.min() ?? -1) < \(settled - 1)"
             )
-            #expect(stroke.segmentStarts.allSatisfy { $0 <= settled + Self.tail })
+            // **`- 2`, and the two matter** (Codex round 2, finding 6). The renderer reads
+            // `points[start]` *and* `points[start + 1]`, so with `N = settled + tail` points
+            // the largest legal start is `N - 2`. The first version of this bound allowed
+            // starts through `N`, which a mutant returning `settled ... settled + tail - 1`
+            // satisfies — 100 starts, both old bounds green — while its last entry indexes
+            // `points[N]` and traps in the renderer. A bound on an index has to be the bound
+            // the *reader* of that index needs, not merely tighter than nothing.
+            #expect(
+                stroke.segmentStarts.allSatisfy { $0 <= settled + Self.tail - 2 },
+                "a segment starts at \(stroke.segmentStarts.max() ?? -1); the renderer reads start + 1"
+            )
         }
         // **Bounded on both sides.** `<=` alone was one-sided, and this is the assertion
         // ADR-029 quotes as *the* discriminating test of ADR-009's claim: dots and strokes
@@ -171,6 +181,22 @@ struct StitchDrawPlanScalingTests {
             \(milliseconds(manyRunsTime)), ratio \(String(format: "%.2f", thousandFold)).)
             """
         )
+        // **And an upper bound, because a lower bound alone cannot say "linear"** (Codex
+        // round 2, finding 5). A mutation that rescanned every colour run once *per* colour
+        // run — Θ(r²), emitting an identical plan — passes `perStitch >= 30` *more strongly*
+        // than healthy code does, so the assertion above establishes only that cost grows.
+        // Between 1 000 and 50 000 runs the run count rises 50×, so linear predicts ~50× the
+        // cost and quadratic ~2 500×; measured is **39.8×** (0.246 → 9.791 ms). Bounded at
+        // 200: five times the healthy figure, a twelfth of quadratic's.
+        let runGrowth = seconds(everyStitchTime) / seconds(manyRunsTime)
+        #expect(
+            runGrowth <= 200,
+            """
+            a 50× rise in colour runs cost \(String(format: "%.1f", runGrowth))× the planning \
+            (1 000: \(milliseconds(manyRunsTime)), 50 000: \(milliseconds(everyStitchTime))) \
+            — linear is ~50×, quadratic ~2 500×, measured 39.8×
+            """
+        )
     }
 
     /// The mid-gesture path, measured rather than worried about.
@@ -204,7 +230,20 @@ struct StitchDrawPlanScalingTests {
             """
             the mid-gesture full re-stroke is expected to scale with the design: \
             5 000 → \(milliseconds(smallTime)), 50 000 → \(milliseconds(largeTime)), \
-            ratio \(String(format: "%.2f", ratio))
+            ratio \(String(format: "%.2f", ratio)) — a collapse to constant cost reads ~1×
+            """
+        )
+        // **The upper bound is the half that earns the word "linear"** (Codex round 2,
+        // finding 5). A mutation rescanning every stitch once per segment — Θ(n²), identical
+        // plan — passes a bare `>= 2.5` *more strongly* than healthy code, so a lower bound
+        // alone names the wrong property. At this 10× step linear predicts ~10× and quadratic
+        // ~100×; 30 sits between them with three-fold margin either way.
+        #expect(
+            ratio <= 30,
+            """
+            the mid-gesture plan grew \(String(format: "%.2f", ratio))× for a 10× design \
+            (5 000: \(milliseconds(smallTime)), 50 000: \(milliseconds(largeTime))) — \
+            linear is ~10×, so this is superlinear
             """
         )
     }

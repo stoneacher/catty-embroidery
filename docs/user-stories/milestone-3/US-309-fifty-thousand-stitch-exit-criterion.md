@@ -101,7 +101,7 @@ Recorded verbatim in substance. Verification the reviewer ran independently: 735
 
 ### I3 — The readout re-evaluates its body once per displayed frame, inside the frame it measures
 
-**ACCEPTED, fixed, and the cost sentence retracted as the finding asked.** `intervals` and `previousTimestamp` are now `@ObservationIgnored`, so an append fires no `withMutation`; the caption is a **constant string** while recording (`capturing… hold ≥ 10 s, then Stop`), so a capture window now costs **zero** body evaluations rather than one per displayed frame. Only `isRecording`, `statistics` and `wasInterrupted` remain observable and each changes at most once per capture. The class comment now says this is why, rather than claiming a cost it did not have.
+**ACCEPTED, fixed, and the cost sentence retracted as the finding asked.** `intervals` and `previousTimestamp` are now `@ObservationIgnored`, so an append fires no `withMutation`; the caption is a **constant string** while recording (`capturing… hold ≥ 10 s, then Stop`), so a capture window now costs **zero** body evaluations rather than one per displayed frame. Only `isRecording`, `statistics` and `wasInterrupted` remain observable (later joined by `drawCount`, `drawnStatistics` and `nominalFrameMilliseconds`), and all of them change only in `start()` and `stop()` — a handful of body evaluations per capture rather than one per displayed frame. *(Round 2 corrected this sentence too: it first said "each changes at most once per capture", and `isRecording` changes at both ends.)* The class comment now says this is why, rather than claiming a cost it did not have.
 
 The usability cost — the tester can no longer watch the frame count climb — is paid for by `isLongEnoughToQuote`, which now measures the window **in seconds** (below), so a mistimed hold is caught after the fact instead of guided during it. The hand-off records the new procedure.
 `FrameTimeRecorder.swift:41, :95`; `FrameTimeReadout.swift:29-37, :46-48`. `intervals` is a stored property of an `@Observable` class, so each append fires `withMutation`; `caption` reads `frameCount` and registers the dependency. Every display-link callback therefore re-runs two `String(format:)` calls and re-renders a `.regularMaterial` blur **overlaid on the canvas being measured**, at 60 Hz, while the stage is otherwise completely static. This contradicts `FrameTimeRecorder.swift:15-16` ("one subtraction and one append"). **Failure: capture 3 comes back marginal and rung 1 of the fallback ladder is taken to fix a cost the instrument introduced.** Cleanest fix: `@ObservationIgnored` on `intervals` plus a static "capturing…" while recording — zero body evaluations during a window — and retract the cost sentence.
@@ -213,4 +213,47 @@ Codex's shared false-negative is also accepted as **correct and out of scope**: 
 ### What Codex confirmed
 
 Nearest-rank percentiles at n=1, small n and ties; `worst` unlosable to rounding; the weak-proxy lifetime reasoning (including that an outliving link cannot retarget a later recorder); normal suspend/resume, double-suspend, stop-while-suspended and phase-after-`onDisappear` all idempotent or flagged; and `theWatermarkRuleAgainstHandComputedValues` genuinely anchoring the rule so the remaining references cannot drift together.
+
+## Cross-vendor review — `/codex-review` round 2 (verification), 2026-09-02
+
+**Seven findings (1 High, 5 Medium, 1 Low). Six accepted and fixed; one sub-point rejected as reviewing pre-fix code.** Highest severity this round: **High** — **flat against round 1, which is not convergence**, so the loop continues. Round produced code changes.
+
+Round 2 confirmed as correctly fixed: F2 (start-while-suspended), the `worstAtMilliseconds` arithmetic including ties and single-sample captures, the one-factor tuning table and its `bakingThreshold = 8000`, the F6 lower bound, the F7 correction in the two places it checked, and three of the four prose fixes.
+
+### R2-F1 (High) — the draw *count* could not answer the question, and my test for it was vacuous
+
+**Accepted — and it is the same finding as round 1's, one level deeper.** Two distinct problems:
+
+1. **A ratio over an aggregate cannot separate the renderer's frames from the display's.** `draws * 10 < frameCount` has no defensible threshold (at exactly 10 % it passes, at 9.9 % it fails, and neither answers anything), and the draw *count* carries no timestamps, so no arithmetic over it can say *which* intervals contained work. Fixed properly: the recorder now tags **each interval** as it is recorded with whether the canvas drew during it, and publishes `drawnStatistics` alongside `statistics`. **The bar is evaluated over the drawn frames.**
+2. **The test I wrote for the guard never called the guard.** It asserted `frameCount / 10 == 0` and `drawCount == 0` — the *inputs* — because the rule lived in a `private` method on a `View` and could not be invoked. It passed while the rule was still wrong. The rule is now `FrameCaptureVerdict`, a plain pure type with its own suite of nine tests. **A guard that cannot be called cannot be tested, and a test that recomputes a guard's inputs is not a test of it** — the same restatement pattern as M3's mutation survivor, now found in a test written *to fix* a review finding.
+
+**And the finding disproved a claim I had just written.** ADR-029 and the hand-off said captures 4 and 5 "force a redraw every frame". Our own capture says **251 draws in 1 932 frames**: a run advances in batches and SwiftUI redraws once per batch, not once per refresh. So even the authoritative captures are mostly idle frames, and a p99 over all of them flatters the renderer by exactly the idle fraction. That is precisely why the bar moved to the drawn subset.
+
+### R2-F2 (Medium) — `CADisplayLink.duration` is the wrong property
+
+**Accepted, fixed.** Apple documents `duration` as based on the **maximum** frame rate, so a link policy-throttled to 30 Hz can still report ~16.67 ms — printing `60Hz` beside the very `FAIL` the field exists to explain. It is also undefined before the first callback, so reading it at `stop()` after an empty capture could publish a meaningless value. Now `targetTimestamp - timestamp`, the documented actual frame duration, sampled inside the callback. Pinned by a test that feeds a 30 Hz duration and asserts the readout cannot say 60.
+
+### R2-F3 (Medium) — the hand-off was still not executable, and "all five blockers fixed" was false
+
+**Accepted; the claim was mine and it was wrong.** Three concrete defects survived round 1's fix: the LLDB recipe called `assembled()` on `StitchDisplayList`, **which has no such method** (it is on `EmbroideryPatternManager`, which the stage never exposes); the install step referenced a `-derivedDataPath` the build command never passed; and the Instruments instruction asked for traces of captures **3 and 4** while the section above it had just made **4 and 5** the authoritative ones — so the settled capture that draws nothing would have been traced and the bake/export capture would not. All three fixed.
+
+### R2-F4 (Medium) — the 22.4 s attribution overreached
+
+**Accepted.** ADR-029 said the worst frame fell "after the ~17 s run had finished". It cannot know that: ADR-027's producer and consumer are separate tasks over an unbounded stream, so the producer finishing does not mean the consumer has drained, and the stage may still be animating. `worstAtMilliseconds` carries no run-state marker. The position is a fact; "after the run" was an inference dressed as one. Restated, with the three candidates listed and the note that **distinguishing them needs a run-state marker the recorder does not have** — the cheapest thing to add if the device session wants the answer.
+
+### R2-F5 (Medium) — tests named "linear" accepted superlinear regressions
+
+**Accepted, and it is a good catch against my own fix.** A mutation that rescans every colour run once *per* colour run — Θ(r²), identical plan emitted — passes `perStitch >= 30` **more strongly** than healthy code. A lower bound establishes "cost grows", not "cost is linear", so the test names and the ADR claims outran what was asserted. Both are now two-sided, using points already measured: colour runs rise 50× between the two large fixtures, so linear predicts ~50× cost and quadratic ~2 500× — measured **39.8×**, bounded at 200. The entire-plan ratio at a 10× step is bounded `2.5 … 30` around a linear ~10×.
+
+### R2-F6 (Medium) — the new index bound was two indices too high
+
+**Accepted, fixed.** The renderer reads `points[start]` **and** `points[start + 1]`, so with `N = settled + tail` points the largest legal start is `N - 2`; I had asserted `<= N`. A mutant returning `settled ... settled + tail - 1` gives 100 starts, satisfies both of round 1's bounds, and indexes `points[N]` in the renderer. **A bound on an index has to be the bound the reader of that index needs, not merely tighter than nothing.**
+
+### R2-F7 (Low) — the correction still had not propagated
+
+**Accepted.** The "GPU-bound" wording survived in `docs/user-stories/milestone-3/README.md` and the story's own summary of the I3 fix still said "each changes at most once per capture". Both fixed, and the milestone README's and ROADMAP's test counts were stale too. This is the second round in which a prose correction of mine failed to reach every copy.
+
+### Rejected
+
+- **R2-F1's short-capture sub-point.** Codex reports that five samples with zero draws give `0 < 5 / 10` and therefore `PASS (short)`. That was true of the commit it reviewed (`9fc1b3d`) and had already been fixed in `42d93f9`, which landed while the round was running — I had found the same integer-division hole independently. Recorded rather than silently dropped, because the finding was correct about the code it saw. The accompanying criticism of the *test* was not stale and is accepted above.
 

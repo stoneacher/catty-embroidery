@@ -37,6 +37,7 @@ overrides, so the one flag reaches the SwiftPM targets too, which is why `Sample
 xcodebuild -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj \
   -scheme catrobat_embroidery_ios -configuration Release \
   -destination 'platform=iOS,name=<device>' \
+  -derivedDataPath build/us309 \
   SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited) DEBUG' \
   build
 ```
@@ -61,8 +62,10 @@ mode removed, and the failure it prevents would land on the device session rathe
   xcrun devicectl device process launch --device <udid> org.catrobat.embroiderydesigner
   ```
 
-  `<path-to>` is the `-derivedDataPath`'s `Build/Products/Release-iphoneos/`; `xcrun devicectl
-  list devices` gives the udid.
+  `<path-to>` is `build/us309/Build/Products/Release-iphoneos/` — the `-derivedDataPath` above,
+  which the build command has to pass explicitly or the products land in a hashed directory
+  under `~/Library/Developer/Xcode/DerivedData` that this instruction cannot name. `xcrun
+  devicectl list devices` gives the udid.
 
 Record the exact commands used in the results table. Prefer the XcodeBuildMCP device tools over
 raw `xcodebuild` where they are available.
@@ -185,22 +188,39 @@ naive proportional version measured *worse* (176 bakes instead of 50).
 
 ## Also record, once
 
-- An Instruments **Animation Hitches** trace of captures 3 and 4, as an independent cross-check
-  that the in-app recorder is not lying. Say in the thesis whether the two agreed.
+- An Instruments **Animation Hitches** trace of **captures 4 and 5** — the two the 60 fps claim
+  rests on. (This said "3 and 4", which contradicted the section above: capture 3 is a settled
+  stage that draws nothing, so a trace of it shows an idle app, while capture 5 is where the
+  bake and export spikes live and had no required trace at all.) It is the only artefact here
+  that observes the rendering pipeline directly rather than inferring it from callback timing,
+  so it is required rather than a cross-check. Say in the thesis whether it and the in-app
+  recorder agreed.
 - The device's own `assembled()` timing at 1 k / 10 k / 50 k, so **ADR-021's Mac figure finally
   gets its device counterpart**. **There is no UI for this**, so use the debugger: run the app
   on the device from Xcode, pause on the stage with the fixture settled, and in the LLDB
   console time the call directly, e.g.
 
+  **`assembled()` is on `EmbroideryPatternManager`, not on `StitchDisplayList`** — an earlier
+  version of this recipe named the display list, which has no such method, so it could not
+  have been run at all. The stage does not retain a pattern manager either: the interpreter
+  builds one internally and the app only ever sees `assembledStream()`'s result. So build the
+  input in the debugger rather than fishing for it:
+
   ```
-  (lldb) expr -l Swift -- import Foundation
-  (lldb) expr -l Swift -- let t = Date(); for _ in 0..<20 { _ = <displayList>.assembled() }; print(-t.timeIntervalSinceNow / 20 * 1000)
+  (lldb) e -l Swift -- import Foundation
+  (lldb) e -l Swift -- import EmbroideryEngine
+  (lldb) e -l Swift -- 
+  let m = EmbroideryPatternManager()
+  for i in 0 ..< 50_000 { m.addStitch(...) }        // 1_000 / 10_000 / 50_000 in turn
+  let t = Date(); for _ in 0 ..< 20 { _ = m.assembled() }
+  print(-t.timeIntervalSinceNow / 20 * 1000)
   ```
 
-  taking the display list from the paused frame, 20 iterations to average, and repeating at
-  each of the three counts. A `signpost` + Instruments interval would be the tidier route if
-  one is added later; today this is the procedure, and it is a debug build's number unless the
-  pause is taken in the Release-with-`DEBUG` build, which it should be. That ADR claimed 0.64 ms was "roughly 10% of a frame on
+  filling the manager through the same public `addStitch` the synthetic fixture uses, 20
+  iterations to average, repeated at each of the three counts. **Take the pause in the
+  Release-with-`DEBUG` build**, or the number is a debug build's and not comparable with
+  ADR-021's. A `signpost` + Instruments interval would be tidier and is worth adding if this
+  measurement is ever repeated; today this is the procedure. That ADR claimed 0.64 ms was "roughly 10% of a frame on
   A15-class hardware"; it is 3.8% of a frame on the Mac it was measured on, and the A15 number
   has never existed. The correction is already recorded; this is what closes it.
 

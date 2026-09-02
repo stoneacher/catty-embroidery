@@ -304,27 +304,78 @@ struct FrameTimeRecorderTests {
         #expect(recorder.nominalFrameMilliseconds == nil)
     }
 
-    /// A short capture with no draws is still a no-draw capture.
+    /// A capture over a static stage publishes **no** drawn statistics, which is what the
+    /// verdict reads.
     ///
-    /// **The regression this pins was mine, found while waiting on the verification round.**
-    /// The first draw guard read `draws < stats.frameCount / 10` — integer division, so a
-    /// capture of fewer than ten frames had a threshold of zero, `0 < 0` was false, and the
-    /// guard silently switched itself off precisely where the evidence is thinnest. Zero is
-    /// now its own case and needs no threshold at all.
-    @Test("a short capture with no draws is not scored as a pass")
-    func aShortCaptureWithNoDrawsIsNotScoredAsAPass() throws {
+    /// **This replaces a test that was vacuous** (Codex round 2, finding 1): the earlier
+    /// version asserted `stats.frameCount / 10 == 0` and `drawCount == 0` — the *inputs* the
+    /// guard would have been handed — and never invoked the guard, which lived in a `private`
+    /// method on a `View` and could not be called. It passed while the rule was still wrong.
+    /// The rule is now `FrameCaptureVerdict`, tested directly in its own suite; what belongs
+    /// here is the recorder's half, which is that no draws means no drawn statistics.
+    @Test("a static-stage capture publishes no drawn statistics")
+    func aStaticStageCapturePublishesNoDrawnStatistics() throws {
         let recorder = FrameTimeRecorder()
         recorder.start()
-        // Five frames, all perfectly on time, nothing drawn.
         for index in 0 ... 5 {
             recorder.record(timestamp: Double(index) * 0.016)
         }
         let stats = try #require(recorder.stop())
 
         #expect(stats.frameCount == 5)
-        #expect(stats.frameCount / 10 == 0, "the truncation the old threshold relied on")
-        #expect(recorder.drawCount == 0)
-        // The numbers would read as a pass; the draw count is what says they mean nothing.
+        #expect(recorder.drawnStatistics == nil, "nothing was drawn, so there is nothing to quote")
+        // The frames themselves look perfect, which is precisely the trap.
         #expect(stats.meetsSixtyFps)
+        #expect(FrameCaptureVerdict.of(
+            all: stats,
+            drawn: recorder.drawnStatistics,
+            wasInterrupted: recorder.wasInterrupted
+        ) == .noDraws)
+    }
+
+    /// **Only the intervals in which the canvas drew land in `drawnStatistics`.**
+    ///
+    /// The tag is applied as each interval is recorded, because a draw *count* over a whole
+    /// capture cannot be apportioned to intervals afterwards. Here two of four intervals
+    /// contain a draw, and they are the slow ones — so the capture as a whole looks healthy
+    /// and the drawn frames do not, which is the distinction the whole exercise is about.
+    @Test("only the intervals containing a draw are quoted")
+    func onlyTheIntervalsContainingADrawAreQuoted() throws {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        recorder.record(timestamp: 0.000)             // seeds the baseline, records nothing
+        recorder.record(timestamp: 0.016)             // idle 16 ms
+        StageDrawCounter.record()
+        recorder.record(timestamp: 0.066)             // drew, 50 ms
+        recorder.record(timestamp: 0.082)             // idle 16 ms
+        StageDrawCounter.record()
+        recorder.record(timestamp: 0.132)             // drew, 50 ms
+
+        let all = try #require(recorder.stop())
+        let drawn = try #require(recorder.drawnStatistics)
+
+        #expect(all.frameCount == 4)
+        #expect(drawn.frameCount == 2)
+        #expect(abs(drawn.median - 50) < 0.001, "the drawn frames are the 50 ms ones")
+        #expect(!drawn.meetsSixtyFps)
+        // And the whole-capture median is one of the idle frames, which is the flattery.
+        #expect(abs(all.median - 16) < 0.001)
+    }
+
+    /// The refresh rate comes from the callback's own frame duration, not from
+    /// `CADisplayLink.duration` — which Apple documents as the *maximum*-rate period and
+    /// which is undefined before the first callback (Codex round 2, finding 2).
+    @Test("the reported frame duration is the one the callback carried")
+    func theReportedFrameDurationIsTheOneTheCallbackCarried() {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        #expect(recorder.nominalFrameMilliseconds == nil, "nothing has fired yet")
+
+        // A link throttled to 30 Hz: the callback's own duration says so.
+        recorder.record(timestamp: 0.000, frameDuration: 1.0 / 30)
+        let reported = recorder.nominalFrameMilliseconds
+
+        #expect(reported != nil)
+        #expect(abs((reported ?? 0) - 33.333) < 0.01, "a 30 Hz link must not report 60 Hz")
     }
 }
