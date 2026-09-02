@@ -225,52 +225,31 @@ naive proportional version measured *worse* (176 bakes instead of 50).
   that observes the rendering pipeline directly rather than inferring it from callback timing,
   so it is required rather than a cross-check. Say in the thesis whether it and the in-app
   recorder agreed.
-- The device's own `assembled()` timing at 1 k / 10 k / 50 k, so **ADR-021's Mac figure finally
-  gets its device counterpart**. **There is no UI for this**, so use the debugger: run the app
-  on the device from Xcode, pause on the stage with the fixture settled, and in the LLDB
-  console time the call directly, e.g.
+- ~~The device's own `assembled()` timing at 1 k / 10 k / 50 k.~~ **Struck 2026-09-02 — the
+  measurement made it unnecessary.** The item existed to give ADR-021's 0.64 ms figure a device
+  counterpart, because that figure is a **Mac** number the ADR had presented with an unstated
+  ~2.6× A15 extrapolation. The correction is already recorded in ADR-021, and the device
+  session then removed the reason to take the measurement at all: the mid-gesture path costs
+  **69.1 ms per drawn frame**, roughly **100×** the 0.64 ms that rebuilding from
+  `assembledStream()` would have cost. So ADR-021's point — that option B was *affordable* and
+  was rejected on prefix stability rather than on speed — is made more strongly by the numbers
+  already in hand than a device `assembled()` figure could make it. The shipped design is two
+  orders of magnitude slower in the case that actually fails.
 
-  **`assembled()` is on `EmbroideryPatternManager`, not on `StitchDisplayList`** — an earlier
-  version of this recipe named the display list, which has no such method. The stage does not
-  retain a pattern manager either: the interpreter builds one internally and the app only ever
-  sees `assembledStream()`'s result. So build the input in the debugger rather than fishing
-  for it. Pause anywhere in the app (a breakpoint on `AppModel.select` will do) and paste these
-  two commands:
-
-  ```
-  (lldb) e -l Swift -- import EmbroideryEngine; import Foundation
-  (lldb) e -l Swift -- var m = EmbroideryPatternManager(); let a = ActorID(0); for i in 0 ..< 50_000 { m.addStitch(at: StagePoint(x: Double(i % 200) * 0.4, y: Double(i / 200) * 0.4), layer: 0, actor: a) }; let t0 = CFAbsoluteTimeGetCurrent(); for _ in 0 ..< 20 { _ = m.assembled() }; print("\((CFAbsoluteTimeGetCurrent() - t0) / 20 * 1000) ms")
-  ```
-
-  **`import Foundation` is load-bearing**: `CFAbsoluteTimeGetCurrent()` lives there,
-  `EmbroideryEngine` does not re-export it, and `AppModel.swift` does not import it either, so
-  without it the expression cannot resolve the timer. The previous version of this recipe had
-  the import and the *transport* rewrite deleted it — the fifth consecutive round in which this
-  one recipe broke for a new reason (Codex round 5).
-
-  **One line per command, and that is not a style choice.** LLDB's `expression` takes either a
-  single-line argument or an interactive multi-line entry it prompts for; a `do {` typed after
-  `e -l Swift --` ends the command there, and the `var`, `for` and closing-brace lines that
-  follow are then read as separate *debugger* commands and fail (Codex round 4). Semicolons on
-  one line avoid the question. Change `50_000` to `1_000` and `10_000` for the other two rows.
-
-  Three details that a shorter recipe gets wrong. **`var`, not `let`** — `addStitch` is
-  `mutating`. **The point has to change every iteration**: `addStitch` dedups a stitch at the
-  same stage position for the same actor (clause A), so repeating one point would build an
-  empty pattern and time nothing. And **`layer` and `actor` are required**: `ActorID(0)` and
-  layer `0` are the single-object case the samples use.
-
-  Take the pause in the **Release-with-`DEBUG`** build, or the number is a debug build's and is
-  not comparable with ADR-021's. A `signpost` + Instruments interval would be tidier and is
-  worth adding if this measurement is ever repeated; today this is the procedure. That ADR
-  claimed 0.64 ms was "roughly 10% of a frame on A15-class hardware"; it is **3.8%** of a frame
-  on the Mac it was measured on, and the A15 number has never existed. The correction is
-  already recorded; this is what closes it.
+  Recorded rather than deleted because the *procedure* is the more useful artefact: the LLDB
+  recipe that would have taken this measurement failed cross-vendor review **five times for
+  five unrelated reasons** — no procedure, wrong receiving type, invalid Swift, invalid LLDB
+  transport, and a missing import introduced by the fix for the transport — and was never once
+  executed. See the workflow journal.
 
 ## Screenshots still owed
 
-- `docs/screenshots/us-309/03-device-50k-fitted.jpg`
-- `docs/screenshots/us-309/04-device-50k-zoomed.jpg`
+- ✅ `docs/screenshots/us-309/03-device-50k-settled-no-draws.jpg` — **taken 2026-09-02.** The
+  settled capture reading `drawn=0 … NO DRAWS`, which is the most useful of the three: the
+  instrument declining to score a capture in which the renderer never ran.
+- `docs/screenshots/us-309/04-device-50k-zoomed.jpg` — still owed.
+- The animating and mid-gesture capsules were read off the device but **not** screenshotted;
+  their numbers are recorded in ADR-029 and in the story.
 
 The two already committed are the simulator pair, kept because the contrast between them is
 the point: `01-sim-50k-settled-no-draws.jpg` is the flawless capture of nothing, and

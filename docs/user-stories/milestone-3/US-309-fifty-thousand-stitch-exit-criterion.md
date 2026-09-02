@@ -422,8 +422,9 @@ Screenshot of the third: `docs/screenshots/us-309/03-device-50k-settled-no-draws
 
 - **The A15-class capture**, to confirm a fix once rung 2 lands. Not needed for the negative result.
 - **Instruments traces** of the animating and mid-gesture captures.
-- **The zoomed screenshot**, and the device `assembled()` timing (whose LLDB recipe has failed review five times and remains unexecuted).
+- **The zoomed screenshot.**
 - Screenshots of the animating and mid-gesture capsules were not kept; only the settled one was.
+- ~~The device `assembled()` timing.~~ **Struck 2026-09-02.** It existed to give ADR-021's 0.64 ms Mac figure a device counterpart; the device measurement removed the need, because the shipped mid-gesture path costs **69.1 ms per drawn frame — roughly 100× the 0.64 ms** that rebuilding from `assembledStream()` would have cost. ADR-021's point (option B was affordable and was rejected on prefix stability, not speed) is made more strongly by the numbers already in hand. **Its LLDB recipe had failed cross-vendor review five times for five unrelated reasons and was never executed** — kept in the hand-off as struck rather than deleted, because the procedure's failure history is the more useful artefact.
 
 ### Backlog raised from the session
 
