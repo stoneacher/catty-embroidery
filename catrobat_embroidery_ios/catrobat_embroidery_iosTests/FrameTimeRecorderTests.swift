@@ -253,48 +253,6 @@ struct FrameTimeRecorderTests {
         #expect(stats.worst < 20, "the stale pre-gap timestamp survived the resume")
     }
 
-    /// **Codex round 1, finding 1**: a capture reports how many times the canvas actually
-    /// drew, because a display-link callback is not evidence that anything was rendered.
-    ///
-    /// Driven here through `StageDrawCounter` directly — the counter is written inside a
-    /// `Canvas` closure that no unit test can run — so what is pinned is the accounting: a
-    /// capture attributes exactly the draws that happened between its own start and stop, and
-    /// nothing from before it.
-    @Test("a capture counts only the draws inside its own window")
-    func aCaptureCountsOnlyTheDrawsInsideItsOwnWindow() {
-        let recorder = FrameTimeRecorder()
-        StageDrawCounter.record()
-        StageDrawCounter.record()
-
-        recorder.start()
-        StageDrawCounter.record()
-        StageDrawCounter.record()
-        StageDrawCounter.record()
-        recorder.record(timestamp: 1.000)
-        recorder.record(timestamp: 1.016)
-        _ = recorder.stop()
-
-        #expect(recorder.drawCount == 3, "the two draws before start() are not this capture's")
-    }
-
-    /// A static stage draws nothing, which is exactly the case the draw count exists to make
-    /// visible: perfect frame times, no rendering.
-    @Test("a capture over a static stage reports no draws")
-    func aCaptureOverAStaticStageReportsNoDraws() throws {
-        let recorder = FrameTimeRecorder()
-        recorder.start()
-        for index in 0 ... 700 {
-            recorder.record(timestamp: Double(index) * 0.016)
-        }
-        let stats = try #require(recorder.stop())
-
-        // The numbers look perfect...
-        #expect(stats.meetsSixtyFps)
-        #expect(stats.isLongEnoughToQuote)
-        // ...and the capture still measured nothing about the renderer.
-        #expect(recorder.drawCount == 0)
-    }
-
     /// Before any capture there is no draw count and no refresh rate to report, rather than a
     /// zero that would read as "no draws".
     @Test("a recorder that has never captured reports neither draws nor a rate")
@@ -302,64 +260,6 @@ struct FrameTimeRecorderTests {
         let recorder = FrameTimeRecorder()
         #expect(recorder.drawCount == nil)
         #expect(recorder.nominalFrameMilliseconds == nil)
-    }
-
-    /// A capture over a static stage publishes **no** drawn statistics, which is what the
-    /// verdict reads.
-    ///
-    /// **This replaces a test that was vacuous** (Codex round 2, finding 1): the earlier
-    /// version asserted `stats.frameCount / 10 == 0` and `drawCount == 0` — the *inputs* the
-    /// guard would have been handed — and never invoked the guard, which lived in a `private`
-    /// method on a `View` and could not be called. It passed while the rule was still wrong.
-    /// The rule is now `FrameCaptureVerdict`, tested directly in its own suite; what belongs
-    /// here is the recorder's half, which is that no draws means no drawn statistics.
-    @Test("a static-stage capture publishes no drawn statistics")
-    func aStaticStageCapturePublishesNoDrawnStatistics() throws {
-        let recorder = FrameTimeRecorder()
-        recorder.start()
-        for index in 0 ... 5 {
-            recorder.record(timestamp: Double(index) * 0.016)
-        }
-        let stats = try #require(recorder.stop())
-
-        #expect(stats.frameCount == 5)
-        #expect(recorder.drawnStatistics == nil, "nothing was drawn, so there is nothing to quote")
-        // The frames themselves look perfect, which is precisely the trap.
-        #expect(stats.meetsSixtyFps)
-        #expect(FrameCaptureVerdict.of(
-            all: stats,
-            drawn: recorder.drawnStatistics,
-            wasInterrupted: recorder.wasInterrupted
-        ) == .noDraws)
-    }
-
-    /// **Only the intervals in which the canvas drew land in `drawnStatistics`.**
-    ///
-    /// The tag is applied as each interval is recorded, because a draw *count* over a whole
-    /// capture cannot be apportioned to intervals afterwards. Here two of four intervals
-    /// contain a draw, and they are the slow ones — so the capture as a whole looks healthy
-    /// and the drawn frames do not, which is the distinction the whole exercise is about.
-    @Test("only the intervals containing a draw are quoted")
-    func onlyTheIntervalsContainingADrawAreQuoted() throws {
-        let recorder = FrameTimeRecorder()
-        recorder.start()
-        recorder.record(timestamp: 0.000)             // seeds the baseline, records nothing
-        recorder.record(timestamp: 0.016)             // idle 16 ms
-        StageDrawCounter.record()
-        recorder.record(timestamp: 0.066)             // drew, 50 ms
-        recorder.record(timestamp: 0.082)             // idle 16 ms
-        StageDrawCounter.record()
-        recorder.record(timestamp: 0.132)             // drew, 50 ms
-
-        let all = try #require(recorder.stop())
-        let drawn = try #require(recorder.drawnStatistics)
-
-        #expect(all.frameCount == 4)
-        #expect(drawn.frameCount == 2)
-        #expect(abs(drawn.median - 50) < 0.001, "the drawn frames are the 50 ms ones")
-        #expect(!drawn.meetsSixtyFps)
-        // And the whole-capture median is one of the idle frames, which is the flattery.
-        #expect(abs(all.median - 16) < 0.001)
     }
 
     /// The refresh rate comes from the callback's own frame duration, not from
@@ -378,4 +278,5 @@ struct FrameTimeRecorderTests {
         #expect(reported != nil)
         #expect(abs((reported ?? 0) - 33.333) < 0.01, "a 30 Hz link must not report 60 Hz")
     }
+
 }

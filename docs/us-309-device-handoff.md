@@ -125,17 +125,26 @@ can return a flawless `p99 16.7 · PASS` while the renderer produced zero frames
 *expected* behaviour of a static stage, not a fault, and it means those captures measure the
 display's cadence rather than ADR-009's claim.
 
-The readout therefore prints **`draws=`** beside `n=`: the number of canvas draw passes during
-the capture. A capture whose draw count is near zero is labelled **`NO DRAWS — measures the
-display, not the renderer`** instead of `PASS`/`FAIL`. Expect exactly that on captures 1–3, and
-**do not report it as the criterion being met.**
+The readout therefore prints **`drawn=`** beside `n=`: `n` is every display-link callback in
+the capture, `drawn` is how many of those intervals the canvas actually drew in. A capture with
+no drawn frame at all is labelled **`NO DRAWS — measures the display, not the renderer`**
+instead of `PASS`/`FAIL`. Expect exactly that on captures 1–3, and **do not report it as the
+criterion being met.**
+
+**The quantiles shown are the drawn frames', not every frame's**, and this matters even for
+captures 4 and 5. Even while a run is animating the canvas redraws once per *batch*, not once
+per refresh — measured, 251 draws in 2 123 frames — so a p99 over all frames is mostly a p99 of
+frames in which nothing happened, and it flatters the renderer by the idle fraction. On the
+same capture the whole-capture p95 is 16.7 ms and the drawn-frame p95 is **61.9 ms**. Quote the
+drawn figures, and quote `drawn=` beside them so the reader can see how many frames they are
+over.
 
 Measured on the simulator before the hand-off, as the illustration:
 
 | | readout |
 |---|---|
-| 50k settled, static | `n=988 draws=0 60Hz med 16.7 p95 16.7 p99 16.7 max 16.7@0.0s · 16.5 s · NO DRAWS` |
-| 50k animating | `n=1932 draws=251 60Hz med 16.7 p95 16.7 p99 49.7 max 72.8@22.4s · 33.7 s · FAIL` |
+| 50k settled, static | `n=1048 drawn=0 60Hz med 16.7 p95 16.7 p99 16.7 max 16.7@0.1s · 17.5 s · NO DRAWS` |
+| 50k animating | `n=2123 drawn=251 60Hz med 16.7 p95 61.9 p99 66.5 max 75.7@23.8s · 37.0 s · FAIL` |
 
 Same fixture, same device, `PASS`-shaped numbers against a `FAIL`, and a p99 of 16.7 against
 49.7 ms. Non-authoritative for the bar (a host GPU is not an A15) but the difference is
@@ -158,7 +167,7 @@ frame, before the `Path` build and 50 000 ellipses). **Capture 5 is where the ba
 live**: the readout prints the worst frame's position as `max <ms>@<seconds>s`, seconds from
 the start of the capture, so the spike can be located without an Instruments timeline. Start
 the capture immediately before pressing Play and stop it immediately after the run ends —
-`draws=` and the total window let you check afterwards how much idle time crept in at either
+`drawn=` and the total window let you check afterwards how much idle time crept in at either
 end, but keep it small so the animation dominates.
 
 ### Tuning (AC5's actual requirement)

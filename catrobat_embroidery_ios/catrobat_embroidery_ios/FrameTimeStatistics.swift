@@ -54,7 +54,7 @@ struct FrameTimeStatistics: Equatable {
     let p99: Double
     let worst: Double
 
-    /// How far into the capture the worst frame fell, in milliseconds from its start.
+    /// How far into the **capture** the worst frame fell, in milliseconds from its start.
     ///
     /// **Kept because the hand-off asks for it and sorting had thrown it away.** Capture 5
     /// runs the animation to 50 000 and says "note where in the run the worst frame falls" —
@@ -62,14 +62,33 @@ struct FrameTimeStatistics: Equatable {
     /// distinguishes a bake spike from an unrelated stutter. Every other statistic here is
     /// order-independent by design; this one deliberately is not, and it is the only reason
     /// the unsorted array is walked (Codex round 1, finding 4).
+    ///
+    /// **Capture-relative, which needs `startOffsetsMilliseconds` for a sub-sampled series.**
+    /// For the whole capture the offsets are the running sum of the durations, so nothing is
+    /// needed. For the *drawn* subset they are not: summing only the drawn intervals gives a
+    /// position in "drawn time", and the readout labelled it `@4.5s` for a spike that fell
+    /// 22 s into a 37 s capture — a number that reads like a wall-clock position and is not
+    /// one. Since locating the spike within the run is the whole purpose of this field
+    /// (hand-off capture 5), the offsets are passed in explicitly for any series that skips
+    /// frames. Found on the running app while verifying the drawn-frame split.
     let worstAtMilliseconds: Double
 
     /// **Optional, and that is a correctness decision rather than fastidiousness.** A zeroed
     /// `FrameTimeStatistics` would report `meetsSixtyFps == true` for a capture that never
     /// rendered a frame — the most flattering possible answer to the criterion, produced by
     /// measuring nothing at all.
-    init?(millisecondsPerFrame durations: [Double]) {
+    /// - Parameters:
+    ///   - durations: the frame intervals, in arrival order.
+    ///   - offsets: where each interval *starts*, in milliseconds from the capture's start.
+    ///     Omit for a contiguous series, where it is the running sum of `durations`; supply
+    ///     it whenever `durations` skips frames, or `worstAtMilliseconds` will report a
+    ///     position in the sub-series' own time rather than in the capture's.
+    init?(millisecondsPerFrame durations: [Double], startOffsetsMilliseconds offsets: [Double]? = nil) {
         guard !durations.isEmpty else { return nil }
+        precondition(
+            offsets == nil || offsets?.count == durations.count,
+            "one start offset per duration, or none at all"
+        )
         let sorted = durations.sorted()
         frameCount = sorted.count
         totalMilliseconds = durations.reduce(0, +)
@@ -84,9 +103,10 @@ struct FrameTimeStatistics: Equatable {
         // spike: it points at the earliest frame that hit the worst cost.
         var elapsed = 0.0
         var worstAt = 0.0
-        for duration in durations {
+        for (index, duration) in durations.enumerated() {
+            let start = offsets?[index] ?? elapsed
             if duration == worst {
-                worstAt = elapsed
+                worstAt = start
                 break
             }
             elapsed += duration

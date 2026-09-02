@@ -114,6 +114,14 @@
         /// separate the renderer's frames from the display's. One integer comparison per
         /// callback can.
         @ObservationIgnored private var drawnIntervals: [Double] = []
+        /// Where each drawn interval *starts*, in milliseconds from the capture's start.
+        ///
+        /// Kept alongside the drawn durations so `worstAtMilliseconds` can report a position
+        /// in the **capture** rather than in drawn-only time — summing just the drawn
+        /// intervals put a spike 22 s into a 37 s capture at "4.5 s" (found on the running
+        /// app while verifying the drawn-frame split).
+        @ObservationIgnored private var drawnOffsets: [Double] = []
+        @ObservationIgnored private var elapsedMilliseconds = 0.0
         @ObservationIgnored private var previousDrawCount = 0
         @ObservationIgnored private var previousTimestamp: CFTimeInterval?
         /// True between losing and regaining the foreground. While set, callbacks record nothing
@@ -162,6 +170,9 @@
             intervals.reserveCapacity(Self.capacity)
             drawnIntervals.removeAll(keepingCapacity: true)
             drawnIntervals.reserveCapacity(Self.capacity)
+            drawnOffsets.removeAll(keepingCapacity: true)
+            drawnOffsets.reserveCapacity(Self.capacity)
+            elapsedMilliseconds = 0
             previousTimestamp = nil
             previousDrawCount = StageDrawCounter.count
             isSuspended = !isActive
@@ -188,7 +199,10 @@
             isRecording = false
             drawCount = StageDrawCounter.count - drawsAtStart
             statistics = FrameTimeStatistics(millisecondsPerFrame: intervals)
-            drawnStatistics = FrameTimeStatistics(millisecondsPerFrame: drawnIntervals)
+            drawnStatistics = FrameTimeStatistics(
+                millisecondsPerFrame: drawnIntervals,
+                startOffsetsMilliseconds: drawnOffsets
+            )
             return statistics
         }
 
@@ -218,7 +232,9 @@
             // because it cannot be recovered from the totals afterwards.
             if draws > previousDrawCount {
                 drawnIntervals.append(milliseconds)
+                drawnOffsets.append(elapsedMilliseconds)
             }
+            elapsedMilliseconds += milliseconds
         }
 
         /// The app lost the foreground: stop recording and mark the capture.
