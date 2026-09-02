@@ -131,6 +131,20 @@ struct BakeSchedulingTests {
     /// This is the measurement AC5 asks to justify the constant with. The plan is the cheap
     /// half of a bake — the rasterisation it drives scales identically and costs far more —
     /// so the ratio between chunks is the number that transfers, not the absolute.
+    ///
+    /// **Bounded at 2 against a theoretical 5, and that gap is not slack for noise alone.**
+    /// Θ(n²/chunk) predicts 5× between chunk 1 000 and 5 000, and a local release build
+    /// measures ~4.9× (26.4 ms against 5.4 ms). CI measured **2.75×** on unmutated code. The
+    /// cause is not only contention: the chunk-1 000 case walks fifty growing prefixes where
+    /// chunk 5 000 walks ten, so the two have genuinely different cache behaviour and the
+    /// *true* ratio differs by machine. The regression this has to catch is the schedule
+    /// ceasing to depend on the chunk at all, which reads **~1×**, so the bound goes between
+    /// 1 and the observed 2.75 — the same rule the scaling suite arrived at after four
+    /// refuted bounds, and this is the fifth.
+    ///
+    /// The flake-proof half of the claim is elsewhere and is structural:
+    /// `aFiftyThousandStitchRunBakesOncePerSettleChunk` pins the bake *count* by observing a
+    /// real `PreviewRunState`, and no timing can perturb it.
     @Test("a larger settle chunk costs proportionally less total bake work")
     func aLargerSettleChunkCostsProportionallyLessTotalBakeWork() {
         let full = SyntheticDesign.displayList(count: 50_000)
@@ -140,11 +154,12 @@ struct BakeSchedulingTests {
         let ratio = seconds(atThousand) / seconds(atFiveThousand)
 
         #expect(
-            ratio >= 3,
+            ratio >= 2,
             """
             total settled-plan work to 50 000: chunk 1 000 → \(milliseconds(atThousand)), \
             chunk 5 000 → \(milliseconds(atFiveThousand)), ratio \
-            \(String(format: "%.2f", ratio))× — Θ(n²/chunk) predicts 5×
+            \(String(format: "%.2f", ratio))× — Θ(n²/chunk) predicts 5×, a schedule that \
+            ignored the chunk would read ~1×
             """
         )
     }
