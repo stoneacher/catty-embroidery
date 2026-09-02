@@ -25,6 +25,13 @@ import Testing
 /// - The 5 k ↔ 50 k ratio the criterion's wording suggests is **floor-limited**: at 5 k the
 ///   cost is dominated by allocation constants, so in a release build that ratio measures
 ///   3.7 against a linear prediction of 10 and tells you nothing.
+/// - **"Not quadratic" is what this establishes, and the name now says only that.** A 16×
+///   step with a ceiling of 64 rejects the Θ(n²) mutant (measured 255.08 against a
+///   theoretical 256) but an O(n log n) append grows ~22× and passes (Codex round 5). The
+///   bound catches the realistic regression — a rescan turning maintenance quadratic — and
+///   claims nothing stronger. Bounding out O(n log n) would need a third anchor and a
+///   steadier instrument than a wall-clock ratio on a shared runner; five such ratios on this
+///   branch have already been refuted by CI.
 /// - **The step is 16×, and the bound is the geometric mean of the two predictions.** For a
 ///   step of k, linear predicts k and quadratic predicts k², so the bound that is equally
 ///   far from both *in log space* — which is the space this question lives in — is k^1.5.
@@ -51,8 +58,8 @@ struct StitchDisplayListThroughputTests {
     /// The batch size the criterion names: 50 000 stitches in 1 000 batches.
     private static let batchCount = 1_000
 
-    @Test("appending is linear in stitch count, not quadratic")
-    func appendingIsLinearInStitchCount() {
+    @Test("appending is not quadratic in stitch count")
+    func appendingIsNotQuadraticInStitchCount() {
         let small = batches(of: 1_600)
         let large = batches(of: 25_600)
 

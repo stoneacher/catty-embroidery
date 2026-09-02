@@ -14,7 +14,7 @@
         case nothingCaptured
         /// Frames arrived but the renderer never drew: this measures the display, not us.
         case noDraws
-        /// The renderer drew, but no draw fell inside a measurable interval.
+        /// Some or all of the capture's draws fell outside every measurable interval.
         ///
         /// **Distinct from `noDraws`, which would be a false statement.** A draw between
         /// `start()` and the first callback — or between the last callback and `stop()` — has
@@ -61,6 +61,7 @@
             all: FrameTimeStatistics?,
             drawn: FrameTimeStatistics?,
             totalDraws: Int,
+            unmeasuredDraws: Int,
             wasInterrupted: Bool
         ) -> FrameCaptureVerdict {
             if wasInterrupted {
@@ -72,6 +73,18 @@
             guard totalDraws > 0 else {
                 return .noDraws
             }
+            // A conclusive failure outranks everything below: see the note further down.
+            if let drawn, !drawn.meetsSixtyFps {
+                return .measured(passed: false, quotableWindow: all.isLongEnoughToQuote)
+            }
+            // **Any unmeasured draw blocks a pass, even one among a hundred measured ones**
+            // (Codex round 5). Round 4 reported this only when *every* draw was unmeasured, so
+            // a capture of 100 clean frames plus one unmeasured 50 ms render still read
+            // `PASS` and the expensive frame simply vanished. A pass is a claim that nothing
+            // exceeded the budget, and a draw whose cost was never timed cannot support it.
+            guard unmeasuredDraws == 0 else {
+                return .drawsNotMeasured(count: unmeasuredDraws)
+            }
             guard let drawn else {
                 return .drawsNotMeasured(count: totalDraws)
             }
@@ -81,15 +94,11 @@
             // violate the 33.3 ms limit outright, and reporting that as "inconclusive" hides
             // the one result the criterion exists to surface. So the bar is evaluated first
             // and only a *passing* capture has to clear the sample-count floor.
-            let window = all.isLongEnoughToQuote
-            if !drawn.meetsSixtyFps {
-                return .measured(passed: false, quotableWindow: window)
-            }
             guard drawn.frameCount >= minimumDrawnFrames else {
                 return .tooFewDraws(count: drawn.frameCount)
             }
             // The window is a property of the capture; the bar is a property of the drawn frames.
-            return .measured(passed: true, quotableWindow: window)
+            return .measured(passed: true, quotableWindow: all.isLongEnoughToQuote)
         }
 
         /// How many drawn frames the quantiles need before they are worth quoting.

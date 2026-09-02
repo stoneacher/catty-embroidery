@@ -91,6 +91,7 @@
                 all: all,
                 drawn: recorder.drawnStatistics,
                 totalDraws: recorder.drawCount ?? 0,
+                unmeasuredDraws: recorder.unmeasuredDrawCount,
                 wasInterrupted: recorder.wasInterrupted
             )
             let counts = "n=\(all.frameCount) drawn=\(recorder.drawnStatistics?.frameCount ?? 0)\(nominal)"

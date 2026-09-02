@@ -2,13 +2,13 @@
 
 **Epic**: E4 Stage & preview | **Estimate**: ~4 h | **Depends on**: US-305, US-306, US-307
 
-**Status**: **Headless half done, review triaged — 2026-09-02. Device capture outstanding**, protocol in [`docs/us-309-device-handoff.md`](../../us-309-device-handoff.md). **736 engine tests** (up from 710) and **183 app tests** (up from 130), SwiftLint `--strict` clean over 229 files, CI green on all three checks, two screenshots. **Both review layers are complete through three cross-vendor rounds**: the in-loop `swift-code-reviewer` pass (five Important, nine suggestions, all accepted) and `/codex-review` rounds 1–3 (19 findings, one sub-point rejected). **The largest finding of the whole story came from the second layer**: the frame-time instrument was measuring the display's refresh cadence rather than the renderer, so a settled 50 000-stitch stage reported a flawless 60 fps with the canvas drawing *nothing* — and the screenshot first committed as evidence for ADR-009 was one of those captures. Four fixes changed the *instrument* rather than the code under test, and every one of them would have corrupted the device session they exist to serve. ADR-029 pins the measurement, the negative result and the fallback ladder; ADR-021 is corrected in place. Planned with `swift-architect`; **the planning pass corrected nine things in the criteria below** (marked **planning correction** inline), and three more were found by execution during implementation (**measurement correction**). Sebastian took three scope decisions, recorded under "Scope decisions".
+**Status**: **Headless half done, review triaged — 2026-09-02. Device capture outstanding**, protocol in [`docs/us-309-device-handoff.md`](../../us-309-device-handoff.md). **736 engine tests** (up from 710) and **191 app tests** (up from 130), SwiftLint `--strict` clean over 229 files, CI green on all three checks, two screenshots. **Both review layers are complete through five cross-vendor rounds**: the in-loop `swift-code-reviewer` pass (five Important, nine suggestions, all accepted) and `/codex-review` rounds 1–5 (33 findings, one sub-point rejected). **The loop is being escalated rather than run to convergence** — severity has been flat at Medium for three consecutive rounds, which the project's stop rule names as non-convergence; see "Round 5" for the recommendation. **The largest finding of the whole story came from the second layer**: the frame-time instrument was measuring the display's refresh cadence rather than the renderer, so a settled 50 000-stitch stage reported a flawless 60 fps with the canvas drawing *nothing* — and the screenshot first committed as evidence for ADR-009 was one of those captures. Four fixes changed the *instrument* rather than the code under test, and every one of them would have corrupted the device session they exist to serve. ADR-029 pins the measurement, the negative result and the fallback ladder; ADR-021 is corrected in place. Planned with `swift-architect`; **the planning pass corrected nine things in the criteria below** (marked **planning correction** inline), and three more were found by execution during implementation (**measurement correction**). Sebastian took three scope decisions, recorded under "Scope decisions".
 
 **Every red here was a compile failure**, so the discriminating bounds are proved by **mutation** instead — three mutations, each caught by its own tests, plus one **survivor** that was the most useful result of the pass. See "Mutation evidence".
 
 **Story**: As the milestone, I want a measured 60 fps at 50 000 stitches on an A15-class device, so ADR-009's rendering bet is evidence rather than a claim.
 
-ADR-009 was decided on reference analysis (Catty's node-per-stitch collapse, Catroid's batched renderer) and has never been measured on our code. This story closes that. `EmbroideryStream.addStitch/addJump/addColorChange` are all public, so a synthetic design can be built directly without running an interpreter.
+ADR-009 was decided on reference analysis (Catty's node-per-stitch collapse, Catroid's batched renderer) and has never been measured on our code. This story closes the **headless** half of that and hands the authoritative device capture over; the bet is not settled until that capture exists. `EmbroideryStream.addStitch/addJump/addColorChange` are all public, so a synthetic design can be built directly without running an interpreter.
 
 ## Acceptance criteria
 - [x] `SyntheticDesign` in `StagePreview` builds a 50 000-stitch display list directly, **and** — separately — a program that animates up to 50k, so both the steady state and the production path are measured. — **planning correction: not one type, and not in `StagePreview`.** The program half needs `ProgramModel`, which `StagePreview` does **not** declare; `import ProgramModel` from there compiles only via SwiftPM's implicit transitive import, which would make ADR-022's dependency list a lie `StagePreviewTargetIsolationTests` cannot see. The program builder is `makeUS309SyntheticProgram()` in **`Samples`** — which the app can link, and which needs `ProgramModel` only, so ADR-016's arrow is untouched — and the display-list half is `SyntheticDesign` in **`StagePreviewTests`**. **Measurement correction: the fixture must not build its input with the code it guards.** Built through `StitchDisplayList.append`, the quadratic mutation made *setup* quadratic, outside any measured region, and the suite ran 400 s without reaching an assertion; `SyntheticDesign.stitches` now builds the array directly.
@@ -335,5 +335,50 @@ The suite is renamed (`US-309 settle scheduling`, `…AdvancesTheWatermarkOncePe
 
 ### R4-F8 (Low) — live prose contradicted the committed artifact
 
-**Accepted.** The tables carried the corrected capture but nearby prose still quoted p99 49.7, "251 of 1 932", and "72.8 ms @ 22.4 s" from a 33.7 s capture. Swept: zero occurrences of any superseded figure remain outside the append-only journal. **Fourth consecutive round in which a figure or claim of mine reached some copies and not others.**
+**Accepted.** The tables carried the corrected capture but nearby prose still quoted p99 49.7, "251 of 1 932", and "72.8 ms @ 22.4 s" from a 33.7 s capture. Swept — **and the sweep was itself incomplete, which round 5 then found**: ADR-029's own paragraph still said "Nine hundred and eighty-eight consecutive frames" two sentences after a row reading `n=1048`, and a test's doc comment still quoted the pre-correction capture. The claim of "zero occurrences" made here was therefore false when written. **Fourth consecutive round in which a figure or claim of mine reached some copies and not others — and the first in which I asserted the sweep was complete without re-running it.**
+
+## Cross-vendor review — `/codex-review` round 5, 2026-09-02 — **LOOP ESCALATED**
+
+**Six findings (4 Medium, 2 Low). All accepted and fixed.** Highest severity: **Medium** — flat for a **third** round.
+
+### The loop is being escalated, not run to convergence
+
+Severity history: **High → High → Medium → Medium → Medium.** The project's stop rule ends the loop on either no code changes or two consecutive decreases, and says to **escalate early, without waiting for the ten-round cap, if severity has been flat or rising for three rounds**. It has. Rounds 3, 4 and 5 were all Medium and all produced code changes, so this is exactly the pattern the rule names as non-convergence.
+
+**What the pattern is, and it is not random.** Four of round 5's six findings are that a *round-4 fix of mine was incomplete or inverted*:
+
+| item | round 4 fixed | round 5 found |
+|---|---|---|
+| boundary draws | reported when *all* draws were unmeasured | 100 measured + 1 unmeasured still read `PASS` |
+| LLDB recipe | transport (single-line) | the rewrite **deleted `import Foundation`**, which the timer needs |
+| "linear" claims | ADR-029 and AC4 | three more live comments, plus the throughput test |
+| bake coverage | suite renamed, gap disclosed | two comments inside the same files contradict the disclosure |
+
+That is a converging *size* of defect but a stable *kind*: each fix lands where the reviewer pointed and misses the adjacent copy or the mirror case. Three rounds of that is the signal to stop and take a human view rather than buy a sixth round.
+
+**Recommendation**: the code findings are closed and the branch is green; the residual risk is documentation drift rather than defects. Hand over here rather than run round 6.
+
+### R5-F1 (Medium) — a mixed capture could still hide an unmeasured draw behind a PASS
+
+**Accepted, fixed.** Round 4 reported unmeasured draws only when `drawnStatistics == nil`, so 100 clean measured frames plus one untimed 50 ms render read `PASS` and the expensive frame vanished. The recorder now counts `unmeasuredDraws` explicitly — before the first callback, after the last, and across a suspension — and **any** unmeasured draw blocks a pass, while a conclusive failure still outranks everything. Four new tests.
+
+### R5-F2 (Medium) — the LLDB fix deleted the import its own timer needs
+
+**Accepted.** The round-4 transport rewrite moved the recipe to one line and dropped `import Foundation`; `CFAbsoluteTimeGetCurrent()` lives there and neither `EmbroideryEngine` nor `AppModel.swift` re-exports it. **Fifth consecutive round in which this one recipe broke for a new reason** — and the second in which my fix inverted the defect rather than removing it.
+
+### R5-F3 (Medium) — three more live "linear" claims, and one more test that does not prove it
+
+**Accepted.** `US309SyntheticProgram.swift` (twice) and `SyntheticDesignTests.swift` still said the cost "is linear"; and `StitchDisplayListThroughputTests` called append linear while a 16× step with a ceiling of 64 lets an O(n log n) append through at ~22×. All reworded to "not quadratic", and the test renamed `appendingIsNotQuadraticInStitchCount`.
+
+### R5-F4 (Medium) — the bake-gap disclosure was contradicted two screens later
+
+**Accepted.** The suite doc states the gap; a comment further down said the renamed test "pins the bake *count*", and `PreviewRunState` said `BakeSchedulingTests` "pins the real count". Both now say *watermark advances*, with the integration named as uncovered.
+
+### R5-F5 (Low) — the sweep I called complete was not
+
+**Accepted, and the meta-point is the finding.** ADR-029 said "Nine hundred and eighty-eight consecutive frames" two sentences after a row reading `n=1048`, and a test doc still quoted the pre-correction capture with the old `draws=` field name. **The "zero occurrences" claim in round 4's record was false when I wrote it** — I asserted the sweep was complete without re-running it, which is exactly the habit the previous three rounds had told me to adopt. Both fixed, and round 4's record now says so rather than standing as written.
+
+### R5-F6 (Low) — the status line predated round 4 and overclaimed closure
+
+**Accepted.** It said review was complete through round 3, reported 183 app tests, and said "This story closes that" of ADR-009's bet while the authoritative device capture is outstanding. Now: five rounds, 191 app tests, and the bet closed only in its headless half.
 

@@ -19,11 +19,13 @@ struct FrameCaptureVerdictTests {
     /// **The case the whole draw-counting exercise exists for.** A settled 50 000-stitch stage
     /// invalidates nothing, so the display link keeps firing and every interval is a perfect
     /// 16.7 ms — while the renderer is asked for nothing. Measured on the running app as
-    /// `n=988 draws=0 … NO DRAWS`.
+    /// `n=1048 drawn=0 … NO DRAWS`.
     @Test("a capture in which nothing was drawn is not a pass, however perfect its frames")
     func aCaptureInWhichNothingWasDrawnIsNotAPass() {
         let perfect = stats(Array(repeating: 16.0, count: 700))
-        let verdict = FrameCaptureVerdict.of(all: perfect, drawn: nil, totalDraws: 0, wasInterrupted: false)
+        let verdict = FrameCaptureVerdict.of(
+            all: perfect, drawn: nil, totalDraws: 0, unmeasuredDraws: 0, wasInterrupted: false
+        )
 
         #expect(verdict == .noDraws)
         #expect(!verdict.isAboutTheRenderer)
@@ -40,6 +42,7 @@ struct FrameCaptureVerdictTests {
             all: stats(Array(repeating: 16.0, count: 5)),
             drawn: nil,
             totalDraws: 0,
+            unmeasuredDraws: 0,
             wasInterrupted: false
         )
         #expect(verdict == .noDraws)
@@ -58,7 +61,9 @@ struct FrameCaptureVerdictTests {
 
         // The whole capture's p99 is inside the budget only because the idle frames dominate.
         #expect(all?.median == 16.0)
-        let verdict = FrameCaptureVerdict.of(all: all, drawn: drawn, totalDraws: 150, wasInterrupted: false)
+        let verdict = FrameCaptureVerdict.of(
+            all: all, drawn: drawn, totalDraws: 150, unmeasuredDraws: 0, wasInterrupted: false
+        )
         #expect(verdict == .measured(passed: false, quotableWindow: true))
         #expect(verdict.isAboutTheRenderer)
     }
@@ -70,6 +75,7 @@ struct FrameCaptureVerdictTests {
             all: stats(Array(repeating: 16.0, count: 700)),
             drawn: stats(Array(repeating: 16.0, count: 200)),
             totalDraws: 200,
+            unmeasuredDraws: 0,
             wasInterrupted: false
         )
         #expect(verdict == .measured(passed: true, quotableWindow: true))
@@ -84,6 +90,7 @@ struct FrameCaptureVerdictTests {
             all: stats(Array(repeating: 16.0, count: 625)),
             drawn: stats([16.0]),
             totalDraws: 1,
+            unmeasuredDraws: 0,
             wasInterrupted: false
         )
         #expect(verdict == .tooFewDraws(count: 1))
@@ -108,6 +115,7 @@ struct FrameCaptureVerdictTests {
                 all: all,
                 drawn: stats(Array(repeating: 16.0, count: justUnder)),
                 totalDraws: justUnder,
+                unmeasuredDraws: 0,
                 wasInterrupted: false
             ) == .tooFewDraws(count: justUnder)
         )
@@ -116,6 +124,7 @@ struct FrameCaptureVerdictTests {
                 all: all,
                 drawn: stats(Array(repeating: 16.0, count: 100)),
                 totalDraws: 100,
+                unmeasuredDraws: 0,
                 wasInterrupted: false
             ) == .measured(passed: true, quotableWindow: true)
         )
@@ -130,6 +139,7 @@ struct FrameCaptureVerdictTests {
             all: stats(Array(repeating: 16.0, count: 100)), // 1.6 s — short
             drawn: stats(Array(repeating: 16.0, count: 100)),
             totalDraws: 100,
+            unmeasuredDraws: 0,
             wasInterrupted: false
         )
         #expect(verdict == .measured(passed: true, quotableWindow: false))
@@ -143,6 +153,7 @@ struct FrameCaptureVerdictTests {
             all: stats(Array(repeating: 16.0, count: 700)),
             drawn: stats(Array(repeating: 16.0, count: 700)),
             totalDraws: 700,
+            unmeasuredDraws: 0,
             wasInterrupted: true
         )
         #expect(verdict == .interrupted)
@@ -153,7 +164,10 @@ struct FrameCaptureVerdictTests {
     /// drew nothing — different problems with different fixes.
     @Test("no frames is distinguished from no draws")
     func noFramesIsDistinguishedFromNoDraws() {
-        #expect(FrameCaptureVerdict.of(all: nil, drawn: nil, totalDraws: 0, wasInterrupted: false) == .nothingCaptured)
+        let verdict = FrameCaptureVerdict.of(
+            all: nil, drawn: nil, totalDraws: 0, unmeasuredDraws: 0, wasInterrupted: false
+        )
+        #expect(verdict == .nothingCaptured)
     }
 
     /// Every case reads differently, so a screenshot of the row is unambiguous about what was
@@ -187,6 +201,7 @@ struct FrameCaptureVerdictTests {
             all: stats(Array(repeating: 16.0, count: 700)),
             drawn: stats(Array(repeating: 50.0, count: 50)),
             totalDraws: 50,
+            unmeasuredDraws: 0,
             wasInterrupted: false
         )
         #expect(verdict == .measured(passed: false, quotableWindow: true))
@@ -200,6 +215,7 @@ struct FrameCaptureVerdictTests {
             all: stats(Array(repeating: 16.0, count: 700)),
             drawn: stats(Array(repeating: 16.0, count: 50)),
             totalDraws: 50,
+            unmeasuredDraws: 0,
             wasInterrupted: false
         )
         #expect(verdict == .tooFewDraws(count: 50))
@@ -215,9 +231,42 @@ struct FrameCaptureVerdictTests {
             all: stats(Array(repeating: 16.0, count: 700)),
             drawn: nil,
             totalDraws: 2,
+            unmeasuredDraws: 0,
             wasInterrupted: false
         )
         #expect(verdict == .drawsNotMeasured(count: 2))
         #expect(!verdict.isAboutTheRenderer)
+    }
+
+    /// **One unmeasured draw among a hundred measured ones still blocks a PASS** (Codex round
+    /// 5). Round 4's fix reported unmeasured draws only when *every* draw was unmeasured, so a
+    /// capture of 100 clean frames plus one untimed 50 ms render read `PASS` and the expensive
+    /// frame simply vanished. A pass claims nothing exceeded the budget; a draw whose cost was
+    /// never timed cannot support that claim.
+    @Test("a single unmeasured draw blocks an otherwise passing capture")
+    func aSingleUnmeasuredDrawBlocksAnOtherwisePassingCapture() {
+        let verdict = FrameCaptureVerdict.of(
+            all: stats(Array(repeating: 16.0, count: 700)),
+            drawn: stats(Array(repeating: 16.0, count: 100)),
+            totalDraws: 101,
+            unmeasuredDraws: 1,
+            wasInterrupted: false
+        )
+        #expect(verdict == .drawsNotMeasured(count: 1))
+        #expect(!verdict.isAboutTheRenderer)
+    }
+
+    /// But it does not mask a failure the measured frames already prove: a conclusive FAIL
+    /// still outranks everything, unmeasured draws included.
+    @Test("an unmeasured draw does not mask a conclusive failure")
+    func anUnmeasuredDrawDoesNotMaskAConclusiveFailure() {
+        let verdict = FrameCaptureVerdict.of(
+            all: stats(Array(repeating: 16.0, count: 700)),
+            drawn: stats(Array(repeating: 50.0, count: 100)),
+            totalDraws: 101,
+            unmeasuredDraws: 1,
+            wasInterrupted: false
+        )
+        #expect(verdict == .measured(passed: false, quotableWindow: true))
     }
 }

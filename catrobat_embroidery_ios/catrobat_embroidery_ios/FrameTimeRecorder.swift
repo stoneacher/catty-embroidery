@@ -126,6 +126,14 @@
         @ObservationIgnored private var frameDurations: [Double] = []
         @ObservationIgnored private var elapsedMilliseconds = 0.0
         @ObservationIgnored private var previousDrawCount = 0
+        /// Draws that happened where no interval could be timed: before the first callback,
+        /// after the last one, and across a suspension.
+        ///
+        /// **Counted separately because a capture that is *partly* unmeasured must not read
+        /// as a clean PASS** (Codex round 5). Round 4 gave such draws their own verdict, but
+        /// only when *every* draw was unmeasured — 100 good measured frames plus one
+        /// unmeasured 50 ms render still reported `PASS`, and the expensive frame vanished.
+        @ObservationIgnored private var unmeasuredDraws = 0
         @ObservationIgnored private var previousTimestamp: CFTimeInterval?
         /// True between losing and regaining the foreground. While set, callbacks record nothing
         /// **and do not re-seed `previousTimestamp`**, so the gap cannot be reconstructed from
@@ -175,6 +183,7 @@
             drawnIntervals.reserveCapacity(Self.capacity)
             drawnOffsets.removeAll(keepingCapacity: true)
             drawnOffsets.reserveCapacity(Self.capacity)
+            unmeasuredDraws = 0
             frameDurations.removeAll(keepingCapacity: true)
             frameDurations.reserveCapacity(Self.capacity)
             elapsedMilliseconds = 0
@@ -200,6 +209,8 @@
         /// Ends the capture and publishes its statistics, or `nil` if it caught no frames.
         @discardableResult
         func stop() -> FrameTimeStatistics? {
+            // Anything drawn after the final callback has no interval either.
+            unmeasuredDraws += StageDrawCounter.count - previousDrawCount
             stopLink()
             isRecording = false
             // The **median** reported period, not the last one: a capture that ran at 30 Hz
@@ -212,6 +223,7 @@
             // 4). Reusing the tested implementation is also one fewer median in the codebase.
             nominalFrameMilliseconds = FrameTimeStatistics(millisecondsPerFrame: frameDurations)?.median
             drawCount = StageDrawCounter.count - drawsAtStart
+            unmeasuredDrawCount = unmeasuredDraws
             statistics = FrameTimeStatistics(millisecondsPerFrame: intervals)
             drawnStatistics = FrameTimeStatistics(
                 millisecondsPerFrame: drawnIntervals,
@@ -250,7 +262,12 @@
             if let frameDuration, frameDuration > 0 {
                 frameDurations.append(frameDuration * 1000)
             }
-            guard let previous = previousTimestamp else { return }
+            guard let previous = previousTimestamp else {
+                // No baseline yet, so this callback times nothing: a draw since `start()`
+                // happened in no measurable interval and is recorded as such.
+                unmeasuredDraws += draws - previousDrawCount
+                return
+            }
             let milliseconds = (timestamp - previous) * 1000
             intervals.append(milliseconds)
             // Did the canvas draw during the interval that produced this frame? Tagged here
@@ -275,6 +292,9 @@
             wasInterrupted = true
         }
 
+        /// Draws that fell outside every timed interval in the last completed capture.
+        private(set) var unmeasuredDrawCount = 0
+
         /// The app has the foreground again: resume with a fresh baseline.
         ///
         /// **Not guarded on having been suspended.** Clearing the baseline on any return to
@@ -285,6 +305,7 @@
             isSuspended = false
             previousTimestamp = nil
             // Draws that happened while the app was away belong to no measured interval.
+            unmeasuredDraws += StageDrawCounter.count - previousDrawCount
             previousDrawCount = StageDrawCounter.count
         }
 

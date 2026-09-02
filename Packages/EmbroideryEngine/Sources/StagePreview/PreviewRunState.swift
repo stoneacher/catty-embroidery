@@ -86,7 +86,9 @@ public struct PreviewRunState: Equatable, Sendable {
     /// the design has settled could ever see. Measured in plan work alone: **26.4 ms at
     /// chunk 1 000 against 5.4 ms at chunk 5 000**, and the rasterisation those plans drive
     /// scales identically while costing far more. (Fifty is also not the "handful" an
-    /// earlier version of this comment claimed; `BakeSchedulingTests` pins the real count.)
+    /// earlier version of this comment claimed; `BakeSchedulingTests` pins the number of
+    /// *watermark advances*, which is one bake each only if the renderer is wired to the
+    /// watermark — an integration that suite cannot see, and says so.)
     ///
     /// The obvious fix is a chunk proportional to the count, and it was implemented and
     /// **measured to be worse**: at `chunk = count / 8` a 50 000-stitch run baked **176**

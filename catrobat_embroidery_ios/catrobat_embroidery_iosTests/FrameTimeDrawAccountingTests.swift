@@ -91,6 +91,7 @@ struct FrameTimeDrawAccountingTests {
             all: stats,
             drawn: recorder.drawnStatistics,
             totalDraws: recorder.drawCount ?? 0,
+            unmeasuredDraws: 0,
             wasInterrupted: recorder.wasInterrupted
         ) == .noDraws)
     }
@@ -183,6 +184,7 @@ struct FrameTimeDrawAccountingTests {
                 all: all,
                 drawn: recorder.drawnStatistics,
                 totalDraws: recorder.drawCount ?? 0,
+                unmeasuredDraws: 0,
                 wasInterrupted: false
             ) == .drawsNotMeasured(count: 1)
         )
@@ -206,5 +208,39 @@ struct FrameTimeDrawAccountingTests {
         _ = recorder.stop()
 
         #expect(recorder.drawnStatistics == nil, "a draw from the suspended stretch leaked in")
+    }
+
+    /// **A draw after the final callback is counted as unmeasured, not silently dropped**
+    /// (Codex round 5). It has no interval — nothing is timed after the last callback — and
+    /// the earlier code lost it entirely, so a capture ending in an expensive render reported
+    /// a clean PASS.
+    @Test("a draw after the last callback is counted as unmeasured")
+    func aDrawAfterTheLastCallbackIsCountedAsUnmeasured() {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        recorder.record(timestamp: 0.000)
+        StageDrawCounter.record()
+        recorder.record(timestamp: 0.016)   // a measured interval that did draw
+        StageDrawCounter.record()           // and one more after the last callback
+        _ = recorder.stop()
+
+        #expect(recorder.drawnStatistics?.frameCount == 1)
+        #expect(recorder.unmeasuredDrawCount == 1, "the trailing draw was dropped")
+    }
+
+    /// An ordinary capture reports no unmeasured draws, so the guard cannot fire spuriously.
+    @Test("a capture whose draws all fall inside intervals reports none unmeasured")
+    func aCaptureWhoseDrawsAllFallInsideIntervalsReportsNoneUnmeasured() {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        recorder.record(timestamp: 0.000)
+        for index in 1 ... 5 {
+            StageDrawCounter.record()
+            recorder.record(timestamp: Double(index) * 0.016)
+        }
+        _ = recorder.stop()
+
+        #expect(recorder.drawnStatistics?.frameCount == 5)
+        #expect(recorder.unmeasuredDrawCount == 0)
     }
 }

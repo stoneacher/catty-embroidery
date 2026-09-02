@@ -93,7 +93,7 @@ struct SyntheticDesignTests {
 
     /// The design stitches in bands, and the count is pinned.
     ///
-    /// **Not decoration.** Per-frame planning cost is linear in the colour-run count
+    /// **Not decoration.** Per-frame planning cost grows with the colour-run count
     /// (`StitchDrawPlanScalingTests`), so a single-run fixture would leave the one dependence
     /// ADR-009's claim actually has entirely unexercised at scale — while also screenshotting
     /// as a featureless black rectangle, which is what the first version of this design did.

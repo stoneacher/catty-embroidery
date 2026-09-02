@@ -45,7 +45,7 @@ private let rowPairs = 125
 /// measuring the wrong thing.** Visually, fifty thousand stitches in a 100 mm hoop is a solid
 /// fill — the first version of this design screenshotted as a black rectangle, in which
 /// nothing about the render could be seen at all, fitted or zoomed. And per-frame planning
-/// cost is linear in the number of **colour runs**, not in the stitch count
+/// cost grows with the number of **colour runs**, not with the stitch count
 /// (`StitchDrawPlanScalingTests`), so a single-run design is the one shape that leaves that
 /// dependence entirely unexercised at scale.
 ///
@@ -66,7 +66,9 @@ public let us309SyntheticStitchCount = 50_001
 /// The number of maximal colour runs the design stitches — one per band.
 ///
 /// Pinned because it is an independent variable of the measurement, not a decoration: the
-/// per-frame planning cost is linear in this number.
+/// per-frame planning cost grows with this number (measured as not-quadratic over the
+/// tested range; `StitchDrawPlanScalingTests` bounds it, and its own comment records that an
+/// O(r log r) implementation would pass those bounds).
 public let us309SyntheticColorRunCount = 5
 
 /// A boustrophedon hatch that fills ADR-007's stage in five colour bands and stitches 50 001

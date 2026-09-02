@@ -225,9 +225,15 @@ naive proportional version measured *worse* (176 bakes instead of 50).
   two commands:
 
   ```
-  (lldb) e -l Swift -- import EmbroideryEngine
+  (lldb) e -l Swift -- import EmbroideryEngine; import Foundation
   (lldb) e -l Swift -- var m = EmbroideryPatternManager(); let a = ActorID(0); for i in 0 ..< 50_000 { m.addStitch(at: StagePoint(x: Double(i % 200) * 0.4, y: Double(i / 200) * 0.4), layer: 0, actor: a) }; let t0 = CFAbsoluteTimeGetCurrent(); for _ in 0 ..< 20 { _ = m.assembled() }; print("\((CFAbsoluteTimeGetCurrent() - t0) / 20 * 1000) ms")
   ```
+
+  **`import Foundation` is load-bearing**: `CFAbsoluteTimeGetCurrent()` lives there,
+  `EmbroideryEngine` does not re-export it, and `AppModel.swift` does not import it either, so
+  without it the expression cannot resolve the timer. The previous version of this recipe had
+  the import and the *transport* rewrite deleted it — the fifth consecutive round in which this
+  one recipe broke for a new reason (Codex round 5).
 
   **One line per command, and that is not a style choice.** LLDB's `expression` takes either a
   single-line argument or an interactive multi-line entry it prompts for; a `do {` typed after

@@ -155,8 +155,10 @@ struct BakeSchedulingTests {
     /// refuted bounds, and this is the fifth.
     ///
     /// The flake-proof half of the claim is elsewhere and is structural:
-    /// `aFiftyThousandStitchRunAdvancesTheWatermarkOncePerSettleChunk` pins the bake *count* by observing a
-    /// real `PreviewRunState`, and no timing can perturb it.
+    /// `aFiftyThousandStitchRunAdvancesTheWatermarkOncePerSettleChunk` pins the *watermark
+    /// advance* count by observing a real `PreviewRunState`, and no timing can perturb it.
+    /// It does **not** pin the renderer's bake count — see the suite doc for that gap
+    /// (Codex round 5 found this comment contradicting the disclosure two screens above it).
     @Test("a larger settle chunk costs proportionally less total bake work")
     func aLargerSettleChunkCostsProportionallyLessTotalBakeWork() {
         let full = SyntheticDesign.displayList(count: 50_000)
