@@ -110,7 +110,7 @@ struct ExportWiringTests {
     /// Every bundled sample's seeded name is valid — the guard that makes the claim above a
     /// property of the library rather than of two hand-checked strings, so a third sample
     /// added in M5 cannot ship a name the field rejects on first sight.
-    @Test("every bundled sample seeds a valid name", arguments: SampleID.allCases)
+    @Test("every bundled sample seeds a valid name", arguments: SampleID.shipping)
     func everySampleSeedsAValidName(id: SampleID) throws {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)

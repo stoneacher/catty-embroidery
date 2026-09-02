@@ -151,6 +151,19 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .frame(minHeight: 120)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        // US-309's frame-time readout, for the measurement fixture only. An overlay rather
+        // than a row in the chrome, so the stage keeps exactly the layout every other
+        // screenshot in this milestone was taken of.
+        .overlay(alignment: .bottom) { frameTimeReadout }
+    }
+
+    /// Present only in debug builds, and only for the measurement fixture.
+    @ViewBuilder private var frameTimeReadout: some View {
+        #if DEBUG
+        if sample?.id == .us309Synthetic, case .drawn = state {
+            FrameTimeReadout()
+        }
+        #endif
     }
 
     /// The drawn state, extracted to `StageCanvas` in US-307.

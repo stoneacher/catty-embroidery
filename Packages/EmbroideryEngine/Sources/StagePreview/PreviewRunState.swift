@@ -67,15 +67,76 @@ public struct PreviewRunState: Equatable, Sendable {
     ///
     /// **Quantised deliberately.** US-305's renderer re-bakes its cached raster
     /// whenever `settledCount` changes, so advancing the watermark every frame
-    /// would bake once per frame — strictly worse than never baking at all. In
-    /// chunks, the bake happens a handful of times per run.
+    /// would bake once per frame — strictly worse than never baking at all.
     ///
-    /// A starting value US-309 tunes, exactly like `bakingThreshold = 2000`.
     /// Measured at 1000: `octagonRosette` advances three times (settling at 3 000
     /// of 3 194) and `squareCoil` twice (2 000 of 2 976) — so both cross the
     /// baking threshold, and M3's real samples exercise the raster path that
     /// US-305 could only ship unreachable.
+    ///
+    /// **US-309 tuned the rule's *shape*, not this number, and deliberately stopped short
+    /// of changing the number.** The rule is `settleWatermark(for:)`; this stays a fixed
+    /// chunk, and the paragraphs below are the measurement that says why.
+    ///
+    /// What is known headlessly: `CanvasStitchLayers` re-bakes whenever `settledCount`
+    /// changes, and a bake re-plans and re-rasterises the **whole settled prefix** — so the
+    /// total work across a run is Σ chunk·k = **Θ(n²/chunk)**. At 50 000 stitches that is
+    /// fifty full rasterisations, the last of them planning the entire design on a single
+    /// frame near the end of every long run — a dropped frame that no capture taken *after*
+    /// the design has settled could ever see. Measured in plan work alone: **26.4 ms at
+    /// chunk 1 000 against 5.4 ms at chunk 5 000**, and the rasterisation those plans drive
+    /// scales identically while costing far more. (Fifty is also not the "handful" an
+    /// earlier version of this comment claimed; `BakeSchedulingTests` pins the number of
+    /// *watermark advances*, which is one bake each only if the renderer is wired to the
+    /// watermark — an integration that suite cannot see, and says so.)
+    ///
+    /// The obvious fix is a chunk proportional to the count, and it was implemented and
+    /// **measured to be worse**: at `chunk = count / 8` a 50 000-stitch run baked **176**
+    /// times rather than fifty, because a chunk that tracks a continuously growing count
+    /// moves the watermark on nearly every batch. A geometric schedule does bound the count
+    /// — ~10 bakes at a ratio of 1.5 — but only by letting the live tail grow to a third of
+    /// the design, i.e. stroking up to 16 000 segments *per frame* at 50 000 stitches, which
+    /// is the cost ADR-009 exists to avoid. **Neither landed: do not "restore" a proportional
+    /// chunk here without a device measurement that beats the fixed one** (ADR-029).
+    ///
+    /// So the trade is real and it is one-dimensional: **bake work falls as the chunk grows,
+    /// per-frame tail work rises with it**, and the balance point is where one full
+    /// rasterisation costs the same as (chunk × frames) of tail stroking.
+    ///
+    /// **Each side is part CPU and part GPU, and an earlier version of this comment called
+    /// them both simply "GPU-bound" — which would send a reader tuning the wrong half**
+    /// (Codex round 1, finding 7). The measurements above are *CPU* measurements:
+    /// `StitchDrawPlan.planning` walks the colour runs and segment candidates, and
+    /// `CanvasStitchLayers.stroke` builds the paths and ellipses, both synchronously on the
+    /// main thread — 26.4 ms of plan work at chunk 1 000 and 0.45 ms of mid-gesture planning
+    /// are main-thread milliseconds, not GPU time. The rasterisation those plans drive is the
+    /// GPU half. So a regression can land on either side, and a main-thread one is the kind
+    /// this engine can actually cause.
+    ///
+    /// What is true is that the *balance point* cannot be located headlessly: it depends on
+    /// the GPU half, which no `swift test` can measure. So the fixed chunk — the tail-optimal
+    /// end, and the end ADR-009's per-frame claim actually rests on — stays as shipped, and
+    /// the constant is the device session's first tuning knob (ADR-029).
+    ///
+    /// Raising it flat is separately not an option: the shipping samples are 2 976 and
+    /// 3 194 stitches, so `settleChunk = 5000` would stop both settling at all and put the
+    /// cached-raster path back out of reach at runtime, undoing what US-306 achieved.
     public static let settleChunk = 1000
+
+    /// Where the watermark sits for a list of `count` stitches.
+    ///
+    /// **Hoisted out of `apply(_:)` and made public and pure**, which is the part of AC5's
+    /// tuning that did land: the policy can now be asserted as a function rather than only
+    /// observed through a run, and a test that *restates* the rule can be told apart from one
+    /// that reads it. That is not hypothetical — US-309's first bake-count test restated the
+    /// old quantisation and stayed green against a mutant that changed it, because test and
+    /// code computed the same wrong number from the same constant.
+    public static func settleWatermark(for count: Int) -> Int {
+        // `max(1, …)` guards the modulo: a zero chunk would be a division **trap** rather
+        // than a degradation (`swift-code-reviewer`, US-306).
+        let chunk = Swift.max(1, settleChunk)
+        return count - count % chunk
+    }
 
     public init() {}
 
@@ -149,16 +210,17 @@ public struct PreviewRunState: Equatable, Sendable {
             )
         }
 
-        // Quantised to `settleChunk`, so the renderer's cached raster is rebuilt a
-        // handful of times per run rather than once per frame. `markSettled` is
-        // monotonic and clamped, so repeating the same value between chunk crossings
-        // costs nothing and changes nothing — which is exactly why the raster's bake
-        // key does not churn.
-        // `max(1, …)` guards the modulo: `settleChunk` is a constant today, but ADR-027 hands
-        // it to US-309 as a tunable, and a zero would be a division **trap** rather than a
-        // degradation (`swift-code-reviewer`).
-        let chunk = Swift.max(1, Self.settleChunk)
-        display.markSettled(upTo: display.count - display.count % chunk)
+        // Quantised, so the renderer's cached raster is rebuilt a bounded number of times
+        // per run rather than once per frame. `markSettled` is monotonic and clamped, so
+        // repeating the same value between crossings costs nothing and changes nothing —
+        // which is exactly why the raster's bake key does not churn.
+        //
+        // The rule itself lives in `settleWatermark(for:)` rather than here, so that it can
+        // be asserted as a function instead of only observed through a run. US-309 tuned the
+        // rule's *shape* and deliberately left the constant alone; see `settleChunk` for the
+        // Θ(n²/chunk) measurement, for why the proportional chunk measured worse, and for why
+        // raising the constant flat was not an option either.
+        display.markSettled(upTo: Self.settleWatermark(for: display.count))
 
         revision += 1
     }

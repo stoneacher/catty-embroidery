@@ -197,6 +197,17 @@ private struct CanvasStitchLayers: View {
 
     var body: some View {
         Canvas { context, size in
+            #if DEBUG
+                // US-309's answer to "did the renderer actually run during that capture?".
+                // A `CADisplayLink` callback fires on every display refresh whether or not this
+                // closure ran, so on a settled, static stage a capture can report a flawless
+                // 60 fps while SwiftUI redraws nothing at all — the frame times would describe
+                // the display, not the renderer (Codex round 1, finding 1). Counting draws here
+                // makes that visible instead of invisible: a capture whose draw count is ~0 is
+                // measuring nothing about ADR-009. One integer increment, no observation, so it
+                // cannot perturb the frame it is counting.
+                StageDrawCounter.record()
+            #endif
             // The raster was rendered at `viewport` and is blitted into `size`, so a
             // mismatch would *stretch* the settled layer while the live tail stays
             // unstretched — a visibly misplaced seam. Today they are equal because this
