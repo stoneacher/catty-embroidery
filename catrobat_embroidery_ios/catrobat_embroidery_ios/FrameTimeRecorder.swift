@@ -121,6 +121,9 @@
         /// intervals put a spike 22 s into a 37 s capture at "4.5 s" (found on the running
         /// app while verifying the drawn-frame split).
         @ObservationIgnored private var drawnOffsets: [Double] = []
+        /// Every callback's own reported frame duration, so the rate published at `stop()`
+        /// describes the whole capture rather than its final frame.
+        @ObservationIgnored private var frameDurations: [Double] = []
         @ObservationIgnored private var elapsedMilliseconds = 0.0
         @ObservationIgnored private var previousDrawCount = 0
         @ObservationIgnored private var previousTimestamp: CFTimeInterval?
@@ -172,6 +175,8 @@
             drawnIntervals.reserveCapacity(Self.capacity)
             drawnOffsets.removeAll(keepingCapacity: true)
             drawnOffsets.reserveCapacity(Self.capacity)
+            frameDurations.removeAll(keepingCapacity: true)
+            frameDurations.reserveCapacity(Self.capacity)
             elapsedMilliseconds = 0
             previousTimestamp = nil
             previousDrawCount = StageDrawCounter.count
@@ -197,6 +202,11 @@
         func stop() -> FrameTimeStatistics? {
             stopLink()
             isRecording = false
+            // The **median** reported period, not the last one: a capture that ran at 30 Hz
+            // and ended at 60 must not be labelled 60 Hz (Codex round 3).
+            if !frameDurations.isEmpty {
+                nominalFrameMilliseconds = frameDurations.sorted()[frameDurations.count / 2]
+            }
             drawCount = StageDrawCounter.count - drawsAtStart
             statistics = FrameTimeStatistics(millisecondsPerFrame: intervals)
             drawnStatistics = FrameTimeStatistics(
@@ -216,14 +226,20 @@
         func record(timestamp: CFTimeInterval, frameDuration: CFTimeInterval? = nil) {
             guard isRecording, !isSuspended else { return }
             let draws = StageDrawCounter.count
-            defer {
-                previousTimestamp = timestamp
-                previousDrawCount = draws
-            }
-            // The link reports its actual period only once it has fired, so this arrives from
-            // the callback rather than being read off the link at `stop()`.
+            // **`previousDrawCount` is advanced only where an interval is actually recorded**
+            // (Codex round 3). Advancing it in a `defer` meant the first callback — which has
+            // no baseline and records nothing — silently consumed any draw that happened
+            // between `start()` and it, so a capture whose only rendering fell in that window
+            // reported `NO DRAWS`. Left un-advanced, that draw is attributed to the first
+            // interval the recorder can actually measure, which is where its cost landed.
+            defer { previousTimestamp = timestamp }
+            // Accumulated unobserved and published once at `stop()`. Assigning the observable
+            // `nominalFrameMilliseconds` here would fire `withMutation` on **every callback** —
+            // reintroducing precisely the per-frame body evaluation that I3 removed — and it
+            // would characterise the capture by its *last* frame, so a capture that ran at
+            // 30 Hz throughout and ended at 60 would be labelled `60Hz` (Codex round 3).
             if let frameDuration, frameDuration > 0 {
-                nominalFrameMilliseconds = frameDuration * 1000
+                frameDurations.append(frameDuration * 1000)
             }
             guard let previous = previousTimestamp else { return }
             let milliseconds = (timestamp - previous) * 1000
@@ -234,6 +250,7 @@
                 drawnIntervals.append(milliseconds)
                 drawnOffsets.append(elapsedMilliseconds)
             }
+            previousDrawCount = draws
             elapsedMilliseconds += milliseconds
         }
 
@@ -259,6 +276,8 @@
         func noteResumed() {
             isSuspended = false
             previousTimestamp = nil
+            // Draws that happened while the app was away belong to no measured interval.
+            previousDrawCount = StageDrawCounter.count
         }
 
         private func stopLink() {

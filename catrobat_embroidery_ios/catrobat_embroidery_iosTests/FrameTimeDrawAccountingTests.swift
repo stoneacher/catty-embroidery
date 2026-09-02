@@ -155,4 +155,45 @@ struct FrameTimeDrawAccountingTests {
         let all = try #require(recorder.statistics)
         #expect(drawn.worstAtMilliseconds < all.totalMilliseconds)
     }
+
+    /// **A draw between `start()` and the first callback is not lost** (Codex round 3).
+    ///
+    /// The first callback has no baseline and records no interval, so advancing
+    /// `previousDrawCount` there consumed any draw that had happened since `start()` — and a
+    /// capture whose only rendering fell in that window came back `NO DRAWS`, the most
+    /// misleading answer available. The draw is now attributed to the first interval the
+    /// recorder can actually measure, which is where its cost landed.
+    @Test("a draw before the first callback is attributed, not consumed")
+    func aDrawBeforeTheFirstCallbackIsAttributedNotConsumed() throws {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        StageDrawCounter.record()          // the renderer drew before any callback arrived
+        recorder.record(timestamp: 0.000)  // seeds the baseline, records no interval
+        recorder.record(timestamp: 0.050)  // the first measurable interval
+        _ = recorder.stop()
+
+        let drawn = try #require(recorder.drawnStatistics, "the draw was consumed by the baseline callback")
+        #expect(drawn.frameCount == 1)
+        #expect(abs(drawn.worst - 50) < 0.001)
+    }
+
+    /// Draws that happened while the app was away belong to no measured interval, so they must
+    /// not be attributed to the first frame after it comes back.
+    @Test("a draw during a suspension does not land in the interval after it")
+    func aDrawDuringASuspensionDoesNotLandInTheIntervalAfterIt() throws {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        recorder.record(timestamp: 0.000)
+        recorder.record(timestamp: 0.016)
+
+        recorder.noteSuspended()
+        StageDrawCounter.record()          // drew while inactive
+        recorder.noteResumed()
+
+        recorder.record(timestamp: 5.000)  // baseline again
+        recorder.record(timestamp: 5.016)  // measured, and nothing drew in it
+        _ = recorder.stop()
+
+        #expect(recorder.drawnStatistics == nil, "a draw from the suspended stretch leaked in")
+    }
 }

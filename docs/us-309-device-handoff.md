@@ -152,8 +152,12 @@ structural. **If your capture 3 comes back `NO DRAWS`, that is correct behaviour
 
 So:
 
-- **Captures 4 and 5 are the authoritative ones for the 60 fps claim**, because only they force
-  a redraw every frame. The thesis sentence about ADR-009 rests on these two.
+- **Captures 4 and 5 are the authoritative ones for the 60 fps claim**, because they are the
+  only ones in which the canvas redraws at all. **Not every frame, though** — measured, the
+  animating capture drew on **251 of 2 123** refreshes, because a run advances in batches and
+  SwiftUI redraws once per batch. Only a live gesture plausibly redraws every frame. That is
+  why the readout's quantiles are taken over the drawn frames rather than all of them. The
+  thesis sentence about ADR-009 rests on these two captures' **drawn** figures.
 - **Captures 1–3 prove something narrower** and should be reported as such: a settled stage
   introduces no background stutter, and per-frame cost does not grow with the settled count.
   (The *independence* claim itself is already proved headlessly and structurally —
@@ -210,28 +214,40 @@ naive proportional version measured *worse* (176 bakes instead of 50).
   console time the call directly, e.g.
 
   **`assembled()` is on `EmbroideryPatternManager`, not on `StitchDisplayList`** — an earlier
-  version of this recipe named the display list, which has no such method, so it could not
-  have been run at all. The stage does not retain a pattern manager either: the interpreter
-  builds one internally and the app only ever sees `assembledStream()`'s result. So build the
-  input in the debugger rather than fishing for it:
+  version of this recipe named the display list, which has no such method. The stage does not
+  retain a pattern manager either: the interpreter builds one internally and the app only ever
+  sees `assembledStream()`'s result. So build the input in the debugger rather than fishing
+  for it. Pause anywhere in the app (a breakpoint on `AppModel.select` will do) and run this as
+  **one** expression — `e -l Swift --` does not open a multi-line prompt, so the whole thing
+  goes on the continuation of a single `expr` using `--` and a brace block:
 
   ```
-  (lldb) e -l Swift -- import Foundation
-  (lldb) e -l Swift -- import EmbroideryEngine
-  (lldb) e -l Swift -- 
-  let m = EmbroideryPatternManager()
-  for i in 0 ..< 50_000 { m.addStitch(...) }        // 1_000 / 10_000 / 50_000 in turn
-  let t = Date(); for _ in 0 ..< 20 { _ = m.assembled() }
-  print(-t.timeIntervalSinceNow / 20 * 1000)
+  (lldb) e -l Swift -- import EmbroideryEngine; import Foundation
+  (lldb) e -l Swift -- do {
+    var m = EmbroideryPatternManager()
+    let actor = ActorID(0)
+    for i in 0 ..< 50_000 {                      // 1_000 / 10_000 / 50_000 in turn
+      m.addStitch(at: StagePoint(x: Double(i % 200) * 0.4, y: Double(i / 200) * 0.4),
+                  layer: 0, actor: actor)
+    }
+    let t = Date()
+    for _ in 0 ..< 20 { _ = m.assembled() }
+    print("\(-t.timeIntervalSinceNow / 20 * 1000) ms")
+  }
   ```
 
-  filling the manager through the same public `addStitch` the synthetic fixture uses, 20
-  iterations to average, repeated at each of the three counts. **Take the pause in the
-  Release-with-`DEBUG` build**, or the number is a debug build's and not comparable with
-  ADR-021's. A `signpost` + Instruments interval would be tidier and is worth adding if this
-  measurement is ever repeated; today this is the procedure. That ADR claimed 0.64 ms was "roughly 10% of a frame on
-  A15-class hardware"; it is 3.8% of a frame on the Mac it was measured on, and the A15 number
-  has never existed. The correction is already recorded; this is what closes it.
+  Three details that a shorter recipe gets wrong. **`var`, not `let`** — `addStitch` is
+  `mutating`. **The point has to change every iteration**: `addStitch` dedups a stitch at the
+  same stage position for the same actor (clause A), so repeating one point would build an
+  empty pattern and time nothing. And **`layer` and `actor` are required**: `ActorID(0)` and
+  layer `0` are the single-object case the samples use.
+
+  Take the pause in the **Release-with-`DEBUG`** build, or the number is a debug build's and is
+  not comparable with ADR-021's. A `signpost` + Instruments interval would be tidier and is
+  worth adding if this measurement is ever repeated; today this is the procedure. That ADR
+  claimed 0.64 ms was "roughly 10% of a frame on A15-class hardware"; it is **3.8%** of a frame
+  on the Mac it was measured on, and the A15 number has never existed. The correction is
+  already recorded; this is what closes it.
 
 ## Screenshots still owed
 

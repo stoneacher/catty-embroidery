@@ -12,7 +12,7 @@ import Testing
 ///
 /// **AC4's claim is also restated, because as written it is false.** The criterion says
 /// per-frame work is "independent of total stitch count". It is independent of the settled
-/// stitch count *at a fixed colour-run count*, and **linear in colour runs** —
+/// stitch count *at a fixed colour-run count*, and **grows with the colour-run count** —
 /// `StitchDrawPlan.planning` walks `list.colorRuns` twice, so a design that changed colour
 /// on every stitch has `colorRuns == count` and a per-frame cost that is O(n) after all.
 /// Re-measured, and stated **with the fixture each number belongs to**, because the earlier
@@ -181,10 +181,12 @@ struct StitchDrawPlanScalingTests {
             \(milliseconds(manyRunsTime)), ratio \(String(format: "%.2f", thousandFold)).)
             """
         )
-        // **And an upper bound, because a lower bound alone cannot say "linear"** (Codex
-        // round 2, finding 5). A mutation that rescanned every colour run once *per* colour
-        // run — Θ(r²), emitting an identical plan — passes `perStitch >= 30` *more strongly*
-        // than healthy code does, so the assertion above establishes only that cost grows.
+        // **And an upper bound, because a lower bound alone establishes only that cost grows**
+        // (Codex round 2, finding 5). A mutation that rescanned every colour run once *per*
+        // colour run — Θ(r²), emitting an identical plan — passes `perStitch >= 30` *more
+        // strongly* than healthy code does. What the pair asserts is **"not quadratic over
+        // this range"**, not linearity: an O(r log r) mutation grows ~78× and passes 200
+        // (Codex round 3). That is the honest reading and it is what the ADR now claims.
         // Between 1 000 and 50 000 runs the run count rises 50×, so linear predicts ~50× the
         // cost and quadratic ~2 500×; measured is **39.8×** (0.246 → 9.791 ms). Bounded at
         // 200: five times the healthy figure, a twelfth of quadratic's.
@@ -216,8 +218,8 @@ struct StitchDrawPlanScalingTests {
     /// would drag a healthy 10× down through a bound of 4; 2.5 keeps four-fold margin either
     /// side while still failing the regression that matters, which is `.entire` quietly
     /// ceasing to plan the whole design and reading ~1×.
-    @Test("the entire plan is linear in stitch count, and that is the mid-gesture cost")
-    func theEntirePlanIsLinearInStitchCount() {
+    @Test("the entire plan grows with stitch count and is not quadratic — the mid-gesture cost")
+    func theEntirePlanGrowsWithStitchCountAndIsNotQuadratic() {
         let small = list(settled: 5_000)
         let large = list(settled: 50_000)
 
@@ -233,11 +235,13 @@ struct StitchDrawPlanScalingTests {
             ratio \(String(format: "%.2f", ratio)) — a collapse to constant cost reads ~1×
             """
         )
-        // **The upper bound is the half that earns the word "linear"** (Codex round 2,
-        // finding 5). A mutation rescanning every stitch once per segment — Θ(n²), identical
+        // **Two-sided, and the pair says "not quadratic" rather than "linear"** (Codex rounds
+        // 2 and 3). A mutation rescanning every stitch once per segment — Θ(n²), identical
         // plan — passes a bare `>= 2.5` *more strongly* than healthy code, so a lower bound
-        // alone names the wrong property. At this 10× step linear predicts ~10× and quadratic
-        // ~100×; 30 sits between them with three-fold margin either way.
+        // alone names the wrong property; hence the ceiling. But the ceiling does not buy
+        // linearity either: an O(n log n) mutation grows ~13× at this 10× step and passes 30.
+        // Bounding that out would need a third point and a far more delicate instrument than
+        // a wall-clock ratio on a shared runner, and the test is named for what it asserts.
         #expect(
             ratio <= 30,
             """

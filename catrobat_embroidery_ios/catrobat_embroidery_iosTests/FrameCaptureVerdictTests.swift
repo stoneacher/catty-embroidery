@@ -50,7 +50,7 @@ struct FrameCaptureVerdictTests {
     /// A p99 over all frames is a p99 of mostly-nothing.
     @Test("the bar is decided by the drawn frames, not by the idle ones")
     func theBarIsDecidedByTheDrawnFramesNotByTheIdleOnes() {
-        let drawnFrames = Array(repeating: 50.0, count: 70)
+        let drawnFrames = Array(repeating: 50.0, count: 150)
         let idleFrames = Array(repeating: 16.0, count: 630)
         let all = stats(idleFrames + drawnFrames)
         let drawn = stats(drawnFrames)
@@ -71,6 +71,41 @@ struct FrameCaptureVerdictTests {
             wasInterrupted: false
         )
         #expect(verdict == .measured(passed: true, quotableWindow: true))
+    }
+
+    /// **A tail over one observation is not a tail** (Codex round 3). With a single drawn
+    /// interval the median, p95 and p99 are the same sample, so `PASS` would be a claim about
+    /// the renderer made from one frame — and `NO DRAWS` would be false, since it did draw.
+    @Test("one drawn frame is neither a pass nor no-draws")
+    func oneDrawnFrameIsNeitherAPassNorNoDraws() {
+        let verdict = FrameCaptureVerdict.of(
+            all: stats(Array(repeating: 16.0, count: 625)),
+            drawn: stats([16.0]),
+            wasInterrupted: false
+        )
+        #expect(verdict == .tooFewDraws(count: 1))
+        #expect(!verdict.isAboutTheRenderer, "one sample cannot be evidence about the renderer")
+    }
+
+    /// The threshold is where p99 stops being the maximum, and it is checked at its own edge.
+    @Test("the drawn-frame threshold is exact at its boundary")
+    func theDrawnFrameThresholdIsExactAtItsBoundary() {
+        let all = stats(Array(repeating: 16.0, count: 700))
+        let justUnder = FrameCaptureVerdict.minimumDrawnFrames - 1
+        #expect(
+            FrameCaptureVerdict.of(
+                all: all,
+                drawn: stats(Array(repeating: 16.0, count: justUnder)),
+                wasInterrupted: false
+            ) == .tooFewDraws(count: justUnder)
+        )
+        #expect(
+            FrameCaptureVerdict.of(
+                all: all,
+                drawn: stats(Array(repeating: 16.0, count: FrameCaptureVerdict.minimumDrawnFrames)),
+                wasInterrupted: false
+            ) == .measured(passed: true, quotableWindow: true)
+        )
     }
 
     /// **The window is the capture's, the bar is the drawn frames'** — two different questions,
@@ -114,6 +149,7 @@ struct FrameCaptureVerdictTests {
             FrameCaptureVerdict.interrupted,
             .nothingCaptured,
             .noDraws,
+            .tooFewDraws(count: 3),
             .measured(passed: true, quotableWindow: true),
             .measured(passed: false, quotableWindow: true),
             .measured(passed: true, quotableWindow: false)

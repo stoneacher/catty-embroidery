@@ -262,21 +262,46 @@ struct FrameTimeRecorderTests {
         #expect(recorder.nominalFrameMilliseconds == nil)
     }
 
-    /// The refresh rate comes from the callback's own frame duration, not from
+    /// The refresh rate comes from the callbacks' own frame durations, not from
     /// `CADisplayLink.duration` — which Apple documents as the *maximum*-rate period and
     /// which is undefined before the first callback (Codex round 2, finding 2).
-    @Test("the reported frame duration is the one the callback carried")
-    func theReportedFrameDurationIsTheOneTheCallbackCarried() {
+    @Test("the reported frame duration is the one the callbacks carried")
+    func theReportedFrameDurationIsTheOneTheCallbacksCarried() {
         let recorder = FrameTimeRecorder()
         recorder.start()
         #expect(recorder.nominalFrameMilliseconds == nil, "nothing has fired yet")
 
-        // A link throttled to 30 Hz: the callback's own duration says so.
-        recorder.record(timestamp: 0.000, frameDuration: 1.0 / 30)
-        let reported = recorder.nominalFrameMilliseconds
+        // A link throttled to 30 Hz: the callbacks' own durations say so.
+        for index in 0 ... 10 {
+            recorder.record(timestamp: Double(index) * 0.033, frameDuration: 1.0 / 30)
+        }
+        #expect(recorder.nominalFrameMilliseconds == nil, "published at stop(), not per frame")
+        _ = recorder.stop()
 
+        let reported = recorder.nominalFrameMilliseconds
         #expect(reported != nil)
         #expect(abs((reported ?? 0) - 33.333) < 0.01, "a 30 Hz link must not report 60 Hz")
+    }
+
+    /// **The rate describes the whole capture, not its last frame** (Codex round 3).
+    ///
+    /// Publishing on every callback left the final value standing, so a capture that ran at
+    /// 30 Hz throughout and happened to end on a 60 Hz frame was labelled `60Hz` — and the
+    /// hand-off's rule is to discard anything that does not say 60. The median of the reported
+    /// durations cannot be swung by one frame. (Assigning per callback was also an observable
+    /// write per frame, which is the cost I3 removed; `nil` until `stop()` is what proves it.)
+    @Test("one fast frame at the end does not relabel a slow capture")
+    func oneFastFrameAtTheEndDoesNotRelabelASlowCapture() {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        for index in 0 ..< 300 {
+            recorder.record(timestamp: Double(index) * 0.033, frameDuration: 1.0 / 30)
+        }
+        recorder.record(timestamp: 300 * 0.033, frameDuration: 1.0 / 60)
+        _ = recorder.stop()
+
+        let reported = recorder.nominalFrameMilliseconds ?? 0
+        #expect(abs(reported - 33.333) < 0.01, "reported \(reported) ms — the last frame won")
     }
 
 }
