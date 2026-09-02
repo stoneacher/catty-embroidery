@@ -19,8 +19,12 @@
     /// `frameCount`-dependent caption re-ran two `String(format:)` calls and re-rendered a
     /// `.regularMaterial` blur **over the canvas being measured**, sixty times a second, while
     /// the stage was otherwise completely static. The instrument was contributing to the
-    /// distribution it reports. Only `isRecording`, `statistics` and `wasInterrupted` are
-    /// observable, and each changes at most once per capture.
+    /// distribution it reports. The observable properties are `isRecording`, `statistics`,
+    /// `wasInterrupted`, `drawCount` and `nominalFrameMilliseconds`, and all of them change
+    /// only in `start()` and `stop()` — a handful of body evaluations per capture rather than
+    /// one per displayed frame. (An earlier version of this sentence said "at most once per
+    /// capture", which is wrong: `isRecording` changes at both ends, and a second capture
+    /// clears what the first published before republishing it.)
     ///
     /// The reservation is the other load-bearing half — a recorder that reallocates mid-capture
     /// perturbs the frames it is measuring at geometrically spaced moments, injecting outliers
@@ -49,6 +53,27 @@
         /// nothing. `noteSuspended()` now drops the gap and this flag says a capture was touched.
         private(set) var wasInterrupted = false
 
+        /// Canvas draw passes during the last completed capture.
+        ///
+        /// **The number that says whether the capture measured the renderer or the display.**
+        /// A display-link callback fires on every refresh whether or not SwiftUI redrew
+        /// anything, so on a settled static stage a capture can report a flawless 60 fps
+        /// having asked the renderer for nothing at all (Codex round 1, finding 1). `nil`
+        /// before any capture. See `StageDrawCounter`.
+        private(set) var drawCount: Int?
+
+        /// The display's nominal frame interval in milliseconds, sampled from the live link.
+        ///
+        /// **Reported because the bar is absolute and the refresh rate is not guaranteed.**
+        /// iOS may drop a display link to 30, 20 or 15 Hz under Low Power Mode, a critical
+        /// thermal state, or the "Limit Frame Rate" accessibility setting. At 30 Hz every
+        /// interval is ~33.3 ms, so a renderer doing essentially no work fails **both**
+        /// halves of AC3's bar — an unforced FAIL indistinguishable from the real thing
+        /// (Codex round 1, finding 3). With this on screen the tester sees 33.3 and knows to
+        /// check the device rather than to start down the fallback ladder. `nil` before any
+        /// capture.
+        private(set) var nominalFrameMilliseconds: Double?
+
         /// Frames recorded in the capture currently running.
         ///
         /// Not observable: see the note on `intervals`. Read by tests and by `stop()`, never by
@@ -68,6 +93,7 @@
         /// **and do not re-seed `previousTimestamp`**, so the gap cannot be reconstructed from
         /// either side of itself.
         @ObservationIgnored private var isSuspended = false
+        @ObservationIgnored private var drawsAtStart = 0
 
         /// Invalidated in `stop()`, when the view holding the recorder disappears, and — as the
         /// backstop — by the proxy itself on the first callback after the recorder is gone.
@@ -94,14 +120,26 @@
         /// **`previousTimestamp` is cleared here**, which is not bookkeeping: carrying it across
         /// would make the first interval of every capture after the first the length of the pause
         /// between them — a multi-second frame, landing squarely in the worst-frame statistic.
-        func start() {
+        ///
+        /// **`isActive` is the scene's *state*, and taking it closes a hole in the suspend
+        /// logic** (Codex round 1, finding 2). `noteSuspended()`/`noteResumed()` record scene
+        /// *transitions*, and both are no-ops outside a capture — so a recorder started while
+        /// the app was already inactive believed it was active, ignored the later
+        /// `noteResumed()`, and measured the entire background gap as one frame with
+        /// `wasInterrupted` still `false`: an ordinary-looking FAIL rather than an
+        /// `INTERRUPTED` one. Passing the phase in means the state cannot be mis-inferred
+        /// from a transition that was never delivered.
+        func start(isActive: Bool = true) {
             stopLink()
             intervals.removeAll(keepingCapacity: true)
             intervals.reserveCapacity(Self.capacity)
             previousTimestamp = nil
-            isSuspended = false
-            wasInterrupted = false
+            isSuspended = !isActive
+            wasInterrupted = !isActive
             statistics = nil
+            drawCount = nil
+            nominalFrameMilliseconds = nil
+            drawsAtStart = StageDrawCounter.count
             isRecording = true
 
             let link = CADisplayLink(
@@ -115,8 +153,13 @@
         /// Ends the capture and publishes its statistics, or `nil` if it caught no frames.
         @discardableResult
         func stop() -> FrameTimeStatistics? {
+            // Sampled before the link goes: `duration` is only meaningful on a live link.
+            if let link, link.duration > 0 {
+                nominalFrameMilliseconds = link.duration * 1_000
+            }
             stopLink()
             isRecording = false
+            drawCount = StageDrawCounter.count - drawsAtStart
             statistics = FrameTimeStatistics(millisecondsPerFrame: intervals)
             return statistics
         }
@@ -149,8 +192,12 @@
         }
 
         /// The app has the foreground again: resume with a fresh baseline.
+        ///
+        /// **Not guarded on having been suspended.** Clearing the baseline on any return to
+        /// active is free — the next callback re-seeds it — and it closes the case where the
+        /// resign-active transition never reached a *recording* recorder, which would leave a
+        /// stale timestamp from before the gap (Codex round 1, finding 2).
         func noteResumed() {
-            guard isSuspended else { return }
             isSuspended = false
             previousTimestamp = nil
         }

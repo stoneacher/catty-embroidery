@@ -32,15 +32,45 @@ struct FrameTimeStatisticsTests {
         #expect(stats.worst == 100)
     }
 
-    /// Order must not matter: frames arrive in time order, and the statistics are about the
-    /// distribution.
+    /// Order must not matter **to the distribution**: frames arrive in time order, and the
+    /// four order statistics are about the distribution, not the sequence.
+    ///
+    /// **Asserted field by field rather than as whole-value equality, and the reason is a
+    /// real one.** `worstAtMilliseconds` was added for the hand-off's capture 5 (Codex round
+    /// 1, finding 4) and is *deliberately* order-dependent — it is the one thing sorting
+    /// destroys — so comparing two `FrameTimeStatistics` with `==` now conflates two
+    /// different claims: "the distribution is order-independent", which is true and worth
+    /// pinning, and "the position of the worst frame is order-independent", which is false by
+    /// design. The next test pins the second half.
     @Test("the statistics do not depend on arrival order")
     func theStatisticsDoNotDependOnArrivalOrder() throws {
         let ascending = try #require(FrameTimeStatistics(millisecondsPerFrame: (1 ... 100).map(Double.init)))
         let descending = try #require(
             FrameTimeStatistics(millisecondsPerFrame: (1 ... 100).reversed().map(Double.init))
         )
-        #expect(ascending == descending)
+        #expect(ascending.frameCount == descending.frameCount)
+        #expect(ascending.median == descending.median)
+        #expect(ascending.p95 == descending.p95)
+        #expect(ascending.p99 == descending.p99)
+        #expect(ascending.worst == descending.worst)
+        #expect(ascending.totalMilliseconds == descending.totalMilliseconds)
+        #expect(ascending.meetsSixtyFps == descending.meetsSixtyFps)
+        #expect(ascending.isLongEnoughToQuote == descending.isLongEnoughToQuote)
+    }
+
+    /// The deliberate exception: **the worst frame's position does depend on arrival order**,
+    /// because it is a fact about the sequence rather than the distribution. Stated as its own
+    /// test so the exception is a claim rather than an omission.
+    @Test("the worst frame's position does depend on arrival order")
+    func theWorstFramesPositionDoesDependOnArrivalOrder() throws {
+        let ascending = try #require(FrameTimeStatistics(millisecondsPerFrame: (1 ... 100).map(Double.init)))
+        let descending = try #require(
+            FrameTimeStatistics(millisecondsPerFrame: (1 ... 100).reversed().map(Double.init))
+        )
+        // Ascending: the 100 ms frame is last, so it starts after the other 99 (4 950 ms).
+        #expect(abs(ascending.worstAtMilliseconds - 4_950) < 0.001)
+        // Descending: it is first.
+        #expect(descending.worstAtMilliseconds == 0)
     }
 
     /// **The test that gives the criterion its teeth.** A capture whose average and median are
@@ -129,5 +159,43 @@ struct FrameTimeStatisticsTests {
         let promotion = try #require(FrameTimeStatistics(millisecondsPerFrame: Array(repeating: 8.3, count: 600)))
         #expect(promotion.frameCount >= FrameTimeStatistics.quotableFrameCount)
         #expect(!promotion.isLongEnoughToQuote, "4.98 s cannot be quoted as AC3's window")
+    }
+
+    /// **Codex round 1, finding 4**: the hand-off's capture 5 asks where in the run the worst
+    /// frame fell, and sorting had thrown that away.
+    ///
+    /// The bake schedule's last and largest rasterisation lands near the end of a long run,
+    /// so *where* is what distinguishes a bake spike from an unrelated stutter. Every other
+    /// statistic here is order-independent by design; this one is deliberately not.
+    @Test("the worst frame's position in the capture is kept")
+    func theWorstFramesPositionInTheCaptureIsKept() throws {
+        // Ninety-nine good frames, then a 40 ms spike, then more good frames: the spike sits
+        // 99 × 16 ms = 1 584 ms into the capture.
+        var durations = Array(repeating: 16.0, count: 99)
+        durations.append(40.0)
+        durations += Array(repeating: 16.0, count: 50)
+        let stats = try #require(FrameTimeStatistics(millisecondsPerFrame: durations))
+
+        #expect(abs(stats.worst - 40) < 0.001)
+        #expect(abs(stats.worstAtMilliseconds - 1_584) < 0.001)
+    }
+
+    /// A spike at the very start reports position zero rather than being confused with "not
+    /// found", and one at the end reports the whole capture minus its own duration.
+    @Test("the worst frame's position is right at both ends of a capture")
+    func theWorstFramesPositionIsRightAtBothEndsOfACapture() throws {
+        let atStart = try #require(FrameTimeStatistics(millisecondsPerFrame: [40.0, 16.0, 16.0]))
+        #expect(atStart.worstAtMilliseconds == 0)
+
+        let atEnd = try #require(FrameTimeStatistics(millisecondsPerFrame: [16.0, 16.0, 40.0]))
+        #expect(abs(atEnd.worstAtMilliseconds - 32) < 0.001)
+    }
+
+    /// On a tie the earliest occurrence wins — the conservative reading for a bake spike,
+    /// since it points at the first frame that hit the worst cost.
+    @Test("a tied worst frame reports its earliest occurrence")
+    func aTiedWorstFrameReportsItsEarliestOccurrence() throws {
+        let stats = try #require(FrameTimeStatistics(millisecondsPerFrame: [16.0, 40.0, 16.0, 40.0]))
+        #expect(abs(stats.worstAtMilliseconds - 16) < 0.001)
     }
 }

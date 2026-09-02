@@ -30,7 +30,10 @@
                     if recorder.isRecording {
                         recorder.stop()
                     } else {
-                        recorder.start()
+                        // The scene's *state*, not a transition: a capture begun while the
+                        // app is not active must know that from the outset. See
+                        // `start(isActive:)`.
+                        recorder.start(isActive: scenePhase == .active)
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -70,30 +73,54 @@
 
         private var caption: String {
             if recorder.isRecording {
-                // Constant while recording — no per-frame body evaluation. See the type comment.
+                // Constant while recording — no per-frame body evaluation. See the type doc.
                 return "capturing… hold ≥ 10 s, then Stop"
             }
             guard let stats = recorder.statistics else {
                 return "US-309 frame times"
             }
-            return """
-            n=\(stats.frameCount) med \(ms(stats.median)) p95 \(ms(stats.p95)) \
-            p99 \(ms(stats.p99)) max \(ms(stats.worst)) · \(String(
-                format: "%.1f",
-                stats.totalMilliseconds / 1000
-            )) s · \
-            \(verdict(stats))
-            """
+            let quantiles = "med \(ms(stats.median)) p95 \(ms(stats.p95)) p99 \(ms(stats.p99))"
+            let worstFrame = "max \(ms(stats.worst))@\(seconds(stats.worstAtMilliseconds))s"
+            let counts = "n=\(stats.frameCount) draws=\(recorder.drawCount ?? 0)\(nominal)"
+            return "\(counts) \(quantiles) \(worstFrame) · \(seconds(stats.totalMilliseconds)) s · \(verdict(stats))"
         }
 
-        /// `INTERRUPTED` outranks `PASS`/`FAIL`, because a capture the app was backgrounded
-        /// during has measured a gap rather than a renderer, and the hand-off's instruction on a
-        /// missed bar is to start tuning — the wrong destination for an artefact.
+        /// The display's nominal rate, or nothing if the link never reported one.
+        ///
+        /// On screen because a 30 Hz link makes every interval ~33.3 ms and so fails both
+        /// halves of the bar for reasons that have nothing to do with the renderer — Low
+        /// Power Mode, a critical thermal state, or the "Limit Frame Rate" accessibility
+        /// setting are each enough (Codex round 1, finding 3). Seeing `30Hz` beside a `FAIL`
+        /// is the difference between checking the device and starting down the ladder.
+        private var nominal: String {
+            guard let interval = recorder.nominalFrameMilliseconds, interval > 0 else { return "" }
+            return " \(Int((1_000 / interval).rounded()))Hz"
+        }
+
+        /// **`INTERRUPTED` and `NO DRAWS` both outrank `PASS`/`FAIL`**, because each means the
+        /// capture measured something other than the renderer — and the hand-off's answer to
+        /// a missed bar is to start tuning, the wrong destination for either artefact.
+        ///
+        /// `NO DRAWS` catches the deeper of the two. A display-link callback fires on every
+        /// refresh whether or not SwiftUI redrew anything, so a settled, static stage can
+        /// report a flawless 60 fps having asked the renderer for nothing at all: that
+        /// capture describes the display's cadence, which was never in question, rather than
+        /// ADR-009's claim, which is (Codex round 1, finding 1). The threshold is deliberately
+        /// generous — far fewer draws than frames still shows the renderer ran; near-zero
+        /// shows it did not.
         private func verdict(_ stats: FrameTimeStatistics) -> String {
             if recorder.wasInterrupted {
                 return "INTERRUPTED — discard and re-capture"
             }
-            return "\(stats.meetsSixtyFps ? "PASS" : "FAIL")\(stats.isLongEnoughToQuote ? "" : " (short)")"
+            if let draws = recorder.drawCount, draws < stats.frameCount / 10 {
+                return "NO DRAWS — measures the display, not the renderer"
+            }
+            let bar = stats.meetsSixtyFps ? "PASS" : "FAIL"
+            return "\(bar)\(stats.isLongEnoughToQuote ? "" : " (short)")"
+        }
+
+        private func seconds(_ milliseconds: Double) -> String {
+            String(format: "%.1f", milliseconds / 1_000)
         }
 
         private func ms(_ value: Double) -> String {

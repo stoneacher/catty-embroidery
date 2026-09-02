@@ -196,4 +196,111 @@ struct FrameTimeRecorderTests {
         #expect(!recorder.isRecording)
         #expect(recorder.statistics == nil)
     }
+
+    /// **Codex round 1, finding 2: `start()` while the app is already inactive.**
+    ///
+    /// The suspend logic records scene *transitions*, and both are no-ops outside a capture.
+    /// So `noteSuspended()` before `start()` was dropped, `start()` asserted "active", the
+    /// later `noteResumed()` was ignored because the recorder believed it had never been
+    /// suspended, and the whole 40-second gap was appended as one frame — with
+    /// `wasInterrupted` still false, i.e. an ordinary-looking FAIL rather than an
+    /// INTERRUPTED one. `start(isActive:)` takes the scene's state so it cannot be
+    /// mis-inferred from a transition that was never delivered.
+    @Test("a capture begun while the app is inactive does not measure the gap")
+    func aCaptureBegunWhileTheAppIsInactiveDoesNotMeasureTheGap() throws {
+        let recorder = FrameTimeRecorder()
+        recorder.noteSuspended()          // dropped: not recording yet
+        recorder.start(isActive: false)   // ...so the state has to come from here
+        recorder.record(timestamp: 1.000) // a callback before the link actually pauses
+        recorder.noteResumed()
+        recorder.record(timestamp: 41.000)
+        recorder.record(timestamp: 41.016)
+
+        let stats = try #require(recorder.stop())
+        #expect(recorder.wasInterrupted, "a capture begun inactive is an interrupted capture")
+        #expect(stats.frameCount == 1, "only the pair after the resume")
+        #expect(stats.worst < 20, "a 40-second interval means the gap was measured as a frame")
+    }
+
+    /// The ordinary case still reports clean, so `isActive` has not made every capture
+    /// interrupted by default.
+    @Test("a capture begun while active is not flagged")
+    func aCaptureBegunWhileActiveIsNotFlagged() {
+        let recorder = FrameTimeRecorder()
+        recorder.start(isActive: true)
+        recorder.record(timestamp: 1.000)
+        recorder.record(timestamp: 1.016)
+        _ = recorder.stop()
+
+        #expect(!recorder.wasInterrupted)
+    }
+
+    /// **Codex round 1, finding 2, second half**: a resume with no recorded suspend must
+    /// still drop the stale baseline, since the resign-active transition can fail to reach a
+    /// recording recorder.
+    @Test("a resume with no recorded suspend still reseeds the baseline")
+    func aResumeWithNoRecordedSuspendStillReseedsTheBaseline() throws {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        recorder.record(timestamp: 1.000)
+        // No noteSuspended() — the transition never arrived.
+        recorder.noteResumed()
+        recorder.record(timestamp: 41.000)
+        recorder.record(timestamp: 41.016)
+
+        let stats = try #require(recorder.stop())
+        #expect(stats.frameCount == 1)
+        #expect(stats.worst < 20, "the stale pre-gap timestamp survived the resume")
+    }
+
+    /// **Codex round 1, finding 1**: a capture reports how many times the canvas actually
+    /// drew, because a display-link callback is not evidence that anything was rendered.
+    ///
+    /// Driven here through `StageDrawCounter` directly — the counter is written inside a
+    /// `Canvas` closure that no unit test can run — so what is pinned is the accounting: a
+    /// capture attributes exactly the draws that happened between its own start and stop, and
+    /// nothing from before it.
+    @Test("a capture counts only the draws inside its own window")
+    func aCaptureCountsOnlyTheDrawsInsideItsOwnWindow() {
+        let recorder = FrameTimeRecorder()
+        StageDrawCounter.record()
+        StageDrawCounter.record()
+
+        recorder.start()
+        StageDrawCounter.record()
+        StageDrawCounter.record()
+        StageDrawCounter.record()
+        recorder.record(timestamp: 1.000)
+        recorder.record(timestamp: 1.016)
+        _ = recorder.stop()
+
+        #expect(recorder.drawCount == 3, "the two draws before start() are not this capture's")
+    }
+
+    /// A static stage draws nothing, which is exactly the case the draw count exists to make
+    /// visible: perfect frame times, no rendering.
+    @Test("a capture over a static stage reports no draws")
+    func aCaptureOverAStaticStageReportsNoDraws() throws {
+        let recorder = FrameTimeRecorder()
+        recorder.start()
+        for index in 0 ... 700 {
+            recorder.record(timestamp: Double(index) * 0.016)
+        }
+        let stats = try #require(recorder.stop())
+
+        // The numbers look perfect...
+        #expect(stats.meetsSixtyFps)
+        #expect(stats.isLongEnoughToQuote)
+        // ...and the capture still measured nothing about the renderer.
+        #expect(recorder.drawCount == 0)
+    }
+
+    /// Before any capture there is no draw count and no refresh rate to report, rather than a
+    /// zero that would read as "no draws".
+    @Test("a recorder that has never captured reports neither draws nor a rate")
+    func aRecorderThatHasNeverCapturedReportsNeitherDrawsNorARate() {
+        let recorder = FrameTimeRecorder()
+        #expect(recorder.drawCount == nil)
+        #expect(recorder.nominalFrameMilliseconds == nil)
+    }
 }

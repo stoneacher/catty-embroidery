@@ -31,9 +31,15 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     /// library's totality check compare against; this case is what the *app*
     /// appends, in debug builds only.
     ///
-    /// Compiled out of Release, so it cannot reach a user. The measurement build
-    /// is a Release build with `DEBUG` defined on the command line, which is what
-    /// keeps the optimiser on while leaving this reachable (ADR-029).
+    /// **Compiled out of any build without `DEBUG` — which is the real boundary,
+    /// not the Release configuration.** An earlier version of this comment said
+    /// "compiled out of Release" immediately before describing the
+    /// Release-with-`DEBUG` build in which it is compiled *in* (Codex round 1). The
+    /// distinction matters because that measurement build is a Release build: what
+    /// keeps this away from users is the absence of the `DEBUG` condition in an
+    /// ordinary distribution build, and the measurement build deliberately defines
+    /// it on the command line to keep the optimiser on while leaving this
+    /// reachable (ADR-029).
     ///
     /// **It is not, however, safe from M5 by construction, and the earlier
     /// wording here ("cannot be persisted by M5") overstated it.** This enum is

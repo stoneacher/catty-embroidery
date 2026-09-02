@@ -54,6 +54,16 @@ struct FrameTimeStatistics: Equatable {
     let p99: Double
     let worst: Double
 
+    /// How far into the capture the worst frame fell, in milliseconds from its start.
+    ///
+    /// **Kept because the hand-off asks for it and sorting had thrown it away.** Capture 5
+    /// runs the animation to 50 000 and says "note where in the run the worst frame falls" —
+    /// the bake schedule's last and largest rasterisation lands near the end, so *where*
+    /// distinguishes a bake spike from an unrelated stutter. Every other statistic here is
+    /// order-independent by design; this one deliberately is not, and it is the only reason
+    /// the unsorted array is walked (Codex round 1, finding 4).
+    let worstAtMilliseconds: Double
+
     /// **Optional, and that is a correctness decision rather than fastidiousness.** A zeroed
     /// `FrameTimeStatistics` would report `meetsSixtyFps == true` for a capture that never
     /// rendered a frame — the most flattering possible answer to the criterion, produced by
@@ -69,6 +79,19 @@ struct FrameTimeStatistics: Equatable {
         // `last`, not `nearestRank(1.0)`: the same value by construction, and saying so
         // directly means the worst frame cannot be lost to a rounding rule.
         worst = sorted[sorted.count - 1]
+        // Walked in arrival order, because position is the one thing sorting destroys. On a
+        // tie the *first* occurrence wins, which is the conservative reading for a bake
+        // spike: it points at the earliest frame that hit the worst cost.
+        var elapsed = 0.0
+        var worstAt = 0.0
+        for duration in durations {
+            if duration == worst {
+                worstAt = elapsed
+                break
+            }
+            elapsed += duration
+        }
+        worstAtMilliseconds = worstAt
     }
 
     /// AC3's bar, in one place: **p99 ≤ one frame, and no frame past two.**

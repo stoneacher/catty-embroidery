@@ -99,10 +99,22 @@ public struct PreviewRunState: Equatable, Sendable {
     ///
     /// So the trade is real and it is one-dimensional: **bake work falls as the chunk grows,
     /// per-frame tail work rises with it**, and the balance point is where one full
-    /// rasterisation costs the same as (chunk × frames) of tail stroking. Both sides are
-    /// GPU-bound. Nothing headless can locate it, so the fixed chunk — which is the
-    /// tail-optimal end, and the end ADR-009's per-frame claim actually rests on — stays as
-    /// shipped, and the constant is the device session's first tuning knob (ADR-029).
+    /// rasterisation costs the same as (chunk × frames) of tail stroking.
+    ///
+    /// **Each side is part CPU and part GPU, and an earlier version of this comment called
+    /// them both simply "GPU-bound" — which would send a reader tuning the wrong half**
+    /// (Codex round 1, finding 7). The measurements above are *CPU* measurements:
+    /// `StitchDrawPlan.planning` walks the colour runs and segment candidates, and
+    /// `CanvasStitchLayers.stroke` builds the paths and ellipses, both synchronously on the
+    /// main thread — 26.4 ms of plan work at chunk 1 000 and 0.45 ms of mid-gesture planning
+    /// are main-thread milliseconds, not GPU time. The rasterisation those plans drive is the
+    /// GPU half. So a regression can land on either side, and a main-thread one is the kind
+    /// this engine can actually cause.
+    ///
+    /// What is true is that the *balance point* cannot be located headlessly: it depends on
+    /// the GPU half, which no `swift test` can measure. So the fixed chunk — the tail-optimal
+    /// end, and the end ADR-009's per-frame claim actually rests on — stays as shipped, and
+    /// the constant is the device session's first tuning knob (ADR-029).
     ///
     /// Raising it flat is separately not an option: the shipping samples are 2 976 and
     /// 3 194 stitches, so `settleChunk = 5000` would stop both settling at all and put the

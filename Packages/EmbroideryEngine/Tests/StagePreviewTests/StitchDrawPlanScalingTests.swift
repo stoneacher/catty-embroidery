@@ -43,6 +43,31 @@ struct StitchDrawPlanScalingTests {
         // straddling the watermark belongs to neither window under the obvious reading and
         // would leave a permanent gap in the thread.
         #expect(dots == Self.tail)
+        // **The indices themselves, not just how many there are** (Codex round 1, finding 6).
+        // Counting alone was satisfied by a mutant that returned the *first* 100 dots and the
+        // first 100 segments instead of the ones around the watermark: all three scale cases
+        // still saw exactly 100 dots and 100–101 segments, every timing got cheaper rather
+        // than dearer, and the whole suite stayed green — while at 50 000 stitches the
+        // renderer would have been redrawing the beginning of the design instead of the live
+        // tail, i.e. the exact opposite of ADR-009's claim, on every frame. A count is a
+        // proxy for the window; the window is the thing being claimed, so assert the window.
+        for run in plan.dots {
+            #expect(
+                run.indices.lowerBound >= settled,
+                "a dot run starts at \(run.indices.lowerBound), below the \(settled) watermark"
+            )
+            #expect(run.indices.upperBound <= settled + Self.tail)
+        }
+        for stroke in plan.strokes {
+            // One earlier than the dots, deliberately: the segment straddling the watermark
+            // belongs to neither window under the obvious reading and would otherwise leave a
+            // permanent gap in the thread.
+            #expect(
+                stroke.segmentStarts.allSatisfy { $0 >= settled - 1 },
+                "a segment starts below the watermark: \(stroke.segmentStarts.min() ?? -1) < \(settled - 1)"
+            )
+            #expect(stroke.segmentStarts.allSatisfy { $0 <= settled + Self.tail })
+        }
         // **Bounded on both sides.** `<=` alone was one-sided, and this is the assertion
         // ADR-029 quotes as *the* discriminating test of ADR-009's claim: dots and strokes
         // come from two independent loops, so a `strokes(for:of:within:)` that returned `[]`
@@ -74,19 +99,29 @@ struct StitchDrawPlanScalingTests {
 
     /// The half AC4 omits, asserted as a *dependence* rather than an independence.
     ///
-    /// Stated as a **bound** rather than a bare inequality so it cannot pass on noise. The
-    /// earlier version claimed a bound in its comment and asserted only `>`, which two
-    /// adjacent noisy timings satisfy half the time.
+    /// **Bounded at the extreme only, and the middle point is recorded rather than asserted
+    /// — because CI refuted a bound there.** The history is worth keeping, since it is the
+    /// third wall-clock ratio on this branch that a hosted runner has refuted:
     ///
-    /// **The bound is set from a re-measurement, and the first attempt at it was refuted.**
-    /// `swift-code-reviewer` proposed `>= 10` on the strength of the "300× spread" this
-    /// suite's own header quoted; the test measures **6.0×**, because the header's 300× is
-    /// the *50 000*-run case and this comparison builds 1 000. A figure in prose that names
-    /// no fixture is how a reviewer is led to a constant the code cannot meet — so both
-    /// cases are now measured here, and the discriminating one is the extreme AC4 names.
+    /// - The original assertion was a bare `manyRuns > oneRun`, which two adjacent noisy
+    ///   timings satisfy half the time. `swift-code-reviewer` rightly called that out and
+    ///   proposed `>= 10×`, quoting the "300× spread" this suite's header carried.
+    /// - `>= 10×` **fails locally at 5.29×**: the header's 300× is the *50 000*-run case
+    ///   while that comparison builds **1 000**. A figure recorded without its fixture is a
+    ///   future wrong constant.
+    /// - A re-measured `>= 2.5×` (local 6.0×) then **failed on CI at 2.01×**.
     ///
-    /// Re-measured (release, M-series Mac, `fastest`): **1 run 0.041 ms · 1 000 runs
-    /// 0.246 ms (6.0×) · 50 000 runs 9.791 ms (239×)**.
+    /// The reason the middle point cannot carry a bound: at 1 000 runs the run walk is a
+    /// minority of the total, so the ratio's denominator is the *fixed tail cost* — a small
+    /// quantity, and the one most sensitive to contention on a shared runner. A ratio whose
+    /// denominator is noise-dominated is a bad instrument no matter which constant you pick.
+    /// At 50 000 runs the numerator is ~240× the denominator, so the same denominator noise
+    /// moves the ratio by a few per cent instead of by a factor of three. **So the assertion
+    /// lives where the signal is, and the middle timing is reported for the record.**
+    ///
+    /// Local (release, M-series Mac, `fastest`): **1 run 0.041 ms · 1 000 runs 0.246 ms
+    /// (6.0×) · 50 000 runs 9.791 ms (239×)**. CI compresses these by roughly 3×, which is
+    /// why the surviving bound is 30 rather than a hair under the local 239.
     @Test("the live plan grows with colour runs, not with stitch count")
     func theLivePlanGrowsWithColourRunsNotWithStitchCount() {
         let oneRun = list(settled: 50_000, colorRuns: 1)
@@ -102,23 +137,17 @@ struct StitchDrawPlanScalingTests {
         let thousandFold = seconds(manyRunsTime) / seconds(oneRunTime)
         let perStitch = seconds(everyStitchTime) / seconds(oneRunTime)
 
-        // The discriminating assertion: 239× measured, bounded at 50, so a loaded CI box has
-        // most of an order of magnitude of slack and a removed run walk still cannot pass.
+        // A mutant that removed the `colorRuns` walk would land at ~1, so 30 still
+        // discriminates by most of an order of magnitude while surviving a loaded runner.
         #expect(
-            perStitch >= 50,
+            perStitch >= 30,
             """
             a colour change per stitch planned in \(milliseconds(everyStitchTime)) against \
             \(milliseconds(oneRunTime)) for one run — ratio \
-            \(String(format: "%.1f", perStitch)), measured at 239×. If these are comparable, \
-            the run walk has been removed and this criterion no longer describes the code
-            """
-        )
-        // Monotone in between, which is what makes it the run count rather than a threshold.
-        #expect(
-            thousandFold >= 2.5,
-            """
-            1 000 colour runs: \(milliseconds(manyRunsTime)) against \
-            \(milliseconds(oneRunTime)), ratio \(String(format: "%.2f", thousandFold))
+            \(String(format: "%.1f", perStitch)), measured at 239× locally. If these are \
+            comparable, the run walk has been removed and this criterion no longer describes \
+            the code. (1 000 runs, for the record, not asserted: \
+            \(milliseconds(manyRunsTime)), ratio \(String(format: "%.2f", thousandFold)).)
             """
         )
     }
