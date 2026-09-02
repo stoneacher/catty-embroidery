@@ -25,10 +25,12 @@ struct SampleLibraryTests {
         #expect(!SampleLibrary.all.isEmpty)
     }
 
-    /// `SampleLibrary[id]` is documented as total. That is only true while `all`
-    /// covers every case, so pin it here rather than trusting the subscript's
+    /// `SampleLibrary[id]` is documented as total **over `SampleID.shipping`**, so that is
+    /// what this pins — not "every `SampleID` case", which is what it used to be called and
+    /// which in a debug build is a different and false claim: `us309Synthetic` is a case and
+    /// is deliberately not in `all`. Pinned here rather than trusting the subscript's
     /// `preconditionFailure` to be unreachable.
-    @Test("ids are unique and cover every SampleID case")
+    @Test("ids are unique and cover every shipping SampleID")
     func idsAreUniqueAndTotal() {
         let ids = SampleLibrary.all.map(\.id)
         #expect(Set(ids).count == ids.count, "duplicate sample id in SampleLibrary.all")

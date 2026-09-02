@@ -31,10 +31,21 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     /// library's totality check compare against; this case is what the *app*
     /// appends, in debug builds only.
     ///
-    /// Compiled out of Release, so it cannot reach a user and cannot be
-    /// persisted by M5. The measurement build is a Release build with `DEBUG`
-    /// defined on the command line, which is what keeps the optimiser on while
-    /// leaving this reachable (ADR-029).
+    /// Compiled out of Release, so it cannot reach a user. The measurement build
+    /// is a Release build with `DEBUG` defined on the command line, which is what
+    /// keeps the optimiser on while leaving this reachable (ADR-029).
+    ///
+    /// **It is not, however, safe from M5 by construction, and the earlier
+    /// wording here ("cannot be persisted by M5") overstated it.** This enum is
+    /// `Codable` over a `String` raw value that the doc above calls a persistence
+    /// token, so the moment M5 writes a selected id anywhere durable, a token
+    /// written by a debug build becomes **undecodable in Release** — a decode
+    /// failure on a user's own stored state, produced by a case that build cannot
+    /// see. What makes it harmless today is only that the app persists nothing at
+    /// all (no `AppStorage`, `SceneStorage`, `UserDefaults` or `JSONEncoder` in
+    /// the app target), which is a property of today's app rather than an
+    /// enforced invariant. **M5 must decode this token defensively — an unknown
+    /// raw value falling back to a shipping sample rather than throwing.**
     case us309Synthetic
     #endif
 

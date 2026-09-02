@@ -14,10 +14,13 @@ import Testing
 /// per-frame work is "independent of total stitch count". It is independent of the settled
 /// stitch count *at a fixed colour-run count*, and **linear in colour runs** —
 /// `StitchDrawPlan.planning` walks `list.colorRuns` twice, so a design that changed colour
-/// on every stitch would have `colorRuns == count` and a per-frame cost that is O(n) after
-/// all (measured: 0.0013 ms at one run against 0.3945 ms at 50 000, a 300× spread). Both
-/// halves are asserted, because a criterion that only states the flattering half is a
-/// criterion that cannot fail.
+/// on every stitch has `colorRuns == count` and a per-frame cost that is O(n) after all.
+/// Re-measured, and stated **with the fixture each number belongs to**, because the earlier
+/// bare "300× spread" was read as applying to the 1 000-run comparison below and produced a
+/// review suggestion the code fails: at 50 000 settled with a 100-stitch tail, planning the
+/// live window costs **0.041 ms at one colour run, 0.246 ms at 1 000 (6.0×) and 9.791 ms at
+/// 50 000 (239×)**. Both halves are asserted, because a criterion that only states the
+/// flattering half is a criterion that cannot fail.
 @Suite("US-309 draw-plan scaling", .serialized, .timeLimit(.minutes(1)))
 struct StitchDrawPlanScalingTests {
     /// The live tail AC4 names.
@@ -40,6 +43,14 @@ struct StitchDrawPlanScalingTests {
         // straddling the watermark belongs to neither window under the obvious reading and
         // would leave a permanent gap in the thread.
         #expect(dots == Self.tail)
+        // **Bounded on both sides.** `<=` alone was one-sided, and this is the assertion
+        // ADR-029 quotes as *the* discriminating test of ADR-009's claim: dots and strokes
+        // come from two independent loops, so a `strokes(for:of:within:)` that returned `[]`
+        // would give `segments == 0` and sail through an upper bound.
+        #expect(
+            segments >= Self.tail,
+            "\(segments) segments for a \(Self.tail)-stitch tail — the stroke loop produced nothing"
+        )
         #expect(segments <= Self.tail + 1)
     }
 
@@ -63,24 +74,51 @@ struct StitchDrawPlanScalingTests {
 
     /// The half AC4 omits, asserted as a *dependence* rather than an independence.
     ///
-    /// Stated as a bound rather than a bare inequality so it cannot pass on noise: a
-    /// thousand-fold increase in colour runs must cost strictly more than the single-run
-    /// case, and the assertion is that the growth is in the runs — which is what makes the
-    /// restated criterion honest about where ADR-009's claim stops holding.
+    /// Stated as a **bound** rather than a bare inequality so it cannot pass on noise. The
+    /// earlier version claimed a bound in its comment and asserted only `>`, which two
+    /// adjacent noisy timings satisfy half the time.
+    ///
+    /// **The bound is set from a re-measurement, and the first attempt at it was refuted.**
+    /// `swift-code-reviewer` proposed `>= 10` on the strength of the "300× spread" this
+    /// suite's own header quoted; the test measures **6.0×**, because the header's 300× is
+    /// the *50 000*-run case and this comparison builds 1 000. A figure in prose that names
+    /// no fixture is how a reviewer is led to a constant the code cannot meet — so both
+    /// cases are now measured here, and the discriminating one is the extreme AC4 names.
+    ///
+    /// Re-measured (release, M-series Mac, `fastest`): **1 run 0.041 ms · 1 000 runs
+    /// 0.246 ms (6.0×) · 50 000 runs 9.791 ms (239×)**.
     @Test("the live plan grows with colour runs, not with stitch count")
     func theLivePlanGrowsWithColourRunsNotWithStitchCount() {
         let oneRun = list(settled: 50_000, colorRuns: 1)
         let manyRuns = list(settled: 50_000, colorRuns: 1_000)
+        // A colour change on every stitch: `colorRuns == count`, which is the case that makes
+        // AC4's "independent of total stitch count" false as written.
+        let everyStitch = list(settled: 50_000, colorRuns: 50_000)
 
         let oneRunTime = fastest { blackHole(StitchDrawPlan.live(of: oneRun)) }
         let manyRunsTime = fastest { blackHole(StitchDrawPlan.live(of: manyRuns)) }
+        let everyStitchTime = fastest { blackHole(StitchDrawPlan.live(of: everyStitch)) }
 
+        let thousandFold = seconds(manyRunsTime) / seconds(oneRunTime)
+        let perStitch = seconds(everyStitchTime) / seconds(oneRunTime)
+
+        // The discriminating assertion: 239× measured, bounded at 50, so a loaded CI box has
+        // most of an order of magnitude of slack and a removed run walk still cannot pass.
         #expect(
-            seconds(manyRunsTime) > seconds(oneRunTime),
+            perStitch >= 50,
             """
-            1 000 colour runs planned in \(milliseconds(manyRunsTime)) against \
-            \(milliseconds(oneRunTime)) for one — if these are equal, the run walk has been \
-            removed and this criterion no longer describes the code
+            a colour change per stitch planned in \(milliseconds(everyStitchTime)) against \
+            \(milliseconds(oneRunTime)) for one run — ratio \
+            \(String(format: "%.1f", perStitch)), measured at 239×. If these are comparable, \
+            the run walk has been removed and this criterion no longer describes the code
+            """
+        )
+        // Monotone in between, which is what makes it the run count rather than a threshold.
+        #expect(
+            thousandFold >= 2.5,
+            """
+            1 000 colour runs: \(milliseconds(manyRunsTime)) against \
+            \(milliseconds(oneRunTime)), ratio \(String(format: "%.2f", thousandFold))
             """
         )
     }

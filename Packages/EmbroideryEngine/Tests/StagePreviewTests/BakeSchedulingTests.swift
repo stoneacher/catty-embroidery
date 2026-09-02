@@ -63,13 +63,6 @@ struct BakeSchedulingTests {
         return seen
     }
 
-    /// The number of full rasterisations a 50 000-stitch run pays for.
-    ///
-    /// **Recorded as a number rather than argued about**, because "a handful of times per
-    /// run" is what `PreviewRunState.settleChunk`'s own doc comment claims and fifty is not
-    /// a handful. That claim was measured against M3's real samples, which reach 3 194
-    /// stitches and bake three times; it does not survive the design this story exists to
-    /// run.
     /// **The bake count, recorded as the number it is.**
     ///
     /// `settleChunk`'s own comment said the raster is rebuilt "a handful of times per run".
@@ -90,15 +83,43 @@ struct BakeSchedulingTests {
         #expect(bakes.count > 10, "\(bakes.count) bakes — the 'handful' claim does not survive 50k")
     }
 
+    /// **The rule against hand-computed literals — the anchor for every other assertion in
+    /// this story that names `settleWatermark(for:)`.**
+    ///
+    /// Three tests compare an observed `settledCount` against the very function `apply`
+    /// calls, which by this story's own definition is a restatement: mutate the rule and both
+    /// sides move together. Each of those is paired with something that does bite, so nothing
+    /// was unguarded — but the pattern is exactly what the mutation exercise was about (M3
+    /// survived a restating helper), and one test that names the numbers outright fixes the
+    /// rule for all of them. Chosen to cover both edges: below the first chunk, exactly on a
+    /// boundary, and one either side of it.
+    @Test("the watermark rule, against hand-computed values")
+    func theWatermarkRuleAgainstHandComputedValues() {
+        #expect(PreviewRunState.settleChunk == 1_000, "the literals below are computed for a 1 000-stitch chunk")
+        #expect(PreviewRunState.settleWatermark(for: 0) == 0)
+        #expect(PreviewRunState.settleWatermark(for: 1) == 0)
+        #expect(PreviewRunState.settleWatermark(for: 999) == 0)
+        #expect(PreviewRunState.settleWatermark(for: 1_000) == 1_000)
+        #expect(PreviewRunState.settleWatermark(for: 1_001) == 1_000)
+        #expect(PreviewRunState.settleWatermark(for: 3_194) == 3_000)
+        #expect(PreviewRunState.settleWatermark(for: 49_999) == 49_000)
+        #expect(PreviewRunState.settleWatermark(for: 50_000) == 50_000)
+    }
+
     /// The live tail the shipped policy leaves is bounded by a **constant**, not a fraction.
     ///
     /// This is the half of the trade-off that argues *for* the fixed chunk, and it is why
     /// US-309 did not raise it on the headless evidence alone: the per-frame cost ADR-009
     /// claims is small is exactly this tail, and a geometric schedule — which would bound
     /// the bake count — buys that by letting the tail reach a third of the design.
+    /// **Deliberately non-multiples of `settleChunk`.** The earlier version used 6 000,
+    /// 20 000, 50 000 and 200 000, four counts whose tail is exactly zero — so a
+    /// `settleWatermark` with no quantisation whatsoever passed four of the five sub-cases
+    /// and the suite still read green. A guard for a *remainder* has to be given inputs with
+    /// remainders.
     @Test("the shipped policy leaves a live tail bounded by a constant")
     func theShippedPolicyLeavesALiveTailBoundedByAConstant() {
-        for count in [3_194, 6_000, 20_000, 50_000, 200_000] {
+        for count in [3_194, 6_001, 20_500, 49_999, 200_123] {
             let tail = count - PreviewRunState.settleWatermark(for: count)
             #expect(tail < PreviewRunState.settleChunk,
                     "a \(count)-stitch design left a \(tail)-stitch live tail")
