@@ -36,7 +36,7 @@ struct StitchDrawPlanScalingTests {
           arguments: [5_000, 20_000, 50_000])
     func theLivePlanTouchesOnlyTheLiveWindow(_ settled: Int) {
         let plan = StitchDrawPlan.live(of: list(settled: settled))
-        let segments = plan.strokes.reduce(0) { $0 + $1.segmentStarts.count }
+        let segments = plan.strokes.reduce(0) { $0 + $1.segments.count }
         let dots = plan.dots.reduce(0) { $0 + $1.indices.count }
         // The tail's own dots, and one segment more than the tail's segments: the live plan
         // deliberately starts one segment *earlier* than the dots do, because the segment
@@ -63,8 +63,8 @@ struct StitchDrawPlanScalingTests {
             // belongs to neither window under the obvious reading and would otherwise leave a
             // permanent gap in the thread.
             #expect(
-                stroke.segmentStarts.allSatisfy { $0 >= settled - 1 },
-                "a segment starts below the watermark: \(stroke.segmentStarts.min() ?? -1) < \(settled - 1)"
+                stroke.segments.allSatisfy { $0.from >= settled - 1 },
+                "a segment starts below the watermark: \(stroke.segments.map(\.from).min() ?? -1)"
             )
             // **`- 2`, and the two matter** (Codex round 2, finding 6). The renderer reads
             // `points[start]` *and* `points[start + 1]`, so with `N = settled + tail` points
@@ -73,9 +73,17 @@ struct StitchDrawPlanScalingTests {
             // satisfies — 100 starts, both old bounds green — while its last entry indexes
             // `points[N]` and traps in the renderer. A bound on an index has to be the bound
             // the *reader* of that index needs, not merely tighter than nothing.
+            // **Now a bound on `to`, which is the index the renderer actually reads**
+            // (US-310). It used to bound `start` at `N - 2` and justify the two by "the
+            // renderer reads `start + 1`" — reasoning that was correct precisely because a
+            // segment was implicitly `start → start + 1`. A segment is an explicit pair since
+            // US-310, so the honest bound is on the far endpoint itself: with
+            // `N = settled + tail` points the largest readable index is `N - 1`. The mutation
+            // the old bound existed to catch — a plan whose last segment indexes `points[N]`
+            // and traps in the renderer — still fails this one.
             #expect(
-                stroke.segmentStarts.allSatisfy { $0 <= settled + Self.tail - 2 },
-                "a segment starts at \(stroke.segmentStarts.max() ?? -1); the renderer reads start + 1"
+                stroke.segments.allSatisfy { $0.to <= settled + Self.tail - 1 },
+                "a segment ends at \(stroke.segments.map(\.to).max() ?? -1); the renderer reads it"
             )
         }
         // **Bounded on both sides.** `<=` alone was one-sided, and this is the assertion

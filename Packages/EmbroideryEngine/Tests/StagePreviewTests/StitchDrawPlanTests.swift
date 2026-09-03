@@ -73,7 +73,10 @@ struct StitchDrawPlanTests {
         // These are also strictly stronger, since they pin the order as well.
         #expect(plan.strokes.map(\.style) == [.traversal, .thread, .thread])
         #expect(plan.strokes.map(\.color) == [PreviewColor.red, PreviewColor.red, PreviewColor.green])
-        #expect(plan.strokes.map(\.segmentStarts) == [[1], [0, 2], [4]])
+        // Pairs since US-310: `[[1→2], [0→1, 2→3], [4→5]]`, the same five segments the
+        // implicit `i → i + 1` spelling described.
+        #expect(plan.strokes.map { $0.segments.map(\.from) } == [[1], [0, 2], [4]])
+        #expect(plan.strokes.allSatisfy { $0.segments.allSatisfy { $0.to == $0.from + 1 } })
     }
 
     /// Item 6's count assertion, which is what makes `.suppressed` observable at
@@ -85,7 +88,7 @@ struct StitchDrawPlanTests {
         let list = Self.twoShortRuns
         let plan = StitchDrawPlan.entire(of: list)
 
-        let drawn = plan.strokes.reduce(0) { $0 + $1.segmentStarts.count }
+        let drawn = plan.strokes.reduce(0) { $0 + $1.segments.count }
 
         #expect(drawn == list.count - 2)
     }
@@ -95,7 +98,7 @@ struct StitchDrawPlanTests {
         for list in [Self.twoShortRuns, Self.firstRunWithALongGap] {
             let plan = StitchDrawPlan.entire(of: list)
 
-            #expect(plan.strokes.allSatisfy { !$0.segmentStarts.isEmpty })
+            #expect(plan.strokes.allSatisfy { !$0.segments.isEmpty })
             #expect(plan.strokes.allSatisfy { $0.style != .suppressed })
         }
     }
@@ -110,7 +113,7 @@ struct StitchDrawPlanTests {
 
         #expect(plan.strokes.count == 1)
         #expect(plan.strokes.first?.style == .traversal)
-        #expect(plan.strokes.first?.segmentStarts == [0, 1])
+        #expect(plan.strokes.first?.segments.map(\.from) == [0, 1])
     }
 
     /// Item 7. The dot rule is stated in display-list terms because Catroid's
@@ -124,7 +127,7 @@ struct StitchDrawPlanTests {
         for list in [Self.twoShortRuns, Self.firstRunWithALongGap] {
             let plan = StitchDrawPlan.entire(of: list)
 
-            let dotted = plan.dots.reduce(0) { $0 + $1.indices.count }
+            let dotted = plan.dots.reduce(0) { $0 + $1.count }
             #expect(dotted == list.count)
 
             // A gapless partition of the indices, in order — the same property
