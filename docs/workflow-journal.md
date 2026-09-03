@@ -1324,3 +1324,43 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
   caught in seconds because the mutation harness runs the unmutated suite first. **Run the
   baseline inside the mutation script, not before it**: a "caught" result means nothing if the test
   was already red.
+
+## 2026-09-03 (US-310, rounds 4–5) — the loop closed on a fix-chain, and what the escalation rule could not see
+
+- **Final shape: 5 rounds, 15 findings, none rejected, severity Medium → Medium → Medium →
+  Medium → Low**, closing on stop condition 1 — round 5's findings were documentation-only, so
+  its triage changed no code. The corner Codex had been circling was declared closed in the same
+  round.
+- **The escalation rule fired correctly and its verdict was wrong, which is worth writing down
+  once.** At three flat Mediums the rule says escalate rather than continue, so it was escalated;
+  Sebastian chose one more round. Rounds 4 and 5 then produced the two most useful results on the
+  branch — a **regression I had introduced in round 3's fix**, and the first clean structural
+  verdict. The rule watches the severity *trend*, which cannot distinguish "four unrelated Mediums"
+  (thrashing) from "one chain of four, each narrower than the last" (converging on a corner).
+  **What would have distinguished them here: rounds 2–4 all found holes in the previous round's
+  fix, not in the original code.** A stop rule that noticed "is this round about the last round's
+  repair?" would have kept going without needing a human. Recorded as a candidate refinement, not
+  a change — one branch is not evidence enough to loosen a rule that exists to stop pathological
+  loops.
+- **The fix-chain, because it is the branch's clearest lesson.** Round 1: a coarse span could join
+  over a non-finite stitch and draw thread across travel. Round 2: my fix's shape (emit those
+  intervals individually) defeated the bound on wholly-rejected input. Round 3: stage *finiteness*
+  was the wrong predicate — a finite-but-unconvertible coordinate reintroduces the defect through
+  the transform. Round 4: **the fix for that over-applied** — consulting joinability at stride 1
+  dropped intervals from `.entire`/`.settled`/`.live`, which is a fine-window behaviour change
+  ADR-021 forbids, resting on a premise ("conversion rejection implies undrawability") that is
+  simply false. Round 5: the prose still conflated the two cases one clause after correcting them.
+  **Each repair was sound about the case it was aimed at and wrong about the case next door.**
+- **The generalisable rule that came out of it**: a guard must be placed by *what it decides*, not
+  by where the bug appeared. Joinability answers "may these be merged" and nothing else; the moment
+  it also answered "may this be drawn", it changed three windows it had no business touching.
+- **Three assertions of mine failed on unmutated code during these rounds** — a `Path.boundingRect`
+  compared against `radius × 2` (the box carries bézier control points), a float equality across a
+  differently-ordered product, and a dot fixture at the origin where scale has no positional
+  effect. All three were caught immediately because the mutation harness runs the baseline first.
+  **A "caught" verdict is meaningless without a green baseline in the same run**; that is now how
+  every mutation script here is written.
+- **Cost, for the thesis's delegation table**: 5 Codex rounds ≈ 25 minutes of wall clock, all
+  in the background, against three genuine rendering defects and one behaviour regression — none
+  of which the in-loop reviewer or my own 15-mutation round had found, and two of which a user
+  could have reached by zooming a design containing a single rejected coordinate.

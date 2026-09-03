@@ -268,12 +268,15 @@ public extension StitchDrawPlan {
                 // `.settled` and `.live` — a behaviour change in the fine windows, against
                 // ADR-021's rule that the display list shows what the program *requested*, and
                 // against this story's own claim that those windows draw what they drew before.
-                // Conversion rejection does not imply view-space undrawability: a coordinate past
-                // `Int64.max / 2` is unconvertible yet still maps finitely at a small scale, so
-                // the fine plan really did draw it. At stride 1 nothing merges, so nothing may be
-                // dropped; above it the drop is what keeps the bound true, and a segment lost
-                // there sits ~10^17 view points away — a fidelity trade a live frame is already
-                // making.
+                // Conversion rejection does not imply view-space undrawability, and the two
+                // cases differ in what dropping costs: a **non-finite** coordinate maps to a
+                // non-finite view point and is skipped in every plan, so dropping it costs no
+                // pixels — while a **finite but unconvertible** one (past `Int64.max / 2`) still
+                // maps finitely at a small scale, so the fine plan genuinely draws it and
+                // dropping it costs a segment ~10^17 view points off-screen. At stride 1 nothing
+                // merges, so nothing may be dropped either way; above it the drop is what keeps
+                // ADR-030's bound true, and the lost segment is a fidelity trade a live frame is
+                // already making.
                 if stride > 1, !Self.isJoinable(list.stitches[start], list.stitches[start + 1]) {
                     walked.close(&spanned, from: anchor, to: start)
                     anchor = start + 1

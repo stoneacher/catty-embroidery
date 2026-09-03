@@ -1,7 +1,13 @@
 # US-310 — Coarsen the mid-gesture draw plan
 
-**Status**: **Implemented 2026-09-03** — review and close-out below; the device capture is a
-stated hand-off ([`docs/us-310-device-handoff.md`](../../us-310-device-handoff.md)). Planned with
+**Status**: **Implemented 2026-09-03, both review layers complete, awaiting merge and the device
+capture.** Not `Done`: the device session ([`docs/us-310-device-handoff.md`](../../us-310-device-handoff.md))
+owns ADR-029's bar, and PR [#44](https://github.com/stoneacher/catty-embroidery/pull/44) is
+handed over green for Sebastian to merge. **Review: `swift-code-reviewer` (5 Important, 7
+suggestions) plus `/codex-review` rounds 1–5 — 15 findings, none rejected, severity Medium →
+Medium → Medium → Medium → **Low**, closing on stop condition 1 (a round whose triage changed no
+code).** Rounds 2, 3 and 4 each found a hole in the *previous round's fix* rather than in the
+original code, and round 5 declared the corner closed. Planned with
 `swift-architect`. The story's own premise check (AC1) ran **before** any code change and
 answered **go**; the numbers are in "Premise" below. **The planning pass corrected nineteen
 things**, marked **planning correction** inline — including two in ADR-029's own rung-2 wording
@@ -349,7 +355,12 @@ trade it away unknowingly.
    to `.entire`, asserted by plan equality. *(Met by `liveCoarseningThreshold`, which is the
    constant this criterion actually constrains — the measurement split it from the target.)*
 8. The bound is stated as what it is, not as "≤ N": thread segments
-   `≤ ceil(count/k) + colorRuns + traversalCount`, dots `≤ ceil(count/k) + colorRuns`. **The
+   `≤ ceil(count/k) + colorRuns + traversalCount + unreachableIntervals`, dots
+   `≤ ceil(count/k) + colorRuns`. *(The last term was added during review — **every break costs
+   a partial span**, and an interval the machine cannot reach breaks the span either side of it.
+   Codex found the shorter bound false twice: first for wholly rejected input, then for
+   alternating reachable/unreachable input, and finally that this criterion still quoted the
+   superseded form.)* **The
    colour-run axis is not bounded by this rung** — ADR-029's colour-change-per-stitch design is
    unhelped by it (P6).
 9. Coarsening is selected exactly when `canUseRaster == false` (a gesture **or** the fit
