@@ -176,7 +176,11 @@ struct CanvasStitchStrokeTests {
     /// both scales, so the ratio is exactly the radius ratio.
     @Test("a dot's size is a function of the scale, not a constant")
     func aDotsSizeIsAFunctionOfTheScale() {
-        let single = [PreviewStitch(position: StagePoint(x: 0, y: 0), color: .black)]
+        // **Off the origin, deliberately** (`/codex-review` round 4): at (0, 0) the scale has no
+        // positional effect at all, so a mutant that centred the dot with scale 1 while keeping
+        // the real translation — and the real scale for the radius — passed every dot assertion
+        // here. Only a non-origin point separates "scaled" from "translated".
+        let single = [PreviewStitch(position: StagePoint(x: 12, y: -7), color: .black)]
         var list = StitchDisplayList()
         list.append(contentsOf: single)
         let run = StitchDrawPlan.entire(of: list).dots[0]
@@ -199,6 +203,13 @@ struct CanvasStitchStrokeTests {
             abs(centre.x - single[0].position.x) > 1,
             "the fixture must actually be moved by the transform, or this pins nothing"
         )
+        // The scale must be visible in the *position*, not only in the radius: a translation-only
+        // mapping of a point 12 units out lands somewhere else entirely.
+        let translationOnly = CGPoint(
+            x: single[0].position.x + translated.translation.x,
+            y: single[0].position.y + translated.translation.y
+        )
+        #expect(abs(placed.boundingRect.midX - translationOnly.x) > 1)
 
         let expected = StitchDrawMetrics.dotRadius(atScale: 3) / StitchDrawMetrics.dotRadius(atScale: 1)
         #expect(expected == 3, "the metric itself must scale, or this test pins nothing")

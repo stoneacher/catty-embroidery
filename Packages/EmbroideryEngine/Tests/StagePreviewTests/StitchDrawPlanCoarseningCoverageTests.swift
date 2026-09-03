@@ -227,12 +227,19 @@ struct StitchDrawPlanCoarseningCoverageTests {
                 // skipped by `segmentPath` in either plan, so the coarse plan does not carry it
                 // at all — which is what keeps ADR-030's bound true even for a list that is
                 // entirely non-finite.
+                // **What the coarse plan must match depends on whether it is coarsening at all**
+                // (`/codex-review` round 4). At stride 1 nothing merges, so it must match the fine
+                // plan *exactly* — dropping an unreachable interval there would change `.entire`,
+                // which ADR-021 forbids. Above stride 1 it matches the fine plan's **reachable**
+                // intervals, because an interval it cannot merge across is one it drops.
                 let fine = StitchDrawPlan.entire(of: list)
-                let drawnByTheFinePlan = Self.threadSegments(fine)
-                    .map(\.from)
-                    .filter { Self.isDrawableInterval($0, of: list) }
+                let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, target: target)
+                let finelyThreaded = Self.threadSegments(fine).map(\.from)
+                let expected = stride == 1
+                    ? finelyThreaded
+                    : finelyThreaded.filter { Self.isDrawableInterval($0, of: list) }
                 let covered = Self.threadSegments(plan).flatMap { $0.from ..< $0.to }
-                #expect(Set(covered) == Set(drawnByTheFinePlan))
+                #expect(Set(covered) == Set(expected), "target \(target), stride \(stride)")
                 #expect(covered.count == Set(covered).count)
             }
         }
@@ -279,6 +286,33 @@ struct StitchDrawPlanCoarseningCoverageTests {
                 )
                 #expect(travelled.allSatisfy { $0.to == $0.from + 1 })
             }
+        }
+    }
+
+    /// **The fine windows are untouched by any of this**, which is the claim `/codex-review`
+    /// round 4 caught being false: the joinability guard was consulted at stride 1 too, so
+    /// `.entire` silently stopped emitting intervals touching an unconvertible coordinate — and
+    /// those are exactly the stitches ADR-021 says the display list must still show, since the
+    /// *stream* rejecting a coordinate is not the same as the *renderer* being unable to draw it.
+    /// A coordinate past `Int64.max / 2` is unconvertible and still maps finitely at a small
+    /// scale.
+    @Test("a fine plan emits every interval, reachable or not")
+    func aFinePlanEmitsEveryIntervalReachableOrNot() {
+        for list in Self.nonFiniteFixtures {
+            let fine = StitchDrawPlan.entire(of: list)
+
+            #expect(
+                StitchDrawPlan.coarse(of: list, threshold: .max, target: .max) == fine,
+                "an uncoarsened plan is the fine plan, guard or no guard"
+            )
+
+            // Stated the other way too: every interval the classifier calls thread is emitted.
+            let threaded = (0 ..< Swift.max(0, list.count - 1)).filter { index in
+                StitchSegmentStyle.classifying(
+                    from: list.stitches[index], to: list.stitches[index + 1]
+                ) == .thread
+            }
+            #expect(Set(Self.threadSegments(fine).map(\.from)) == Set(threaded))
         }
     }
 

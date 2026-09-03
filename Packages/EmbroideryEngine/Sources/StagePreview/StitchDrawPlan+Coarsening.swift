@@ -98,11 +98,17 @@ public extension StitchDrawPlan {
     /// ADR-028 already took when it accepted that off-screen content is revealed only as frames
     /// re-stroke.
     ///
-    /// **The bound is not `target`**, and pretending otherwise would be a false claim: every
-    /// colour run must close its own span and keep its own dot, and traversals are never joined,
-    /// so the counts are `ceil(count/stride) + colorRuns (+ traversals)`. A design that changes
-    /// colour every stitch — ADR-029's one genuinely growing axis — is therefore **not helped by
-    /// this rung at all**. Rungs 3 and 4 are where that case goes.
+    /// **The bound is not `target`**, and pretending otherwise would be a false claim: **every
+    /// break costs a partial span**, so thread segments are
+    /// `≤ ceil(count/stride) + colorRuns + traversals + unreachableIntervals` and dots
+    /// `≤ ceil(count/stride) + colorRuns`. A colour run must close its own span and keep its own
+    /// dot, traversals are never joined, and an interval the machine cannot reach breaks the span
+    /// either side of it. *(The last term arrived in `/codex-review` round 3, from a fixture
+    /// alternating reachable and unreachable stitches — one short segment per island, whatever
+    /// the stride. An earlier version of this comment omitted it and round 4 caught that the
+    /// comment still disagreed with ADR-030.)* A design that changes colour every stitch —
+    /// ADR-029's one genuinely growing axis — is **not helped by this rung at all**. Rungs 3 and
+    /// 4 are where that case goes.
     static func coarse(
         of list: StitchDisplayList,
         threshold: Int = liveCoarseningThreshold,

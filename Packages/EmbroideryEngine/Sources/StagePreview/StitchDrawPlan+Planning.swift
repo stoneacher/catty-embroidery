@@ -173,8 +173,16 @@ public extension StitchDrawPlan {
     /// coordinate. `EmbroideryPoint(converting:)` is the right test because it is **exactly what
     /// `EmbroideryStream.requiresTraversal` consults** (ADR-020's range guard, `Int(exactly:)`
     /// over the rounded stage value): a stitch it rejects is one the replay never reaches, so no
-    /// span may cross it, and everything it accepts is inside the stage range and therefore maps
-    /// finitely at every representable scale.
+    /// span may cross it.
+    ///
+    /// **Why acceptance is *sufficient*, spelled out because the whole fix rests on it.**
+    /// `EmbroideryPoint.embroideryUnits(fromStageValue:)` is `Int(exactly: javaRound(value * 2))`,
+    /// so it accepts a magnitude of at most about 4.6 × 10^18 — `Int64.max / 2`. `StageTransform`
+    /// guarantees a scale within `[minimumScale, maximumScale]` (0.05 … 50) and a translation that
+    /// is finite by construction, so an accepted coordinate maps to at most about 2.3 × 10^20:
+    /// finite by a factor of 10^288, and therefore drawable. So a stitch this predicate accepts is
+    /// one `segmentPath` will draw at *every* transform the type can represent, which is what
+    /// makes a transform-free joinability rule safe against a transform-dependent renderer guard.
     ///
     /// This keeps the plan **transform-free**, which `StitchDrawPlan`'s type doc requires —
     /// panning and zooming must not invalidate a plan, so joinability cannot be a function of the
@@ -254,16 +262,28 @@ public extension StitchDrawPlan {
                 // non-drawable endpoint, so these intervals were never drawn in *either* plan.
                 // What the coarse plan therefore matches is the fine plan's **drawn** coverage,
                 // not its emitted coverage, and the bound holds for every input.
-                if Self.isJoinable(list.stitches[start], list.stitches[start + 1]) {
+                // **`stride > 1` first, and that ordering is the whole point** (`/codex-review`
+                // round 4). Joinability answers "may this interval be *merged*", never "may it be
+                // *drawn*". Consulting it at stride 1 dropped intervals from `.entire`,
+                // `.settled` and `.live` — a behaviour change in the fine windows, against
+                // ADR-021's rule that the display list shows what the program *requested*, and
+                // against this story's own claim that those windows draw what they drew before.
+                // Conversion rejection does not imply view-space undrawability: a coordinate past
+                // `Int64.max / 2` is unconvertible yet still maps finitely at a small scale, so
+                // the fine plan really did draw it. At stride 1 nothing merges, so nothing may be
+                // dropped; above it the drop is what keeps the bound true, and a segment lost
+                // there sits ~10^17 view points away — a fidelity trade a live frame is already
+                // making.
+                if stride > 1, !Self.isJoinable(list.stitches[start], list.stitches[start + 1]) {
+                    walked.close(&spanned, from: anchor, to: start)
+                    anchor = start + 1
+                } else {
                     spanned += 1
                     if spanned == stride {
                         walked.threaded.append(Segment(from: anchor, to: start + 1))
                         anchor = start + 1
                         spanned = 0
                     }
-                } else {
-                    walked.close(&spanned, from: anchor, to: start)
-                    anchor = start + 1
                 }
             case .traversal:
                 // Travel ends the open span and is then drawn as the single interval it is.
