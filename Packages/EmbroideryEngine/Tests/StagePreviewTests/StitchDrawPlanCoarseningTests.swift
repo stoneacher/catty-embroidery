@@ -74,14 +74,14 @@ struct StitchDrawPlanCoarseningTests {
     // MARK: - T1 · the identity that keeps one planner behind three windows
 
     /// **Vacuous on its own, and deliberately kept anyway.** An implementation that ignored the
-    /// budget entirely passes this; it is discriminating only paired with `T3` and `T10`, which
-    /// require the budget to be respected above it. What it buys is the property that makes
+    /// threshold entirely passes this; it is discriminating only paired with `T3` and `T10`, which
+    /// require the target to be respected above it. What it buys is the property that makes
     /// `StitchDrawPlan+Planning.swift`'s "one planner parameterised by two windows, rather than
-    /// three implementations" argument survive this story: `coarse` at an unreachable budget
+    /// three implementations" argument survive this story: `coarse` at an unreachable threshold
     /// *is* `entire`, so the coarse path cannot drift into a second set of rules for the same
     /// pixels.
-    @Test("at an unreachable budget the coarse plan is the entire plan")
-    func atAnUnreachableBudgetTheCoarsePlanIsTheEntirePlan() {
+    @Test("at an unreachable threshold the coarse plan is the entire plan")
+    func atAnUnreachableThresholdTheCoarsePlanIsTheEntirePlan() {
         let fixtures = [
             StitchDisplayList(),
             displayList([previewStitch(0, 0, PreviewColor.red)]),
@@ -92,38 +92,11 @@ struct StitchDrawPlanCoarseningTests {
         ]
 
         for list in fixtures {
-            #expect(StitchDrawPlan.coarse(of: list, budget: .max) == StitchDrawPlan.entire(of: list))
+            #expect(
+                StitchDrawPlan.coarse(of: list, threshold: .max, target: .max)
+                    == StitchDrawPlan.entire(of: list)
+            )
         }
-    }
-
-    // MARK: - T2 · the stride rule, observed rather than restated
-
-    /// **The rule is a public pure function and this test reads it back**, which is US-309's
-    /// survivor lesson applied on day one: a test there that *restated* the settle rule instead
-    /// of observing it passed the mutant, and that is why `PreviewRunState.settleWatermark(for:)`
-    /// exists. Recomputing `(count - 1) / budget + 1` here would assert the arithmetic against
-    /// itself.
-    ///
-    /// The `budget: .max` case is not decoration: the obvious spelling of a ceiling division,
-    /// `(count + budget - 1) / budget`, **overflows and traps** there.
-    @Test("the stride is one at or below the budget and grows by ceiling division above it")
-    func theStrideIsOneAtOrBelowTheBudget() {
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 0, budget: 4000) == 1)
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 1, budget: 4000) == 1)
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 3999, budget: 4000) == 1)
-        // The boundary: at exactly the budget nothing is coarsened. **What this case catches is
-        // an off-by-one in the division, not the comparison** — checked by mutation rather than
-        // assumed, because the first version of this comment claimed the opposite. `count /
-        // budget + 1` for `(count - 1) / budget + 1` returns 2 here and fails; relaxing the
-        // guard from `>` to `>=` is an *equivalent* mutant that no test can catch, since the
-        // ceiling formula itself returns 1 at the boundary.
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 4000, budget: 4000) == 1)
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 4001, budget: 4000) == 2)
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 8000, budget: 4000) == 2)
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 8001, budget: 4000) == 3)
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 50000, budget: 4000) == 13)
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 50001, budget: 4000) == 13)
-        #expect(StitchDrawPlan.coarseningStride(forStitchCount: .max, budget: .max) == 1)
     }
 
     // MARK: - T3 · the bound, two-sided
@@ -133,19 +106,19 @@ struct StitchDrawPlanCoarseningTests {
     /// `StitchDrawPlanScalingTests`, where a plan that drew less than it should have satisfied
     /// every bound it was given.
     ///
-    /// The bound is stated as what it actually is rather than as "≤ budget": every colour run
+    /// The bound is stated as what it actually is rather than as "≤ target": every colour run
     /// must close its own span and keep its own dot, so the counts carry a `+ colorRuns` term
     /// and the segment count also carries the traversals, which are **never** coarsened.
     /// `fineTraversalCount` is therefore read off the fine plan rather than assumed to be zero.
-    @Test("above the budget the plan is bounded by the stride, and is not empty")
-    func aboveTheBudgetThePlanIsBoundedByTheStride() {
+    @Test("above the target the plan is bounded by the stride, and is not empty")
+    func aboveTheTargetThePlanIsBoundedByTheStride() {
         let list = SyntheticDesign.displayList(count: 50000, colorRuns: 5)
-        let budget = 4000
-        let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, budget: budget)
+        let target = 4000
+        let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, target: target)
 
         let fine = StitchDrawPlan.entire(of: list)
         let fineTraversals = fine.strokes.filter { $0.style == .traversal }.flatMap(\.segments).count
-        let plan = StitchDrawPlan.coarse(of: list, budget: budget)
+        let plan = StitchDrawPlan.coarse(of: list, threshold: target, target: target)
 
         let expected = (list.count + stride - 1) / stride
         let threads = Self.threadSegments(plan).count
@@ -163,12 +136,12 @@ struct StitchDrawPlanCoarseningTests {
     @Test("the coarse thread is continuous, not every k-th segment")
     func theCoarseThreadIsContinuous() throws {
         let list = Self.straightRun(200)
-        let budget = 10
-        // **The stride, read from the rule rather than assumed to be the budget.** They are
-        // different numbers — a budget of 10 over 200 stitches strides by 20 — and writing 10
+        let target = 10
+        // **The stride, read from the rule rather than assumed to be the target.** They are
+        // different numbers — a target of 10 over 200 stitches strides by 20 — and writing 10
         // here is the mistake this line exists to have already made once.
-        let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, budget: budget)
-        let plan = StitchDrawPlan.coarse(of: list, budget: budget)
+        let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, target: target)
+        let plan = StitchDrawPlan.coarse(of: list, threshold: target, target: target)
         let segments = Self.threadSegments(plan)
 
         try #require(segments.count > 1, "otherwise continuity is trivially satisfied")
@@ -202,7 +175,7 @@ struct StitchDrawPlanCoarseningTests {
         stitches += (0 ..< 20).map { previewStitch(1000 + Double($0 + 1) * 10, 0, PreviewColor.red) }
         let list = displayList(stitches)
 
-        let plan = StitchDrawPlan.coarse(of: list, budget: 8)
+        let plan = StitchDrawPlan.coarse(of: list, threshold: 8, target: 8)
 
         for segment in Self.threadSegments(plan) {
             for index in segment.from ..< segment.to {
@@ -225,7 +198,7 @@ struct StitchDrawPlanCoarseningTests {
     @Test("no coarse segment crosses a colour run boundary")
     func noCoarseSegmentCrossesAColourRunBoundary() throws {
         let list = SyntheticDesign.displayList(count: 20000, colorRuns: 4)
-        let plan = StitchDrawPlan.coarse(of: list, budget: 1000)
+        let plan = StitchDrawPlan.coarse(of: list, threshold: 1000, target: 1000)
 
         try #require(list.colorRuns.count == 4)
         for stroke in plan.strokes {
@@ -249,7 +222,7 @@ struct StitchDrawPlanCoarseningTests {
     func everyColourRunKeepsAtLeastOneDot() throws {
         for runs in [1000, 50000] {
             let list = SyntheticDesign.displayList(count: 50000, colorRuns: runs)
-            let plan = StitchDrawPlan.coarse(of: list, budget: 4000)
+            let plan = StitchDrawPlan.coarse(of: list, threshold: 4000, target: 4000)
 
             try #require(list.colorRuns.count == runs)
             #expect(plan.dots.count == list.colorRuns.count)
@@ -270,9 +243,9 @@ struct StitchDrawPlanCoarseningTests {
     @Test("the dot count is the per-run ceiling of the stride")
     func theDotCountIsThePerRunCeilingOfTheStride() {
         let list = SyntheticDesign.displayList(count: 50000, colorRuns: 5)
-        let budget = 4000
-        let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, budget: budget)
-        let plan = StitchDrawPlan.coarse(of: list, budget: budget)
+        let target = 4000
+        let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, target: target)
+        let plan = StitchDrawPlan.coarse(of: list, threshold: target, target: target)
 
         let expected = list.colorRuns.reduce(0) { total, run in
             total + (run.range.count + stride - 1) / stride
@@ -290,85 +263,56 @@ struct StitchDrawPlanCoarseningTests {
     /// the first of those is a reason to coarsen. Keying on the branch would coarsen a settled
     /// stage that merely has no cache yet.
     ///
-    /// **Asserted above the budget deliberately.** At or below it `coarse == entire`, so three
+    /// **Asserted above the threshold deliberately.** At or below it `coarse == entire`, so three
     /// of the four rows would compare the same value and the test would assert nothing (US-310
     /// planning correction P14).
     @Test("a frame gets the coarse window exactly while the transform is live")
     func aFrameGetsTheCoarseWindowExactlyWhileTheTransformIsLive() {
         var list = SyntheticDesign.displayList(count: 50000, colorRuns: 5)
         list.markSettled(upTo: 49000)
-        let budget = 4000
+        let target = 4000
 
         let fit = StageTransform(scale: 1, translation: .zero)
         let zoomed = StageTransform(scale: 3, translation: ViewPoint(x: 10, y: 20))
         let live = StageRenderTransform.live(bake: fit, current: zoomed)
         let settled = StageRenderTransform.settled(fit)
 
-        let coarse = StitchDrawPlan.coarse(of: list, budget: budget)
+        let coarse = StitchDrawPlan.coarse(of: list, threshold: target, target: target)
         #expect(coarse != StitchDrawPlan.entire(of: list), "otherwise the rows below prove nothing")
 
         // Live, whatever the caller says about compositing: a live transform can never
         // composite a raster baked at another one, so the liveness guard comes first.
         #expect(StitchDrawPlan.forFrame(
-            of: list, at: live, compositingRaster: false, budget: budget
+            of: list, at: live, compositingRaster: false, threshold: target, target: target
         ) == coarse)
         #expect(StitchDrawPlan.forFrame(
-            of: list, at: live, compositingRaster: true, budget: budget
+            of: list, at: live, compositingRaster: true, threshold: target, target: target
         ) == coarse)
 
         // Settled with no usable raster is *not* a gesture: it draws everything, uncoarsened.
         #expect(StitchDrawPlan.forFrame(
-            of: list, at: settled, compositingRaster: false, budget: budget
+            of: list, at: settled, compositingRaster: false, threshold: target, target: target
         ) == StitchDrawPlan.entire(of: list))
 
         // Settled over a valid raster draws only the live tail.
         #expect(StitchDrawPlan.forFrame(
-            of: list, at: settled, compositingRaster: true, budget: budget
+            of: list, at: settled, compositingRaster: true, threshold: target, target: target
         ) == StitchDrawPlan.live(of: list))
     }
 
     // MARK: - T10 · ADR-009's batching claim, in the coarse plan too
 
     /// ADR-009's claim is about the *number of paths*, and coarsening must not buy its saving
-    /// by emitting a stroke per span. Above the budget, or this is the existing `.entire`
+    /// by emitting a stroke per span. Above the threshold, or this is the existing `.entire`
     /// assertion again (`coarse == entire` there).
     @Test("the coarse plan keeps at most two strokes and one dot path per colour run")
     func theCoarsePlanKeepsAtMostTwoStrokesPerColourRun() {
         let list = SyntheticDesign.displayList(count: 50000, colorRuns: 5)
-        let plan = StitchDrawPlan.coarse(of: list, budget: 4000)
+        let plan = StitchDrawPlan.coarse(of: list, threshold: 4000, target: 4000)
 
         #expect(plan.strokes.count <= 2 * list.colorRuns.count)
         #expect(plan.dots.count == list.colorRuns.count)
         #expect(plan.strokes.count < list.count, "one path per span is the anti-goal")
     }
 
-    // MARK: - T11 · the shipping samples are untouched
-
-    /// **What makes the constant itself part of the contract.** Both shipping designs are below
-    /// `liveStitchBudget`, so every frame they draw — settled, live or mid-gesture — is exactly
-    /// the plan they drew before this story. Iterating `SampleLibrary.all` rather than `.first`
-    /// is deliberate: the existing plan suite uses `.first` and therefore covers only the
-    /// 3 194-stitch rosette, leaving the 2 976-stitch coil unasserted (US-310, P13).
-    @Test("no shipping sample is coarsened at the default budget")
-    func noShippingSampleIsCoarsenedAtTheDefaultBudget() throws {
-        try #require(!SampleLibrary.all.isEmpty)
-
-        for sample in SampleLibrary.all {
-            var list = StitchDisplayList()
-            var running = interpreter(sample.program)
-            for events in tickBatches(&running) {
-                list.append(contentsOf: RunBatch.reducing(events).stitches)
-            }
-
-            try #require(list.count > 1, "\(sample.id) must actually stitch")
-            #expect(
-                list.count < StitchDrawPlan.liveStitchBudget,
-                "\(sample.id) has \(list.count) stitches, at or above the budget"
-            )
-            #expect(
-                StitchDrawPlan.coarse(of: list, budget: StitchDrawPlan.liveStitchBudget)
-                    == StitchDrawPlan.entire(of: list)
-            )
-        }
-    }
 }

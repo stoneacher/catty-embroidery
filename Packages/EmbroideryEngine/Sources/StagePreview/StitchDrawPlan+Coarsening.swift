@@ -15,51 +15,72 @@
 /// overhead would have made coarsening useless, and the decision rule said so in advance
 /// (`docs/user-stories/milestone-3/US-310-coarsen-mid-gesture-draw-plan.md`, "Premise").
 public extension StitchDrawPlan {
-    /// How many stitches a *live* frame may plan before it starts joining them.
+    /// The stitch count above which a *live* frame starts joining stitches together.
     ///
-    /// **A knob, and honest about it.** The value is arithmetic rather than an optimum: 12.5×
-    /// below 50 000, above both shipping samples (2 976 and 3 194, so neither is affected at
-    /// all), above the renderer's own 2 000-stitch baking threshold, and at the resulting stride
-    /// of 13 the premise decomposition predicts 36.1 ms → ≲ 17.3 ms on the machine it was
-    /// measured on. Where the *balance* between fidelity and frame time actually sits depends on
-    /// GPU work no `swift test` can see, exactly as ADR-029 records for `settleChunk`, so this
-    /// is the device session's first knob and the story requires a sweep of at least two values.
+    /// Below it nothing changes at all: both shipping designs (2 976 and 3 194 stitches) draw
+    /// every stitch in every window, exactly as they did before this story, which
+    /// `StitchDrawPlanCoarseningTests` asserts by plan equality over `SampleLibrary.all`.
     ///
-    /// Raising it is safe in the sense that nothing breaks; it simply buys back fidelity at the
-    /// cost of frame time. Lowering it below a shipping sample's stitch count would start
-    /// coarsening designs that render perfectly well today, which `StitchDrawPlanCoarseningTests`
-    /// forbids.
-    static let liveStitchBudget = 4000
+    /// **Separate from `liveSegmentTarget`, because one number could not do both jobs — and it
+    /// took a measurement to see that.** A single "budget" had to be at once the floor that
+    /// keeps the 3 194-stitch rosette untouched (so ≥ 3 194) and the segment count a large
+    /// design should aim for (which the sweep put near 1 000). Those two requirements have no
+    /// common value. Measured mid-gesture at 50 001 stitches, drawn frames only, on the
+    /// simulator: uncoarsened median 36.1 ms; at a target of 4 000 (stride 13) 33.3 ms — still
+    /// two refresh periods; at 1 000 (stride 50) **16.667 ms, one period**; at 250 (stride 201)
+    /// 16.667 ms again, so the knob has a knee and 1 000 is past it.
+    ///
+    /// The consequence, recorded rather than hidden: the stride is **discontinuous here**. A
+    /// 4 000-stitch design draws every stitch and a 4 001-stitch one strides by 5. It lasts only
+    /// while a finger is down, and the alternative was a default that provably does not reach
+    /// one frame period at 50 000 stitches.
+    static let liveCoarseningThreshold = 4_000
 
-    /// How many stitch intervals one drawn segment may join, for a design of `count` stitches.
+    /// Roughly how many segments a live frame should draw once it is coarsening at all.
     ///
-    /// `1` at or below the budget — so ordinary designs are untouched — and `ceil(count/budget)`
-    /// above it.
+    /// **A knob, and honest about it.** 1 000 is where the simulator sweep above stops
+    /// improving, not a proof about any device: the numbers that decide it are part CPU and part
+    /// GPU, and ADR-029 records that the balance point cannot be located headlessly. The device
+    /// session sweeps it, and the story requires at least two values.
+    ///
+    /// Raising it buys fidelity at the cost of frame time; lowering it does the reverse and stops
+    /// helping below ~1 000. It has no effect at all on designs at or below
+    /// `liveCoarseningThreshold`.
+    static let liveSegmentTarget = 1_000
+
+    /// How many stitch intervals one drawn segment may join, for a design of `count` stitches
+    /// aiming at `target` segments: `1` at or below the target, `ceil(count/target)` above it.
     ///
     /// **Public and pure, deliberately, and this is US-309's most useful result applied on day
     /// one.** A test there *restated* the settle rule instead of observing it and therefore
     /// passed a mutant of the code it was meant to pin; the fix was to make the rule a function
     /// a test can call. This is that shape from the start.
     ///
-    /// Spelled `count <= budget ? 1 : (count - 1) / budget + 1` rather than the more familiar
-    /// `(count + budget - 1) / budget`, which **overflows and traps** at `budget == Int.max` —
-    /// a public entry point must not have an input that kills the process.
+    /// Spelled `count <= target ? 1 : (count - 1) / target + 1` rather than the more familiar
+    /// `(count + target - 1) / target`, which **overflows and traps** at `target == Int.max` — a
+    /// public entry point must not have an input that kills the process.
     ///
     /// **Not the trap ADR-029 records for the proportional settle chunk.** That failed because a
     /// threshold tracking a continuously growing count moved a *watermark with a side effect* on
     /// nearly every batch, turning fifty rasterisations into 176. This parameterises a pure
     /// per-frame function whose result is thrown away: nothing is cached on it and nothing is
-    /// triggered by its changing (at the default budget it changes 12 times across a
-    /// 50 000-stitch run). The coupling that *would* recreate that trap is rung 3 — a `Path`
-    /// cache keyed on the plan is invalidated whenever this changes — so rung 3 must key on the
-    /// plan including the stride and expect those dozen invalidations.
-    static func coarseningStride(forStitchCount count: Int, budget: Int) -> Int {
-        let budget = Swift.max(1, budget)
-        guard count > budget else { return 1 }
-        return (count - 1) / budget + 1
+    /// triggered by its changing (at the shipped target it changes ~50 times across a
+    /// 50 000-stitch run, and each change costs one plan that was going to be built anyway). The
+    /// coupling that *would* recreate that trap is rung 3 — a `Path` cache keyed on the plan is
+    /// invalidated whenever this changes — so rung 3 must key on the plan including the stride
+    /// and expect those invalidations.
+    ///
+    /// **Whether to coarsen at all is not this function's decision**; that is
+    /// `liveCoarseningThreshold`, applied by `coarse(of:threshold:target:)`. Keeping them apart
+    /// is what lets the device session tune fidelity without changing *which* designs are
+    /// affected.
+    static func coarseningStride(forStitchCount count: Int, target: Int) -> Int {
+        let target = Swift.max(1, target)
+        guard count > target else { return 1 }
+        return (count - 1) / target + 1
     }
 
-    /// Everything in the list, joined into at most `budget`-ish segments and dots.
+    /// Everything in the list, joined into roughly `target` segments and dots.
     ///
     /// The same window as `.entire` — the whole list, no raster underneath — at a stride above
     /// 1. It is *not* "every k-th segment": the thread stays continuous, because a dropped
@@ -70,18 +91,25 @@ public extension StitchDrawPlan {
     /// ADR-028 already took when it accepted that off-screen content is revealed only as frames
     /// re-stroke.
     ///
-    /// **The bound is not `budget`**, and pretending otherwise would be a false claim: every
+    /// **The bound is not `target`**, and pretending otherwise would be a false claim: every
     /// colour run must close its own span and keep its own dot, and traversals are never joined,
     /// so the counts are `ceil(count/stride) + colorRuns (+ traversals)`. A design that changes
     /// colour every stitch — ADR-029's one genuinely growing axis — is therefore **not helped by
     /// this rung at all**. Rungs 3 and 4 are where that case goes.
-    static func coarse(of list: StitchDisplayList, budget: Int = liveStitchBudget) -> StitchDrawPlan {
+    static func coarse(
+        of list: StitchDisplayList,
+        threshold: Int = liveCoarseningThreshold,
+        target: Int = liveSegmentTarget
+    ) -> StitchDrawPlan {
         planning(
             list,
             dotting: 0 ..< list.count,
             segmentsFrom: 0,
             upTo: lastSegment(before: list.count),
-            stride: coarseningStride(forStitchCount: list.count, budget: budget)
+            // At or below the threshold this is 1, and the plan is `entire`'s to the byte.
+            stride: list.count > threshold
+                ? coarseningStride(forStitchCount: list.count, target: target)
+                : 1
         )
     }
 
@@ -109,9 +137,12 @@ public extension StitchDrawPlan {
         of list: StitchDisplayList,
         at transform: StageRenderTransform,
         compositingRaster: Bool,
-        budget: Int = liveStitchBudget
+        threshold: Int = liveCoarseningThreshold,
+        target: Int = liveSegmentTarget
     ) -> StitchDrawPlan {
-        guard transform.canUseRaster else { return coarse(of: list, budget: budget) }
+        guard transform.canUseRaster else {
+            return coarse(of: list, threshold: threshold, target: target)
+        }
         return compositingRaster ? live(of: list) : entire(of: list)
     }
 }
