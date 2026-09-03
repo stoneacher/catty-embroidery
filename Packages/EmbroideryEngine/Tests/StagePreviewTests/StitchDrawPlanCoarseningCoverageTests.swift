@@ -118,15 +118,33 @@ struct StitchDrawPlanCoarseningCoverageTests {
             previewStitch(40, 0, PreviewColor.green),
             previewStitch(.nan, 0, PreviewColor.green),
             previewStitch(60, 0, PreviewColor.green)
+        ]),
+        // **Finite, and still unreachable** (`/codex-review` round 3): `1e307` is a perfectly
+        // finite `Double` that `EmbroideryPoint(converting:)` rejects, and at
+        // `StageTransform.maximumScale` it maps to a non-finite view point — so the renderer
+        // skips both adjacent intervals while a span joined over it would be drawn. A
+        // finiteness test passes this fixture; the reachability test does not.
+        displayList([
+            previewStitch(0, 0, PreviewColor.red),
+            previewStitch(1e307, 0, PreviewColor.red),
+            previewStitch(10, 0, PreviewColor.red),
+            previewStitch(20, 0, PreviewColor.red),
+            previewStitch(1e300, 1e300, PreviewColor.red),
+            previewStitch(30, 0, PreviewColor.red)
         ])
     ]
 
-    /// Whether the interval starting at `index` has two finite endpoints — the intervals
-    /// `segmentPath` will actually draw.
+    /// Whether the interval starting at `index` joins two stitches the machine can actually
+    /// reach — the intervals a coarse plan is allowed to merge, and the ones the renderer draws.
+    ///
+    /// Uses `EmbroideryPoint(converting:)`, the same public predicate the planner and
+    /// `EmbroideryStream.requiresTraversal` consult. **An earlier version repeated the planner's
+    /// finiteness proxy instead**, which `/codex-review` round 3 pointed out is the test
+    /// asserting the implementation against itself — and it was the weaker rule, so it could not
+    /// have caught the `1e307`-at-maximum-scale case.
     private static func isDrawableInterval(_ index: Int, of list: StitchDisplayList) -> Bool {
-        let first = list.stitches[index].position
-        let second = list.stitches[index + 1].position
-        return first.x.isFinite && first.y.isFinite && second.x.isFinite && second.y.isFinite
+        EmbroideryPoint(converting: list.stitches[index].position) != nil
+            && EmbroideryPoint(converting: list.stitches[index + 1].position) != nil
     }
 
     private static func threadSegments(_ plan: StitchDrawPlan) -> [StitchDrawPlan.Segment] {
@@ -262,6 +280,41 @@ struct StitchDrawPlanCoarseningCoverageTests {
                 #expect(travelled.allSatisfy { $0.to == $0.from + 1 })
             }
         }
+    }
+
+    /// **Every break can cost a partial span, and the bound has to say so** (`/codex-review`
+    /// round 3, finding 2). Dropping wholly unreachable intervals fixed the all-rejected case,
+    /// but a list that alternates reachable and unreachable stitches breaks the span at every
+    /// third interval, so it yields one short segment per island however large the stride is.
+    ///
+    /// The honest bound is therefore `ceil(count / stride)` plus one term per *thing that forces
+    /// a break*: the colour runs, the traversals, and the unreachable intervals. Asserted here
+    /// against a fixture built to maximise the last of those, which is the case the synthetic
+    /// design (all finite) and the all-rejected fixture (no drawable islands) both miss.
+    @Test("the bound holds when unreachable stitches break the spans")
+    func theBoundHoldsWhenUnreachableStitchesBreakTheSpans() {
+        var stitches: [PreviewStitch] = []
+        for index in 0 ..< 1_666 {
+            let base = Double(index) * 10
+            stitches.append(previewStitch(base, 0, PreviewColor.red))
+            stitches.append(previewStitch(base + 2, 0, PreviewColor.red))
+            stitches.append(previewStitch(.nan, 0, PreviewColor.red))
+        }
+        let list = displayList(stitches)
+        let target = 100
+        let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, target: target)
+
+        let plan = StitchDrawPlan.coarse(of: list, threshold: 0, target: target)
+        let fine = StitchDrawPlan.entire(of: list)
+
+        let unreachable = (0 ..< list.count - 1).count { !Self.isDrawableInterval($0, of: list) }
+        let traversals = fine.strokes.filter { $0.style == .traversal }.flatMap(\.segments).count
+        let bound = (list.count + stride - 1) / stride + list.colorRuns.count + traversals + unreachable
+
+        #expect(Self.threadSegments(plan).count <= bound)
+        // Two-sided: the drawable islands must still be drawn, one segment each.
+        #expect(Self.threadSegments(plan).count >= 1_000)
+        #expect(stride > 1, "otherwise this says nothing about coarsening")
     }
 
     /// **The bound has to survive the input ADR-021 permits, and the first fix did not**

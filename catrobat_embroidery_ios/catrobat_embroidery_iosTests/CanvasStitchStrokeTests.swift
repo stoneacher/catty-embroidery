@@ -186,6 +186,20 @@ struct CanvasStitchStrokeTests {
             run, of: single, transform: StageTransform(scale: 3, translation: .zero)
         )
 
+        // **Where the dot is, not merely how big it is** (`/codex-review` round 3, finding 3). A
+        // mutant that ignored the translation for the centre while still scaling the radius
+        // passed the earlier "the bounding rects differ" assertion, because the radius alone
+        // changes the box. One dot's box is centred on its own centre, so this pins the position.
+        let translated = StageTransform(scale: 3, translation: ViewPoint(x: 40, y: -15))
+        let placed = CanvasStitchStroke.dotPath(run, of: single, transform: translated)
+        let centre = translated.viewCGPoint(of: single[0].position)
+        #expect(abs(placed.boundingRect.midX - centre.x) < 1e-9)
+        #expect(abs(placed.boundingRect.midY - centre.y) < 1e-9)
+        #expect(
+            abs(centre.x - single[0].position.x) > 1,
+            "the fixture must actually be moved by the transform, or this pins nothing"
+        )
+
         let expected = StitchDrawMetrics.dotRadius(atScale: 3) / StitchDrawMetrics.dotRadius(atScale: 1)
         #expect(expected == 3, "the metric itself must scale, or this test pins nothing")
         // **Within a tolerance, and the reason is arithmetic rather than laziness**: the two

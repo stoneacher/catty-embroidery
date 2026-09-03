@@ -160,13 +160,28 @@ public extension StitchDrawPlan {
     /// Whether the interval between two stitches may be *merged into* a longer segment.
     ///
     /// Only about representability, never about style: the classifier decides what a thread is,
-    /// this decides what may be joined. Both endpoints must be finite, because a joined segment
-    /// carries only its two ends and the renderer's `isDrawable` guard can then no longer see the
-    /// vertex in between. Spelled here rather than on `StagePoint` so the engine's geometry type
-    /// does not grow a member for one caller's benefit.
+    /// this decides what may be joined. A joined segment carries only its two ends, so the
+    /// renderer's per-subpath `isDrawable` guard can no longer see the vertex in between — which
+    /// makes joining over an unreachable stitch draw thread across ground the machine never
+    /// visits.
+    ///
+    /// **The predicate is "can the machine go there", not "is the coordinate finite"**, and the
+    /// difference is a defect `/codex-review` round 3 found. A *finite* coordinate can still map
+    /// to a non-finite view point: `1e307` at `StageTransform.maximumScale` overflows, so the
+    /// fine plan draws neither adjacent interval while a coarse span joined straight over it —
+    /// the same ADR-024 violation as round 1's, reached through the transform instead of the
+    /// coordinate. `EmbroideryPoint(converting:)` is the right test because it is **exactly what
+    /// `EmbroideryStream.requiresTraversal` consults** (ADR-020's range guard, `Int(exactly:)`
+    /// over the rounded stage value): a stitch it rejects is one the replay never reaches, so no
+    /// span may cross it, and everything it accepts is inside the stage range and therefore maps
+    /// finitely at every representable scale.
+    ///
+    /// This keeps the plan **transform-free**, which `StitchDrawPlan`'s type doc requires —
+    /// panning and zooming must not invalidate a plan, so joinability cannot be a function of the
+    /// transform even though the defect was found through one.
     private static func isJoinable(_ first: PreviewStitch, _ second: PreviewStitch) -> Bool {
-        first.position.x.isFinite && first.position.y.isFinite
-            && second.position.x.isFinite && second.position.y.isFinite
+        EmbroideryPoint(converting: first.position) != nil
+            && EmbroideryPoint(converting: second.position) != nil
     }
 
     /// The classified segments of one run's window, split by style.
