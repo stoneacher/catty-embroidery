@@ -27,8 +27,15 @@ public extension StitchDrawPlan {
     /// design should aim for (which the sweep put near 1 000). Those two requirements have no
     /// common value. Measured mid-gesture at 50 001 stitches, drawn frames only, on the
     /// simulator: uncoarsened median 36.1 ms; at a target of 4 000 (stride 13) 33.3 ms — still
-    /// two refresh periods; at 1 000 (stride 50) **16.667 ms, one period**; at 250 (stride 201)
-    /// 16.667 ms again, so the knob has a knee and 1 000 is past it.
+    /// two refresh periods; at 1 000 (**stride 51**) **16.667 ms, one period**; at 250 (stride
+    /// 201) 16.667 ms again.
+    ///
+    /// **What that does and does not establish** (`swift-code-reviewer`): stride 51 gets the
+    /// median under one period and stride 201 reads no better. It does **not** locate a knee —
+    /// an earlier version of this comment said so — because a display-link interval reports only
+    /// multiples of the refresh period, so 51 and 201 both read the floor and are
+    /// indistinguishable; the transition lies anywhere in (13, 51]. 1 000 is preferred over 250
+    /// on fidelity grounds, which needs no knee.
     ///
     /// The consequence, recorded rather than hidden: the stride is **discontinuous here**. A
     /// 4 000-stitch design draws every stitch and a 4 001-stitch one strides by 5. It lasts only

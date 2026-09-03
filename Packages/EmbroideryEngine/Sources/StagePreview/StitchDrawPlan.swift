@@ -72,7 +72,7 @@ public struct StitchDrawPlan: Equatable, Sendable {
         ///
         /// In `.entire`, `.settled` and `.live` every segment still spans one stitch interval
         /// (`to == from + 1`) — coarsening happens only in `.coarse`, and only above
-        /// `liveStitchBudget`. `StitchDrawPlanWindowTests` asserts that, because a stride
+        /// `liveCoarseningThreshold`. `StitchDrawPlanWindowTests` asserts that, because a stride
         /// leaking into a fine window would leave the suites that read `from` green while the
         /// thread rendered in dashes.
         public let segments: [Segment]
@@ -85,8 +85,12 @@ public struct StitchDrawPlan: Equatable, Sendable {
     /// the un-coarsened paths, not this one. At stride 1 an array would allocate one `Int` per
     /// stitch, up to 50 000 of them, in every settled bake; a fix for the live path would have
     /// become a regression for the settled path it does not touch. `Range` + stride is
-    /// allocation-free at every stride, and `dottedIndices` is the only way to read it, so no
-    /// caller can iterate the range and quietly ignore the stride.
+    /// allocation-free at every stride, and `dottedIndices` is the way to read it. `indices`
+    /// stays public because the window assertions in `StitchDrawPlanScalingTests` are about the
+    /// range itself — so "read it through `dottedIndices`" is a **convention**, not something the
+    /// type enforces, and a renderer that iterated `indices` would silently draw every dot again
+    /// (`swift-code-reviewer` corrected an earlier version of this comment, which claimed no
+    /// caller *could*).
     ///
     /// *(Before US-310 this comment said a `Range` was right because "**every** entry in the
     /// window is dotted — there is nothing to filter". That is still the rule at stride 1 and
@@ -128,13 +132,18 @@ public struct StitchDrawPlan: Equatable, Sendable {
 
         /// How many dots this run draws — `indices.count` only at stride 1.
         ///
-        /// Arithmetic rather than `dottedIndices.count`, which would walk the sequence: at
-        /// 50 000 stitches that is the difference between a division and fifty thousand
-        /// increments, on a path a frame takes.
+        /// Arithmetic rather than `dottedIndices.count`, which would walk the sequence. It has no
+        /// production caller today (the renderer iterates `dottedIndices` and never asks how
+        /// many); it exists so a test can state a dot count without re-deriving the stride rule.
+        ///
+        /// **Spelled to avoid the overflow its own sibling warns about.** `(span + stride - 1) /
+        /// stride` — the version written first — traps at `stride == Int.max`, which is exactly
+        /// what `coarseningStride`'s doc forbids for a public entry point, and it was reachable
+        /// because `planning` had accidentally become public (`swift-code-reviewer`).
         public var count: Int {
             let span = indices.count
             let stride = Swift.max(1, stride)
-            return (span + stride - 1) / stride
+            return span == 0 ? 0 : (span - 1) / stride + 1
         }
     }
 

@@ -92,8 +92,17 @@ struct StitchDrawPlanCoarseningTests {
         ]
 
         for list in fixtures {
+            // Two ways to reach the identity, and they prove different things
+            // (`swift-code-reviewer`). An unreachable *threshold* never enters the stride path at
+            // all, so it pins only the gate; an unreachable *target* does enter it and computes a
+            // stride of 1, which is what keeps "one planner, not three implementations" true —
+            // and it drives `coarseningStride`'s overflow-free spelling through `coarse`.
             #expect(
                 StitchDrawPlan.coarse(of: list, threshold: .max, target: .max)
+                    == StitchDrawPlan.entire(of: list)
+            )
+            #expect(
+                StitchDrawPlan.coarse(of: list, threshold: 0, target: .max)
                     == StitchDrawPlan.entire(of: list)
             )
         }
@@ -155,42 +164,6 @@ struct StitchDrawPlanCoarseningTests {
         // And it really is coarser than the fine plan, or the assertion above is met by k = 1.
         #expect(segments.count < list.count - 1)
         #expect(segments.allSatisfy { $0.to - $0.from <= stride })
-    }
-
-    // MARK: - T5 · no thread across travel
-
-    /// ADR-024 records that **both** references draw travel as solid thread indistinguishable
-    /// from stitching, so a machine's travel moves look sewn, and that we deliberately do not.
-    /// Coarsening is the one change that could reintroduce it by accident: a span joining
-    /// `a → b` over a jump would draw exactly the line the references draw.
-    ///
-    /// Asserted through the public classifier over the list's own stitches, so the test does not
-    /// re-implement the rule it is checking.
-    @Test("no coarse thread segment spans a traversal, and traversals stay unmerged")
-    func noCoarseThreadSegmentSpansATraversal() throws {
-        // Twenty short moves, one long hop, twenty more — one colour throughout, so the hop is
-        // a traversal rather than a suppressed colour boundary.
-        var stitches = (0 ..< 20).map { previewStitch(Double($0) * 10, 0, PreviewColor.red) }
-        stitches.append(previewStitch(1000, 0, PreviewColor.red))
-        stitches += (0 ..< 20).map { previewStitch(1000 + Double($0 + 1) * 10, 0, PreviewColor.red) }
-        let list = displayList(stitches)
-
-        let plan = StitchDrawPlan.coarse(of: list, threshold: 8, target: 8)
-
-        for segment in Self.threadSegments(plan) {
-            for index in segment.from ..< segment.to {
-                let style = StitchSegmentStyle.classifying(
-                    from: list.stitches[index], to: list.stitches[index + 1]
-                )
-                #expect(style == .thread, "segment \(segment.from)→\(segment.to) spans a \(style)")
-            }
-        }
-
-        // The traversal itself is still drawn, and drawn as one unit segment: merging two jumps
-        // would erase the needle penetration between them.
-        let traversals = plan.strokes.filter { $0.style == .traversal }.flatMap(\.segments)
-        #expect(traversals == [StitchDrawPlan.Segment(from: 19, to: 20)])
-        try #require(!Self.threadSegments(plan).isEmpty)
     }
 
     // MARK: - T6 · no span crosses a colour run

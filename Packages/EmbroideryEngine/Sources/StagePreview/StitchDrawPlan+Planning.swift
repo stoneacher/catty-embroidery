@@ -62,9 +62,11 @@ public extension StitchDrawPlan {
     /// zero so an empty or one-stitch list stays total. Both windows are expressed in
     /// terms of this, so the off-by-one lives in one place.
     ///
-    /// Internal rather than `private` since US-310, so `+Coarsening.swift` expresses its window
-    /// in the same terms instead of re-deriving the same off-by-one in a second file.
-    static func lastSegment(before count: Int) -> Int {
+    /// **`internal`, spelled out.** It was `private` until US-310, which needed it from
+    /// `+Coarsening.swift`; dropping `private` inside a `public extension` makes a member
+    /// **public**, which is not what the change intended and is what review caught. The keyword
+    /// is explicit here so the next edit cannot widen it by omission.
+    internal static func lastSegment(before count: Int) -> Int {
         Swift.max(0, count - 1)
     }
 
@@ -85,7 +87,13 @@ public extension StitchDrawPlan {
     /// the segments whose both endpoints it holds — so the suppression rule is
     /// enforced by the iteration, and the classifier's `.suppressed` result is a
     /// second, independent check rather than the only one.
-    static func planning(
+    /// **`internal`, spelled out**, for the reason `lastSegment(before:)` records: undecorated
+    /// members of a `public extension` are public, and a *public* `planning` would be a public
+    /// constructor for arbitrary plans at a caller-chosen window and stride — which is precisely
+    /// the chokepoint `Stroke` and `DotRun` give up their memberwise initializers to keep
+    /// (`StitchDrawPlan`'s type doc). It also made `stride: 0` and `stride: .max` reachable from
+    /// outside the module.
+    internal static func planning(
         _ list: StitchDisplayList,
         dotting dotted: Range<Int>,
         segmentsFrom firstSegment: Int,
@@ -156,6 +164,18 @@ public extension StitchDrawPlan {
     private struct WalkedSegments {
         var threaded: [Segment] = []
         var traversed: [Segment] = []
+
+        /// Emits the open span, if there is one, and marks it closed.
+        ///
+        /// One method for all three closing sites, because **dropping one of them is invisible**:
+        /// review found that deleting the mid-run close left all 750 tests green, which on screen
+        /// is up to `stride − 1` intervals of missing thread before every jump and every colour
+        /// change. `spanned` is `inout` so a caller cannot close the span and forget to reset it.
+        mutating func close(_ spanned: inout Int, from anchor: Int, to vertex: Int) {
+            defer { spanned = 0 }
+            guard spanned > 0 else { return }
+            threaded.append(Segment(from: anchor, to: vertex))
+        }
     }
 
     /// Walks one run's owned segments, joining up to `stride` consecutive thread intervals into
@@ -174,32 +194,37 @@ public extension StitchDrawPlan {
         var spanned = 0
 
         for start in candidates {
-            let style = StitchSegmentStyle.classifying(
+            // **A `switch`, not two `if`s.** The `if` form this replaced (US-310, first draft)
+            // silently treated a *new* `StitchSegmentStyle` case as "close the span and draw
+            // nothing"; exhaustiveness makes a fourth case a compile error here, which is how
+            // `main` had it before this story and how the renderer still has it
+            // (`swift-code-reviewer`).
+            switch StitchSegmentStyle.classifying(
                 from: list.stitches[start], to: list.stitches[start + 1]
-            )
-            if style == .thread {
+            ) {
+            case .thread:
                 spanned += 1
                 if spanned == stride {
                     walked.threaded.append(Segment(from: anchor, to: start + 1))
                     anchor = start + 1
                     spanned = 0
                 }
-                continue
-            }
-
-            // Travel and a colour boundary both end the span; only travel is itself drawn, and
-            // it is drawn as the single interval it is. Merging two jumps would erase the needle
-            // penetration between them.
-            if spanned > 0 { walked.threaded.append(Segment(from: anchor, to: start)) }
-            if style == .traversal {
+            case .traversal:
+                // Travel ends the open span and is then drawn as the single interval it is.
+                // Merging two jumps would erase the needle penetration between them.
+                walked.close(&spanned, from: anchor, to: start)
                 walked.traversed.append(Segment(from: start, to: start + 1))
+                anchor = start + 1
+            case .suppressed:
+                // Cannot arise inside a run (see `planning`); closing anyway keeps the second,
+                // independent check a check rather than the only one.
+                walked.close(&spanned, from: anchor, to: start)
+                anchor = start + 1
             }
-            anchor = start + 1
-            spanned = 0
         }
         // A span shorter than the stride still has to be drawn, or the run's thread stops short
         // of its own last stitch — visible as a nibbled end on every colour run.
-        if spanned > 0 { walked.threaded.append(Segment(from: anchor, to: candidates.upperBound)) }
+        walked.close(&spanned, from: anchor, to: candidates.upperBound)
 
         return walked
     }

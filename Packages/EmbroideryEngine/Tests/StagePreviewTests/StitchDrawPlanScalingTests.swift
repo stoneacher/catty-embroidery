@@ -37,7 +37,7 @@ struct StitchDrawPlanScalingTests {
     func theLivePlanTouchesOnlyTheLiveWindow(_ settled: Int) {
         let plan = StitchDrawPlan.live(of: list(settled: settled))
         let segments = plan.strokes.reduce(0) { $0 + $1.segments.count }
-        let dots = plan.dots.reduce(0) { $0 + $1.indices.count }
+        let dots = plan.dots.reduce(0) { $0 + $1.count }
         // The tail's own dots, and one segment more than the tail's segments: the live plan
         // deliberately starts one segment *earlier* than the dots do, because the segment
         // straddling the watermark belongs to neither window under the obvious reading and

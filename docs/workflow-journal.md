@@ -1235,3 +1235,47 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
   pass `-derivedDataPath build/<story>`, which lands Xcode's generated sources inside the repo;
   they are gitignored but SwiftLint walked them and failed `--strict` on 30+ violations in code
   nobody wrote. Fixing the gate beats remembering to delete the directory after every capture.
+
+## 2026-09-03 (US-310 review) — the layer that caught a claim the mutation round had made
+
+- **`swift-code-reviewer` found a surviving, non-equivalent mutant that my own mutation round had
+  missed, and it was in the sentence I had just written.** The story's status line claimed "ten
+  mutations, each caught by its own test; the single survivor … is provably equivalent". Deleting
+  the **mid-run span close** — the line that emits the open coarse span when travel or a colour
+  change arrives — leaves all 751 tests green. On screen that is up to `stride − 1` intervals of
+  missing thread immediately before *every* jump and *every* colour swap: at stride 51, a whole
+  coarse segment of blank fabric at each. It is exactly the property AC3 claims and ADR-030 pins
+  verbatim, and the *closed-and-drawn* half of that sentence had no test behind it.
+- **The reason my round missed it is worth keeping: I mutated what I had thought about.** My
+  travel mutation coarsened *through* a traversal (caught), and my final-span mutation dropped the
+  span at the *end of a run* (caught). The mid-run close is the third instance of the same
+  operation and I never wrote it down as a separate case. A hand-written mutation set inherits the
+  author's blind spots; the reviewer's 2 800-case property sweep did not, because it asserted a
+  **set equality** — the intervals coarse thread covers must equal the intervals the fine plan
+  classifies as thread — which rules out gaps, duplicates, thread across a jump and thread across
+  a colour change in one assertion. That test now lives in the suite and catches the mutant 16
+  times over.
+- **Generalisation for this project**: when three call sites perform the same operation, the
+  mutation set needs one entry *per site*, not one per operation. The closing logic is now a
+  single `WalkedSegments.close(_:from:to:)` with `spanned` as `inout`, so there is one site to
+  mutate and a caller cannot close the span and forget to reset the counter.
+- **A second finding I would not have found by reading: `private` → nothing inside a
+  `public extension` means `public`.** `planning` and `lastSegment(before:)` needed to be visible
+  from a second file, so I dropped `private` and wrote "internal rather than private" in the doc
+  comment — and the comment was simply false. The reviewer proved it by compiling a call from the
+  test module with a plain `import`, no `@testable`. A public `planning` is a public constructor
+  for arbitrary plans at any window and stride, which is the chokepoint `Stroke` and `DotRun` give
+  up their memberwise initializers to protect, and it made `stride: .max` reachable — which made a
+  latent overflow trap in `DotRun.count` reachable, in the exact spelling
+  `coarseningStride`'s own doc comment forbids two files away. **One access-level slip turned two
+  "unreachable" notes into reachable ones.** Both keywords are now written out explicitly.
+- **The reviewer also refuted a figure and an inference.** The stride at a target of 1 000 over
+  50 001 stitches is **51**, not the 50 I wrote in three places; and calling the sweep's shape a
+  *knee* is unsupportable on an instrument that reports only multiples of the refresh period,
+  because strides 51 and 201 both read the floor and the transition could lie anywhere in (13, 51].
+  Both are corrected in place. The lesson is the same one ADR-029's draw-count finding taught:
+  **state what the instrument can distinguish, not what the numbers suggest.**
+- **Cost and shape of the pass**: one review, five Important findings and seven suggestions, all
+  accepted, none rejected — and the two that mattered were both *claims stated more broadly than
+  their evidence* rather than broken behaviour. The shipped code was correct on every one of the
+  2 800 property cases; what was wrong was the coverage behind it and the prose around it.

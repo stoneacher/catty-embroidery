@@ -7,11 +7,16 @@ answered **go**; the numbers are in "Premise" below. **The planning pass correct
 things**, marked **planning correction** inline — including two in ADR-029's own rung-2 wording
 and one that made AC1 unexecutable as first written. **750 engine tests** (up from 736) and 191
 app tests, SwiftLint `--strict` clean, five screenshots. ADR-030 pins the semantics; ADR-029 is
-corrected in place. Every red was a compile failure, so the assertions are proved by **ten
-mutations, each caught by its own test**; the single survivor changes `>` to `>=` in the stride
-guard and is provably **equivalent**, since the ceiling formula returns 1 at the boundary either
-way. **The implementation then refuted one of the story's own design decisions** — see "What the
-measurement changed".
+corrected in place. **The implementation then refuted one of the story's own design decisions** —
+see "What the measurement changed" — and **review then refuted a claim made right here**: this
+line said the assertions were proved by ten mutations with one *equivalent* survivor. A second
+survivor existed and was **not** equivalent. `swift-code-reviewer` found that deleting the
+mid-run span close leaves all 751 tests green, which on screen is up to `stride − 1` intervals of
+missing thread before **every** jump and **every** colour change — the exact property AC3 claims
+and ADR-030 pins. It is now covered by an interval-set-equality test, and that mutant is caught
+by 16 tests. Thirteen mutations run in total, and the only survivor left is the `>`-for-`>=`
+stride guard, which is provably equivalent because the ceiling formula returns 1 at the boundary
+either way.
 
 **Epic**: E4 Stage & preview | **Estimate**: ~5 h | **Depends on**: US-305, US-306, US-307,
 US-309 | **Rung**: ADR-029 fallback ladder, **rung 2**
@@ -113,8 +118,12 @@ it.** One constant had to be at once the floor that keeps the 3 194-stitch roset
 | 250 | 201 | 16.667 | 33.465 | 49.174 | 58.974 | [05](../../screenshots/us-310/05-sim-50k-sweep-target-250.jpg) |
 
 At a target of 4 000 — the plan's default — the median is **still two refresh periods**. At 1 000
-it is one, and at 250 it is one again, so the knob has a knee just past 1 000 and 3 194 ≤ x is
-incompatible with x ≈ 1 000. So the rule became **two** constants:
+it is one, and at 250 it is one again, and 3 194 ≤ x is incompatible with x ≈ 1 000. *(An earlier
+version of this paragraph called that a **knee**; `swift-code-reviewer` was right that the sweep
+cannot locate one. Since the instrument reports only multiples of the refresh period, strides 51
+and 201 both read the floor and are indistinguishable, so the transition lies anywhere in
+(13, 51]. What the data supports is "stride 51 gets the median under one period and 201 reads no
+better"; 1 000 is then preferred over 250 on fidelity grounds, which needs no knee.)* So the rule became **two** constants:
 `liveCoarseningThreshold = 4 000` decides *whether*, `liveSegmentTarget = 1 000` decides *how
 much*. The cost is a **discontinuity at the threshold** — a 4 000-stitch design draws every
 stitch, a 4 001-stitch one strides by 5 — which is documented rather than hidden, because the

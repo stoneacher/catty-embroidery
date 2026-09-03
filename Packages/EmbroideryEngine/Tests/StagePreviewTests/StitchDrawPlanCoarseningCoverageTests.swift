@@ -1,0 +1,171 @@
+import EmbroideryEngine
+import StagePreview
+import Testing
+
+/// What the coarse plan must **cover**, and what it must never **cross**.
+///
+/// Split from `StitchDrawPlanCoarseningTests` — which asserts the plan's other shape properties —
+/// and from `StitchDrawPlanCoarseningRuleTests`, which asserts the arithmetic. The seam is the
+/// one thing US-310 could get wrong in a way a user would see and a test would not: drawing
+/// thread across a jump (ADR-024's named defect in *both* references) or, the mirror image,
+/// failing to draw thread right up to one. Review found the second of those unasserted, so the
+/// two now live together, since neither is safe without the other.
+///
+/// The file boundary itself is SwiftLint's 400-line limit under `--strict`, for the third time
+/// in this story.
+@Suite("Stitch draw plan coarsening coverage")
+struct StitchDrawPlanCoarseningCoverageTests {
+    private static let twoShortRuns = displayList([
+        previewStitch(0, 0, PreviewColor.red),
+        previewStitch(10, 0, PreviewColor.red),
+        previewStitch(20, 0, PreviewColor.red),
+        previewStitch(30, 0, PreviewColor.green),
+        previewStitch(40, 0, PreviewColor.green)
+    ])
+
+    private static let firstRunWithALongGap = displayList([
+        previewStitch(0, 0, PreviewColor.red),
+        previewStitch(10, 0, PreviewColor.red),
+        previewStitch(200, 0, PreviewColor.red),
+        previewStitch(210, 0, PreviewColor.red),
+        previewStitch(220, 0, PreviewColor.green),
+        previewStitch(230, 0, PreviewColor.green)
+    ])
+
+    private static let onlyTraversals = displayList([
+        previewStitch(0, 0, PreviewColor.red),
+        previewStitch(200, 0, PreviewColor.red),
+        previewStitch(400, 0, PreviewColor.red)
+    ])
+
+    /// Lists that exercise **both** ways an open span has to be closed — a traversal and a
+    /// colour boundary — in the positions that are easy to get wrong: a hop in the middle of a
+    /// run, a hop as a run's last interval, a run of length 1, and consecutive hops.
+    private static let travelAndColourFixtures: [StitchDisplayList] = [
+        twoShortRuns,
+        firstRunWithALongGap,
+        onlyTraversals,
+        // Hop in the middle of the first run, then a colour change, then a hop that ends the run.
+        displayList([
+            previewStitch(0, 0, PreviewColor.red),
+            previewStitch(10, 0, PreviewColor.red),
+            previewStitch(20, 0, PreviewColor.red),
+            previewStitch(400, 0, PreviewColor.red),
+            previewStitch(410, 0, PreviewColor.red),
+            previewStitch(420, 0, PreviewColor.green),
+            previewStitch(430, 0, PreviewColor.green),
+            previewStitch(900, 0, PreviewColor.green),
+            previewStitch(910, 0, PreviewColor.blue)
+        ]),
+        // Two hops back to back, so a merged pair would be visible, plus a length-1 run.
+        displayList([
+            previewStitch(0, 0, PreviewColor.red),
+            previewStitch(300, 0, PreviewColor.red),
+            previewStitch(600, 0, PreviewColor.red),
+            previewStitch(610, 0, PreviewColor.red),
+            previewStitch(620, 0, PreviewColor.green),
+            previewStitch(630, 0, PreviewColor.blue),
+            previewStitch(640, 0, PreviewColor.blue)
+        ]),
+        // Twenty short moves either side of one hop — T5's shape, at a longer run length.
+        hopInTheMiddle
+    ]
+
+    /// Built statement by statement rather than as one concatenated literal: the `+` chain of
+    /// two `map`s and an array defeated the type-checker outright ("unable to type-check this
+    /// expression in reasonable time"), the same hazard `StitchDrawPlanTests` records for a
+    /// three-member tuple.
+    private static let hopInTheMiddle: StitchDisplayList = {
+        var stitches = (0 ..< 20).map { previewStitch(Double($0) * 10, 0, PreviewColor.red) }
+        stitches.append(previewStitch(1_000, 0, PreviewColor.red))
+        for index in 0 ..< 20 {
+            stitches.append(previewStitch(1_000 + Double(index + 1) * 10, 0, PreviewColor.red))
+        }
+        return displayList(stitches)
+    }()
+
+    private static func threadSegments(_ plan: StitchDrawPlan) -> [StitchDrawPlan.Segment] {
+        plan.strokes.filter { $0.style == .thread }.flatMap(\.segments)
+    }
+
+    // MARK: - T5 · no thread across travel
+
+    /// ADR-024 records that **both** references draw travel as solid thread indistinguishable
+    /// from stitching, so a machine's travel moves look sewn, and that we deliberately do not.
+    /// Coarsening is the one change that could reintroduce it by accident: a span joining
+    /// `a → b` over a jump would draw exactly the line the references draw.
+    ///
+    /// Asserted through the public classifier over the list's own stitches, so the test does not
+    /// re-implement the rule it is checking.
+    @Test("no coarse thread segment spans a traversal, and traversals stay unmerged")
+    func noCoarseThreadSegmentSpansATraversal() throws {
+        // Twenty short moves, one long hop, twenty more — one colour throughout, so the hop is
+        // a traversal rather than a suppressed colour boundary.
+        var stitches = (0 ..< 20).map { previewStitch(Double($0) * 10, 0, PreviewColor.red) }
+        stitches.append(previewStitch(1000, 0, PreviewColor.red))
+        stitches += (0 ..< 20).map { previewStitch(1000 + Double($0 + 1) * 10, 0, PreviewColor.red) }
+        let list = displayList(stitches)
+
+        let plan = StitchDrawPlan.coarse(of: list, threshold: 8, target: 8)
+
+        for segment in Self.threadSegments(plan) {
+            for index in segment.from ..< segment.to {
+                let style = StitchSegmentStyle.classifying(
+                    from: list.stitches[index], to: list.stitches[index + 1]
+                )
+                #expect(style == .thread, "segment \(segment.from)→\(segment.to) spans a \(style)")
+            }
+        }
+
+        // The traversal itself is still drawn, and drawn as one unit segment: merging two jumps
+        // would erase the needle penetration between them.
+        let traversals = plan.strokes.filter { $0.style == .traversal }.flatMap(\.segments)
+        #expect(traversals == [StitchDrawPlan.Segment(from: 19, to: 20)])
+        try #require(!Self.threadSegments(plan).isEmpty)
+    }
+
+    /// **The assertion the story should have had from the start, and it took a review to find.**
+    ///
+    /// Every other test here checks that what *is* emitted is legitimate: thread segments span
+    /// only thread intervals (T5), nothing crosses a run (T6), the chain has no gaps on a
+    /// traversal-free fixture (T4). None of them checks that the coarse plan draws *everything*
+    /// the fine plan draws — so dropping the span that is open when travel or a colour change
+    /// arrives left all 750 tests green. On screen that is up to `stride − 1` stitch intervals of
+    /// missing thread immediately before **every** jump and **every** colour swap: at the shipped
+    /// stride of 51, a whole coarse segment of blank fabric at each, mid-gesture only.
+    ///
+    /// So this asserts **set equality of covered intervals**, which is one assertion that
+    /// simultaneously rules out gaps, duplicates, thread across a jump and thread across a colour
+    /// change — and it is the assertion ADR-030's "an open span is closed at travel and at a
+    /// colour boundary rather than drawn through it" actually makes. The fixtures deliberately put
+    /// a hop *inside* each colour run and end one run on a hop, so both close paths run.
+    @Test("coarse thread covers exactly the intervals the fine plan threads")
+    func coarseThreadCoversExactlyTheIntervalsTheFinePlanThreads() {
+        for list in Self.travelAndColourFixtures {
+            let fine = StitchDrawPlan.entire(of: list)
+            let finelyThreaded = Set(Self.threadSegments(fine).map(\.from))
+
+            for target in [1, 2, 3, 5, 8, 97] {
+                let plan = StitchDrawPlan.coarse(of: list, threshold: 0, target: target)
+                let covered = Self.threadSegments(plan).flatMap { $0.from ..< $0.to }
+
+                #expect(
+                    Set(covered) == finelyThreaded,
+                    "target \(target): covered \(covered.sorted()) against \(finelyThreaded.sorted())"
+                )
+                // No interval is drawn twice — a `Set` comparison alone would not see that, and a
+                // double-drawn traversal composites its alpha twice.
+                #expect(covered.count == Set(covered).count, "target \(target): an interval repeats")
+
+                // The traversals, likewise exactly and verbatim.
+                let travelled = plan.strokes.filter { $0.style == .traversal }.flatMap(\.segments)
+                #expect(
+                    Set(travelled.map(\.from))
+                        == Set(fine.strokes.filter { $0.style == .traversal }.flatMap(\.segments).map(\.from))
+                )
+                #expect(travelled.allSatisfy { $0.to == $0.from + 1 })
+            }
+        }
+    }
+
+}
