@@ -121,6 +121,14 @@ struct StitchDrawPlanCoarseningCoverageTests {
         ])
     ]
 
+    /// Whether the interval starting at `index` has two finite endpoints — the intervals
+    /// `segmentPath` will actually draw.
+    private static func isDrawableInterval(_ index: Int, of list: StitchDisplayList) -> Bool {
+        let first = list.stitches[index].position
+        let second = list.stitches[index + 1].position
+        return first.x.isFinite && first.y.isFinite && second.x.isFinite && second.y.isFinite
+    }
+
     private static func threadSegments(_ plan: StitchDrawPlan) -> [StitchDrawPlan.Segment] {
         plan.strokes.filter { $0.style == .thread }.flatMap(\.segments)
     }
@@ -196,11 +204,17 @@ struct StitchDrawPlanCoarseningCoverageTests {
                     }
                 }
 
-                // And the coverage is still the fine plan's, so nothing was lost by breaking the
-                // span — the intervals touching the bad vertex are emitted, just not merged.
+                // **The coverage matches the fine plan's *drawn* intervals, not its emitted
+                // ones** (`/codex-review` round 2). An interval touching a non-finite vertex is
+                // skipped by `segmentPath` in either plan, so the coarse plan does not carry it
+                // at all — which is what keeps ADR-030's bound true even for a list that is
+                // entirely non-finite.
                 let fine = StitchDrawPlan.entire(of: list)
+                let drawnByTheFinePlan = Self.threadSegments(fine)
+                    .map(\.from)
+                    .filter { Self.isDrawableInterval($0, of: list) }
                 let covered = Self.threadSegments(plan).flatMap { $0.from ..< $0.to }
-                #expect(Set(covered) == Set(Self.threadSegments(fine).map(\.from)))
+                #expect(Set(covered) == Set(drawnByTheFinePlan))
                 #expect(covered.count == Set(covered).count)
             }
         }
@@ -248,6 +262,32 @@ struct StitchDrawPlanCoarseningCoverageTests {
                 #expect(travelled.allSatisfy { $0.to == $0.from + 1 })
             }
         }
+    }
+
+    /// **The bound has to survive the input ADR-021 permits, and the first fix did not**
+    /// (`/codex-review` round 2, finding 1). A design whose coordinates are all rejected has
+    /// *every* interval unjoinable; emitting each one individually — the shape of round 1's fix —
+    /// produced 49 999 segments for a plan whose stated bound is about 1 001, i.e. it defeated
+    /// coarsening exactly where coarsening is needed. Omitting them costs nothing on screen,
+    /// because the renderer already skipped every one.
+    @Test("a design of rejected coordinates plans nothing to stroke")
+    func aDesignOfRejectedCoordinatesPlansNothingToStroke() {
+        var stitches: [PreviewStitch] = []
+        for index in 0 ..< 5_000 {
+            stitches.append(PreviewStitch(
+                position: StagePoint(x: index.isMultiple(of: 2) ? .nan : .infinity, y: 0),
+                color: PreviewColor.red
+            ))
+        }
+        let list = displayList(stitches)
+
+        let plan = StitchDrawPlan.coarse(of: list, threshold: 0, target: 100)
+
+        #expect(Self.threadSegments(plan).isEmpty)
+        #expect(plan.strokes.allSatisfy { $0.style != .thread })
+        // The dots are unaffected: they are per-index, and the renderer skips an undrawable
+        // centre one dot at a time, so nothing here is the plan's business.
+        #expect(plan.dots.count == 1)
     }
 
 }

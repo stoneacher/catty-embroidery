@@ -113,7 +113,9 @@ public extension StitchDrawPlan {
             dotting: 0 ..< list.count,
             segmentsFrom: 0,
             upTo: lastSegment(before: list.count),
-            // At or below the threshold this is 1, and the plan is `entire`'s to the byte.
+            // At or below the threshold this is 1, and the plan is `entire`'s — the same
+            // segments and dots in the same order, which is the claim that survives the
+            // representation change from index to pair (`/codex-review` round 2).
             stride: list.count > threshold
                 ? coarseningStride(forStitchCount: list.count, target: target)
                 : 1

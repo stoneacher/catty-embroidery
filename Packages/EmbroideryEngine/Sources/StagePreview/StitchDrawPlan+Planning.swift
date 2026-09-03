@@ -77,7 +77,9 @@ public extension StitchDrawPlan {
     /// coarse window ADR-029's rung 2 asks for is this function at a stride above 1, so the
     /// settled, live and coarse pixels are produced by identical rules — the property the type
     /// doc below rests on. At stride 1 the emitted segments are exactly `i → i + 1`, so no
-    /// existing window changes by a byte.
+    /// existing window changes which stitches it draws or in what order — *not* "by a byte",
+    /// since the representation itself deliberately changed from an index to a pair
+    /// (`/codex-review` round 2, finding 3).
     ///
     /// Walks `colorRuns` rather than the stitches: the runs are a gapless partition of
     /// the indices (`StitchDisplayList` guarantees it), so every drawn segment lies
@@ -225,8 +227,18 @@ public extension StitchDrawPlan {
                 // one solid line straight across the travel, which is precisely the ADR-024
                 // defect coarsening must not reintroduce.
                 //
-                // Emitting those intervals individually keeps the coverage identical to the fine
-                // plan and leaves the renderer's per-subpath skip to do the work.
+                // **Such an interval is not planned at all**, and that is a correction to this
+                // story's first fix, which emitted it as its own unit segment to keep the coarse
+                // plan's *interval* coverage identical to the fine plan's. That trade was wrong
+                // in one direction (`/codex-review` round 2): for a design of 50 000 rejected
+                // coordinates — which ADR-021 permits — every interval is unjoinable, so the
+                // coarse plan came out with 49 999 segments and ADR-030's bound was defeated by
+                // exactly the input coarsening exists to survive.
+                //
+                // Omitting them costs no pixels: `segmentPath` skips any subpath with a
+                // non-drawable endpoint, so these intervals were never drawn in *either* plan.
+                // What the coarse plan therefore matches is the fine plan's **drawn** coverage,
+                // not its emitted coverage, and the bound holds for every input.
                 if Self.isJoinable(list.stitches[start], list.stitches[start + 1]) {
                     spanned += 1
                     if spanned == stride {
@@ -236,7 +248,6 @@ public extension StitchDrawPlan {
                     }
                 } else {
                     walked.close(&spanned, from: anchor, to: start)
-                    walked.threaded.append(Segment(from: start, to: start + 1))
                     anchor = start + 1
                 }
             case .traversal:

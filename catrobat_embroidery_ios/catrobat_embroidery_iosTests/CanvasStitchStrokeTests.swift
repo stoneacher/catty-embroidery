@@ -46,7 +46,9 @@ struct CanvasStitchStrokeTests {
             case let .move(to: point):
                 pending = point
             case let .line(to: point):
-                if let start = pending { pairs.append((start, point)) }
+                if let start = pending {
+                    pairs.append((start, point))
+                }
                 pending = point
             default:
                 break
@@ -60,7 +62,9 @@ struct CanvasStitchStrokeTests {
     private static func subpathCount(_ path: Path) -> Int {
         var moves = 0
         let count: (Path.Element) -> Void = { element in
-            if case .move = element { moves += 1 }
+            if case .move = element {
+                moves += 1
+            }
         }
         path.forEach(count)
         return moves
@@ -121,6 +125,75 @@ struct CanvasStitchStrokeTests {
         )
 
         #expect(Self.subpaths(path).count == 1, "only the segment not touching the bad point")
+    }
+
+    /// **Both builders must actually use the transform they are handed** (`/codex-review` round
+    /// 2, finding 2). Every other test here uses the identity, so a builder that ignored its
+    /// `transform` argument entirely — or read a stale one — would have survived all of them.
+    ///
+    /// Zoom also changes the dot *radius*, since `StitchDrawMetrics.dotRadius` is a function of
+    /// the scale (that is the deviation from Catty that matters most in practice: its width is
+    /// derived once from the device diagonal and cannot respond to zoom at all).
+    @Test("both builders map through the transform they are given")
+    func bothBuildersMapThroughTheTransformTheyAreGiven() throws {
+        let zoomed = StageTransform(scale: 3, translation: ViewPoint(x: 100, y: -20))
+        let points = Self.points(3)
+
+        let segments = CanvasStitchStroke.segmentPath(
+            [StitchDrawPlan.Segment(from: 0, to: 2)], of: points, transform: zoomed
+        )
+        let drawn = Self.subpaths(segments)
+        try #require(drawn.count == 1)
+        let expectedFrom = zoomed.viewCGPoint(of: points[0].position)
+        let expectedTo = zoomed.viewCGPoint(of: points[2].position)
+        #expect(drawn[0].from == expectedFrom)
+        #expect(drawn[0].to == expectedTo)
+        #expect(drawn[0].from != CGPoint(x: points[0].position.x, y: points[0].position.y),
+                "otherwise the identity would satisfy this too")
+
+        // The dots move *and* grow with the scale.
+        var list = StitchDisplayList()
+        list.append(contentsOf: points)
+        let run = StitchDrawPlan.entire(of: list).dots[0]
+        let atFit = CanvasStitchStroke.dotPath(run, of: points, transform: Self.identity)
+        let atZoom = CanvasStitchStroke.dotPath(run, of: points, transform: zoomed)
+
+        #expect(Self.subpathCount(atZoom) == Self.subpathCount(atFit))
+        #expect(atZoom.boundingRect != atFit.boundingRect)
+    }
+
+    /// **The radius, isolated from the positions.** A mutation fixing the radius at scale 1
+    /// *survived* the test above, because several dots still move apart under zoom and their
+    /// combined bounding box grows either way. A **single**-dot fixture is the only shape that
+    /// can see the radius at all — and the radius answering zoom is exactly the deviation from
+    /// Catty that ADR-024 keeps (Catty derives its width once from the device diagonal, so it
+    /// cannot).
+    ///
+    /// Asserted as a **ratio** rather than as two absolute diameters: `Path.boundingRect` is not
+    /// the tight box of an ellipse — the bézier control points of the four arcs lie outside the
+    /// curve — so `width == radius * 2` is false, as an earlier version of this test discovered
+    /// by failing on unmutated code. Whatever the box includes, it is computed identically at
+    /// both scales, so the ratio is exactly the radius ratio.
+    @Test("a dot's size is a function of the scale, not a constant")
+    func aDotsSizeIsAFunctionOfTheScale() {
+        let single = [PreviewStitch(position: StagePoint(x: 0, y: 0), color: .black)]
+        var list = StitchDisplayList()
+        list.append(contentsOf: single)
+        let run = StitchDrawPlan.entire(of: list).dots[0]
+
+        let atFit = CanvasStitchStroke.dotPath(run, of: single, transform: Self.identity)
+        let atZoom = CanvasStitchStroke.dotPath(
+            run, of: single, transform: StageTransform(scale: 3, translation: .zero)
+        )
+
+        let expected = StitchDrawMetrics.dotRadius(atScale: 3) / StitchDrawMetrics.dotRadius(atScale: 1)
+        #expect(expected == 3, "the metric itself must scale, or this test pins nothing")
+        // **Within a tolerance, and the reason is arithmetic rather than laziness**: the two
+        // sides multiply the same three factors in a different order — `(3.15 × 3) × 2` against
+        // `(3.15 × 2) × 3` — which differ in the last bits of a `Double`. An exact `==` here
+        // failed on *unmutated* code, which is how this comment came to exist.
+        #expect(abs(atZoom.boundingRect.width - atFit.boundingRect.width * expected) < 1e-9)
+        #expect(abs(atZoom.boundingRect.height - atFit.boundingRect.height * expected) < 1e-9)
     }
 
     // MARK: - Dots
