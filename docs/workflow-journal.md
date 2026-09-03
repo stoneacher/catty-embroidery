@@ -1279,3 +1279,48 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
   accepted, none rejected — and the two that mattered were both *claims stated more broadly than
   their evidence* rather than broken behaviour. The shipped code was correct on every one of the
   2 800 property cases; what was wrong was the coverage behind it and the prose around it.
+
+## 2026-09-03 (US-310, cross-vendor) — three flat Medium rounds, one chain of defects, and what each layer could see
+
+- **Severity: Medium → Medium → Medium; ten findings; none rejected; every round changed code.** By the
+  project's stop rule that is non-convergence, so the loop is escalated to Sebastian rather than
+  run to the cap. But the *shape* is worth recording, because "flat" here does not mean thrashing:
+  all three Mediums are **one chain in one corner** — coarsening interacting with coordinates
+  ADR-021 deliberately allows into the display list — and each was strictly narrower than the last.
+  Round 3 explicitly found nothing outside that corner. The rule fires on the severity trend and
+  cannot see that difference, which is itself a finding about the rule.
+- **The chain, because it is the most instructive thing on this branch.** (1) A non-finite stitch:
+  `requiresTraversal` answers `false` for a coordinate it cannot convert, so the intervals touching
+  it classify as *thread*; the fine plan emits them and the renderer skips each subpath, while a
+  coarse span joined **over** the bad vertex has two finite endpoints and was therefore drawn — one
+  solid line across ground the machine only travels. (2) My fix emitted those intervals
+  individually to keep interval coverage identical, which gives a wholly-rejected 50 000-stitch
+  design 49 999 segments and defeats the bound on precisely the input coarsening exists to survive;
+  they are never drawn, so dropping them costs nothing. (3) Stage-space *finiteness* was still the
+  wrong predicate — `1e307` is a finite `Double` the machine cannot reach, and at maximum scale it
+  maps to a non-finite view point, so the same ADR-024 violation returns through the **transform**
+  rather than the coordinate. The predicate is now `EmbroideryPoint(converting:)`, which is what
+  `requiresTraversal` itself consults, and which keeps the plan transform-free as its contract
+  demands.
+- **Each round refuted the previous round's fix, and that is the argument for the verification
+  round existing at all.** Rounds 2 and 3 found nothing wrong with the *original* code; they found
+  that the repair had a hole. Two of the three would have shipped as latent behaviour a user could
+  reach by zooming a design containing one rejected coordinate.
+- **The bound taught a general lesson about bounds over span-based schemes**: every *break* costs a
+  partial span, so the bound needs one term per thing that can force a break — colour runs,
+  traversals, and now unreachable intervals. Two successive amendments were each refuted by a
+  fixture I had not thought to build (100 % bad input, then alternating good/bad). A bound is only
+  as strong as the worst fixture someone will construct for it.
+- **What each of the three layers actually caught, which is the thesis-relevant comparison.** My own
+  mutation round: the ordinary defects, and it *missed* the third of three identical call sites.
+  `swift-code-reviewer`: that miss (via a 2 800-case property sweep), plus an accidental
+  `public` in a `public extension` that made two "unreachable" traps reachable. `/codex-review`: the
+  three-link chain above, all of it about inputs the *other two layers had no fixture for*, plus
+  the observation that the whole plan-to-pixel layer had no executable coverage. Three layers,
+  three disjoint classes of finding; none of them redundant on this branch.
+- **A tooling note worth keeping.** Two assertions of mine failed on *unmutated* code before they
+  ever caught a mutant — a `Path.boundingRect` compared against `radius * 2` (the box includes
+  bézier control points) and a float equality across a differently-ordered product. Both were
+  caught in seconds because the mutation harness runs the unmutated suite first. **Run the
+  baseline inside the mutation script, not before it**: a "caught" result means nothing if the test
+  was already red.
