@@ -1177,3 +1177,61 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
 - **US-309 closes as done with its exit criterion answered in the negative, and that is the correct outcome rather than a deferral.** The story's job was to turn ADR-009 from a claim into evidence. It did: animating passes, mid-gesture fails at ~14 fps. A story that measures something and finds it wanting has discharged its purpose; leaving it open until the *renderer* is fixed would conflate "did we measure it" with "did we like the answer". The fix is ADR-029's ladder and belongs to its own story.
 - **The remaining items are carried to a milestone-level "final verification" section rather than kept as story blockers**, and the distinction is worth stating because it was easy to get wrong. Each of them — the A15 confirmation, the Instruments traces, the zoomed screenshot, the manual accessibility pass — is *cheaper and more meaningful run once against a finished milestone* than repeatedly against a moving one, and none of them can change US-309's conclusion. The two criterion-level questions are there too, because they are author decisions and not work items at all. Recording who owns each, at the moment it was deferred, is what stops a deferral becoming an omission — the failure mode US-110 hit when a story was handed over without its Status line set.
 - **The milestone's exit criterion is now explicitly "answered, not met".** The README says so in the exit-criteria section rather than only in the story: end-to-end works and the transform math is unit-tested, but M3 cannot claim 60 fps at 50 000 stitches until the mid-gesture path is fixed. Writing that in the place a reader checks the milestone's status — rather than only where the measurement happened — is the same propagation discipline this branch spent four review rounds learning.
+
+## 2026-09-03 (US-310) — the story that checked its own premise first, and the sweep that refuted its own constant
+
+- **The most valuable thing `swift-architect` produced was an argument that the story might be
+  wrong.** Asked to plan ADR-029's rung 2, it found that the 69.1 ms mid-gesture figure had never
+  been *attributed*: ADR-029's own bake schedule strokes the same ~50 000 stitches up to fifty
+  times per run, yet the animating capture's worst frame over 251 drawn frames was 16.703 ms,
+  which a 69 ms main-thread re-stroke does not obviously permit — and ADR-029 never reconciles
+  the two. It made that an AC1 with a **decision rule fixed in advance**: two counts on one
+  instrument, equal medians mean "do not implement this story". A plan whose first criterion can
+  cancel the plan is a better plan.
+- **And the check as written could not be run**, which is the kind of thing only checking finds:
+  the frame-time readout is gated to the `Synthetic 50k` fixture, and that fixture is a fixed
+  50 001 stitches with no smaller variant — so there was no instrumented small design to take the
+  second reading on. Fixed with a `-US310FrameTimes` launch argument rather than by widening the
+  gate, so US-309's reason for the narrow gate (no diagnostic overlay in shipping screenshots)
+  survives.
+- **A scripted drag on the simulator turned out to be a real instrument**, which was not obvious:
+  pinch is not automatable here, but `ui-automation drag --duration 4 --steps 80` holds a
+  single-touch gesture for four seconds with continuous touch-moves, and a held gesture is exactly
+  the state (`canUseRaster == false`) the measurement needs. The control that makes it
+  comparable is the **draw count**: 231 against 230 at the two stitch counts, because redraws are
+  driven by the touch-move rate rather than the refresh rate. Same number of drawn frames, so the
+  median difference is per-frame cost. This is the second time this project has got its
+  discriminating evidence from a *count* rather than a time.
+- **The instrument quantises, and that nearly produced a wrong conclusion.** A display-link
+  interval can only report multiples of 16.667 ms. The first coarsened capture read `med 33.333`
+  — exactly two periods — which looks like "barely improved" and actually means "somewhere
+  between one and two periods". The premise arithmetic had predicted ≲ 17.3 ms, i.e. *just* over
+  one period: the prediction was met and still read as a failure. Reading a quantised instrument
+  as if it were continuous would have sent the next hour down the wrong rung.
+- **The sweep refuted the story's own design decision, and that is the story's best result.** One
+  constant had to be both the ≥ 3 194 floor that keeps a shipping design uncoarsened and the
+  ≈ 1 000 segment target that reaches one frame period. No number satisfies both, so the rule
+  split into a threshold and a target. **Four points beat one arithmetic estimate**: 4 000 (stride
+  13) still two periods, 1 000 (stride 50) one period, 250 (stride 201) one period — a knee, which
+  a single default could not have shown.
+- **What the story deliberately does not claim is as important as what it does.** p99 moved
+  46.7 / 52.9 / 49.2 across four stride values *with no ordering* — a cost that does not respond
+  to the independent variable is not the thing being changed. So the tail is attributed to the
+  gesture-end commit and its full re-bake and left to rung 1, rather than folded into a "3× faster"
+  headline. ADR-030 says which half is claimed and on what platform.
+- **Ten mutations, one survivor, and the survivor was right to survive.** Every red was a compile
+  failure again, so the assertions were checked by mutation: dashing, coarsening through travel, a
+  global dot stride, a dropped final span, swapped `forFrame` precedence — all caught by exactly
+  their own test. The survivor relaxes `>` to `>=` in the stride guard and is **equivalent**, since
+  the ceiling formula returns 1 at the boundary either way. My test comment had claimed that case
+  caught the operator; it does not, and the comment is corrected to name the mutation it actually
+  catches. A mutation round is also a claim-checker for the *comments*, not only the code.
+- **Two SwiftLint limits forced two structural splits**, both worth keeping: `CanvasStitchRenderer`
+  crossed 400 lines, so the pure stroking functions moved to `CanvasStitchStroke.swift` (the seam
+  is genuine — when-to-draw versus how-to-draw), and the span walker had to come out of stroke
+  assembly to stay inside the complexity cap. Third time in this project a lint limit has found a
+  seam that was already there; US-307's `StageView` extraction was the first.
+- **`build/` was excluded from SwiftLint.** This project's own device hand-off tells the tester to
+  pass `-derivedDataPath build/<story>`, which lands Xcode's generated sources inside the repo;
+  they are gitignored but SwiftLint walked them and failed `--strict` on 30+ violations in code
+  nobody wrote. Fixing the gate beats remembering to delete the directory after every capture.

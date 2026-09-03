@@ -1,10 +1,17 @@
 # US-310 — Coarsen the mid-gesture draw plan
 
-**Status**: **In progress** — planned 2026-09-03 with `swift-architect`. The story's own premise
-check (AC1) ran **before** any code change and answered **go**; the numbers are in "Premise"
-below. **The planning pass corrected nineteen things**, marked **planning correction** inline —
-including two in ADR-029's own rung-2 wording and one that made AC1 unexecutable as first
-written.
+**Status**: **Implemented 2026-09-03** — review and close-out below; the device capture is a
+stated hand-off ([`docs/us-310-device-handoff.md`](../../us-310-device-handoff.md)). Planned with
+`swift-architect`. The story's own premise check (AC1) ran **before** any code change and
+answered **go**; the numbers are in "Premise" below. **The planning pass corrected nineteen
+things**, marked **planning correction** inline — including two in ADR-029's own rung-2 wording
+and one that made AC1 unexecutable as first written. **750 engine tests** (up from 736) and 191
+app tests, SwiftLint `--strict` clean, five screenshots. ADR-030 pins the semantics; ADR-029 is
+corrected in place. Every red was a compile failure, so the assertions are proved by **ten
+mutations, each caught by its own test**; the single survivor changes `>` to `>=` in the stride
+guard and is provably **equivalent**, since the ceiling formula returns 1 at the boundary either
+way. **The implementation then refuted one of the story's own design decisions** — see "What the
+measurement changed".
 
 **Epic**: E4 Stage & preview | **Estimate**: ~5 h | **Depends on**: US-305, US-306, US-307,
 US-309 | **Rung**: ADR-029 fallback ladder, **rung 2**
@@ -75,9 +82,12 @@ it predicts equal medians and the medians differ by 19.5 ms. Decomposing as `C +
   57 %** (≥ 20.8 of 36.1 ms) of the mid-gesture frame at 50 000 scales with the stitch count.
 - `C ≤ 15.4 ms` — an upper bound on whatever is count-independent.
 
-At `k = 13` (the default budget below) the per-primitive share falls by ~13/14, predicting
+At `k = 13` (the plan's original default) the per-primitive share falls by ~13/14, predicting
 **36.1 → ≲ 17.3 ms** on this simulator: under the 33.3 ms dropped-frame half of the bar. The
-residual `C` is the honest uncertainty and it is bounded, not unknown.
+residual `C` is the honest uncertainty and it is bounded, not unknown. **Measurement correction:**
+that prediction was met and was still not enough — 17.3 ms is *just over* one 16.667 ms period, so
+it reads as 33.333 on a display-link instrument. Stride 13 was therefore replaced; see "What the
+measurement changed".
 
 **What this measurement is not.** Simulator absolute milliseconds are not authoritative for
 ADR-029's bar — a host GPU is not an A19, let alone an A15, and the device read 69.1 ms where
@@ -87,6 +97,49 @@ at `drawn=251` across simulator and device.
 
 **The instrument had to be widened to take this measurement at all** — see planning correction
 P19; the change is a launch argument, and it is part of this story.
+
+## What the measurement changed, after the plan was written
+
+**The single `liveStitchBudget` the plan specifies does not work, and the sweep is what showed
+it.** One constant had to be at once the floor that keeps the 3 194-stitch rosette uncoarsened
+(so ≥ 3 194, from AC7) and the segment count a large design aims for. Measured mid-gesture at
+50 001 stitches, same instrument and protocol as the premise, `drawn = 230–231` throughout:
+
+| target | stride | med | p95 | p99 | worst | screenshot |
+|---|---|---|---|---|---|---|
+| none (before) | 1 | 36.129 | 49.177 | 56.292 | 86.858 | [02](../../screenshots/us-310/02-sim-50k-mid-gesture-premise.jpg) |
+| 4 000 | 13 | 33.333 | 34.943 | 46.693 | 55.316 | — |
+| **1 000 (shipped)** | **51** | **16.667** | 33.871 | 52.857 | 56.019 | [03](../../screenshots/us-310/03-sim-50k-mid-gesture-coarsened.jpg) |
+| 250 | 201 | 16.667 | 33.465 | 49.174 | 58.974 | [05](../../screenshots/us-310/05-sim-50k-sweep-target-250.jpg) |
+
+At a target of 4 000 — the plan's default — the median is **still two refresh periods**. At 1 000
+it is one, and at 250 it is one again, so the knob has a knee just past 1 000 and 3 194 ≤ x is
+incompatible with x ≈ 1 000. So the rule became **two** constants:
+`liveCoarseningThreshold = 4 000` decides *whether*, `liveSegmentTarget = 1 000` decides *how
+much*. The cost is a **discontinuity at the threshold** — a 4 000-stitch design draws every
+stitch, a 4 001-stitch one strides by 5 — which is documented rather than hidden, because the
+alternative was a default that provably does not reach one frame period.
+
+**Three things this story claims, and one it does not.** It claims the median mid-gesture frame
+at 50 000 stitches now fits a refresh period on the machine measured; that the fine windows are
+byte-identical; and that both shipping designs are untouched. **It does not claim the tail**: p99
+moved 46.7 / 52.9 / 49.2 across the four targets with no ordering, so the tail does not respond
+to the stride and therefore is not the coarse plan. Three drags means three gesture-end commits,
+each triggering a full 50 000-stitch re-bake, and p99 of 231 drawn frames is the second or third
+worst frame — so the candidates are the commit and the bake, which are rung 1's and ADR-029's
+Θ(n²/chunk) territory. The hand-off carries a no-new-code discriminator for it.
+
+**Two limits on every number above.** A display-link interval reports only **multiples of the
+refresh period**, so "33.333" means "more than one period, at most two" rather than a measured
+cost; and these are **simulator** numbers, where the device read 69.1 ms against this
+instrument's 36.1 — roughly 1.9× slower — so the shipped target may need to come down on
+hardware. What carries is the structure: one instrument, equal draw counts, cost responding to
+the stride.
+
+**The coarse image at 50 000 is visually indistinguishable** from the fine one
+([04](../../screenshots/us-310/04-sim-50k-coarse-plan-during-drag.jpg), taken *during* a drag),
+because fifty thousand stitches in a 100 mm hoop is a solid fill. The honest visual test is
+therefore a *zoomed* gesture, which is a hand-off item.
 
 ## Design decisions
 
@@ -170,6 +223,13 @@ future reader would edit (P15).
 
 ### 4. Choosing k — a stitch budget, and why it is not ADR-029's `settleChunk` trap
 
+> **Measurement correction (2026-09-03, after implementation).** The single budget below is
+> *not what shipped*: it cannot be both the ≥ 3 194 floor this section relies on and the ≈ 1 000
+> target the sweep found. What shipped is `liveCoarseningThreshold = 4_000` plus
+> `liveSegmentTarget = 1_000`, and `coarseningStride(forStitchCount:target:)`. Everything else in
+> this section — the pure function, the `k == 1` floor, the overflow spelling, the argument that
+> this is not the `settleChunk` trap — holds unchanged. See "What the measurement changed".
+
 `coarseningStride(forStitchCount:budget:)` = `count <= budget ? 1 : (count - 1) / budget + 1`.
 Spelled that way and not `(count + budget - 1) / budget`, which **overflows** at
 `budget == Int.max` — a case the tests exercise (P16).
@@ -191,7 +251,7 @@ it, nothing is triggered by its changing, and at budget 4 000 it changes 12 time
 a `Path` cache keyed on the plan is invalidated by k — so rung 3 must key on the plan including
 k and expect ~12 invalidations per run. Recorded so it is not rediscovered.
 
-**Starting budget: `liveStitchBudget = 4_000`**, and it is arithmetic rather than measurement:
+**Starting budget: `liveStitchBudget = 4_000`** *(superseded — see the correction above)*, and it is arithmetic rather than measurement:
 12.5× below 50 000, above both shipping samples, above the app's `bakingThreshold` of 2 000, and
 at k = 13 the premise decomposition predicts ~17.3 ms from 36.1 on the simulator. **It is the
 device session's knob**, the same status ADR-029 gives `settleChunk`.
@@ -268,9 +328,10 @@ trade it away unknowingly.
    its run's traversal stroke.
 6. Dots are strided from each colour run's own lower bound, so every colour run keeps at least
    one dot and no thread colour can disappear mid-gesture.
-7. The stride is a **public pure function** of (stitch count, budget) with `k == 1` at or below
-   the budget; at the default budget **every** sample in `SampleLibrary.all` plans identically
-   to `.entire`, asserted by plan equality.
+7. The stride is a **public pure function** of (stitch count, target) with `k == 1` at or below
+   the target; at the shipped constants **every** sample in `SampleLibrary.all` plans identically
+   to `.entire`, asserted by plan equality. *(Met by `liveCoarseningThreshold`, which is the
+   constant this criterion actually constrains — the measurement split it from the target.)*
 8. The bound is stated as what it is, not as "≤ N": thread segments
    `≤ ceil(count/k) + colorRuns + traversalCount`, dots `≤ ceil(count/k) + colorRuns`. **The
    colour-run axis is not bounded by this rung** — ADR-029's colour-change-per-stitch design is
@@ -281,8 +342,10 @@ trade it away unknowingly.
 10. ADR-009's batching claim holds in the coarse plan too — at most two strokes plus one dot
     path per colour run — asserted on a design **above** the budget, since below it the
     assertion is vacuous (P14).
-11. The default budget is documented as a knob with the arithmetic behind it, and the device
-    session's job is named. It is not presented as measured.
+11. The default constants are documented as knobs with the reasoning behind them, and the device
+    session's job is named. **Amended by the outcome**: the target is now backed by a measured
+    four-point sweep rather than arithmetic alone, and the ADR says which platform it was measured
+    on and why that does not settle the device.
 12. **Device**: the 50 000 mid-gesture capture is re-taken and reported as
     median/p95/p99/worst over drawn frames, at ≥ 2 budget values. ADR-029's bar is quoted
     **unchanged** — US-309's AC8 forbids rewording a criterion in response to a measurement, and
