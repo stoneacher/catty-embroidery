@@ -1,8 +1,8 @@
 # US-310 device hand-off — does coarsening reach the bar on real hardware?
 
 US-310 coarsens the plan a live frame draws (ADR-029 fallback ladder rung 2, semantics pinned in
-ADR-030). Everything that can be proved without hardware is proved: 750 engine tests, ten
-mutations, and a simulator sweep. This file is the protocol for the part only a device can
+ADR-030). Everything that can be proved without hardware is proved: 752 engine tests, 197 app
+tests, fifteen mutations, and a four-point simulator sweep. This file is the protocol for the part only a device can
 answer, and it is deliberately short, because it reuses
 [`us-309-device-handoff.md`](us-309-device-handoff.md) unchanged for the build, the device
 conditions and the bar.
@@ -19,9 +19,12 @@ drags, quantiles over **drawn frames only**, `drawn = 230–231` in every captur
 | **1 000 (shipped)** | **51** | **16.667** | 33.871 | 52.857 | 56.019 |
 | 250 | 201 | 16.667 | 33.465 | 49.174 | 58.974 |
 
-Read this as: the **median** mid-gesture frame now fits one refresh period, the knob has a knee
-around a target of 1 000, and **the tail does not respond to the stride at all** — so the tail is
-not the coarse plan. The device read **69.1 ms** where this instrument reads 36.1, i.e. it is
+Read this as: the **median** mid-gesture frame now fits one refresh period at a target of 1 000
+(stride 51), a target of 250 reads no better, and **the tail does not respond to the stride at
+all** — so the tail is not the coarse plan. It does **not** locate a knee: this instrument reports
+only multiples of the refresh period, so 51 and 201 both read the floor and the transition lies
+anywhere in (13, 51]. ADR-030 retracted that word and an earlier version of this file put it
+back (`/codex-review` round 1, finding 6). The device read **69.1 ms** where this instrument reads 36.1, i.e. it is
 roughly **1.9× slower on this path**, so the shipped target may well need to come down.
 
 Two things the instrument cannot do, both of which shape what to record: a display-link interval
@@ -63,7 +66,8 @@ that have nothing to do with the renderer.
    ADR-029's 69.1 ms row. Pinch *and* pan, since a pinch redraws on every touch move.
 2. **50 000 mid-gesture, target sweep.** At least two of {2 000, 1 000, 500}, each needing its own
    build (the constant is `StitchDrawPlan.liveSegmentTarget`). The question is whether the median
-   reaches one period on device and where its knee is — not whether it beats the simulator.
+   reaches one period on device, and how far the target can be *raised* while it still does —
+   not whether it beats the simulator, and not where a "knee" is.
 3. **3 194 mid-gesture (Octagon Rosette), with `-US310FrameTimes`.** The control: this design is
    below `liveCoarseningThreshold`, so US-310 changed nothing about it. If it regressed, the
    threshold is wrong or something outside the coarse path moved.

@@ -84,6 +84,43 @@ struct StitchDrawPlanCoarseningCoverageTests {
         return displayList(stitches)
     }()
 
+    /// Lists whose interior holds a coordinate the renderer cannot draw. Codex's reproducer is
+    /// the first; the others put the bad point first, last, adjacent to a colour change, and in
+    /// pairs, since a span breaking on one of them must break on all.
+    private static let nonFiniteFixtures: [StitchDisplayList] = [
+        displayList([
+            previewStitch(0, 0, PreviewColor.red),
+            previewStitch(10, 0, PreviewColor.red),
+            previewStitch(.nan, 0, PreviewColor.red),
+            previewStitch(1_000, 0, PreviewColor.red),
+            previewStitch(1_010, 0, PreviewColor.red),
+            previewStitch(1_020, 0, PreviewColor.red),
+            previewStitch(1_030, 0, PreviewColor.red)
+        ]),
+        displayList([
+            previewStitch(.infinity, 0, PreviewColor.red),
+            previewStitch(10, 0, PreviewColor.red),
+            previewStitch(20, 0, PreviewColor.red),
+            previewStitch(30, 0, PreviewColor.red)
+        ]),
+        displayList([
+            previewStitch(0, 0, PreviewColor.red),
+            previewStitch(10, 0, PreviewColor.red),
+            previewStitch(20, 0, PreviewColor.red),
+            previewStitch(0, .nan, PreviewColor.red)
+        ]),
+        displayList([
+            previewStitch(0, 0, PreviewColor.red),
+            previewStitch(.nan, .nan, PreviewColor.red),
+            previewStitch(-.infinity, 0, PreviewColor.red),
+            previewStitch(20, 0, PreviewColor.red),
+            previewStitch(30, 0, PreviewColor.green),
+            previewStitch(40, 0, PreviewColor.green),
+            previewStitch(.nan, 0, PreviewColor.green),
+            previewStitch(60, 0, PreviewColor.green)
+        ])
+    ]
+
     private static func threadSegments(_ plan: StitchDrawPlan) -> [StitchDrawPlan.Segment] {
         plan.strokes.filter { $0.style == .thread }.flatMap(\.segments)
     }
@@ -122,6 +159,51 @@ struct StitchDrawPlanCoarseningCoverageTests {
         let traversals = plan.strokes.filter { $0.style == .traversal }.flatMap(\.segments)
         #expect(traversals == [StitchDrawPlan.Segment(from: 19, to: 20)])
         try #require(!Self.threadSegments(plan).isEmpty)
+    }
+
+    /// **A coarse span must not step over a stitch the renderer cannot draw** (`/codex-review`
+    /// round 1, finding 1).
+    ///
+    /// ADR-021 divergence #5 deliberately lets a coordinate the *stream* rejects into the display
+    /// list, so a position can be non-finite. `EmbroideryStream.requiresTraversal` returns
+    /// **false** when conversion rejects such a point — it cannot compute a distance — so
+    /// `StitchSegmentStyle.classifying` calls both intervals touching it `.thread`. The fine plan
+    /// emits them and the renderer then skips each one, because `segmentPath` guards every
+    /// subpath on `isDrawable`: nothing is drawn there, which is right, since the machine's
+    /// surviving state travels across that gap.
+    ///
+    /// A coarse span would instead *join over* the bad vertex, and its two endpoints are finite —
+    /// so the renderer draws one solid line straight across the travel. That is the exact ADR-024
+    /// defect this story must never reproduce, reachable only through coarsening.
+    ///
+    /// So the rule: **a span never joins across a non-finite vertex**; the intervals touching one
+    /// are emitted individually, which keeps the coverage identical to the fine plan while
+    /// leaving the renderer's per-subpath skip to do its job. Asserted on *interior* vertices
+    /// only — a unit segment may legitimately end on a bad point, exactly as the fine plan's does.
+    @Test("a coarse span never joins across a stitch the renderer cannot draw")
+    func aCoarseSpanNeverJoinsAcrossANonFiniteStitch() {
+        for list in Self.nonFiniteFixtures {
+            for target in [1, 2, 3, 5, 97] {
+                let plan = StitchDrawPlan.coarse(of: list, threshold: 0, target: target)
+
+                for segment in Self.threadSegments(plan) where segment.to > segment.from + 1 {
+                    for index in (segment.from + 1) ..< segment.to {
+                        let position = list.stitches[index].position
+                        #expect(
+                            position.x.isFinite && position.y.isFinite,
+                            "target \(target): segment \(segment.from)→\(segment.to) steps over \(index)"
+                        )
+                    }
+                }
+
+                // And the coverage is still the fine plan's, so nothing was lost by breaking the
+                // span — the intervals touching the bad vertex are emitted, just not merged.
+                let fine = StitchDrawPlan.entire(of: list)
+                let covered = Self.threadSegments(plan).flatMap { $0.from ..< $0.to }
+                #expect(Set(covered) == Set(Self.threadSegments(fine).map(\.from)))
+                #expect(covered.count == Set(covered).count)
+            }
+        }
     }
 
     /// **The assertion the story should have had from the start, and it took a review to find.**

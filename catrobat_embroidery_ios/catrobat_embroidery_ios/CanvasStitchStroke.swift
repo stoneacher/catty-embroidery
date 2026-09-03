@@ -63,28 +63,67 @@ enum CanvasStitchStroke {
         // After every stroke, so dots always sit on top — a deviation from Catroid,
         // which interleaves them in stitch order and lets a later run cover an earlier
         // run's penetration points.
-        let radius = StitchDrawMetrics.dotRadius(atScale: transform.scale)
         for run in plan.dots {
-            var path = Path()
-            // `dottedIndices`, never `indices`: a coarse run dots every `stride`-th entry, and
-            // iterating the raw range would silently draw all of them — the one place this
-            // story's saving on the dot half could be lost without any test noticing, since
-            // every plan-level assertion would still pass.
-            for index in run.dottedIndices {
-                let centre = transform.viewCGPoint(of: points[index].position)
-                // Skip an undrawable dot rather than adding it. See `segmentPath`.
-                guard centre.isDrawable else { continue }
-                path.addEllipse(
-                    in: CGRect(
-                        x: centre.x - radius,
-                        y: centre.y - radius,
-                        width: radius * 2,
-                        height: radius * 2
-                    )
-                )
-            }
-            context.fill(path, with: .color(Color(run.color)))
+            context.fill(dotPath(run, of: points, transform: transform), with: .color(Color(run.color)))
         }
+    }
+
+    /// Whether this frame may composite the cached raster underneath the plan it draws.
+    ///
+    /// **Extracted so it can be tested at all** (`/codex-review` round 1, finding 3). It lives in
+    /// a `private` view whose `Canvas` closure only runs when hosted *and* drawn, so passing a
+    /// constant here — or asking for the wrong window — left every package `forFrame` test green
+    /// while a live frame went back to the measured 69.1 ms route. Three of its four clauses are
+    /// about *staleness* rather than about liveness, which is exactly why `forFrame` takes this
+    /// as an input and asks `canUseRaster` itself.
+    ///
+    /// `baked == nil` fails on `Optional.none == .some(key)`; a stale key and a `Canvas` sized
+    /// differently from the raster's viewport each fail on their own clause. In all three the
+    /// frame draws the whole design and no raster, which is what the branch this replaced did.
+    static func compositingRaster(
+        canUseRaster: Bool,
+        bakedKey: AnyHashable?,
+        expectedKey: AnyHashable,
+        size: CGSize,
+        viewport: ViewSize
+    ) -> Bool {
+        canUseRaster
+            && bakedKey == expectedKey
+            && size.width == viewport.width
+            && size.height == viewport.height
+    }
+
+    /// **One** `Path` holding one colour run's penetration dots.
+    ///
+    /// A separate function purely so it can be *tested* (`/codex-review` round 1, finding 2):
+    /// while this was a loop inside `stroke(_:of:transform:travelOpacity:into:)` its one
+    /// load-bearing decision — iterate `dottedIndices`, never `indices` — was unobservable,
+    /// because reaching it needs a `GraphicsContext` and therefore a hosted, drawn `Canvas`.
+    /// Iterating the raw range would have built all 50 001 ellipses while every plan-level
+    /// assertion stayed green, i.e. silently given back the whole dot half of US-310's saving.
+    /// A `Path` can be walked in a test; a `GraphicsContext` cannot.
+    static func dotPath(
+        _ run: StitchDrawPlan.DotRun,
+        of points: [PreviewStitch],
+        transform: StageTransform
+    ) -> Path {
+        let radius = StitchDrawMetrics.dotRadius(atScale: transform.scale)
+        var path = Path()
+        // `dottedIndices`, never `indices`: a coarse run dots every `stride`-th entry.
+        for index in run.dottedIndices {
+            let centre = transform.viewCGPoint(of: points[index].position)
+            // Skip an undrawable dot rather than adding it. See `segmentPath`.
+            guard centre.isDrawable else { continue }
+            path.addEllipse(
+                in: CGRect(
+                    x: centre.x - radius,
+                    y: centre.y - radius,
+                    width: radius * 2,
+                    height: radius * 2
+                )
+            )
+        }
+        return path
     }
 
     /// **One** `Path` holding every segment in a stroke, as disjoint subpaths.

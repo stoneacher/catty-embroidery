@@ -155,6 +155,18 @@ public extension StitchDrawPlan {
         return strokes
     }
 
+    /// Whether the interval between two stitches may be *merged into* a longer segment.
+    ///
+    /// Only about representability, never about style: the classifier decides what a thread is,
+    /// this decides what may be joined. Both endpoints must be finite, because a joined segment
+    /// carries only its two ends and the renderer's `isDrawable` guard can then no longer see the
+    /// vertex in between. Spelled here rather than on `StagePoint` so the engine's geometry type
+    /// does not grow a member for one caller's benefit.
+    private static func isJoinable(_ first: PreviewStitch, _ second: PreviewStitch) -> Bool {
+        first.position.x.isFinite && first.position.y.isFinite
+            && second.position.x.isFinite && second.position.y.isFinite
+    }
+
     /// The classified segments of one run's window, split by style.
     ///
     /// A named result rather than a tuple: SwiftLint caps tuple members, and both halves want
@@ -203,11 +215,29 @@ public extension StitchDrawPlan {
                 from: list.stitches[start], to: list.stitches[start + 1]
             ) {
             case .thread:
-                spanned += 1
-                if spanned == stride {
-                    walked.threaded.append(Segment(from: anchor, to: start + 1))
+                // **A span may not step over a stitch the renderer cannot draw**
+                // (`/codex-review` round 1). ADR-021 lets a coordinate the stream *rejects* into
+                // the display list, and `requiresTraversal` answers `false` for it — it cannot
+                // compute a distance — so both intervals touching such a point classify
+                // `.thread`. The fine plan emits them and `segmentPath` then skips each subpath
+                // on `isDrawable`, drawing nothing across a gap the machine merely travels. A
+                // span joining over that vertex has two *finite* endpoints, so it would be drawn:
+                // one solid line straight across the travel, which is precisely the ADR-024
+                // defect coarsening must not reintroduce.
+                //
+                // Emitting those intervals individually keeps the coverage identical to the fine
+                // plan and leaves the renderer's per-subpath skip to do the work.
+                if Self.isJoinable(list.stitches[start], list.stitches[start + 1]) {
+                    spanned += 1
+                    if spanned == stride {
+                        walked.threaded.append(Segment(from: anchor, to: start + 1))
+                        anchor = start + 1
+                        spanned = 0
+                    }
+                } else {
+                    walked.close(&spanned, from: anchor, to: start)
+                    walked.threaded.append(Segment(from: start, to: start + 1))
                     anchor = start + 1
-                    spanned = 0
                 }
             case .traversal:
                 // Travel ends the open span and is then drawn as the single interval it is.

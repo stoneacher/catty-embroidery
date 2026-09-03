@@ -50,6 +50,15 @@ struct StitchDrawPlanCoarseningRuleTests {
         #expect(StitchDrawPlan.coarseningStride(forStitchCount: 50000, target: 4000) == 13)
         #expect(StitchDrawPlan.coarseningStride(forStitchCount: 50001, target: 4000) == 13)
         #expect(StitchDrawPlan.coarseningStride(forStitchCount: .max, target: .max) == 1)
+        // **Hostile targets, pinned** (`/codex-review` round 1, finding 4). The clamp to 1 is
+        // load-bearing and was unasserted: deleting it leaves `target: 0` dividing by zero and
+        // `target: -1` returning a stride of 0 — a stride of 0 means `spanned == stride` never
+        // holds, so a run's thread is emitted as one span however long it is. This is a public
+        // function whose own doc promises hostile input cannot kill the process.
+        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 2, target: 0) == 2)
+        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 2, target: -1) == 2)
+        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 0, target: 0) == 1)
+        #expect(StitchDrawPlan.coarseningStride(forStitchCount: 50_000, target: .min) == 50_000)
     }
 
     /// **Two constants, because one cannot do both jobs — and the measurement is what showed

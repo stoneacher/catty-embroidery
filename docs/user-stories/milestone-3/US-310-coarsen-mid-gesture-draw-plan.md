@@ -5,8 +5,8 @@ stated hand-off ([`docs/us-310-device-handoff.md`](../../us-310-device-handoff.m
 `swift-architect`. The story's own premise check (AC1) ran **before** any code change and
 answered **go**; the numbers are in "Premise" below. **The planning pass corrected nineteen
 things**, marked **planning correction** inline — including two in ADR-029's own rung-2 wording
-and one that made AC1 unexecutable as first written. **750 engine tests** (up from 736) and 191
-app tests, SwiftLint `--strict` clean, five screenshots. ADR-030 pins the semantics; ADR-029 is
+and one that made AC1 unexecutable as first written. **752 engine tests** (up from 736) and
+**197 app tests** (up from 191), SwiftLint `--strict` clean, five screenshots. ADR-030 pins the semantics; ADR-029 is
 corrected in place. **The implementation then refuted one of the story's own design decisions** —
 see "What the measurement changed" — and **review then refuted a claim made right here**: this
 line said the assertions were proved by ten mutations with one *equivalent* survivor. A second
@@ -130,8 +130,15 @@ stitch, a 4 001-stitch one strides by 5 — which is documented rather than hidd
 alternative was a default that provably does not reach one frame period.
 
 **Three things this story claims, and one it does not.** It claims the median mid-gesture frame
-at 50 000 stitches now fits a refresh period on the machine measured; that the fine windows are
-byte-identical; and that both shipping designs are untouched. **It does not claim the tail**: p99
+at 50 000 stitches now fits a refresh period on the machine measured; that the fine windows draw
+the **same segment and dot coverage, and issue the same drawing commands**, as before; and that
+both shipping designs are therefore visually unchanged. *(`/codex-review` round 1, finding 5, was
+right that an earlier phrasing — "the fine windows are **byte-identical**" — is false and cannot
+be what the tests show. The plan's representation deliberately changed: a segment is now a pair
+rather than an `Int`, 16 bytes against 8, and every `DotRun` carries a stride. The shipping-sample
+test also compares the new `coarse` plan against the new `entire` plan, so it cannot speak about
+`main` at all. What it does establish — same coverage, same commands, `stride == 1` — is the
+defensible claim and is the one a user would notice.)* **It does not claim the tail**: p99
 moved 46.7 / 52.9 / 49.2 across the four targets with no ordering, so the tail does not respond
 to the stride and therefore is not the coarse plan. Three drags means three gesture-end commits,
 each triggering a full 50 000-stitch re-bake, and p99 of 231 drawn frames is the second or third

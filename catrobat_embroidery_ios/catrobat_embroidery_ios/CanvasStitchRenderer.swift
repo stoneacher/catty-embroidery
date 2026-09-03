@@ -229,9 +229,13 @@ private struct CanvasStitchLayers: View {
             // and would have paid the same fidelity cost for nothing. `forFrame` asks
             // `canUseRaster` for the second question and takes this conjunction only as the
             // answer to the first, and it does so where `swift test` can see it (ADR-023).
-            let compositingRaster = transform.canUseRaster
-                && baked?.key == bakeKey
-                && Self.matches(size, viewport)
+            let compositingRaster = CanvasStitchStroke.compositingRaster(
+                canUseRaster: transform.canUseRaster,
+                bakedKey: baked?.key,
+                expectedKey: bakeKey,
+                size: size,
+                viewport: viewport
+            )
             if compositingRaster, let baked {
                 context.draw(baked.image, in: CGRect(origin: .zero, size: size))
             }
