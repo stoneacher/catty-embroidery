@@ -111,8 +111,12 @@ struct StitchDrawPlanCoarseningTests {
         #expect(StitchDrawPlan.coarseningStride(forStitchCount: 0, budget: 4000) == 1)
         #expect(StitchDrawPlan.coarseningStride(forStitchCount: 1, budget: 4000) == 1)
         #expect(StitchDrawPlan.coarseningStride(forStitchCount: 3999, budget: 4000) == 1)
-        // The boundary: at exactly the budget nothing is coarsened. `<` for `<=` here is the
-        // one-character mutation this case exists to catch.
+        // The boundary: at exactly the budget nothing is coarsened. **What this case catches is
+        // an off-by-one in the division, not the comparison** — checked by mutation rather than
+        // assumed, because the first version of this comment claimed the opposite. `count /
+        // budget + 1` for `(count - 1) / budget + 1` returns 2 here and fails; relaxing the
+        // guard from `>` to `>=` is an *equivalent* mutant that no test can catch, since the
+        // ceiling formula itself returns 1 at the boundary.
         #expect(StitchDrawPlan.coarseningStride(forStitchCount: 4000, budget: 4000) == 1)
         #expect(StitchDrawPlan.coarseningStride(forStitchCount: 4001, budget: 4000) == 2)
         #expect(StitchDrawPlan.coarseningStride(forStitchCount: 8000, budget: 4000) == 2)
@@ -159,7 +163,12 @@ struct StitchDrawPlanCoarseningTests {
     @Test("the coarse thread is continuous, not every k-th segment")
     func theCoarseThreadIsContinuous() throws {
         let list = Self.straightRun(200)
-        let plan = StitchDrawPlan.coarse(of: list, budget: 10)
+        let budget = 10
+        // **The stride, read from the rule rather than assumed to be the budget.** They are
+        // different numbers — a budget of 10 over 200 stitches strides by 20 — and writing 10
+        // here is the mistake this line exists to have already made once.
+        let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, budget: budget)
+        let plan = StitchDrawPlan.coarse(of: list, budget: budget)
         let segments = Self.threadSegments(plan)
 
         try #require(segments.count > 1, "otherwise continuity is trivially satisfied")
@@ -172,7 +181,7 @@ struct StitchDrawPlanCoarseningTests {
         }
         // And it really is coarser than the fine plan, or the assertion above is met by k = 1.
         #expect(segments.count < list.count - 1)
-        #expect(segments.allSatisfy { $0.to - $0.from <= 10 })
+        #expect(segments.allSatisfy { $0.to - $0.from <= stride })
     }
 
     // MARK: - T5 · no thread across travel
