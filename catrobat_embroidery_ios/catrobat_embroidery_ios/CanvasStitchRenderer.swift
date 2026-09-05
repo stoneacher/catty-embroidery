@@ -220,24 +220,32 @@ private struct CanvasStitchLayers: View {
             // at `current` would misplace them. Stroking everything is correct at any
             // transform and is what makes the frame able to *reveal* content the previous
             // frame had off-screen — the thing moving an already-rendered layer cannot do.
-            if transform.canUseRaster, let baked, baked.key == bakeKey, Self.matches(size, viewport) {
+            //
+            // **Which window is a package decision, not a decision here** (US-310). This used to
+            // be an `if/else` choosing `.live` or `.entire`, which conflated two different
+            // questions: "may the raster be composited?" and "is an interaction in flight?".
+            // They come apart exactly where it matters — a settled stage with no usable raster
+            // (too short to bake, stale key, wrong size) took the same branch as a live gesture
+            // and would have paid the same fidelity cost for nothing. `forFrame` asks
+            // `canUseRaster` for the second question and takes this conjunction only as the
+            // answer to the first, and it does so where `swift test` can see it (ADR-023).
+            let compositingRaster = CanvasStitchStroke.compositingRaster(
+                canUseRaster: transform.canUseRaster,
+                bakedKey: baked?.key,
+                expectedKey: bakeKey,
+                size: size,
+                viewport: viewport
+            )
+            if compositingRaster, let baked {
                 context.draw(baked.image, in: CGRect(origin: .zero, size: size))
-                Self.stroke(
-                    .live(of: display),
-                    of: display.stitches,
-                    transform: transform.current,
-                    travelOpacity: travelOpacity,
-                    into: &context
-                )
-            } else {
-                Self.stroke(
-                    .entire(of: display),
-                    of: display.stitches,
-                    transform: transform.current,
-                    travelOpacity: travelOpacity,
-                    into: &context
-                )
             }
+            CanvasStitchStroke.stroke(
+                .forFrame(of: display, at: transform, compositingRaster: compositingRaster),
+                of: display.stitches,
+                transform: transform.current,
+                travelOpacity: travelOpacity,
+                into: &context
+            )
         }
         .onChange(of: bakeKey, initial: true) { rebakeIfWorthwhile() }
     }
@@ -285,7 +293,7 @@ private struct CanvasStitchLayers: View {
         baked = Baked(
             key: bakeKey,
             image: Image(size: size) { context in
-                Self.stroke(
+                CanvasStitchStroke.stroke(
                     plan,
                     of: settledPoints,
                     transform: bakeTransform,
@@ -294,106 +302,5 @@ private struct CanvasStitchLayers: View {
                 )
             }
         )
-    }
-
-    /// **One stroking function for both layers, and that is the point.**
-    ///
-    /// `Image(size:renderer:)` (iOS 16+) and `Canvas` both hand out an
-    /// `inout GraphicsContext`, so the settled pixels and the live pixels can be
-    /// produced by identical code. If they were not, the seam at the watermark would
-    /// differ in cap shape, width rounding or alpha, and no unit test would notice — a
-    /// human would, on a screenshot, eventually.
-    ///
-    /// `points` is passed rather than read from the display list because the settled
-    /// bake strokes a *copy* of the prefix; the plan's indices are valid against either.
-    private static func stroke(
-        _ plan: StitchDrawPlan,
-        of points: [PreviewStitch],
-        transform: StageTransform,
-        travelOpacity: Double,
-        into context: inout GraphicsContext
-    ) {
-        for stroke in plan.strokes {
-            let path = segmentPath(stroke.segmentStarts, of: points, transform: transform)
-            switch stroke.style {
-            case .thread:
-                context.stroke(
-                    path,
-                    with: .color(Color(stroke.color)),
-                    style: StrokeStyle(
-                        lineWidth: StitchDrawMetrics.threadWidth(atScale: transform.scale),
-                        lineCap: .round,
-                        lineJoin: .round
-                    )
-                )
-            case .traversal:
-                context.stroke(
-                    path,
-                    with: .color(StageChrome.travelLine.opacity(travelOpacity)),
-                    style: StrokeStyle(
-                        lineWidth: StitchDrawMetrics.traversalWidthInViewPoints,
-                        lineCap: .butt,
-                        dash: StageChrome.travelDash
-                    )
-                )
-            case .suppressed:
-                continue // never planned; the switch is exhaustive so a new style is a compile error
-            }
-        }
-
-        // After every stroke, so dots always sit on top — a deviation from Catroid,
-        // which interleaves them in stitch order and lets a later run cover an earlier
-        // run's penetration points.
-        let radius = StitchDrawMetrics.dotRadius(atScale: transform.scale)
-        for run in plan.dots {
-            var path = Path()
-            for index in run.indices {
-                let centre = transform.viewCGPoint(of: points[index].position)
-                // Skip an undrawable dot rather than adding it. See `segmentPath`.
-                guard centre.isDrawable else { continue }
-                path.addEllipse(
-                    in: CGRect(
-                        x: centre.x - radius,
-                        y: centre.y - radius,
-                        width: radius * 2,
-                        height: radius * 2
-                    )
-                )
-            }
-            context.fill(path, with: .color(Color(run.color)))
-        }
-    }
-
-    /// **One** `Path` holding every segment in a stroke, as disjoint subpaths.
-    ///
-    /// The `move`/`addLine` pair per segment is what makes this a batch rather than a
-    /// shape per stitch: `Canvas` strokes the whole thing in one call. Catty's
-    /// node-per-stitch scene graph is the anti-goal ADR-009 exists to forbid, and it is
-    /// worth noting the accessibility consequence too — a `Canvas` has no child views,
-    /// so 50 000 stitches produce *zero* accessibility elements.
-    private static func segmentPath(
-        _ starts: [Int],
-        of points: [PreviewStitch],
-        transform: StageTransform
-    ) -> Path {
-        var path = Path()
-        for start in starts {
-            let from = transform.viewCGPoint(of: points[start].position)
-            let to = transform.viewCGPoint(of: points[start + 1].position)
-
-            // **The renderer's non-finite policy, and it needs to be explicit** (Codex
-            // round 2). ADR-021 divergence #5 deliberately lets a coordinate the stream
-            // *rejects* into the display trace, so a position can be infinite or NaN — and
-            // because this is a **batched** path, one such point does not merely misdraw
-            // itself: CoreGraphics can discard the whole path, taking every good segment in
-            // the colour run with it. Skipping the offending subpath keeps the rest of the
-            // run on screen, which is the same "one bad stitch must not delete the design"
-            // rule `StageBox.expand(toInclude:)` applies to bounds.
-            guard from.isDrawable, to.isDrawable else { continue }
-
-            path.move(to: from)
-            path.addLine(to: to)
-        }
-        return path
     }
 }

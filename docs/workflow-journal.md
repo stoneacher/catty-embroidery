@@ -1177,3 +1177,237 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
 - **US-309 closes as done with its exit criterion answered in the negative, and that is the correct outcome rather than a deferral.** The story's job was to turn ADR-009 from a claim into evidence. It did: animating passes, mid-gesture fails at ~14 fps. A story that measures something and finds it wanting has discharged its purpose; leaving it open until the *renderer* is fixed would conflate "did we measure it" with "did we like the answer". The fix is ADR-029's ladder and belongs to its own story.
 - **The remaining items are carried to a milestone-level "final verification" section rather than kept as story blockers**, and the distinction is worth stating because it was easy to get wrong. Each of them — the A15 confirmation, the Instruments traces, the zoomed screenshot, the manual accessibility pass — is *cheaper and more meaningful run once against a finished milestone* than repeatedly against a moving one, and none of them can change US-309's conclusion. The two criterion-level questions are there too, because they are author decisions and not work items at all. Recording who owns each, at the moment it was deferred, is what stops a deferral becoming an omission — the failure mode US-110 hit when a story was handed over without its Status line set.
 - **The milestone's exit criterion is now explicitly "answered, not met".** The README says so in the exit-criteria section rather than only in the story: end-to-end works and the transform math is unit-tested, but M3 cannot claim 60 fps at 50 000 stitches until the mid-gesture path is fixed. Writing that in the place a reader checks the milestone's status — rather than only where the measurement happened — is the same propagation discipline this branch spent four review rounds learning.
+
+## 2026-09-03 (US-310) — the story that checked its own premise first, and the sweep that refuted its own constant
+
+- **The most valuable thing `swift-architect` produced was an argument that the story might be
+  wrong.** Asked to plan ADR-029's rung 2, it found that the 69.1 ms mid-gesture figure had never
+  been *attributed*: ADR-029's own bake schedule strokes the same ~50 000 stitches up to fifty
+  times per run, yet the animating capture's worst frame over 251 drawn frames was 16.703 ms,
+  which a 69 ms main-thread re-stroke does not obviously permit — and ADR-029 never reconciles
+  the two. It made that an AC1 with a **decision rule fixed in advance**: two counts on one
+  instrument, equal medians mean "do not implement this story". A plan whose first criterion can
+  cancel the plan is a better plan.
+- **And the check as written could not be run**, which is the kind of thing only checking finds:
+  the frame-time readout is gated to the `Synthetic 50k` fixture, and that fixture is a fixed
+  50 001 stitches with no smaller variant — so there was no instrumented small design to take the
+  second reading on. Fixed with a `-US310FrameTimes` launch argument rather than by widening the
+  gate, so US-309's reason for the narrow gate (no diagnostic overlay in shipping screenshots)
+  survives.
+- **A scripted drag on the simulator turned out to be a real instrument**, which was not obvious:
+  pinch is not automatable here, but `ui-automation drag --duration 4 --steps 80` holds a
+  single-touch gesture for four seconds with continuous touch-moves, and a held gesture is exactly
+  the state (`canUseRaster == false`) the measurement needs. The control that makes it
+  comparable is the **draw count**: 231 against 230 at the two stitch counts, because redraws are
+  driven by the touch-move rate rather than the refresh rate. Same number of drawn frames, so the
+  median difference is per-frame cost. This is the second time this project has got its
+  discriminating evidence from a *count* rather than a time.
+- **The instrument quantises, and that nearly produced a wrong conclusion.** A display-link
+  interval can only report multiples of 16.667 ms. The first coarsened capture read `med 33.333`
+  — exactly two periods — which looks like "barely improved" and actually means "somewhere
+  between one and two periods". The premise arithmetic had predicted ≲ 17.3 ms, i.e. *just* over
+  one period: the prediction was met and still read as a failure. Reading a quantised instrument
+  as if it were continuous would have sent the next hour down the wrong rung.
+- **The sweep refuted the story's own design decision, and that is the story's best result.** One
+  constant had to be both the ≥ 3 194 floor that keeps a shipping design uncoarsened and the
+  ≈ 1 000 segment target that reaches one frame period. No number satisfies both, so the rule
+  split into a threshold and a target. **Four points beat one arithmetic estimate**: 4 000 (stride
+  13) still two periods, 1 000 (stride 50) one period, 250 (stride 201) one period — a knee, which
+  a single default could not have shown.
+- **What the story deliberately does not claim is as important as what it does.** p99 moved
+  46.7 / 52.9 / 49.2 across four stride values *with no ordering* — a cost that does not respond
+  to the independent variable is not the thing being changed. So the tail is attributed to the
+  gesture-end commit and its full re-bake and left to rung 1, rather than folded into a "3× faster"
+  headline. ADR-030 says which half is claimed and on what platform.
+- **Ten mutations, one survivor, and the survivor was right to survive.** Every red was a compile
+  failure again, so the assertions were checked by mutation: dashing, coarsening through travel, a
+  global dot stride, a dropped final span, swapped `forFrame` precedence — all caught by exactly
+  their own test. The survivor relaxes `>` to `>=` in the stride guard and is **equivalent**, since
+  the ceiling formula returns 1 at the boundary either way. My test comment had claimed that case
+  caught the operator; it does not, and the comment is corrected to name the mutation it actually
+  catches. A mutation round is also a claim-checker for the *comments*, not only the code.
+- **Two SwiftLint limits forced two structural splits**, both worth keeping: `CanvasStitchRenderer`
+  crossed 400 lines, so the pure stroking functions moved to `CanvasStitchStroke.swift` (the seam
+  is genuine — when-to-draw versus how-to-draw), and the span walker had to come out of stroke
+  assembly to stay inside the complexity cap. Third time in this project a lint limit has found a
+  seam that was already there; US-307's `StageView` extraction was the first.
+- **`build/` was excluded from SwiftLint.** This project's own device hand-off tells the tester to
+  pass `-derivedDataPath build/<story>`, which lands Xcode's generated sources inside the repo;
+  they are gitignored but SwiftLint walked them and failed `--strict` on 30+ violations in code
+  nobody wrote. Fixing the gate beats remembering to delete the directory after every capture.
+
+## 2026-09-03 (US-310 review) — the layer that caught a claim the mutation round had made
+
+- **`swift-code-reviewer` found a surviving, non-equivalent mutant that my own mutation round had
+  missed, and it was in the sentence I had just written.** The story's status line claimed "ten
+  mutations, each caught by its own test; the single survivor … is provably equivalent". Deleting
+  the **mid-run span close** — the line that emits the open coarse span when travel or a colour
+  change arrives — leaves all 751 tests green. On screen that is up to `stride − 1` intervals of
+  missing thread immediately before *every* jump and *every* colour swap: at stride 51, a whole
+  coarse segment of blank fabric at each. It is exactly the property AC3 claims and ADR-030 pins
+  verbatim, and the *closed-and-drawn* half of that sentence had no test behind it.
+- **The reason my round missed it is worth keeping: I mutated what I had thought about.** My
+  travel mutation coarsened *through* a traversal (caught), and my final-span mutation dropped the
+  span at the *end of a run* (caught). The mid-run close is the third instance of the same
+  operation and I never wrote it down as a separate case. A hand-written mutation set inherits the
+  author's blind spots; the reviewer's 2 800-case property sweep did not, because it asserted a
+  **set equality** — the intervals coarse thread covers must equal the intervals the fine plan
+  classifies as thread — which rules out gaps, duplicates, thread across a jump and thread across
+  a colour change in one assertion. That test now lives in the suite and catches the mutant 16
+  times over.
+- **Generalisation for this project**: when three call sites perform the same operation, the
+  mutation set needs one entry *per site*, not one per operation. The closing logic is now a
+  single `WalkedSegments.close(_:from:to:)` with `spanned` as `inout`, so there is one site to
+  mutate and a caller cannot close the span and forget to reset the counter.
+- **A second finding I would not have found by reading: `private` → nothing inside a
+  `public extension` means `public`.** `planning` and `lastSegment(before:)` needed to be visible
+  from a second file, so I dropped `private` and wrote "internal rather than private" in the doc
+  comment — and the comment was simply false. The reviewer proved it by compiling a call from the
+  test module with a plain `import`, no `@testable`. A public `planning` is a public constructor
+  for arbitrary plans at any window and stride, which is the chokepoint `Stroke` and `DotRun` give
+  up their memberwise initializers to protect, and it made `stride: .max` reachable — which made a
+  latent overflow trap in `DotRun.count` reachable, in the exact spelling
+  `coarseningStride`'s own doc comment forbids two files away. **One access-level slip turned two
+  "unreachable" notes into reachable ones.** Both keywords are now written out explicitly.
+- **The reviewer also refuted a figure and an inference.** The stride at a target of 1 000 over
+  50 001 stitches is **51**, not the 50 I wrote in three places; and calling the sweep's shape a
+  *knee* is unsupportable on an instrument that reports only multiples of the refresh period,
+  because strides 51 and 201 both read the floor and the transition could lie anywhere in (13, 51].
+  Both are corrected in place. The lesson is the same one ADR-029's draw-count finding taught:
+  **state what the instrument can distinguish, not what the numbers suggest.**
+- **Cost and shape of the pass**: one review, five Important findings and seven suggestions, all
+  accepted, none rejected — and the two that mattered were both *claims stated more broadly than
+  their evidence* rather than broken behaviour. The shipped code was correct on every one of the
+  2 800 property cases; what was wrong was the coverage behind it and the prose around it.
+
+## 2026-09-03 (US-310, cross-vendor) — three flat Medium rounds, one chain of defects, and what each layer could see
+
+- **Severity: Medium → Medium → Medium; ten findings; none rejected; every round changed code.** By the
+  project's stop rule that is non-convergence, so the loop is escalated to Sebastian rather than
+  run to the cap. But the *shape* is worth recording, because "flat" here does not mean thrashing:
+  all three Mediums are **one chain in one corner** — coarsening interacting with coordinates
+  ADR-021 deliberately allows into the display list — and each was strictly narrower than the last.
+  Round 3 explicitly found nothing outside that corner. The rule fires on the severity trend and
+  cannot see that difference, which is itself a finding about the rule.
+- **The chain, because it is the most instructive thing on this branch.** (1) A non-finite stitch:
+  `requiresTraversal` answers `false` for a coordinate it cannot convert, so the intervals touching
+  it classify as *thread*; the fine plan emits them and the renderer skips each subpath, while a
+  coarse span joined **over** the bad vertex has two finite endpoints and was therefore drawn — one
+  solid line across ground the machine only travels. (2) My fix emitted those intervals
+  individually to keep interval coverage identical, which gives a wholly-rejected 50 000-stitch
+  design 49 999 segments and defeats the bound on precisely the input coarsening exists to survive;
+  they are never drawn, so dropping them costs nothing. (3) Stage-space *finiteness* was still the
+  wrong predicate — `1e307` is a finite `Double` the machine cannot reach, and at maximum scale it
+  maps to a non-finite view point, so the same ADR-024 violation returns through the **transform**
+  rather than the coordinate. The predicate is now `EmbroideryPoint(converting:)`, which is what
+  `requiresTraversal` itself consults, and which keeps the plan transform-free as its contract
+  demands.
+- **Each round refuted the previous round's fix, and that is the argument for the verification
+  round existing at all.** Rounds 2 and 3 found nothing wrong with the *original* code; they found
+  that the repair had a hole. Two of the three would have shipped as latent behaviour a user could
+  reach by zooming a design containing one rejected coordinate.
+- **The bound taught a general lesson about bounds over span-based schemes**: every *break* costs a
+  partial span, so the bound needs one term per thing that can force a break — colour runs,
+  traversals, and now unreachable intervals. Two successive amendments were each refuted by a
+  fixture I had not thought to build (100 % bad input, then alternating good/bad). A bound is only
+  as strong as the worst fixture someone will construct for it.
+- **What each of the three layers actually caught, which is the thesis-relevant comparison.** My own
+  mutation round: the ordinary defects, and it *missed* the third of three identical call sites.
+  `swift-code-reviewer`: that miss (via a 2 800-case property sweep), plus an accidental
+  `public` in a `public extension` that made two "unreachable" traps reachable. `/codex-review`: the
+  three-link chain above, all of it about inputs the *other two layers had no fixture for*, plus
+  the observation that the whole plan-to-pixel layer had no executable coverage. Three layers,
+  three disjoint classes of finding; none of them redundant on this branch.
+- **A tooling note worth keeping.** Two assertions of mine failed on *unmutated* code before they
+  ever caught a mutant — a `Path.boundingRect` compared against `radius * 2` (the box includes
+  bézier control points) and a float equality across a differently-ordered product. Both were
+  caught in seconds because the mutation harness runs the unmutated suite first. **Run the
+  baseline inside the mutation script, not before it**: a "caught" result means nothing if the test
+  was already red.
+
+## 2026-09-03 (US-310, rounds 4–5) — the loop closed on a fix-chain, and what the escalation rule could not see
+
+- **Final shape: 5 rounds, 15 findings, none rejected, severity Medium → Medium → Medium →
+  Medium → Low**, closing on stop condition 1 — round 5's findings were documentation-only, so
+  its triage changed no code. The corner Codex had been circling was declared closed in the same
+  round.
+- **The escalation rule fired correctly and its verdict was wrong, which is worth writing down
+  once.** At three flat Mediums the rule says escalate rather than continue, so it was escalated;
+  Sebastian chose one more round. Rounds 4 and 5 then produced the two most useful results on the
+  branch — a **regression I had introduced in round 3's fix**, and the first clean structural
+  verdict. The rule watches the severity *trend*, which cannot distinguish "four unrelated Mediums"
+  (thrashing) from "one chain of four, each narrower than the last" (converging on a corner).
+  **What would have distinguished them here: rounds 2–4 all found holes in the previous round's
+  fix, not in the original code.** A stop rule that noticed "is this round about the last round's
+  repair?" would have kept going without needing a human. Recorded as a candidate refinement, not
+  a change — one branch is not evidence enough to loosen a rule that exists to stop pathological
+  loops.
+- **The fix-chain, because it is the branch's clearest lesson.** Round 1: a coarse span could join
+  over a non-finite stitch and draw thread across travel. Round 2: my fix's shape (emit those
+  intervals individually) defeated the bound on wholly-rejected input. Round 3: stage *finiteness*
+  was the wrong predicate — a finite-but-unconvertible coordinate reintroduces the defect through
+  the transform. Round 4: **the fix for that over-applied** — consulting joinability at stride 1
+  dropped intervals from `.entire`/`.settled`/`.live`, which is a fine-window behaviour change
+  ADR-021 forbids, resting on a premise ("conversion rejection implies undrawability") that is
+  simply false. Round 5: the prose still conflated the two cases one clause after correcting them.
+  **Each repair was sound about the case it was aimed at and wrong about the case next door.**
+- **The generalisable rule that came out of it**: a guard must be placed by *what it decides*, not
+  by where the bug appeared. Joinability answers "may these be merged" and nothing else; the moment
+  it also answered "may this be drawn", it changed three windows it had no business touching.
+- **Three assertions of mine failed on unmutated code during these rounds** — a `Path.boundingRect`
+  compared against `radius × 2` (the box carries bézier control points), a float equality across a
+  differently-ordered product, and a dot fixture at the origin where scale has no positional
+  effect. All three were caught immediately because the mutation harness runs the baseline first.
+  **A "caught" verdict is meaningless without a green baseline in the same run**; that is now how
+  every mutation script here is written.
+- **Cost, for the thesis's delegation table**: 5 Codex rounds ≈ 25 minutes of wall clock, all
+  in the background, against three genuine rendering defects and one behaviour regression — none
+  of which the in-loop reviewer or my own 15-mutation round had found, and two of which a user
+  could have reached by zooming a design containing a single rejected coordinate.
+
+## 2026-09-05 (US-310, device) — ten minutes with a phone beat five review rounds, for the third time
+
+- **Sebastian pinched the synthetic on his iPhone and photographed a defect that every automated
+  layer had passed over**: five `/codex-review` rounds, an in-loop `swift-code-reviewer` pass,
+  757 engine tests and nineteen mutations. The coarse plan was **cutting the corners of a fill**.
+  The synthetic hatch lays 200 stitches per row and reverses at each end, so at stride 51 a span
+  straddling a turn chops up to fifty stitches off that row: the design's straight edges become
+  comb teeth with the strided dots beading on the tips, and the silhouette shrinks — for as long
+  as a finger is down. The Octagon Rosette looked perfect throughout, because at 3 194 stitches it
+  is below the threshold and never coarsens. That contrast *is* the diagnosis, and it arrived in
+  one sentence from a user.
+- **Why nothing headless could have caught it, stated precisely, because this is the reusable
+  part.** Every assertion the story had was about *how many* segments a plan holds, *which
+  intervals* it covers, or *what styles* it mixes. All three are indifferent to **which vertices a
+  span skips** — and that is the entire content of the artifact. The property that catches it is
+  about the design's *shape*: every row end must survive as a segment endpoint. Coverage-of-
+  intervals and preservation-of-shape are different claims, and a simplification algorithm needs
+  the second one.
+- **My "visually indistinguishable" claim was evidence-shaped and wrong.** It rested on a
+  simulator screenshot taken *during* a drag — with the design panned so far that only its
+  interior was on screen. The edges, the only place the artifact lives, were out of frame. **A
+  screenshot is evidence for what is in the frame, and the frame is a choice I made.** Next time a
+  visual claim rests on one image, the check is: does the frame contain the thing that could
+  disprove it?
+- **The first fix's test was self-referential and a mutation caught it.** "No coarse segment spans
+  a corner" asserted through `isCorner` — the same function the planner consults — so weakening
+  the rule from `>= 90°` to `> 90°` left the test happily agreeing with the weakened plan. The
+  hatch's turn is *two right angles*, so that mutant reintroduced the whole defect and passed. The
+  fix is two assertions at different levels: the rule's contract stated case by case, and the
+  consequence stated **without** the rule. Third time this project has hit rule-restated-as-test
+  (US-309's settle watermark, US-310's stride, now the corner) — it is the dominant failure mode
+  of testing a pure function against itself.
+- **Two more survivors, two more fixtures.** A mutant re-anchoring *past* the corner survived
+  because every fixture in the coverage suite was collinear — the corner path was never exercised
+  by the assertion that would have caught it. A mutant treating a repeated stitch as a corner
+  survived because no fixture had duplicates. **The fixture set is part of the assertion**; the
+  suite was strong and the inputs were narrow.
+- **The device also confirmed the rung works**: `med 16.670 p95 24.089 p99 29.068 max 43.661`
+  against US-309's `69.1 / 118.8 / 136.2 / 166.2`. The median now sits at one refresh period on
+  real hardware. It still reads FAIL, and only on the tail — exactly where ADR-030 says it claims
+  nothing, and where the gesture-end commit and its re-bake live.
+- **Process note**: the app suite currently shows 199/200 because Sebastian's working tree carries
+  a personal `PRODUCT_BUNDLE_IDENTIFIER` and `DEVELOPMENT_TEAM` for device signing, which
+  `UTTypeDeclarationTests` correctly rejects. CI is unaffected. Worth knowing before someone
+  "fixes" that test: it is doing its job, and Xcode also silently stripped every comment from
+  `Info.plist` when the signing settings were edited.

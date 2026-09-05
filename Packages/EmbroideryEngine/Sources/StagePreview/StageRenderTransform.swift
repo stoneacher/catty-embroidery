@@ -45,8 +45,16 @@ public enum StageRenderTransform: Hashable, Sendable {
     /// Whether the cached raster may be composited at all this frame.
     ///
     /// `false` while live: the raster's pixels were baked at `bake`, so drawing them under a
-    /// tail stroked at `current` would misplace them. The frame strokes everything instead —
-    /// correct at any transform, and cheap at the counts M3 reaches.
+    /// tail stroked at `current` would misplace them. The frame strokes the whole design instead
+    /// — correct at any transform, and what makes it able to *reveal* content the previous frame
+    /// had off-screen.
+    ///
+    /// **It is no longer stroked at full fidelity, and it was never "cheap".** This comment used
+    /// to end "cheap at the counts M3 reaches", written against 2 976 stitches; ADR-029 names that
+    /// sentence as the one US-309 invalidated, measuring 69.1 ms per drawn frame at 50 000. Since
+    /// US-310 this predicate is what `StitchDrawPlan.forFrame(of:at:compositingRaster:…)` keys on
+    /// to hand back a **coarse** plan (ADR-030 rung 2), so `false` here now costs fidelity while
+    /// a finger is down rather than frame time.
     public var canUseRaster: Bool {
         switch self {
         case .settled: true
