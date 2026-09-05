@@ -87,6 +87,35 @@ public extension StitchDrawPlan {
         return (count - 1) / target + 1
     }
 
+    /// Whether the path **turns a corner** at `vertex` — doubles back, or turns by 90° or more.
+    ///
+    /// **Found on a device, not by any test** (Sebastian, 2026-09-05, iPhone). Coarsening a
+    /// boustrophedon fill without this frays it: the synthetic hatch lays 200 stitches per row and
+    /// reverses at each end, so at stride 51 a span straddling a row turn *cuts the corner* and
+    /// chops up to fifty stitches off that row. On screen the design's straight edges become comb
+    /// teeth with the strided dots beading on the tips — the whole silhouette shrinks and frays
+    /// while a finger is down, which no assertion about segment *counts* or interval *coverage*
+    /// can see. The story had claimed the coarse image was "visually indistinguishable" at 50 000
+    /// stitches, from a simulator screenshot whose framing happened to exclude the edges, which
+    /// are the only place the artifact lives.
+    ///
+    /// So a span may not cross a corner either: `≥ 90°` rather than a strict reversal, because a
+    /// square's corner is cut just as visibly as a hairpin's, and the hatch's own turn is two 90°
+    /// steps (along the row, down to the next, back along it) that a `> 90°` test would miss
+    /// entirely.
+    ///
+    /// A zero-length interval is **not** a corner: a repeated stitch has no direction to compare,
+    /// and treating it as one would break the span at every duplicate.
+    ///
+    /// Public and pure for the reason `coarseningStride(forStitchCount:target:)` is — a rule a
+    /// test can *observe* rather than restate (US-309's survivor).
+    static func isCorner(_ first: PreviewStitch, _ vertex: PreviewStitch, _ second: PreviewStitch) -> Bool {
+        let incoming = (x: vertex.position.x - first.position.x, y: vertex.position.y - first.position.y)
+        let outgoing = (x: second.position.x - vertex.position.x, y: second.position.y - vertex.position.y)
+        guard incoming.x != 0 || incoming.y != 0, outgoing.x != 0 || outgoing.y != 0 else { return false }
+        return incoming.x * outgoing.x + incoming.y * outgoing.y <= 0
+    }
+
     /// Everything in the list, joined into roughly `target` segments and dots.
     ///
     /// The same window as `.entire` — the whole list, no raster underneath — at a stride above

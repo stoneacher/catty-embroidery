@@ -87,10 +87,12 @@ commit, and the fix belongs to rung 1 / the Θ(n²/chunk) bake schedule rather t
 
 ## Judgement to bring back
 
-- The **coarse image**, in the hand, at two zoom levels: is the fidelity drop acceptable while a
-  finger is down? At 50 000 stitches in a 100 mm hoop the simulator screenshot is
-  indistinguishable (the design is a solid fill), so the honest test is a *zoomed-in* gesture,
-  where a stride of 51 is visible.
+- ~~The **coarse image**, in the hand, at two zoom levels~~ — **answered 2026-09-05, and the
+  answer was no.** The hatch's edges frayed into comb teeth because spans were cutting the row
+  turns; a corner rule now prevents that. **Re-check it**: the same pinch on the synthetic, both
+  zoom levels, looking specifically at the left and right edges and at the boundary between
+  colour bands. The simulator could not settle this — the screenshot that produced the original
+  "indistinguishable" claim had the design's edges out of frame.
 - The **pop** at gesture start and at commit: distracting, or unnoticeable?
 - Whether the **discontinuity at the threshold** shows up in practice — a 4 001-stitch design
   strides by 5 while a 4 000-stitch one strides by 1.

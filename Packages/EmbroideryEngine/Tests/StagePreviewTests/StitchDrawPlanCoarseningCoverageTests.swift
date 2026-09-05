@@ -68,8 +68,25 @@ struct StitchDrawPlanCoarseningCoverageTests {
             previewStitch(640, 0, PreviewColor.blue)
         ]),
         // Twenty short moves either side of one hop — T5's shape, at a longer run length.
-        hopInTheMiddle
+        hopInTheMiddle,
+        // **A boustrophedon fixture, because every other list here is collinear** — so the corner
+        // path was never exercised by the coverage assertion, and a mutant that re-anchored
+        // *past* the corner, losing that interval entirely, survived.
+        zigZag
     ]
+
+    /// Four rows of six, laid boustrophedon: the shape of every fill, and the shape that frayed
+    /// on the device.
+    private static let zigZag: StitchDisplayList = {
+        var stitches: [PreviewStitch] = []
+        for row in 0 ..< 4 {
+            let columns = row.isMultiple(of: 2) ? Array(0 ..< 6) : Array((0 ..< 6).reversed())
+            for column in columns {
+                stitches.append(previewStitch(Double(column) * 10, Double(row) * 4, PreviewColor.red))
+            }
+        }
+        return displayList(stitches)
+    }()
 
     /// Built statement by statement rather than as one concatenated literal: the `+` chain of
     /// two `map`s and an array defeated the type-checker outright ("unable to type-check this

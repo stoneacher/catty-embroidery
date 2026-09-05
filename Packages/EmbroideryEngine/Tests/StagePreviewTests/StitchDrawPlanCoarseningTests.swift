@@ -132,8 +132,16 @@ struct StitchDrawPlanCoarseningTests {
         let expected = (list.count + stride - 1) / stride
         let threads = Self.threadSegments(plan).count
         let dots = plan.dots.reduce(0) { $0 + $1.count }
+        // **Corners are the fifth term** (device finding, 2026-09-05): a span may not cross one,
+        // and this hatch turns twice per row, so ~500 of the segments below are corner breaks
+        // rather than stride breaks. Counted through the public rule rather than re-derived here.
+        let corners = (1 ..< Swift.max(1, list.count - 1)).count { index in
+            StitchDrawPlan.isCorner(
+                list.stitches[index - 1], list.stitches[index], list.stitches[index + 1]
+            )
+        }
 
-        #expect(threads <= expected + list.colorRuns.count + fineTraversals)
+        #expect(threads <= expected + list.colorRuns.count + fineTraversals + corners)
         #expect(dots <= expected + list.colorRuns.count)
         // The other side: a plan that drew nothing would pass both bounds above.
         #expect(threads >= 3000)

@@ -102,6 +102,39 @@ struct StitchDrawPlanCoarseningRuleTests {
         ) == 51)
     }
 
+    // MARK: - The corner rule
+
+    /// The corner rule's own contract, case by case.
+    ///
+    /// **Stated here rather than inferred from a plan, and that distinction is the point.** The
+    /// plan-level test asks "does any span cross a corner?" *using this same function*, so it
+    /// stays self-consistent under a mutation of the rule: weakening `<= 0` to `< 0` stops the
+    /// hatch's right angles being corners, and the plan-level assertion happily agrees. These
+    /// cases pin the rule itself; the silhouette assertion in the coverage suite pins the
+    /// consequence without reference to it. Between them a wrong rule has nowhere to hide.
+    @Test("a corner is a turn of ninety degrees or more, and a repeat is not a corner")
+    func aCornerIsATurnOfNinetyDegreesOrMore() {
+        func stitch(_ x: Double, _ y: Double) -> PreviewStitch { previewStitch(x, y, PreviewColor.red) }
+
+        // Straight on: not a corner, whatever the step lengths.
+        #expect(!StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(20, 0)))
+        #expect(!StitchDrawPlan.isCorner(stitch(0, 0), stitch(1, 0), stitch(100, 0)))
+        // A gentle bend stays joinable — a curve must still coarsen.
+        #expect(!StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(20, 10)))
+        // **Exactly ninety degrees is a corner**, which is what the hatch turns on: along the row,
+        // down to the next, back along it — two right angles and no reversal anywhere, so a
+        // strict-reversal rule would miss the whole artifact.
+        #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(10, 10)))
+        #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(10, -10)))
+        // Past ninety, and a full reversal.
+        #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(5, 10)))
+        #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(0, 0)))
+        // A repeated stitch has no direction to compare and must not break the span.
+        #expect(!StitchDrawPlan.isCorner(stitch(10, 0), stitch(10, 0), stitch(20, 0)))
+        #expect(!StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(10, 0)))
+        #expect(!StitchDrawPlan.isCorner(stitch(10, 0), stitch(10, 0), stitch(10, 0)))
+    }
+
     // MARK: - T11 · the shipping samples are untouched
 
     /// **What makes the constants themselves part of the contract.** Both shipping designs are

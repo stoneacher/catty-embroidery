@@ -158,10 +158,29 @@ instrument's 36.1 — roughly 1.9× slower — so the shipped target may need to
 hardware. What carries is the structure: one instrument, equal draw counts, cost responding to
 the stride.
 
-**The coarse image at 50 000 is visually indistinguishable** from the fine one
-([04](../../screenshots/us-310/04-sim-50k-coarse-plan-during-drag.jpg), taken *during* a drag),
-because fifty thousand stitches in a 100 mm hoop is a solid fill. The honest visual test is
-therefore a *zoomed* gesture, which is a hand-off item.
+**~~The coarse image at 50 000 is visually indistinguishable from the fine one~~ — refuted on
+device, 2026-09-05.** Sebastian pinched the synthetic on an iPhone and photographed what this
+claim missed: the hatch's straight edges **fray into comb teeth with the strided dots beading on
+the tips**, and the silhouette shrinks, for as long as a finger is down
+([07](../../screenshots/us-310/07-device-50k-mid-gesture-frayed.jpg),
+[06 zoomed](../../screenshots/us-310/06-device-50k-mid-gesture-frayed-zoomed.jpg);
+[08](../../screenshots/us-310/08-device-50k-settled-and-capture.jpg) is the same design settled
+and clean). The Octagon Rosette was unaffected, which is the threshold's control working.
+
+The mechanism: the hatch lays **200 stitches per row** and reverses at each end, so at stride 51
+a span straddling a turn cuts the corner and chops up to fifty stitches off that row. **Fixed by
+a corner rule** — a span may not cross a turn of 90° or more (`StitchDrawPlan.isCorner`) — which
+joins traversals, colour changes and unreachable stitches on the list of things that force a
+break, and adds the bound's fifth term.
+
+**Why the original claim was wrong is the useful part.** It rested on
+[04](../../screenshots/us-310/04-sim-50k-coarse-plan-during-drag.jpg), a simulator screenshot
+taken *during* a drag — with the design panned far enough that only its **interior** was on
+screen. The edges, the only place the artifact lives, were out of frame. And nothing headless
+could have contradicted it: segment counts, interval coverage, the batching bound and the
+traversal rule are all indifferent to *which* vertices a span skips. The assertion that catches it
+now is about the silhouette — every row end must survive as a segment endpoint — and it is stated
+**without** reference to `isCorner`, because a wrong rule and a wrong plan otherwise agree.
 
 ## Design decisions
 
@@ -355,7 +374,7 @@ trade it away unknowingly.
    to `.entire`, asserted by plan equality. *(Met by `liveCoarseningThreshold`, which is the
    constant this criterion actually constrains — the measurement split it from the target.)*
 8. The bound is stated as what it is, not as "≤ N": thread segments
-   `≤ ceil(count/k) + colorRuns + traversalCount + unreachableIntervals`, dots
+   `≤ ceil(count/k) + colorRuns + traversalCount + unreachableIntervals + corners`, dots
    `≤ ceil(count/k) + colorRuns`. *(The last term was added during review — **every break costs
    a partial span**, and an interval the machine cannot reach breaks the span either side of it.
    Codex found the shorter bound false twice: first for wholly rejected input, then for
@@ -379,7 +398,11 @@ trade it away unknowingly.
     nothing here rewords it.
 13. The fidelity cost is stated: the coarse route may deviate from the true path by up to the
     largest excursion within k consecutive stitches, and the image changes at interaction start
-    and at commit. Accepted, reviewed on a screenshot, not asserted.
+    and at commit. Accepted, reviewed on a screenshot, not asserted. **Amended 2026-09-05**: that
+    deviation is *not* acceptable where it cuts a corner — the device showed it fraying a fill's
+    edges — so corners are now preserved and the remaining, accepted deviation is the one along a
+    smooth path. What is still not asserted is how large that residual looks; what is asserted is
+    that the silhouette survives.
 
 ## Test-first plan
 

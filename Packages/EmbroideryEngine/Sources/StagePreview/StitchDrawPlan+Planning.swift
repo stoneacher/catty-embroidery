@@ -281,6 +281,16 @@ public extension StitchDrawPlan {
                     walked.close(&spanned, from: anchor, to: start)
                     anchor = start + 1
                 } else {
+                    // **A span may not cross a corner** (found on a device — see
+                    // `StitchDrawPlan.isCorner`). Closing *at* `start` and re-anchoring there
+                    // keeps the corner vertex as an endpoint of both segments, so the coverage is
+                    // unchanged and the design's silhouette survives coarsening; cutting it is
+                    // what frayed a hatch's row ends into comb teeth.
+                    if stride > 1, spanned > 0,
+                       Self.isCorner(list.stitches[start - 1], list.stitches[start], list.stitches[start + 1]) {
+                        walked.close(&spanned, from: anchor, to: start)
+                        anchor = start
+                    }
                     spanned += 1
                     if spanned == stride {
                         walked.threaded.append(Segment(from: anchor, to: start + 1))
