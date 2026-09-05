@@ -1364,3 +1364,50 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
   in the background, against three genuine rendering defects and one behaviour regression — none
   of which the in-loop reviewer or my own 15-mutation round had found, and two of which a user
   could have reached by zooming a design containing a single rejected coordinate.
+
+## 2026-09-05 (US-310, device) — ten minutes with a phone beat five review rounds, for the third time
+
+- **Sebastian pinched the synthetic on his iPhone and photographed a defect that every automated
+  layer had passed over**: five `/codex-review` rounds, an in-loop `swift-code-reviewer` pass,
+  757 engine tests and nineteen mutations. The coarse plan was **cutting the corners of a fill**.
+  The synthetic hatch lays 200 stitches per row and reverses at each end, so at stride 51 a span
+  straddling a turn chops up to fifty stitches off that row: the design's straight edges become
+  comb teeth with the strided dots beading on the tips, and the silhouette shrinks — for as long
+  as a finger is down. The Octagon Rosette looked perfect throughout, because at 3 194 stitches it
+  is below the threshold and never coarsens. That contrast *is* the diagnosis, and it arrived in
+  one sentence from a user.
+- **Why nothing headless could have caught it, stated precisely, because this is the reusable
+  part.** Every assertion the story had was about *how many* segments a plan holds, *which
+  intervals* it covers, or *what styles* it mixes. All three are indifferent to **which vertices a
+  span skips** — and that is the entire content of the artifact. The property that catches it is
+  about the design's *shape*: every row end must survive as a segment endpoint. Coverage-of-
+  intervals and preservation-of-shape are different claims, and a simplification algorithm needs
+  the second one.
+- **My "visually indistinguishable" claim was evidence-shaped and wrong.** It rested on a
+  simulator screenshot taken *during* a drag — with the design panned so far that only its
+  interior was on screen. The edges, the only place the artifact lives, were out of frame. **A
+  screenshot is evidence for what is in the frame, and the frame is a choice I made.** Next time a
+  visual claim rests on one image, the check is: does the frame contain the thing that could
+  disprove it?
+- **The first fix's test was self-referential and a mutation caught it.** "No coarse segment spans
+  a corner" asserted through `isCorner` — the same function the planner consults — so weakening
+  the rule from `>= 90°` to `> 90°` left the test happily agreeing with the weakened plan. The
+  hatch's turn is *two right angles*, so that mutant reintroduced the whole defect and passed. The
+  fix is two assertions at different levels: the rule's contract stated case by case, and the
+  consequence stated **without** the rule. Third time this project has hit rule-restated-as-test
+  (US-309's settle watermark, US-310's stride, now the corner) — it is the dominant failure mode
+  of testing a pure function against itself.
+- **Two more survivors, two more fixtures.** A mutant re-anchoring *past* the corner survived
+  because every fixture in the coverage suite was collinear — the corner path was never exercised
+  by the assertion that would have caught it. A mutant treating a repeated stitch as a corner
+  survived because no fixture had duplicates. **The fixture set is part of the assertion**; the
+  suite was strong and the inputs were narrow.
+- **The device also confirmed the rung works**: `med 16.670 p95 24.089 p99 29.068 max 43.661`
+  against US-309's `69.1 / 118.8 / 136.2 / 166.2`. The median now sits at one refresh period on
+  real hardware. It still reads FAIL, and only on the tail — exactly where ADR-030 says it claims
+  nothing, and where the gesture-end commit and its re-bake live.
+- **Process note**: the app suite currently shows 199/200 because Sebastian's working tree carries
+  a personal `PRODUCT_BUNDLE_IDENTIFIER` and `DEVELOPMENT_TEAM` for device signing, which
+  `UTTypeDeclarationTests` correctly rejects. CI is unaffected. Worth knowing before someone
+  "fixes" that test: it is doing its job, and Xcode also silently stripped every comment from
+  `Info.plist` when the signing settings were edited.
