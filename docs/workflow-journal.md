@@ -1541,3 +1541,63 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
   team; the real team came out of the on-disk provisioning profile. And `xcodebuild … | tail`
   reports **`tail`'s** exit code, so a failed build exits 0 — the check has to grep for
   `BUILD SUCCEEDED`, not test `$?`.
+
+## 2026-09-14 (US-313 planning) — two agents, one derivation, and a backlog entry that was wrong in the expensive direction
+
+Placed the last two backlog entries at the M3 boundary and planned the one that goes into the
+milestone. `swift-architect` and `swift-ui-design` ran concurrently against the real source.
+
+- **Both agents independently reached the same non-obvious conclusion, and it contradicts the
+  story they were given.** The backlog's US-313 entry names two separable causes for the gesture
+  feeling wrong. The second — "`startAnchor` is captured once, so content drifts away from under
+  the touch" — is **not a defect**. `pinched(by: m, about: c₀).dragged(by: c₁ − c₀)` maps a point
+  at `x₀` to `m(x₀ − c₀) + c₁`, which is exactly where the finger now is; the frozen start anchor
+  is the correct formulation, and the live anchor the entry proposes is off by `(1 − m)(c₁ − c₀)`.
+  **Building the story as specified would have introduced the drift it was written to remove.**
+  I re-derived it from `StageTransform.pinched`/`dragged` before accepting it, because the
+  architect explicitly asked that its own algebra not be taken on report — the right instinct,
+  and the same one ADR-028's history argues for.
+- **Convergence from two differently-briefed agents is worth more than either report.** They were
+  given different questions (architecture and test plan; interaction feel and accessibility) and
+  neither was told the other existed. Arriving at the same derivation from opposite ends is
+  evidence of a kind a single agent cannot produce, however confident. Worth repeating for any
+  claim that is about to overturn a written specification.
+- **They disagreed on exactly one point, and the disagreement was the useful part.**
+  `swift-ui-design` wanted `.live` gated on `!gesture.isIdentity` (the stage currently degrades on
+  touch-down, before anything moves — a pop on a stationary frame). `swift-architect` wanted
+  `canUseRaster == false` asserted for *every* frame of a manipulation, which forbids that.
+  Resolved in the story rather than merged: the gating is safe **because** of the invariant, since
+  at touch-down the bake key is still the committed transform. A merge would have shipped the
+  stronger assertion and quietly lost the improvement.
+- **The feared ADR revision was a wording problem.** The entry parks the story on a conflict with
+  ADR-028's "written once, in `onEnded`". Only the *consequence* is load-bearing — the settled
+  raster re-bakes once per gesture — and that depends on `settled` not being written mid-gesture,
+  not on `onEnded`. ADR-028's own 2026-08-18 correction had already split presentation from
+  commit. So: a dated amendment plus ADR-031, and **ADR-030 §7's inherited invariant is satisfied
+  rather than traded** — the thing US-310 wrote that paragraph to protect.
+- **ADR-028 also partially retracts, and the retraction is the honest part.** It claims the single
+  commit "deletes entirely" a per-channel state machine. Two UIKit recognisers have independent
+  lifecycles, so it comes back — this time as a `Sendable` value type under `swift test` rather
+  than four pieces of `@State` in a view, which is what makes ADR-028's own
+  `onlyTheFinalCumulativeValueIsApplied` (recorded as collapsing to `once == once`) assertable at
+  last.
+- **Nine specification corrections at planning, on top of US-307's six, US-308's twenty and
+  US-310's nineteen.** The pattern is now unambiguous enough to state plainly: **a specification
+  written at discovery time, from the ADRs and a symptom, is a good record of the symptom and an
+  unreliable record of the cause.** The backlog mechanism is still right — the entry captured the
+  user's own words, the sequencing against rung 2, and the instruction to weigh the invariant at
+  a planning session rather than in a hurry, and all three survived. What did not survive was
+  every sentence that guessed at a mechanism.
+- **The estimate was 40 % low** (~5 h specified, 7–9 h counted), which is what forced the split.
+  Splitting on the *simulator boundary* rather than by feature turned out to be the useful cut:
+  313a's red phase can be shown for all sixteen of its criteria with no device, and 313b's
+  definition of done is a human with two fingers.
+- **Two milestone-close items moved into 313b rather than staying on the list**, which is the
+  scheduling result worth carrying: the tail discriminator and the three in-the-hand judgement
+  questions are all questions *about a gesture*, and asking them of an interaction that is about
+  to be replaced would answer the wrong question. A third (`liveSegmentTarget`) was decided as a
+  scope call and is re-verified under the new gesture.
+- **Delegation shape**: two planning agents in parallel, ~7 and ~11 minutes, no overlap in
+  findings beyond the shared derivation. Verification of the load-bearing claim was done in the
+  main context by reading two functions — cheap, and the only part that could not be delegated,
+  since it is the claim everything else rests on.
