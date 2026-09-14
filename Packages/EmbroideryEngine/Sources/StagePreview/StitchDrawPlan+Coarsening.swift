@@ -134,10 +134,32 @@ public extension StitchDrawPlan {
         //
         // Scaling by the largest *component* rather than the length: no `sqrt`, and no squaring
         // to overflow on the way to normalising.
+        //
+        // **What this does not promise** (`/codex-review` round 7, narrowing round 6's claim that
+        // "a positive scale cannot move a dot product across zero"): the two divisions round
+        // independently, so a dot within rounding of zero may land either side of it — directions
+        // `(ε, 10)` and `(10, 0)` have a true dot of `10ε` and a computed dot of exactly 0, so
+        // they read as a corner. That turn differs from a right angle by ~5e-325 radians, and the
+        // rule already declares exactly 90° a corner, so the classification is right for every
+        // purpose this serves. The honest claim is "correct to within rounding of the 90°
+        // boundary", not "sign-exact".
         let incomingScale = Swift.max(abs(incoming.x), abs(incoming.y))
         let outgoingScale = Swift.max(abs(outgoing.x), abs(outgoing.y))
-        // Zero-length intervals leave here (no direction to compare), and so does anything
-        // non-finite, since `NaN > 0` is false — the predicate stays total for a public caller.
+        // **Order matters here**: a non-finite scale must be judged *before* the zero-length
+        // guard, because `NaN > 0` is false and would otherwise fall into "no direction to
+        // compare" and answer `false` — the very answer this guard exists to avoid.
+
+        // **When the angle cannot be computed, say corner** (`/codex-review` round 7, against
+        // round 6's own fix). A delta is non-finite either because a coordinate is, or because the
+        // *subtraction* overflowed — `−greatestFiniteMagnitude → +greatestFiniteMagnitude` is a
+        // pair of perfectly finite points whose difference is `+∞`. Round 6 answered "not a
+        // corner" there while claiming to have fixed overflow; that answer joins a span straight
+        // across a turn it cannot see, which is the one direction that costs silhouette. Breaking
+        // costs segments and nothing else. Unreachable through the planner — `isJoinable` rejects
+        // such coordinates long before — so this is about the public entry point.
+        guard incomingScale.isFinite, outgoingScale.isFinite else { return true }
+
+        // Zero-length intervals leave here: no direction to compare, so no corner.
         guard incomingScale > 0, outgoingScale > 0 else { return false }
 
         let unitIncoming = (x: incoming.x / incomingScale, y: incoming.y / incomingScale)

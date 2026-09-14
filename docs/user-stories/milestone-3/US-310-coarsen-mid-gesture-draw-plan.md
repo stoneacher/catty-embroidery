@@ -15,8 +15,8 @@ original code, and round 5 declared the corner closed. Planned with
 `swift-architect`. The story's own premise check (AC1) ran **before** any code change and
 answered **go**; the numbers are in "Premise" below. **The planning pass corrected nineteen
 things**, marked **planning correction** inline — including two in ADR-029's own rung-2 wording
-and one that made AC1 unexecutable as first written. **752 engine tests** (up from 736) and
-**197 app tests** (up from 191), SwiftLint `--strict` clean, five screenshots. ADR-030 pins the semantics; ADR-029 is
+and one that made AC1 unexecutable as first written. **761 engine tests** (up from 736) and
+**200 app tests** (up from 191), SwiftLint `--strict` clean, five screenshots. ADR-030 pins the semantics; ADR-029 is
 corrected in place. **The implementation then refuted one of the story's own design decisions** —
 see "What the measurement changed" — and **review then refuted a claim made right here**: this
 line said the assertions were proved by ten mutations with one *equivalent* survivor. A second

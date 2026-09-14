@@ -64,7 +64,7 @@ struct StitchDrawPlanCoarseningRuleTests {
     /// **Two constants, because one cannot do both jobs — and the measurement is what showed
     /// it.** A single budget had to be simultaneously the floor below which nothing is coarsened
     /// (which must stay above the 3 194-stitch rosette, or a shipping design changes) and the
-    /// segment count a large design aims for (which the simulator sweep put at ~1 000: stride 50
+    /// segment count a large design aims for (which the simulator sweep put at ~1 000: stride 51
     /// brings the mid-gesture median from over two refresh periods to one, and stride 201 buys
     /// nothing further). Those are 3 194 ≤ x and x ≈ 1 000, which no single number satisfies.
     ///
@@ -129,6 +129,17 @@ struct StitchDrawPlanCoarseningRuleTests {
         // Past ninety, and a full reversal.
         #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(5, 10)))
         #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(0, 0)))
+        // **When the angle cannot be computed, break the span** (`/codex-review` round 7). These
+        // deltas overflow to ±∞ on subtraction, so no dot product exists — and round 6's comment
+        // claimed to have fixed exactly this while still answering "not a corner", which joins a
+        // span across a turn it cannot see. Breaking is the safe direction: it costs segments,
+        // never silhouette. Unreachable through the planner (`isJoinable` rejects these long
+        // before), so this pins the public entry point.
+        let huge = Double.greatestFiniteMagnitude
+        #expect(StitchDrawPlan.isCorner(stitch(-huge, 0), stitch(huge, 0), stitch(-huge, 0)))
+        #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(.nan, 0), stitch(10, 0)))
+        #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(.infinity, 0), stitch(10, 0)))
+
         // A repeated stitch has no direction to compare and must not break the span.
         #expect(!StitchDrawPlan.isCorner(stitch(10, 0), stitch(10, 0), stitch(20, 0)))
         #expect(!StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, 0), stitch(10, 0)))

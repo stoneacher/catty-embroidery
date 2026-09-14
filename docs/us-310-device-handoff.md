@@ -1,7 +1,7 @@
 # US-310 device hand-off — does coarsening reach the bar on real hardware?
 
 US-310 coarsens the plan a live frame draws (ADR-029 fallback ladder rung 2, semantics pinned in
-ADR-030). Everything that can be proved without hardware is proved: 752 engine tests, 197 app
+ADR-030). Everything that can be proved without hardware is proved: 761 engine tests, 200 app
 tests, fifteen mutations, and a four-point simulator sweep. This file is the protocol for the part only a device can
 answer, and it is deliberately short, because it reuses
 [`us-309-device-handoff.md`](us-309-device-handoff.md) unchanged for the build, the device

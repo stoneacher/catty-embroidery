@@ -235,6 +235,15 @@ public extension StitchDrawPlan {
         // what `isCorner` needs. Tracking it is what stops a duplicate stitch hiding a reversal
         // (`/codex-review` round 6); `start - 1` was the naive reading and misses
         // `(0,0) (10,0) (10,0) (0,0)` entirely.
+        //
+        // **It is reset wherever a *break* resets `anchor`**, and round 6 missed that
+        // (`/codex-review` round 7): a chain beginning after travel, a colour change or an
+        // unreachable stitch inherits **no** direction, so its first turn must not be judged
+        // against the previous chain's. Setting it to the new anchor makes the incoming delta
+        // zero there, which `isCorner` already reads as "no direction to compare". Left stale, a
+        // duplicate just after travel closed a **zero-length** segment — a subpath drawing
+        // nothing. The corner break is the exception: it re-anchors *at* the corner and keeps the
+        // direction, because the chain continues through it.
         var directionAnchor = candidates.lowerBound
 
         for start in candidates {
@@ -287,6 +296,8 @@ public extension StitchDrawPlan {
                 if stride > 1, !Self.isJoinable(list.stitches[start], list.stitches[start + 1]) {
                     walked.close(&spanned, from: anchor, to: start)
                     anchor = start + 1
+                    // A new chain inherits no direction — see `directionAnchor`.
+                    directionAnchor = start + 1
                 } else {
                     // **A span may not cross a corner** (found on a device — see
                     // `StitchDrawPlan.isCorner`). Closing *at* `start` and re-anchoring there
@@ -306,6 +317,11 @@ public extension StitchDrawPlan {
                         anchor = start + 1
                         spanned = 0
                     }
+                    // Advance the direction only when the path actually moved: if the next point
+                    // repeats this one, the last non-zero direction is the one we already have.
+                    if list.stitches[start + 1].position != list.stitches[start].position {
+                        directionAnchor = start
+                    }
                 }
             case .traversal:
                 // Travel ends the open span and is then drawn as the single interval it is.
@@ -313,17 +329,13 @@ public extension StitchDrawPlan {
                 walked.close(&spanned, from: anchor, to: start)
                 walked.traversed.append(Segment(from: start, to: start + 1))
                 anchor = start + 1
+                directionAnchor = start + 1
             case .suppressed:
                 // Cannot arise inside a run (see `planning`); closing anyway keeps the second,
                 // independent check a check rather than the only one.
                 walked.close(&spanned, from: anchor, to: start)
                 anchor = start + 1
-            }
-
-            // Advance the direction anchor only when the path actually moved: if the next point
-            // repeats this one, the last non-zero direction is still the one we already have.
-            if list.stitches[start + 1].position != list.stitches[start].position {
-                directionAnchor = start
+                directionAnchor = start + 1
             }
         }
         // A span shorter than the stride still has to be drawn, or the run's thread stops short
