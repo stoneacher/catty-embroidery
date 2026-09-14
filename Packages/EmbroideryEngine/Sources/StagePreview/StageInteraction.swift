@@ -146,18 +146,6 @@ public struct StageInteraction: Equatable, Sendable {
         return moved(by: gesture, from: committed, fitting: fit, in: viewport)
     }
 
-    /// How far the stage is zoomed relative to the fit — 1.0 means fitted.
-    ///
-    /// Relative, because this is what gets spoken: view points per stage point means nothing to
-    /// a user, and "300 per cent" is something they can act on.
-    public func magnification(
-        gesture: StageGesture?,
-        fitting fit: StageTransform,
-        in viewport: ViewSize
-    ) -> Double {
-        transform(with: gesture, fitting: fit, in: viewport).scale / fit.scale
-    }
-
     // MARK: - Transitions
 
     /// Folds a finished gesture in.
@@ -365,8 +353,19 @@ public struct StageInteraction: Equatable, Sendable {
         case .zoomIn: Self.adjustmentStep
         case .zoomOut: 1 / Self.adjustmentStep
         }
-        settled = (settled ?? fit)
-            .pinched(by: factor, about: viewport.center, within: StageZoomBounds(fitting: fit))
+        let baseline = settled ?? fit
+        settled = baseline
+            .pinched(
+                by: factor,
+                about: viewport.center,
+                // The **same** widened bounds a gesture gets. ADR-028: "the adjustable action
+                // uses the same bounds as a gesture; one bounds concept, not two." Round 4
+                // widened them for `moved` and not here, which split the concept in exactly the
+                // way that sentence forbids — and the symptom was Zoom Out *increasing* the scale,
+                // from an explicit transform sitting below the current fit's floor
+                // (`/codex-review` round 5).
+                within: StageZoomBounds(fitting: fit, including: baseline.scale)
+            )
     }
 
     /// Back to following the fit, with no animation — a new design, or a reset that should not

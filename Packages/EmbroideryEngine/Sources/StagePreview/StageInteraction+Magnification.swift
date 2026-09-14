@@ -45,4 +45,16 @@ public extension StageInteraction {
         }
         return lower ... Swift.max(lower, upper)
     }
+
+    /// How far the stage is zoomed relative to the fit — 1.0 means fitted.
+    ///
+    /// Relative, because this is what gets spoken: view points per stage point means nothing to
+    /// a user, and "300 per cent" is something they can act on.
+    func magnification(
+        gesture: StageGesture?,
+        fitting fit: StageTransform,
+        in viewport: ViewSize
+    ) -> Double {
+        transform(with: gesture, fitting: fit, in: viewport).scale / fit.scale
+    }
 }
