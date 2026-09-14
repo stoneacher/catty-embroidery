@@ -17,6 +17,61 @@ struct StitchDrawPlanSilhouetteTests {
         plan.strokes.filter { $0.style == .thread }.flatMap(\.segments)
     }
 
+    /// **A duplicate stitch must not hide a reversal** (`/codex-review` round 6, finding 1).
+    ///
+    /// A three-consecutive-point predicate cannot see the turn in `(0,0) (10,0) (10,0) (0,0)`:
+    /// both triples around the duplicate contain a zero-length interval, so both answer "not a
+    /// corner", and the span joins straight from x=0 to x=−30 — erasing the whole excursion out
+    /// to x=10 and back, which the fine plan draws. Zero-length intervals *are* correctly not
+    /// corners on their own; what was wrong is letting one erase the 180° turn between the
+    /// nearest **non-zero** directions either side of it.
+    @Test("a repeated stitch does not hide the reversal around it")
+    func aRepeatedStitchDoesNotHideTheReversalAroundIt() {
+        var stitches = [
+            previewStitch(0, 0, PreviewColor.red),
+            previewStitch(10, 0, PreviewColor.red),
+            previewStitch(10, 0, PreviewColor.red)
+        ]
+        for index in 0 ..< 5_000 {
+            stitches.append(previewStitch(-Double(index) * 10, 0, PreviewColor.red))
+        }
+        let list = displayList(stitches)
+
+        let plan = StitchDrawPlan.coarse(of: list, threshold: 0, target: 1_000)
+
+        // The excursion's far point is x = 10, at index 1 (and its duplicate at 2). A span that
+        // joined across the turn would leave neither as an endpoint.
+        var endpoints: Set<Int> = []
+        for segment in Self.threadSegments(plan) {
+            endpoints.insert(segment.from)
+            endpoints.insert(segment.to)
+        }
+        #expect(
+            endpoints.contains(1) || endpoints.contains(2),
+            "the turn at x=10 was skipped, so the excursion is not drawn"
+        )
+    }
+
+    /// **Direction, not raw magnitude** (`/codex-review` round 6, finding 2).
+    ///
+    /// `leastNonzeroMagnitude * leastNonzeroMagnitude` underflows to `+0`, so a dead-straight path
+    /// of denormal steps made *every* interior vertex satisfy `dot <= 0` — every vertex a false
+    /// corner, 4 999 segments where the bound allows about 101, and coarsening defeated entirely
+    /// on a design that has no corners at all.
+    @Test("a straight path of vanishingly small steps has no corners")
+    func aStraightPathOfVanishinglySmallStepsHasNoCorners() {
+        let step = Double.leastNonzeroMagnitude
+        let list = displayList((0 ..< 5_000).map {
+            previewStitch(Double($0) * step, 0, PreviewColor.red)
+        })
+
+        let plan = StitchDrawPlan.coarse(of: list, threshold: 0, target: 100)
+        let stride = StitchDrawPlan.coarseningStride(forStitchCount: list.count, target: 100)
+
+        // One colour run, no traversals, no corners: the bound is the stride term plus the run.
+        #expect(Self.threadSegments(plan).count <= (list.count + stride - 1) / stride + 1)
+    }
+
     /// **The artifact a device found and no test could see** (Sebastian, 2026-09-05).
     ///
     /// Coarsening a boustrophedon fill without a corner rule cuts each row turn, chopping up to
@@ -55,16 +110,24 @@ struct StitchDrawPlanSilhouetteTests {
         // attempt: with 250 rows, some row end coincidentally lands on a span boundary, so the
         // extreme x survives by luck even when most rows are chopped. Counting the extreme
         // stitches individually is what makes it discriminate.
-        let extremeX = list.stitches.map(\.position.x).max() ?? 0
-        let extremes = Set(list.stitches.indices.filter { list.stitches[$0].position.x == extremeX })
+        // **Both edges, and that is finding 3 of `/codex-review` round 6.** Checking only `maxX`
+        // left a hole an asymmetric rule walks straight through: `dot <= 0 && cross >= 0`
+        // preserves this fixture's two right-edge turns and rejects both left-edge ones, so the
+        // right edge stayed pristine, this assertion agreed, and the left edge frayed unseen.
+        // A boustrophedon fill has a row end at *each* extreme; the silhouette claim is about all
+        // of them.
+        let columns = list.stitches.map(\.position.x)
         var endpoints: Set<Int> = []
         for segment in Self.threadSegments(plan) {
             endpoints.insert(segment.from)
             endpoints.insert(segment.to)
         }
 
-        #expect(extremes.count > 100, "the fixture must have many row ends, or this pins nothing")
-        #expect(extremes.subtracting(endpoints).isEmpty, "row ends were cut off the silhouette")
+        for extreme in [columns.max() ?? 0, columns.min() ?? 0] {
+            let ends = Set(list.stitches.indices.filter { list.stitches[$0].position.x == extreme })
+            #expect(ends.count > 100, "the fixture must have many row ends, or this pins nothing")
+            #expect(ends.subtracting(endpoints).isEmpty, "row ends at x=\(extreme) were cut off")
+        }
     }
 
 }

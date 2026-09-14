@@ -107,13 +107,42 @@ public extension StitchDrawPlan {
     /// A zero-length interval is **not** a corner: a repeated stitch has no direction to compare,
     /// and treating it as one would break the span at every duplicate.
     ///
+    /// **`first` is the origin of the last *non-zero* direction, not necessarily the vertex's
+    /// immediate predecessor**, and the caller owes that. A duplicate stitch otherwise *hides* a
+    /// reversal: in `(0,0) (10,0) (10,0) (0,0)` both consecutive triples contain a zero-length
+    /// interval, so a strict three-consecutive-point reading answers "no corner" twice and the
+    /// span joins straight through, erasing the excursion out to x=10 and back
+    /// (`/codex-review` round 6). Because the intervening intervals are zero-length the vertex
+    /// has not moved, so `vertex − first` *is* the last non-zero direction.
+    ///
     /// Public and pure for the reason `coarseningStride(forStitchCount:target:)` is — a rule a
     /// test can *observe* rather than restate (US-309's survivor).
     static func isCorner(_ first: PreviewStitch, _ vertex: PreviewStitch, _ second: PreviewStitch) -> Bool {
         let incoming = (x: vertex.position.x - first.position.x, y: vertex.position.y - first.position.y)
         let outgoing = (x: second.position.x - vertex.position.x, y: second.position.y - vertex.position.y)
-        guard incoming.x != 0 || incoming.y != 0, outgoing.x != 0 || outgoing.y != 0 else { return false }
-        return incoming.x * outgoing.x + incoming.y * outgoing.y <= 0
+
+        // **Each direction is scaled to unit-ish magnitude before the dot product**, and the raw
+        // product this replaced was wrong at both ends of the `Double` range (`/codex-review`
+        // round 6). Underflow was reachable from the planner: a dead-straight path of
+        // `leastNonzeroMagnitude` steps produced `tiny × tiny == +0`, so `<= 0` held at *every*
+        // interior vertex — 4 999 false corners on a design with none, and coarsening defeated
+        // entirely. Overflow is the mirror image at the public entry point: deltas near 1e308
+        // give `+∞ + −∞ == NaN`, and a mathematically negative dot product then answers "not a
+        // corner". Dividing each vector by its own largest component bounds every product at 1,
+        // so neither can happen, and the angle is unchanged because a positive scale factor
+        // cannot move a dot product across zero.
+        //
+        // Scaling by the largest *component* rather than the length: no `sqrt`, and no squaring
+        // to overflow on the way to normalising.
+        let incomingScale = Swift.max(abs(incoming.x), abs(incoming.y))
+        let outgoingScale = Swift.max(abs(outgoing.x), abs(outgoing.y))
+        // Zero-length intervals leave here (no direction to compare), and so does anything
+        // non-finite, since `NaN > 0` is false — the predicate stays total for a public caller.
+        guard incomingScale > 0, outgoingScale > 0 else { return false }
+
+        let unitIncoming = (x: incoming.x / incomingScale, y: incoming.y / incomingScale)
+        let unitOutgoing = (x: outgoing.x / outgoingScale, y: outgoing.y / outgoingScale)
+        return unitIncoming.x * unitOutgoing.x + unitIncoming.y * unitOutgoing.y <= 0
     }
 
     /// Everything in the list, joined into roughly `target` segments and dots.
@@ -129,7 +158,7 @@ public extension StitchDrawPlan {
     ///
     /// **The bound is not `target`**, and pretending otherwise would be a false claim: **every
     /// break costs a partial span**, so thread segments are
-    /// `≤ ceil(count/stride) + colorRuns + traversals + unreachableIntervals` and dots
+    /// `≤ ceil(count/stride) + colorRuns + traversals + unreachableIntervals + corners` and dots
     /// `≤ ceil(count/stride) + colorRuns`. A colour run must close its own span and keep its own
     /// dot, traversals are never joined, and an interval the machine cannot reach breaks the span
     /// either side of it. *(The last term arrived in `/codex-review` round 3, from a fixture

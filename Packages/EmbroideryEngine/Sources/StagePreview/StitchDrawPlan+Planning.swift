@@ -230,6 +230,13 @@ public extension StitchDrawPlan {
         var anchor = candidates.lowerBound
         var spanned = 0
 
+        // The index whose position last *differed* from the current vertex's — so
+        // `stitches[vertex] − stitches[directionAnchor]` is the last non-zero direction, which is
+        // what `isCorner` needs. Tracking it is what stops a duplicate stitch hiding a reversal
+        // (`/codex-review` round 6); `start - 1` was the naive reading and misses
+        // `(0,0) (10,0) (10,0) (0,0)` entirely.
+        var directionAnchor = candidates.lowerBound
+
         for start in candidates {
             // **A `switch`, not two `if`s.** The `if` form this replaced (US-310, first draft)
             // silently treated a *new* `StitchSegmentStyle` case as "close the span and draw
@@ -287,7 +294,9 @@ public extension StitchDrawPlan {
                     // unchanged and the design's silhouette survives coarsening; cutting it is
                     // what frayed a hatch's row ends into comb teeth.
                     if stride > 1, spanned > 0,
-                       Self.isCorner(list.stitches[start - 1], list.stitches[start], list.stitches[start + 1]) {
+                       Self.isCorner(
+                           list.stitches[directionAnchor], list.stitches[start], list.stitches[start + 1]
+                       ) {
                         walked.close(&spanned, from: anchor, to: start)
                         anchor = start
                     }
@@ -309,6 +318,12 @@ public extension StitchDrawPlan {
                 // independent check a check rather than the only one.
                 walked.close(&spanned, from: anchor, to: start)
                 anchor = start + 1
+            }
+
+            // Advance the direction anchor only when the path actually moved: if the next point
+            // repeats this one, the last non-zero direction is still the one we already have.
+            if list.stitches[start + 1].position != list.stitches[start].position {
+                directionAnchor = start
             }
         }
         // A span shorter than the stride still has to be drawn, or the run's thread stops short

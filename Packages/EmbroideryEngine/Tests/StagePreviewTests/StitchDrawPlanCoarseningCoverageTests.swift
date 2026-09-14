@@ -339,9 +339,11 @@ struct StitchDrawPlanCoarseningCoverageTests {
     /// third interval, so it yields one short segment per island however large the stride is.
     ///
     /// The honest bound is therefore `ceil(count / stride)` plus one term per *thing that forces
-    /// a break*: the colour runs, the traversals, and the unreachable intervals. Asserted here
-    /// against a fixture built to maximise the last of those, which is the case the synthetic
-    /// design (all finite) and the all-rejected fixture (no drawable islands) both miss.
+    /// a break*: the colour runs, the traversals, the unreachable intervals, and — since the
+    /// device finding — the **corners**. Asserted here against a fixture built to maximise the
+    /// unreachable term, which is the case the synthetic design (all finite) and the all-rejected
+    /// fixture (no drawable islands) both miss; this fixture is collinear, so its corner term is
+    /// zero and the four-term form below is exact for it.
     @Test("the bound holds when unreachable stitches break the spans")
     func theBoundHoldsWhenUnreachableStitchesBreakTheSpans() {
         var stitches: [PreviewStitch] = []
