@@ -1750,3 +1750,56 @@ rather than run to round 4.
   documented. `Phase` moved first, then `magnificationLimits` — both chosen because they only
   read. A line limit pushing back against the encapsulation is an odd interaction, and the right
   answer was to let the encapsulation win and move something else.
+
+## 2026-09-14 (US-313a, Codex rounds 4–6) — the loop closes, and round 6 replays a review from a story that already shipped
+
+Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
+**High → High → High → High → Medium → none valid**, closing on stop condition 1.
+
+- **The fix chain ran three links long, and each link was a correct fix.** Round 1 made the tracker
+  clamp into the same range the transform enforces, so the two would agree on one factor. That
+  clamp turned a 1× pinch into 1.25× when the settled scale sat below the current floor, defeating
+  `StageGesture.isIdentity` — round 4. Fixing *that* by widening the bounds in `moved` split the
+  bounds into two concepts, so the accessibility Zoom Out could zoom in — round 5. **Every one of
+  those was the right fix; each simply moved the problem one layer out**, and the pattern only
+  stopped when the fix landed on the shared concept (`StageZoomBounds(fitting:including:)`, used by
+  every path) rather than on a call site. US-310 saw the same shape across five of its nine rounds.
+  The generalisable rule: when round N+1's finding is caused by round N's fix, the fix was probably
+  applied at a symptom, and the next one should be applied one level further in.
+- **Round 6 re-derived another story's review, verbatim, against code that already contains its
+  fixes.** This branch changes one constant in `StitchDrawPlan+Coarsening.swift`, so Codex reviewed
+  the whole file and produced four findings — the duplicate-stitch reversal with the same
+  `(0,0) (10,0) (10,0) (0,0)` fixture, the `leastNonzeroMagnitude` dot-product underflow, the
+  single-edge silhouette assertion, the `+ corners` bound. Those are **US-310's Codex rounds 6, 7
+  and 8**, already merged, and the source comments cite them by number — one of them literally
+  reads "Both edges, and that is finding 3 of `/codex-review` round 6."
+- **Two readings of that, and both are worth the thesis.** As *reproducibility* it is a strong
+  result: the same model, same rubric, same code region, months apart, converges on the same four
+  defects in the same order with the same reproducers. As *cost* it is a warning: a review scoped
+  to `main...HEAD` re-reviews every file the branch touches at all, so a one-line constant change
+  dragged a 500-line file with nine rounds of history back into scope, and the round produced four
+  findings, zero of them actionable, while failing to do the verification it was actually asked
+  for. **Diff scope is not review scope**, and the prompt should say which regions are new work and
+  which are incidental.
+- **The first rejections of this loop, and rejecting them took reading the code rather than
+  trusting either party.** Rounds 1–5 had 18 findings and none was rejected. It would have been
+  easy to keep that record by "fixing" things already fixed; each rejection is recorded with the
+  file and line that refutes it.
+- **Round 6 also silently failed its assignment.** It was asked to verify round 5's fix and to
+  enumerate every `StageZoomBounds` construction; it did neither, spent its budget on a
+  floating-point search, and then hit an account usage limit. So round 5's fix is covered by its own
+  test and not by cross-vendor verification — **recorded as a gap rather than counted as a clean
+  round**, because "the last round found nothing about the code I changed" and "the last round did
+  not look at the code I changed" are different states.
+- **I answered one of my own review questions while waiting for the verdict.** The no-ratchet
+  property (does widening the bounds by the baseline let repeated pinches ratchet outward?) was
+  cheap to test, so it became a test rather than a question. Codex independently confirmed it an
+  hour later. Worth repeating: when a review question is decidable by a test, writing the test
+  while the reviewer runs costs nothing and converts an opinion into a regression guard.
+- **Line limits pushed back against encapsulation three times.** `StageInteraction.swift` crossed
+  400 lines twice and the test suites twice more. The natural extraction each time was the toggle
+  and the pan — and both write `settled`, whose `private(set)` setter is what makes "settled is not
+  written while fingers are down" enforceable rather than documented. The answer was to let the
+  encapsulation win and move the read-only pieces instead (`Phase`, `magnificationLimits`, the
+  `magnification` accessor). A mechanical rule and a semantic invariant disagreeing is a good
+  moment to check which one is load-bearing.
