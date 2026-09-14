@@ -34,7 +34,10 @@ public extension StageInteraction {
         let scale = baseline(fitting: fit, settlingAt: progress).scale
         guard scale > 0, scale.isFinite else { return StageManipulation.unlimitedMagnification }
 
-        let bounds = StageZoomBounds(fitting: fit)
+        // The same widened bounds `moved(by:from:fitting:in:)` applies, so the range the tracker
+        // is clamped into and the range the transform enforces are one thing rather than two
+        // spellings that can disagree — which is the whole reason this method exists.
+        let bounds = StageZoomBounds(fitting: fit, including: scale)
         let lower = bounds.minimum / scale
         let upper = bounds.maximum / scale
         guard lower.isFinite, lower > 0, upper.isFinite else {

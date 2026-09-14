@@ -389,7 +389,11 @@ public struct StageInteraction: Equatable, Sendable {
             .pinched(
                 by: gesture.magnification,
                 about: gesture.anchor(in: viewport),
-                within: StageZoomBounds(fitting: fit)
+                // Widened to include where the stage already is, so a pinch cannot snap a
+                // legitimately out-of-floor transform up to the floor — and, since US-313a
+                // clamps the input layer into the matching range, so that a 1× pinch stays 1×
+                // (`/codex-review` round 4).
+                within: StageZoomBounds(fitting: fit, including: baseline.scale)
             )
             .dragged(by: gesture.pan)
     }

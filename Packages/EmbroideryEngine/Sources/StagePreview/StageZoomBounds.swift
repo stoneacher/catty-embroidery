@@ -58,6 +58,31 @@ public struct StageZoomBounds: Equatable, Sendable {
         )
     }
 
+    /// The fit-aware bounds, widened to include a transform the stage is **already at**.
+    ///
+    /// **Only ever widens, which is this type's existing rule applied to a second input.** A
+    /// design settled below the current floor is reachable without anything going wrong: pan an
+    /// out-of-hoop design at a narrow viewport, where the floor is the fit's own small scale,
+    /// then widen the viewport so the fit — and its floor — grow past where the user is. The
+    /// bounds then excluded the transform on screen, so the *next* pinch snapped the stage up to
+    /// the floor, and a pinch of exactly 1× did it too.
+    ///
+    /// That last part is what made this worth fixing rather than documenting. US-313a's
+    /// `StageInteraction.magnificationLimits` clamps the input layer into the same range so the
+    /// tracker and the transform agree on one factor (`/codex-review` round 1) — and clamping a
+    /// 1× pinch up to 1.25× turns an identity gesture into a non-identity one, which defeats
+    /// `StageGesture.isIdentity` and with it every guard ADR-028 built on top of it
+    /// (`/codex-review` round 4).
+    public init(fitting fit: StageTransform, including current: Double) {
+        let fitted = StageZoomBounds(fitting: fit)
+        guard current.isFinite, current > 0 else { self = fitted; return }
+
+        self.init(
+            minimum: Swift.min(fitted.minimum, current),
+            maximum: Swift.max(fitted.maximum, current)
+        )
+    }
+
     /// Clamps into these bounds.
     ///
     /// Direction-preserving at the infinities and NaN → `minimum`, exactly as

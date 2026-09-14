@@ -235,6 +235,79 @@ struct StageToggleAndPanTests {
         #expect(interaction.baseline(fitting: narrower) == narrower, "and it must still refit")
     }
 
+    /// **A pinch of exactly 1× must stay exactly 1×, whatever the bounds.** An out-of-hoop design
+    /// can be settled at a scale *below* the current fit's floor — pan at a narrow viewport, then
+    /// widen it — and the limits then opened at 1.25, so `pinchBegan(scale: 1)` clamped to 1.25
+    /// and the gesture stopped being an identity. Two stationary fingers moved every grabbed
+    /// point but the centroid, and `StageGesture.isIdentity` — the guard ADR-028 built to keep a
+    /// still gesture still — could not fire because the value it inspects had already been
+    /// changed. Found by `/codex-review` round 4.
+    ///
+    /// The rule that fixes it is the one ADR-028 states for the fit-aware floor: the bounds may
+    /// only ever *widen*. They now include the baseline the user is actually at, so 1 is always
+    /// inside the range and the transform never clamps a factor the tracker allowed.
+    @Test("the magnification limits always contain one, even below the fit's floor")
+    func theMagnificationLimitsAlwaysContainOne() throws {
+        let narrow = StageTransform(scale: 0.04)
+        var interaction = StageInteraction()
+        interaction.panned(by: ViewPoint(x: 10, y: 0), fitting: narrow)
+        #expect(interaction.baseline(fitting: narrow).scale == 0.04)
+
+        // The viewport widens: the fit is now 0.08, whose floor (0.05) excludes where we are.
+        let wider = StageTransform(scale: 0.08)
+        let limits = interaction.magnificationLimits(fitting: wider)
+        #expect(limits.contains(1))
+
+        var manipulation = StageManipulation()
+        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center, within: limits)
+        let resting = try #require(manipulation.gesture(in: Self.viewport))
+        #expect(resting.isIdentity, "an identity pinch must survive the clamp")
+
+        // And a small pinch is applied as asked rather than snapped up to the fit's floor.
+        manipulation.pinchChanged(to: 1.01)
+        let nudged = try #require(manipulation.gesture(in: Self.viewport))
+        let moved = interaction.transform(with: nudged, fitting: wider, in: Self.viewport)
+        #expect(abs(moved.scale - 0.04 * 1.01) < 1e-12)
+    }
+
+    /// The source-fit flag, pinned on **both** sides of its branch: an animation that began from
+    /// an explicit transform must stay explicit when interrupted at its source. Without this a
+    /// mutant setting `sourceFollowedFit: true` in `beginSettling` survives the suite. Found by
+    /// `/codex-review` round 4.
+    @Test("interrupting an explicit animation at its source stays explicit")
+    func interruptingAnExplicitAnimationAtItsSourceStaysExplicit() throws {
+        var interaction = StageInteraction()
+        interaction.commit(
+            StageGesture(magnification: 2), fitting: Self.fit, in: Self.viewport
+        )
+        let zoomed = interaction.baseline(fitting: Self.fit)
+        let started = interaction.beginSettling(fitting: Self.fit)
+        _ = try #require(started)
+
+        interaction.interrupt(settlingAt: 0)
+
+        #expect(!interaction.isFollowingFit)
+        #expect(interaction.baseline(fitting: Self.fit) == zoomed)
+    }
+
+    /// `beginManipulating` claims to be inert when nothing is animating and safe to call from
+    /// every recogniser's `.began`. Pinned, because an idle-only side effect would otherwise take
+    /// a fit-following stage off the fit — the thing ADR-028's identity guard exists to prevent.
+    /// Found by `/codex-review` round 4.
+    @Test("beginning a manipulation with nothing animating changes nothing")
+    func beginningAManipulationWithNothingAnimatingChangesNothing() {
+        var interaction = StageInteraction()
+
+        interaction.beginManipulating(fitting: Self.fit)
+        interaction.beginManipulating(fitting: Self.fit)
+
+        #expect(interaction.isFollowingFit)
+        #expect(!interaction.isSettling)
+
+        interaction.commit(StageGesture(), fitting: Self.fit, in: Self.viewport)
+        #expect(interaction.isFollowingFit)
+    }
+
     // MARK: - The directional pan
 
     /// **The gap this closes is live in the shipped app**: `adjust` anchors on the viewport's
