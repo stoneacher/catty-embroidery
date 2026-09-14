@@ -39,6 +39,9 @@ struct StageManipulationTests {
         }
     }
 
+    /// Magnification limits wide enough never to bite, for the tests that are not about bounds.
+    private static let free = StageManipulation.unlimitedMagnification
+
     private static func delta(from start: ViewPoint, to end: ViewPoint) -> ViewPoint {
         ViewPoint(x: end.x - start.x, y: end.y - start.y)
     }
@@ -70,7 +73,7 @@ struct StageManipulationTests {
 
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: start.centroid)
+        manipulation.pinchBegan(scale: 1, centroid: start.centroid, within: Self.free)
         manipulation.panChanged(to: Self.delta(from: start.centroid, to: now.centroid))
         manipulation.pinchChanged(to: now.separation / start.separation)
 
@@ -97,7 +100,7 @@ struct StageManipulationTests {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
         manipulation.panChanged(to: alreadyPanned)
-        manipulation.pinchBegan(scale: 1, centroid: centroid)
+        manipulation.pinchBegan(scale: 1, centroid: centroid, within: Self.free)
         manipulation.pinchChanged(to: 2)
 
         let gesture = try #require(manipulation.gesture(in: Self.viewport))
@@ -120,7 +123,7 @@ struct StageManipulationTests {
 
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: start.centroid)
+        manipulation.pinchBegan(scale: 1, centroid: start.centroid, within: Self.free)
         manipulation.panChanged(to: Self.delta(from: start.centroid, to: now.centroid))
         manipulation.pinchChanged(to: now.separation / start.separation)
 
@@ -149,7 +152,7 @@ struct StageManipulationTests {
     @Test("the magnification is cumulative, never accumulated")
     func theMagnificationIsCumulativeNeverAccumulated() throws {
         var manipulation = StageManipulation()
-        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center)
+        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center, within: Self.free)
         manipulation.pinchChanged(to: 2)
         manipulation.pinchChanged(to: 2)
         manipulation.pinchChanged(to: 2)
@@ -173,12 +176,12 @@ struct StageManipulationTests {
     func aSecondPinchDuringOnePanDoesNotResetTheMagnification() throws {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300))
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300), within: Self.free)
         manipulation.pinchChanged(to: 3)
         manipulation.pinchEnded()
         manipulation.panChanged(to: ViewPoint(x: 20, y: 10))
 
-        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 240, y: 280))
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 240, y: 280), within: Self.free)
         let gesture = try #require(manipulation.gesture(in: Self.viewport))
 
         #expect(gesture.magnification == 3)
@@ -192,13 +195,13 @@ struct StageManipulationTests {
     func aSecondPinchDuringOnePanDoesNotMoveTheStage() throws {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300))
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300), within: Self.free)
         manipulation.pinchChanged(to: 3)
         manipulation.pinchEnded()
         manipulation.panChanged(to: ViewPoint(x: 20, y: 10))
 
         let before = try #require(manipulation.gesture(in: Self.viewport))
-        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 240, y: 280))
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 240, y: 280), within: Self.free)
         let after = try #require(manipulation.gesture(in: Self.viewport))
 
         // Observed at probe points rather than by comparing the transforms: the rebase re-derives
@@ -220,7 +223,7 @@ struct StageManipulationTests {
     func aSecondPinchScalesAboutTheNewFingers() throws {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300))
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300), within: Self.free)
         manipulation.pinchChanged(to: 3)
         manipulation.pinchEnded()
         manipulation.panChanged(to: ViewPoint(x: 20, y: 10))
@@ -230,11 +233,52 @@ struct StageManipulationTests {
         // The stage point sitting under the new centroid at the moment the fingers land.
         let grabbed = Self.transform(for: held).stagePoint(of: regrasp)
 
-        manipulation.pinchBegan(scale: 1, centroid: regrasp)
+        manipulation.pinchBegan(scale: 1, centroid: regrasp, within: Self.free)
         manipulation.pinchChanged(to: 2)
         let zoomed = try #require(manipulation.gesture(in: Self.viewport))
 
         #expect(zoomed.magnification == 6)
         #expect(Self.isClose(Self.transform(for: zoomed).viewPoint(of: grabbed), regrasp, within: 1e-8))
+    }
+
+    /// **The rebase must compensate for the factor the transform actually applies, not the one
+    /// the fingers asked for.** `StageTransform.pinched` clamps `baseline.scale × factor` into
+    /// `StageZoomBounds`, so at a bound the effective factor is
+    /// `clamp(s × requested) / s`, and a compensation computed from `requested` overshoots.
+    ///
+    /// Easily reached in ordinary use, which is why this is not an exotic case: the floor is
+    /// `min(fit.scale, 0.05)`, so pinching a fitted design down a few times parks the
+    /// manipulation on the bound with a finger still down. Found by `/codex-review` round 1.
+    @Test("a rebase after a clamped pinch does not move the stage")
+    func aRebaseAfterAClampedPinchDoesNotMoveTheStage() throws {
+        // A fit near the ceiling, so a 3× pinch clamps to 2× and the two factors differ.
+        let fit = StageTransform(scale: 25)
+        let limits = StageInteraction().magnificationLimits(fitting: fit)
+        let staged = { (gesture: StageGesture) in
+            StageInteraction().transform(with: gesture, fitting: fit, in: Self.viewport)
+        }
+
+        var manipulation = StageManipulation()
+        manipulation.panBegan(at: .zero)
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 100, y: 100), within: limits)
+        manipulation.pinchChanged(to: 3)
+        manipulation.pinchEnded()
+
+        let clamped = try #require(manipulation.gesture(in: Self.viewport))
+        #expect(clamped.magnification == 2, "the tracker holds what the transform will apply")
+
+        let before = staged(clamped)
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 100), within: limits)
+        let after = staged(try #require(manipulation.gesture(in: Self.viewport)))
+
+        let corners = [ViewPoint(x: 0, y: 0), ViewPoint(x: 390, y: 500), ViewPoint(x: 200, y: 100)]
+        for probe in corners.map(before.stagePoint(of:)) {
+            #expect(Self.isClose(after.viewPoint(of: probe), before.viewPoint(of: probe), within: 1e-8))
+        }
+
+        // And the next pinch composes from what is displayed, not from the unclamped request.
+        manipulation.pinchChanged(to: 0.5)
+        let reduced = try #require(manipulation.gesture(in: Self.viewport))
+        #expect(reduced.magnification == 1)
     }
 }

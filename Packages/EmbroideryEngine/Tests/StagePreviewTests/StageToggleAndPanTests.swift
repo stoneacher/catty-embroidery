@@ -111,6 +111,24 @@ struct StageToggleAndPanTests {
         #expect(interaction.baseline(fitting: Self.fit) == midway)
     }
 
+    /// **An explicit transform that happens to equal the fit must still be able to go back to
+    /// following it.** Two opposing pans, or a zero-delta accessibility pan, leave `settled`
+    /// non-`nil` and equal to `fit`; the toggle then found nothing to animate and returned `nil`
+    /// without clearing it, so the stage stayed pinned to a stale transform and a later viewport
+    /// change could not refit. "Nothing to animate" is not "nothing to do". Found by
+    /// `/codex-review` round 1.
+    @Test("a toggle with nothing to animate still returns to following the fit")
+    func aToggleWithNothingToAnimateStillFollowsTheFit() {
+        var interaction = StageInteraction()
+        interaction.panned(by: .zero, fitting: Self.fit)
+        #expect(!interaction.isFollowingFit)
+
+        let started = interaction.beginToggle(about: Self.viewport.center, fitting: Self.fit)
+
+        #expect(started == nil, "there is nothing to animate")
+        #expect(interaction.isFollowingFit, "but the fit is adopted anyway")
+    }
+
     // MARK: - The directional pan
 
     /// **The gap this closes is live in the shipped app**: `adjust` anchors on the viewport's

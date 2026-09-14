@@ -21,6 +21,10 @@ struct StageManipulationLifecycleTests {
         StageTransform.fitting(StageGeometry.box, in: viewport)
     }
 
+    /// Magnification limits wide enough never to bite — the clamping case has its own test in
+    /// `StageManipulationTests`.
+    private static let free = StageManipulation.unlimitedMagnification
+
     /// Where the stage lands for a gesture, from a fresh interaction following the fit.
     private static func transform(for gesture: StageGesture) -> StageTransform {
         StageInteraction().transform(with: gesture, fitting: fit, in: viewport)
@@ -108,25 +112,86 @@ struct StageManipulationLifecycleTests {
         #expect(stillPanning.magnification == 2)
     }
 
-    /// **A pan that begins with a non-zero translation contributes nothing until it moves.**
+    /// **The recogniser's threshold distance is part of the pan, and ADR-028 pins that.**
     ///
-    /// US-313b's coordinator will call `setTranslation(.zero, in:)` at `.began`, so in the
-    /// shipped path this value is zero — which is exactly why the tracker should not depend on
-    /// it. The parameter is named `at:` because it is an *origin*, and the untested half of the
-    /// system (a UIKit coordinator) should not be the thing that has to remember that.
-    @Test("a pan that begins away from zero contributes nothing until it moves")
-    func aPanThatBeginsAwayFromZeroContributesNothing() throws {
+    /// US-307 tried subtracting it, measured a 101 pt drag committing 101 while showing 91, and
+    /// **removed the subtraction entirely** — live and committed are then the same number by
+    /// construction rather than two pieces of code agreeing, and the jump moves to pan *start*,
+    /// where it reads as the drag catching. `StageGesture.panX`'s own doc says "including the
+    /// recognizer's threshold distance. Not subtracted anywhere."
+    ///
+    /// This test exists because US-313a briefly reintroduced the subtraction — treating
+    /// `panBegan(at:)`'s argument as an origin — on the reasoning that the tracker should not
+    /// depend on the coordinator having zeroed the recogniser. That reasoning is fine and the
+    /// conclusion was wrong: with a pinch live, dropping the threshold means the grabbed points
+    /// stop tracking the fingers, which is the story's whole purpose. Found by `/codex-review`
+    /// round 1.
+    @Test("the pan carries the recogniser's threshold distance rather than subtracting it")
+    func thePanCarriesTheRecognizerThreshold() throws {
         var manipulation = StageManipulation()
-        manipulation.panBegan(at: ViewPoint(x: 5, y: -8))
+        manipulation.panBegan(at: ViewPoint(x: 12, y: 0))
 
-        let resting = try #require(manipulation.gesture(in: Self.viewport))
-        #expect(resting.isIdentity)
+        let atThreshold = try #require(manipulation.gesture(in: Self.viewport))
+        #expect(atThreshold.panX == 12)
 
-        manipulation.panChanged(to: ViewPoint(x: 25, y: 12))
+        manipulation.panChanged(to: ViewPoint(x: 22, y: 0))
         let moved = try #require(manipulation.gesture(in: Self.viewport))
 
-        #expect(moved.panX == 20)
-        #expect(moved.panY == 20)
+        #expect(moved.panX == 22)
+    }
+
+    /// **A pinch can begin and end before the pan ever recognises.** UIKit starts a pan only
+    /// after enough movement, so two fingers can land, pinch, and one lift — all with the pan
+    /// still `.possible`. `Channel.absent` cannot tell "this recogniser never participated" from
+    /// "this recogniser is still possible while a finger is down", so the tracker would commit,
+    /// go `nil`, and then commit a second time when the remaining finger finally drags.
+    ///
+    /// The transform survives that (pinch-then-pan composes to the same place), but the gap
+    /// between the two commits is a window where `gesture` is `nil` and rendering reports
+    /// settled — so the raster can rebuild **with a finger still on the glass**, which is
+    /// ADR-030 §7's inherited invariant. Found by `/codex-review` round 1.
+    @Test("a pinch that ends while touches remain does not commit")
+    func aPinchThatEndsWhileTouchesRemainDoesNotCommit() throws {
+        var manipulation = StageManipulation()
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 250), within: Self.free)
+        manipulation.pinchChanged(to: 2)
+        manipulation.pinchEnded()
+
+        #expect(manipulation.finish(in: Self.viewport, touchesRemain: true) == nil)
+        // Still live, so no settled window opens while the finger is down.
+        #expect(manipulation.gesture(in: Self.viewport) != nil)
+
+        manipulation.panBegan(at: ViewPoint(x: 40, y: 0))
+        manipulation.panEnded()
+        let committed = manipulation.finish(in: Self.viewport, touchesRemain: false)
+
+        #expect(committed?.magnification == 2)
+        #expect(committed?.panX == 40)
+    }
+
+    /// A scale the recogniser should never send must not poison the manipulation. Zero is the
+    /// case that persists: it would make `magnificationBase` zero and every later pinch zero too,
+    /// pinning the stage at the minimum until the whole manipulation ends.
+    @Test("a non-finite or non-positive scale is ignored rather than latched")
+    func aNonFiniteScaleIsIgnored() throws {
+        var manipulation = StageManipulation()
+        manipulation.panBegan(at: .zero)
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 250), within: Self.free)
+        manipulation.pinchChanged(to: 2)
+
+        manipulation.pinchChanged(to: 0)
+        manipulation.pinchChanged(to: .nan)
+        manipulation.pinchChanged(to: .infinity)
+
+        let held = try #require(manipulation.gesture(in: Self.viewport))
+        #expect(held.magnification == 2)
+
+        manipulation.pinchEnded()
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 210, y: 250), within: Self.free)
+        manipulation.pinchChanged(to: 3)
+        let after = try #require(manipulation.gesture(in: Self.viewport))
+
+        #expect(after.magnification == 6)
     }
 
     // MARK: - Lifecycle failures
