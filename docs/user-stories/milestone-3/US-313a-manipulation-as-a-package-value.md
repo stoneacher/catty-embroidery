@@ -1,13 +1,27 @@
 # US-313a — The manipulation is a package value: centroid pan, latched pinch, one commit
 
-**Status**: **Planned — 2026-09-14.** Split out of backlog entry US-313 at planning time, which
-came in at 7–9 h against its own ~5 h estimate. Planned with `swift-architect` and
-`swift-ui-design`; **the planning pass corrected nine things in the backlog specification**,
+**Status**: **Implemented 2026-09-14 — in review, not yet done.** **789 engine tests** (up from
+761), SwiftLint `--strict` clean, CI green on all three checks. Split out of backlog entry US-313
+at planning, which came in at 7–9 h against its own ~5 h estimate. Planned with `swift-architect`
+and `swift-ui-design`; **the planning pass corrected nine things in the backlog specification**,
 marked **planning correction** inline, and the central one inverts the story: the backlog names
-two separable causes and **only the first is real**. Sebastian took four scope decisions,
-recorded under "Scope decisions". This half is entirely headless — package types under
-`swift test`, no simulator — and is independently mergeable, because the tracker can be built
-and fully tested before anything consumes it. US-313b puts fingers on it.
+two separable causes and **only the first is real**. Sebastian took four scope decisions, recorded
+under "Scope decisions".
+
+**Two corrections arrived after planning, both recorded inline below.** (1) The story's own
+resolution of its two planning passes' disagreement was **wrong**, and two tests written for
+ADR-028's Codex rounds 2 and 3 refuted it within a minute — `BakeKey` carries `settledCount`, not
+the transform alone, so a resting frame reporting `canUseRaster` mid-gesture permits a bake at a
+new watermark. AC11 is inverted. (2) The in-loop review found that **a manipulation can contain
+more than one pinch** — lift a finger and put it back while still dragging — where the tracker
+took the second recogniser's fresh `scale` of 1 as the magnification and snapped the stage from
+3× to unzoomed. `pinchBegan` now rebases.
+
+**Review**: `swift-code-reviewer` was launched twice in a worktree and **failed both times**
+(session rate limit, then a 600 s stall) without reporting; the pass was done in the main context
+instead and is journalled as a delegation failure. Two findings, both fixed and both with tests.
+Ten mutants across the story, no survivors. **`/codex-review` has not run yet** — the story is not
+closed until it has.
 
 **Epic**: E4 Stage & preview | **Estimate**: ~4 h | **Depends on**: US-307, US-310 |
 **Discovered**: 2026-09-02, US-309 device session (Sebastian, iPhone 17 Pro)
