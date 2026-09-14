@@ -33,12 +33,33 @@ struct StitchDrawPlanWindowTests {
 
     /// Every segment start in a plan, flattened and sorted — the plan's coverage,
     /// independent of how it happened to group the segments into strokes.
+    ///
+    /// Reads `from` off each `Segment` since US-310, where a drawn segment became an explicit
+    /// index *pair*. In these windows that loses nothing: every segment here spans one stitch
+    /// interval, which is what `everySegmentInAFineWindowSpansOneStitchInterval` pins.
     private static func segmentStarts(_ plan: StitchDrawPlan) -> [Int] {
-        plan.strokes.flatMap(\.segmentStarts).sorted()
+        plan.strokes.flatMap(\.segments).map(\.from).sorted()
     }
 
     private static func dottedIndices(_ plan: StitchDrawPlan) -> [Int] {
-        plan.dots.flatMap { Array($0.indices) }.sorted()
+        plan.dots.flatMap { Array($0.dottedIndices) }.sorted()
+    }
+
+    /// **The invariant US-310 must not break while it makes segments coarsenable.** The three
+    /// windows here are the *fine* ones: whatever the coarse path does, `.entire`, `.settled`
+    /// and `.live` still draw one segment per stitch interval, so every index the renderer
+    /// reads is `from` and `from + 1` as it always was. Without this, a stride leaking into a
+    /// fine window would leave every assertion in this suite still green — they all read
+    /// `from` — while the thread rendered in dashes.
+    @Test("every segment in a fine window spans exactly one stitch interval")
+    func everySegmentInAFineWindowSpansOneStitchInterval() {
+        let list = Self.oneRun(settledUpTo: 2)
+
+        for plan in [StitchDrawPlan.entire(of: list), .settled(of: list), .live(of: list)] {
+            for segment in plan.strokes.flatMap(\.segments) {
+                #expect(segment.to == segment.from + 1)
+            }
+        }
     }
 
     @Test("the live plan dots are exactly the stitches after the watermark")

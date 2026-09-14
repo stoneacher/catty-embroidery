@@ -157,10 +157,23 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .overlay(alignment: .bottom) { frameTimeReadout }
     }
 
-    /// Present only in debug builds, and only for the measurement fixture.
+    /// Present only in debug builds, and only for the measurement fixture — **or for any
+    /// design when the process was launched with `-US310FrameTimes`**.
+    ///
+    /// The launch argument exists because US-310's premise check needs a mid-gesture capture at
+    /// a *small* stitch count, and there was no instrumented small design to take one on: the
+    /// only fixture this readout was shown for is `us309Synthetic`, which is fixed at
+    /// `us309SyntheticStitchCount` (50 001) with no smaller variant. Without a second count the
+    /// 69.1 ms mid-gesture median cannot be attributed — a cost proportional to the primitive
+    /// count and a fixed per-frame cost are indistinguishable from one measurement.
+    ///
+    /// An argument rather than simply widening the condition, so US-309's reason for the narrow
+    /// gate survives: no shipping design's *screenshot* acquires a diagnostic overlay it did not
+    /// have before, because an ordinary debug run does not pass the flag.
     @ViewBuilder private var frameTimeReadout: some View {
         #if DEBUG
-        if sample?.id == .us309Synthetic, case .drawn = state {
+        if sample?.id == .us309Synthetic || FrameTimeReadout.isForcedForEverySample,
+           case .drawn = state {
             FrameTimeReadout()
         }
         #endif

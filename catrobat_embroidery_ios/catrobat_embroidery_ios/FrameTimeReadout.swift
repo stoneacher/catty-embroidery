@@ -29,6 +29,26 @@
     /// Shown only for `SampleID.us309Synthetic`, so no shipping design's screenshot acquires a
     /// diagnostic overlay it did not have before this story.
     struct FrameTimeReadout: View {
+        /// Whether this process was launched with `-US310FrameTimes`, which shows the readout for
+        /// **every** design rather than only for `SampleID.us309Synthetic`.
+        ///
+        /// US-310's premise check needs a mid-gesture capture at a *small* stitch count, and there
+        /// was no instrumented small design to take one on: the fixture this readout is otherwise
+        /// gated to is fixed at `us309SyntheticStitchCount` (50 001) with no smaller variant. One
+        /// count cannot separate a cost proportional to the primitive count from a fixed per-frame
+        /// cost — two counts on one instrument can.
+        ///
+        /// An argument rather than a widened condition, so US-309's reason for the narrow gate
+        /// survives: an ordinary debug run does not pass the flag, so no shipping design's
+        /// screenshot acquires a diagnostic overlay it did not have before.
+        ///
+        /// Read **once**, and stored: `ProcessInfo.arguments` cannot change while the process
+        /// runs, and scanning it inside a `body` would put the instrument's own cost into every
+        /// frame of the stage it measures — the mistake this file's type doc already records
+        /// once, for the live frame counter.
+        static let isForcedForEverySample = ProcessInfo.processInfo.arguments
+            .contains("-US310FrameTimes")
+
         @State private var recorder = FrameTimeRecorder()
         @Environment(\.scenePhase) private var scenePhase
 

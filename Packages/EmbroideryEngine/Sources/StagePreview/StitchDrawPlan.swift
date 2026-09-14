@@ -61,18 +61,52 @@ public struct StitchDrawPlan: Equatable, Sendable {
         /// worth given `Stroke` has exactly one producer.
         public let color: ThreadColor
 
-        /// The *lower* index of each segment in this path; segment `i` spans stitch
-        /// `i → i + 1`.
-        public let segmentStarts: [Int]
+        /// The segments in this path, in ascending order.
+        ///
+        /// **An explicit pair since US-310, and the implicitness is what had to go.** This was
+        /// `segmentStarts: [Int]` under the contract "segment `i` spans stitch `i → i + 1`",
+        /// which is exactly the assumption ADR-029's rung 2 needs to break: while a gesture is
+        /// live the frame re-strokes the whole design, and the way to make that affordable is
+        /// to join `a → b` over a stride of stitches instead of every consecutive pair. A
+        /// stride cannot be expressed in a single index.
+        ///
+        /// In `.entire`, `.settled` and `.live` every segment still spans one stitch interval
+        /// (`to == from + 1`) — coarsening happens only in `.coarse`, and only above
+        /// `liveCoarseningThreshold`. `StitchDrawPlanWindowTests` asserts that, because a stride
+        /// leaking into a fine window would leave the suites that read `from` green while the
+        /// thread rendered in dashes.
+        public let segments: [Segment]
     }
 
-    /// The penetration dots for one colour run, as a contiguous index range.
+    /// The penetration dots for one colour run: a contiguous index range, taken every
+    /// `stride`-th index from its lower bound.
     ///
-    /// A `Range`, not an array, because **every** entry in the window is dotted —
-    /// there is nothing to filter. That is the dot rule stated in display-list terms:
-    /// Catroid skips dots on jump and colour-change points, but those are *synthetic
-    /// records in the export model* and the display list has no synthetic entries.
-    /// Every entry is a stitch the program requested, so every entry gets a dot.
+    /// A `Range` plus a stride, **not an array of the selected indices** — and the reason is
+    /// the un-coarsened paths, not this one. At stride 1 an array would allocate one `Int` per
+    /// stitch, up to 50 000 of them, in every settled bake; a fix for the live path would have
+    /// become a regression for the settled path it does not touch. `Range` + stride is
+    /// allocation-free at every stride, and `dottedIndices` is the way to read it. `indices`
+    /// stays public because the window assertions in `StitchDrawPlanScalingTests` are about the
+    /// range itself — so "read it through `dottedIndices`" is a **convention**, not something the
+    /// type enforces, and a renderer that iterated `indices` would silently draw every dot again
+    /// (`swift-code-reviewer` corrected an earlier version of this comment, which claimed no
+    /// caller *could*).
+    ///
+    /// *(Before US-310 this comment said a `Range` was right because "**every** entry in the
+    /// window is dotted — there is nothing to filter". That is still the rule at stride 1 and
+    /// is no longer the whole truth, so it is rewritten rather than extended: ADR-029 records
+    /// what stale prose sitting directly above the line a reader edits costs.)*
+    ///
+    /// **The stride is anchored at this run's own `lowerBound`, never globally.** A global
+    /// `index % stride == 0` rule drops every dot of a run shorter than the stride, and what
+    /// the user sees is a thread colour vanishing the instant a finger lands. Anchoring per run
+    /// makes "every colour run keeps at least one dot" true by construction, including at run
+    /// length 1.
+    ///
+    /// The dot rule itself is unchanged and is stated in display-list terms, because Catroid's
+    /// cannot be evaluated here: Catroid skips dots on jump and colour-change points, but those
+    /// are *synthetic records in the export model* and the display list has no synthetic
+    /// entries. Every entry is a stitch the program requested, so every entry is eligible.
     ///
     /// Deliberately "requested" and not "a real needle penetration": under ADR-020 an
     /// op can be recorded and drawn while the replay rejects it. The preview shows the
@@ -83,6 +117,55 @@ public struct StitchDrawPlan: Equatable, Sendable {
     public struct DotRun: Equatable, Sendable {
         public let color: ThreadColor
         public let indices: Range<Int>
+
+        /// Every `stride`-th index is dotted. `1` means all of them, which is what every window
+        /// but `.coarse` produces.
+        public let stride: Int
+
+        /// The indices to draw a dot at — the only correct way to read this run.
+        ///
+        /// `StrideTo<Int>` rather than `[Int]`: no allocation, and it is computed rather than
+        /// stored so `StitchDrawPlan` stays `Equatable` (`StrideTo` is not).
+        public var dottedIndices: StrideTo<Int> {
+            Swift.stride(from: indices.lowerBound, to: indices.upperBound, by: Swift.max(1, stride))
+        }
+
+        /// How many dots this run draws — `indices.count` only at stride 1.
+        ///
+        /// Arithmetic rather than `dottedIndices.count`, which would walk the sequence. It has no
+        /// production caller today (the renderer iterates `dottedIndices` and never asks how
+        /// many); it exists so a test can state a dot count without re-deriving the stride rule.
+        ///
+        /// **Spelled to avoid the overflow its own sibling warns about.** `(span + stride - 1) /
+        /// stride` — the version written first — traps at `stride == Int.max`, which is exactly
+        /// what `coarseningStride`'s doc forbids for a public entry point, and it was reachable
+        /// because `planning` had accidentally become public (`swift-code-reviewer`).
+        public var count: Int {
+            let span = indices.count
+            let stride = Swift.max(1, stride)
+            return span == 0 ? 0 : (span - 1) / stride + 1
+        }
+    }
+
+    /// One drawn segment: the thread between two stitches in the display list.
+    ///
+    /// `from` and `to` are indices into the list the plan was computed from, and `to` is
+    /// **not** necessarily `from + 1` — a coarse plan joins across a stride of stitches
+    /// (ADR-029 rung 2). It carries no invariant of its own beyond that, which is why it has a
+    /// public initializer where `Stroke` and `DotRun` deliberately do not: those two exist to
+    /// make "never empty, never `.suppressed`" unrepresentable, and a pair of indices has
+    /// nothing equivalent to protect.
+    ///
+    /// A sibling of `Stroke` rather than nested inside it, because SwiftLint's one-level
+    /// nesting limit is enforced here by `--strict` in CI.
+    public struct Segment: Equatable, Sendable {
+        public let from: Int
+        public let to: Int
+
+        public init(from: Int, to: Int) {
+            self.from = from
+            self.to = to
+        }
     }
 
     /// Strokes in draw order: per colour run, traversal beneath thread; runs in list

@@ -110,3 +110,11 @@ excluded:
   # reviewer agent ran while the new custom rule was active: it flagged
   # `ContentView.swift`, a file this story deletes.
   - ".claude/worktrees"
+  # `-derivedDataPath build/<story>` is what this project's own device hand-off
+  # protocol tells the tester to pass (docs/us-309-device-handoff.md), so a
+  # measurement build leaves Xcode's generated sources — asset symbols, string
+  # symbols, resource-bundle accessors — inside the repo. They are gitignored but
+  # SwiftLint still walked them and failed `--strict` on code nobody wrote: 30+
+  # violations in `GeneratedStringSymbols_*.swift` alone. Excluding the directory
+  # is the fix rather than remembering to delete it after every capture (US-310).
+  - "build"
