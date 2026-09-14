@@ -48,55 +48,43 @@ file.
 **Not** a defect in US-308: ADR-012 pins the byte semantics, ADR-015 pins when a colour change is
 emitted, and both are met. ADR-026 records the finding.
 
+**Placement, decided 2026-09-14**: **not** taken into M3. It changes no bytes and no gesture, and
+its sidecar option is better decided once M5's file handling exists to decide it against.
+Candidate for **M4 or M5**.
+
 ---
 
-## US-313 — Zoom and pan do not feel native: no live two-finger centroid
+## US-314 — The stage is not frozen under the fingers while the design is still growing
 
-**Epic**: E4 Stage & preview | **Estimate**: ~5 h | **Discovered**: 2026-09-02, US-309 device session (Sebastian, iPhone 17 Pro)
+**Epic**: E4 Stage & preview | **Estimate**: ~3 h | **Discovered**: 2026-09-14, `/codex-review`
+round 2 on US-313a
 
-**Problem**, in the user's words: "pinching really only zooms in/out of the canvas and does not
-register side-to-side movements in parallel", against the behaviour every iOS user has from
-Maps and Photos — where two fingers zoom **and** translate at once, about the point between
-them, continuously.
+**Problem**: ADR-028's baseline is `settled ?? fit`, and `fit` is a *per-frame parameter* the view
+recomputes from the display list's bounds. While the user has never zoomed — `settled == nil`,
+"following the fit", the state a fresh stage is in — a run whose design grows beyond the hoop
+changes `StageGeometry.fitTarget(including:)`, and therefore changes the fit, the bake key and the
+drawn transform **mid-manipulation**. The stage shifts under the fingers, and the point a finger
+grabbed is no longer under it.
 
-**This is not a missing `.simultaneously`.** `StageCanvas.inspectGesture` already composes
-`MagnifyGesture().simultaneously(with: DragGesture())` and already reads `startAnchor`. Two
-concrete things make it feel wrong, and they are separable:
+**Reproduction** (Codex's, at viewport 100 × 100): a fresh interaction, `panBegan`, `pinchBegan` at
+(20, 20), `pinchChanged(to: 2)`, then render once with `fit.scale == 1` and once with
+`fit.scale == 0.5` without ending the manipulation. The grabbed stage point maps to x = 20 in the
+first frame and x = 0 in the second, and `bake` changes between them.
 
-1. **`DragGesture` is a single-touch recogniser.** Native two-finger manipulation pans by the
-   *centroid* of the two touches; SwiftUI's `DragGesture` has no concept of one. With two
-   fingers down its translation is not the midpoint, so lateral movement during a pinch is
-   largely dropped — exactly the symptom reported.
-2. **`startAnchor` is captured once, at gesture start.** Zoom is therefore anchored where the
-   pinch *began* rather than following the fingers as they move, so content drifts away from
-   under the touch during a long pinch.
+**Why it is not US-313a's**: it is pre-existing — US-307 shipped this and US-313a changes nothing
+about it. What US-313a did was *claim* the invariant more loudly (its AC10 said "`bake` is
+identical across every frame of a manipulation"), so that criterion is narrowed to "at a constant
+fit" rather than left overstating what the code does. The fix is a design decision this story
+should not take in passing: a manipulation needs a **frozen baseline** distinct from `settled`,
+because pinning `settled` at gesture start instead would take the stage permanently off the fit
+and contradict ADR-028's rule that an identity gesture must not do that.
 
-`DragGesture`'s default 10 pt `minimumDistance` compounds both, and ADR-028 records why it
-cannot simply be set to zero: `minimumDistance: 0` claims the touch and makes the double-tap
-reset a byte-for-byte no-op. That trade was measured, not assumed.
-
-**The tension to resolve first, and it is an ADR-level decision.** The idiomatic fix is UIKit
-interop — either `UIScrollView` via `UIViewRepresentable` (free centroid zoom, rubber-banding,
-momentum) or a `UIPinchGestureRecognizer`/`UIPanGestureRecognizer` pair with simultaneous
-recognition, reading `location(in:)` for the live centroid. **Both conflict with ADR-028's
-load-bearing decision that the transform is written once, in `onEnded`, and never during the
-gesture.** That single commit is what makes "the settled raster re-bakes exactly once per
-gesture" *structural rather than timed* (ADR-028, criterion 3), and it is what lets
-`StageZoom.commit` drop a whole state machine. A scroll view writes continuously. So this
-story cannot be taken as a UI change alone: it must either preserve the single-commit property
-under a continuous recogniser, or ADR-028 must be revisited with its consequences re-derived.
-
-**Sequencing against US-309.** US-309 measured the mid-gesture path on an iPhone 17 Pro at
-**median 69.1 ms, p99 136.2 ms** per drawn frame at 50 000 stitches — roughly 14 fps, a
-decisive miss of ADR-009's bar. A *better* gesture makes that path more prominent, not less,
-because users will hold gestures longer and expect momentum. **Take ADR-029's fallback ladder
-rung 2 (decimate the mid-gesture `.entire` plan) before or with this story**, or a more
-responsive gesture will simply expose the rendering cost more often.
-
-**Not scheduled**: it is a genuine usability gap rather than a defect — the gestures work, they
-are merely not idiomatic — and it carries an ADR revision. It wants a planning session that can
-weigh the single-commit invariant against native feel, with the M3 exit criterion already
-answered.
+**Scope when scheduled**: a `manipulationBaseline` captured at the first channel's begin and
+cleared at commit or cancel, read by `baseline`, `rendering`, `transform` and `commit` while a
+manipulation is live; an ADR-028 amendment recording that "the baseline cannot move while fingers
+are down" is now enforced rather than assumed; and a test that drives two different fits through
+one manipulation, which is the shape every existing test misses by passing the same `Self.fit`
+every frame.
 
 ---
 
@@ -111,6 +99,29 @@ answered.
   to be the caller, and two facts that only surfaced then changed the answer — ADR-007's stage
   bounds do not exist as code, and `DSTHeader.init` is a second public trapping entry point
   this file never listed. Deciding it in isolation would have picked the wrong option.
+
+- **US-313 — Zoom and pan do not feel native: no live two-finger centroid.** Specified here on
+  2026-09-02 from the US-309 device session, scheduled into M3 on 2026-09-14 and **split in
+  two** at planning →
+  [`milestone-3/US-313a`](milestone-3/US-313a-manipulation-as-a-package-value.md) (the headless
+  manipulation value) and
+  [`milestone-3/US-313b`](milestone-3/US-313b-two-fingers-reach-the-stage.md) (the recogniser
+  pair, the accessibility gap, the device session). **The mechanism paid for itself twice
+  over**, and in the opposite direction to US-211: this entry's analysis was not merely
+  incomplete, it was **wrong in a way that would have produced a defect**. It named two
+  separable causes; the second — "`startAnchor` is captured once … content drifts away from
+  under the touch" — is not a defect at all, and the fix it implies (a live anchor) is off by
+  `(1 − m)(c₁ − c₀)`, so building it as specified would have *introduced* the drift the entry
+  wanted removed. The frozen start anchor is the correct formulation and the single-touch pan
+  channel was the whole bug. The entry's central premise — that the fix "conflicts with
+  ADR-028's load-bearing decision" and therefore "carries an ADR revision" — was also wrong:
+  it conflicts with ADR-028's *wording*, not its substance, so the outcome is a dated
+  amendment plus ADR-031, and ADR-030 §7's inherited invariant is **satisfied rather than
+  traded**. The entry's own suggested mechanism (`location(in:)` per frame) is the wrong input,
+  and the bridge it implies (`UIGestureRecognizerRepresentable`) is iOS 18 against an iOS 17
+  floor. Nine corrections in all. **What the entry got right is what mattered**: the user's own
+  words, the sequencing against rung 2, and the instruction to weigh the single-commit
+  invariant at a planning session rather than in a hurry.
 
 Also settled by M3 planning, though they were ADR-020 consequences rather than backlog
 entries: the `hasValidPattern`-vs-replay export-gating divergence and the adversarial-coordinate
