@@ -150,6 +150,12 @@ public extension StitchDrawPlan {
         // the zero-length branch answering "not a corner" — the exact answer this guard exists to
         // prevent, reachable only through one of the two axes. Guarding the components directly
         // makes the order irrelevant.
+        // This also covers the case where the *coordinates* are finite and their **difference**
+        // is not — `−greatestFiniteMagnitude → +greatestFiniteMagnitude` overflows to `+∞` — so a
+        // second finiteness check on the scales below would be unreachable: `abs` and `max` of
+        // finite components are finite. An earlier version kept one and claimed it caught exactly
+        // that overflow, which is false (`/codex-review` round 9); dead code justified by a wrong
+        // reason is worse than no code, so it is gone rather than re-explained.
         guard incoming.x.isFinite, incoming.y.isFinite,
               outgoing.x.isFinite, outgoing.y.isFinite
         else { return true }
@@ -168,12 +174,6 @@ public extension StitchDrawPlan {
         // across a turn it cannot see, which is the one direction that costs silhouette. Breaking
         // costs segments and nothing else. Unreachable through the planner — `isJoinable` rejects
         // such coordinates long before — so this is about the public entry point.
-        // A delta can be non-finite even when both coordinates are, because the *subtraction*
-        // overflows: `−greatestFiniteMagnitude → +greatestFiniteMagnitude` is a pair of finite
-        // points whose difference is `+∞`. The scales are finite whenever the components are, so
-        // this now only catches that overflow case.
-        guard incomingScale.isFinite, outgoingScale.isFinite else { return true }
-
         // Zero-length intervals leave here: no direction to compare, so no corner.
         guard incomingScale > 0, outgoingScale > 0 else { return false }
 

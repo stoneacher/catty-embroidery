@@ -1474,3 +1474,29 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
   it flagged a violation, so the commit had to be amended. The memory rule says verify by exit code
   before committing. The pre-commit hook gates engine tests only, so lint has no net under it —
   which is exactly why the ordering matters.
+
+## 2026-09-14 (US-310, round 9) — the loop closes, on a finding about a comment
+
+- **Round 9: one Low finding, comment-only, so the loop ends on stop condition 1** ("rejected
+  findings and doc/comment-only corrections end the loop"). Codex's verdict was explicit on both
+  halves it was asked for: the corner rule is sound on the planner's reachable domain **and** as
+  its public contract states, with no remaining executable defect anywhere in the diff.
+- **The finding was that a guard I had kept was dead, and the comment justifying it was false.**
+  Round 8 added a component-wise finiteness guard; the older scale-wise guard then became
+  unreachable, because `abs` and `max` of finite components are finite. My comment claimed it
+  "only catches" a finite-coordinate subtraction that overflows — but that produces an infinite
+  *delta*, which the component guard already rejects. **Dead code justified by a wrong reason is
+  worse than no code**, so it is removed rather than re-explained, and two mutations confirm the
+  remaining guard is still the one under test.
+- **Final shape: 9 rounds, 24 findings, none rejected, severity Medium ×4 → Low → Medium ×3 →
+  Low.** Rounds 1–5 reviewed the original story; the loop closed; the device finding then landed
+  new code and it was **reopened** for rounds 6–9. Five of the nine rounds found a hole in the
+  *previous* round's fix.
+- **What the branch is actually evidence for**, since this is thesis data: a stop condition is a
+  statement about a *body of code*, not about a branch. The round-5 "clean" verdict was correct for
+  what it had seen and worthless for what arrived afterwards — and the code that arrived afterwards
+  contained four executable defects, two of them reachable from the planner. Reopening cost four
+  rounds and caught all four.
+- **Thirty-four mutations across the story, two survivors, both proven equivalent** rather than
+  argued: the `>`-for-`>=` stride guard (the ceiling formula returns 1 at the boundary either way)
+  and the unreachable `.suppressed` branch (a `fatalError` in it leaves the suite green).
