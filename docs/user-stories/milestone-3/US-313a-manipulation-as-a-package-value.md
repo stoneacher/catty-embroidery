@@ -147,7 +147,7 @@ collapsing to `once == once` because "applied exactly once" was a fact about the
    corners — a live gap in the shipped app. The pure `panned(by:)` math is this story; the four
    named actions are US-313b.
 
-## The `.live` gating, where the two planning passes disagreed
+## The `.live` gating, where the two planning passes disagreed — and where the plan was wrong
 
 `swift-ui-design` proposed gating `.live` on `!gesture.isIdentity`, because
 `StageInteraction.rendering` goes `.live` the instant `gesture != nil` — so the image degrades
@@ -155,11 +155,31 @@ on touch-down, while nothing has moved, which is a pop on a *stationary* frame a
 visible kind. `swift-architect` proposed asserting `canUseRaster == false` for **every** frame
 of a manipulation. Both cannot stand.
 
-**Resolved in favour of the gating**, because it is safe for the reason the invariant exists: at
-touch-down the bake key is still the committed transform, so the settled path draws the
-already-cached raster — no new bake, no `settled` write, and the pop moves to first movement
-where motion masks it. The observable invariant is therefore stated as `bake` identity across
-the manipulation plus coarseness on *moved* frames, not as a blanket `canUseRaster == false`.
+**Resolved at planning in favour of the gating, and that resolution is wrong.** The argument was
+that at touch-down the bake key is still the committed transform, so the settled path draws an
+already-cached raster and nothing is re-baked. **The bake key is not the transform alone.**
+`CanvasStitchRenderer.BakeKey` carries `settledCount` and `resetCount` as well, and the settled
+watermark *advances while a run is still producing stitches*. So a resting frame reporting
+`canUseRaster` mid-gesture permits a bake at a **new** watermark — a full rasterisation of the
+settled prefix, during the gesture, at whatever the design has reached. That is ADR-028's Codex
+round 2 defect ("a gesture returned to its baseline reported settled and let the raster rebuild
+mid-gesture") arriving by a different route, and it is the expense ADR-009's cache exists to
+avoid.
+
+**Implementation correction, 2026-09-14: the architect's position stands, for a reason neither
+planning pass gave.** Two existing tests — `aGestureAtItsBaselineIsStillLive` and
+`presenceNotMagnitudeDecidesLiveness`, written for ADR-028's rounds 2 and 3 — went red within a
+minute of the gate being implemented and are the reason this was caught rather than shipped.
+Process rule 3 applies in spirit: the red test was right and the new design was wrong, so the
+design changed. The gate is reverted, the rule is restated in `rendering`'s own comment with the
+`settledCount` reason attached, and AC11 is inverted (below).
+
+**The fidelity pop it was meant to fix is real and now explicitly unaddressed.** It is one frame
+at touch-down only if the finger moves immediately; a finger resting on the stage holds the
+coarse image for as long as it rests. Fixing it needs the *plan* to refine without the *bake key*
+becoming usable — the two are currently coupled through `canUseRaster`, which is the same
+coupling US-313b records against refine-on-pause. Recorded there as a candidate with its cost
+attached, not smuggled in here.
 
 ## Acceptance criteria
 
@@ -189,11 +209,15 @@ the manipulation plus coarseness on *moved* frames, not as a blanket `canUseRast
    origin are still live. Mirrors `StageInteractionTests.presenceNotMagnitudeDecidesLiveness`,
    which four Codex rounds paid for.
 10. **`bake` is identical across every frame of a manipulation and changes exactly once**, and
-    `StitchDrawPlan.forFrame` returns the coarse plan on every frame where the gesture is
-    non-identity, at 50 001 stitches. ADR-030 §7's inherited invariant, observed rather than
-    restated.
-11. **An identity gesture renders from the settled path** and does not change the bake key —
-    the resolution above.
+    `StitchDrawPlan.forFrame` returns the coarse plan on **every** frame of a manipulation at
+    50 001 stitches — moved or not, per the correction above. ADR-030 §7's inherited invariant,
+    observed rather than restated. **The `bake` half was already green** and stays as a
+    regression guard rather than being claimed as a red: what it pins is that the *new input
+    path* cannot take the invariant away.
+11. **A resting manipulation — fingers down, nothing moved — is still live**, and its bake key
+    is the committed transform. **Inverted 2026-09-14 during implementation**: this criterion
+    originally said the opposite (that an identity gesture renders from the settled path), and
+    the section above records why that was wrong and what caught it.
 12. **`panned(by:)` and the double-tap toggle exist as pure package math**, tested headlessly:
     a directional pan of ~25 % of the viewport, and fit ↔ ~2× about a given view point with the
     fit branch reachable from any state.

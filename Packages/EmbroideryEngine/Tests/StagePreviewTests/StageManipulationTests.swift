@@ -25,16 +25,16 @@ struct StageManipulationTests {
 
     /// Two touches, so a test can say where fingers are rather than what the recognisers report.
     private struct Fingers {
-        var a: ViewPoint
-        var b: ViewPoint
+        var first: ViewPoint
+        var second: ViewPoint
 
         var centroid: ViewPoint {
-            ViewPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
+            ViewPoint(x: (first.x + second.x) / 2, y: (first.y + second.y) / 2)
         }
 
         var separation: Double {
-            let dx = b.x - a.x
-            let dy = b.y - a.y
+            let dx = second.x - first.x
+            let dy = second.y - first.y
             return (dx * dx + dy * dy).squareRoot()
         }
     }
@@ -63,10 +63,10 @@ struct StageManipulationTests {
     /// where two grabbed points ended up, so a wrong rule has nowhere to hide.
     @Test("both fingers stay under the stage points they grabbed")
     func bothFingersStayUnderTheStagePointsTheyGrabbed() throws {
-        let start = Fingers(a: ViewPoint(x: 100, y: 200), b: ViewPoint(x: 300, y: 400))
-        let now = Fingers(a: ViewPoint(x: 140, y: 180), b: ViewPoint(x: 460, y: 500))
-        let grabbedA = Self.fit.stagePoint(of: start.a)
-        let grabbedB = Self.fit.stagePoint(of: start.b)
+        let start = Fingers(first: ViewPoint(x: 100, y: 200), second: ViewPoint(x: 300, y: 400))
+        let now = Fingers(first: ViewPoint(x: 140, y: 180), second: ViewPoint(x: 460, y: 500))
+        let grabbedA = Self.fit.stagePoint(of: start.first)
+        let grabbedB = Self.fit.stagePoint(of: start.second)
 
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
@@ -77,8 +77,8 @@ struct StageManipulationTests {
         let gesture = try #require(manipulation.gesture(in: Self.viewport))
         let transform = Self.transform(for: gesture)
 
-        #expect(Self.isClose(transform.viewPoint(of: grabbedA), now.a))
-        #expect(Self.isClose(transform.viewPoint(of: grabbedB), now.b))
+        #expect(Self.isClose(transform.viewPoint(of: grabbedA), now.first))
+        #expect(Self.isClose(transform.viewPoint(of: grabbedB), now.second))
     }
 
     /// A pinch that starts **after** the pan has already moved must be anchored in the
@@ -111,11 +111,11 @@ struct StageManipulationTests {
     /// translating — the stage must translate by exactly that much.
     @Test("lateral centroid movement during a pinch moves the stage")
     func lateralCentroidMovementDuringAPinchMovesTheStage() throws {
-        let start = Fingers(a: ViewPoint(x: 100, y: 240), b: ViewPoint(x: 300, y: 240))
+        let start = Fingers(first: ViewPoint(x: 100, y: 240), second: ViewPoint(x: 300, y: 240))
         let sideways = ViewPoint(x: 90, y: -35)
         let now = Fingers(
-            a: ViewPoint(x: start.a.x + sideways.x, y: start.a.y + sideways.y),
-            b: ViewPoint(x: start.b.x + sideways.x, y: start.b.y + sideways.y)
+            first: ViewPoint(x: start.first.x + sideways.x, y: start.first.y + sideways.y),
+            second: ViewPoint(x: start.second.x + sideways.x, y: start.second.y + sideways.y)
         )
 
         var manipulation = StageManipulation()
@@ -134,7 +134,7 @@ struct StageManipulationTests {
         // one-ULP hazard ADR-028's Codex round 5 already lost once. Two points also say
         // something the transform equality does not: the stage *translated* rather than
         // scaling about a point that happens to move it there.
-        for grabbed in [start.a, start.b].map(Self.fit.stagePoint(of:)) {
+        for grabbed in [start.first, start.second].map(Self.fit.stagePoint(of:)) {
             let before = Self.fit.viewPoint(of: grabbed)
             #expect(Self.isClose(
                 transform.viewPoint(of: grabbed),

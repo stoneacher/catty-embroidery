@@ -215,20 +215,24 @@ struct StageInteractionTests {
             != committed)
     }
 
-    /// **Fingers down, nothing moved: draw the cached raster.**
+    /// **Fingers down, nothing moved: still live — and this test asserts the opposite of what
+    /// US-313a planned.**
     ///
-    /// `rendering` used to go `.live` the instant a gesture existed, so the image degraded at
-    /// touch-down — a fidelity pop on a *stationary* frame, which is the most visible kind. It is
-    /// safe to keep the settled path here for the reason the invariant exists: the bake key is
-    /// still the committed transform, so this frame composites a raster that is already correct,
-    /// and nothing is re-baked. The pop moves to first movement, where motion masks it.
+    /// The plan resolved a disagreement between its two planning passes in favour of gating
+    /// `.live` on `!gesture.isIdentity`, so the image would not degrade on a stationary frame at
+    /// touch-down. The argument was that an unmoved gesture leaves the bake key where it is, so
+    /// nothing could be re-baked. **It is wrong**, and `aGestureAtItsBaselineIsStillLive` above
+    /// — written for ADR-028's Codex round 2 — caught it within a minute of the gate being
+    /// implemented: `BakeKey` carries `settledCount` as well as the transform, and that advances
+    /// while a run is still producing stitches. A resting frame that composites the raster
+    /// mid-gesture therefore permits a bake at a *new* watermark, rasterising the settled prefix
+    /// during the gesture at whatever the design has reached.
     ///
-    /// `swift-architect` proposed asserting `canUseRaster == false` for *every* frame of a
-    /// manipulation, which would forbid this; `swift-ui-design` proposed the gate. The
-    /// invariant that actually matters is the one above — the key does not move — and this test
-    /// and the previous one pin it together.
-    @Test("an identity gesture renders from the settled path and leaves the bake key alone")
-    func anIdentityGestureRendersFromTheSettledPath() throws {
+    /// Kept as the positive statement of the rule, in the terms US-313's tracker produces it:
+    /// a manipulation with fingers down and nothing moved is live, and its bake key is the
+    /// committed transform.
+    @Test("a resting manipulation is live and keeps the committed transform as its bake key")
+    func aRestingManipulationIsLive() throws {
         var interaction = StageInteraction()
         interaction.commit(Self.pinch(1.4), fitting: Self.fit, in: Self.viewport)
         let committed = interaction.baseline(fitting: Self.fit)
@@ -241,35 +245,43 @@ struct StageInteractionTests {
         )
 
         #expect(resting.isIdentity)
-        #expect(rendering == .settled(committed))
-        #expect(rendering.canUseRaster)
+        #expect(!rendering.canUseRaster)
+        #expect(rendering.bake == committed)
+        #expect(rendering.current == committed, "an identity gesture draws exactly the baseline")
     }
 
-    /// The consequence at the scale the rung was built for: a moved frame takes the coarse plan,
-    /// a resting one does not pay for coarseness it does not need.
-    @Test("a moved frame draws the coarse plan and a resting frame draws the live one")
-    func aMovedFrameDrawsTheCoarsePlan() throws {
+    /// The consequence at the scale the rung was built for: **every** frame of a manipulation
+    /// takes the coarse plan, including the ones where the fingers have not moved yet. That
+    /// costs fidelity on a stationary frame, which the plan tried to avoid and could not — see
+    /// `aRestingManipulationIsLive`. What it buys is that no bake can fire while fingers are
+    /// down, which at 50 000 stitches is the expensive half of ADR-009.
+    @Test("every frame of a manipulation draws the coarse plan, moved or not")
+    func everyFrameOfAManipulationDrawsTheCoarsePlan() throws {
         let list = displayList(
-            (0 ..< 50001).map { previewStitch(Double($0) * 10, 0, PreviewColor.red) }
+            (0 ..< 50_001).map { previewStitch(Double($0) * 10, 0, PreviewColor.red) }
         )
         var interaction = StageInteraction()
         interaction.commit(Self.pinch(1.2), fitting: Self.fit, in: Self.viewport)
 
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        let resting = try #require(manipulation.gesture(in: Self.viewport))
+
+        for movement in [ViewPoint.zero, ViewPoint(x: 12, y: 4), ViewPoint(x: 40, y: 9)] {
+            manipulation.panChanged(to: movement)
+            let gesture = try #require(manipulation.gesture(in: Self.viewport))
+            #expect(StitchDrawPlan.forFrame(
+                of: list,
+                at: interaction.rendering(gesture: gesture, fitting: Self.fit, in: Self.viewport),
+                compositingRaster: true
+            ) == StitchDrawPlan.coarse(of: list))
+        }
+
+        // And with no manipulation at all it is the live window again, so the coarse plan is
+        // paid for only while fingers are down.
         #expect(StitchDrawPlan.forFrame(
             of: list,
-            at: interaction.rendering(gesture: resting, fitting: Self.fit, in: Self.viewport),
+            at: interaction.rendering(gesture: nil, fitting: Self.fit, in: Self.viewport),
             compositingRaster: true
         ) == StitchDrawPlan.live(of: list))
-
-        manipulation.panChanged(to: ViewPoint(x: 12, y: 4))
-        let moved = try #require(manipulation.gesture(in: Self.viewport))
-        #expect(StitchDrawPlan.forFrame(
-            of: list,
-            at: interaction.rendering(gesture: moved, fitting: Self.fit, in: Self.viewport),
-            compositingRaster: true
-        ) == StitchDrawPlan.coarse(of: list))
     }
 }

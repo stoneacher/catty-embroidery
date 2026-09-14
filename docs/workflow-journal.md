@@ -1601,3 +1601,51 @@ milestone. `swift-architect` and `swift-ui-design` ran concurrently against the 
   findings beyond the shared derivation. Verification of the load-bearing claim was done in the
   main context by reading two functions — cheap, and the only part that could not be delegated,
   since it is the claim everything else rests on.
+
+## 2026-09-14 (US-313a) — a plan refuted by a test written for a defect two stories ago
+
+The headless half of US-313 is green: 785 engine tests, up from 761.
+
+- **The plan's one resolved disagreement was resolved the wrong way, and an existing test caught
+  it inside a minute.** Two planning agents disagreed about whether `.live` should be gated on
+  `!gesture.isIdentity`, and I resolved it in favour of the gate with what looked like a
+  decisive argument: at touch-down the bake key is still the committed transform, so nothing can
+  be re-baked. **`BakeKey` is not the transform alone** — it carries `settledCount`, which
+  advances while a run is still producing stitches. A resting frame that reports `canUseRaster`
+  mid-gesture therefore permits a bake at a *new* watermark. `aGestureAtItsBaselineIsStillLive`
+  and `presenceNotMagnitudeDecidesLiveness`, written for ADR-028's Codex rounds 2 and 3, went red
+  immediately. **The tests knew something all three of us had missed** — two planning agents and
+  me — and the one that was right had been written a story and a half earlier for what looked
+  like a different reason.
+- **The lesson is about what a regression test is *for*.** Both of those tests read as
+  belt-and-braces restatements of a rule the type now makes structural. They are not: they encode
+  a *consequence* whose cause has since moved. Neither planning pass read `BakeKey`, because from
+  the package's point of view nothing about it is visible — the coupling is in the app. So: when
+  a plan proposes weakening an invariant, the test that fails is evidence before the argument is.
+  I had the argument first and it was confident and wrong.
+- **Process rule 3 generalises.** The rule says never fix a red golden by consulting the other
+  reference. The same shape applied here to a test that is not a golden: the red test was right
+  and the new design was wrong, so the design changed. Worth noting how *easy* the other path
+  would have been — the test's own comment says "liveness is the gesture's presence, not its
+  value", which reads like a style preference rather than a performance invariant, and updating
+  it would have looked like tidying.
+- **A mutation round improved a test that had not failed.** Nine mutants, zero survivors — but
+  running them showed that the lateral-movement test compared two transforms with `==` after
+  `pinched(by: 1, about:)` re-derives a translation through a divide and a multiply. It passed on
+  its numbers by luck. Rewritten to ask where two grabbed points went, it stopped catching one
+  mutant it had been catching — correctly, since that "catch" was ULP noise rather than the
+  property under test. **A mutation round is also a way to find tests that pass for the wrong
+  reason**, not only ones that fail to fail.
+- **One test was already green and is recorded as a guard rather than claimed as a red.** The
+  bake key already holds still across a manipulation; what the new test pins is that the new
+  input path cannot take that away. Fourth story running where the plan's buildability pass or
+  the implementation found an "already green" item — the cheap check (does the new test reference
+  a symbol the story adds?) would not have caught this one, because it does.
+- **`#require` cannot call a `mutating` member** — it expands its argument into a closure, so
+  `try #require(manipulation.finish(in: viewport))` does not compile. Bind first, then require.
+  Cost about ten minutes across two files; worth the line because the error message
+  ("cannot use mutating member on immutable value: '$0' is immutable") names a `$0` that appears
+  nowhere in the test.
+- **Delegation shape**: none for the implementation. Story tests are not delegated here by rule,
+  and the green phase was small enough that specifying it for `swift-engineer` would have cost
+  more than writing it. The two planning agents earned their keep before the code existed.

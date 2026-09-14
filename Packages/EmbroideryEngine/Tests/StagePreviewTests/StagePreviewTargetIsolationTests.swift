@@ -124,6 +124,63 @@ struct StagePreviewTargetIsolationTests {
         #expect(summarise(StitchDisplayList(), nil) == .empty)
     }
 
+    /// US-313's manipulation tracker is now the most exposed thing on this boundary, and by
+    /// some distance: it exists to be driven by `UIPinchGestureRecognizer` and
+    /// `UIPanGestureRecognizer`, whose values arrive as `CGFloat`, `CGPoint` and
+    /// `UIGestureRecognizer.State`. Taking any of those in would move the whole manipulation
+    /// behind a simulator boot — the exact thing ADR-022 exists to prevent, and the reason
+    /// US-313 could be split with its harder half on the fast gate.
+    ///
+    /// The recogniser *lifecycle* is the subtle half. It is expressed here as separate begin /
+    /// changed / ended methods rather than as a state parameter, precisely so that
+    /// `UIGestureRecognizer.State` has no reason to exist in the signature; binding them proves
+    /// that shape rather than describing it.
+    @Test("the manipulation boundary is Double-based package types, not UIKit")
+    func theManipulationBoundaryIsPackageTypes() {
+        let pinchBegan: (inout StageManipulation, Double, ViewPoint) -> Void = {
+            $0.pinchBegan(scale: $1, centroid: $2)
+        }
+        let pinchChanged: (inout StageManipulation, Double) -> Void = { $0.pinchChanged(to: $1) }
+        let pinchEnded: (inout StageManipulation) -> Void = { $0.pinchEnded() }
+        let panBegan: (inout StageManipulation, ViewPoint) -> Void = { $0.panBegan(at: $1) }
+        let panChanged: (inout StageManipulation, ViewPoint) -> Void = { $0.panChanged(to: $1) }
+        let panEnded: (inout StageManipulation) -> Void = { $0.panEnded() }
+        let cancelled: (inout StageManipulation) -> Void = { $0.cancelled() }
+        let read: (StageManipulation) -> (ViewSize) -> StageGesture? = { subject in
+            { subject.gesture(in: $0) }
+        }
+        let finish: (inout StageManipulation, ViewSize) -> StageGesture? = { $0.finish(in: $1) }
+        let toggle: (inout StageInteraction, ViewPoint, StageTransform) -> Int? = {
+            $0.beginToggle(about: $1, fitting: $2)
+        }
+        let pan: (inout StageInteraction, ViewPoint, StageTransform) -> Void = {
+            $0.panned(by: $1, fitting: $2)
+        }
+
+        let viewport = ViewSize(width: 390, height: 500)
+        let fit = StageTransform.fitting(StageGeometry.box, in: viewport)
+        var manipulation = StageManipulation()
+
+        panBegan(&manipulation, .zero)
+        pinchBegan(&manipulation, 1, viewport.center)
+        pinchChanged(&manipulation, 2)
+        panChanged(&manipulation, ViewPoint(x: 10, y: 10))
+        #expect(read(manipulation)(viewport)?.magnification == 2)
+
+        pinchEnded(&manipulation)
+        panEnded(&manipulation)
+        #expect(finish(&manipulation, viewport) != nil)
+
+        panBegan(&manipulation, .zero)
+        cancelled(&manipulation)
+        #expect(read(manipulation)(viewport) == nil)
+
+        var interaction = StageInteraction()
+        pan(&interaction, ViewPoint(x: -40, y: 0), fit)
+        #expect(!interaction.isFollowingFit)
+        #expect(toggle(&interaction, viewport.center, fit) != nil)
+    }
+
     /// US-306's run machinery is the next thing on this boundary, and it is the most
     /// likely to acquire an app dependency: a run has a state machine, and
     /// `@Observable`/`Observation` is the obvious reach for it. It must stay out, or
