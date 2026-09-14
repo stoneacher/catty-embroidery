@@ -72,7 +72,7 @@ public struct StageInteraction: Equatable, Sendable {
         switch phase {
         case .idle:
             settled ?? fit
-        case let .settling(_, from, to, progress, _):
+        case let .settling(_, from, to, progress, _, _):
             from.interpolated(to: to, progress: progress)
         }
     }
@@ -88,14 +88,14 @@ public struct StageInteraction: Equatable, Sendable {
     /// animation; the tests could not see it because they only ever observed progress 0 and 1 —
     /// Codex round 7.)
     public func baseline(fitting fit: StageTransform, settlingAt progress: Double) -> StageTransform {
-        guard case let .settling(_, from, to, _, _) = phase else { return baseline(fitting: fit) }
+        guard case let .settling(_, from, to, _, _, _) = phase else { return baseline(fitting: fit) }
         return from.interpolated(to: to, progress: progress)
     }
 
     /// The progress the *model* holds — the endpoint `withAnimation` is moving toward, which
     /// the view's shim interpolates from.
     public var settlingProgress: Double {
-        guard case let .settling(_, _, _, progress, _) = phase else { return 0 }
+        guard case let .settling(_, _, _, progress, _, _) = phase else { return 0 }
         return progress
     }
 
@@ -208,7 +208,8 @@ public struct StageInteraction: Equatable, Sendable {
 
         nextSettlingID += 1
         phase = .settling(
-            id: nextSettlingID, from: settled ?? fit, to: fit, progress: 0, adoptsFit: true
+            id: nextSettlingID, from: settled ?? fit, to: fit, progress: 0,
+            adoptsFit: true, sourceFollowedFit: isFollowingFit
         )
         return nextSettlingID
     }
@@ -253,9 +254,27 @@ public struct StageInteraction: Equatable, Sendable {
             from: from,
             to: destination,
             progress: 0,
-            adoptsFit: !zoomingIn
+            adoptsFit: !zoomingIn,
+            sourceFollowedFit: zoomingIn
         )
         return nextSettlingID
+    }
+
+    /// The user's fingers have gone down: end any animation, at what is on screen.
+    ///
+    /// **ADR-028 says a gesture and a fit animation are mutually exclusive, and until now only
+    /// `commit` enforced it — at the gesture's *end*.** In between, the animation kept running
+    /// under the fingers, so the visible baseline moved every frame while
+    /// `StageManipulation` held magnification limits captured once at `pinchBegan`; the clamped
+    /// factor then stopped matching the one `pinched` applies and the next rebase jumped
+    /// (`/codex-review` round 3). Calling this at the first channel's begin makes the baseline
+    /// something that cannot move under a manipulation, which is what the rebase derivation
+    /// assumes.
+    ///
+    /// Idempotent, and inert when nothing is animating, so a coordinator may call it from every
+    /// recogniser's `.began` without tracking which one was first.
+    public mutating func beginManipulating(fitting fit: StageTransform, settlingAt progress: Double = 1) {
+        interrupt(settlingAt: progress)
     }
 
     /// One activation of a directional pan accessibility action.
@@ -280,8 +299,11 @@ public struct StageInteraction: Equatable, Sendable {
     /// Drives the animation. Ignored unless a fit animation is actually in flight, so a
     /// completion arriving after an interruption cannot restart one.
     public mutating func settlingProgressed(to progress: Double) {
-        guard case let .settling(id, from, to, _, adoptsFit) = phase else { return }
-        phase = .settling(id: id, from: from, to: to, progress: progress, adoptsFit: adoptsFit)
+        guard case let .settling(id, from, to, _, adoptsFit, source) = phase else { return }
+        phase = .settling(
+            id: id, from: from, to: to, progress: progress,
+            adoptsFit: adoptsFit, sourceFollowedFit: source
+        )
     }
 
     /// Ends the animation `id` by adopting its destination — the fit.
@@ -291,7 +313,7 @@ public struct StageInteraction: Equatable, Sendable {
     /// animation happens to be running now (Codex round 7). The id it was handed at
     /// `beginSettling` is what makes "mine" checkable.
     public mutating func finishSettling(_ id: Int) {
-        guard case let .settling(current, _, to, _, adoptsFit) = phase, current == id else {
+        guard case let .settling(current, _, to, _, adoptsFit, _) = phase, current == id else {
             return
         }
         phase = .idle
@@ -309,11 +331,18 @@ public struct StageInteraction: Equatable, Sendable {
     ///   user's explicit one, because they took control of a stage that was mid-flight and what
     ///   they see is what they should keep.
     public mutating func interrupt(settlingAt progress: Double = 1) {
-        guard case let .settling(_, from, to, _, adoptsFit) = phase else { return }
+        guard case let .settling(_, from, to, _, adoptsFit, source) = phase else { return }
 
         phase = .idle
         guard progress < 1 else {
             settled = adoptsFit ? nil : to
+            return
+        }
+        // Nothing has moved yet, so nothing about the stage should change — including whether it
+        // was following the fit. Storing `from` here would pin a stage that was only ever
+        // "wherever the fit is" to one particular fit (`/codex-review` round 3).
+        guard progress > 0 || !source else {
+            settled = nil
             return
         }
         settled = from.interpolated(to: to, progress: progress)

@@ -222,8 +222,11 @@ attached, not smuggled in here.
 9. **Liveness is presence, not magnitude**: a pinch back to exactly 1× and a pan back to its
    origin are still live. Mirrors `StageInteractionTests.presenceNotMagnitudeDecidesLiveness`,
    which four Codex rounds paid for.
-10. **`bake` is identical across every frame of a manipulation *at a constant fit*, and changes
-    exactly once**, and
+10. **`bake` is identical across every frame of a manipulation *at a constant fit*, and a
+    manipulation that moves something changes it exactly once** (an identity manipulation commits
+    nothing and so changes it not at all — **narrowed again by `/codex-review` round 3**, which
+    caught the criterion requiring a change that ADR-028's identity guard forbids, and that AC9
+    and AC11 explicitly make reachable), and
     `StitchDrawPlan.forFrame` returns the coarse plan on **every** frame of a manipulation at
     50 001 stitches — moved or not, per the correction above. ADR-030 §7's inherited invariant,
     observed rather than restated. **The `bake` half was already green** and stays as a

@@ -192,6 +192,49 @@ struct StageToggleAndPanTests {
         #expect(limits.lowerBound < StageTransform.minimumRepresentableScale)
     }
 
+    /// **A manipulation and an animation are mutually exclusive, and ADR-028 says so — but only
+    /// `commit` enforced it, at the *end* of the gesture.** While a fit animation kept running
+    /// under a live pinch, the visible baseline moved every frame, so the limits captured at
+    /// `pinchBegan` stopped matching the factor `pinched` applies and a rebase jumped. Found by
+    /// `/codex-review` round 3, which reached it by holding the fingers still and letting the
+    /// animation advance underneath them.
+    @Test("beginning a manipulation ends any animation, so the baseline stops moving")
+    func beginningAManipulationEndsAnyAnimation() throws {
+        var interaction = StageInteraction()
+        let started = interaction.beginToggle(about: ViewPoint(x: 0, y: 0), fitting: Self.fit)
+        _ = try #require(started)
+        let visible = interaction.baseline(fitting: Self.fit, settlingAt: 0.25)
+
+        interaction.beginManipulating(fitting: Self.fit, settlingAt: 0.25)
+
+        #expect(!interaction.isSettling)
+        #expect(interaction.baseline(fitting: Self.fit) == visible)
+        // The limits are now a property of a baseline that cannot move under the fingers.
+        let before = interaction.magnificationLimits(fitting: Self.fit)
+        #expect(interaction.magnificationLimits(fitting: Self.fit, settlingAt: 0.5) == before)
+    }
+
+    /// **Interrupting an animation at progress zero must leave the stage exactly as it was**, and
+    /// for one that began from the fit that means *following the fit*, not holding an explicit
+    /// transform that happens to equal it. `adoptsFit` gave the phase destination semantics;
+    /// this is the same question at the source end. Reachable as an identity gesture landing in
+    /// the same frame a double tap starts: the stage then stops refitting for good. Found by
+    /// `/codex-review` round 3.
+    @Test("interrupting an animation at its source keeps following the fit")
+    func interruptingAnAnimationAtItsSourceKeepsFollowingTheFit() throws {
+        var interaction = StageInteraction()
+        let started = interaction.beginToggle(about: .zero, fitting: Self.fit)
+        _ = try #require(started)
+
+        interaction.commit(StageGesture(), fitting: Self.fit, in: Self.viewport, settlingAt: 0)
+
+        #expect(interaction.isFollowingFit, "an identity gesture must not take the stage off the fit")
+        let narrower = StageTransform.fitting(
+            StageGeometry.box, in: ViewSize(width: 200, height: 200)
+        )
+        #expect(interaction.baseline(fitting: narrower) == narrower, "and it must still refit")
+    }
+
     // MARK: - The directional pan
 
     /// **The gap this closes is live in the shipped app**: `adjust` anchors on the viewport's

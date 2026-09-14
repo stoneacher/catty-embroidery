@@ -33,12 +33,19 @@ public extension StageInteraction {
         /// inferred by comparing `to` against the fit, because that comparison is the
         /// equality-of-transforms question this whole type exists to stop asking: it is
         /// defeated by one ULP, and ADR-028 records four spellings of it losing in a row.
+        /// **`sourceFollowedFit` is `adoptsFit`'s mirror at the other end.** `adoptsFit` says
+        /// what reaching the destination means; this says what returning to the source means.
+        /// Without it, interrupting at progress 0 stores `from` as an explicit transform even
+        /// when `from` was only ever "wherever the fit is" — so an identity gesture landing in
+        /// the same frame a double tap starts takes the stage off the fit permanently, and it
+        /// stops refitting on rotation for good (`/codex-review` round 3).
         case settling(
             id: Int,
             from: StageTransform,
             to: StageTransform,
             progress: Double,
-            adoptsFit: Bool
+            adoptsFit: Bool,
+            sourceFollowedFit: Bool
         )
     }
 }
