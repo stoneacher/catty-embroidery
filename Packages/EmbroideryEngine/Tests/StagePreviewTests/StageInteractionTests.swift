@@ -210,7 +210,7 @@ struct StageInteractionTests {
         manipulation.panEnded()
         // Bound before `#require`: the macro expands its argument into a closure, and `finish`
         // is `mutating`.
-        let finished = manipulation.finish(in: Self.viewport)
+        let finished = manipulation.finish(in: Self.viewport, touchesRemain: false)
         try interaction.commit(#require(finished), fitting: Self.fit, in: Self.viewport)
 
         #expect(interaction.rendering(gesture: nil, fitting: Self.fit, in: Self.viewport).bake

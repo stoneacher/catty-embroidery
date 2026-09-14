@@ -47,7 +47,7 @@ struct StageManipulationLifecycleTests {
 
         manipulation.pinchEnded()
 
-        #expect(manipulation.finish(in: Self.viewport) == nil)
+        #expect(manipulation.finish(in: Self.viewport, touchesRemain: false) == nil)
         #expect(manipulation.gesture(in: Self.viewport) != nil)
     }
 
@@ -66,8 +66,8 @@ struct StageManipulationLifecycleTests {
         manipulation.pinchEnded()
         manipulation.panEnded()
 
-        #expect(manipulation.finish(in: Self.viewport) != nil)
-        #expect(manipulation.finish(in: Self.viewport) == nil)
+        #expect(manipulation.finish(in: Self.viewport, touchesRemain: false) != nil)
+        #expect(manipulation.finish(in: Self.viewport, touchesRemain: false) == nil)
         #expect(manipulation.gesture(in: Self.viewport) == nil)
     }
 
@@ -85,7 +85,7 @@ struct StageManipulationLifecycleTests {
         manipulation.pinchEnded()
         manipulation.panEnded()
 
-        #expect(manipulation.finish(in: Self.viewport) == live)
+        #expect(manipulation.finish(in: Self.viewport, touchesRemain: false) == live)
     }
 
     /// A finger lifts, the other keeps dragging. The magnification must stay where the pinch
@@ -194,6 +194,26 @@ struct StageManipulationLifecycleTests {
         #expect(after.magnification == 6)
     }
 
+    /// **A pinch with no pan must still commit when the fingers go.** The pan may never
+    /// recognise at all — two fingers land, pinch, and both lift without the centroid travelling
+    /// far enough — and the recogniser then goes `.possible → .failed` with no callback the
+    /// tracker sees. The coordinator's touch count is what ends the manipulation, so the pinch is
+    /// not lost. Found by `/codex-review` round 2, which reached it from the other side: a
+    /// coordinator that answered a failed pan with `cancelled()` would discard a perfectly good
+    /// 2× pinch.
+    @Test("a pinch with no pan commits when the last finger lifts")
+    func aPinchWithNoPanCommitsWhenTheLastFingerLifts() throws {
+        var manipulation = StageManipulation()
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 250), within: Self.free)
+        manipulation.pinchChanged(to: 2)
+        manipulation.pinchEnded()
+
+        #expect(manipulation.finish(in: Self.viewport, touchesRemain: true) == nil)
+        let committed = manipulation.finish(in: Self.viewport, touchesRemain: false)
+
+        #expect(committed?.magnification == 2)
+    }
+
     // MARK: - Lifecycle failures
 
     /// **The regression this approach risks and `@GestureState` cannot have.** SwiftUI clears a
@@ -211,7 +231,7 @@ struct StageManipulationLifecycleTests {
         manipulation.cancelled()
 
         #expect(manipulation.gesture(in: Self.viewport) == nil)
-        #expect(manipulation.finish(in: Self.viewport) == nil)
+        #expect(manipulation.finish(in: Self.viewport, touchesRemain: false) == nil)
     }
 
     /// A cancelled manipulation must not poison the next one.

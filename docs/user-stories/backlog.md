@@ -54,6 +54,40 @@ Candidate for **M4 or M5**.
 
 ---
 
+## US-314 — The stage is not frozen under the fingers while the design is still growing
+
+**Epic**: E4 Stage & preview | **Estimate**: ~3 h | **Discovered**: 2026-09-14, `/codex-review`
+round 2 on US-313a
+
+**Problem**: ADR-028's baseline is `settled ?? fit`, and `fit` is a *per-frame parameter* the view
+recomputes from the display list's bounds. While the user has never zoomed — `settled == nil`,
+"following the fit", the state a fresh stage is in — a run whose design grows beyond the hoop
+changes `StageGeometry.fitTarget(including:)`, and therefore changes the fit, the bake key and the
+drawn transform **mid-manipulation**. The stage shifts under the fingers, and the point a finger
+grabbed is no longer under it.
+
+**Reproduction** (Codex's, at viewport 100 × 100): a fresh interaction, `panBegan`, `pinchBegan` at
+(20, 20), `pinchChanged(to: 2)`, then render once with `fit.scale == 1` and once with
+`fit.scale == 0.5` without ending the manipulation. The grabbed stage point maps to x = 20 in the
+first frame and x = 0 in the second, and `bake` changes between them.
+
+**Why it is not US-313a's**: it is pre-existing — US-307 shipped this and US-313a changes nothing
+about it. What US-313a did was *claim* the invariant more loudly (its AC10 said "`bake` is
+identical across every frame of a manipulation"), so that criterion is narrowed to "at a constant
+fit" rather than left overstating what the code does. The fix is a design decision this story
+should not take in passing: a manipulation needs a **frozen baseline** distinct from `settled`,
+because pinning `settled` at gesture start instead would take the stage permanently off the fit
+and contradict ADR-028's rule that an identity gesture must not do that.
+
+**Scope when scheduled**: a `manipulationBaseline` captured at the first channel's begin and
+cleared at commit or cancel, read by `baseline`, `rendering`, `transform` and `commit` while a
+manipulation is live; an ADR-028 amendment recording that "the baseline cannot move while fingers
+are down" is now enforced rather than assumed; and a test that drives two different fits through
+one manipulation, which is the shape every existing test misses by passing the same `Self.fit`
+every frame.
+
+---
+
 **Otherwise empty.** The mechanism worked as designed and is worth recording:
 
 - **US-211 — DST serialization field-width chokepoint.** Specified here at discovery time on

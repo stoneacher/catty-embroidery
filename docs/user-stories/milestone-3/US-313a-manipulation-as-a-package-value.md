@@ -222,12 +222,18 @@ attached, not smuggled in here.
 9. **Liveness is presence, not magnitude**: a pinch back to exactly 1× and a pan back to its
    origin are still live. Mirrors `StageInteractionTests.presenceNotMagnitudeDecidesLiveness`,
    which four Codex rounds paid for.
-10. **`bake` is identical across every frame of a manipulation and changes exactly once**, and
+10. **`bake` is identical across every frame of a manipulation *at a constant fit*, and changes
+    exactly once**, and
     `StitchDrawPlan.forFrame` returns the coarse plan on **every** frame of a manipulation at
     50 001 stitches — moved or not, per the correction above. ADR-030 §7's inherited invariant,
     observed rather than restated. **The `bake` half was already green** and stays as a
     regression guard rather than being claimed as a red: what it pins is that the *new input
-    path* cannot take the invariant away.
+    path* cannot take the invariant away. **Qualified 2026-09-14 by `/codex-review` round 2**: at
+    a *changing* fit it is false, and always has been — while `settled` is `nil` the bake is
+    `settled ?? fit`, so a run whose growing design leaves the hoop moves the fit, the bake and
+    the stage under the user's fingers. Pre-existing (US-307 shipped it) and **not fixed here**;
+    tracked as US-314 in [`backlog.md`](../backlog.md). The criterion is narrowed rather than the
+    claim quietly kept, because a story must not assert an invariant its code does not enforce.
 11. **A resting manipulation — fingers down, nothing moved — is still live**, and its bake key
     is the committed transform. **Inverted 2026-09-14 during implementation**: this criterion
     originally said the opposite (that an identity gesture renders from the settled path), and

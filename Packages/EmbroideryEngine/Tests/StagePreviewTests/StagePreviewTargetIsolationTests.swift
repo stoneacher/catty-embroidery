@@ -154,7 +154,7 @@ struct StagePreviewTargetIsolationTests {
         let read: (StageManipulation) -> (ViewSize) -> StageGesture? = { subject in
             { subject.gesture(in: $0) }
         }
-        let finish: (inout StageManipulation, ViewSize) -> StageGesture? = { $0.finish(in: $1) }
+        let finish: (inout StageManipulation, ViewSize) -> StageGesture? = { $0.finish(in: $1, touchesRemain: false) }
         let toggle: (inout StageInteraction, ViewPoint, StageTransform) -> Int? = {
             $0.beginToggle(about: $1, fitting: $2)
         }

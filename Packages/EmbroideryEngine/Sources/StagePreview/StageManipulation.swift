@@ -280,13 +280,16 @@ public struct StageManipulation: Equatable, Sendable {
     ///   the two `gesture` is `nil`, so the raster can rebuild with a finger on the glass
     ///   (ADR-030 §7). Found by `/codex-review` round 1.
     ///
-    ///   Defaulted to `false` deliberately. A caller that forgets it commits early — today's
-    ///   behaviour — where a caller that forgot a mandatory `true` would leave the tracker live
-    ///   forever, coarse forever, never re-baking. Of the two ways to be wrong, this is the one
-    ///   that recovers.
+    ///   **Required, with no default.** Round 1 defaulted it to `false` on the argument that a
+    ///   forgetful caller should commit early rather than stick live forever. Round 2 pointed out
+    ///   what that actually buys: the default *silently selects the unsafe branch*, so the
+    ///   original two-commit sequence survives untouched in any call that omits it, and the
+    ///   regression test — which passes `true` explicitly — cannot see the omission. Requiring it
+    ///   makes forgetting a compile error, and passing the wrong value a visible bug rather than
+    ///   an invisible one.
     public mutating func finish(
         in viewport: ViewSize,
-        touchesRemain: Bool = false
+        touchesRemain: Bool
     ) -> StageGesture? {
         guard !touchesRemain else { return nil }
         guard isLive, !hasActiveChannel, let gesture = gesture(in: viewport) else { return nil }

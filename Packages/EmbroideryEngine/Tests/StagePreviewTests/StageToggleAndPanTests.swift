@@ -129,6 +129,69 @@ struct StageToggleAndPanTests {
         #expect(interaction.isFollowingFit, "but the fit is adopted anyway")
     }
 
+    /// **A takeover starts from what is on screen, and `beginSettling` was the one that did
+    /// not.** Its `interrupt()` runs at the default progress 1, which now adopts the *destination*
+    /// rather than the fit — so "Fit to Hoop" pressed during a toggle zoom-in snapped the stage
+    /// forward to 2× before animating back. Harmless before this story, because every animation
+    /// ended at the fit and adopting the destination *was* adopting the fit; the toggle is what
+    /// made the two different. `commit`, `adjust`, `panned` and `beginToggle` all take the
+    /// visible progress already. Found by `/codex-review` round 2.
+    @Test("fit to hoop during a zoom-in starts from what is on screen")
+    func fitToHoopDuringAZoomInStartsFromWhatIsOnScreen() throws {
+        var interaction = StageInteraction()
+        let started = interaction.beginToggle(about: ViewPoint(x: 300, y: 120), fitting: Self.fit)
+        _ = try #require(started)
+        let visible = interaction.baseline(fitting: Self.fit, settlingAt: 0.25)
+
+        let reset = interaction.beginSettling(fitting: Self.fit, settlingAt: 0.25)
+        _ = try #require(reset)
+
+        #expect(interaction.baseline(fitting: Self.fit, settlingAt: 0) == visible)
+    }
+
+    // MARK: - Magnification limits
+
+    /// The limits must describe the transform the user can *see*, not the one the model has
+    /// already jumped to. ADR-028 records that the model's progress reaches 1 the moment
+    /// `withAnimation` runs and only the view's shim holds the interpolated value — which is why
+    /// every other method here takes `settlingAt`. Without it a pinch mid-animation is clamped
+    /// against the destination's scale and the rebase compensation goes wrong again, which is
+    /// round 1's High finding by another route. Found by `/codex-review` round 2.
+    @Test("the magnification limits follow the visible baseline during an animation")
+    func theMagnificationLimitsFollowTheVisibleBaseline() throws {
+        var interaction = StageInteraction()
+        let started = interaction.beginToggle(about: ViewPoint(x: 0, y: 0), fitting: Self.fit)
+        _ = try #require(started)
+
+        let visible = interaction.baseline(fitting: Self.fit, settlingAt: 0.25)
+        let bounds = StageZoomBounds(fitting: Self.fit)
+        let limits = interaction.magnificationLimits(fitting: Self.fit, settlingAt: 0.25)
+
+        #expect(abs(limits.lowerBound - bounds.minimum / visible.scale) < 1e-12)
+        #expect(abs(limits.upperBound - bounds.maximum / visible.scale) < 1e-12)
+    }
+
+    /// **A ratio floored by an absolute scale is a category error.** `minimumRepresentableScale`
+    /// is a bound on a transform's scale, not on a magnification factor, and using it as the
+    /// floor narrows the fit-aware range for a very small fit — the stage then cannot pinch down
+    /// to a zoom the bounds explicitly permit. Found by `/codex-review` round 2.
+    @Test("the magnification limits are a ratio, not floored by an absolute scale")
+    func theMagnificationLimitsAreARatio() {
+        let tiny = StageTransform(scale: 1e-6)
+        var interaction = StageInteraction()
+        interaction.commit(
+            StageGesture(magnification: 5e7), fitting: tiny, in: Self.viewport
+        )
+
+        let baseline = interaction.baseline(fitting: tiny)
+        let bounds = StageZoomBounds(fitting: tiny)
+        let limits = interaction.magnificationLimits(fitting: tiny)
+
+        #expect(baseline.scale == 50)
+        #expect(abs(limits.lowerBound - bounds.minimum / baseline.scale) < 1e-18)
+        #expect(limits.lowerBound < StageTransform.minimumRepresentableScale)
+    }
+
     // MARK: - The directional pan
 
     /// **The gap this closes is live in the shipped app**: `adjust` anchors on the viewport's

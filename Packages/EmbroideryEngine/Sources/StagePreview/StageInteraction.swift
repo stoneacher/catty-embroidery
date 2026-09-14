@@ -192,10 +192,18 @@ public struct StageInteraction: Equatable, Sendable {
     /// Returns the new animation's identity, or `nil` when there is nothing to animate — the
     /// caller passes it back to `finishSettling(_:)` so a late completion can prove it owns the
     /// animation it is ending.
-    public mutating func beginSettling(fitting fit: StageTransform) -> Int? {
+    /// - Parameter settlingAt: the in-flight animation's **visible** progress. Load-bearing
+    ///   since the toggle exists: `interrupt()` at progress 1 adopts the animation's
+    ///   *destination*, which used to be the fit for every animation and so was harmless. A
+    ///   zoom-in's destination is not the fit, so "Fit to Hoop" pressed mid-zoom-in snapped the
+    ///   stage forward to 2× and then animated back (`/codex-review` round 2).
+    public mutating func beginSettling(
+        fitting fit: StageTransform,
+        settlingAt progress: Double = 1
+    ) -> Int? {
         // A second activation while the first is still running would otherwise animate from the
         // pre-animation transform and snap backwards past what is on screen.
-        interrupt()
+        interrupt(settlingAt: progress)
         guard !isFollowingFit else { return nil }
 
         nextSettlingID += 1
@@ -248,24 +256,6 @@ public struct StageInteraction: Equatable, Sendable {
             adoptsFit: !zoomingIn
         )
         return nextSettlingID
-    }
-
-    /// What a live pinch may multiply the baseline by, as a ratio, before
-    /// `StageTransform.pinched` starts clamping.
-    ///
-    /// **Exists so the input layer and the transform agree on the factor.**
-    /// `StageManipulation` compensates its rebase with the magnification it holds, and that is
-    /// exact only if the transform applies the same number; `pinched` clamps into
-    /// `StageZoomBounds`, which is fit-aware and therefore not something the tracker can know.
-    /// Handing the range over keeps one source of truth for the bound instead of two spellings
-    /// of it (`/codex-review` round 1).
-    public func magnificationLimits(fitting fit: StageTransform) -> ClosedRange<Double> {
-        let scale = baseline(fitting: fit).scale
-        guard scale > 0, scale.isFinite else { return StageManipulation.unlimitedMagnification }
-
-        let bounds = StageZoomBounds(fitting: fit)
-        let lower = Swift.max(bounds.minimum / scale, StageTransform.minimumRepresentableScale)
-        return lower ... Swift.max(lower, bounds.maximum / scale)
     }
 
     /// One activation of a directional pan accessibility action.
