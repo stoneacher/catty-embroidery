@@ -1,27 +1,36 @@
 # US-313a — The manipulation is a package value: centroid pan, latched pinch, one commit
 
-**Status**: **Implemented 2026-09-14 — in review, not yet done.** **789 engine tests** (up from
-761), SwiftLint `--strict` clean, CI green on all three checks. Split out of backlog entry US-313
-at planning, which came in at 7–9 h against its own ~5 h estimate. Planned with `swift-architect`
-and `swift-ui-design`; **the planning pass corrected nine things in the backlog specification**,
-marked **planning correction** inline, and the central one inverts the story: the backlog names
-two separable causes and **only the first is real**. Sebastian took four scope decisions, recorded
-under "Scope decisions".
+**Status**: **Done — 2026-09-14**, pending merge of [PR #46](https://github.com/stoneacher/catty-embroidery/pull/46).
+**804 engine tests** (up from 761), SwiftLint `--strict` clean, CI green on all three checks. No
+app-layer change, so no screenshot; no byte path touched, so no Ink/Stitch verification. Split out
+of backlog entry US-313 at planning, which came in at 7–9 h against its own ~5 h estimate.
 
-**Two corrections arrived after planning, both recorded inline below.** (1) The story's own
+**The planning pass inverted the story.** Planned with `swift-architect` and `swift-ui-design`,
+which ran concurrently and **converged independently on a conclusion that contradicted the
+specification they were both given**: the backlog names two separable causes and only the first is
+real. `StageInteraction.moved` already composes `pinched(by: m, about: c₀).dragged(by: p)`, which
+is *exactly* native two-finger manipulation once `p` is the centroid delta — so the frozen
+`startAnchor` the entry blames for drift is the correct formulation, and the live anchor it
+proposes is off by `(1 − m)(c₁ − c₀)`. Nine corrections in all, marked **planning correction**
+inline. Sebastian took four scope decisions, under "Scope decisions".
+
+**Three corrections arrived after planning, each from a different layer.** (1) The story's own
 resolution of its two planning passes' disagreement was **wrong**, and two tests written for
-ADR-028's Codex rounds 2 and 3 refuted it within a minute — `BakeKey` carries `settledCount`, not
-the transform alone, so a resting frame reporting `canUseRaster` mid-gesture permits a bake at a
-new watermark. AC11 is inverted. (2) The in-loop review found that **a manipulation can contain
-more than one pinch** — lift a finger and put it back while still dragging — where the tracker
-took the second recogniser's fresh `scale` of 1 as the magnification and snapped the stage from
-3× to unzoomed. `pinchBegan` now rebases.
+ADR-028's Codex rounds 2 and 3 refuted it within a minute — `BakeKey` carries `settledCount`, so a
+resting frame reporting `canUseRaster` mid-gesture permits a bake at a new watermark. AC11 is
+inverted. (2) The in-loop review found that **a manipulation can contain more than one pinch**;
+`pinchBegan` now rebases. (3) `/codex-review` round 1 **reverted the in-loop review's own fix**,
+because it had reintroduced the threshold subtraction ADR-028 measured and removed.
 
-**Review**: `swift-code-reviewer` was launched twice in a worktree and **failed both times**
-(session rate limit, then a 600 s stall) without reporting; the pass was done in the main context
-instead and is journalled as a delegation failure. Two findings, both fixed and both with tests.
-Ten mutants across the story, no survivors. **`/codex-review` has not run yet** — the story is not
-closed until it has.
+**Review: two layers, and the second undid work of the first.** `swift-code-reviewer` was launched
+twice in a worktree and **failed both times** (session rate limit, then a 600 s stall) without
+reporting, so the in-loop pass was done in the main context and is journalled as a delegation
+failure; it found two defects. `/codex-review` then ran **6 rounds — 22 findings, 17 fixed, 1
+deferred as US-314, 4 rejected**, severity **High → High → High → High → Medium → none valid**,
+closing on stop condition 1. The loop escalated twice at the flat-severity rule and Sebastian
+authorised continuing both times. **Round 6's four findings were US-310's own Codex rounds 6–8,
+re-derived verbatim against code that already contains those fixes** — rejected with the file and
+line that refutes each. Ten mutants across the story, no survivors.
 
 **Epic**: E4 Stage & preview | **Estimate**: ~4 h | **Depends on**: US-307, US-310 |
 **Discovered**: 2026-09-02, US-309 device session (Sebastian, iPhone 17 Pro)
