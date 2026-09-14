@@ -1703,3 +1703,50 @@ times**: the first died on a session rate limit having just read the diff, the s
   lesson the contaminated-baseline entry of 2026-09-14 records for measurements, arriving here
   for tests.
 - **789 engine tests**, up from 761. Ten mutants across the session, no survivors.
+
+## 2026-09-14 (US-313a, Codex rounds 1–3) — flat at High for three rounds, and the layer that reverted the other layer
+
+Severity **High → High → High**, 14 findings, 13 fixed, 1 deferred, **none rejected**. Flat for
+three rounds is this project's early-escalation trigger, so the loop is paused for Sebastian
+rather than run to round 4.
+
+- **The strongest single argument yet for two review layers**: round 1 found that a fix from the
+  *in-loop* review, made an hour earlier, contradicted ADR-028. I had changed `panBegan` to treat
+  its argument as an origin, reasoning that the tracker (the tested half) should not depend on the
+  coordinator having zeroed the recogniser. ADR-028 line 427 removed exactly that subtraction
+  after measuring it, and with a pinch live it also stops the grabbed points tracking the fingers.
+  Previous stories recorded the two layers finding *different* things; this is the first where one
+  layer **undid** the other's work, which is a different and better argument for the cost.
+- **Codex also reversed its own round-1 fix in round 2**, and was right both times. Round 1 said
+  `finish` should take `touchesRemain`; I defaulted it to `false` so a forgetful caller would fail
+  safe rather than stick live forever. Round 2's counter is the sharper reading: a default
+  *silently selects the unsafe branch*, and the regression test — which passes `true` explicitly —
+  structurally cannot catch an omission. **A safe default and an unsafe silence are not the same
+  trade**, and I had priced only the first.
+- **The severity label was flat while the substance fell.** Round 1's High was reachable by a user
+  in the shipped app; round 3's High has no production caller at all — it is a contract that
+  US-313b would have to wire wrongly to reach. The stop rule reads severity, not reachability, so
+  it says "not converging" where the honest description is "converging in impact, flat in label".
+  Worth recording as a limitation of the rule rather than a fault in it: the rule's job is to stop
+  me declaring victory early, and it did that correctly for the first two rounds.
+- **Three of the findings were about the *doc*, not the code** — twice narrowing AC10, once
+  recording a deferral. That is a good sign rather than a wasted round: the criterion had drifted
+  into claiming an invariant the code does not enforce (`bake` identical across every frame), and
+  the alternative to narrowing it was shipping a story whose acceptance criteria are false.
+- **One finding was deferred, and writing down *why* took longer than fixing it would have.**
+  US-314 (the fit moving under the fingers during a growing run) is pre-existing, reproducible,
+  and needs a frozen baseline distinct from `settled` — pinning `settled` at gesture start would
+  contradict ADR-028's identity-gesture rule. The temptation was to fix it inline while the
+  context was hot; the reason not to is that it changes what "following the fit" means, which is
+  ADR-028's most load-bearing concept.
+- **Two self-inflicted CI failures this session, both from the same class of mistake**: running a
+  verification (SwiftLint) and then editing more before committing, and chaining `swiftlint` and
+  `git commit` with `;` so the commit ran despite the failure. The pre-commit hook runs tests and
+  an app compile but **not** lint, which is exactly the gap ADR-023 describes it as having. **A
+  verification result is only as current as the edit it was run against.**
+- **`StageInteraction.swift` hit the 400-line limit twice**, and both times the natural extraction
+  was blocked by access control: the toggle and the pan write `settled`, whose `private(set)`
+  setter is what makes "settled is not written while fingers are down" enforceable rather than
+  documented. `Phase` moved first, then `magnificationLimits` — both chosen because they only
+  read. A line limit pushing back against the encapsulation is an odd interaction, and the right
+  answer was to let the encapsulation win and move something else.
