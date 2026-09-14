@@ -63,7 +63,14 @@ prints — a 30 Hz link makes every interval ~33.3 ms and fails both halves of t
 that have nothing to do with the renderer.
 
 1. **50 000 mid-gesture, shipped constants.** The one that matters: it is the direct successor to
-   ADR-029's 69.1 ms row. Pinch *and* pan, since a pinch redraws on every touch move.
+   ADR-029's 69.1 ms row. ~~Pinch *and* pan, since a pinch redraws on every touch move.~~
+   **Corrected 2026-09-14, after the session tried to follow it: pinch and pan cannot be
+   performed together in the shipped app** — simultaneous two-finger centroid is exactly what
+   US-313 has not built, and ADR-028 commits one transform per gesture. Alternate them instead,
+   and **watch `drawn` rather than the clock**: the redraw count is set by the touch-move rate,
+   so a capture that pauses silently fills with animating frames. A sustained gesture reads 60–84 %
+   of `n` as `drawn`; the **animating signature is `drawn=251`**, and a mid-gesture capture
+   reporting it is mixed and must be discarded — which is how the 2026-09-05 capture was caught.
 2. **50 000 mid-gesture, target sweep.** At least two of {2 000, 1 000, 500}, each needing its own
    build (the constant is `StitchDrawPlan.liveSegmentTarget`). The question is whether the median
    reaches one period on device, and how far the target can be *raised* while it still does —
@@ -105,3 +112,32 @@ as do the **Instruments (Animation Hitches) traces** — the only artefact that 
 residual between `Path` construction and ellipse scan-conversion, and therefore the only thing
 that can decide ADR-030's recorded renderer-only alternative (`addRect` for `addEllipse` while
 live).
+
+
+## Results — session complete 2026-09-14
+
+All four captures taken on an iPhone 17 Pro (A19, Release with `DEBUG`), `60Hz` on every row,
+quantiles over drawn frames only. Build and install were driven from the command line exactly as
+the **Build** section prescribes, with `DEVELOPMENT_TEAM=6M2HZFQZ6L` and a personal
+`PRODUCT_BUNDLE_IDENTIFIER=org.superrandom.embroiderydesigner` passed as overrides so
+`project.pbxproj` stayed untouched.
+
+| # | what | target | drawn / n | med | p95 | p99 | worst | verdict |
+|---|---|---|---|---|---|---|---|---|
+| [09](screenshots/us-310/09-device-50k-animating.jpg) | 50 000 animating | 1 000 | 251 / 1139 | 16.669 | 16.670 | 16.670 | 16.702 @9.6 s | **PASS** |
+| [10](screenshots/us-310/10-device-3194-mid-gesture-control.jpg) | 3 194 mid-gesture (control) | n/a | 618 / 986 | 16.669 | 16.670 | 16.670 | 16.705 @11.7 s | **PASS** |
+| [11](screenshots/us-310/11-device-50k-mid-gesture-target-2000.jpg) | 50 000 mid-gesture | 2 000 | 754 / 1251 | 16.669 | 16.670 | 33.338 | 50.008 @18.3 s | FAIL |
+| [12](screenshots/us-310/12-device-50k-mid-gesture-target-1000-sustained.jpg) | 50 000 mid-gesture | **1 000 (shipped)** | **967 / 1152** | **16.670** | **16.670** | 33.060 | 50.008 @1.4 s | FAIL |
+
+The analysis is in **ADR-030**, which this file does not duplicate. In one line: the rung's claim
+holds on a clean capture at the shipped target (median *and* p95 at one refresh period), the
+animating path and the sub-threshold control are unregressed, the tail is indifferent to the
+target and therefore not the coarse plan, and both targets reach the instrument's floor so the
+shipped constant is conservative rather than tuned.
+
+**The question this file said the session owns — "where is the tail?" — was not answered.** The
+discriminating capture (one unreleased gesture against several short drags) was not taken, and it
+is carried to the milestone's final-verification list along with the three judgement questions
+above, none of which were run either. What the session *did* add to the tail argument is that the
+tail does not move when the stride halves, on device as on the simulator — consistent with the
+commit hypothesis, but not a test of it.
