@@ -125,8 +125,22 @@ struct StageManipulationTests {
         manipulation.pinchChanged(to: now.separation / start.separation)
 
         let gesture = try #require(manipulation.gesture(in: Self.viewport))
+        let transform = Self.transform(for: gesture)
 
-        #expect(Self.transform(for: gesture) == Self.fit.dragged(by: sideways))
+        // Asked of two grabbed points rather than by comparing the transform to
+        // `fit.dragged(by: sideways)`. A pinch of exactly 1× still runs the composition, and
+        // `pinched(by:about:)` re-derives the translation through a divide and a multiply — so
+        // an exact comparison is a bet on a round trip landing on the same bits, which is the
+        // one-ULP hazard ADR-028's Codex round 5 already lost once. Two points also say
+        // something the transform equality does not: the stage *translated* rather than
+        // scaling about a point that happens to move it there.
+        for grabbed in [start.a, start.b].map(Self.fit.stagePoint(of:)) {
+            let before = Self.fit.viewPoint(of: grabbed)
+            #expect(Self.isClose(
+                transform.viewPoint(of: grabbed),
+                ViewPoint(x: before.x + sideways.x, y: before.y + sideways.y)
+            ))
+        }
     }
 
     /// ADR-028's correctness clause, re-established across the new input path: recogniser values
