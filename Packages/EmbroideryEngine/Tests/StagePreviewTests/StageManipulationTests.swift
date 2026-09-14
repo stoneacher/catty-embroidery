@@ -241,6 +241,104 @@ struct StageManipulationTests {
         #expect(stillPanning.magnification == 2)
     }
 
+    /// **Lift one finger, put it back, never lifting the other.** The pan carries on throughout
+    /// with `maximumNumberOfTouches = 2`, so this is one manipulation containing *two* pinches —
+    /// and it is the ordinary way a two-finger gesture is adjusted, not an edge case.
+    ///
+    /// `UIPinchGestureRecognizer.scale` is cumulative from its own begin, and a coordinator
+    /// resets it to 1 at `.began`, so the second pinch reports 1 where the manipulation is
+    /// already at `m`. Taking that as the magnification snaps the stage back to unzoomed the
+    /// instant the second finger lands.
+    @Test("a second pinch during one pan does not reset the magnification")
+    func aSecondPinchDuringOnePanDoesNotResetTheMagnification() throws {
+        var manipulation = StageManipulation()
+        manipulation.panBegan(at: .zero)
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300))
+        manipulation.pinchChanged(to: 3)
+        manipulation.pinchEnded()
+        manipulation.panChanged(to: ViewPoint(x: 20, y: 10))
+
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 240, y: 280))
+        let gesture = try #require(manipulation.gesture(in: Self.viewport))
+
+        #expect(gesture.magnification == 3)
+    }
+
+    /// And the frame must not move at the moment that second finger lands. Re-anchoring on the
+    /// new centroid changes the composition even when the scale does not: the stage jumps by
+    /// `(1 − m)(aNew − aOld)`, which is zero only when unzoomed or when the fingers land back on
+    /// the old anchor.
+    @Test("a second pinch during one pan does not move the stage")
+    func aSecondPinchDuringOnePanDoesNotMoveTheStage() throws {
+        var manipulation = StageManipulation()
+        manipulation.panBegan(at: .zero)
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300))
+        manipulation.pinchChanged(to: 3)
+        manipulation.pinchEnded()
+        manipulation.panChanged(to: ViewPoint(x: 20, y: 10))
+
+        let before = try #require(manipulation.gesture(in: Self.viewport))
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 240, y: 280))
+        let after = try #require(manipulation.gesture(in: Self.viewport))
+
+        // Observed at probe points rather than by comparing the transforms: the rebase re-derives
+        // the translation through a divide and a multiply, so the two land two ULPs apart
+        // (205.0 against 205.00000000000006) while describing the same frame. Asserting equality
+        // here would be the same bet `lateralCentroidMovementDuringAPinchMovesTheStage` already
+        // lost — and what matters is that nothing on screen moved, which is a claim about points.
+        let (old, new) = (Self.transform(for: before), Self.transform(for: after))
+        let corners = [ViewPoint(x: 0, y: 0), ViewPoint(x: 390, y: 500), ViewPoint(x: 240, y: 280)]
+        for probe in corners.map(old.stagePoint(of:)) {
+            #expect(Self.isClose(new.viewPoint(of: probe), old.viewPoint(of: probe), within: 1e-8))
+        }
+    }
+
+    /// Having re-anchored without moving anything, the second pinch must then scale about the
+    /// point the fingers are actually on — otherwise continuity was bought by zooming about a
+    /// stale centroid the user has since left.
+    @Test("a second pinch scales about the new fingers")
+    func aSecondPinchScalesAboutTheNewFingers() throws {
+        var manipulation = StageManipulation()
+        manipulation.panBegan(at: .zero)
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300))
+        manipulation.pinchChanged(to: 3)
+        manipulation.pinchEnded()
+        manipulation.panChanged(to: ViewPoint(x: 20, y: 10))
+
+        let regrasp = ViewPoint(x: 240, y: 280)
+        let held = try #require(manipulation.gesture(in: Self.viewport))
+        // The stage point sitting under the new centroid at the moment the fingers land.
+        let grabbed = Self.transform(for: held).stagePoint(of: regrasp)
+
+        manipulation.pinchBegan(scale: 1, centroid: regrasp)
+        manipulation.pinchChanged(to: 2)
+        let zoomed = try #require(manipulation.gesture(in: Self.viewport))
+
+        #expect(zoomed.magnification == 6)
+        #expect(Self.isClose(Self.transform(for: zoomed).viewPoint(of: grabbed), regrasp, within: 1e-8))
+    }
+
+    /// **A pan that begins with a non-zero translation contributes nothing until it moves.**
+    ///
+    /// US-313b's coordinator will call `setTranslation(.zero, in:)` at `.began`, so in the
+    /// shipped path this value is zero — which is exactly why the tracker should not depend on
+    /// it. The parameter is named `at:` because it is an *origin*, and the untested half of the
+    /// system (a UIKit coordinator) should not be the thing that has to remember that.
+    @Test("a pan that begins away from zero contributes nothing until it moves")
+    func aPanThatBeginsAwayFromZeroContributesNothing() throws {
+        var manipulation = StageManipulation()
+        manipulation.panBegan(at: ViewPoint(x: 5, y: -8))
+
+        let resting = try #require(manipulation.gesture(in: Self.viewport))
+        #expect(resting.isIdentity)
+
+        manipulation.panChanged(to: ViewPoint(x: 25, y: 12))
+        let moved = try #require(manipulation.gesture(in: Self.viewport))
+
+        #expect(moved.panX == 20)
+        #expect(moved.panY == 20)
+    }
+
     // MARK: - Lifecycle failures
 
     /// **The regression this approach risks and `@GestureState` cannot have.** SwiftUI clears a

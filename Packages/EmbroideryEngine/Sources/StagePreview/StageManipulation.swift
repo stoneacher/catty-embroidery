@@ -63,7 +63,16 @@ public struct StageManipulation: Equatable, Sendable {
     /// Cumulative scale since the pinch began, latched at whatever the pinch last reported.
     private var magnification: Double = 1
 
-    /// Cumulative centroid translation in view points, as the pan recogniser reports it.
+    /// Where the pan recogniser's translation started, so a recogniser that begins away from
+    /// zero contributes nothing until it actually moves.
+    ///
+    /// The shipped coordinator will zero the recogniser at `.began`, which is precisely why the
+    /// tracker does not rely on it having done so: this half is the tested one, and an origin the
+    /// untested half must remember is an invariant with nowhere to live.
+    private var panOrigin: ViewPoint = .zero
+
+    /// Cumulative centroid translation in view points, as the pan recogniser reports it,
+    /// measured from `panOrigin`.
     ///
     /// `UIPanGestureRecognizer.translation(in:)` is the translation of the **centroid** of its
     /// touches and stays continuous when a finger is added or removed, which is the single
@@ -74,10 +83,25 @@ public struct StageManipulation: Equatable, Sendable {
     /// The pinch's centre **in the baseline frame** — the centroid at pinch-begin, less whatever
     /// the pan had already moved by then.
     ///
-    /// `nil` until a pinch begins, and then the anchor never moves: it is a point in the frame
-    /// the transform is composed *from*, so a live centroid would be a different quantity in a
-    /// different frame, not a fresher version of this one.
+    /// `nil` until a pinch begins. It does not follow the fingers *within* a pinch — a live
+    /// anchor is wrong, not fresher (see the type comment) — but it is **re-derived when a new
+    /// pinch begins**, because a manipulation can contain more than one.
     private var anchor: ViewPoint?
+
+    /// The product of the pinches that have already ended in this manipulation.
+    ///
+    /// A recogniser's `scale` is cumulative from **its own** begin, and a coordinator resets it
+    /// to 1 at `.began`, so a second pinch reports 1 where the manipulation is already at 3×.
+    /// Without this the stage snaps back to unzoomed the instant the second finger lands.
+    private var magnificationBase: Double = 1
+
+    /// The compensation that keeps the frame still when the anchor is re-derived.
+    ///
+    /// Re-anchoring changes the composition even when the scale does not: `pinched(about:)` about
+    /// a different point is a different transform, and the frame jumps by `(1 − m)(aNew − aOld)`.
+    /// Accumulating that difference into the pan keeps the stage exactly where it was while
+    /// letting the *next* pinch scale about the fingers the user actually has down.
+    private var panOffset: ViewPoint = .zero
 
     public init() {}
 
@@ -109,8 +133,8 @@ public struct StageManipulation: Equatable, Sendable {
             magnification: magnification,
             anchorUnitX: Self.unit(anchor.x, of: viewport.width),
             anchorUnitY: Self.unit(anchor.y, of: viewport.height),
-            panX: translation.x,
-            panY: translation.y
+            panX: translation.x + panOffset.x,
+            panY: translation.y + panOffset.y
         )
     }
 
@@ -125,22 +149,49 @@ public struct StageManipulation: Equatable, Sendable {
 
     // MARK: - The pinch channel
 
+    /// A pinch begins — the first of the manipulation, or a later one after the user lifted a
+    /// finger and put it back while still dragging with the other.
+    ///
+    /// **Re-anchoring without moving anything is the whole content of this method.** Three things
+    /// have to happen at once: the anchor becomes the baseline-frame point currently under the
+    /// fingers, the frame does not move, and the magnification already accumulated survives.
+    ///
+    /// The first pinch is the same arithmetic with `m == 1`, where the offset term vanishes and
+    /// this reduces to `centroid − translation` — one code path rather than a special case, so
+    /// the ordinary route cannot rot while the rare one is exercised only by tests.
     public mutating func pinchBegan(scale: Double, centroid: ViewPoint) {
         pinch = .active
-        magnification = scale
-        // Into the baseline frame. Without this the composition is off by `(m − 1)·translation`
-        // whenever a second finger lands after the drag has already moved — which is the
-        // ordinary way a two-finger gesture starts.
-        anchor = ViewPoint(x: centroid.x - translation.x, y: centroid.y - translation.y)
+
+        let previous = anchor ?? .zero
+        let magnified = magnification
+        if magnified.isFinite, magnified > 0 {
+            // The baseline-frame point under the fingers now: invert `v(x) = m(x − a) + a + p`.
+            let current = ViewPoint(
+                x: (centroid.x - previous.x - translation.x - panOffset.x) / magnified + previous.x,
+                y: (centroid.y - previous.y - translation.y - panOffset.y) / magnified + previous.y
+            )
+            // …and the pan term that makes the swap invisible. Derived by requiring
+            // `m(x − aNew) + aNew + p + δ == m(x − aOld) + aOld + p` for every `x`.
+            panOffset = ViewPoint(
+                x: panOffset.x + (magnified - 1) * (current.x - previous.x),
+                y: panOffset.y + (magnified - 1) * (current.y - previous.y)
+            )
+            anchor = current
+        }
+
+        magnificationBase = magnification
+        magnification = magnificationBase * scale
     }
 
     public mutating func pinchChanged(to scale: Double) {
         guard pinch.isActive else { return }
-        magnification = scale
+        magnification = magnificationBase * scale
     }
 
     public mutating func pinchEnded() {
         guard pinch.isActive else { return }
+        // Latch, so a pan continuing on the remaining finger keeps the zoom the user reached.
+        magnificationBase = magnification
         pinch = .ended
     }
 
@@ -148,12 +199,16 @@ public struct StageManipulation: Equatable, Sendable {
 
     public mutating func panBegan(at translation: ViewPoint) {
         pan = .active
-        self.translation = translation
+        panOrigin = translation
+        self.translation = .zero
     }
 
     public mutating func panChanged(to translation: ViewPoint) {
         guard pan.isActive else { return }
-        self.translation = translation
+        self.translation = ViewPoint(
+            x: translation.x - panOrigin.x,
+            y: translation.y - panOrigin.y
+        )
     }
 
     public mutating func panEnded() {
