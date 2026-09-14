@@ -1433,3 +1433,44 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
   rather than checkboxes, so the clean result proved nothing and the criteria had to be read one
   by one. A story-format assumption baked into a verification step is worth knowing about: the
   check passes hardest when it is least applicable.
+
+## 2026-09-14 (US-310, rounds 6–8) — reopening a closed review loop, and three rounds of fixing my own fixes
+
+- **The loop had closed at round 5 (Low, stop condition 1). The device finding then landed
+  substantive new code *after* that verdict, so it was reopened.** That is the right call and the
+  branch proves it: rounds 6, 7 and 8 found four executable defects in the corner rule, every one
+  of them in code written after the "clean" round. **A stop condition is about a body of code, not
+  about a branch** — when the code changes materially, the verdict it earned no longer applies.
+- **Rounds 6, 7 and 8 each found a hole in the previous round's fix.** Counting rounds 2–4, that is
+  now five of eight rounds spent on repairs rather than on the original code. The chain here:
+  (6) a duplicate stitch hid a reversal, because a three-point predicate cannot see past a
+  zero-length interval; (7) my fix for that left `directionAnchor` stale across a break *and* the
+  loop-bottom advance clobbered the resets — two bugs in one fix; (8) the finiteness guard I added
+  in 7 was defeated by `Swift.max` being NaN-asymmetric.
+- **`Swift.max` is `y >= x ? y : x`, so it is not NaN-symmetric**: `max(NaN, 0)` is NaN but
+  `max(0, NaN)` is **0**. A NaN in y beside a zero x delta therefore produced a finite scale of
+  zero, passed the finiteness guard, and fell into the zero-length branch — answering exactly the
+  thing the guard existed to prevent. My test had covered NaN in *x* only, where the argument order
+  happens to propagate it. **A guard over a reduction is only as good as the reduction's edge
+  cases; guard the components, not the summary.**
+- **The underflow finding produced a claim-narrowing rather than a fix, and that was the right
+  outcome.** Round 6's comment asserted "a positive scale cannot move a dot product across zero",
+  which is false as implemented — two independent roundings. But the counterexample differs from a
+  right angle by ~5e-325 radians, and the rule already calls exactly 90° a corner, so the
+  classification is correct for every purpose it serves. The comment now claims "correct to within
+  rounding of the 90° boundary". **Chasing exactness there would have been motion; narrowing the
+  claim is the fix.**
+- **A test of mine failed for the right reason and I nearly "fixed" the code.** A diagonal
+  boustrophedon fixture asserted "every 20th index is a turn"; index 19 is a ~56° turn the rule
+  correctly joins through, with the reversal completing one vertex later. The assertion was wrong,
+  not the walker. **Guessing which index is a corner re-derives the rule inside the test** — the
+  same self-reference trap this branch has now hit three times. The replacement names no index: it
+  names the silhouette.
+- **One survivor is genuinely equivalent and it was worth proving rather than arguing.** The
+  `.suppressed` branch in `strokes(for:)` is unreachable — a colour boundary is owned by neither
+  run — confirmed by placing a `fatalError` in it and watching all 761 tests stay green. Told
+  round 8 about it up front so it would judge the claim instead of rediscovering it, which it did.
+- **Process slip worth recording**: I ran `swiftlint` *after* `git commit` once in this session and
+  it flagged a violation, so the commit had to be amended. The memory rule says verify by exit code
+  before committing. The pre-commit hook gates engine tests only, so lint has no net under it —
+  which is exactly why the ordering matters.

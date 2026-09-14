@@ -8,10 +8,12 @@ and one has been taken, so hand-off captures 2 (the sweep), 3 (the 3 194 control
 on the tail alone — where ADR-030 claims nothing.** Not `Done`: the device session ([`docs/us-310-device-handoff.md`](../../us-310-device-handoff.md))
 owns ADR-029's bar, and PR [#44](https://github.com/stoneacher/catty-embroidery/pull/44) is
 handed over green for Sebastian to merge. **Review: `swift-code-reviewer` (5 Important, 7
-suggestions) plus `/codex-review` rounds 1–5 — 15 findings, none rejected, severity Medium →
-Medium → Medium → Medium → **Low**, closing on stop condition 1 (a round whose triage changed no
-code).** Rounds 2, 3 and 4 each found a hole in the *previous round's fix* rather than in the
-original code, and round 5 declared the corner closed. Planned with
+suggestions) plus `/codex-review` rounds 1–8 — 21 findings, none rejected, severity Medium ×4 →
+Low → Medium ×3.** The loop closed at round 5 and was **reopened** when the device finding
+(2026-09-05) landed substantive new code after that verdict; rounds 6–8 review the corner rule.
+**Rounds 2, 3, 4, 7 and 8 each found a hole in the *previous round's fix* rather than in the
+original code** — the branch's defining pattern, and the argument for the verification round
+existing at all. Planned with
 `swift-architect`. The story's own premise check (AC1) ran **before** any code change and
 answered **go**; the numbers are in "Premise" below. **The planning pass corrected nineteen
 things**, marked **planning correction** inline — including two in ADR-029's own rung-2 wording
@@ -24,9 +26,11 @@ survivor existed and was **not** equivalent. `swift-code-reviewer` found that de
 mid-run span close leaves all 751 tests green, which on screen is up to `stride − 1` intervals of
 missing thread before **every** jump and **every** colour change — the exact property AC3 claims
 and ADR-030 pins. It is now covered by an interval-set-equality test, and that mutant is caught
-by 16 tests. Thirteen mutations run in total, and the only survivor left is the `>`-for-`>=`
-stride guard, which is provably equivalent because the ceiling formula returns 1 at the boundary
-either way.
+by 16 tests. **Thirty-two mutations run in total.** Two survivors, both provably equivalent: the
+`>`-for-`>=` stride guard (the ceiling formula returns 1 at the boundary either way) and the
+`.suppressed` branch inside `strokes(for:)`, which is unreachable because a colour boundary is
+owned by neither run — verified by putting a `fatalError` in it and watching the suite stay
+green.
 
 **Epic**: E4 Stage & preview | **Estimate**: ~5 h | **Depends on**: US-305, US-306, US-307,
 US-309 | **Rung**: ADR-029 fallback ladder, **rung 2**

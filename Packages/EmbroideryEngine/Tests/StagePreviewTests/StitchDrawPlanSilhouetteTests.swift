@@ -29,6 +29,13 @@ struct StitchDrawPlanSilhouetteTests {
     /// from above. So "every vertex at an extreme y survives as a segment endpoint" is both true
     /// and strong here — unlike a boustrophedon, where two consecutive vertices share the extreme
     /// and only one of them is the turn.
+    ///
+    /// *(The fixture this replaced is worth recording, because it failed for the right reason. It
+    /// was a diagonal boustrophedon asserting "every 20th index is a turn" — and index 19 is not
+    /// one: the path goes diagonally up-right and then straight up, a ~56° turn that the rule
+    /// correctly joins through, with the reversal completing one vertex later. Guessing which
+    /// index is a corner re-derives the rule and gets it wrong, which is precisely what this suite
+    /// exists not to do. Its successor names no index at all; it names the silhouette.)*
     @Test("the corner rule holds whatever direction the turn is approached from")
     func theCornerRuleHoldsWhateverDirectionTheTurnIsApproachedFrom() {
         var stitches: [PreviewStitch] = []

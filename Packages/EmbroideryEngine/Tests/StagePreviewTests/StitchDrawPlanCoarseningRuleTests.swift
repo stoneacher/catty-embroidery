@@ -139,6 +139,15 @@ struct StitchDrawPlanCoarseningRuleTests {
         #expect(StitchDrawPlan.isCorner(stitch(-huge, 0), stitch(huge, 0), stitch(-huge, 0)))
         #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(.nan, 0), stitch(10, 0)))
         #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(.infinity, 0), stitch(10, 0)))
+        // **Both axes, because `Swift.max` hides a NaN depending on argument order**
+        // (`/codex-review` round 8). It is `y >= x ? y : x`, so `max(NaN, 0)` returns NaN while
+        // `max(0, NaN)` returns **0** — a NaN in *y* beside a zero *x* delta therefore produced a
+        // finite scale of 0, sailed through the finiteness guard, and fell into the zero-length
+        // branch answering "not a corner". Testing NaN in x only would never have shown it.
+        #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(0, .nan), stitch(10, 0)))
+        #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(0, 0), stitch(.nan, .nan)))
+        #expect(StitchDrawPlan.isCorner(stitch(.nan, .nan), stitch(0, 0), stitch(10, 0)))
+        #expect(StitchDrawPlan.isCorner(stitch(0, 0), stitch(10, .nan), stitch(20, 0)))
 
         // A repeated stitch has no direction to compare and must not break the span.
         #expect(!StitchDrawPlan.isCorner(stitch(10, 0), stitch(10, 0), stitch(20, 0)))

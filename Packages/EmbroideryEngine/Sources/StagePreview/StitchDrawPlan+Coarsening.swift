@@ -143,6 +143,17 @@ public extension StitchDrawPlan {
         // rule already declares exactly 90° a corner, so the classification is right for every
         // purpose this serves. The honest claim is "correct to within rounding of the 90°
         // boundary", not "sign-exact".
+        // **Every component is tested before any `Swift.max` can hide one** (`/codex-review`
+        // round 8). `Swift.max` is `y >= x ? y : x`, so it is *not* NaN-symmetric: `max(NaN, 0)`
+        // returns NaN, but `max(0, NaN)` returns **0**. A NaN in y beside a zero x delta therefore
+        // produced a perfectly finite scale of 0, passed the finiteness guard below, and fell into
+        // the zero-length branch answering "not a corner" — the exact answer this guard exists to
+        // prevent, reachable only through one of the two axes. Guarding the components directly
+        // makes the order irrelevant.
+        guard incoming.x.isFinite, incoming.y.isFinite,
+              outgoing.x.isFinite, outgoing.y.isFinite
+        else { return true }
+
         let incomingScale = Swift.max(abs(incoming.x), abs(incoming.y))
         let outgoingScale = Swift.max(abs(outgoing.x), abs(outgoing.y))
         // **Order matters here**: a non-finite scale must be judged *before* the zero-length
@@ -157,6 +168,10 @@ public extension StitchDrawPlan {
         // across a turn it cannot see, which is the one direction that costs silhouette. Breaking
         // costs segments and nothing else. Unreachable through the planner — `isJoinable` rejects
         // such coordinates long before — so this is about the public entry point.
+        // A delta can be non-finite even when both coordinates are, because the *subtraction*
+        // overflows: `−greatestFiniteMagnitude → +greatestFiniteMagnitude` is a pair of finite
+        // points whose difference is `+∞`. The scales are finite whenever the components are, so
+        // this now only catches that overflow case.
         guard incomingScale.isFinite, outgoingScale.isFinite else { return true }
 
         // Zero-length intervals leave here: no direction to compare, so no corner.
