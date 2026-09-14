@@ -1,13 +1,25 @@
 # US-310 — Coarsen the mid-gesture draw plan
 
-**Status**: **Implemented; device capture 1 of 4 taken and the corner fix confirmed on device
-2026-09-14. NOT done** — AC12 asks for the mid-gesture capture at **≥ 2 target values** on device
-and one has been taken, so hand-off captures 2 (the sweep), 3 (the 3 194 control) and 4
-(animating) are outstanding. What the one capture does establish is the headline: median
-**69.1 → 16.670 ms**, p99 **136.2 → 29.068**, i.e. one refresh period on real hardware, still FAIL
-on the tail alone — where ADR-030 claims nothing.** Not `Done`: the device session ([`docs/us-310-device-handoff.md`](../../us-310-device-handoff.md))
-owns ADR-029's bar, and PR [#44](https://github.com/stoneacher/catty-embroidery/pull/44) is
-handed over green for Sebastian to merge. **Review: `swift-code-reviewer` (5 Important, 7
+**Status**: **Done — 2026-09-14.** The device session ran to completion the same day: AC12's
+mid-gesture capture at **two** target values is taken, plus the animating capture and the 3 194
+control, all `60Hz` on an iPhone 17 Pro. **At the shipped target, under a sustained gesture
+drawing on 84 % of frames, median and p95 both sit at one refresh period** (`drawn=967/1152 med
+16.670 p95 16.670 p99 33.060 max 50.008 · 19.4 s`), against US-309's un-coarsened `69.1 / 118.8 /
+136.2 / 166.2`. The animating path reproduces US-309's row to the microsecond (`drawn=251`, worst
+16.702 against 16.703) and the sub-threshold control never leaves the floor. **It still reads FAIL
+on the tail alone, where ADR-030 claims nothing** — and the session sharpened why: doubling the
+target halves the stride and the tail does not move (p99 33.338 against 33.060, worst *identical*
+at 50.008 ms, three refresh periods in both), so on device as on the simulator the tail is not the
+coarse plan. **The session's own first finding was that the 2026-09-05 capture this story
+previously cited was mixed** — its `drawn=251` is the animating signature, matched exactly by
+today's animating capture — so the rung's headline now rests on a clean capture instead, where it
+lands *better* (p95 16.670 against the mixed capture's 24.089). **A second error of the same shape
+was made and corrected inside the session**: the target-2 000 capture's tail was first read as a
+regression, against that same contaminated baseline. **Both targets reach the floor, so the
+shipped 1 000 is conservative rather than tuned** — up to double the gesture fidelity appears to
+be free — but that is not a knee (both read the instrument's floor) and the constant is left
+unchanged for the author to rule on. PR [#44](https://github.com/stoneacher/catty-embroidery/pull/44)
+merged as `e44d427`. **Review: `swift-code-reviewer` (5 Important, 7
 suggestions) plus `/codex-review` rounds 1–9 — 24 findings, none rejected, severity Medium ×4 →
 Low → Medium ×3 → **Low**, closing on stop condition 1 (a comment-only triage). Codex's closing
 verdict: the corner rule is sound both on the planner's reachable domain and as its public
@@ -20,7 +32,7 @@ existing at all. Planned with
 answered **go**; the numbers are in "Premise" below. **The planning pass corrected nineteen
 things**, marked **planning correction** inline — including two in ADR-029's own rung-2 wording
 and one that made AC1 unexecutable as first written. **761 engine tests** (up from 736) and
-**200 app tests** (up from 191), SwiftLint `--strict` clean, five screenshots. ADR-030 pins the semantics; ADR-029 is
+**200 app tests** (up from 191), SwiftLint `--strict` clean, **nine screenshots** (five from implementation, four from the device session). ADR-030 pins the semantics; ADR-029 is
 corrected in place. **The implementation then refuted one of the story's own design decisions** —
 see "What the measurement changed" — and **review then refuted a claim made right here**: this
 line said the assertions were proved by ten mutations with one *equivalent* survivor. A second
@@ -405,12 +417,16 @@ trade it away unknowingly.
 12. **Device**: the 50 000 mid-gesture capture is re-taken and reported as
     median/p95/p99/worst over drawn frames, at ≥ 2 budget values. ADR-029's bar is quoted
     **unchanged** — US-309's AC8 forbids rewording a criterion in response to a measurement, and
-    nothing here rewords it. — **PARTIALLY MET, and this is what keeps the story open.** One
-    capture exists, at the shipped constants (2026-09-05): `n=1122 drawn=251 60Hz med 16.670
-    p95 24.089 p99 29.068 max 43.661@7.8s`, against ADR-029's 69.1 / 118.8 / 136.2 / 166.2. The
-    **≥ 2 values** half is not met — the four-point sweep was on the *simulator*, and the device
-    needs its own, since the two platforms differ by ~1.9× on this path. Hand-off captures 2, 3
-    and 4 remain.
+    nothing here rewords it. — **MET, 2026-09-14.** Two device values at 50 000 mid-gesture,
+    both `60Hz`, quantiles over drawn frames: **target 1 000 (shipped)** `drawn=967/1152 med
+    16.670 p95 16.670 p99 33.060 max 50.008@1.4s · 19.4 s` and **target 2 000** `drawn=754/1251
+    med 16.669 p95 16.670 p99 33.338 max 50.008@18.3s · 21.0 s`, against ADR-029's 69.1 / 118.8 /
+    136.2 / 166.2. The bar is quoted unchanged and both rows read **FAIL on the tail alone**.
+    **The 2026-09-05 capture previously cited here is superseded as mixed**: its `drawn=251` is
+    the animating draw signature, matched exactly by this session's animating capture, so its
+    median was computed mostly over animating frames. The clean capture supports the same claim
+    more strongly (p95 16.670 against 24.089). Hand-off captures 2, 3 and 4 are taken; see
+    ADR-030's device table and screenshots 09–12.
 13. The fidelity cost is stated: the coarse route may deviate from the true path by up to the
     largest excursion within k consecutive stitches, and the image changes at interaction start
     and at commit. Accepted, reviewed on a screenshot, not asserted. **Amended 2026-09-05**: that

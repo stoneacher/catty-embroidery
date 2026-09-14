@@ -1500,3 +1500,44 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
 - **Thirty-four mutations across the story, two survivors, both proven equivalent** rather than
   argued: the `>`-for-`>=` stride guard (the ceiling formula returns 1 at the boundary either way)
   and the unreachable `.suppressed` branch (a `fatalError` in it leaves the suite green).
+
+## 2026-09-14 (US-310, device session) — a contaminated baseline, found by a draw count
+
+- **The session's largest result was not a measurement, it was noticing that an earlier one was
+  invalid.** ADR-030's device confirmation rested on a capture with `drawn=251`. Today's *animating*
+  capture — a different scenario entirely — also read `drawn=251`. Identical draw counts across two
+  scenarios meant one of them was mislabelled, and the mid-gesture one was: its median had been
+  computed mostly over animating frames. ADR-030 had already written the doubt down ("`drawn=251`
+  of 1122 is the animating ratio rather than a sustained pinch") and shipped anyway. **A hedge in
+  prose is not a guard**; what closed it was a second capture whose only purpose was to be the
+  clean version, at `drawn=967` of 1152.
+- **The claim survived, which is why this is a correction and not a retraction.** On the clean
+  capture the shipped target reads `med 16.670 p95 16.670` — *better* than the contaminated row's
+  p95 of 24.089. A contaminated baseline can flatter or damn; here it had been quietly damning the
+  result it was cited to support.
+- **I then made the same error inside the session, one message later.** Reading the target-2 000
+  capture against that contaminated baseline, I reported its tail as a regression ("2 000 costs
+  tail"). Against the clean 1 000 the tails are the same — p99 33.060 against 33.338, worst
+  **identical at 50.008 ms**. Two uses of one bad number, ten minutes apart, the second *after*
+  I had flagged the first as suspect. **Distrusting a number is not the same as removing it from
+  circulation**, and the practical rule is to recompute every comparison that touched it rather
+  than to annotate it.
+- **Instrumentation counts are labels, and cheaper than the thing they label.** `drawn` cost
+  nothing to read and identified a scenario more reliably than the operator's memory of what they
+  had done. Worth carrying: when a capture's *scenario* is human-performed, record a machine-read
+  discriminator alongside the numbers, or the capture is only as trustworthy as the note attached
+  to it.
+- **The hand-off asked for something the app cannot do.** "Pinch *and* pan" is unexecutable —
+  simultaneous two-finger centroid is precisely what US-313 has not built (ADR-028 commits one
+  transform per gesture). Sebastian caught it in the running app; the protocol had been written
+  from the ADRs and was never checked against the shipped interaction. Corrected in place so the
+  A15 session does not repeat it.
+- **Delegation shape**: none. Build, install, launch, the constant edit for the sweep and the
+  revert were all driven from the command line here; the human half was the pinching, the phone,
+  and one correction of the protocol. The split worked — five captures in about ten minutes of
+  Sebastian's attention.
+- **Two toolchain notes worth the line.** A signing failure sent me to the wrong team ID because
+  the parenthetical in `Apple Development: … (358ALM88WP)` is a *certificate* identifier, not a
+  team; the real team came out of the on-disk provisioning profile. And `xcodebuild … | tail`
+  reports **`tail`'s** exit code, so a failed build exits 0 — the check has to grep for
+  `BUILD SUCCEEDED`, not test `$?`.
