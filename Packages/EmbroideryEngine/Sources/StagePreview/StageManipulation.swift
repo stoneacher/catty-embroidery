@@ -63,16 +63,16 @@ public struct StageManipulation: Equatable, Sendable {
     /// Cumulative scale since the pinch began, latched at whatever the pinch last reported.
     private var magnification: Double = 1
 
-    /// Where the pan recogniser's translation started, so a recogniser that begins away from
-    /// zero contributes nothing until it actually moves.
+    /// Cumulative centroid translation in view points, exactly as the pan recogniser reports it
+    /// — **threshold distance included, never subtracted** (ADR-028).
     ///
-    /// The shipped coordinator will zero the recogniser at `.began`, which is precisely why the
-    /// tracker does not rely on it having done so: this half is the tested one, and an origin the
-    /// untested half must remember is an invariant with nowhere to live.
-    private var panOrigin: ViewPoint = .zero
-
-    /// Cumulative centroid translation in view points, as the pan recogniser reports it,
-    /// measured from `panOrigin`.
+    /// US-313a briefly subtracted a captured origin here, so a recogniser beginning away from
+    /// zero would contribute nothing until it moved. `/codex-review` round 1 refuted it against
+    /// the ADR: US-307 measured that subtraction (a 101 pt drag committing 101 while showing 91),
+    /// **removed it entirely**, and pinned the reason — live and committed are then the same
+    /// number by construction rather than two pieces of code agreeing. With a pinch live it is
+    /// worse than cosmetic: dropping the threshold means the grabbed points stop tracking the
+    /// fingers, which is the whole purpose of this type.
     ///
     /// `UIPanGestureRecognizer.translation(in:)` is the translation of the **centroid** of its
     /// touches and stays continuous when a finger is added or removed, which is the single
@@ -102,6 +102,19 @@ public struct StageManipulation: Equatable, Sendable {
     /// Accumulating that difference into the pan keeps the stage exactly where it was while
     /// letting the *next* pinch scale about the fingers the user actually has down.
     private var panOffset: ViewPoint = .zero
+
+    /// The magnification range the transform will actually honour, as a ratio of the baseline.
+    ///
+    /// Set at `pinchBegan` and held for the manipulation, because the baseline cannot move while
+    /// fingers are down — that is ADR-030 §7's invariant, read from the other side.
+    private var limits: ClosedRange<Double> = unlimitedMagnification
+
+    /// Limits wide enough never to bite, for callers with no bounds to impose.
+    ///
+    /// Not `0 ... .infinity`: a zero or infinite magnification is refused outright rather than
+    /// clamped, so the range only has to be wide.
+    public static let unlimitedMagnification: ClosedRange<Double> =
+        StageTransform.minimumRepresentableScale ... Double.greatestFiniteMagnitude
 
     public init() {}
 
@@ -159,8 +172,20 @@ public struct StageManipulation: Equatable, Sendable {
     /// The first pinch is the same arithmetic with `m == 1`, where the offset term vanishes and
     /// this reduces to `centroid − translation` — one code path rather than a special case, so
     /// the ordinary route cannot rot while the rare one is exercised only by tests.
-    public mutating func pinchBegan(scale: Double, centroid: ViewPoint) {
+    /// - Parameter limits: what `StageTransform.pinched` will actually allow, as a ratio of the
+    ///   baseline — `StageInteraction.magnificationLimits(fitting:)` computes it. **Load-bearing
+    ///   for the rebase, not a safety net**: the compensation below is exact only when the factor
+    ///   this type holds is the factor the transform applies, and `pinched` clamps into
+    ///   `StageZoomBounds`. Rebasing on an unclamped request after a clamped pinch moves the
+    ///   frame (`/codex-review` round 1), and the bound is ordinary to reach — the floor is
+    ///   `min(fit.scale, 0.05)`, a few pinches down from a fitted design.
+    public mutating func pinchBegan(
+        scale: Double,
+        centroid: ViewPoint,
+        within limits: ClosedRange<Double>
+    ) {
         pinch = .active
+        self.limits = limits
 
         let previous = anchor ?? .zero
         let magnified = magnification
@@ -172,20 +197,46 @@ public struct StageManipulation: Equatable, Sendable {
             )
             // …and the pan term that makes the swap invisible. Derived by requiring
             // `m(x − aNew) + aNew + p + δ == m(x − aOld) + aOld + p` for every `x`.
-            panOffset = ViewPoint(
+            let offset = ViewPoint(
                 x: panOffset.x + (magnified - 1) * (current.x - previous.x),
                 y: panOffset.y + (magnified - 1) * (current.y - previous.y)
             )
-            anchor = current
+            // A rebase that cannot be represented is refused, leaving the previous anchor in
+            // place — the same rule `StageTransform.dragged(by:)` applies to an unrepresentable
+            // pan, and for the same reason: a non-finite anchor would poison every later frame.
+            if current.x.isFinite, current.y.isFinite, offset.x.isFinite, offset.y.isFinite {
+                panOffset = offset
+                anchor = current
+            }
         }
 
         magnificationBase = magnification
-        magnification = magnificationBase * scale
+        magnification = Self.magnified(magnificationBase, by: scale, within: limits)
+            ?? magnification
     }
 
     public mutating func pinchChanged(to scale: Double) {
         guard pinch.isActive else { return }
-        magnification = magnificationBase * scale
+        guard let magnified = Self.magnified(magnificationBase, by: scale, within: limits) else {
+            // A scale the recogniser should never send. **Ignored rather than stored**: latching
+            // zero or NaN would make every later pinch in this manipulation zero or NaN too, and
+            // the stage could not leave the floor until every finger lifted (`/codex-review`
+            // round 1).
+            return
+        }
+        magnification = magnified
+    }
+
+    /// `base × scale`, clamped into `limits`, or `nil` for an input no gesture can mean.
+    private static func magnified(
+        _ base: Double,
+        by scale: Double,
+        within limits: ClosedRange<Double>
+    ) -> Double? {
+        guard scale.isFinite, scale > 0 else { return nil }
+        let product = base * scale
+        guard product.isFinite, product > 0 else { return nil }
+        return Swift.min(Swift.max(product, limits.lowerBound), limits.upperBound)
     }
 
     public mutating func pinchEnded() {
@@ -199,16 +250,12 @@ public struct StageManipulation: Equatable, Sendable {
 
     public mutating func panBegan(at translation: ViewPoint) {
         pan = .active
-        panOrigin = translation
-        self.translation = .zero
+        self.translation = translation
     }
 
     public mutating func panChanged(to translation: ViewPoint) {
         guard pan.isActive else { return }
-        self.translation = ViewPoint(
-            x: translation.x - panOrigin.x,
-            y: translation.y - panOrigin.y
-        )
+        self.translation = translation
     }
 
     public mutating func panEnded() {
@@ -225,7 +272,23 @@ public struct StageManipulation: Equatable, Sendable {
     /// would write `StageInteraction.settled` twice for one manipulation, and so re-bake a
     /// 50 000-stitch prefix twice back to back at finger-lift — precisely where ADR-030 puts the
     /// residual tail.
-    public mutating func finish(in viewport: ViewSize) -> StageGesture? {
+    /// - Parameter touchesRemain: whether the user still has a finger on the stage. **UIKit
+    ///   starts a pan only after enough movement**, so two fingers can land, pinch, and one lift
+    ///   with the pan still `.possible` — and `Channel.absent` cannot tell a recogniser that
+    ///   never participated from one that still might. Committing there ends the manipulation
+    ///   early: the same touch then commits again when the remaining finger drags, and between
+    ///   the two `gesture` is `nil`, so the raster can rebuild with a finger on the glass
+    ///   (ADR-030 §7). Found by `/codex-review` round 1.
+    ///
+    ///   Defaulted to `false` deliberately. A caller that forgets it commits early — today's
+    ///   behaviour — where a caller that forgot a mandatory `true` would leave the tracker live
+    ///   forever, coarse forever, never re-baking. Of the two ways to be wrong, this is the one
+    ///   that recovers.
+    public mutating func finish(
+        in viewport: ViewSize,
+        touchesRemain: Bool = false
+    ) -> StageGesture? {
+        guard !touchesRemain else { return nil }
         guard isLive, !hasActiveChannel, let gesture = gesture(in: viewport) else { return nil }
         self = StageManipulation()
         return gesture

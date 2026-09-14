@@ -137,8 +137,13 @@ struct StagePreviewTargetIsolationTests {
     /// that shape rather than describing it.
     @Test("the manipulation boundary is Double-based package types, not UIKit")
     func theManipulationBoundaryIsPackageTypes() {
-        let pinchBegan: (inout StageManipulation, Double, ViewPoint) -> Void = {
-            $0.pinchBegan(scale: $1, centroid: $2)
+        // The limits are bound too: they are a `ClosedRange<Double>`, and a `CGFloat` range
+        // reaching this signature is exactly the leak this suite exists to stop compiling.
+        let pinchBegan: (inout StageManipulation, Double, ViewPoint, ClosedRange<Double>) -> Void = {
+            $0.pinchBegan(scale: $1, centroid: $2, within: $3)
+        }
+        let limits: (StageInteraction) -> (StageTransform) -> ClosedRange<Double> = { subject in
+            { subject.magnificationLimits(fitting: $0) }
         }
         let pinchChanged: (inout StageManipulation, Double) -> Void = { $0.pinchChanged(to: $1) }
         let pinchEnded: (inout StageManipulation) -> Void = { $0.pinchEnded() }
@@ -162,7 +167,7 @@ struct StagePreviewTargetIsolationTests {
         var manipulation = StageManipulation()
 
         panBegan(&manipulation, .zero)
-        pinchBegan(&manipulation, 1, viewport.center)
+        pinchBegan(&manipulation, 1, viewport.center, StageManipulation.unlimitedMagnification)
         pinchChanged(&manipulation, 2)
         panChanged(&manipulation, ViewPoint(x: 10, y: 10))
         #expect(read(manipulation)(viewport)?.magnification == 2)
@@ -176,6 +181,7 @@ struct StagePreviewTargetIsolationTests {
         #expect(read(manipulation)(viewport) == nil)
 
         var interaction = StageInteraction()
+        #expect(limits(interaction)(fit) == interaction.magnificationLimits(fitting: fit))
         pan(&interaction, ViewPoint(x: -40, y: 0), fit)
         #expect(!interaction.isFollowingFit)
         #expect(toggle(&interaction, viewport.center, fit) != nil)

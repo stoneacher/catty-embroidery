@@ -12,6 +12,8 @@ import Testing
 struct StageInteractionTests {
     private static let viewport = ViewSize(width: 390, height: 500)
 
+    private static let free = StageManipulation.unlimitedMagnification
+
     private static var fit: StageTransform {
         StageTransform.fitting(StageGeometry.box, in: viewport)
     }
@@ -183,7 +185,7 @@ struct StageInteractionTests {
 
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center)
+        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center, within: Self.free)
 
         var bakes: [StageTransform] = []
         var frames: [StageTransform] = []

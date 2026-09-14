@@ -41,7 +41,7 @@ struct StageManipulationLifecycleTests {
     func endingOneChannelWhileTheOtherIsLiveProducesNoCommitValue() {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center)
+        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center, within: Self.free)
         manipulation.panChanged(to: ViewPoint(x: 30, y: 10))
         manipulation.pinchChanged(to: 1.5)
 
@@ -59,7 +59,7 @@ struct StageManipulationLifecycleTests {
     func aManipulationYieldsExactlyOneCommitValue() {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center)
+        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center, within: Self.free)
         manipulation.panChanged(to: ViewPoint(x: 30, y: 10))
         manipulation.pinchChanged(to: 1.5)
 
@@ -77,7 +77,7 @@ struct StageManipulationLifecycleTests {
     func theCommittedValueIsTheLastLiveValue() throws {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 120, y: 260))
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 120, y: 260), within: Self.free)
         manipulation.panChanged(to: ViewPoint(x: -14, y: 62))
         manipulation.pinchChanged(to: 2.25)
 
@@ -95,7 +95,7 @@ struct StageManipulationLifecycleTests {
     func aLatchedMagnificationSurvivesThePinchEnding() throws {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300))
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 200, y: 300), within: Self.free)
         manipulation.pinchChanged(to: 2)
         manipulation.panChanged(to: ViewPoint(x: 40, y: 15))
 
@@ -204,7 +204,7 @@ struct StageManipulationLifecycleTests {
     func aCancelledManipulationCommitsNothingAndClearsLiveness() {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center)
+        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center, within: Self.free)
         manipulation.panChanged(to: ViewPoint(x: 30, y: 10))
         manipulation.pinchChanged(to: 1.5)
 
@@ -236,7 +236,7 @@ struct StageManipulationLifecycleTests {
     func presenceNotMagnitudeDecidesLiveness() throws {
         var manipulation = StageManipulation()
         manipulation.panBegan(at: .zero)
-        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center)
+        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center, within: Self.free)
         manipulation.pinchChanged(to: 2)
         manipulation.panChanged(to: ViewPoint(x: 40, y: 40))
 
@@ -253,7 +253,7 @@ struct StageManipulationLifecycleTests {
     @Test("a zero viewport anchors at the centre")
     func aZeroViewportAnchorsAtTheCentre() throws {
         var manipulation = StageManipulation()
-        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 120, y: 260))
+        manipulation.pinchBegan(scale: 1, centroid: ViewPoint(x: 120, y: 260), within: Self.free)
         manipulation.pinchChanged(to: 2)
 
         let gesture = try #require(manipulation.gesture(in: .zero))
