@@ -1649,3 +1649,57 @@ The headless half of US-313 is green: 785 engine tests, up from 761.
 - **Delegation shape**: none for the implementation. Story tests are not delegated here by rule,
   and the green phase was small enough that specifying it for `swift-engineer` would have cost
   more than writing it. The two planning agents earned their keep before the code existed.
+
+## 2026-09-14 (US-313a review) — the delegated reviewer failed twice, and the review found a real defect anyway
+
+`swift-code-reviewer` was launched twice in an isolated worktree and produced **nothing both
+times**: the first died on a session rate limit having just read the diff, the second stalled for
+600 s with no output after the same first step. The review was then done in the main context.
+
+- **Two agent failures in a row is new, and the fallback cost less than the second attempt.**
+  Worth recording for the delegation ledger: the reviewer's value is a *different reader*, and
+  that value is real (US-306's Critical, US-310's interval-set finding), but it is not worth a
+  third launch when the diff is small and freshly written. The in-context review found the
+  defect below in about ten minutes.
+- **The defect: a manipulation can contain more than one pinch, and the tracker assumed it could
+  not.** Lift one finger and put it back while still dragging with the other — the pan continues
+  throughout at `maximumNumberOfTouches = 2`, so this is one manipulation with two pinches. A
+  recogniser's `scale` is cumulative from *its own* begin and a coordinator resets it to 1 at
+  `.began`, so `pinchBegan` took 1 as the magnification and **the stage snapped from 3× back to
+  unzoomed the instant the second finger landed** (reproduced: scale 2.148 → 0.716). Re-anchoring
+  on the new centroid separately moved the frame by `(1 − m)(aNew − aOld)`.
+- **It was found by asking the question I had written into the review brief**, not by reading the
+  code top to bottom. The brief listed "the anchor across a second pinch" as area 2 because the
+  architect's plan had flagged per-channel bookkeeping as the honest cost of the approach. The
+  plan predicted the *area* correctly and the implementation still got it wrong — so the value of
+  the planning pass was not that it prevented the bug but that it said where to look for it.
+- **The fix is the rebase ADR-028 said the single commit had deleted.** `pinchBegan` now
+  re-derives the anchor as the baseline-frame point under the fingers, absorbs the difference into
+  a `panOffset` so nothing moves, and carries the accumulated zoom in a `magnificationBase`. The
+  first pinch is the same arithmetic at `m == 1`, so there is one code path — the rare case
+  exercises the ordinary one rather than sitting beside it.
+- **A second finding of the same shape**: `panBegan(at:)` took its argument as the pan's *value*
+  rather than its *origin*, so a recogniser beginning away from zero would jump. The shipped
+  coordinator will zero it — which is exactly the argument for not relying on that. **The tracker
+  is the tested half; an invariant the untested half must remember has nowhere to live.**
+- **My own mistake, and the test that caught it is the interesting part.** `git add -A` on the
+  review-fix commit swept up local Xcode changes I had identified *in the same session* as
+  needing to stay out of the repo: a personal `DEVELOPMENT_TEAM`, a bundle identifier changed
+  from `org.catrobat.embroiderydesigner`, and an `Info.plist` Xcode had rewritten, silently
+  deleting the 40-line comment carrying ADR-026's exported-vs-imported reasoning. CI went red on
+  `UTTypeDeclarationTests/hostAppCarriesTheDeclaration` — **US-308 wrote that test for exactly
+  this coupling**, because the exported UTType identifier is namespaced to the bundle id. A
+  documentation-shaped invariant was caught by an executable one.
+- **The lesson is narrower than "don't use `git add -A`".** I had *already* diagnosed those files
+  and said in the same session that they must not be committed, then used a whole-tree stage four
+  tool calls later. Naming a hazard is not the same as arming anything against it. `git add`
+  with explicit paths, or `git status` read before every commit, is the cheap guard — the
+  expensive one was a CI round trip.
+- **Local SwiftLint was clean and CI's was not**, for the dullest possible reason: I ran the lint
+  before adding the last two tests, and the file crossed the 400-line limit afterwards. The
+  file then split along the seam its `// MARK:`s already had (geometry vs. the two-channel
+  lifecycle), the same forcing function that split `StitchDrawPlanCoarseningRuleTests`. **A
+  verification result is only as current as the edit it was run against**, which is the same
+  lesson the contaminated-baseline entry of 2026-09-14 records for measurements, arriving here
+  for tests.
+- **789 engine tests**, up from 761. Ten mutants across the session, no survivors.
