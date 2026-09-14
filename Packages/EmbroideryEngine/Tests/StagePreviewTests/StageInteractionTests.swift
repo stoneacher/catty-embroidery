@@ -164,4 +164,112 @@ struct StageInteractionTests {
 
         #expect(interaction == before)
     }
+
+    // MARK: - What a manipulation does to the bake key (US-313a)
+
+    /// **ADR-030 §7's inherited invariant, observed rather than restated.** US-310's rung works
+    /// because `StageInteraction.settled` is not written while fingers are down: the bake key
+    /// holds still, so the settled prefix is rasterised once per manipulation and every frame in
+    /// between takes the coarse plan. A continuous commit would move the key per frame and
+    /// re-rasterise 50 000 stitches every frame — worse than before US-310 existed.
+    ///
+    /// Driven through the real tracker rather than through hand-built `StageGesture`s, because
+    /// what is being pinned is that *this input path* cannot move the key.
+    @Test("the bake transform is unchanged for every frame of a manipulation")
+    func theBakeTransformIsUnchangedForEveryFrameOfAManipulation() throws {
+        var interaction = StageInteraction()
+        interaction.commit(Self.pinch(1.4), fitting: Self.fit, in: Self.viewport)
+        let committed = interaction.baseline(fitting: Self.fit)
+
+        var manipulation = StageManipulation()
+        manipulation.panBegan(at: .zero)
+        manipulation.pinchBegan(scale: 1, centroid: Self.viewport.center)
+
+        var bakes: [StageTransform] = []
+        var frames: [StageTransform] = []
+        for step in 1 ... 8 {
+            manipulation.panChanged(to: ViewPoint(x: Double(step) * 7, y: Double(step) * -3))
+            manipulation.pinchChanged(to: 1 + Double(step) / 10)
+            let gesture = try #require(manipulation.gesture(in: Self.viewport))
+            let rendering = interaction.rendering(
+                gesture: gesture, fitting: Self.fit, in: Self.viewport
+            )
+            bakes.append(rendering.bake)
+            frames.append(rendering.current)
+            #expect(!rendering.canUseRaster)
+        }
+
+        #expect(bakes.allSatisfy { $0 == committed })
+        // The frame moved on every one of those steps, so the key holding still is a property of
+        // the design and not of a manipulation that happened to do nothing.
+        #expect(Set(frames).count == 8)
+
+        manipulation.pinchEnded()
+        manipulation.panEnded()
+        // Bound before `#require`: the macro expands its argument into a closure, and `finish`
+        // is `mutating`.
+        let finished = manipulation.finish(in: Self.viewport)
+        try interaction.commit(#require(finished), fitting: Self.fit, in: Self.viewport)
+
+        #expect(interaction.rendering(gesture: nil, fitting: Self.fit, in: Self.viewport).bake
+            != committed)
+    }
+
+    /// **Fingers down, nothing moved: draw the cached raster.**
+    ///
+    /// `rendering` used to go `.live` the instant a gesture existed, so the image degraded at
+    /// touch-down — a fidelity pop on a *stationary* frame, which is the most visible kind. It is
+    /// safe to keep the settled path here for the reason the invariant exists: the bake key is
+    /// still the committed transform, so this frame composites a raster that is already correct,
+    /// and nothing is re-baked. The pop moves to first movement, where motion masks it.
+    ///
+    /// `swift-architect` proposed asserting `canUseRaster == false` for *every* frame of a
+    /// manipulation, which would forbid this; `swift-ui-design` proposed the gate. The
+    /// invariant that actually matters is the one above — the key does not move — and this test
+    /// and the previous one pin it together.
+    @Test("an identity gesture renders from the settled path and leaves the bake key alone")
+    func anIdentityGestureRendersFromTheSettledPath() throws {
+        var interaction = StageInteraction()
+        interaction.commit(Self.pinch(1.4), fitting: Self.fit, in: Self.viewport)
+        let committed = interaction.baseline(fitting: Self.fit)
+
+        var manipulation = StageManipulation()
+        manipulation.panBegan(at: .zero)
+        let resting = try #require(manipulation.gesture(in: Self.viewport))
+        let rendering = interaction.rendering(
+            gesture: resting, fitting: Self.fit, in: Self.viewport
+        )
+
+        #expect(resting.isIdentity)
+        #expect(rendering == .settled(committed))
+        #expect(rendering.canUseRaster)
+    }
+
+    /// The consequence at the scale the rung was built for: a moved frame takes the coarse plan,
+    /// a resting one does not pay for coarseness it does not need.
+    @Test("a moved frame draws the coarse plan and a resting frame draws the live one")
+    func aMovedFrameDrawsTheCoarsePlan() throws {
+        let list = displayList(
+            (0 ..< 50001).map { previewStitch(Double($0) * 10, 0, PreviewColor.red) }
+        )
+        var interaction = StageInteraction()
+        interaction.commit(Self.pinch(1.2), fitting: Self.fit, in: Self.viewport)
+
+        var manipulation = StageManipulation()
+        manipulation.panBegan(at: .zero)
+        let resting = try #require(manipulation.gesture(in: Self.viewport))
+        #expect(StitchDrawPlan.forFrame(
+            of: list,
+            at: interaction.rendering(gesture: resting, fitting: Self.fit, in: Self.viewport),
+            compositingRaster: true
+        ) == StitchDrawPlan.live(of: list))
+
+        manipulation.panChanged(to: ViewPoint(x: 12, y: 4))
+        let moved = try #require(manipulation.gesture(in: Self.viewport))
+        #expect(StitchDrawPlan.forFrame(
+            of: list,
+            at: interaction.rendering(gesture: moved, fitting: Self.fit, in: Self.viewport),
+            compositingRaster: true
+        ) == StitchDrawPlan.coarse(of: list))
+    }
 }
