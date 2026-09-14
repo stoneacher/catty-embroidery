@@ -1,7 +1,11 @@
 # US-310 — Coarsen the mid-gesture draw plan
 
-**Status**: **Implemented 2026-09-03, both review layers complete, awaiting merge and the device
-capture.** Not `Done`: the device session ([`docs/us-310-device-handoff.md`](../../us-310-device-handoff.md))
+**Status**: **Implemented; device capture 1 of 4 taken and the corner fix confirmed on device
+2026-09-14. NOT done** — AC12 asks for the mid-gesture capture at **≥ 2 target values** on device
+and one has been taken, so hand-off captures 2 (the sweep), 3 (the 3 194 control) and 4
+(animating) are outstanding. What the one capture does establish is the headline: median
+**69.1 → 16.670 ms**, p99 **136.2 → 29.068**, i.e. one refresh period on real hardware, still FAIL
+on the tail alone — where ADR-030 claims nothing.** Not `Done`: the device session ([`docs/us-310-device-handoff.md`](../../us-310-device-handoff.md))
 owns ADR-029's bar, and PR [#44](https://github.com/stoneacher/catty-embroidery/pull/44) is
 handed over green for Sebastian to merge. **Review: `swift-code-reviewer` (5 Important, 7
 suggestions) plus `/codex-review` rounds 1–5 — 15 findings, none rejected, severity Medium →
@@ -395,7 +399,12 @@ trade it away unknowingly.
 12. **Device**: the 50 000 mid-gesture capture is re-taken and reported as
     median/p95/p99/worst over drawn frames, at ≥ 2 budget values. ADR-029's bar is quoted
     **unchanged** — US-309's AC8 forbids rewording a criterion in response to a measurement, and
-    nothing here rewords it.
+    nothing here rewords it. — **PARTIALLY MET, and this is what keeps the story open.** One
+    capture exists, at the shipped constants (2026-09-05): `n=1122 drawn=251 60Hz med 16.670
+    p95 24.089 p99 29.068 max 43.661@7.8s`, against ADR-029's 69.1 / 118.8 / 136.2 / 166.2. The
+    **≥ 2 values** half is not met — the four-point sweep was on the *simulator*, and the device
+    needs its own, since the two platforms differ by ~1.9× on this path. Hand-off captures 2, 3
+    and 4 remain.
 13. The fidelity cost is stated: the coarse route may deviate from the true path by up to the
     largest excursion within k consecutive stitches, and the image changes at interaction start
     and at commit. Accepted, reviewed on a screenshot, not asserted. **Amended 2026-09-05**: that

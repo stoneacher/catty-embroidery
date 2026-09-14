@@ -1411,3 +1411,25 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
   `UTTypeDeclarationTests` correctly rejects. CI is unaffected. Worth knowing before someone
   "fixes" that test: it is doing its job, and Xcode also silently stripped every comment from
   `Info.plist` when the signing settings were edited.
+
+## 2026-09-14 (US-310) — the corner fix confirmed on device, and a review layer that did not run
+
+- **Sebastian rebuilt with the corner rule and confirmed it on his iPhone**: "looks good on my
+  iPhone". That closes the loop opened on 2026-09-05 — the artifact was found on a device, fixed
+  against a rule and four mutants, and verified on the same device. Worth recording as the shape
+  that worked: **a user-visible defect needs a user-visible confirmation**, not a green suite.
+- **The corner fix shipped with one review layer, not two, and that is a gap rather than a
+  judgement call.** The `/codex-review` loop had already closed at round 5 (Low, stop condition 1)
+  when the device finding arrived; the corner rule then changed the walker's control flow *after*
+  that verdict. A round 6 was started and killed before producing output, so what stands behind
+  that code is my own mutation round (four mutants, caught, green baseline in the same pass) plus
+  the device. Every earlier round on this branch found something in the *previous* round's fix,
+  which is precisely the pattern that argues against skipping one.
+- **`/finish` caught that the story was about to be called done when it is not.** AC12 asks for the
+  device capture at **≥ 2 target values**; exactly one exists. The four-point sweep everyone
+  remembers was on the *simulator*, and the two platforms differ by ~1.9× on this path, so it does
+  not transfer. Hand-off captures 2, 3 and 4 are still open. **The checklist's own proof step was
+  vacuous here** — `grep '^- \[ \]'` prints nothing because this story uses a *numbered* AC list
+  rather than checkboxes, so the clean result proved nothing and the criteria had to be read one
+  by one. A story-format assumption baked into a verification step is worth knowing about: the
+  check passes hardest when it is least applicable.
