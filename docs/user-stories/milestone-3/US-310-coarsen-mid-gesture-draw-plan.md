@@ -8,8 +8,10 @@ and one has been taken, so hand-off captures 2 (the sweep), 3 (the 3 194 control
 on the tail alone — where ADR-030 claims nothing.** Not `Done`: the device session ([`docs/us-310-device-handoff.md`](../../us-310-device-handoff.md))
 owns ADR-029's bar, and PR [#44](https://github.com/stoneacher/catty-embroidery/pull/44) is
 handed over green for Sebastian to merge. **Review: `swift-code-reviewer` (5 Important, 7
-suggestions) plus `/codex-review` rounds 1–8 — 21 findings, none rejected, severity Medium ×4 →
-Low → Medium ×3.** The loop closed at round 5 and was **reopened** when the device finding
+suggestions) plus `/codex-review` rounds 1–9 — 24 findings, none rejected, severity Medium ×4 →
+Low → Medium ×3 → **Low**, closing on stop condition 1 (a comment-only triage). Codex's closing
+verdict: the corner rule is sound both on the planner's reachable domain and as its public
+contract states, with no remaining executable defect in the diff.** The loop closed at round 5 and was **reopened** when the device finding
 (2026-09-05) landed substantive new code after that verdict; rounds 6–8 review the corner rule.
 **Rounds 2, 3, 4, 7 and 8 each found a hole in the *previous round's fix* rather than in the
 original code** — the branch's defining pattern, and the argument for the verification round
@@ -26,7 +28,7 @@ survivor existed and was **not** equivalent. `swift-code-reviewer` found that de
 mid-run span close leaves all 751 tests green, which on screen is up to `stride − 1` intervals of
 missing thread before **every** jump and **every** colour change — the exact property AC3 claims
 and ADR-030 pins. It is now covered by an interval-set-equality test, and that mutant is caught
-by 16 tests. **Thirty-two mutations run in total.** Two survivors, both provably equivalent: the
+by 16 tests. **Thirty-four mutations run in total.** Two survivors, both provably equivalent: the
 `>`-for-`>=` stride guard (the ceiling formula returns 1 at the boundary either way) and the
 `.suppressed` branch inside `strokes(for:)`, which is unreachable because a colour boundary is
 owned by neither run — verified by putting a `fatalError` in it and watching the suite stay
