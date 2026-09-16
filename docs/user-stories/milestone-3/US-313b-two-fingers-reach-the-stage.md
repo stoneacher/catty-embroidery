@@ -1,10 +1,39 @@
 # US-313b — Two fingers reach the stage: the recogniser pair, the a11y gap, the tail discriminator
 
-**Status**: **Planned — 2026-09-14.** The second half of backlog entry US-313, split at planning
-time. Everything here either needs a simulator or needs a human with two fingers on a device —
-which is the whole reason for the split: US-313a's red phase can be shown for all of its
-criteria without either. Planned with `swift-architect` and `swift-ui-design`. Sebastian took
-four scope decisions, recorded in [US-313a](US-313a-manipulation-as-a-package-value.md).
+**Status**: **Implemented 2026-09-16 — the device session is outstanding, and with it AC8, AC9's
+reachability half, AC12, AC13 and correction 3.** 225 app tests (up from 200), 804 engine tests,
+SwiftLint `--strict` clean, CI green on all three checks. Five simulator captures including a
+mid-drag frame. Planned with `swift-architect` and `swift-ui-design`; Sebastian took three
+further scope decisions on 2026-09-16 (below), alongside the four recorded in
+[US-313a](US-313a-manipulation-as-a-package-value.md).
+
+**The story's own design shipped a defect, and the planning pass found it.** Its three lifecycle
+rules are individually right and jointly incomplete: with the pan still `.possible` — two fingers
+pinching without passing its slop — the pinch's `.ended` correctly declines to commit while
+touches remain, and then the **last finger lifts with no recogniser left to send an action**.
+Nothing asks again, the manipulation stays live forever, `canUseRaster` stays false and the design
+stays coarse for the rest of the session: rule 3's catastrophe reached through rule 2's door. A
+touch-counting view supplies the missing terminal signal.
+
+**Three of the eleven test items were not buildable as written**, and the red phase refuted a
+fourth premise by executing it. AC3 asks a question UIKit has no getter for; AC9's is the
+accessibility-tree walk US-307 deleted for CI flakiness; the commit-counter test asserted on
+process-wide state from a parallel suite. And the proposed stub recogniser with a settable
+`state` **compiles and is silently ignored** — measured on a booted iPhone 17 — so the stubs
+override instead. Four tests the story did not have were added; the ADR records why.
+
+**Scope decisions (Sebastian, 2026-09-16)**
+
+1. **The directional pan actions are camera-relative** — "Pan Left" moves the viewport left, so
+   the design's left-hand side comes into view and the design itself slides right. A named
+   action is a word, and every spoken or typed direction uses the camera convention.
+2. **Both VoiceOver hints are rewritten** (~75 Crowdin re-translations each). Neither mentioned
+   panning, and the *running* hint named no recovery at all — and the pan is deliberately
+   unclamped, so a user who pushes a running design off the canvas had nothing telling them the
+   way back.
+3. **ADR-031 and ADR-028's five corrections land here.** US-313a specified both and wrote
+   neither, while `docs/ROADMAP.md` already claimed "ADR-031 pins it"; journalled as a
+   close-out miss.
 
 **Epic**: E4 Stage & preview | **Estimate**: ~4 h | **Depends on**: **US-313a** (the tracker it
 feeds), US-310 (the instrument and the protocol)

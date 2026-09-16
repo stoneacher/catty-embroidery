@@ -1803,3 +1803,50 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   encapsulation win and move the read-only pieces instead (`Phase`, `magnificationLimits`, the
   `magnification` accessor). A mechanical rule and a semantic invariant disagreeing is a good
   moment to check which one is load-bearing.
+
+## 2026-09-16 — US-313b: two planning agents, an executed premise, and a defect in the story's own design
+
+- **The two planning agents ran concurrently and split the story cleanly**, which is the first time
+  that pairing has been unambiguously worth it. `swift-architect` took the recogniser pair, the
+  testability seam and the corrected test plan; `swift-ui-design` took the accessibility half, the
+  catalog strings and the capture protocol. They overlapped nowhere and each found things the other
+  did not: the architect found the missing terminal signal, the designer found that AC10's memo key
+  does not determine its own output. Total cost ~307k subagent tokens for ~16 minutes of wall time,
+  against a story whose own design had been written a fortnight earlier by the same two agents.
+- **The architect executed a premise instead of reasoning about it, and refuted the plan.** The
+  story's test item 4 proposed stub recognisers with a settable `state` via
+  `import UIKit.UIGestureRecognizerSubclass`, flagged as "to verify at the red phase, not to take
+  from the plan". Verified on a booted simulator: it compiles, `state` *is* assignable, and the
+  assignment is **silently swallowed** — no action ever dispatches. A stub built that way would have
+  produced tests that were green because the coordinator took no branch at all. Overriding the
+  members works. This is ADR-027's close-out lesson holding a second time, and it is the strongest
+  argument yet for the flag-the-premise habit: the story flagged it, so the plan was cheap to fix.
+- **The story's own design shipped a defect, and it was found by reading rather than by testing.**
+  Its three lifecycle rules are individually right and jointly incomplete: when the pan never leaves
+  `.possible`, the last finger lifting runs no action method at all, so nothing asks for the commit
+  and the stage stays live for the session. Worth noting *how* it was found — the architect was
+  asked to work out "precisely how `touchesRemain` is computed, including the case where the pan is
+  still `.possible`", and the answer to that question is where the hole was. A specific question
+  about a named edge case beat a general request for review.
+- **Three of eleven test items were not buildable as written.** AC3 asks about `require(toFail:)`,
+  which UIKit exposes no getter for; AC9 is the accessibility-tree walk US-307 deleted after it
+  passed locally and failed unreproducibly on CI — the story cites that deletion in AC7 and then
+  asks for the same technique in item 8; and the commit-counter test asserted on process-wide state
+  from a suite that runs in parallel with the one driving commits. **Sixth consecutive story** where
+  the planning-time buildability check paid for itself.
+- **The `[red]` commit was skipped for the first three slices and taken for the fourth**, which is
+  worth recording as a miss rather than a policy. The package and accessibility slices were proven
+  red in-session — the failures are in the transcript — but committed green, so CI never saw their
+  red baseline. Only the catcher's fifteen tests got a real `[red]` commit (CI run 35140849034,
+  failing as designed). The rule is worth its cost precisely on the small slices, where "it was
+  obviously red" is easiest to believe and cheapest to be wrong about.
+- **A scripted double tap landed on the simulator, and was verified by reading the accessibility
+  value rather than by eye.** The MCP `batch` tool issues two taps inside the double-tap interval,
+  which the story assumed might be impossible; the stage then reported `Zoom 200 %`. A screenshot
+  cannot distinguish "the toggle fired" from "the tap missed", and the spoken value can.
+- **US-313a closed with two documents it had specified and not written** — ADR-031 and ADR-028's
+  five corrections — while `docs/ROADMAP.md` already said "ADR-031 pins it". Nothing caught it: the
+  story's own "ADR consequence" section is prose, and `/finish` checks that the journal and the
+  status line exist rather than that every artefact a story promised was produced. The closing
+  checklist should compare a story's ADR-consequence section against `DECISIONS.md` before the
+  status line is written.
