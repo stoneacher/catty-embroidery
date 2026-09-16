@@ -1850,3 +1850,37 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   status line exist rather than that every artefact a story promised was produced. The closing
   checklist should compare a story's ADR-consequence section against `DECISIONS.md` before the
   status line is written.
+
+## 2026-09-16 — US-313b: the two review layers found different things, and the cheap one found the worst
+
+- **The in-loop `swift-code-reviewer` and `/codex-review` overlapped on almost nothing**, which is
+  the clearest evidence yet for running both. The in-loop pass found a **critical** defect of
+  *state* — a system cancel left the coordinator's suppression flag set, swallowing the entire next
+  touch sequence — plus four surviving mutations where the coordinator's inputs were replaceable by
+  constants. Codex found a **High** defect of *platform default*: `UIView.isMultipleTouchEnabled`
+  is `false` unless you set it, so the touch-counting view was seeing one finger while its
+  recognisers saw two. Neither found the other's. The in-loop pass walked every delivery order and
+  took the count as given; Codex asked where the count comes from.
+- **Both defects had the same shape and neither test suite could see them**, for the same reason:
+  the tests call `touchesArrived(2)` directly and the seam was reached only by the test, not by
+  UIKit. The lesson generalises past this story — **a test seam that production does not use is not
+  a seam, it is a second implementation**. The cancel path is now the production method minus the
+  `UITouch` no test can construct, and the multi-touch flag has its own assertion.
+- **Nine of Codex's eight findings were about tests rather than code** (the eighth was the
+  multi-touch defect). That ratio is worth recording: on a branch whose *behaviour* two reviewers
+  agreed was correct, almost every finding was "this assertion cannot fail". The repo has now found
+  this class in seven consecutive stories, and the standing question — "what production line could
+  I delete while this stays green?" — is doing more work than any other review prompt.
+- **One fix was attempted, measured, and abandoned rather than shipped.** Codex's finding 3 (a
+  no-op `updateUIView` survives) is valid, and the obvious test — re-render the host, assert the
+  snapshot followed — cannot be made deterministic here: SwiftUI *schedules* a representable's
+  update, and forced layout, a bounded runloop spin and a key window all failed to drive it. The
+  resulting test passed in isolation and failed inside the suite, which is exactly the
+  hosted-accessibility-tree flake US-307 deleted. It is recorded as a stated gap instead. **A
+  known blind spot beats a test that fails for reasons unrelated to the code.**
+- **A reviewer's mutation was itself refuted by running it.** The in-loop pass demonstrated the
+  `updateUIView` gap by adding `install(on:)` there and watching the suite stay green; re-running
+  that mutation against the rewritten test *also* leaves it green, because re-adding a recogniser
+  already attached to the same view is a no-op in UIKit. The finding (the old test never called
+  `updateUIView`) was right; the mutation used to demonstrate it was benign. Worth the habit: when
+  a review hands you a mutation, run it — both to confirm the gap and to learn what the gap is.
