@@ -195,7 +195,7 @@ struct StageManipulationWiringTests {
 
         // **Asserted on the model, not on the rendered frame.** The frame a double tap produces
         // is the *interpolated* one — the toggle animates, so the first frame after the tap is
-        // still at the fit, and an assertion on it measures the animation\'s first step rather
+        // still at the fit, and an assertion on it measures the animation's first step rather
         // than its destination. `baseline(fitting:settlingAt: 1)` is where the toggle is going.
         #expect(model.interaction.isSettling, "the double tap did not start an animation")
         let destination = model.interaction.baseline(fitting: fitted, settlingAt: 1)

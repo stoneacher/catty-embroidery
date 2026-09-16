@@ -63,8 +63,7 @@ final class StageTouchTrackingView: UIView {
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesCancelled(touches, with: event)
-        activeTouchCount = max(0, activeTouchCount - touches.count)
-        touchesCancelledByTheSystem()
+        touchesCancelledByTheSystem(count: touches.count)
     }
 
     func touchesArrived(_ count: Int) {
@@ -78,9 +77,28 @@ final class StageTouchTrackingView: UIView {
     }
 
     /// The system took the touches away — an incoming call, a competing recogniser, the view
-    /// going away mid-gesture. Routed separately from the count so a cancel can never be
-    /// mistaken for a clean end.
-    func touchesCancelledByTheSystem() {
+    /// going away mid-gesture.
+    ///
+    /// **The cancellation and the count change are both reported, in that order, and the order
+    /// is the fix for a defect this file shipped.** The first version decremented the count
+    /// silently and then reported only the cancel, so on the ordinary path — the system taking
+    /// *every* touch — the count reached zero with nothing observing it. The coordinator sets
+    /// its suppression flag on a cancel and clears it only when the count reaches zero, so the
+    /// flag stayed set and the **entire next touch sequence was swallowed**: no pinch, no pan,
+    /// no double tap, until those fingers lifted. Reachable every day, not exotically — on
+    /// compact width a one-finger pan from the leading edge hands its touches to
+    /// `NavigationStack`'s interactive pop, which cancels them (`swift-code-reviewer`).
+    ///
+    /// Reported in this order because the coordinator must reset its tracker before the count
+    /// tells it the glass is clear; the settle it then attempts is a no-op against a tracker
+    /// that has just been cleared, which is the intended outcome — a cancel commits nothing.
+    ///
+    /// **This is also the seam the tests drive**, and it is the production path rather than a
+    /// parallel one: `UITouch` has no public initialiser, so the override above can only hand
+    /// this method a count. A test calling it exercises every line the system does.
+    func touchesCancelledByTheSystem(count: Int) {
+        activeTouchCount = max(0, activeTouchCount - count)
         onTouchesCancelled?()
+        onTouchCountChanged?(activeTouchCount)
     }
 }

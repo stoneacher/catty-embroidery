@@ -1,5 +1,6 @@
 @testable import catrobat_embroidery_ios
 import Foundation
+import StagePreview
 import Testing
 
 /// Every user-facing string this story ships resolves to real English text.
@@ -211,13 +212,12 @@ struct AppStringsTests {
     /// Distinctness is the property rather than the wording, so this stays inside the suite's
     /// standing rule of not asserting English.
     @Test func theFiveNamedStageActionsAreDistinct() {
-        let names = [
-            String(localized: .stageCanvasAccessibilityActionFit),
-            String(localized: .stageCanvasAccessibilityActionPanLeft),
-            String(localized: .stageCanvasAccessibilityActionPanRight),
-            String(localized: .stageCanvasAccessibilityActionPanUp),
-            String(localized: .stageCanvasAccessibilityActionPanDown)
-        ]
+        // **Read through the directions rather than through the four symbols**, so this asks the
+        // same mapping the view asks. Naming the entries directly would leave the join between a
+        // direction and its spoken name — the one thing that can be wired the wrong way round —
+        // untouched by any assertion (`swift-code-reviewer`, I2).
+        let names = [String(localized: .stageCanvasAccessibilityActionFit)]
+            + StagePanDirection.allCases.map { String(localized: $0.accessibilityActionName) }
 
         #expect(Set(names).count == names.count, "two stage actions share a spoken name")
         #expect(names.allSatisfy { $0.contains { $0.isLetter } })

@@ -27,7 +27,7 @@ struct StageManipulationCatcher: UIViewRepresentable {
     ///
     /// **Named `Snapshot` rather than `Context`** because `UIViewRepresentable` already has a
     /// `Context`, and shadowing it inside the conforming type is a confusion no comment fixes.
-    struct Snapshot: Equatable {
+    struct Snapshot {
         let fitted: StageTransform
         let viewport: ViewSize
         /// The fit animation's **visible** progress, straight from the `SettlingProgress` shim.

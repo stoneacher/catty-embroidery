@@ -15,12 +15,20 @@
     /// so a mutation cannot invalidate the view that caused it, and `#if DEBUG` so it does not
     /// exist in any build a user can install.
     ///
-    /// **Its only call site is a closure the view supplies**, not the coordinator, and that is
-    /// a testability decision rather than a stylistic one: the coordinator is driven directly by
-    /// a test suite that runs in parallel with the serialized suite which asserts on this
-    /// counter, and process-wide mutable state written by both is a flake waiting for a slow
-    /// CI runner. The view wires it under `#if DEBUG`; tests wire their own closure and never
-    /// touch this.
+    /// **Its only call site is a closure the view supplies**, not the coordinator, and that is a
+    /// testability decision rather than a stylistic one: the coordinator is driven directly by a
+    /// suite that runs in parallel with the serialized suite asserting on this counter, so the
+    /// coordinator tests wire their own closure and never reach here.
+    ///
+    /// **That is not full isolation, and the first version of this comment claimed it was**
+    /// (`swift-code-reviewer`, I6). `StageManipulationWiringTests` hosts the real `StageCanvas`,
+    /// whose closure *is* `record` under `DEBUG`, so a hosted commit does increment this. What
+    /// makes that safe today is the same argument `FrameTimeDrawAccountingTests` already records
+    /// for `StageDrawCounter`: every body involved is synchronous and `@MainActor`, so the two
+    /// suites cannot interleave, and each capture takes its own baseline at `start()` so the
+    /// absolute value never matters. **The day one of those tests gains an `await`, the delta
+    /// becomes nondeterministic** — that is the cost of a process-wide counter, stated rather
+    /// than wished away.
     @MainActor
     enum StageCommitCounter {
         private(set) static var count = 0

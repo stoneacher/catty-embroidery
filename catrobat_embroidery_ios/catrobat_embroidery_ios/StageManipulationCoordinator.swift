@@ -123,7 +123,11 @@ extension StageManipulationCatcher {
                 settleIfFinished()
             case .cancelled, .failed:
                 cancel()
-            case .possible, .recognized:
+            case .possible:
+                // `.recognized` is `.ended` under another name and is matched above; `.failed`
+                // dispatches no action message at all, so the arm above it is really the
+                // cancelled one and is kept for the compiler's exhaustiveness rather than for a
+                // path UIKit takes (`swift-code-reviewer`, S7).
                 break
             @unknown default:
                 break
@@ -155,7 +159,11 @@ extension StageManipulationCatcher {
                 settleIfFinished()
             case .cancelled, .failed:
                 cancel()
-            case .possible, .recognized:
+            case .possible:
+                // `.recognized` is `.ended` under another name and is matched above; `.failed`
+                // dispatches no action message at all, so the arm above it is really the
+                // cancelled one and is kept for the compiler's exhaustiveness rather than for a
+                // path UIKit takes (`swift-code-reviewer`, S7).
                 break
             @unknown default:
                 break

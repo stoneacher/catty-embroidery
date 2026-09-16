@@ -111,8 +111,14 @@ struct StagePanDirectionTests {
         }
     }
 
-    /// Four directions and no more: the enum is what the view iterates to build its actions, so
-    /// a fifth case must be a deliberate act rather than something a `default` swallows.
+    /// Four directions and no more.
+    ///
+    /// **Not because the view iterates them** — it writes four modifiers out by hand, because the
+    /// order they are declared in is the order the Actions rotor offers them and "Fit to Hoop"
+    /// has to stay first. An earlier version of this comment claimed the opposite, which had the
+    /// consequence backwards: a fifth case would be silently *unreachable* in the UI rather than
+    /// automatically offered (`swift-code-reviewer`, S8). What `CaseIterable` buys is this test
+    /// and the app-side name mapping, where a fifth case is a compile error.
     @Test("there are exactly four directions")
     func thereAreExactlyFourDirections() {
         #expect(StagePanDirection.allCases.count == 4)

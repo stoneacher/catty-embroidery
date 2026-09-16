@@ -144,45 +144,79 @@ struct StageManipulationCatcherTests {
     /// animation frame, every run batch and every touch move. Re-creating or re-installing a
     /// recogniser there cancels the gesture in flight — the single most dangerous thing that
     /// method could do, and invisible in a screenshot.
+    ///
+    /// **Hosted, and re-rendered, because the first version of this test never called
+    /// `updateUIView` at all** — it drove `Coordinator.update(...)` directly, which is merely the
+    /// method `updateUIView` happens to call (`swift-code-reviewer`, I3). A guard that does not
+    /// reach the method it names is not a guard. Re-assigning `rootView` is what makes SwiftUI
+    /// run the representable's update against the same view identity.
+    ///
+    /// **What it proves, stated exactly, because the obvious mutation turns out to be benign.**
+    /// The review demonstrated the gap by adding `context.coordinator.install(on: uiView)` to
+    /// `updateUIView`; re-running that mutation against *this* test also leaves it green, and
+    /// measurably so — the count stays 3 and every identity holds, because adding a recogniser
+    /// already attached to the same view is a no-op in UIKit. So the hazard this guards is not a
+    /// redundant `install`: it is a **replacement** — new recogniser objects, or a new
+    /// coordinator, on an update — which would drop the touch sequence in flight. That is what
+    /// the identity comparisons below assert, and a non-idempotent install would show up in the
+    /// count.
     @Test func updatingDoesNotReinstallTheRecognizers() {
         let recording = Recording()
-        let wiring = CatcherHarness.wired(recording)
-        let coordinator = wiring.coordinator
-        let view = wiring.view
+        let hosted = Self.hostCatcher(recording, settlingAt: 0.25)
+        let before = Self.coordinator(in: hosted.controller.view)
+        #expect(before != nil, "the catcher never reached the hierarchy")
+        guard let before, let view = Self.trackingView(in: hosted.controller.view) else { return }
         let installed = view.gestureRecognizers ?? []
+        #expect(installed.count == 3)
 
-        for progress in [0.0, 0.25, 0.5, 1.0] {
-            coordinator.update(
-                snapshot: CatcherHarness.snapshot(settlingAt: progress),
-                manipulation: Binding(
-                    get: { recording.manipulation }, set: { recording.manipulation = $0 }
-                ),
-                interaction: Binding(
-                    get: { recording.interaction }, set: { recording.interaction = $0 }
-                ),
-                onDoubleTap: { _ in },
-                onCommitted: nil
-            )
+        for progress in [0.5, 0.75, 1.0] {
+            hosted.controller.rootView = Self.catcherBody(recording, settlingAt: progress)
+            hosted.window.setNeedsLayout()
+            hosted.window.layoutIfNeeded()
+            hosted.controller.view.layoutIfNeeded()
         }
 
+        #expect(Self.coordinator(in: hosted.controller.view) === before, "the coordinator was replaced")
         #expect(view.gestureRecognizers?.count == 3)
         #expect(zip(view.gestureRecognizers ?? [], installed).allSatisfy { $0 === $1 })
-        #expect(coordinator.snapshot.settlingProgress == 1.0)
+        hosted.window.isHidden = true
     }
 
-    /// **The app-level survivor of ADR-028's Codex round 8**, which today has no test at all.
-    /// The model's settling progress jumps to 1 the instant `withAnimation` runs; only the
-    /// shim's closure holds the interpolated value. A catcher constructed outside the shim would
-    /// interrupt an animation at its *destination*, snapping the stage from what the user can
-    /// see to where it was heading. This proves the interpolated value reaches the coordinator
-    /// through SwiftUI; the per-frame cadence stays a visual check.
+    /// **The app-level survivor of ADR-028's Codex round 8**, which had no test at all before
+    /// this story. The model's settling progress jumps to 1 the instant `withAnimation` runs;
+    /// only the shim's closure holds the interpolated value. A catcher constructed outside the
+    /// shim would interrupt an animation at its *destination*, snapping the stage from what the
+    /// user can see to where it was heading.
+    ///
+    /// The value checked is **0.25, not 1**: `Snapshot.placeholder.settlingProgress` is also 1,
+    /// so asserting 1 is satisfied by a coordinator that never took the snapshot at all
+    /// (`swift-code-reviewer`, S1).
     @Test func theCatcherSeesTheShimsInterpolatedProgress() {
         let recording = Recording()
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
-        let hosted = SettlingProgress(progress: 0.5) { animated in
+        let hosted = Self.hostCatcher(recording, settlingAt: 0.25)
+
+        let coordinator = Self.coordinator(in: hosted.controller.view)
+        #expect(coordinator != nil, "the catcher never reached the hierarchy")
+        #expect(coordinator?.snapshot.settlingProgress == 0.25)
+        hosted.window.isHidden = true
+    }
+
+    /// A hosted view and the window keeping it alive, so the hierarchy can be walked and laid
+    /// out again between steps.
+    private struct Hosted {
+        let window: UIWindow
+        let controller: UIHostingController<SettlingProgress<StageManipulationCatcher>>
+    }
+
+    private static func catcherBody(
+        _ recording: Recording, settlingAt progress: Double
+    ) -> SettlingProgress<StageManipulationCatcher> {
+        SettlingProgress(progress: progress) { animated in
             StageManipulationCatcher(
                 snapshot: StageManipulationCatcher.Snapshot(
-                    fitted: CatcherHarness.fit, viewport: CatcherHarness.viewport, settlingProgress: animated
+                    fitted: CatcherHarness.fit,
+                    viewport: CatcherHarness.viewport,
+                    settlingProgress: animated
                 ),
                 manipulation: Binding(
                     get: { recording.manipulation }, set: { recording.manipulation = $0 }
@@ -194,16 +228,25 @@ struct StageManipulationCatcherTests {
                 onCommitted: nil
             )
         }
-        let controller = UIHostingController(rootView: hosted)
+    }
+
+    private static func hostCatcher(_ recording: Recording, settlingAt progress: Double) -> Hosted {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
+        let controller = UIHostingController(rootView: catcherBody(recording, settlingAt: progress))
         window.rootViewController = controller
         window.isHidden = false
         controller.view.frame = window.bounds
         window.layoutIfNeeded()
         controller.view.layoutIfNeeded()
+        return Hosted(window: window, controller: controller)
+    }
 
-        let coordinator = Self.coordinator(in: controller.view)
-        #expect(coordinator != nil, "the catcher never reached the hierarchy")
-        #expect(coordinator?.snapshot.settlingProgress == 0.5)
+    private static func trackingView(in root: UIView) -> StageTouchTrackingView? {
+        if let found = root as? StageTouchTrackingView { return found }
+        for subview in root.subviews {
+            if let found = trackingView(in: subview) { return found }
+        }
+        return nil
     }
 
     /// Finds the coordinator the way a hosted test must: through the recogniser it is the

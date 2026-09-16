@@ -272,6 +272,21 @@ hand-off capture 1 as originally written — and it makes a third (the A15 re-ru
 sharing a session. The bundled manual accessibility pass must run **after** this story, and its
 checklist gains AC8 and AC9 explicitly.
 
+## What this story leaves open, named so it is not rediscovered
+
+- **A directional pan gives an assistive user no feedback.** VoiceOver announces nothing after a
+  *custom* action and a pan does not change the spoken value, so four activations are four silent
+  events — and the pan is unclamped, so they can put the design off the canvas entirely. Recorded
+  in ADR-031 and handed to the deferred **pan-clamping story**, which owns both halves.
+- **The `minimumDistance` trade (ADR-028 correction 3) still needs its device measurement.** Under
+  UIKit it is inherited and non-configurable rather than retired — which is what this story's own
+  text got wrong — so human check 3 is what closes it.
+- **Pre-existing, unchanged by this story**: `StageInteraction.magnification(gesture:fitting:in:)`
+  takes no `settlingAt:`, so the *spoken* zoom percentage jumps to a fit animation's destination
+  the instant `withAnimation` runs — ADR-028's Codex-round-8 class of bug, in the accessibility
+  value rather than in the render. Identical on `main`; recorded because this story moved the call
+  site and doubled the ways to start that animation (`swift-code-reviewer`, S13).
+
 ## Manual Ink/Stitch verification
 
 **Not needed.** No byte path is touched.

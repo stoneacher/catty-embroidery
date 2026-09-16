@@ -120,7 +120,12 @@ struct StageCatcherLifecycleTests {
 
         let live = recording.manipulation.gesture(in: CatcherHarness.viewport)
         #expect(live != nil)
-        #expect((live?.magnification ?? 0) * CatcherHarness.fit.scale <= bounds.maximum * (1 + 1e-9))
+        // **Both sides.** The upper half alone is satisfied by a magnification of 1 — that is, by
+        // a coordinator that dropped the pinch entirely — so the lower half is what says the
+        // pinch was applied and then clamped rather than ignored (`swift-code-reviewer`, S2).
+        let scaled = (live?.magnification ?? 0) * CatcherHarness.fit.scale
+        #expect(scaled <= bounds.maximum * (1 + 1e-9))
+        #expect(scaled >= bounds.maximum * (1 - 1e-9))
     }
 
     // MARK: - AC5: cancellation
@@ -206,10 +211,169 @@ struct StageCatcherLifecycleTests {
         pinch.scale = 3
         pinch.stubState = .changed
         coordinator.pinched(pinch)
-        view.touchesCancelledByTheSystem()
+        // **The production path**, count and all: `touchesCancelled(_:with:)` can only hand this
+        // method a count, because `UITouch` has no public initialiser.
+        view.touchesCancelledByTheSystem(count: 2)
 
         #expect(recording.commits == 0)
         #expect(!recording.manipulation.isLive)
         #expect(recording.interaction.settled == nil)
+
+        // **And the stage is usable again immediately.** The first version of this file decremented
+        // the count silently inside the override and reported only the cancel, so on the ordinary
+        // path — the system taking every touch — nothing ever observed the count reach zero, the
+        // coordinator's suppression flag stayed set, and the **whole next touch sequence was
+        // swallowed**: no pinch, no pan, no double tap. The old test could not see it because it
+        // called the notification helper directly rather than the path UIKit uses
+        // (`swift-code-reviewer`, C1).
+        view.touchesArrived(2)
+        pinch.stubState = .began
+        coordinator.pinched(pinch)
+
+        #expect(recording.manipulation.isLive, "a cancel left the next gesture suppressed")
+    }
+
+    /// A cancel that takes only *some* of the touches leaves the rest suppressed, which is the
+    /// other half of "until the glass is clear" — the fingers still down belong to a sequence the
+    /// system has already disowned.
+    @Test func aPartialCancelStaysSuppressedWhileAFingerRemains() {
+        let recording = Recording()
+        let wiring = CatcherHarness.wired(recording)
+        let coordinator = wiring.coordinator
+        let view = wiring.view
+        let pinch = StubPinch()
+
+        view.touchesArrived(2)
+        pinch.stubState = .began
+        coordinator.pinched(pinch)
+        view.touchesCancelledByTheSystem(count: 1)
+
+        pinch.stubState = .began
+        coordinator.pinched(pinch)
+        #expect(!recording.manipulation.isLive, "a finger from the cancelled sequence is still down")
+
+        view.touchesLeft(1)
+        view.touchesArrived(2)
+        pinch.stubState = .began
+        coordinator.pinched(pinch)
+        #expect(recording.manipulation.isLive)
+    }
+
+    /// S3: the double tap is suppressed too, and by the same flag. Without this, removing its
+    /// guard is a green mutation.
+    @Test func aDoubleTapDuringACancelledSequenceIsIgnored() {
+        let recording = Recording()
+        let wiring = CatcherHarness.wired(recording)
+        let coordinator = wiring.coordinator
+        let view = wiring.view
+        let pinch = StubPinch()
+        let tap = StubTap()
+
+        view.touchesArrived(2)
+        pinch.stubState = .began
+        coordinator.pinched(pinch)
+        pinch.stubState = .cancelled
+        coordinator.pinched(pinch)
+        coordinator.doubleTapped(tap)
+
+        #expect(recording.taps.isEmpty, "a tap on a disowned touch sequence must not toggle")
+
+        view.touchesLeft(2)
+        coordinator.doubleTapped(tap)
+        #expect(recording.taps.count == 1)
+    }
+
+    // MARK: - The numbers the coordinator hands the package
+
+    /// **The single input this whole story exists to deliver**, and it was unasserted until the
+    /// review deleted the pan's `.changed` arm and watched the suite stay green
+    /// (`swift-code-reviewer`, I4). The story's headline defect was that lateral movement during a
+    /// pinch was dropped; nothing would have noticed if it still were.
+    @Test func aPanCommitsTheTranslationItLastReported() {
+        let recording = Recording()
+        let wiring = CatcherHarness.wired(recording)
+        let coordinator = wiring.coordinator
+        let view = wiring.view
+        let pan = StubPan()
+        let probe = CatcherHarness.fit.stagePoint(of: CatcherHarness.viewport.center)
+
+        view.touchesArrived(1)
+        pan.stubTranslation = CGPoint(x: 17, y: 9)
+        pan.stubState = .began
+        coordinator.panned(pan)
+        pan.stubTranslation = CGPoint(x: 57, y: 29)
+        pan.stubState = .changed
+        coordinator.panned(pan)
+        pan.stubState = .ended
+        coordinator.panned(pan)
+        view.touchesLeft(1)
+
+        let settled = recording.interaction.settled
+        #expect(settled != nil)
+        let landed = settled?.viewPoint(of: probe)
+        #expect(abs((landed?.x ?? 0) - (CatcherHarness.viewport.center.x + 57)) < 1e-6)
+        #expect(abs((landed?.y ?? 0) - (CatcherHarness.viewport.center.y + 29)) < 1e-6)
+    }
+
+    /// **The threshold is included and never subtracted** — ADR-028 measured that subtraction (a
+    /// 101 pt drag showing 91 and committing 101) and removed it, and the coordinator's comment
+    /// calls re-basing to zero "the single most likely wrong reflex in this file". This is the
+    /// case that can see it: a pan that begins and ends without ever reporting a change, where
+    /// the beginning translation is the whole of the gesture.
+    @Test func aPanThatNeverChangesStillCommitsItsBeginningTranslation() {
+        let recording = Recording()
+        let wiring = CatcherHarness.wired(recording)
+        let coordinator = wiring.coordinator
+        let view = wiring.view
+        let pan = StubPan()
+        let probe = CatcherHarness.fit.stagePoint(of: CatcherHarness.viewport.center)
+
+        view.touchesArrived(1)
+        pan.stubTranslation = CGPoint(x: 17, y: 9)
+        pan.stubState = .began
+        coordinator.panned(pan)
+        pan.stubState = .ended
+        coordinator.panned(pan)
+        view.touchesLeft(1)
+
+        let landed = recording.interaction.settled?.viewPoint(of: probe)
+        #expect(landed != nil)
+        #expect(abs((landed?.x ?? 0) - (CatcherHarness.viewport.center.x + 17)) < 1e-6)
+        #expect(abs((landed?.y ?? 0) - (CatcherHarness.viewport.center.y + 9)) < 1e-6)
+    }
+
+    /// **The pinch anchors about the fingers, not about the viewport's centre** — the other half
+    /// of "each finger keeps the stage point it grabbed", and also unasserted until the review
+    /// replaced the centroid with `.zero` and the suite stayed green (I5). The old sequence used a
+    /// centroid that happened to *be* the viewport centre, which is exactly the fallback
+    /// `StageManipulation.gesture(in:)` uses when no anchor was ever set — so a coordinator
+    /// passing nothing through was indistinguishable from one passing the right thing.
+    @Test func aPinchCommitsAboutTheCentroidItWasGiven() {
+        let recording = Recording()
+        let wiring = CatcherHarness.wired(recording)
+        let coordinator = wiring.coordinator
+        let view = wiring.view
+        let pinch = StubPinch()
+        let centroid = ViewPoint(x: 100, y: 200)
+        let grabbed = CatcherHarness.fit.stagePoint(of: centroid)
+
+        view.touchesArrived(2)
+        pinch.stubLocation = CGPoint(x: centroid.x, y: centroid.y)
+        pinch.stubState = .began
+        coordinator.pinched(pinch)
+        pinch.scale = 2
+        pinch.stubState = .changed
+        coordinator.pinched(pinch)
+        pinch.stubState = .ended
+        coordinator.pinched(pinch)
+        view.touchesLeft(2)
+
+        let settled = recording.interaction.settled
+        #expect(settled != nil)
+        #expect(abs((settled?.scale ?? 0) - CatcherHarness.fit.scale * 2) < 1e-6)
+        // The point under the fingers stayed under the fingers.
+        let stayed = settled?.viewPoint(of: grabbed)
+        #expect(abs((stayed?.x ?? 0) - centroid.x) < 1e-6)
+        #expect(abs((stayed?.y ?? 0) - centroid.y) < 1e-6)
     }
 }
