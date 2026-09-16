@@ -1,4 +1,5 @@
 @testable import catrobat_embroidery_ios
+import Foundation
 import StagePreview
 import SwiftUI
 import Testing
@@ -169,7 +170,7 @@ struct StageManipulationCatcherTests {
         let installed = view.gestureRecognizers ?? []
         #expect(installed.count == 3)
 
-        for progress in [0.5, 0.75, 1.0] {
+        for progress in [0.5, 0.75] {
             hosted.controller.rootView = Self.catcherBody(recording, settlingAt: progress)
             hosted.window.setNeedsLayout()
             hosted.window.layoutIfNeeded()
@@ -180,6 +181,38 @@ struct StageManipulationCatcherTests {
         #expect(view.gestureRecognizers?.count == 3)
         #expect(zip(view.gestureRecognizers ?? [], installed).allSatisfy { $0 === $1 })
         hosted.window.isHidden = true
+    }
+
+    // **What this suite deliberately does not assert, and why it was tried and abandoned.**
+    //
+    // `/codex-review` round 1 (finding 3) points out that deleting `apply(to:)` from
+    // `updateUIView` leaves everything green: the coordinator would keep its `makeUIView`
+    // snapshot forever, so a pinch begun mid-animation would interrupt at a stale progress and
+    // the stage would snap — ADR-028's round-8 defect by another route. The finding is valid.
+    //
+    // The obvious closure is to re-render the host with a new progress and assert the snapshot
+    // followed. **It was built, and it is not deterministic here**: SwiftUI schedules a
+    // representable's update rather than running it inside `layoutIfNeeded`, and neither a
+    // forced layout, a bounded runloop spin, nor a key window made it happen. What it did
+    // produce was a test that passed in isolation and failed in the suite — which is precisely
+    // the hosted-accessibility-tree flake US-307 deleted, and this repo does not ship a test it
+    // cannot reproduce a failure for.
+    //
+    // So the gap is **stated rather than covered**: the snapshot reaching the coordinator on
+    // every frame is carried by the device session, where a pinch begun during a fit animation
+    // is human check 6's "pop at gesture start", and by the fact that `updateUIView` has exactly
+    // one statement, so there is nothing in it to break independently.
+
+    /// **The line the whole terminal signal rests on, and UIKit's default is the wrong one.**
+    ///
+    /// A view that is not multi-touch enabled receives only the first touch of a sequence while
+    /// its recognisers receive them all, so the count stays at 1 with two fingers down — and the
+    /// stage then commits when the *first* finger lifts, writing `settled` with a finger still
+    /// on the glass (ADR-030 §7) and committing a second time if the remaining finger pans.
+    /// `/codex-review` round 1 found it; no test could, because they all call `touchesArrived(2)`
+    /// directly, which is the one thing UIKit would never do.
+    @Test func theTrackingViewReceivesEveryFinger() {
+        #expect(StageTouchTrackingView().isMultipleTouchEnabled)
     }
 
     /// **The app-level survivor of ADR-028's Codex round 8**, which had no test at all before

@@ -94,12 +94,12 @@ enum CatcherHarness {
         let view: StageTouchTrackingView
     }
 
-    static func wired(_ recording: Recording) -> Wiring {
+    static func wired(_ recording: Recording, settlingAt progress: Double = 1) -> Wiring {
         let coordinator = StageManipulationCatcher.Coordinator()
         let view = StageTouchTrackingView()
         coordinator.install(on: view)
         coordinator.update(
-            snapshot: snapshot(),
+            snapshot: snapshot(settlingAt: progress),
             manipulation: Binding(
                 get: { recording.manipulation }, set: { recording.manipulation = $0 }
             ),

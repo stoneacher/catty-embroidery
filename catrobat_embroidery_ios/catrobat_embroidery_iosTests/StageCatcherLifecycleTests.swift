@@ -283,97 +283,82 @@ struct StageCatcherLifecycleTests {
         #expect(recording.taps.count == 1)
     }
 
-    // MARK: - The numbers the coordinator hands the package
-
-    /// **The single input this whole story exists to deliver**, and it was unasserted until the
-    /// review deleted the pan's `.changed` arm and watched the suite stay green
-    /// (`swift-code-reviewer`, I4). The story's headline defect was that lateral movement during a
-    /// pinch was dropped; nothing would have noticed if it still were.
-    @Test func aPanCommitsTheTranslationItLastReported() {
-        let recording = Recording()
-        let wiring = CatcherHarness.wired(recording)
-        let coordinator = wiring.coordinator
-        let view = wiring.view
-        let pan = StubPan()
-        let probe = CatcherHarness.fit.stagePoint(of: CatcherHarness.viewport.center)
-
-        view.touchesArrived(1)
-        pan.stubTranslation = CGPoint(x: 17, y: 9)
-        pan.stubState = .began
-        coordinator.panned(pan)
-        pan.stubTranslation = CGPoint(x: 57, y: 29)
-        pan.stubState = .changed
-        coordinator.panned(pan)
-        pan.stubState = .ended
-        coordinator.panned(pan)
-        view.touchesLeft(1)
-
-        let settled = recording.interaction.settled
-        #expect(settled != nil)
-        let landed = settled?.viewPoint(of: probe)
-        #expect(abs((landed?.x ?? 0) - (CatcherHarness.viewport.center.x + 57)) < 1e-6)
-        #expect(abs((landed?.y ?? 0) - (CatcherHarness.viewport.center.y + 29)) < 1e-6)
-    }
-
-    /// **The threshold is included and never subtracted** — ADR-028 measured that subtraction (a
-    /// 101 pt drag showing 91 and committing 101) and removed it, and the coordinator's comment
-    /// calls re-basing to zero "the single most likely wrong reflex in this file". This is the
-    /// case that can see it: a pan that begins and ends without ever reporting a change, where
-    /// the beginning translation is the whole of the gesture.
-    @Test func aPanThatNeverChangesStillCommitsItsBeginningTranslation() {
-        let recording = Recording()
-        let wiring = CatcherHarness.wired(recording)
-        let coordinator = wiring.coordinator
-        let view = wiring.view
-        let pan = StubPan()
-        let probe = CatcherHarness.fit.stagePoint(of: CatcherHarness.viewport.center)
-
-        view.touchesArrived(1)
-        pan.stubTranslation = CGPoint(x: 17, y: 9)
-        pan.stubState = .began
-        coordinator.panned(pan)
-        pan.stubState = .ended
-        coordinator.panned(pan)
-        view.touchesLeft(1)
-
-        let landed = recording.interaction.settled?.viewPoint(of: probe)
-        #expect(landed != nil)
-        #expect(abs((landed?.x ?? 0) - (CatcherHarness.viewport.center.x + 17)) < 1e-6)
-        #expect(abs((landed?.y ?? 0) - (CatcherHarness.viewport.center.y + 9)) < 1e-6)
-    }
-
-    /// **The pinch anchors about the fingers, not about the viewport's centre** — the other half
-    /// of "each finger keeps the stage point it grabbed", and also unasserted until the review
-    /// replaced the centroid with `.zero` and the suite stayed green (I5). The old sequence used a
-    /// centroid that happened to *be* the viewport centre, which is exactly the fallback
-    /// `StageManipulation.gesture(in:)` uses when no anchor was ever set — so a coordinator
-    /// passing nothing through was indistinguishable from one passing the right thing.
-    @Test func aPinchCommitsAboutTheCentroidItWasGiven() {
+    /// **Both terminal signals are independent, and the reverse delivery order proves it.**
+    ///
+    /// Every other test here delivers the recogniser's `.ended` before the touches lift, so the
+    /// zero-count callback is what commits and the `.ended` arm's own `settleIfFinished()` can be
+    /// deleted with the suite green (`/codex-review` round 1, finding 5). In this order the count
+    /// reaches zero while the pinch channel is still active — `finish` correctly returns `nil` —
+    /// and nothing but the `.ended` arm is left to retry. ADR-031 says the order must not matter;
+    /// until now only one order was ever exercised.
+    @Test func theTouchesCanLiftBeforeTheRecognizerEndsAndStillCommitOnce() {
         let recording = Recording()
         let wiring = CatcherHarness.wired(recording)
         let coordinator = wiring.coordinator
         let view = wiring.view
         let pinch = StubPinch()
-        let centroid = ViewPoint(x: 100, y: 200)
-        let grabbed = CatcherHarness.fit.stagePoint(of: centroid)
 
         view.touchesArrived(2)
-        pinch.stubLocation = CGPoint(x: centroid.x, y: centroid.y)
+        pinch.stubLocation = CGPoint(x: 150, y: 300)
         pinch.stubState = .began
         coordinator.pinched(pinch)
         pinch.scale = 2
         pinch.stubState = .changed
         coordinator.pinched(pinch)
+
+        // The glass clears first, while the pinch has not yet reported its end.
+        view.touchesLeft(2)
+        #expect(recording.commits == 0, "a channel is still active")
+
         pinch.stubState = .ended
         coordinator.pinched(pinch)
-        view.touchesLeft(2)
 
-        let settled = recording.interaction.settled
-        #expect(settled != nil)
-        #expect(abs((settled?.scale ?? 0) - CatcherHarness.fit.scale * 2) < 1e-6)
-        // The point under the fingers stayed under the fingers.
-        let stayed = settled?.viewPoint(of: grabbed)
-        #expect(abs((stayed?.x ?? 0) - centroid.x) < 1e-6)
-        #expect(abs((stayed?.y ?? 0) - centroid.y) < 1e-6)
+        #expect(recording.commits == 1)
+        #expect(!recording.manipulation.isLive)
+        #expect(recording.interaction.settled != nil)
+    }
+
+    /// **The limits are read *after* the interrupt, and the order is observable.**
+    ///
+    /// `beginManipulating` ends any fit animation at its *visible* progress, which moves the
+    /// baseline; a magnification range computed before it is computed against the animation's
+    /// **destination** while the user pinches against what is on screen. The tracker's clamped
+    /// factor then stops matching the one `StageTransform.pinched` applies, and the next re-anchor
+    /// jumps — `/codex-review` round 2 on US-313a found that in the package, and nothing guarded
+    /// the coordinator's ordering until round 1 of this story's review pointed out that no test
+    /// begins a pinch during an animation (finding 4).
+    @Test func thePinchLimitsComeFromWhatIsOnScreenNotFromTheAnimationsDestination() throws {
+        let recording = Recording()
+        let fit = CatcherHarness.fit
+        var interaction = StageInteraction()
+        interaction.commit(
+            StageGesture(magnification: 8), fitting: fit, in: CatcherHarness.viewport
+        )
+        // Assigned first: `#require` captures its expression in a closure, where `interaction`
+        // would be immutable and `beginSettling` is mutating.
+        let settling = interaction.beginSettling(fitting: fit)
+        #expect(settling != nil, "there must be something to animate")
+        recording.interaction = interaction
+        // What the user can see halfway through the animation back to the fit.
+        let visible = interaction.baseline(fitting: fit, settlingAt: 0.5)
+
+        let wiring = CatcherHarness.wired(recording, settlingAt: 0.5)
+        let pinch = StubPinch()
+        wiring.view.touchesArrived(2)
+        pinch.stubLocation = CGPoint(x: 200, y: 400)
+        pinch.stubState = .began
+        wiring.coordinator.pinched(pinch)
+        pinch.scale = 5_000
+        pinch.stubState = .changed
+        wiring.coordinator.pinched(pinch)
+
+        let live = try #require(recording.manipulation.gesture(in: CatcherHarness.viewport))
+        let bounds = StageZoomBounds(fitting: fit, including: visible.scale)
+        let expected = bounds.maximum / visible.scale
+        #expect(abs(live.magnification - expected) < 1e-6)
+        // …and that really is a different number from the one the destination would give, or
+        // this test would pass against the defect it names.
+        let fromDestination = StageZoomBounds(fitting: fit, including: fit.scale).maximum / fit.scale
+        #expect(abs(expected - fromDestination) > 1e-6)
     }
 }

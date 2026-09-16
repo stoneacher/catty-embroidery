@@ -39,6 +39,21 @@ final class StageTouchTrackingView: UIView {
         // Transparent and hit-testable: the recognisers need the touches, the stage needs the
         // pixels. `isUserInteractionEnabled` is already true by default for a plain `UIView`.
         backgroundColor = .clear
+        // **The whole terminal signal depends on this line, and it defaults to `false`.**
+        //
+        // A `UIView` that is not multi-touch enabled receives only the *first* touch of a
+        // sequence, while its gesture recognisers receive them all — so the pinch worked
+        // perfectly and the count silently stayed at 1 with two fingers down. The consequence is
+        // the exact invariant this type exists to protect, inverted: fingers A and B land
+        // (count 1), A lifts, the view reports **zero**, and the pinch's `.ended` then commits
+        // with B still on the glass. `StageInteraction.settled` is written mid-gesture, which
+        // ADR-030 §7 forbids, and if B then crosses the pan's slop it starts a second
+        // manipulation that commits again — two commits from one touch sequence.
+        //
+        // Found by `/codex-review` round 1. The in-loop review walked both delivery orders and
+        // missed it because it took the count as given; the tests missed it because they call
+        // `touchesArrived(2)` directly, which is the one thing UIKit would not have done.
+        isMultipleTouchEnabled = true
         // **AC7, set here rather than in `makeUIView`**, which is what lets a test assert it on
         // a plain constructor instead of walking a published accessibility tree — the technique
         // US-307 had to delete after it passed locally and failed unreproducibly on CI.

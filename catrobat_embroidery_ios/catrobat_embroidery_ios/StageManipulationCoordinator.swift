@@ -44,9 +44,20 @@ extension StageManipulationCatcher {
 
         override init() {
             super.init()
-            pinch.addTarget(self, action: #selector(pinched))
-            pan.addTarget(self, action: #selector(panned))
-            tap.addTarget(self, action: #selector(doubleTapped))
+            // **One wiring line for three recognisers**, because a deleted `addTarget` is a
+            // mutation no test in this repo can catch: UIKit exposes no way to read a
+            // recogniser's targets back, and the suite drives the action methods directly. The
+            // consequence of losing the *pan*'s target is this story's original defect exactly —
+            // a two-finger pinch that zooms and does not translate (`/codex-review` round 1,
+            // finding 2). Consolidating does not close the blind spot; it reduces it from three
+            // independent lines to one, and the device session's checks 1–3 exercise all three.
+            for (recognizer, action) in [
+                (pinch as UIGestureRecognizer, #selector(pinched)),
+                (pan as UIGestureRecognizer, #selector(panned)),
+                (tap as UIGestureRecognizer, #selector(doubleTapped))
+            ] {
+                recognizer.addTarget(self, action: action)
+            }
 
             pan.minimumNumberOfTouches = 1
             pan.maximumNumberOfTouches = 2
