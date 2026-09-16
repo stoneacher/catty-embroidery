@@ -110,4 +110,62 @@ struct StageCatcherInputTests {
         #expect(abs((stayed?.x ?? 0) - centroid.x) < 1e-6)
         #expect(abs((stayed?.y ?? 0) - centroid.y) < 1e-6)
     }
+
+    /// **The pan's own terminal arm, which the pinch's test did not cover.**
+    ///
+    /// `theTouchesCanLiftBeforeTheRecognizerEndsAndStillCommitOnce` drives the reverse delivery
+    /// order through the *pinch*, so deleting `settleIfFinished()` from the **pan**'s `.ended`
+    /// arm alone still left the suite green (`/codex-review` round 2). One finger dragging is
+    /// the commonest manipulation there is, and in this order — the touch lifting before the
+    /// recogniser reports its end — nothing else would commit it.
+    @Test func aPanEndingAfterTheTouchesLiftStillCommitsOnce() {
+        let recording = Recording()
+        let wiring = CatcherHarness.wired(recording)
+        let pan = StubPan()
+
+        wiring.view.touchesArrived(1)
+        pan.stubTranslation = CGPoint(x: 10, y: 5)
+        pan.stubState = .began
+        wiring.coordinator.panned(pan)
+        pan.stubTranslation = CGPoint(x: 40, y: 20)
+        pan.stubState = .changed
+        wiring.coordinator.panned(pan)
+
+        wiring.view.touchesLeft(1)
+        #expect(recording.commits == 0, "the pan channel is still active")
+
+        pan.stubState = .ended
+        wiring.coordinator.panned(pan)
+
+        #expect(recording.commits == 1)
+        #expect(!recording.manipulation.isLive)
+        #expect(recording.interaction.settled != nil)
+    }
+
+    /// **A pan beginning mid-animation takes the stage over at what is on screen**, which is the
+    /// pan half of the ordering the pinch's test pins. Deleting `beginManipulating()` from the
+    /// pan's `.began` arm left the suite green (`/codex-review` round 2): the fit animation would
+    /// keep running under the finger, so the baseline the drag is measured against moves while
+    /// the user drags it.
+    @Test func aPanBeginningDuringAFitAnimationAdoptsWhatIsOnScreen() {
+        let recording = Recording()
+        let fit = CatcherHarness.fit
+        var interaction = StageInteraction()
+        interaction.commit(
+            StageGesture(magnification: 8), fitting: fit, in: CatcherHarness.viewport
+        )
+        let settling = interaction.beginSettling(fitting: fit)
+        #expect(settling != nil, "there must be something to animate")
+        recording.interaction = interaction
+        let visible = interaction.baseline(fitting: fit, settlingAt: 0.5)
+
+        let wiring = CatcherHarness.wired(recording, settlingAt: 0.5)
+        let pan = StubPan()
+        wiring.view.touchesArrived(1)
+        pan.stubState = .began
+        wiring.coordinator.panned(pan)
+
+        #expect(!recording.interaction.isSettling, "the animation kept running under the finger")
+        #expect(recording.interaction.settled == visible)
+    }
 }

@@ -198,10 +198,12 @@ struct StageManipulationCatcherTests {
     // the hosted-accessibility-tree flake US-307 deleted, and this repo does not ship a test it
     // cannot reproduce a failure for.
     //
-    // So the gap is **stated rather than covered**: the snapshot reaching the coordinator on
-    // every frame is carried by the device session, where a pinch begun during a fit animation
-    // is human check 6's "pop at gesture start", and by the fact that `updateUIView` has exactly
-    // one statement, so there is nothing in it to break independently.
+    // So the gap is **stated rather than covered**. An earlier version of this comment handed it
+    // to human check 6, which is wrong and is corrected here (`/codex-review` round 2): that
+    // check judges the pop at gesture start, not a manipulation begun *during* a fit animation.
+    // The story's human checks now carry that step explicitly. What remains true either way is
+    // that `updateUIView` has exactly one statement, so there is nothing in it to break
+    // independently of its being called at all.
 
     /// **The line the whole terminal signal rests on, and UIKit's default is the wrong one.**
     ///
@@ -213,6 +215,34 @@ struct StageManipulationCatcherTests {
     /// directly, which is the one thing UIKit would never do.
     @Test func theTrackingViewReceivesEveryFinger() {
         #expect(StageTouchTrackingView().isMultipleTouchEnabled)
+    }
+
+    /// **Fingers arrive one at a time, and every other test reaches two in one jump from zero.**
+    ///
+    /// `touchesArrived(2)` is a convenience no touch sequence produces: a second finger lands
+    /// while the first is already down, so the count *accumulates*. Replacing `+= count` with
+    /// `= count` survived the whole suite (`/codex-review` round 2) and recreates the
+    /// early-commit failure — two fingers would read 1, and the stage would commit when the
+    /// first lifted. Partial departures and a cancel that takes one of two fingers are the same
+    /// arithmetic seen from the other side.
+    @Test func theTouchCountAccumulatesAsFingersArriveAndLeave() {
+        let view = StageTouchTrackingView()
+
+        view.touchesArrived(1)
+        view.touchesArrived(1)
+        #expect(view.activeTouchCount == 2, "a second finger landed on top of the first")
+
+        view.touchesLeft(1)
+        #expect(view.activeTouchCount == 1)
+
+        view.touchesArrived(1)
+        #expect(view.activeTouchCount == 2)
+
+        view.touchesCancelledByTheSystem(count: 1)
+        #expect(view.activeTouchCount == 1, "a partial cancel takes only its own touches")
+
+        view.touchesLeft(5)
+        #expect(view.activeTouchCount == 0, "the count is clamped rather than going negative")
     }
 
     /// **The app-level survivor of ADR-028's Codex round 8**, which had no test at all before

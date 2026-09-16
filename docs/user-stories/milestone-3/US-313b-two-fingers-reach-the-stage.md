@@ -264,6 +264,12 @@ pinch cannot be synthesised at all. On device:
    levels, the pop at gesture start and commit, the stride discontinuity at
    `liveCoarseningThreshold` — now answerable under a gesture worth judging.
 7. Accessibility Inspector: one element, the new actions reachable, the names speakable.
+8. **Begin a manipulation *during* a fit animation** — double-tap to start the toggle, then put
+   two fingers down while it is still moving — and say whether the stage takes over smoothly from
+   where it visibly is, or snaps to where the animation was heading. Added after `/codex-review`
+   round 2: the automated guard for this (that `updateUIView` keeps handing the coordinator the
+   shim's current progress) could not be made deterministic, so this step is what covers it, and
+   check 6's "pop at gesture start" does **not** — it judges a gesture begun from rest.
 
 ## Relationship to M3's final verification
 
