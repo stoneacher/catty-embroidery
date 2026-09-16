@@ -213,6 +213,28 @@ struct StageAccessibilityTests {
         #expect(StageAccessibility.hint(for: .idle) == finished)
     }
 
+    /// US-313b: **both** hints name the recovery action, because after this story both states
+    /// can be panned and the pan is unclamped.
+    ///
+    /// The gap was live and silent. `stage.canvas.accessibility.hint.running` named no action
+    /// at all beyond adjusting, and ADR-028 ships the pan deliberately unclamped — so a user
+    /// who pans a running design off the canvas is told nothing about how to get it back, and
+    /// "Fit to Hoop" is the only way back that does not need a double tap (which VoiceOver
+    /// claims and Switch Control lacks). The `.action.fit` entry's own translator comment
+    /// already required this consistency of the finished hint; nothing asserted it, and the
+    /// running hint never had it.
+    ///
+    /// **This asserts a cross-entry invariant in the development locale**, which is as far as
+    /// it can honestly go: a translator who rephrases without naming the action breaks the
+    /// property in their language and no test here can see it. That is what the translator
+    /// comment on all three entries is for.
+    @Test func bothHintsNameTheRecoveryAction() {
+        let fit = String(localized: .stageCanvasAccessibilityActionFit)
+
+        #expect(StageAccessibility.hint(for: .running).contains(fit))
+        #expect(StageAccessibility.hint(for: .finished(.programFinished)).contains(fit))
+    }
+
     /// The completion reason is a *notice* on screen, not a difference in what the stage can
     /// do — so all three finished reasons share one hint rather than inventing copy for each.
     @Test func everyFinishedReasonSharesOneHint() {
