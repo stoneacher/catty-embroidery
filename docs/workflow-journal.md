@@ -1541,3 +1541,265 @@ Correcting the **2026-09-01** entry above (US-309, "A negative result, kept rath
   team; the real team came out of the on-disk provisioning profile. And `xcodebuild … | tail`
   reports **`tail`'s** exit code, so a failed build exits 0 — the check has to grep for
   `BUILD SUCCEEDED`, not test `$?`.
+
+## 2026-09-14 (US-313 planning) — two agents, one derivation, and a backlog entry that was wrong in the expensive direction
+
+Placed the last two backlog entries at the M3 boundary and planned the one that goes into the
+milestone. `swift-architect` and `swift-ui-design` ran concurrently against the real source.
+
+- **Both agents independently reached the same non-obvious conclusion, and it contradicts the
+  story they were given.** The backlog's US-313 entry names two separable causes for the gesture
+  feeling wrong. The second — "`startAnchor` is captured once, so content drifts away from under
+  the touch" — is **not a defect**. `pinched(by: m, about: c₀).dragged(by: c₁ − c₀)` maps a point
+  at `x₀` to `m(x₀ − c₀) + c₁`, which is exactly where the finger now is; the frozen start anchor
+  is the correct formulation, and the live anchor the entry proposes is off by `(1 − m)(c₁ − c₀)`.
+  **Building the story as specified would have introduced the drift it was written to remove.**
+  I re-derived it from `StageTransform.pinched`/`dragged` before accepting it, because the
+  architect explicitly asked that its own algebra not be taken on report — the right instinct,
+  and the same one ADR-028's history argues for.
+- **Convergence from two differently-briefed agents is worth more than either report.** They were
+  given different questions (architecture and test plan; interaction feel and accessibility) and
+  neither was told the other existed. Arriving at the same derivation from opposite ends is
+  evidence of a kind a single agent cannot produce, however confident. Worth repeating for any
+  claim that is about to overturn a written specification.
+- **They disagreed on exactly one point, and the disagreement was the useful part.**
+  `swift-ui-design` wanted `.live` gated on `!gesture.isIdentity` (the stage currently degrades on
+  touch-down, before anything moves — a pop on a stationary frame). `swift-architect` wanted
+  `canUseRaster == false` asserted for *every* frame of a manipulation, which forbids that.
+  Resolved in the story rather than merged: the gating is safe **because** of the invariant, since
+  at touch-down the bake key is still the committed transform. A merge would have shipped the
+  stronger assertion and quietly lost the improvement.
+- **The feared ADR revision was a wording problem.** The entry parks the story on a conflict with
+  ADR-028's "written once, in `onEnded`". Only the *consequence* is load-bearing — the settled
+  raster re-bakes once per gesture — and that depends on `settled` not being written mid-gesture,
+  not on `onEnded`. ADR-028's own 2026-08-18 correction had already split presentation from
+  commit. So: a dated amendment plus ADR-031, and **ADR-030 §7's inherited invariant is satisfied
+  rather than traded** — the thing US-310 wrote that paragraph to protect.
+- **ADR-028 also partially retracts, and the retraction is the honest part.** It claims the single
+  commit "deletes entirely" a per-channel state machine. Two UIKit recognisers have independent
+  lifecycles, so it comes back — this time as a `Sendable` value type under `swift test` rather
+  than four pieces of `@State` in a view, which is what makes ADR-028's own
+  `onlyTheFinalCumulativeValueIsApplied` (recorded as collapsing to `once == once`) assertable at
+  last.
+- **Nine specification corrections at planning, on top of US-307's six, US-308's twenty and
+  US-310's nineteen.** The pattern is now unambiguous enough to state plainly: **a specification
+  written at discovery time, from the ADRs and a symptom, is a good record of the symptom and an
+  unreliable record of the cause.** The backlog mechanism is still right — the entry captured the
+  user's own words, the sequencing against rung 2, and the instruction to weigh the invariant at
+  a planning session rather than in a hurry, and all three survived. What did not survive was
+  every sentence that guessed at a mechanism.
+- **The estimate was 40 % low** (~5 h specified, 7–9 h counted), which is what forced the split.
+  Splitting on the *simulator boundary* rather than by feature turned out to be the useful cut:
+  313a's red phase can be shown for all sixteen of its criteria with no device, and 313b's
+  definition of done is a human with two fingers.
+- **Two milestone-close items moved into 313b rather than staying on the list**, which is the
+  scheduling result worth carrying: the tail discriminator and the three in-the-hand judgement
+  questions are all questions *about a gesture*, and asking them of an interaction that is about
+  to be replaced would answer the wrong question. A third (`liveSegmentTarget`) was decided as a
+  scope call and is re-verified under the new gesture.
+- **Delegation shape**: two planning agents in parallel, ~7 and ~11 minutes, no overlap in
+  findings beyond the shared derivation. Verification of the load-bearing claim was done in the
+  main context by reading two functions — cheap, and the only part that could not be delegated,
+  since it is the claim everything else rests on.
+
+## 2026-09-14 (US-313a) — a plan refuted by a test written for a defect two stories ago
+
+The headless half of US-313 is green: 785 engine tests, up from 761.
+
+- **The plan's one resolved disagreement was resolved the wrong way, and an existing test caught
+  it inside a minute.** Two planning agents disagreed about whether `.live` should be gated on
+  `!gesture.isIdentity`, and I resolved it in favour of the gate with what looked like a
+  decisive argument: at touch-down the bake key is still the committed transform, so nothing can
+  be re-baked. **`BakeKey` is not the transform alone** — it carries `settledCount`, which
+  advances while a run is still producing stitches. A resting frame that reports `canUseRaster`
+  mid-gesture therefore permits a bake at a *new* watermark. `aGestureAtItsBaselineIsStillLive`
+  and `presenceNotMagnitudeDecidesLiveness`, written for ADR-028's Codex rounds 2 and 3, went red
+  immediately. **The tests knew something all three of us had missed** — two planning agents and
+  me — and the one that was right had been written a story and a half earlier for what looked
+  like a different reason.
+- **The lesson is about what a regression test is *for*.** Both of those tests read as
+  belt-and-braces restatements of a rule the type now makes structural. They are not: they encode
+  a *consequence* whose cause has since moved. Neither planning pass read `BakeKey`, because from
+  the package's point of view nothing about it is visible — the coupling is in the app. So: when
+  a plan proposes weakening an invariant, the test that fails is evidence before the argument is.
+  I had the argument first and it was confident and wrong.
+- **Process rule 3 generalises.** The rule says never fix a red golden by consulting the other
+  reference. The same shape applied here to a test that is not a golden: the red test was right
+  and the new design was wrong, so the design changed. Worth noting how *easy* the other path
+  would have been — the test's own comment says "liveness is the gesture's presence, not its
+  value", which reads like a style preference rather than a performance invariant, and updating
+  it would have looked like tidying.
+- **A mutation round improved a test that had not failed.** Nine mutants, zero survivors — but
+  running them showed that the lateral-movement test compared two transforms with `==` after
+  `pinched(by: 1, about:)` re-derives a translation through a divide and a multiply. It passed on
+  its numbers by luck. Rewritten to ask where two grabbed points went, it stopped catching one
+  mutant it had been catching — correctly, since that "catch" was ULP noise rather than the
+  property under test. **A mutation round is also a way to find tests that pass for the wrong
+  reason**, not only ones that fail to fail.
+- **One test was already green and is recorded as a guard rather than claimed as a red.** The
+  bake key already holds still across a manipulation; what the new test pins is that the new
+  input path cannot take that away. Fourth story running where the plan's buildability pass or
+  the implementation found an "already green" item — the cheap check (does the new test reference
+  a symbol the story adds?) would not have caught this one, because it does.
+- **`#require` cannot call a `mutating` member** — it expands its argument into a closure, so
+  `try #require(manipulation.finish(in: viewport))` does not compile. Bind first, then require.
+  Cost about ten minutes across two files; worth the line because the error message
+  ("cannot use mutating member on immutable value: '$0' is immutable") names a `$0` that appears
+  nowhere in the test.
+- **Delegation shape**: none for the implementation. Story tests are not delegated here by rule,
+  and the green phase was small enough that specifying it for `swift-engineer` would have cost
+  more than writing it. The two planning agents earned their keep before the code existed.
+
+## 2026-09-14 (US-313a review) — the delegated reviewer failed twice, and the review found a real defect anyway
+
+`swift-code-reviewer` was launched twice in an isolated worktree and produced **nothing both
+times**: the first died on a session rate limit having just read the diff, the second stalled for
+600 s with no output after the same first step. The review was then done in the main context.
+
+- **Two agent failures in a row is new, and the fallback cost less than the second attempt.**
+  Worth recording for the delegation ledger: the reviewer's value is a *different reader*, and
+  that value is real (US-306's Critical, US-310's interval-set finding), but it is not worth a
+  third launch when the diff is small and freshly written. The in-context review found the
+  defect below in about ten minutes.
+- **The defect: a manipulation can contain more than one pinch, and the tracker assumed it could
+  not.** Lift one finger and put it back while still dragging with the other — the pan continues
+  throughout at `maximumNumberOfTouches = 2`, so this is one manipulation with two pinches. A
+  recogniser's `scale` is cumulative from *its own* begin and a coordinator resets it to 1 at
+  `.began`, so `pinchBegan` took 1 as the magnification and **the stage snapped from 3× back to
+  unzoomed the instant the second finger landed** (reproduced: scale 2.148 → 0.716). Re-anchoring
+  on the new centroid separately moved the frame by `(1 − m)(aNew − aOld)`.
+- **It was found by asking the question I had written into the review brief**, not by reading the
+  code top to bottom. The brief listed "the anchor across a second pinch" as area 2 because the
+  architect's plan had flagged per-channel bookkeeping as the honest cost of the approach. The
+  plan predicted the *area* correctly and the implementation still got it wrong — so the value of
+  the planning pass was not that it prevented the bug but that it said where to look for it.
+- **The fix is the rebase ADR-028 said the single commit had deleted.** `pinchBegan` now
+  re-derives the anchor as the baseline-frame point under the fingers, absorbs the difference into
+  a `panOffset` so nothing moves, and carries the accumulated zoom in a `magnificationBase`. The
+  first pinch is the same arithmetic at `m == 1`, so there is one code path — the rare case
+  exercises the ordinary one rather than sitting beside it.
+- **A second finding of the same shape**: `panBegan(at:)` took its argument as the pan's *value*
+  rather than its *origin*, so a recogniser beginning away from zero would jump. The shipped
+  coordinator will zero it — which is exactly the argument for not relying on that. **The tracker
+  is the tested half; an invariant the untested half must remember has nowhere to live.**
+- **My own mistake, and the test that caught it is the interesting part.** `git add -A` on the
+  review-fix commit swept up local Xcode changes I had identified *in the same session* as
+  needing to stay out of the repo: a personal `DEVELOPMENT_TEAM`, a bundle identifier changed
+  from `org.catrobat.embroiderydesigner`, and an `Info.plist` Xcode had rewritten, silently
+  deleting the 40-line comment carrying ADR-026's exported-vs-imported reasoning. CI went red on
+  `UTTypeDeclarationTests/hostAppCarriesTheDeclaration` — **US-308 wrote that test for exactly
+  this coupling**, because the exported UTType identifier is namespaced to the bundle id. A
+  documentation-shaped invariant was caught by an executable one.
+- **The lesson is narrower than "don't use `git add -A`".** I had *already* diagnosed those files
+  and said in the same session that they must not be committed, then used a whole-tree stage four
+  tool calls later. Naming a hazard is not the same as arming anything against it. `git add`
+  with explicit paths, or `git status` read before every commit, is the cheap guard — the
+  expensive one was a CI round trip.
+- **Local SwiftLint was clean and CI's was not**, for the dullest possible reason: I ran the lint
+  before adding the last two tests, and the file crossed the 400-line limit afterwards. The
+  file then split along the seam its `// MARK:`s already had (geometry vs. the two-channel
+  lifecycle), the same forcing function that split `StitchDrawPlanCoarseningRuleTests`. **A
+  verification result is only as current as the edit it was run against**, which is the same
+  lesson the contaminated-baseline entry of 2026-09-14 records for measurements, arriving here
+  for tests.
+- **789 engine tests**, up from 761. Ten mutants across the session, no survivors.
+
+## 2026-09-14 (US-313a, Codex rounds 1–3) — flat at High for three rounds, and the layer that reverted the other layer
+
+Severity **High → High → High**, 14 findings, 13 fixed, 1 deferred, **none rejected**. Flat for
+three rounds is this project's early-escalation trigger, so the loop is paused for Sebastian
+rather than run to round 4.
+
+- **The strongest single argument yet for two review layers**: round 1 found that a fix from the
+  *in-loop* review, made an hour earlier, contradicted ADR-028. I had changed `panBegan` to treat
+  its argument as an origin, reasoning that the tracker (the tested half) should not depend on the
+  coordinator having zeroed the recogniser. ADR-028 line 427 removed exactly that subtraction
+  after measuring it, and with a pinch live it also stops the grabbed points tracking the fingers.
+  Previous stories recorded the two layers finding *different* things; this is the first where one
+  layer **undid** the other's work, which is a different and better argument for the cost.
+- **Codex also reversed its own round-1 fix in round 2**, and was right both times. Round 1 said
+  `finish` should take `touchesRemain`; I defaulted it to `false` so a forgetful caller would fail
+  safe rather than stick live forever. Round 2's counter is the sharper reading: a default
+  *silently selects the unsafe branch*, and the regression test — which passes `true` explicitly —
+  structurally cannot catch an omission. **A safe default and an unsafe silence are not the same
+  trade**, and I had priced only the first.
+- **The severity label was flat while the substance fell.** Round 1's High was reachable by a user
+  in the shipped app; round 3's High has no production caller at all — it is a contract that
+  US-313b would have to wire wrongly to reach. The stop rule reads severity, not reachability, so
+  it says "not converging" where the honest description is "converging in impact, flat in label".
+  Worth recording as a limitation of the rule rather than a fault in it: the rule's job is to stop
+  me declaring victory early, and it did that correctly for the first two rounds.
+- **Three of the findings were about the *doc*, not the code** — twice narrowing AC10, once
+  recording a deferral. That is a good sign rather than a wasted round: the criterion had drifted
+  into claiming an invariant the code does not enforce (`bake` identical across every frame), and
+  the alternative to narrowing it was shipping a story whose acceptance criteria are false.
+- **One finding was deferred, and writing down *why* took longer than fixing it would have.**
+  US-314 (the fit moving under the fingers during a growing run) is pre-existing, reproducible,
+  and needs a frozen baseline distinct from `settled` — pinning `settled` at gesture start would
+  contradict ADR-028's identity-gesture rule. The temptation was to fix it inline while the
+  context was hot; the reason not to is that it changes what "following the fit" means, which is
+  ADR-028's most load-bearing concept.
+- **Two self-inflicted CI failures this session, both from the same class of mistake**: running a
+  verification (SwiftLint) and then editing more before committing, and chaining `swiftlint` and
+  `git commit` with `;` so the commit ran despite the failure. The pre-commit hook runs tests and
+  an app compile but **not** lint, which is exactly the gap ADR-023 describes it as having. **A
+  verification result is only as current as the edit it was run against.**
+- **`StageInteraction.swift` hit the 400-line limit twice**, and both times the natural extraction
+  was blocked by access control: the toggle and the pan write `settled`, whose `private(set)`
+  setter is what makes "settled is not written while fingers are down" enforceable rather than
+  documented. `Phase` moved first, then `magnificationLimits` — both chosen because they only
+  read. A line limit pushing back against the encapsulation is an odd interaction, and the right
+  answer was to let the encapsulation win and move something else.
+
+## 2026-09-14 (US-313a, Codex rounds 4–6) — the loop closes, and round 6 replays a review from a story that already shipped
+
+Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
+**High → High → High → High → Medium → none valid**, closing on stop condition 1.
+
+- **The fix chain ran three links long, and each link was a correct fix.** Round 1 made the tracker
+  clamp into the same range the transform enforces, so the two would agree on one factor. That
+  clamp turned a 1× pinch into 1.25× when the settled scale sat below the current floor, defeating
+  `StageGesture.isIdentity` — round 4. Fixing *that* by widening the bounds in `moved` split the
+  bounds into two concepts, so the accessibility Zoom Out could zoom in — round 5. **Every one of
+  those was the right fix; each simply moved the problem one layer out**, and the pattern only
+  stopped when the fix landed on the shared concept (`StageZoomBounds(fitting:including:)`, used by
+  every path) rather than on a call site. US-310 saw the same shape across five of its nine rounds.
+  The generalisable rule: when round N+1's finding is caused by round N's fix, the fix was probably
+  applied at a symptom, and the next one should be applied one level further in.
+- **Round 6 re-derived another story's review, verbatim, against code that already contains its
+  fixes.** This branch changes one constant in `StitchDrawPlan+Coarsening.swift`, so Codex reviewed
+  the whole file and produced four findings — the duplicate-stitch reversal with the same
+  `(0,0) (10,0) (10,0) (0,0)` fixture, the `leastNonzeroMagnitude` dot-product underflow, the
+  single-edge silhouette assertion, the `+ corners` bound. Those are **US-310's Codex rounds 6, 7
+  and 8**, already merged, and the source comments cite them by number — one of them literally
+  reads "Both edges, and that is finding 3 of `/codex-review` round 6."
+- **Two readings of that, and both are worth the thesis.** As *reproducibility* it is a strong
+  result: the same model, same rubric, same code region, months apart, converges on the same four
+  defects in the same order with the same reproducers. As *cost* it is a warning: a review scoped
+  to `main...HEAD` re-reviews every file the branch touches at all, so a one-line constant change
+  dragged a 500-line file with nine rounds of history back into scope, and the round produced four
+  findings, zero of them actionable, while failing to do the verification it was actually asked
+  for. **Diff scope is not review scope**, and the prompt should say which regions are new work and
+  which are incidental.
+- **The first rejections of this loop, and rejecting them took reading the code rather than
+  trusting either party.** Rounds 1–5 had 18 findings and none was rejected. It would have been
+  easy to keep that record by "fixing" things already fixed; each rejection is recorded with the
+  file and line that refutes it.
+- **Round 6 also silently failed its assignment.** It was asked to verify round 5's fix and to
+  enumerate every `StageZoomBounds` construction; it did neither, spent its budget on a
+  floating-point search, and then hit an account usage limit. So round 5's fix is covered by its own
+  test and not by cross-vendor verification — **recorded as a gap rather than counted as a clean
+  round**, because "the last round found nothing about the code I changed" and "the last round did
+  not look at the code I changed" are different states.
+- **I answered one of my own review questions while waiting for the verdict.** The no-ratchet
+  property (does widening the bounds by the baseline let repeated pinches ratchet outward?) was
+  cheap to test, so it became a test rather than a question. Codex independently confirmed it an
+  hour later. Worth repeating: when a review question is decidable by a test, writing the test
+  while the reviewer runs costs nothing and converts an opinion into a regression guard.
+- **Line limits pushed back against encapsulation three times.** `StageInteraction.swift` crossed
+  400 lines twice and the test suites twice more. The natural extraction each time was the toggle
+  and the pan — and both write `settled`, whose `private(set)` setter is what makes "settled is not
+  written while fingers are down" enforceable rather than documented. The answer was to let the
+  encapsulation win and move the read-only pieces instead (`Phase`, `magnificationLimits`, the
+  `magnification` accessor). A mechanical rule and a semantic invariant disagreeing is a good
+  moment to check which one is load-bearing.

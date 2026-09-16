@@ -97,9 +97,13 @@ struct StitchDrawPlanCoarseningRuleTests {
     @Test("the shipped constants leave every sample alone and aim below the threshold")
     func theShippedConstantsLeaveEverySampleAlone() {
         #expect(StitchDrawPlan.liveSegmentTarget < StitchDrawPlan.liveCoarseningThreshold)
+        // 26 at the target US-313a raised this to: ⌈50 001 / 2 000⌉, re-derived rather than
+        // re-blessed when the constant moved from 1 000 (where it was 51). The relation above is
+        // what the shipped pair has to satisfy; this line is the arithmetic at the story's own
+        // measurement count, and it is here so that changing the constant cannot be silent.
         #expect(StitchDrawPlan.coarseningStride(
             forStitchCount: 50_001, target: StitchDrawPlan.liveSegmentTarget
-        ) == 51)
+        ) == 26)
     }
 
     // MARK: - The corner rule

@@ -22,26 +22,6 @@
 /// pure function under `swift test`, which is the deeper win. The view keeps only what SwiftUI
 /// must own: a `@GestureState` whose *presence* is the gesture's lifecycle.
 public struct StageInteraction: Equatable, Sendable {
-    /// What is happening to the stage right now.
-    ///
-    /// Deliberately **not** a `Bool` pair or a set of optionals: a gesture and a fit animation
-    /// are mutually exclusive by construction here, where before they could overlap and the
-    /// code that composed them had to decide which won.
-    public enum Phase: Equatable, Sendable {
-        case idle
-        /// A double-tap or the "Fit to Hoop" action, animating from one transform to another.
-        ///
-        /// **`id` is identity, not bookkeeping, and leaving it out was a real defect.** The
-        /// rewrite claimed that making `finishSettling` idempotent replaced the generation
-        /// token it deleted. It does not: idempotence protects a late completion only when
-        /// *nothing* is settling, and cannot tell "my animation" from "a newer one". Begin A,
-        /// interrupt it with a gesture, begin B, and A's completion then finds B's `.settling`
-        /// phase and ends it early (Codex round 7). The token was never bookkeeping — it was
-        /// ownership — and the improvement over the original is that it now lives *inside the
-        /// value*, where a test can reach it, rather than as a `@State` counter in a view.
-        case settling(id: Int, from: StageTransform, to: StageTransform, progress: Double)
-    }
-
     /// The user's explicit transform, or `nil` while the stage follows the fit.
     ///
     /// `nil` rather than a snapshot: a stored fit freezes at the viewport it was taken in, so a
@@ -65,6 +45,13 @@ public struct StageInteraction: Equatable, Sendable {
     /// in two the ~3× ceiling ADR-027 records for the needle's legibility.
     public static let adjustmentStep: Double = 1.5
 
+    /// What one double-tap zooms to, as a multiple of the fit.
+    ///
+    /// 2× rather than the adjustable action's 1.5, because this is one gesture and not a
+    /// repeatable step: a double tap is a *destination*, and Photos' fit-to-filled toggle is the
+    /// reference. Deliberately modest — the tap says "closer", the pinch says how much.
+    public static let toggleStep: Double = 2
+
     public init() {}
 
     public var isFollowingFit: Bool {
@@ -85,7 +72,7 @@ public struct StageInteraction: Equatable, Sendable {
         switch phase {
         case .idle:
             settled ?? fit
-        case let .settling(_, from, to, progress):
+        case let .settling(_, from, to, progress, _, _):
             from.interpolated(to: to, progress: progress)
         }
     }
@@ -101,14 +88,14 @@ public struct StageInteraction: Equatable, Sendable {
     /// animation; the tests could not see it because they only ever observed progress 0 and 1 —
     /// Codex round 7.)
     public func baseline(fitting fit: StageTransform, settlingAt progress: Double) -> StageTransform {
-        guard case let .settling(_, from, to, _) = phase else { return baseline(fitting: fit) }
+        guard case let .settling(_, from, to, _, _, _) = phase else { return baseline(fitting: fit) }
         return from.interpolated(to: to, progress: progress)
     }
 
     /// The progress the *model* holds — the endpoint `withAnimation` is moving toward, which
     /// the view's shim interpolates from.
     public var settlingProgress: Double {
-        guard case let .settling(_, _, _, progress) = phase else { return 0 }
+        guard case let .settling(_, _, _, progress, _, _) = phase else { return 0 }
         return progress
     }
 
@@ -127,6 +114,17 @@ public struct StageInteraction: Equatable, Sendable {
         in viewport: ViewSize,
         settlingAt progress: Double = 1
     ) -> StageRenderTransform {
+        // **Presence, not movement — and US-313 tried to weaken this and was refuted here.**
+        // Going `.live` the instant a finger lands does degrade the image on a stationary frame
+        // (US-310 made liveness cost fidelity), and the planning pass proposed gating on
+        // `!gesture.isIdentity` on the argument that an unmoved gesture leaves the bake key
+        // where it is, so nothing could be re-baked. **The bake key is not the transform alone**:
+        // `CanvasStitchRenderer.BakeKey` also carries `settledCount`, which advances while a run
+        // is still producing stitches. So a resting frame reporting `canUseRaster` mid-gesture
+        // lets a bake fire at a *new* watermark — a full rasterisation of the settled prefix,
+        // during the gesture, which is ADR-028's Codex round 2 defect exactly and the expense
+        // ADR-009's cache exists to avoid. The two tests below were written for that defect and
+        // they caught this.
         guard gesture != nil || isSettling else { return .settled(baseline(fitting: fit)) }
         return .live(
             bake: settled ?? fit,
@@ -146,18 +144,6 @@ public struct StageInteraction: Equatable, Sendable {
         let committed = baseline(fitting: fit, settlingAt: progress)
         guard let gesture, !gesture.isIdentity else { return committed }
         return moved(by: gesture, from: committed, fitting: fit, in: viewport)
-    }
-
-    /// How far the stage is zoomed relative to the fit — 1.0 means fitted.
-    ///
-    /// Relative, because this is what gets spoken: view points per stage point means nothing to
-    /// a user, and "300 per cent" is something they can act on.
-    public func magnification(
-        gesture: StageGesture?,
-        fitting fit: StageTransform,
-        in viewport: ViewSize
-    ) -> Double {
-        transform(with: gesture, fitting: fit, in: viewport).scale / fit.scale
     }
 
     // MARK: - Transitions
@@ -194,22 +180,118 @@ public struct StageInteraction: Equatable, Sendable {
     /// Returns the new animation's identity, or `nil` when there is nothing to animate — the
     /// caller passes it back to `finishSettling(_:)` so a late completion can prove it owns the
     /// animation it is ending.
-    public mutating func beginSettling(fitting fit: StageTransform) -> Int? {
+    /// - Parameter settlingAt: the in-flight animation's **visible** progress. Load-bearing
+    ///   since the toggle exists: `interrupt()` at progress 1 adopts the animation's
+    ///   *destination*, which used to be the fit for every animation and so was harmless. A
+    ///   zoom-in's destination is not the fit, so "Fit to Hoop" pressed mid-zoom-in snapped the
+    ///   stage forward to 2× and then animated back (`/codex-review` round 2).
+    public mutating func beginSettling(
+        fitting fit: StageTransform,
+        settlingAt progress: Double = 1
+    ) -> Int? {
         // A second activation while the first is still running would otherwise animate from the
         // pre-animation transform and snap backwards past what is on screen.
-        interrupt()
+        interrupt(settlingAt: progress)
         guard !isFollowingFit else { return nil }
 
         nextSettlingID += 1
-        phase = .settling(id: nextSettlingID, from: settled ?? fit, to: fit, progress: 0)
+        phase = .settling(
+            id: nextSettlingID, from: settled ?? fit, to: fit, progress: 0,
+            adoptsFit: true, sourceFollowedFit: isFollowingFit
+        )
         return nextSettlingID
+    }
+
+    /// The double-tap: **fit ↔ `toggleStep` about the tapped point.**
+    ///
+    /// Maps and Photos zoom *in* at the point you tapped; the stage only ever reset to the fit,
+    /// which is a divergence from the very apps a user is comparing it against. So: fitted taps
+    /// zoom in about the tap, anything else returns to the fit — which keeps fit exactly one
+    /// more tap away, the recovery path the "Fit to Hoop" accessibility action also guarantees.
+    ///
+    /// Returns the new animation's identity, or `nil` when there is nothing to animate.
+    /// - Parameter point: where the user tapped, in view points.
+    public mutating func beginToggle(
+        about point: ViewPoint,
+        fitting fit: StageTransform,
+        settlingAt progress: Double = 1
+    ) -> Int? {
+        // A second activation while the first is still running would otherwise animate from the
+        // pre-animation transform and snap backwards past what is on screen.
+        interrupt(settlingAt: progress)
+
+        let from = settled ?? fit
+        let zoomingIn = isFollowingFit
+        let destination = zoomingIn
+            ? fit.pinched(by: Self.toggleStep, about: point, within: StageZoomBounds(fitting: fit))
+            : fit
+        // Nothing to *animate* is not nothing to *do*. Reachable two ways: the fit is already at
+        // the maximum scale, so the pinch clamps to where it started; or `settled` is non-`nil`
+        // and happens to equal the fit, which two opposing pans or a zero-delta accessibility pan
+        // produce. In the second case returning early left the stage pinned to a stale explicit
+        // transform that no later refit could move, and repeated double-taps stayed no-ops
+        // (`/codex-review` round 1) — so the fit branch adopts the fit regardless.
+        guard destination != from else {
+            if !zoomingIn { settled = nil }
+            return nil
+        }
+
+        nextSettlingID += 1
+        phase = .settling(
+            id: nextSettlingID,
+            from: from,
+            to: destination,
+            progress: 0,
+            adoptsFit: !zoomingIn,
+            sourceFollowedFit: zoomingIn
+        )
+        return nextSettlingID
+    }
+
+    /// The user's fingers have gone down: end any animation, at what is on screen.
+    ///
+    /// **ADR-028 says a gesture and a fit animation are mutually exclusive, and until now only
+    /// `commit` enforced it — at the gesture's *end*.** In between, the animation kept running
+    /// under the fingers, so the visible baseline moved every frame while
+    /// `StageManipulation` held magnification limits captured once at `pinchBegan`; the clamped
+    /// factor then stopped matching the one `pinched` applies and the next rebase jumped
+    /// (`/codex-review` round 3). Calling this at the first channel's begin makes the baseline
+    /// something that cannot move under a manipulation, which is what the rebase derivation
+    /// assumes.
+    ///
+    /// Idempotent, and inert when nothing is animating, so a coordinator may call it from every
+    /// recogniser's `.began` without tracking which one was first.
+    public mutating func beginManipulating(fitting fit: StageTransform, settlingAt progress: Double = 1) {
+        interrupt(settlingAt: progress)
+    }
+
+    /// One activation of a directional pan accessibility action.
+    ///
+    /// **The gap this closes was live in the shipped app.** `adjust` zooms about the viewport's
+    /// centre, so a user who cannot pinch could reach any magnification and still only ever see
+    /// the middle of their design: at 3× the corners were unreachable. This is the same
+    /// `dragged(by:)` a finger produces, so the two paths cannot drift apart.
+    ///
+    /// Unclamped, like the gesture pan — ADR-028 ships it that way and says so. Clamping is a
+    /// real gap and its own story; adding it here for one caller would leave the two pans
+    /// disagreeing about where the stage may go.
+    public mutating func panned(
+        by delta: ViewPoint,
+        fitting fit: StageTransform,
+        settlingAt progress: Double = 1
+    ) {
+        interrupt(settlingAt: progress)
+        settled = (settled ?? fit).dragged(by: delta)
     }
 
     /// Drives the animation. Ignored unless a fit animation is actually in flight, so a
     /// completion arriving after an interruption cannot restart one.
     public mutating func settlingProgressed(to progress: Double) {
-        guard case let .settling(id, from, to, _) = phase else { return }
-        phase = .settling(id: id, from: from, to: to, progress: progress)
+        guard case let .settling(id, from, to, _, adoptsFit, source) = phase else { return }
+        phase = .settling(
+            id: id, from: from, to: to, progress: progress,
+            adoptsFit: adoptsFit, sourceFollowedFit: source
+        )
     }
 
     /// Ends the animation `id` by adopting its destination — the fit.
@@ -219,9 +301,11 @@ public struct StageInteraction: Equatable, Sendable {
     /// animation happens to be running now (Codex round 7). The id it was handed at
     /// `beginSettling` is what makes "mine" checkable.
     public mutating func finishSettling(_ id: Int) {
-        guard case let .settling(current, _, _, _) = phase, current == id else { return }
+        guard case let .settling(current, _, to, _, adoptsFit, _) = phase, current == id else {
+            return
+        }
         phase = .idle
-        settled = nil
+        settled = adoptsFit ? nil : to
     }
 
     /// Ends any animation immediately, at the destination it was heading for.
@@ -235,10 +319,21 @@ public struct StageInteraction: Equatable, Sendable {
     ///   user's explicit one, because they took control of a stage that was mid-flight and what
     ///   they see is what they should keep.
     public mutating func interrupt(settlingAt progress: Double = 1) {
-        guard case let .settling(_, from, to, _) = phase else { return }
+        guard case let .settling(_, from, to, _, adoptsFit, source) = phase else { return }
 
         phase = .idle
-        settled = progress >= 1 ? nil : from.interpolated(to: to, progress: progress)
+        guard progress < 1 else {
+            settled = adoptsFit ? nil : to
+            return
+        }
+        // Nothing has moved yet, so nothing about the stage should change — including whether it
+        // was following the fit. Storing `from` here would pin a stage that was only ever
+        // "wherever the fit is" to one particular fit (`/codex-review` round 3).
+        guard progress > 0 || !source else {
+            settled = nil
+            return
+        }
+        settled = from.interpolated(to: to, progress: progress)
     }
 
     /// One activation of the accessibility adjustable action.
@@ -258,8 +353,19 @@ public struct StageInteraction: Equatable, Sendable {
         case .zoomIn: Self.adjustmentStep
         case .zoomOut: 1 / Self.adjustmentStep
         }
-        settled = (settled ?? fit)
-            .pinched(by: factor, about: viewport.center, within: StageZoomBounds(fitting: fit))
+        let baseline = settled ?? fit
+        settled = baseline
+            .pinched(
+                by: factor,
+                about: viewport.center,
+                // The **same** widened bounds a gesture gets. ADR-028: "the adjustable action
+                // uses the same bounds as a gesture; one bounds concept, not two." Round 4
+                // widened them for `moved` and not here, which split the concept in exactly the
+                // way that sentence forbids — and the symptom was Zoom Out *increasing* the scale,
+                // from an explicit transform sitting below the current fit's floor
+                // (`/codex-review` round 5).
+                within: StageZoomBounds(fitting: fit, including: baseline.scale)
+            )
     }
 
     /// Back to following the fit, with no animation — a new design, or a reset that should not
@@ -282,7 +388,11 @@ public struct StageInteraction: Equatable, Sendable {
             .pinched(
                 by: gesture.magnification,
                 about: gesture.anchor(in: viewport),
-                within: StageZoomBounds(fitting: fit)
+                // Widened to include where the stage already is, so a pinch cannot snap a
+                // legitimately out-of-floor transform up to the floor — and, since US-313a
+                // clamps the input layer into the matching range, so that a 1× pinch stays 1×
+                // (`/codex-review` round 4).
+                within: StageZoomBounds(fitting: fit, including: baseline.scale)
             )
             .dragged(by: gesture.pan)
     }

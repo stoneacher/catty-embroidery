@@ -53,7 +53,18 @@ public extension StitchDrawPlan {
     /// Raising it buys fidelity at the cost of frame time; lowering it does the reverse and stops
     /// helping below ~1 000. It has no effect at all on designs at or below
     /// `liveCoarseningThreshold`.
-    static let liveSegmentTarget = 1_000
+    ///
+    /// **Raised from 1 000 to 2 000 in US-313a, on ADR-030's own device evidence and an author's
+    /// call.** That session swept both values at 50 001 stitches mid-gesture and they are
+    /// indistinguishable — median and p95 at one refresh period, p99 33.060 against 33.338, worst
+    /// *identical* at 50.008 ms — so 1 000 was conservative rather than tuned and up to double
+    /// the gesture fidelity was going spare. Recorded honestly: both readings sit on the
+    /// instrument's floor, so this is evidence that raising it is **free**, not a located knee,
+    /// and the ceiling is unknown. US-313 is the story where the fidelity is worth spending,
+    /// because a gesture that tracks properly is one users hold longer and look at while holding.
+    /// Re-verified on device under the new gesture in US-313b (AC13), which may raise the
+    /// touch-move rate and so the draw rate.
+    static let liveSegmentTarget = 2_000
 
     /// How many stitch intervals one drawn segment may join, for a design of `count` stitches
     /// aiming at `target` segments: `1` at or below the target, `ceil(count/target)` above it.
