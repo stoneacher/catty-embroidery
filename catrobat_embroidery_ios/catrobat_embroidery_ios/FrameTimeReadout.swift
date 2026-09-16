@@ -114,7 +114,11 @@
                 unmeasuredDraws: recorder.unmeasuredDrawCount,
                 wasInterrupted: recorder.wasInterrupted
             )
-            let counts = "n=\(all.frameCount) drawn=\(recorder.drawnStatistics?.frameCount ?? 0)\(nominal)"
+            // `commits=` rides beside `drawn=` rather than inside the verdict: a capture is
+            // not better or worse for containing gesture-ends, but the two numbers together
+            // are what separate a per-frame cost from a per-commit tail (ADR-029, US-313b).
+            let counts = "n=\(all.frameCount) drawn=\(recorder.drawnStatistics?.frameCount ?? 0)"
+                + " commits=\(recorder.commitCount ?? 0)\(nominal)"
             let window = "\(seconds(all.totalMilliseconds)) s"
             // **The quantiles shown are the drawn frames', not every frame's**, because those
             // are the only ones the renderer had anything to do with. Falls back to the whole
@@ -135,11 +139,11 @@
         /// is the difference between checking the device and starting down the ladder.
         private var nominal: String {
             guard let interval = recorder.nominalFrameMilliseconds, interval > 0 else { return "" }
-            return " \(Int((1_000 / interval).rounded()))Hz"
+            return " \(Int((1000 / interval).rounded()))Hz"
         }
 
         private func seconds(_ milliseconds: Double) -> String {
-            String(format: "%.1f", milliseconds / 1_000)
+            String(format: "%.1f", milliseconds / 1000)
         }
 
         /// Frame times to **three** decimals, and that is not fussiness.

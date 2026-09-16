@@ -35,6 +35,16 @@ import StagePreview
 /// when the language or region changes.
 @MainActor
 final class StageAccessibilityMemo {
+    /// What VoiceOver says about the stage, as one value.
+    ///
+    /// A named type rather than a tuple: the three strings are read together, and three
+    /// positional components is where a call site starts getting them in the wrong order.
+    struct Spoken: Equatable {
+        let label: String
+        let value: String
+        let hint: String
+    }
+
     /// What the expensive half depends on, and nothing else.
     private struct DescriptionKey: Equatable {
         let summary: StageSummary
@@ -69,7 +79,7 @@ final class StageAccessibilityMemo {
         summary: StageSummary,
         state: RunState,
         magnification: Double
-    ) -> (label: String, value: String, hint: String) {
+    ) -> Spoken {
         if labelKey != .some(designName) {
             label = StageAccessibility.label(designName: designName)
             labelKey = .some(designName)
@@ -84,7 +94,7 @@ final class StageAccessibilityMemo {
             descriptionComputations += 1
         }
 
-        return (
+        return Spoken(
             label: label,
             value: StageAccessibility.value(describing: described, magnification: magnification),
             hint: hint

@@ -25,88 +25,6 @@ import UIKit
 @MainActor
 @Suite("Stage manipulation catcher")
 struct StageManipulationCatcherTests {
-    // MARK: - Stubs
-
-    /// Overrides rather than assigns; see the suite comment.
-    private final class StubPinch: UIPinchGestureRecognizer {
-        var stubState: UIGestureRecognizer.State = .possible
-        var stubLocation: CGPoint = .zero
-
-        override var state: UIGestureRecognizer.State {
-            get { stubState }
-            set { stubState = newValue }
-        }
-
-        override func location(in _: UIView?) -> CGPoint {
-            stubLocation
-        }
-    }
-
-    private final class StubPan: UIPanGestureRecognizer {
-        var stubState: UIGestureRecognizer.State = .possible
-        var stubTranslation: CGPoint = .zero
-
-        override var state: UIGestureRecognizer.State {
-            get { stubState }
-            set { stubState = newValue }
-        }
-
-        override func translation(in _: UIView?) -> CGPoint {
-            stubTranslation
-        }
-    }
-
-    private final class StubTap: UITapGestureRecognizer {
-        var stubLocation: CGPoint = .zero
-
-        override func location(in _: UIView?) -> CGPoint {
-            stubLocation
-        }
-    }
-
-    /// Holds what the bindings write, and counts the commits the coordinator reports.
-    ///
-    /// A local class per test rather than anything shared: these suites run in parallel.
-    private final class Recording {
-        var manipulation = StageManipulation()
-        var interaction = StageInteraction()
-        var commits = 0
-        var taps: [ViewPoint] = []
-    }
-
-    private static let viewport = ViewSize(width: 400, height: 800)
-
-    private static var fit: StageTransform {
-        StageTransform.fitting(StageGeometry.box, in: viewport)
-    }
-
-    private static func snapshot(settlingAt progress: Double = 1) -> StageManipulationCatcher.Snapshot {
-        StageManipulationCatcher.Snapshot(
-            fitted: fit, viewport: viewport, settlingProgress: progress
-        )
-    }
-
-    /// A coordinator wired to a recording, installed on a real tracking view.
-    private static func wired(
-        _ recording: Recording
-    ) -> (StageManipulationCatcher.Coordinator, StageTouchTrackingView) {
-        let coordinator = StageManipulationCatcher.Coordinator()
-        let view = StageTouchTrackingView()
-        coordinator.install(on: view)
-        coordinator.update(
-            snapshot: snapshot(),
-            manipulation: Binding(
-                get: { recording.manipulation }, set: { recording.manipulation = $0 }
-            ),
-            interaction: Binding(
-                get: { recording.interaction }, set: { recording.interaction = $0 }
-            ),
-            onDoubleTap: { recording.taps.append($0) },
-            onCommitted: { recording.commits += 1 }
-        )
-        return (coordinator, view)
-    }
-
     // MARK: - AC1: what is installed
 
     /// **Four of these six assertions are the test.** "Installs three recognisers" passes on
@@ -182,189 +100,6 @@ struct StageManipulationCatcherTests {
         }
     }
 
-    // MARK: - AC4: one manipulation, one commit
-
-    @Test func aRecognizerActionSequenceDrivesTheTrackerAndCommitsOnce() {
-        let recording = Recording()
-        let (coordinator, view) = Self.wired(recording)
-        let pinch = StubPinch()
-        let pan = StubPan()
-
-        view.touchesArrived(2)
-        pinch.stubLocation = CGPoint(x: 200, y: 400)
-        pinch.stubState = .began
-        coordinator.pinched(pinch)
-        pan.stubState = .began
-        coordinator.panned(pan)
-
-        for step in 1 ... 2 {
-            pinch.scale = 1 + 0.5 * Double(step)
-            pinch.stubState = .changed
-            coordinator.pinched(pinch)
-            pan.stubTranslation = CGPoint(x: 10 * step, y: 5 * step)
-            pan.stubState = .changed
-            coordinator.panned(pan)
-            #expect(recording.commits == 0, "a commit landed mid-manipulation")
-            #expect(recording.manipulation.isLive)
-        }
-
-        pinch.stubState = .ended
-        coordinator.pinched(pinch)
-        #expect(recording.commits == 0, "the pinch ending is not the manipulation ending")
-        pan.stubState = .ended
-        coordinator.panned(pan)
-        view.touchesLeft(2)
-
-        #expect(recording.commits == 1)
-        #expect(recording.interaction.settled != nil)
-        #expect(!recording.manipulation.isLive)
-        #expect(recording.manipulation.gesture(in: Self.viewport) == nil)
-    }
-
-    /// **The hole in the story's lifecycle rules, which are individually right and jointly
-    /// incomplete.** Two fingers land, the pinch begins, and the user pinches without moving the
-    /// centroid past the pan's slop — so the pan stays `.possible` and never sends an action.
-    /// One finger lifts: the pinch ends, touches remain, correctly no commit. The last finger
-    /// lifts: **no action method runs at all**, because the only recogniser that recognised has
-    /// already ended. The commit never fires, the manipulation stays live forever,
-    /// `canUseRaster` stays false and the design stays coarse — the exact catastrophe the
-    /// story's rule 3 was written to prevent, arriving through rule 2's door.
-    ///
-    /// The fix is that the touch count is itself a terminal signal, so the settle is attempted
-    /// from every one of them; `finish(in:touchesRemain:)` is idempotent, so attempting twice
-    /// costs nothing.
-    @Test func aPinchThatEndsLastWithThePanNeverBegunStillCommits() {
-        let recording = Recording()
-        let (coordinator, view) = Self.wired(recording)
-        let pinch = StubPinch()
-
-        view.touchesArrived(2)
-        pinch.stubLocation = CGPoint(x: 150, y: 300)
-        pinch.stubState = .began
-        coordinator.pinched(pinch)
-        pinch.scale = 2
-        pinch.stubState = .changed
-        coordinator.pinched(pinch)
-
-        pinch.stubState = .ended
-        coordinator.pinched(pinch)
-        view.touchesLeft(1)
-        #expect(recording.commits == 0, "a finger is still down")
-
-        view.touchesLeft(1)
-
-        #expect(recording.commits == 1)
-        #expect(!recording.manipulation.isLive)
-        #expect(recording.interaction.settled != nil)
-    }
-
-    /// The pinch is clamped into the range the transform will actually apply, which is what
-    /// makes `StageManipulation`'s rebase exact rather than approximately right. Passing
-    /// `unlimitedMagnification` instead compiles, looks fine, and breaks the rebase at the
-    /// bounds — which a fitted design reaches in a few pinches.
-    @Test func theCoordinatorPinchesWithinTheInteractionsLimits() {
-        let recording = Recording()
-        let (coordinator, view) = Self.wired(recording)
-        let pinch = StubPinch()
-        let bounds = StageZoomBounds(fitting: Self.fit, including: Self.fit.scale)
-
-        view.touchesArrived(2)
-        pinch.stubLocation = CGPoint(x: 200, y: 400)
-        pinch.stubState = .began
-        coordinator.pinched(pinch)
-        pinch.scale = 5000
-        pinch.stubState = .changed
-        coordinator.pinched(pinch)
-
-        let live = recording.manipulation.gesture(in: Self.viewport)
-        #expect(live != nil)
-        #expect((live?.magnification ?? 0) * Self.fit.scale <= bounds.maximum * (1 + 1e-9))
-    }
-
-    // MARK: - AC5: cancellation
-
-    /// The app-level companion to US-313a's AC8. `@GestureState` clears itself when the system
-    /// takes the touches away; a coordinator does not, and missing it leaves the stage
-    /// permanently live — `canUseRaster` false forever, the design coarse forever.
-    @Test func aCancelledRecognizerLeavesNoLiveState() {
-        let recording = Recording()
-        let (coordinator, view) = Self.wired(recording)
-        let pinch = StubPinch()
-
-        view.touchesArrived(2)
-        pinch.stubState = .began
-        coordinator.pinched(pinch)
-        pinch.scale = 2
-        pinch.stubState = .changed
-        coordinator.pinched(pinch)
-        pinch.stubState = .cancelled
-        coordinator.pinched(pinch)
-
-        #expect(recording.commits == 0, "a cancelled manipulation must commit nothing")
-        #expect(!recording.manipulation.isLive)
-        #expect(recording.manipulation.gesture(in: Self.viewport) == nil)
-        #expect(recording.interaction.settled == nil)
-    }
-
-    /// **The companion the story lacks.** `cancelled()` resets the whole tracker, so a pan that
-    /// is still physically in flight has no channel to report into — harmless on its own. But a
-    /// second finger landing afterwards re-arms the tracker through `pinchBegan`, while the pan
-    /// channel stays dead for the rest of the touch sequence: the stage would pinch and refuse
-    /// to pan. Suppressing every action until the glass is clear makes "the system took the
-    /// touches away" mean one thing rather than two.
-    @Test func nothingAfterACancelActsUntilTheGlassIsClear() {
-        let recording = Recording()
-        let (coordinator, view) = Self.wired(recording)
-        let pinch = StubPinch()
-        let pan = StubPan()
-
-        view.touchesArrived(2)
-        pinch.stubState = .began
-        coordinator.pinched(pinch)
-        pinch.stubState = .cancelled
-        coordinator.pinched(pinch)
-
-        // The pan was mid-flight and UIKit keeps sending it until the fingers leave.
-        pan.stubState = .changed
-        coordinator.panned(pan)
-        pan.stubState = .ended
-        coordinator.panned(pan)
-        // A second pinch on the same, already-cancelled touch sequence.
-        pinch.stubState = .began
-        coordinator.pinched(pinch)
-
-        #expect(recording.commits == 0)
-        #expect(!recording.manipulation.isLive)
-
-        // Once the glass is clear, a fresh manipulation works normally.
-        view.touchesLeft(2)
-        view.touchesArrived(2)
-        pinch.stubState = .began
-        coordinator.pinched(pinch)
-
-        #expect(recording.manipulation.isLive, "a new touch sequence must not stay suppressed")
-    }
-
-    /// A system cancel delivered to the *view* rather than to a recogniser — the same event
-    /// from the other side. It must not be mistaken for a clean end, which would commit.
-    @Test func aViewLevelCancelCommitsNothing() {
-        let recording = Recording()
-        let (coordinator, view) = Self.wired(recording)
-        let pinch = StubPinch()
-
-        view.touchesArrived(2)
-        pinch.stubState = .began
-        coordinator.pinched(pinch)
-        pinch.scale = 3
-        pinch.stubState = .changed
-        coordinator.pinched(pinch)
-        view.touchesCancelledByTheSystem()
-
-        #expect(recording.commits == 0)
-        #expect(!recording.manipulation.isLive)
-        #expect(recording.interaction.settled == nil)
-    }
-
     // MARK: - The double tap
 
     /// The coordinator's half of AC6: the tapped point reaches the view, in view coordinates.
@@ -372,7 +107,7 @@ struct StageManipulationCatcherTests {
     /// hosted stage in `StageViewWiringTests`, because the animation belongs to SwiftUI.
     @Test func theDoubleTapHandsOutTheTappedPoint() {
         let recording = Recording()
-        let (coordinator, _) = Self.wired(recording)
+        let coordinator = CatcherHarness.wired(recording).coordinator
         let tap = StubTap()
         tap.stubLocation = CGPoint(x: 120, y: 380)
 
@@ -411,12 +146,14 @@ struct StageManipulationCatcherTests {
     /// method could do, and invisible in a screenshot.
     @Test func updatingDoesNotReinstallTheRecognizers() {
         let recording = Recording()
-        let (coordinator, view) = Self.wired(recording)
+        let wiring = CatcherHarness.wired(recording)
+        let coordinator = wiring.coordinator
+        let view = wiring.view
         let installed = view.gestureRecognizers ?? []
 
         for progress in [0.0, 0.25, 0.5, 1.0] {
             coordinator.update(
-                snapshot: Self.snapshot(settlingAt: progress),
+                snapshot: CatcherHarness.snapshot(settlingAt: progress),
                 manipulation: Binding(
                     get: { recording.manipulation }, set: { recording.manipulation = $0 }
                 ),
@@ -445,7 +182,7 @@ struct StageManipulationCatcherTests {
         let hosted = SettlingProgress(progress: 0.5) { animated in
             StageManipulationCatcher(
                 snapshot: StageManipulationCatcher.Snapshot(
-                    fitted: Self.fit, viewport: Self.viewport, settlingProgress: animated
+                    fitted: CatcherHarness.fit, viewport: CatcherHarness.viewport, settlingProgress: animated
                 ),
                 manipulation: Binding(
                     get: { recording.manipulation }, set: { recording.manipulation = $0 }
@@ -473,11 +210,9 @@ struct StageManipulationCatcherTests {
     /// delegate of. A `UIView` walk, not an accessibility-tree walk — deterministic, and
     /// unaffected by whether the accessibility server has engaged.
     private static func coordinator(in root: UIView) -> StageManipulationCatcher.Coordinator? {
-        if let found = root.gestureRecognizers?
-            .compactMap({ $0.delegate as? StageManipulationCatcher.Coordinator }).first
-        {
-            return found
-        }
+        let owned = root.gestureRecognizers?
+            .compactMap { $0.delegate as? StageManipulationCatcher.Coordinator }
+        if let found = owned?.first { return found }
         for subview in root.subviews {
             if let found = coordinator(in: subview) {
                 return found

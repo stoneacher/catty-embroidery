@@ -29,6 +29,15 @@ struct StageAccessibilityMemoTests {
     private static let finished = StageSummary(
         stitchCount: 3194, colorCount: 1, widthInMillimetres: 98.6, heightInMillimetres: 98.6
     )
+    /// One set of inputs. A named type rather than a tuple: four positional components is
+    /// where a copy-paste swaps two of them, and it is over SwiftLint's cap anyway.
+    private struct Reading {
+        let name: String?
+        let summary: StageSummary
+        let state: RunState
+        let magnification: Double
+    }
+
     private static let larger = StageSummary(
         stitchCount: 50001, colorCount: 2, widthInMillimetres: 120.4, heightInMillimetres: 84.2
     )
@@ -121,23 +130,43 @@ struct StageAccessibilityMemoTests {
     /// still be caught.
     @Test func theMemoAgreesWithTheUncachedStringsInEveryState() {
         let memo = StageAccessibilityMemo()
-        let cases: [(String?, StageSummary, RunState, Double)] = [
-            ("OctagonRosette", Self.finished, .finished(.programFinished), 1),
-            ("OctagonRosette", Self.finished, .finished(.programFinished), 2.5),
-            ("OctagonRosette", Self.finished, .running, 2.5),
-            (nil, Self.larger, .finished(.stoppedByUser), 0.4),
-            (nil, Self.larger, .finished(.stoppedByUser), 0.4)
+        let cases: [Reading] = [
+            Reading(
+                name: "OctagonRosette", summary: Self.finished,
+                state: .finished(.programFinished), magnification: 1
+            ),
+            Reading(
+                name: "OctagonRosette", summary: Self.finished,
+                state: .finished(.programFinished), magnification: 2.5
+            ),
+            Reading(
+                name: "OctagonRosette", summary: Self.finished,
+                state: .running, magnification: 2.5
+            ),
+            Reading(
+                name: nil, summary: Self.larger,
+                state: .finished(.stoppedByUser), magnification: 0.4
+            ),
+            Reading(
+                name: nil, summary: Self.larger,
+                state: .finished(.stoppedByUser), magnification: 0.4
+            )
         ]
 
-        for (name, summary, state, magnification) in cases {
+        for reading in cases {
             let cached = memo.strings(
-                designName: name, summary: summary, state: state, magnification: magnification
+                designName: reading.name,
+                summary: reading.summary,
+                state: reading.state,
+                magnification: reading.magnification
             )
 
-            #expect(cached.label == StageAccessibility.label(designName: name))
-            #expect(cached.hint == StageAccessibility.hint(for: state))
+            #expect(cached.label == StageAccessibility.label(designName: reading.name))
+            #expect(cached.hint == StageAccessibility.hint(for: reading.state))
             #expect(cached.value == StageAccessibility.value(
-                summary: summary, state: state, magnification: magnification
+                summary: reading.summary,
+                state: reading.state,
+                magnification: reading.magnification
             ))
         }
     }

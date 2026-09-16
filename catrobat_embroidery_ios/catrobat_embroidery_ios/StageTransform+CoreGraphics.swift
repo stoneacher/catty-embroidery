@@ -66,14 +66,20 @@ extension ViewSize {
 }
 
 extension ViewPoint {
-    /// A gesture translation, on the way in to `StageZoom.commit`.
+    /// A recogniser's point, on the way in to the package.
     ///
-    /// `DragGesture.Value.translation` is a `CGSize` — a displacement, not a position — and
-    /// this is the whole of the conversion. It lives beside the other bridges rather than in
-    /// the stage view because a `CGSize` reaching `StagePreview` is exactly what ADR-022's
-    /// isolation test forbids, and because the view's job is to compose gestures, not to
-    /// re-type their values.
-    init(_ translation: CGSize) {
-        self.init(x: translation.width, y: translation.height)
+    /// `UIPinchGestureRecognizer.location(in:)` and `UIPanGestureRecognizer.translation(in:)`
+    /// are both `CGPoint` — one a position, the other a displacement, and `ViewPoint` is the
+    /// package's single type for both, exactly as `CGPoint` is UIKit's. It lives beside the
+    /// other bridges rather than in the stage view because a CoreGraphics type reaching
+    /// `StagePreview` is what ADR-022's isolation test forbids, and because the view's job is
+    /// to install recognisers, not to re-type their values.
+    ///
+    /// **Replaces a `CGSize` overload that had no call site at all.** That one was written for
+    /// `StageZoom.commit` — a type ADR-028's rewrite deleted — and `DragGesture`'s `CGSize`
+    /// translation went with it. Dead public bridging is worse than none: its doc comment named
+    /// a type that no longer exists, so a reader arriving at it was told something false.
+    init(_ point: CGPoint) {
+        self.init(x: point.x, y: point.y)
     }
 }
