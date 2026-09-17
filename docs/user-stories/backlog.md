@@ -128,3 +128,43 @@ entries: the `hasValidPattern`-vs-replay export-gating divergence and the advers
 question are now placed in
 [`milestone-3/US-308`](milestone-3/US-308-design-name-and-dst-export.md) and
 [`milestone-3/US-211`](milestone-3/US-211-dst-field-width-chokepoint.md) respectively.
+
+## US-315 — The canvas and the hoop come apart while the keyboard animates
+
+**Epic**: E4 Stage & preview | **Estimate**: unknown until reproduced — the diagnosis *is* the
+story | **Discovered**: 2026-09-17, US-313b device session (Sebastian, on the phone)
+
+**Problem**: focusing the design-name field glitches the drawn canvas while the keyboard animates
+in or out — the **design and the hoop field are briefly drawn at different transforms**, so the
+design sits off-centre and spills outside the hoop onto the mat. Visible in the session's screen
+recording at 3.01 s with the keyboard mid-dismiss. Every *committed* state before and after is
+correct; this is a transient, which is the class ADR-028 records as invisible to stills and which
+has now produced three defects in this milestone.
+
+**Already ruled out, written down so the next attempt does not spend the same hour.** Two
+mechanical explanations were built and **refuted by reading the code**:
+
+1. *A stale cached raster composited into the new size.* `CanvasStitchLayers.BakeKey` includes
+   `width` and `height`, so a resize changes the key, `baked?.key != bakeKey`, and
+   `compositingRaster` returns false — the frame takes the full-stroke path at `transform.current`.
+2. *An explicit `settled` transform that does not follow the viewport.* True of `settled` itself,
+   but the hoop field is drawn by `StageFieldView(transform: render.current)` — the **same** value
+   the renderer strokes with, so the two cannot disagree by that route.
+
+**Not reproducible on the simulator**, tried three ways: focusing the field from a fresh fit (the
+export row hides, so the canvas resizes with no keyboard at all); with the software keyboard
+enabled; and at 200 % zoom with `settled` non-`nil`. All settle correctly, and no intermediate
+frame showed the mismatch when sampled at 20 ms from a 60 fps `simctl recordVideo`.
+
+**Next step, and it is a question rather than a fix**: the missing variable is the interaction
+state before focusing — had the stage been zoomed or panned, and does it reproduce from a fresh
+fit? A device recording of both discriminates. After that, the two remaining suspects are SwiftUI
+snapshotting and scaling a view whose frame is animating (the canvas would be a *rendered* layer
+being interpolated rather than re-stroked), and the `SettlingProgress` shim's captured closure
+holding a `fitted` from the previous layout pass — `StageCanvas` documents that staleness and
+argues it is safe because a manipulation and a fit animation cannot coexist. **A keyboard resize
+is neither**, so that argument does not cover this case.
+
+**Not US-313b's.** Nothing that story changed is on this path: the catcher is an overlay that draws
+nothing, and the renderer, the bake key and the field are untouched by it. The interaction is
+US-308's name field against US-305's canvas.
