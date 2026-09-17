@@ -1968,3 +1968,29 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   measured, and flipped back; only the *result* is committed. A change-and-revert pair on a
   reviewed, CI-green branch would have been two commits of noise carrying no information that this
   ADR entry does not.
+
+## 2026-09-17 — US-313b: two criteria written as controls produced the session's only real finding
+
+- **AC13's A/B and AC12's capture 3 were both written as checks on something already believed, and
+  together they overturned it.** AC13 re-verified a constant (it is fine). Capture 3 was "unchanged
+  from ADR-030's capture 10" — a floor check. Neither was expected to say anything new. What they
+  jointly establish is that **the mid-gesture frame cost is not the number of segments drawn**: a
+  3 194-stitch design drawing *more* uncoarsened segments than the coarsened 50 001 one runs at
+  exactly one refresh period, while halving the coarsened count changes nothing.
+- **The comparison only exists because of an arithmetic accident nobody planned.** Octagon Rosette
+  is below `liveCoarseningThreshold`, so it draws all 3 194 of its segments, while the 50 001-stitch
+  design is coarsened to ~1 923. The control design happens to draw *more* geometry than the design
+  it is a control for. That was not designed; it was noticed while writing the instructions for the
+  capture, and stating the two possible readings **before** the measurement is what made the result
+  immediately interpretable instead of a curiosity.
+- **A ladder written in ADR-029 has now been re-pointed twice by measurement.** First by US-309's
+  device session (rung 1 cannot touch a path that never bakes), now by this one (rung 2 is
+  exhausted; drawing fewer segments is no longer the lever). Both times the rung that looked
+  obvious from a desk was wrong, and both times one capture settled it. The ladder's value is not
+  its ordering — which has been wrong twice — but that it forced the order to be *written down*
+  and therefore falsifiable.
+- **The leading hypothesis is recorded as a hypothesis, with the experiment that would test it.**
+  The two designs differ in area covered far more than in geometry, so fill rate and overdraw are
+  the candidate; a 50 000-stitch fixture covering a small area would discriminate, and this repo
+  does not have one. Written into ADR-029 rather than acted on, because nothing in this story needs
+  it and the next person should inherit the question rather than a guess.

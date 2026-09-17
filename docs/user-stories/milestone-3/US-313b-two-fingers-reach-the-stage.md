@@ -1,8 +1,8 @@
 # US-313b — Two fingers reach the stage: the recogniser pair, the a11y gap, the tail discriminator
 
 **Status**: **Implemented 2026-09-16, reviewed 2026-09-17, device session 2026-09-17 —
-AC8, AC9, AC12 and AC13 are met, and ADR-028 correction 3 is measured. Only capture 3's floor
-check is outstanding.**
+every criterion that a device can settle is met — AC8, AC9, AC12, AC13 and ADR-028
+correction 3.**
 **236 app tests** (up from 200) and **810 engine tests** (up from 804), SwiftLint `--strict`
 clean, CI green on all three checks, [PR #47](https://github.com/stoneacher/catty-embroidery/pull/47).
 Five simulator captures including a mid-drag frame. Planned with `swift-architect` and
@@ -317,8 +317,16 @@ threaten it — and, more usefully, **the mid-gesture frame is not dominated by 
 this range**, which re-points ADR-029's remaining rungs away from drawing less. The engine's own
 stride assertion caught the flip within seconds, which is what it was written for.
 
-Capture 3 (the 3 194 control) still needs a re-run with `-US310FrameTimes` — a scheme argument
-applies only to a launch from Xcode. It is the floor check, not a claim this story rests on.
+**Capture 3 is the session's only PASS, and it turned a control into the session's sharpest
+result** (screenshot 12): `n=906 drawn=870 commits=1 60Hz med 16.669 p95 16.669 p99 16.669 max
+16.702@2.0s · 15.1 s`. Flat at one refresh period across 870 drawn frames.
+
+Octagon Rosette sits below `liveCoarseningThreshold`, so it never coarsens and draws all **3 194**
+segments — *more* than the 50 001-stitch design draws coarsened (~1 923). **More segments, half the
+frame time.** With the A/B showing that halving the coarsened count changes nothing, the two
+results together say the mid-gesture cost **is not the number of segments drawn**, and ADR-029's
+ladder is re-pointed at overdraw and fill rate. Neither of these measurements was what its
+criterion was written to check.
 
 **AC8 passes.** Accessibility Inspector, on device: one `SwiftUI.AccessibilityNode`, traits exactly
 `Image` + `Adjustable`, the label, the zoomed value and the rewritten hint all correct.
