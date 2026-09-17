@@ -18,10 +18,15 @@ import SwiftUI
 /// derived expressions, and answered each question by comparing values. The cross-vendor review
 /// found a defect in that arrangement in six consecutive rounds — four of them the *same*
 /// mistake, asking "is an interaction happening?" of a value rather than of the lifecycle — so
-/// the arrangement was replaced rather than patched a seventh time. What is left here is the
-/// part SwiftUI must own: an optional whose presence is the gesture, and two conversions on the
-/// way in (`CGFloat` → `Double`, `UnitPoint` → two `Double`s) that keep ADR-022's boundary
-/// checkable.
+/// the arrangement was replaced rather than patched a seventh time.
+///
+/// **US-313b moved the input layer out again**, and this paragraph used to end by describing
+/// what it left behind — "an optional whose presence is the gesture, and two conversions on the
+/// way in". Both are gone: the `@GestureState` is a `@State StageManipulation` fed by a UIKit
+/// recogniser pair (`StageManipulationCatcher`), and the only conversion left in the app is
+/// `CGPoint` → `ViewPoint`, in `StageTransform+CoreGraphics`. What this file owns now is the
+/// *presentation* — the shim that animates, the accessibility surface, and where the catcher
+/// sits in the modifier chain.
 struct StageCanvas<Renderer: StagePreviewRenderer>: View {
     let display: StitchDisplayList
     let runState: RunState
@@ -38,19 +43,25 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
 
     @Binding var interaction: StageInteraction
 
-    /// The gesture in flight, or `nil`.
+    /// The manipulation in flight, tracked by the package.
     ///
-    /// **Its presence *is* the gesture's lifecycle**, which is the whole reason it is
-    /// `@GestureState`: SwiftUI sets it while fingers are down and clears it when the gesture
-    /// ends, including one the system cancels for a call or a backgrounding. Every earlier
-    /// version of this view inferred "is a gesture happening" from a *value* instead — whether
-    /// two transforms were equal, or whether the gesture's own numbers were still their
-    /// defaults — and the cross-vendor review found a defect in that inference in four separate
-    /// rounds. An optional cannot be wrong in that way.
+    /// **Replaces a `@GestureState`, and the property it gave up has to be replaced too.** That
+    /// wrapper's presence *was* the gesture's lifecycle: SwiftUI set it while fingers were down
+    /// and cleared it for a gesture the system cancelled. `StageManipulation` holds the same
+    /// property deliberately — `isLive` is asked of the recognisers' states, never inferred
+    /// from values — and the clearing that came free now has a named test on both sides of the
+    /// boundary, because a coordinator does not get it for nothing.
     ///
-    /// The values inside are absolute since the gesture began, because that is what SwiftUI
-    /// delivers; nothing here accumulates them.
-    @GestureState private var gesture: StageGesture?
+    /// View-local, exactly as the `@GestureState` was: touch delivery is per-view, and the
+    /// size-class change that destroys this view also cancels the recognisers. `interaction` is
+    /// the value that needs `AppModel`, because `RootView` builds the stage at two call sites.
+    @State private var manipulation = StageManipulation()
+
+    /// The spoken strings, computed once per distinct state rather than once per body.
+    ///
+    /// `@State` of a reference type, which is what lets it be written *during* body evaluation
+    /// — see `StageAccessibilityMemo`, which explains why it is neither a value nor observable.
+    @State private var spoken = StageAccessibilityMemo()
 
     /// The single gate ADR-027 asks this story to reuse rather than add a second of. The
     /// *policy* lives in `StageMotion`; this is just the environment read, which is per-view
@@ -78,8 +89,30 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
             // snap, and no test could see it because they only ever observed progress 0 and 1
             // (Codex round 7).
             SettlingProgress(progress: interaction.settlingProgress) { animated in
+                // **The one read of the tracker per frame.** It is a `@State` captured by the
+                // closure the shim calls, so during a fit animation — when only the shim's body
+                // re-runs — this is the value from the last outer body evaluation.
+                //
+                // What makes that safe is **not** "a manipulation and an animation cannot
+                // coexist", which is what this comment first claimed and is false: the
+                // coordinator's `beginManipulating` ends the animation in the *model*, while the
+                // `withAnimation` transaction interpolating the shim keeps running and its
+                // completion still fires (`swift-code-reviewer`, Q3). What actually holds is
+                // narrower and stronger: every mutation of `manipulation` goes through the
+                // `@State` setter, so the outer body is re-evaluated and this closure is rebuilt
+                // before the next render — and `StageInteraction.baseline(fitting:settlingAt:)`
+                // ignores the progress once the phase is no longer `.settling`.
+                let gesture = manipulation.gesture(in: viewport)
                 let render = interaction.rendering(
                     gesture: gesture, fitting: fitted, in: viewport, settlingAt: animated
+                )
+                let says = spoken.strings(
+                    designName: designName,
+                    summary: summary,
+                    state: runState,
+                    magnification: interaction.magnification(
+                        gesture: gesture, fitting: fitted, in: viewport
+                    )
                 )
 
                 ZStack {
@@ -95,35 +128,35 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                 // before this the pane's grouped-background grey showed through (reported by
                 // Sebastian from the running app).
                 .background(StageChrome.outsideField)
-                // Grabbable across the whole slot rather than only where ink was stroked.
-                .contentShape(Rectangle())
-                // **The handlers live inside the shim so they can see `animated`.**
+                // **The catcher lives inside the shim, and above the accessibility modifiers.**
                 //
-                // The model's stored progress jumps to 1 the instant `withAnimation` runs; only
-                // this closure receives the interpolated value. A handler outside it would
-                // interrupt the animation at its *destination*, snapping the stage from what the
-                // user can see to the fit before their gesture applied (Codex round 8).
-                // Re-creating the gestures per animation frame costs nothing a run does not
-                // already cost — `body` re-evaluates once per batch throughout a run, and
-                // gestures are values.
-                .gesture(inspectGesture(viewport: viewport, fitted: fitted, settlingAt: animated))
-                // **A separate modifier, not part of the composition above.** The drag's default
-                // 10 pt minimum distance is what lets these coexist — a double tap never moves,
-                // so the drag never claims it. Measured, not assumed: building with
-                // `DragGesture(minimumDistance: 0)` made the double-tap a byte-for-byte no-op.
-                .onTapGesture(count: 2) { resetToFit(fitting: fitted, settlingAt: animated) }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(StageAccessibility.label(designName: designName))
-                .accessibilityValue(
-                    StageAccessibility.value(
-                        summary: summary,
-                        state: runState,
-                        magnification: interaction.magnification(
-                            gesture: gesture, fitting: fitted, in: viewport
-                        )
+                // Inside, because only this closure receives the interpolated progress: the
+                // model's stored value jumps to 1 the instant `withAnimation` runs, so a catcher
+                // built outside would interrupt an animation at its *destination*, snapping the
+                // stage from what the user can see to where it was heading (Codex round 8).
+                //
+                // Above `.accessibilityElement(children: .ignore)`, because that modifier merges
+                // the subtree *below it in the chain*: an overlay attached after it is a sibling
+                // of the merged element, and the stage becomes two accessibility elements. That
+                // is the one line of this surgery no screenshot can check, and it is why AC8 is
+                // an Accessibility Inspector pass rather than a test.
+                .overlay {
+                    StageManipulationCatcher(
+                        snapshot: StageManipulationCatcher.Snapshot(
+                            fitted: fitted, viewport: viewport, settlingProgress: animated
+                        ),
+                        manipulation: $manipulation,
+                        interaction: $interaction,
+                        onDoubleTap: { point in
+                            toggle(about: point, fitting: fitted, settlingAt: animated)
+                        },
+                        onCommitted: commitRecorder
                     )
-                )
-                .accessibilityHint(StageAccessibility.hint(for: runState))
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(says.label)
+                .accessibilityValue(says.value)
+                .accessibilityHint(says.hint)
                 .accessibilityAddTraits(.isImage)
                 // Criterion 7: zoom without gestures, for VoiceOver and Switch Control.
                 .accessibilityAdjustableAction { direction in
@@ -133,6 +166,29 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                 // VoiceOver running — a double tap is VoiceOver's own activate gesture — and
                 // Switch Control has no double tap at all. Without this, a user who zooms in
                 // has no way back, which would make criterion 7 a trap instead of a feature.
+                // **The completion of what the adjustable action started.** `adjust` anchors on
+                // the viewport's centre, so zoom was reachable without gestures and pan was not:
+                // a user could reach 3× and still only ever see the middle of their design. Four
+                // named directions, spoken rather than gestural, and camera-relative — "Pan
+                // Left" moves the view left, so the design's left-hand side comes into sight.
+                //
+                // Written out rather than looped, because the name and the movement both come
+                // from one `direction` (`StagePanAction`) and cannot disagree — the review
+                // proved they could when spelled separately here.
+                //
+                // **Declared in reverse, because the rotor reads them in reverse — measured, not
+                // assumed.** The planning pass flagged that SwiftUI's ordering of
+                // `.accessibilityAction(named:)` against source order cannot be taken on trust
+                // and had to be read off the Accessibility Inspector. It was, on device
+                // (2026-09-17): declaring Fit to Hoop first put it **last** in the list, behind
+                // all four pans. So the declaration order below is the reverse of the spoken
+                // order, and the spoken order is what matters — **Fit to Hoop first**, because
+                // it is the recovery from everything the other four can do, and a rotor is
+                // traversed one swipe at a time.
+                .modifier(panAction(.down, fitting: fitted, in: viewport, settlingAt: animated))
+                .modifier(panAction(.up, fitting: fitted, in: viewport, settlingAt: animated))
+                .modifier(panAction(.right, fitting: fitted, in: viewport, settlingAt: animated))
+                .modifier(panAction(.left, fitting: fitted, in: viewport, settlingAt: animated))
                 .accessibilityAction(named: Text(.stageCanvasAccessibilityActionFit)) {
                     resetToFit(fitting: fitted, settlingAt: animated)
                 }
@@ -140,52 +196,29 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
         }
     }
 
-    // MARK: - Gestures
+    // MARK: - Touches
 
-    /// Pinch and pan **simultaneously**, folded in once when the gesture ends.
+    /// Counts committed manipulations, in debug builds only.
     ///
-    /// `.updating` only records what SwiftUI reports; every decision about what that *means* —
-    /// whether it is live, what it moves from, whether it changed anything — belongs to
-    /// `StageInteraction` and is tested there.
-    private func inspectGesture(
-        viewport: ViewSize,
-        fitted: StageTransform,
-        settlingAt progress: Double
-    ) -> some Gesture {
-        MagnifyGesture()
-            .simultaneously(with: DragGesture())
-            .updating($gesture) { value, state, _ in
-                state = Self.reading(value)
-            }
-            .onEnded { value in
-                interaction.commit(
-                    Self.reading(value), fitting: fitted, in: viewport, settlingAt: progress
-                )
-            }
-    }
-
-    /// SwiftUI's composed gesture value as the package's own type.
-    ///
-    /// **One function, used by both callbacks**, because the live frame and the commit reading
-    /// the same event two different ways is precisely the class of bug this story spent six
-    /// review rounds on. The conversions are explicit — `CGFloat` → `Double`, a `UnitPoint`'s
-    /// two components, a `CGSize`'s two — so no CoreGraphics or SwiftUI type crosses ADR-022's
-    /// boundary, and the isolation test can see that it does not.
-    private static func reading(
-        _ value: SimultaneousGesture<MagnifyGesture, DragGesture>.Value
-    ) -> StageGesture {
-        StageGesture(
-            magnification: Double(value.first?.magnification ?? 1),
-            anchorUnitX: Double(value.first?.startAnchor.x ?? 0.5),
-            anchorUnitY: Double(value.first?.startAnchor.y ?? 0.5),
-            panX: Double(value.second?.translation.width ?? 0),
-            panY: Double(value.second?.translation.height ?? 0)
-        )
+    /// Supplied by the view rather than recorded inside the coordinator so that a process-wide
+    /// counter is never written by the parallel suites that drive the coordinator directly —
+    /// which would let an unrelated test inflate the count a frame-time capture reports.
+    private var commitRecorder: (() -> Void)? {
+        #if DEBUG
+            StageCommitCounter.record
+        #else
+            nil
+        #endif
     }
 
     // MARK: - Programmatic transform changes
 
-    /// Double-tap, and the "Fit to Hoop" accessibility action.
+    /// The "Fit to Hoop" accessibility action.
+    ///
+    /// **No longer the double tap**, which US-313a made a toggle: fitted taps zoom in about the
+    /// tapped point, anything else returns to the fit. This stays the unconditional way back,
+    /// which is what an assistive user relies on — a double tap is VoiceOver's own activate
+    /// gesture, and Switch Control has none at all.
     ///
     /// Animates a `Double` and lets the canvas re-stroke at each step, rather than sliding an
     /// already-rendered layer: a reset from a zoomed-in view is a zoom *out*, which by
@@ -213,6 +246,53 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
             // animation ends whichever animation happens to be running now.
             interaction.finishSettling(settling)
         }
+    }
+
+    /// The double tap: **fit ↔ ~2× about the tapped point.**
+    ///
+    /// Maps and Photos zoom *in* where you tapped; the shipped stage only ever reset, which is a
+    /// divergence from the apps a user is comparing it against. US-313a shipped the math and
+    /// nothing called it — `beginToggle` had no call site in the app until this line — so the
+    /// toggle is new behaviour here rather than a re-test of the package.
+    ///
+    /// Shares `resetToFit`'s animation machinery deliberately: one answer to "what happens when
+    /// you interrupt a fit", not one per caller. The interrupt is `beginToggle`'s own, at the
+    /// *visible* progress, because a zoom-in's destination is not the fit — interrupting at 1
+    /// snapped the stage forward to 2× and then animated back (`/codex-review` round 2).
+    private func toggle(
+        about point: ViewPoint,
+        fitting fitted: StageTransform,
+        settlingAt progress: Double
+    ) {
+        guard let settling = interaction.beginToggle(
+            about: point, fitting: fitted, settlingAt: progress
+        ) else { return }
+
+        withAnimation(StageMotion.fitAnimation(reduceMotion: reduceMotion)) {
+            interaction.settlingProgressed(to: 1)
+        } completion: {
+            interaction.finishSettling(settling)
+        }
+    }
+
+    /// One directional pan action, its name and its movement taken from the same `direction`.
+    ///
+    /// The step and its sign live in the package (`StagePanDirection`), so "Pan Left brings the
+    /// left-hand side into view" is a `swift test` assertion rather than a comment here; the
+    /// name is joined to the direction in `StagePanAction`, so the two cannot disagree.
+    private func panAction(
+        _ direction: StagePanDirection,
+        fitting fitted: StageTransform,
+        in viewport: ViewSize,
+        settlingAt progress: Double
+    ) -> StagePanAction {
+        StagePanAction(
+            direction: direction,
+            interaction: $interaction,
+            fitted: fitted,
+            viewport: viewport,
+            settlingProgress: progress
+        )
     }
 
     /// One activation of the adjustable action.

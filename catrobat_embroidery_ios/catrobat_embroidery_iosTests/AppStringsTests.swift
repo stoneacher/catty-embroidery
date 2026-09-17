@@ -1,5 +1,6 @@
 @testable import catrobat_embroidery_ios
 import Foundation
+import StagePreview
 import Testing
 
 /// Every user-facing string this story ships resolves to real English text.
@@ -53,6 +54,15 @@ struct AppStringsTests {
             (.stageCanvasAccessibilityHintRunning, "stage.canvas.accessibility.hint.running"),
             (.stageCanvasAccessibilityHintFinished, "stage.canvas.accessibility.hint.finished"),
             (.stageCanvasAccessibilityActionFit, "stage.canvas.accessibility.action.fit"),
+            // US-313b. The four directional pans, which close the gap ADR-028 left open: the
+            // adjustable action anchors on the viewport's centre, so zoom was reachable without
+            // gestures and pan was not — an assistive user could zoom to 3× and never reach
+            // their design's corners. A missing entry here is worse than a missing label on
+            // screen: the raw key would be **spoken aloud** as the action's name.
+            (.stageCanvasAccessibilityActionPanLeft, "stage.canvas.accessibility.action.pan.left"),
+            (.stageCanvasAccessibilityActionPanRight, "stage.canvas.accessibility.action.pan.right"),
+            (.stageCanvasAccessibilityActionPanUp, "stage.canvas.accessibility.action.pan.up"),
+            (.stageCanvasAccessibilityActionPanDown, "stage.canvas.accessibility.action.pan.down"),
             // US-308. Only the three non-parameterised, non-hint entries are listed here.
             // The seven disabled-reason hints are covered by
             // `ExportControlTests.everyHintResolves`, which additionally asserts they are
@@ -189,5 +199,27 @@ struct AppStringsTests {
         // And the two entries are not the same string, which a copy-paste of one key into
         // both call sites would make them.
         #expect(oneStitch != oneColour)
+    }
+
+    /// US-313b: the five named actions on the stage are **pairwise distinct**.
+    ///
+    /// The `≠ key` check above cannot see the realistic failure here. Four entries written in
+    /// one sitting, differing by one word, are exactly where a copy-paste leaves two directions
+    /// sharing a name — and both would resolve, both would be non-empty, and both would pass
+    /// every assertion in this file. What a user gets is two rotor entries reading "Pan Left",
+    /// one of which pans right.
+    ///
+    /// Distinctness is the property rather than the wording, so this stays inside the suite's
+    /// standing rule of not asserting English.
+    @Test func theFiveNamedStageActionsAreDistinct() {
+        // **Read through the directions rather than through the four symbols**, so this asks the
+        // same mapping the view asks. Naming the entries directly would leave the join between a
+        // direction and its spoken name — the one thing that can be wired the wrong way round —
+        // untouched by any assertion (`swift-code-reviewer`, I2).
+        let names = [String(localized: .stageCanvasAccessibilityActionFit)]
+            + StagePanDirection.allCases.map { String(localized: $0.accessibilityActionName) }
+
+        #expect(Set(names).count == names.count, "two stage actions share a spoken name")
+        #expect(names.allSatisfy { $0.contains { $0.isLetter } })
     }
 }

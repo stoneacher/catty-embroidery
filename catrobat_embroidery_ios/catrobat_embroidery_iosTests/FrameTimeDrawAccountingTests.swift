@@ -47,6 +47,53 @@ struct FrameTimeDrawAccountingTests {
         #expect(recorder.drawCount == 3, "the two draws before start() are not this capture's")
     }
 
+    /// US-313b: a capture also reports how many **manipulations were committed** in its window.
+    ///
+    /// **What it discriminates.** ADR-030 leaves the tail unclaimed and points at the
+    /// gesture-end commit and its full re-bake; the story's device captures #1 and #2 differ
+    /// only in how many times the user lets go. If p99 and the worst frame scale with this
+    /// number rather than with `drawn=`, the commit hypothesis is confirmed and the residual
+    /// belongs to rung 1 — an observation instead of an argument about how many drags the
+    /// tester thinks they performed.
+    ///
+    /// **Restated from the story's `theCommitCounterCountsManipulationsNotFrames`**, which as
+    /// written was a near-duplicate of the catcher's own commits-once test *and* asserted on
+    /// process-wide state from a suite that runs in parallel with the one driving commits. The
+    /// "not frames" half lives where it belongs, in
+    /// `aRecognizerActionSequenceDrivesTheTrackerAndCommitsOnce`; what is left for here is the
+    /// window accounting, which is this suite's subject and the reason it is `.serialized`.
+    @Test("a capture counts only the commits inside its own window")
+    func aCaptureCountsOnlyTheCommitsInsideItsOwnWindow() {
+        let recorder = FrameTimeRecorder()
+        StageCommitCounter.record()
+
+        recorder.start()
+        StageCommitCounter.record()
+        StageCommitCounter.record()
+        recorder.record(timestamp: 1.000)
+        recorder.record(timestamp: 1.016)
+        _ = recorder.stop()
+
+        #expect(recorder.commitCount == 2, "the commit before start() is not this capture's")
+    }
+
+    /// A sustained manipulation is one commit however long it is held — the property device
+    /// capture #1 depends on, and the one ADR-030 §7 inherits.
+    @Test("a capture with no gesture-end reports no commits")
+    func aCaptureWithNoGestureEndReportsNoCommits() {
+        let recorder = FrameTimeRecorder()
+
+        recorder.start()
+        for index in 0 ... 600 {
+            recorder.record(timestamp: Double(index) * 0.016)
+            StageDrawCounter.record()
+        }
+        _ = recorder.stop()
+
+        #expect(recorder.commitCount == 0)
+        #expect((recorder.drawCount ?? 0) > 0, "the capture must still have measured draws")
+    }
+
     /// A static stage draws nothing, which is exactly the case the draw count exists to make
     /// visible: perfect frame times, no rendering.
     @Test("a capture over a static stage reports no draws")

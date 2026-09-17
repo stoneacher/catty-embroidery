@@ -72,6 +72,18 @@
         /// before any capture. See `StageDrawCounter`.
         private(set) var drawCount: Int?
 
+        /// Manipulations committed during the last completed capture.
+        ///
+        /// **The number that tells a tail from a cost.** ADR-030 leaves the residual tail
+        /// unclaimed and points at the gesture-end commit and its full re-bake; the story's
+        /// captures #1 and #2 differ only in how many times the user let go. If p99 scales with
+        /// this rather than with `drawCount`, the commit hypothesis is confirmed.
+        ///
+        /// Deliberately simpler than the draw accounting: nothing is quantiled over commits, so
+        /// there is no per-callback attribution and no unmeasured-commit case — a capture only
+        /// needs to know how many happened inside its own window. `nil` before any capture.
+        private(set) var commitCount: Int?
+
         /// The display's **actual** frame interval in milliseconds, sampled in the callback.
         ///
         /// **Reported because the bar is absolute and the refresh rate is not guaranteed.**
@@ -134,6 +146,9 @@
         /// only when *every* draw was unmeasured — 100 good measured frames plus one
         /// unmeasured 50 ms render still reported `PASS`, and the expensive frame vanished.
         @ObservationIgnored private var unmeasuredDraws = 0
+
+        /// The commit counter's value when this capture began. See `commitCount`.
+        @ObservationIgnored private var commitsAtStart = 0
         @ObservationIgnored private var previousTimestamp: CFTimeInterval?
         /// True between losing and regaining the foreground. While set, callbacks record nothing
         /// **and do not re-seed `previousTimestamp`**, so the gap cannot be reconstructed from
@@ -189,11 +204,13 @@
             elapsedMilliseconds = 0
             previousTimestamp = nil
             previousDrawCount = StageDrawCounter.count
+            commitsAtStart = StageCommitCounter.count
             isSuspended = !isActive
             wasInterrupted = !isActive
             statistics = nil
             drawnStatistics = nil
             drawCount = nil
+            commitCount = nil
             nominalFrameMilliseconds = nil
             drawsAtStart = StageDrawCounter.count
             isRecording = true
@@ -223,6 +240,7 @@
             // 4). Reusing the tested implementation is also one fewer median in the codebase.
             nominalFrameMilliseconds = FrameTimeStatistics(millisecondsPerFrame: frameDurations)?.median
             drawCount = StageDrawCounter.count - drawsAtStart
+            commitCount = StageCommitCounter.count - commitsAtStart
             unmeasuredDrawCount = unmeasuredDraws
             statistics = FrameTimeStatistics(millisecondsPerFrame: intervals)
             drawnStatistics = FrameTimeStatistics(

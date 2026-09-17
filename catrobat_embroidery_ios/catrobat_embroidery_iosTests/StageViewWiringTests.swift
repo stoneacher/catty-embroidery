@@ -22,34 +22,6 @@ import UIKit
 @MainActor
 @Suite("Stage view wiring")
 struct StageViewWiringTests {
-    /// Records what it was handed instead of drawing it. A class, because recording is
-    /// a side effect of a `View`'s `body` and a value type would record into a copy.
-    /// One recorded call. A sibling of the renderer rather than nested inside it, purely
-    /// to stay within SwiftLint's one-level nesting limit.
-    private struct Invocation {
-        let display: StitchDisplayList
-        let transform: StageRenderTransform
-        let needle: PreviewNeedle?
-        let viewport: ViewSize
-    }
-
-    @MainActor
-    private final class RecordingRenderer: StagePreviewRenderer {
-        var invocations: [Invocation] = []
-
-        func makeBody(
-            display: StitchDisplayList,
-            transform: StageRenderTransform,
-            needle: PreviewNeedle?,
-            viewport: ViewSize
-        ) -> EmptyView {
-            invocations.append(
-                Invocation(display: display, transform: transform, needle: needle, viewport: viewport)
-            )
-            return EmptyView()
-        }
-    }
-
     /// Hosts `view` at `size` and forces a layout pass, so every `GeometryReader`
     /// inside it has run by the time this returns.
     ///
@@ -64,15 +36,6 @@ struct StageViewWiringTests {
         controller.view.frame = window.bounds
         window.layoutIfNeeded()
         controller.view.layoutIfNeeded()
-    }
-
-    private static func drawnList() -> StitchDisplayList {
-        var list = StitchDisplayList()
-        list.append(contentsOf: [
-            PreviewStitch(position: StagePoint(x: 0, y: 0), color: .black),
-            PreviewStitch(position: StagePoint(x: 40, y: 20), color: .black)
-        ])
-        return list
     }
 
     /// Builds the stage with the story's new parameters defaulted, so that adding one
@@ -117,7 +80,7 @@ struct StageViewWiringTests {
     /// stale viewport, all fail here.
     @Test func theRendererIsHandedTheDisplayListTransformAndViewportForItsSize() {
         let renderer = RecordingRenderer()
-        let list = Self.drawnList()
+        let list = StageRenderRecording.drawnList()
 
         Self.hosting(
             Self.stage(display: list, needle: nil, renderer: renderer),
@@ -151,7 +114,7 @@ struct StageViewWiringTests {
     /// every gesture.
     @Test func theRendererIsHandedTheZoomsTransformRatherThanTheFit() {
         let renderer = RecordingRenderer()
-        let list = Self.drawnList()
+        let list = StageRenderRecording.drawnList()
         var zoomed = StageInteraction()
 
         // Hosted twice: once fitted to learn the viewport, then zoomed about its centre — so
@@ -191,7 +154,7 @@ struct StageViewWiringTests {
         )
 
         Self.hosting(
-            Self.stage(display: Self.drawnList(), needle: needle, renderer: renderer),
+            Self.stage(display: StageRenderRecording.drawnList(), needle: needle, renderer: renderer),
             at: CGSize(width: 390, height: 700)
         )
 
@@ -213,7 +176,7 @@ struct StageViewWiringTests {
 
         Self.hosting(
             Self.stage(
-                display: Self.drawnList(),
+                display: StageRenderRecording.drawnList(),
                 needle: nil,
                 renderer: renderer,
                 runState: .finished(.programFinished)
@@ -234,7 +197,7 @@ struct StageViewWiringTests {
 
         Self.hosting(
             Self.stage(
-                display: Self.drawnList(),
+                display: StageRenderRecording.drawnList(),
                 needle: nil,
                 renderer: renderer,
                 runState: .finished(.stoppedByUser)

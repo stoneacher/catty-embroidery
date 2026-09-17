@@ -1,10 +1,52 @@
 # US-313b — Two fingers reach the stage: the recogniser pair, the a11y gap, the tail discriminator
 
-**Status**: **Planned — 2026-09-14.** The second half of backlog entry US-313, split at planning
-time. Everything here either needs a simulator or needs a human with two fingers on a device —
-which is the whole reason for the split: US-313a's red phase can be shown for all of its
-criteria without either. Planned with `swift-architect` and `swift-ui-design`. Sebastian took
-four scope decisions, recorded in [US-313a](US-313a-manipulation-as-a-package-value.md).
+**Status**: **Implemented 2026-09-16, reviewed 2026-09-17, device session 2026-09-17 —
+every criterion that a device can settle is met — AC8, AC9, AC12, AC13 and ADR-028
+correction 3.**
+**236 app tests** (up from 200) and **810 engine tests** (up from 804), SwiftLint `--strict`
+clean, CI green on all three checks, [PR #47](https://github.com/stoneacher/catty-embroidery/pull/47).
+Five simulator captures including a mid-drag frame. Planned with `swift-architect` and
+`swift-ui-design`; Sebastian took three further scope decisions on 2026-09-16 (below), alongside
+the four recorded in [US-313a](US-313a-manipulation-as-a-package-value.md).
+
+**Two review layers, 32 findings, none rejected.** `swift-code-reviewer` found 1 critical
+(a system cancel left the coordinator suppressed, swallowing the next whole touch sequence) and
+6 important, four of which were mutations that survived the suite — including the pan translation
+this story exists to deliver. `/codex-review` then ran **3 rounds, 12 findings, severity
+High → Medium → Low**, closing on **both** stop conditions: no code change in the last round, and
+two consecutive decreases. Its High was the one defect reading the diff could not surface —
+`UIView.isMultipleTouchEnabled` defaults to `false`, so the touch-counting view saw one finger
+while its recognisers saw two, and the stage committed with a finger still down. **Thirteen of the
+32 findings were "this assertion cannot fail"**, on a branch both reviewers agreed behaved
+correctly.
+
+**The story's own design shipped a defect, and the planning pass found it.** Its three lifecycle
+rules are individually right and jointly incomplete: with the pan still `.possible` — two fingers
+pinching without passing its slop — the pinch's `.ended` correctly declines to commit while
+touches remain, and then the **last finger lifts with no recogniser left to send an action**.
+Nothing asks again, the manipulation stays live forever, `canUseRaster` stays false and the design
+stays coarse for the rest of the session: rule 3's catastrophe reached through rule 2's door. A
+touch-counting view supplies the missing terminal signal.
+
+**Three of the eleven test items were not buildable as written**, and the red phase refuted a
+fourth premise by executing it. AC3 asks a question UIKit has no getter for; AC9's is the
+accessibility-tree walk US-307 deleted for CI flakiness; the commit-counter test asserted on
+process-wide state from a parallel suite. And the proposed stub recogniser with a settable
+`state` **compiles and is silently ignored** — measured on a booted iPhone 17 — so the stubs
+override instead. Four tests the story did not have were added; the ADR records why.
+
+**Scope decisions (Sebastian, 2026-09-16)**
+
+1. **The directional pan actions are camera-relative** — "Pan Left" moves the viewport left, so
+   the design's left-hand side comes into view and the design itself slides right. A named
+   action is a word, and every spoken or typed direction uses the camera convention.
+2. **Both VoiceOver hints are rewritten** (~75 Crowdin re-translations each). Neither mentioned
+   panning, and the *running* hint named no recovery at all — and the pan is deliberately
+   unclamped, so a user who pushes a running design off the canvas had nothing telling them the
+   way back.
+3. **ADR-031 and ADR-028's five corrections land here.** US-313a specified both and wrote
+   neither, while `docs/ROADMAP.md` already claimed "ADR-031 pins it"; journalled as a
+   close-out miss.
 
 **Epic**: E4 Stage & preview | **Estimate**: ~4 h | **Depends on**: **US-313a** (the tracker it
 feeds), US-310 (the instrument and the protocol)
@@ -235,6 +277,12 @@ pinch cannot be synthesised at all. On device:
    levels, the pop at gesture start and commit, the stride discontinuity at
    `liveCoarseningThreshold` — now answerable under a gesture worth judging.
 7. Accessibility Inspector: one element, the new actions reachable, the names speakable.
+8. **Begin a manipulation *during* a fit animation** — double-tap to start the toggle, then put
+   two fingers down while it is still moving — and say whether the stage takes over smoothly from
+   where it visibly is, or snaps to where the animation was heading. Added after `/codex-review`
+   round 2: the automated guard for this (that `updateUIView` keeps handing the coordinator the
+   shim's current progress) could not be made deterministic, so this step is what covers it, and
+   check 6's "pop at gesture start" does **not** — it judges a gesture begun from rest.
 
 ## Relationship to M3's final verification
 
@@ -242,6 +290,87 @@ This story **supplies** two of the milestone's open items — the tail discrimin
 hand-off capture 1 as originally written — and it makes a third (the A15 re-run) cheaper by
 sharing a session. The bundled manual accessibility pass must run **after** this story, and its
 checklist gains AC8 and AC9 explicitly.
+
+## Device session, 2026-09-17
+
+**In the hand**: every item verified, "intuitive and very smooth" (Sebastian). That covers centroid
+tracking, the add/remove-finger continuity the plan took on trust, the double tap under UIKit
+(**ADR-028 correction 3 measured, not reasoned about**), the compact-width edge, the trackpad, and
+ADR-030's three outstanding judgements.
+
+**AC12 — the discriminator is conclusive.** Capture 2 has a third of capture 1's drawn frames and
+13× its commits, and its tail is *worse* (p99 48.936 → 76.683). ADR-030's unclaimed tail is the
+gesture-end commit and its re-bake. Rows are in ADR-030.
+
+**A second sustained capture** (screenshot 07) reads `n=545 drawn=487 commits=1 med 35.854 p95
+48.677 p99 51.303 max 57.149@12.8s · 18.4 s`. It reproduces capture 1 (34.281 → 35.854) and
+reinforces the discriminator from the other side: one commit, a high draw ratio, and a tail
+*well below* capture 2's thirteen-commit one (p99 51.303 against 76.683).
+
+**AC13 passes, settled by an A/B rather than by argument.** Both gesture captures sit at a ~34 ms
+median against ADR-030's 16.670, and three variables had moved at once — the constant, the device,
+and a gesture now driving `drawn/n` to 0.94 against 0.6. Flipping `liveSegmentTarget` back to 1 000
+and re-running capture 1 on the same phone in the same session isolated it: **35.769 at 1 000
+against 34.281 and 35.854 at 2 000** (screenshot 11). Halving the drawn segments changed nothing
+measurable, so the raise is confirmed free on real hardware under the gesture that was supposed to
+threaten it — and, more usefully, **the mid-gesture frame is not dominated by the segment count in
+this range**, which re-points ADR-029's remaining rungs away from drawing less. The engine's own
+stride assertion caught the flip within seconds, which is what it was written for.
+
+**Capture 3 is the session's only PASS, and it turned a control into the session's sharpest
+result** (screenshot 12): `n=906 drawn=870 commits=1 60Hz med 16.669 p95 16.669 p99 16.669 max
+16.702@2.0s · 15.1 s`. Flat at one refresh period across 870 drawn frames.
+
+Octagon Rosette sits below `liveCoarseningThreshold`, so it never coarsens and draws all **3 194**
+segments — *more* than the 50 001-stitch design draws coarsened (~1 923). **More segments, half the
+frame time.** With the A/B showing that halving the coarsened count changes nothing, the two
+results together say the mid-gesture cost **is not the number of segments drawn**, and ADR-029's
+ladder is re-pointed at overdraw and fill rate. Neither of these measurements was what its
+criterion was written to check.
+
+**AC8 passes.** Accessibility Inspector, on device: one `SwiftUI.AccessibilityNode`, traits exactly
+`Image` + `Adjustable`, the label, the zoomed value and the rewritten hint all correct.
+
+**AC9 passes on content, *failed on order*, and is now fixed and re-verified.** All five custom
+actions were present (the Inspector lists eight: those five plus `Activate`, `Increment` and
+`Decrement`, which the traits imply), but they appeared in **reverse declaration order**, putting
+Fit to Hoop last — behind the four pans a user would need it to recover from. The planning pass
+called this out as unassumable, which is the only reason it was looked for. Reversing the modifiers
+on one observation is itself an inference, so it was **re-read on device** rather than assumed
+(screenshot 06): the list now reads Fit to Hoop, Pan Left, Pan Right, Pan Up, Pan Down. That shot
+incidentally confirms two more things live — the value carries no zoom phrase at the fit, and the
+rewritten hint reads in full.
+
+**Audit findings, triaged**: one contrast warning (`#0091FF` on `#FFFFFF`, 3.23 at 14 pt) — Apple's
+own tint on the share row, real against WCAG AA for normal text, recorded for the milestone
+accessibility pass rather than fixed here. Four "Dynamic Type font sizes are unsupported" — **false
+positives**: every font in the app is a semantic text style, and `DesignNameField` already reflows
+at AX1 (US-308). The flagged nodes are the stage, which contains no text at all, and SwiftUI's own
+`UIKitTextField`. The behavioural check — AX1 on device — is the milestone pass's, not the audit's.
+
+**Found during the session, and not this story's**: focusing the design-name field glitches the
+drawn canvas during the keyboard's resize — the design and the hoop field are briefly drawn at
+different transforms. Reproduced from Sebastian's recording, **not** reproducible on the simulator
+(fresh fit, keyboard up, or at 200 % zoom), and both mechanical explanations were refuted by reading
+the code: `CanvasStitchLayers.BakeKey` includes the viewport, so a resize does invalidate the cached
+raster, and the field and the design are drawn through the same `transform.current`. Filed as its
+own story rather than widening this one; it lives in the US-308 name-field ↔ canvas interaction and
+nothing links it to this story's changes.
+
+## What this story leaves open, named so it is not rediscovered
+
+- **A directional pan gives an assistive user no feedback.** VoiceOver announces nothing after a
+  *custom* action and a pan does not change the spoken value, so four activations are four silent
+  events — and the pan is unclamped, so they can put the design off the canvas entirely. Recorded
+  in ADR-031 and handed to the deferred **pan-clamping story**, which owns both halves.
+- **The `minimumDistance` trade (ADR-028 correction 3) still needs its device measurement.** Under
+  UIKit it is inherited and non-configurable rather than retired — which is what this story's own
+  text got wrong — so human check 3 is what closes it.
+- **Pre-existing, unchanged by this story**: `StageInteraction.magnification(gesture:fitting:in:)`
+  takes no `settlingAt:`, so the *spoken* zoom percentage jumps to a fit animation's destination
+  the instant `withAnimation` runs — ADR-028's Codex-round-8 class of bug, in the accessibility
+  value rather than in the render. Identical on `main`; recorded because this story moved the call
+  site and doubled the ways to start that animation (`swift-code-reviewer`, S13).
 
 ## Manual Ink/Stitch verification
 

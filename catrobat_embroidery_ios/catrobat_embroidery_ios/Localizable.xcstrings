@@ -49,6 +49,54 @@
         }
       }
     },
+    "stage.canvas.accessibility.action.pan.down": {
+      "comment": "Name of an accessibility action on the embroidery stage that moves the user's view of the design. IMPORTANT: this is camera movement, not movement of the design — \"Pan Down\" means the view travels down, so more of the lower part of the design becomes visible and the design itself appears to move up. Translate the direction the viewer's attention travels, not the direction the design moves. The stage is a picture with a fixed physical orientation (an embroidery hoop), so left stays left in right-to-left languages — do not swap it for leading/trailing. Spoken by VoiceOver in the Actions rotor, listed in the Switch Control actions menu, and spoken verbatim by Voice Control users as \"Tap <name>\", so keep it short, imperative and clearly distinct from the three sibling directions and from stage.canvas.accessibility.action.fit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pan Down"
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.action.pan.left": {
+      "comment": "Name of an accessibility action on the embroidery stage that moves the user's view of the design. IMPORTANT: this is camera movement, not movement of the design — \"Pan Left\" means the view travels left, so more of the left-hand side of the design becomes visible and the design itself appears to move right. Translate the direction the viewer's attention travels, not the direction the design moves. The stage is a picture with a fixed physical orientation (an embroidery hoop), so left stays left in right-to-left languages — do not swap it for leading/trailing. Spoken by VoiceOver in the Actions rotor, listed in the Switch Control actions menu, and spoken verbatim by Voice Control users as \"Tap <name>\", so keep it short, imperative and clearly distinct from the three sibling directions and from stage.canvas.accessibility.action.fit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pan Left"
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.action.pan.right": {
+      "comment": "Name of an accessibility action on the embroidery stage that moves the user's view of the design. IMPORTANT: this is camera movement, not movement of the design — \"Pan Right\" means the view travels right, so more of the right-hand side of the design becomes visible and the design itself appears to move left. Translate the direction the viewer's attention travels, not the direction the design moves. The stage is a picture with a fixed physical orientation (an embroidery hoop), so left stays left in right-to-left languages — do not swap it for leading/trailing. Spoken by VoiceOver in the Actions rotor, listed in the Switch Control actions menu, and spoken verbatim by Voice Control users as \"Tap <name>\", so keep it short, imperative and clearly distinct from the three sibling directions and from stage.canvas.accessibility.action.fit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pan Right"
+          }
+        }
+      }
+    },
+    "stage.canvas.accessibility.action.pan.up": {
+      "comment": "Name of an accessibility action on the embroidery stage that moves the user's view of the design. IMPORTANT: this is camera movement, not movement of the design — \"Pan Up\" means the view travels up, so more of the upper part of the design becomes visible and the design itself appears to move down. Translate the direction the viewer's attention travels, not the direction the design moves. The stage is a picture with a fixed physical orientation (an embroidery hoop), so left stays left in right-to-left languages — do not swap it for leading/trailing. Spoken by VoiceOver in the Actions rotor, listed in the Switch Control actions menu, and spoken verbatim by Voice Control users as \"Tap <name>\", so keep it short, imperative and clearly distinct from the three sibling directions and from stage.canvas.accessibility.action.fit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pan Up"
+          }
+        }
+      }
+    },
     "stage.canvas.accessibility.colors": {
       "comment": "One part of the VoiceOver description of the embroidery stage, e.g. \"1 colour\". %lld is the number of *distinct* thread colours in the design, not the number of colour changes — a design that switches red, blue, red uses two colours. Spoken aloud, never shown on screen. Add the plural categories your language needs.",
       "extractionState": "manual",
@@ -74,25 +122,25 @@
       }
     },
     "stage.canvas.accessibility.hint.finished": {
-      "comment": "VoiceOver hint for the embroidery stage whenever a design is not currently being stitched. A hint says what the user can do here; what the stage holds is spoken separately as its value. \"Fit to Hoop\" must match the name of the action stage.canvas.accessibility.action.fit exactly, or the hint will name an action the user cannot find. Describe the result of adjusting rather than naming a gesture — VoiceOver, Switch Control and keyboard users each reach it differently and the system already explains how.",
+      "comment": "VoiceOver hint for the embroidery stage whenever a design is not currently being stitched. A hint says what the user can do here; what the stage holds is spoken separately as its value. \"Fit to Hoop\" must match the name of the action stage.canvas.accessibility.action.fit exactly, or the hint will name an action the user cannot find. Say \"pan\" generically rather than listing the four direction actions by name — hints are spoken after a delay and must stay short. Naming Fit to Hoop is required rather than decorative: panning has no limit, so a user can move the design off screen entirely and this is how they learn the way back. Describe the result of adjusting and panning rather than naming a gesture — VoiceOver, Switch Control and keyboard users each reach them differently and the system already explains how.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Adjust to zoom the design in and out, or use Fit to Hoop to see all of it."
+            "value": "Adjust to zoom the design in and out, pan to move around it, or use Fit to Hoop to see all of it."
           }
         }
       }
     },
     "stage.canvas.accessibility.hint.running": {
-      "comment": "VoiceOver hint for the embroidery stage while a design is being stitched. A hint says what the user can do here. Mentions that stitching is in progress because that is useful alongside the actions, though it is also spoken as the stage's value for users who have turned hints off.",
+      "comment": "VoiceOver hint for the embroidery stage while a design is being stitched. A hint says what the user can do here. Mentions that stitching is in progress because that is useful alongside the actions, though it is also spoken as the stage's value for users who have turned hints off. \"Fit to Hoop\" must match the name of the action stage.canvas.accessibility.action.fit exactly. The design can be zoomed and panned while it is still being stitched, and panning has no limit, so this hint has to name the way back just as the stopped one does.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stitching in progress. Adjust to zoom the design in and out."
+            "value": "Stitching in progress. Adjust to zoom, pan to move around the design, or use Fit to Hoop to see all of it."
           }
         }
       }

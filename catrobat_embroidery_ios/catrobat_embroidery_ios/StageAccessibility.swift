@@ -49,7 +49,17 @@ enum StageAccessibility {
     /// discrete; putting it first means the part that changed is heard before the rest, which
     /// the user can swipe past.
     static func value(summary: StageSummary, state: RunState, magnification: Double) -> String {
-        let described = describing(summary: summary, state: state)
+        value(describing: describing(summary: summary, state: state), magnification: magnification)
+    }
+
+    /// The same value, from a description that has already been built.
+    ///
+    /// **Split out for `StageAccessibilityMemo`, and the split is exactly where the costs
+    /// differ**: everything in `describing` is keyed on `(summary, state)` and is constant for
+    /// a whole manipulation, while the zoom phrase changes on nearly every frame of a pinch and
+    /// costs one number format. A memo that keyed the two together would miss on every frame of
+    /// the one path it was bought for.
+    static func value(describing described: String, magnification: Double) -> String {
         guard let zoom = zoomPhrase(magnification: magnification) else { return described }
         return String(localized: .stageCanvasAccessibilityValueZoomed(zoom, described))
     }
@@ -76,7 +86,11 @@ enum StageAccessibility {
     }
 
     /// The design, in words, once it is finished — or the fact that it is still being made.
-    private static func describing(summary: StageSummary, state: RunState) -> String {
+    ///
+    /// Internal rather than private since US-313b: `StageAccessibilityMemo` caches exactly this,
+    /// because it is the expensive half — three catalog lookups and two `Measurement` formats
+    /// with a `.wide` unit style.
+    static func describing(summary: StageSummary, state: RunState) -> String {
         guard !state.isRunning else {
             return String(localized: .stageCanvasAccessibilityValueStitching)
         }

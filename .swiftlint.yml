@@ -27,6 +27,8 @@ identifier_name:
     - dy
     - to # Brick.setVariable(name:to:) — reads "set variable … to …" (Catroid parity)
     - id # Identifiable's required property name — spelled by the protocol, not chosen
+    - up # StagePanDirection's cardinal direction — its three siblings clear the floor and
+         # abbreviating around the rule ("upward") would name one direction differently
 
 custom_rules:
   # US-303's "no hardcoded user-facing strings" check.

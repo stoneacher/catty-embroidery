@@ -1803,3 +1803,194 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   encapsulation win and move the read-only pieces instead (`Phase`, `magnificationLimits`, the
   `magnification` accessor). A mechanical rule and a semantic invariant disagreeing is a good
   moment to check which one is load-bearing.
+
+## 2026-09-16 — US-313b: two planning agents, an executed premise, and a defect in the story's own design
+
+- **The two planning agents ran concurrently and split the story cleanly**, which is the first time
+  that pairing has been unambiguously worth it. `swift-architect` took the recogniser pair, the
+  testability seam and the corrected test plan; `swift-ui-design` took the accessibility half, the
+  catalog strings and the capture protocol. They overlapped nowhere and each found things the other
+  did not: the architect found the missing terminal signal, the designer found that AC10's memo key
+  does not determine its own output. Total cost ~307k subagent tokens for ~16 minutes of wall time,
+  against a story whose own design had been written a fortnight earlier by the same two agents.
+- **The architect executed a premise instead of reasoning about it, and refuted the plan.** The
+  story's test item 4 proposed stub recognisers with a settable `state` via
+  `import UIKit.UIGestureRecognizerSubclass`, flagged as "to verify at the red phase, not to take
+  from the plan". Verified on a booted simulator: it compiles, `state` *is* assignable, and the
+  assignment is **silently swallowed** — no action ever dispatches. A stub built that way would have
+  produced tests that were green because the coordinator took no branch at all. Overriding the
+  members works. This is ADR-027's close-out lesson holding a second time, and it is the strongest
+  argument yet for the flag-the-premise habit: the story flagged it, so the plan was cheap to fix.
+- **The story's own design shipped a defect, and it was found by reading rather than by testing.**
+  Its three lifecycle rules are individually right and jointly incomplete: when the pan never leaves
+  `.possible`, the last finger lifting runs no action method at all, so nothing asks for the commit
+  and the stage stays live for the session. Worth noting *how* it was found — the architect was
+  asked to work out "precisely how `touchesRemain` is computed, including the case where the pan is
+  still `.possible`", and the answer to that question is where the hole was. A specific question
+  about a named edge case beat a general request for review.
+- **Three of eleven test items were not buildable as written.** AC3 asks about `require(toFail:)`,
+  which UIKit exposes no getter for; AC9 is the accessibility-tree walk US-307 deleted after it
+  passed locally and failed unreproducibly on CI — the story cites that deletion in AC7 and then
+  asks for the same technique in item 8; and the commit-counter test asserted on process-wide state
+  from a suite that runs in parallel with the one driving commits. **Sixth consecutive story** where
+  the planning-time buildability check paid for itself.
+- **The `[red]` commit was skipped for the first three slices and taken for the fourth**, which is
+  worth recording as a miss rather than a policy. The package and accessibility slices were proven
+  red in-session — the failures are in the transcript — but committed green, so CI never saw their
+  red baseline. Only the catcher's fifteen tests got a real `[red]` commit (CI run 35140849034,
+  failing as designed). The rule is worth its cost precisely on the small slices, where "it was
+  obviously red" is easiest to believe and cheapest to be wrong about.
+- **A scripted double tap landed on the simulator, and was verified by reading the accessibility
+  value rather than by eye.** The MCP `batch` tool issues two taps inside the double-tap interval,
+  which the story assumed might be impossible; the stage then reported `Zoom 200 %`. A screenshot
+  cannot distinguish "the toggle fired" from "the tap missed", and the spoken value can.
+- **US-313a closed with two documents it had specified and not written** — ADR-031 and ADR-028's
+  five corrections — while `docs/ROADMAP.md` already said "ADR-031 pins it". Nothing caught it: the
+  story's own "ADR consequence" section is prose, and `/finish` checks that the journal and the
+  status line exist rather than that every artefact a story promised was produced. The closing
+  checklist should compare a story's ADR-consequence section against `DECISIONS.md` before the
+  status line is written.
+
+## 2026-09-16 — US-313b: the two review layers found different things, and the cheap one found the worst
+
+- **The in-loop `swift-code-reviewer` and `/codex-review` overlapped on almost nothing**, which is
+  the clearest evidence yet for running both. The in-loop pass found a **critical** defect of
+  *state* — a system cancel left the coordinator's suppression flag set, swallowing the entire next
+  touch sequence — plus four surviving mutations where the coordinator's inputs were replaceable by
+  constants. Codex found a **High** defect of *platform default*: `UIView.isMultipleTouchEnabled`
+  is `false` unless you set it, so the touch-counting view was seeing one finger while its
+  recognisers saw two. Neither found the other's. The in-loop pass walked every delivery order and
+  took the count as given; Codex asked where the count comes from.
+- **Both defects had the same shape and neither test suite could see them**, for the same reason:
+  the tests call `touchesArrived(2)` directly and the seam was reached only by the test, not by
+  UIKit. The lesson generalises past this story — **a test seam that production does not use is not
+  a seam, it is a second implementation**. The cancel path is now the production method minus the
+  `UITouch` no test can construct, and the multi-touch flag has its own assertion.
+- **Nine of Codex's eight findings were about tests rather than code** (the eighth was the
+  multi-touch defect). That ratio is worth recording: on a branch whose *behaviour* two reviewers
+  agreed was correct, almost every finding was "this assertion cannot fail". The repo has now found
+  this class in seven consecutive stories, and the standing question — "what production line could
+  I delete while this stays green?" — is doing more work than any other review prompt.
+- **One fix was attempted, measured, and abandoned rather than shipped.** Codex's finding 3 (a
+  no-op `updateUIView` survives) is valid, and the obvious test — re-render the host, assert the
+  snapshot followed — cannot be made deterministic here: SwiftUI *schedules* a representable's
+  update, and forced layout, a bounded runloop spin and a key window all failed to drive it. The
+  resulting test passed in isolation and failed inside the suite, which is exactly the
+  hosted-accessibility-tree flake US-307 deleted. It is recorded as a stated gap instead. **A
+  known blind spot beats a test that fails for reasons unrelated to the code.**
+- **A reviewer's mutation was itself refuted by running it.** The in-loop pass demonstrated the
+  `updateUIView` gap by adding `install(on:)` there and watching the suite stay green; re-running
+  that mutation against the rewritten test *also* leaves it green, because re-adding a recogniser
+  already attached to the same view is a no-op in UIKit. The finding (the old test never called
+  `updateUIView`) was right; the mutation used to demonstrate it was benign. Worth the habit: when
+  a review hands you a mutation, run it — both to confirm the gap and to learn what the gap is.
+
+## 2026-09-17 — US-313b: the Codex loop closed on both conditions, and nine of its twelve findings were tests
+
+- **Three rounds, 12 findings, none rejected, severity High → Medium → Low.** The loop ended on
+  **both** stop conditions at once: round 3 produced no code change, and severity had fallen twice
+  in a row. That is the first time on this project both have held together, and it is worth noting
+  that they agreed — the rule's two halves were added at different times for different reasons
+  (US-108's early convergence, US-302's round-6 defect) and had not previously been tested against
+  each other.
+- **Nine of the twelve findings were tests that could not fail**, on a branch where two independent
+  reviewers agreed the *behaviour* was correct. Only one was a production defect — and it was a
+  platform default, `UIView.isMultipleTouchEnabled`, which no amount of reading the diff would
+  surface, because the wrong line is the one that is absent. Together with the in-loop pass's four
+  surviving mutations, **13 of this story's 32 findings were "this assertion cannot fail"**.
+- **Each round found the gap in the previous round's fix, and each time it was a narrower version
+  of the same mistake.** Round 1: the coordinator's inputs were unasserted. Round 2: the reverse
+  terminal order was proven for the pinch and not the pan; the touch count was reached in one jump
+  rather than accumulated. Round 3: the *comment* explaining round 2's fix made a false claim about
+  what UIKit can deliver. The defect got smaller each round, which is what convergence looks like
+  when it is real rather than assumed.
+- **Codex corrected my prose twice, and both corrections mattered.** It caught that human check 6
+  cannot carry the `updateUIView` gap (it judges a gesture begun from rest, not one begun during an
+  animation — the story gained an explicit check 8), and that `touchesBegan` may legally batch two
+  touches. Neither changed a line of behaviour; both changed what a future reader would believe.
+  **A review that only looks for defects would have passed over both.**
+- **The loop's cost, for the thesis record**: three Codex rounds at roughly 2–6 minutes each,
+  against a story whose in-loop review had already found a critical defect. The second reviewer was
+  not redundant — it found the one production defect the first missed, and the first found the one
+  Codex missed.
+
+## 2026-09-17 — US-313b's device session: the two things only a human could have found
+
+- **The Accessibility Inspector caught an ordering defect no test in this repo could.** All five
+  custom actions were present and correctly named, and they came out in **reverse declaration
+  order** — Fit to Hoop last, behind the four pans it exists to recover from. The planning pass had
+  flagged exactly this as unassumable ("do not assume; read it off the Inspector"), which is the
+  only reason it was looked for. Worth keeping as a pattern: when a planning pass says a platform
+  behaviour cannot be taken on trust, that sentence should become a line in the human checklist,
+  not a caveat in a comment.
+- **The frame-time discriminator worked exactly as designed, and it is the story's best result.**
+  Capture 2 has a third of capture 1's drawn frames and thirteen times its commits, and its tail is
+  worse. One number (`commits=`, ~20 lines of `#if DEBUG`) converted "is the tail the commit?" from
+  an argument about how many drags the tester performed into an observation. ADR-029 named this as
+  the cheapest thing to add; it was right.
+- **Three variables moved between two measurement sessions, and the honest answer is "unsettled".**
+  The mid-gesture median is twice ADR-030's, but the constant, the device and the gesture's draw
+  rate all changed at once, so the number cannot be attributed. It would have been easy — and
+  wrong — to write either "AC13 fails, revert the constant" or "different device, ignore it". The
+  A/B that isolates the constant is one build, and the story says so instead.
+- **I could not reproduce the canvas glitch, and said so rather than shipping a guess.** Two
+  mechanical explanations (a stale raster; a viewport-independent `settled`) were both refuted by
+  *reading the code* — `BakeKey` includes the viewport — after I had already half-written the first
+  one up. The cost of checking was two minutes; the cost of reporting it would have been a wrong
+  ADR entry and a fix for a mechanism that does not exist.
+- **Xcode stripped a 45-line comment from `Info.plist`** when it rewrote the file for the device
+  signing change, taking ADR-026's four decisions with it (the declaration itself survived). Caught
+  only because the diff was reviewed before committing. Files Xcode owns cannot hold prose safely —
+  the reasoning belongs in the ADR, with the plist comment as the pointer.
+
+## 2026-09-17 — US-313b: the A/B that cleared a constant, and the negative result underneath it
+
+- **AC13 existed because US-313a changed a constant on simulator evidence, and it paid for itself
+  — in the opposite direction to the one expected.** The mid-gesture median on device was twice
+  ADR-030's row, which looked like the raise from 1 000 to 2 000 finally costing something. It is
+  not: flipping the constant back and re-running the same capture on the same phone gave 35.769
+  against 34.281 and 35.854 at 2 000. **Halving the drawn segments changed nothing measurable.**
+- **Two variables were nearly conflated, and the A/B is the only reason they were not.** The
+  tempting write-ups were "AC13 fails, revert the constant" and "different device, ignore it".
+  Both would have been wrong, and the first would have reverted a change that is demonstrably
+  free. One build separated them; the cost was ten minutes.
+- **The negative result is worth more than the pass.** If halving the segment count does not move
+  the median, then the mid-gesture frame is not dominated by how many segments it draws — ADR-029's
+  rung 2 has reached diminishing returns on this hardware, and rungs 3 and 4 should aim at the
+  per-frame fixed cost rather than at drawing less. A criterion written to re-verify a constant
+  ended up re-pointing the performance ladder.
+- **The engine's own guard caught the flip within seconds.** `StitchDrawPlanCoarseningRuleTests`
+  pins the stride at the story's measurement count "so that changing the constant cannot be
+  silent" — 2 000 → 1 000 failed it immediately (stride 26 → 51), and its comment instructs
+  re-deriving rather than re-blessing. A test written to protect a decision protected a temporary
+  measurement build too.
+- **The measurement build was never committed.** The constant was flipped in the working tree,
+  measured, and flipped back; only the *result* is committed. A change-and-revert pair on a
+  reviewed, CI-green branch would have been two commits of noise carrying no information that this
+  ADR entry does not.
+
+## 2026-09-17 — US-313b: two criteria written as controls produced the session's only real finding
+
+- **AC13's A/B and AC12's capture 3 were both written as checks on something already believed, and
+  together they overturned it.** AC13 re-verified a constant (it is fine). Capture 3 was "unchanged
+  from ADR-030's capture 10" — a floor check. Neither was expected to say anything new. What they
+  jointly establish is that **the mid-gesture frame cost is not the number of segments drawn**: a
+  3 194-stitch design drawing *more* uncoarsened segments than the coarsened 50 001 one runs at
+  exactly one refresh period, while halving the coarsened count changes nothing.
+- **The comparison only exists because of an arithmetic accident nobody planned.** Octagon Rosette
+  is below `liveCoarseningThreshold`, so it draws all 3 194 of its segments, while the 50 001-stitch
+  design is coarsened to ~1 923. The control design happens to draw *more* geometry than the design
+  it is a control for. That was not designed; it was noticed while writing the instructions for the
+  capture, and stating the two possible readings **before** the measurement is what made the result
+  immediately interpretable instead of a curiosity.
+- **A ladder written in ADR-029 has now been re-pointed twice by measurement.** First by US-309's
+  device session (rung 1 cannot touch a path that never bakes), now by this one (rung 2 is
+  exhausted; drawing fewer segments is no longer the lever). Both times the rung that looked
+  obvious from a desk was wrong, and both times one capture settled it. The ladder's value is not
+  its ordering — which has been wrong twice — but that it forced the order to be *written down*
+  and therefore falsifiable.
+- **The leading hypothesis is recorded as a hypothesis, with the experiment that would test it.**
+  The two designs differ in area covered far more than in geometry, so fill rate and overdraw are
+  the candidate; a 50 000-stitch fixture covering a small area would discriminate, and this repo
+  does not have one. Written into ADR-029 rather than acted on, because nothing in this story needs
+  it and the next person should inherit the question rather than a guess.
