@@ -1,11 +1,23 @@
 # US-313b — Two fingers reach the stage: the recogniser pair, the a11y gap, the tail discriminator
 
-**Status**: **Implemented 2026-09-16 — the device session is outstanding, and with it AC8, AC9's
-reachability half, AC12, AC13 and correction 3.** 225 app tests (up from 200), 804 engine tests,
-SwiftLint `--strict` clean, CI green on all three checks. Five simulator captures including a
-mid-drag frame. Planned with `swift-architect` and `swift-ui-design`; Sebastian took three
-further scope decisions on 2026-09-16 (below), alongside the four recorded in
-[US-313a](US-313a-manipulation-as-a-package-value.md).
+**Status**: **Implemented 2026-09-16, reviewed 2026-09-17 — the device session is outstanding,
+and with it AC8, AC9's reachability half, AC12, AC13 and ADR-028 correction 3.**
+**236 app tests** (up from 200) and **810 engine tests** (up from 804), SwiftLint `--strict`
+clean, CI green on all three checks, [PR #47](https://github.com/stoneacher/catty-embroidery/pull/47).
+Five simulator captures including a mid-drag frame. Planned with `swift-architect` and
+`swift-ui-design`; Sebastian took three further scope decisions on 2026-09-16 (below), alongside
+the four recorded in [US-313a](US-313a-manipulation-as-a-package-value.md).
+
+**Two review layers, 32 findings, none rejected.** `swift-code-reviewer` found 1 critical
+(a system cancel left the coordinator suppressed, swallowing the next whole touch sequence) and
+6 important, four of which were mutations that survived the suite — including the pan translation
+this story exists to deliver. `/codex-review` then ran **3 rounds, 12 findings, severity
+High → Medium → Low**, closing on **both** stop conditions: no code change in the last round, and
+two consecutive decreases. Its High was the one defect reading the diff could not surface —
+`UIView.isMultipleTouchEnabled` defaults to `false`, so the touch-counting view saw one finger
+while its recognisers saw two, and the stage committed with a finger still down. **Thirteen of the
+32 findings were "this assertion cannot fail"**, on a branch both reviewers agreed behaved
+correctly.
 
 **The story's own design shipped a defect, and the planning pass found it.** Its three lifecycle
 rules are individually right and jointly incomplete: with the pan still `.possible` — two fingers
