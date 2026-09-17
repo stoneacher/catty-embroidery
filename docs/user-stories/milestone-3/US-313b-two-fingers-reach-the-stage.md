@@ -301,6 +301,11 @@ ADR-030's three outstanding judgements.
 13× its commits, and its tail is *worse* (p99 48.936 → 76.683). ADR-030's unclaimed tail is the
 gesture-end commit and its re-bake. Rows are in ADR-030.
 
+**A second sustained capture** (screenshot 07) reads `n=545 drawn=487 commits=1 med 35.854 p95
+48.677 p99 51.303 max 57.149@12.8s · 18.4 s`. It reproduces capture 1 (34.281 → 35.854) and
+reinforces the discriminator from the other side: one commit, a high draw ratio, and a tail
+*well below* capture 2's thirteen-commit one (p99 51.303 against 76.683).
+
 **AC13 is open, and deliberately not called either way.** Both gesture captures sit at a ~33 ms
 median against ADR-030's 16.670, but three variables moved at once — the constant, the device, and
 a gesture that now drives `drawn/n` to 0.94 against 0.6. **One build settles it**: `liveSegmentTarget`
@@ -310,12 +315,15 @@ back to 1 000, re-run capture 1 on the same phone. Capture 3 needs a re-run with
 **AC8 passes.** Accessibility Inspector, on device: one `SwiftUI.AccessibilityNode`, traits exactly
 `Image` + `Adjustable`, the label, the zoomed value and the rewritten hint all correct.
 
-**AC9 passes on content and *failed on order*, which is why it was a human check.** All five custom
-actions are present (the Inspector lists eight: those five plus `Activate`, `Increment` and
-`Decrement`, which the traits imply). But they appeared in **reverse declaration order**, putting
+**AC9 passes on content, *failed on order*, and is now fixed and re-verified.** All five custom
+actions were present (the Inspector lists eight: those five plus `Activate`, `Increment` and
+`Decrement`, which the traits imply), but they appeared in **reverse declaration order**, putting
 Fit to Hoop last — behind the four pans a user would need it to recover from. The planning pass
-called this out as unassumable; the declaration order is now reversed, with the measurement recorded
-in ADR-031. **Re-verify once in the Inspector.**
+called this out as unassumable, which is the only reason it was looked for. Reversing the modifiers
+on one observation is itself an inference, so it was **re-read on device** rather than assumed
+(screenshot 06): the list now reads Fit to Hoop, Pan Left, Pan Right, Pan Up, Pan Down. That shot
+incidentally confirms two more things live — the value carries no zoom phrase at the fit, and the
+rewritten hint reads in full.
 
 **Audit findings, triaged**: one contrast warning (`#0091FF` on `#FFFFFF`, 3.23 at 14 pt) — Apple's
 own tint on the share row, real against WCAG AA for normal text, recorded for the milestone
