@@ -1,7 +1,7 @@
 # US-313b — Two fingers reach the stage: the recogniser pair, the a11y gap, the tail discriminator
 
-**Status**: **Implemented 2026-09-16, reviewed 2026-09-17 — the device session is outstanding,
-and with it AC8, AC9's reachability half, AC12, AC13 and ADR-028 correction 3.**
+**Status**: **Implemented 2026-09-16, reviewed 2026-09-17, device session 2026-09-17 —
+AC8, AC9 and AC12 are met; AC13 is open pending one A/B, and ADR-028 correction 3 is measured.**
 **236 app tests** (up from 200) and **810 engine tests** (up from 804), SwiftLint `--strict`
 clean, CI green on all three checks, [PR #47](https://github.com/stoneacher/catty-embroidery/pull/47).
 Five simulator captures including a mid-drag frame. Planned with `swift-architect` and
@@ -289,6 +289,49 @@ This story **supplies** two of the milestone's open items — the tail discrimin
 hand-off capture 1 as originally written — and it makes a third (the A15 re-run) cheaper by
 sharing a session. The bundled manual accessibility pass must run **after** this story, and its
 checklist gains AC8 and AC9 explicitly.
+
+## Device session, 2026-09-17
+
+**In the hand**: every item verified, "intuitive and very smooth" (Sebastian). That covers centroid
+tracking, the add/remove-finger continuity the plan took on trust, the double tap under UIKit
+(**ADR-028 correction 3 measured, not reasoned about**), the compact-width edge, the trackpad, and
+ADR-030's three outstanding judgements.
+
+**AC12 — the discriminator is conclusive.** Capture 2 has a third of capture 1's drawn frames and
+13× its commits, and its tail is *worse* (p99 48.936 → 76.683). ADR-030's unclaimed tail is the
+gesture-end commit and its re-bake. Rows are in ADR-030.
+
+**AC13 is open, and deliberately not called either way.** Both gesture captures sit at a ~33 ms
+median against ADR-030's 16.670, but three variables moved at once — the constant, the device, and
+a gesture that now drives `drawn/n` to 0.94 against 0.6. **One build settles it**: `liveSegmentTarget`
+back to 1 000, re-run capture 1 on the same phone. Capture 3 needs a re-run with `-US310FrameTimes`
+(a scheme argument applies only to a launch from Xcode).
+
+**AC8 passes.** Accessibility Inspector, on device: one `SwiftUI.AccessibilityNode`, traits exactly
+`Image` + `Adjustable`, the label, the zoomed value and the rewritten hint all correct.
+
+**AC9 passes on content and *failed on order*, which is why it was a human check.** All five custom
+actions are present (the Inspector lists eight: those five plus `Activate`, `Increment` and
+`Decrement`, which the traits imply). But they appeared in **reverse declaration order**, putting
+Fit to Hoop last — behind the four pans a user would need it to recover from. The planning pass
+called this out as unassumable; the declaration order is now reversed, with the measurement recorded
+in ADR-031. **Re-verify once in the Inspector.**
+
+**Audit findings, triaged**: one contrast warning (`#0091FF` on `#FFFFFF`, 3.23 at 14 pt) — Apple's
+own tint on the share row, real against WCAG AA for normal text, recorded for the milestone
+accessibility pass rather than fixed here. Four "Dynamic Type font sizes are unsupported" — **false
+positives**: every font in the app is a semantic text style, and `DesignNameField` already reflows
+at AX1 (US-308). The flagged nodes are the stage, which contains no text at all, and SwiftUI's own
+`UIKitTextField`. The behavioural check — AX1 on device — is the milestone pass's, not the audit's.
+
+**Found during the session, and not this story's**: focusing the design-name field glitches the
+drawn canvas during the keyboard's resize — the design and the hoop field are briefly drawn at
+different transforms. Reproduced from Sebastian's recording, **not** reproducible on the simulator
+(fresh fit, keyboard up, or at 200 % zoom), and both mechanical explanations were refuted by reading
+the code: `CanvasStitchLayers.BakeKey` includes the viewport, so a resize does invalidate the cached
+raster, and the field and the design are drawn through the same `transform.current`. Filed as its
+own story rather than widening this one; it lives in the US-308 name-field ↔ canvas interaction and
+nothing links it to this story's changes.
 
 ## What this story leaves open, named so it is not rediscovered
 

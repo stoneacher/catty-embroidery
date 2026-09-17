@@ -1913,3 +1913,32 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   against a story whose in-loop review had already found a critical defect. The second reviewer was
   not redundant — it found the one production defect the first missed, and the first found the one
   Codex missed.
+
+## 2026-09-17 — US-313b's device session: the two things only a human could have found
+
+- **The Accessibility Inspector caught an ordering defect no test in this repo could.** All five
+  custom actions were present and correctly named, and they came out in **reverse declaration
+  order** — Fit to Hoop last, behind the four pans it exists to recover from. The planning pass had
+  flagged exactly this as unassumable ("do not assume; read it off the Inspector"), which is the
+  only reason it was looked for. Worth keeping as a pattern: when a planning pass says a platform
+  behaviour cannot be taken on trust, that sentence should become a line in the human checklist,
+  not a caveat in a comment.
+- **The frame-time discriminator worked exactly as designed, and it is the story's best result.**
+  Capture 2 has a third of capture 1's drawn frames and thirteen times its commits, and its tail is
+  worse. One number (`commits=`, ~20 lines of `#if DEBUG`) converted "is the tail the commit?" from
+  an argument about how many drags the tester performed into an observation. ADR-029 named this as
+  the cheapest thing to add; it was right.
+- **Three variables moved between two measurement sessions, and the honest answer is "unsettled".**
+  The mid-gesture median is twice ADR-030's, but the constant, the device and the gesture's draw
+  rate all changed at once, so the number cannot be attributed. It would have been easy — and
+  wrong — to write either "AC13 fails, revert the constant" or "different device, ignore it". The
+  A/B that isolates the constant is one build, and the story says so instead.
+- **I could not reproduce the canvas glitch, and said so rather than shipping a guess.** Two
+  mechanical explanations (a stale raster; a viewport-independent `settled`) were both refuted by
+  *reading the code* — `BakeKey` includes the viewport — after I had already half-written the first
+  one up. The cost of checking was two minutes; the cost of reporting it would have been a wrong
+  ADR entry and a fix for a mechanism that does not exist.
+- **Xcode stripped a 45-line comment from `Info.plist`** when it rewrote the file for the device
+  signing change, taking ADR-026's four decisions with it (the declaration itself survived). Caught
+  only because the diff was reviewed before committing. Files Xcode owns cannot hold prose safely —
+  the reasoning belongs in the ADR, with the plist comment as the pointer.

@@ -166,24 +166,32 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                 // VoiceOver running — a double tap is VoiceOver's own activate gesture — and
                 // Switch Control has no double tap at all. Without this, a user who zooms in
                 // has no way back, which would make criterion 7 a trap instead of a feature.
-                .accessibilityAction(named: Text(.stageCanvasAccessibilityActionFit)) {
-                    resetToFit(fitting: fitted, settlingAt: animated)
-                }
                 // **The completion of what the adjustable action started.** `adjust` anchors on
                 // the viewport's centre, so zoom was reachable without gestures and pan was not:
                 // a user could reach 3× and still only ever see the middle of their design. Four
                 // named directions, spoken rather than gestural, and camera-relative — "Pan
                 // Left" moves the view left, so the design's left-hand side comes into sight.
                 //
-                // Written out rather than looped, because a custom action is a modifier and the
-                // order they are declared in is the order the rotor offers them: Fit to Hoop
-                // stays first, as the recovery from everything the other four can do. The name
-                // and the movement both come from one `direction` (`StagePanAction`), so they
-                // cannot disagree — the review proved they could when spelled separately here.
-                .modifier(panAction(.left, fitting: fitted, in: viewport, settlingAt: animated))
-                .modifier(panAction(.right, fitting: fitted, in: viewport, settlingAt: animated))
-                .modifier(panAction(.up, fitting: fitted, in: viewport, settlingAt: animated))
+                // Written out rather than looped, because the name and the movement both come
+                // from one `direction` (`StagePanAction`) and cannot disagree — the review
+                // proved they could when spelled separately here.
+                //
+                // **Declared in reverse, because the rotor reads them in reverse — measured, not
+                // assumed.** The planning pass flagged that SwiftUI's ordering of
+                // `.accessibilityAction(named:)` against source order cannot be taken on trust
+                // and had to be read off the Accessibility Inspector. It was, on device
+                // (2026-09-17): declaring Fit to Hoop first put it **last** in the list, behind
+                // all four pans. So the declaration order below is the reverse of the spoken
+                // order, and the spoken order is what matters — **Fit to Hoop first**, because
+                // it is the recovery from everything the other four can do, and a rotor is
+                // traversed one swipe at a time.
                 .modifier(panAction(.down, fitting: fitted, in: viewport, settlingAt: animated))
+                .modifier(panAction(.up, fitting: fitted, in: viewport, settlingAt: animated))
+                .modifier(panAction(.right, fitting: fitted, in: viewport, settlingAt: animated))
+                .modifier(panAction(.left, fitting: fitted, in: viewport, settlingAt: animated))
+                .accessibilityAction(named: Text(.stageCanvasAccessibilityActionFit)) {
+                    resetToFit(fitting: fitted, settlingAt: animated)
+                }
             }
         }
     }
