@@ -212,19 +212,26 @@ struct StageManipulationCatcherTests {
     /// stage then commits when the *first* finger lifts, writing `settled` with a finger still
     /// on the glass (ADR-030 §7) and committing a second time if the remaining finger pans.
     /// `/codex-review` round 1 found it; no test could, because they all call `touchesArrived(2)`
-    /// directly, which is the one thing UIKit would never do.
+    /// directly and so never exercise the count arithmetic against a real delivery.
     @Test func theTrackingViewReceivesEveryFinger() {
         #expect(StageTouchTrackingView().isMultipleTouchEnabled)
     }
 
-    /// **Fingers arrive one at a time, and every other test reaches two in one jump from zero.**
+    /// **Fingers can arrive one at a time, and every other test reaches two in one jump.**
     ///
-    /// `touchesArrived(2)` is a convenience no touch sequence produces: a second finger lands
-    /// while the first is already down, so the count *accumulates*. Replacing `+= count` with
-    /// `= count` survived the whole suite (`/codex-review` round 2) and recreates the
+    /// The claim this comment made first — that `touchesArrived(2)` is something no touch
+    /// sequence produces — is **false**, and `/codex-review` round 3 corrected it: `touchesBegan`
+    /// takes "one or more" touches, so a genuinely simultaneous two-finger landing can arrive
+    /// batched. What the suite was missing is the *other* legal delivery, two sequential
+    /// single-touch callbacks, which is what a second finger landing on a stage already being
+    /// dragged produces. That is the one that distinguishes accumulation from assignment:
+    /// replacing `+= count` with `= count` survived the whole suite (round 2) and recreates the
     /// early-commit failure — two fingers would read 1, and the stage would commit when the
-    /// first lifted. Partial departures and a cancel that takes one of two fingers are the same
-    /// arithmetic seen from the other side.
+    /// first lifted.
+    ///
+    /// The final over-departure is a different kind of assertion and is labelled as one: not a
+    /// delivery UIKit makes, but the clamp that keeps an unbalanced or doubled callback
+    /// degrading to "no fingers" rather than to a permanently live stage.
     @Test func theTouchCountAccumulatesAsFingersArriveAndLeave() {
         let view = StageTouchTrackingView()
 
@@ -241,6 +248,8 @@ struct StageManipulationCatcherTests {
         view.touchesCancelledByTheSystem(count: 1)
         #expect(view.activeTouchCount == 1, "a partial cancel takes only its own touches")
 
+        // Robustness rather than realism: UIKit would not report five departures from one
+        // finger, and the clamp is what makes a doubled or unbalanced callback harmless.
         view.touchesLeft(5)
         #expect(view.activeTouchCount == 0, "the count is clamped rather than going negative")
     }

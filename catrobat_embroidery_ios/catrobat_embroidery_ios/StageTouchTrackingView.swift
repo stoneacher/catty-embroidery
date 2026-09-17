@@ -52,7 +52,9 @@ final class StageTouchTrackingView: UIView {
         //
         // Found by `/codex-review` round 1. The in-loop review walked both delivery orders and
         // missed it because it took the count as given; the tests missed it because they call
-        // `touchesArrived(2)` directly, which is the one thing UIKit would not have done.
+        // `touchesArrived(2)` directly and so never exercised this arithmetic against a real
+        // delivery. (`touchesBegan` may legally carry two touches at once — an earlier version
+        // of this comment said otherwise; round 3 corrected it.)
         isMultipleTouchEnabled = true
         // **AC7, set here rather than in `makeUIView`**, which is what lets a test assert it on
         // a plain constructor instead of walking a published accessibility tree — the technique
