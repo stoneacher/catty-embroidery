@@ -633,7 +633,19 @@ So **conversion rejection is not the same as view-space undrawability**, and a j
 
 **The commit hypothesis is confirmed, and this is what the story was built to establish.** Capture 2 has **a third** of capture 1's drawn frames and **13×** its commits, and its tail is *worse* — p99 48.936 → 76.683, worst 76.043 → 83.348. A per-draw cost would have improved with fewer draws. So the residual tail this ADR left unclaimed is the **gesture-end commit and its full re-bake**, which is rung 1's territory, and `commits=` beside `drawn=` is what turned an argument about how many drags the tester performed into an observation. Capture 4 confirms nothing leaks into the animating path: `drawn=245` against ADR-030's 251, `commits=0`, median at one refresh period.
 
-**What is *not* settled, stated rather than concluded.** Captures 1 and 2 both sit at a median of ~33 ms — two refresh periods, against this ADR's clean row of 16.670. Three things differ from the 2026-09-14 session at once: `liveSegmentTarget` (1 000 → 2 000, US-313a), the **device** (these rows are not the iPhone 17 Pro the earlier ones came from), and the gesture itself, which now drives `drawn/n` to 0.94 where this ADR measured 0.6. **The clean experiment is one build**: set the constant back to 1 000 and re-run capture 1 on the same phone in the same session, leaving the constant the only variable. Until that is run, **AC13 is neither passed nor failed** — and US-313a's "measured free" stands on evidence taken under a gesture that could not drive the draw rate this hard. Capture 3 (the 3 194 control) was taken without `-US310FrameTimes` and has no row; a scheme argument applies only to a launch from Xcode.
+**AC13 settled by an A/B on the same phone, the same session: `liveSegmentTarget = 2000` is confirmed free, and the median is not the segment count.** Captures 1 and 2 sit at a median of ~34 ms, two refresh periods against this ADR's clean row of 16.670, and three things differed from the 2026-09-14 session at once — the constant, the device, and a gesture now driving `drawn/n` to 0.94 where this ADR measured 0.6. The constant was isolated by flipping it back and re-running capture 1:
+
+| `liveSegmentTarget` | drawn/n | commits | med | p95 | p99 | max |
+|---|---|---|---|---|---|---|
+| 2 000 | 0.94 | 1 | 34.281 | 47.545 | 48.936 | 76.043 |
+| 2 000 (repeat) | 0.89 | 1 | 35.854 | 48.677 | 51.303 | 57.149 |
+| **1 000** | 0.94 | 1 | **35.769** | 49.333 | 51.189 | 52.194 |
+
+**Halving the drawn segments changed nothing measurable** — roughly 1 923 segments at stride 26 against ~980 at stride 51, and 35.769 lands *inside* the 34.281–35.854 spread of the two runs at 2 000. So US-313a's raise is re-confirmed on real hardware under the gesture that was supposed to threaten it, and the "up to double the fidelity, free" claim survives a test it could have failed.
+
+**The negative result is the more useful half, and it re-points ADR-029's ladder.** If halving the segment count does not move the median, then in this range **the mid-gesture frame is not dominated by how many segments it draws** — rung 2 has reached diminishing returns on this device, and the remaining ~34 ms is per-frame fixed cost (path construction, the canvas-to-GPU handoff) or the device itself. Rungs 3 and 4 should be aimed there rather than at drawing less. What the A/B cannot separate is the **device**: these rows are not the iPhone 17 Pro the 16.670 came from, so that row should be read as one device's number rather than the platform's.
+
+Capture 3 (the 3 194 control) was taken without `-US310FrameTimes` and has no row; a scheme argument applies only to a launch from Xcode.
 
 ## ADR-031 — The manipulation layer: a recogniser pair over a pure tracker, and the terminal signal neither story had (2026-09-16)
 

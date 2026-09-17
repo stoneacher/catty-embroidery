@@ -1942,3 +1942,29 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   signing change, taking ADR-026's four decisions with it (the declaration itself survived). Caught
   only because the diff was reviewed before committing. Files Xcode owns cannot hold prose safely —
   the reasoning belongs in the ADR, with the plist comment as the pointer.
+
+## 2026-09-17 — US-313b: the A/B that cleared a constant, and the negative result underneath it
+
+- **AC13 existed because US-313a changed a constant on simulator evidence, and it paid for itself
+  — in the opposite direction to the one expected.** The mid-gesture median on device was twice
+  ADR-030's row, which looked like the raise from 1 000 to 2 000 finally costing something. It is
+  not: flipping the constant back and re-running the same capture on the same phone gave 35.769
+  against 34.281 and 35.854 at 2 000. **Halving the drawn segments changed nothing measurable.**
+- **Two variables were nearly conflated, and the A/B is the only reason they were not.** The
+  tempting write-ups were "AC13 fails, revert the constant" and "different device, ignore it".
+  Both would have been wrong, and the first would have reverted a change that is demonstrably
+  free. One build separated them; the cost was ten minutes.
+- **The negative result is worth more than the pass.** If halving the segment count does not move
+  the median, then the mid-gesture frame is not dominated by how many segments it draws — ADR-029's
+  rung 2 has reached diminishing returns on this hardware, and rungs 3 and 4 should aim at the
+  per-frame fixed cost rather than at drawing less. A criterion written to re-verify a constant
+  ended up re-pointing the performance ladder.
+- **The engine's own guard caught the flip within seconds.** `StitchDrawPlanCoarseningRuleTests`
+  pins the stride at the story's measurement count "so that changing the constant cannot be
+  silent" — 2 000 → 1 000 failed it immediately (stride 26 → 51), and its comment instructs
+  re-deriving rather than re-blessing. A test written to protect a decision protected a temporary
+  measurement build too.
+- **The measurement build was never committed.** The constant was flipped in the working tree,
+  measured, and flipped back; only the *result* is committed. A change-and-revert pair on a
+  reviewed, CI-green branch would have been two commits of noise carrying no information that this
+  ADR entry does not.

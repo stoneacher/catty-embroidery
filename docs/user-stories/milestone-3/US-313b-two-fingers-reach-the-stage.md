@@ -1,7 +1,8 @@
 # US-313b — Two fingers reach the stage: the recogniser pair, the a11y gap, the tail discriminator
 
 **Status**: **Implemented 2026-09-16, reviewed 2026-09-17, device session 2026-09-17 —
-AC8, AC9 and AC12 are met; AC13 is open pending one A/B, and ADR-028 correction 3 is measured.**
+AC8, AC9, AC12 and AC13 are met, and ADR-028 correction 3 is measured. Only capture 3's floor
+check is outstanding.**
 **236 app tests** (up from 200) and **810 engine tests** (up from 804), SwiftLint `--strict`
 clean, CI green on all three checks, [PR #47](https://github.com/stoneacher/catty-embroidery/pull/47).
 Five simulator captures including a mid-drag frame. Planned with `swift-architect` and
@@ -306,11 +307,18 @@ gesture-end commit and its re-bake. Rows are in ADR-030.
 reinforces the discriminator from the other side: one commit, a high draw ratio, and a tail
 *well below* capture 2's thirteen-commit one (p99 51.303 against 76.683).
 
-**AC13 is open, and deliberately not called either way.** Both gesture captures sit at a ~33 ms
-median against ADR-030's 16.670, but three variables moved at once — the constant, the device, and
-a gesture that now drives `drawn/n` to 0.94 against 0.6. **One build settles it**: `liveSegmentTarget`
-back to 1 000, re-run capture 1 on the same phone. Capture 3 needs a re-run with `-US310FrameTimes`
-(a scheme argument applies only to a launch from Xcode).
+**AC13 passes, settled by an A/B rather than by argument.** Both gesture captures sit at a ~34 ms
+median against ADR-030's 16.670, and three variables had moved at once — the constant, the device,
+and a gesture now driving `drawn/n` to 0.94 against 0.6. Flipping `liveSegmentTarget` back to 1 000
+and re-running capture 1 on the same phone in the same session isolated it: **35.769 at 1 000
+against 34.281 and 35.854 at 2 000** (screenshot 11). Halving the drawn segments changed nothing
+measurable, so the raise is confirmed free on real hardware under the gesture that was supposed to
+threaten it — and, more usefully, **the mid-gesture frame is not dominated by the segment count in
+this range**, which re-points ADR-029's remaining rungs away from drawing less. The engine's own
+stride assertion caught the flip within seconds, which is what it was written for.
+
+Capture 3 (the 3 194 control) still needs a re-run with `-US310FrameTimes` — a scheme argument
+applies only to a launch from Xcode. It is the floor check, not a claim this story rests on.
 
 **AC8 passes.** Accessibility Inspector, on device: one `SwiftUI.AccessibilityNode`, traits exactly
 `Image` + `Adjustable`, the label, the zoomed value and the rewritten hint all correct.
