@@ -1884,3 +1884,32 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   already attached to the same view is a no-op in UIKit. The finding (the old test never called
   `updateUIView`) was right; the mutation used to demonstrate it was benign. Worth the habit: when
   a review hands you a mutation, run it — both to confirm the gap and to learn what the gap is.
+
+## 2026-09-17 — US-313b: the Codex loop closed on both conditions, and nine of its twelve findings were tests
+
+- **Three rounds, 12 findings, none rejected, severity High → Medium → Low.** The loop ended on
+  **both** stop conditions at once: round 3 produced no code change, and severity had fallen twice
+  in a row. That is the first time on this project both have held together, and it is worth noting
+  that they agreed — the rule's two halves were added at different times for different reasons
+  (US-108's early convergence, US-302's round-6 defect) and had not previously been tested against
+  each other.
+- **Nine of the twelve findings were tests that could not fail**, on a branch where two independent
+  reviewers agreed the *behaviour* was correct. Only one was a production defect — and it was a
+  platform default, `UIView.isMultipleTouchEnabled`, which no amount of reading the diff would
+  surface, because the wrong line is the one that is absent. Together with the in-loop pass's four
+  surviving mutations, **13 of this story's 32 findings were "this assertion cannot fail"**.
+- **Each round found the gap in the previous round's fix, and each time it was a narrower version
+  of the same mistake.** Round 1: the coordinator's inputs were unasserted. Round 2: the reverse
+  terminal order was proven for the pinch and not the pan; the touch count was reached in one jump
+  rather than accumulated. Round 3: the *comment* explaining round 2's fix made a false claim about
+  what UIKit can deliver. The defect got smaller each round, which is what convergence looks like
+  when it is real rather than assumed.
+- **Codex corrected my prose twice, and both corrections mattered.** It caught that human check 6
+  cannot carry the `updateUIView` gap (it judges a gesture begun from rest, not one begun during an
+  animation — the story gained an explicit check 8), and that `touchesBegan` may legally batch two
+  touches. Neither changed a line of behaviour; both changed what a future reader would believe.
+  **A review that only looks for defects would have passed over both.**
+- **The loop's cost, for the thesis record**: three Codex rounds at roughly 2–6 minutes each,
+  against a story whose in-loop review had already found a critical defect. The second reviewer was
+  not redundant — it found the one production defect the first missed, and the first found the one
+  Codex missed.
