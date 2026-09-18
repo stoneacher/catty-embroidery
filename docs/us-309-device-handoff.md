@@ -276,3 +276,46 @@ rows above (2 captures × 3 rows). The earlier "5 (then 9)" was arithmetic for t
 four-capture tuning grid and no longer matches the table. The two `.trace` bundles, the device `assembled()` numbers, and
 the two screenshots. Everything else — the headless guards, the simulator rehearsal, the tuning
 *shape* — is already done and does not need the device.
+
+## Instruments (Animation Hitches) — protocol, added 2026-09-18
+
+The final-verification item asked for Instruments traces "of the animating and mid-gesture
+captures" without saying how. Taken 2026-09-18; the findings are in **ADR-029's amendment**, and
+this section is only the how, because four things cost the session time and none is discoverable
+from the tool's own errors.
+
+1. **`xctrace` and Instruments.app cannot see a CoreDevice-only phone until Xcode has been opened
+   once and its access prompt approved.** Before that, `xcrun xctrace list devices` lists the
+   device under **`== Devices Offline ==`** and `xctrace record` fails with
+   `Timed out waiting for device to boot`, while `devicectl` reports the same device
+   `available (paired)`, `Transport Type: wired`, and installs and launches on it happily. The
+   two tools use different discovery paths and only the `devicectl` one works headlessly. Open
+   Xcode, approve, and the device moves to `== Devices ==`.
+2. **`--attach` does not work here; use `--launch`.** Attaching by process name gives
+   `Cannot find process matching name`, and attaching by the pid that
+   `devicectl device info processes` just printed gives `Cannot find process for provided pid`.
+   The working form launches the app under the recorder, and carries the US-310 flag:
+
+   ```
+   xcrun xctrace record --template 'Animation Hitches' \
+     --device <udid> --output <path>.trace --time-limit 100s --no-prompt \
+     --launch -- org.catrobat.embroiderydesigner -US310FrameTimes
+   ```
+
+3. **Budget ~3 minutes of wall clock after the window closes.** The template records in
+   `Deferred` mode, so the shell stays busy pulling and symbolicating long after the time limit;
+   the trace header still reports the true recording length and `end-reason`. The launched app is
+   terminated when the recording ends (`termination-reason="exit(0)"`) — that is the recorder, not
+   a crash.
+4. **Read it with `xctrace export`, not the GUI.** `--toc` lists the tables; the two that matter
+   are `schema="hitches"` (start, duration, and a `narrative-description` naming the suspected
+   cause) and `schema="displayed-surfaces-per-second"` (presented frames per second, against which
+   a 60 Hz panel is the reference). The XML compresses repeated values into `id`/`ref` pairs, so a
+   naive parse silently drops most durations — resolve the refs.
+
+**Pair it with a capsule capture in the same window.** The session's result depended entirely on
+the two instruments describing *the same frames*: launch under the recorder, press Play once to
+make the Record capsule exist at all, then Record → Play → Stop inside the window, and photograph
+the readout. That pairing is what excluded observer overhead — the capsule reproduced US-310's
+capture 09 to three decimals *under* the profiler — and it is what made the disagreement
+attributable rather than arguable.
