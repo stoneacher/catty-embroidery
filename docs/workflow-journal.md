@@ -1994,3 +1994,106 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   the candidate; a 50 000-stitch fixture covering a small area would discriminate, and this repo
   does not have one. Written into ADR-029 rather than acted on, because nothing in this story needs
   it and the next person should inherit the question rather than a guess.
+
+## 2026-09-18 — M3 close: the drift check found homeless invariants, not reinvented ones
+
+- **40 `semantically_similar_to` edges crossing the `docs/` communities were triaged; the answer to
+  the question the check exists to ask — "has a new story reinvented an invariant an existing ADR
+  already owns?" — is *no*.** Nothing contradicts an ADR. What the edges surfaced instead is the
+  inverse failure: **four cross-cutting process invariants that no ADR owns.** (1) "Never reword a
+  criterion in response to a measurement" lives in **US-309's AC8** — a story checklist — and is
+  cited from `DECISIONS.md:501`, `:533` and from US-310. (2) The "test that cannot fail" pattern is
+  stated as an aside at `:412` (inside ADR-028's zoom/pan material), counted there to nine
+  occurrences, and re-applied in ADR-025/026/027; US-313b then hit it thirteen more times in one
+  story. (3) "A correction is not finished until every copy of the claim is gone" sits in ADR-027's
+  review section at `:379` and again at `:398`, then is applied uncited in ADR-021, ADR-026,
+  ADR-028 and the US-309 hand-off. (4) "Execute a framework premise, don't reason about it" is
+  stated once at `:398` and applied in ADR-023 and US-313b.
+- **ADR-027's review section has become the repo's de facto methodology home**, holding two of the
+  four. That is a discoverability problem rather than a correctness one: a reader looking for the
+  project's test-methodology rules has no reason to open an ADR about the run lifecycle, and M4
+  planning has no reason to open a closed milestone's story file for AC8.
+- **The one pair that looked like genuine ADR overlap was refuted by the ADR, exactly as the rule
+  says it should be.** The graph's strongest same-file edge (0.85) joined ADR-014 and ADR-017, both
+  "accept a Double divergence from a Java numeric type". ADR-017's own Context already adjudicates
+  the boundary — "Codex US-202 round 1 correctly flagged that ADR-014 covers only pattern-layer
+  geometry, not formula evaluation". The graph found a real adjacency and the ADR layer had already
+  resolved it; no document changed.
+- **The CLAUDE.md ↔ AGENTS.md mirror produced four 0.85–0.95 edges, which is the mirror working.**
+  Those pairs are evidence the two files are still in sync rather than drift to be fixed.
+- **What did not run, recorded rather than implied.** The semantic extraction of
+  `docs/workflow-journal.md` **failed** — the subagent read all 487 KB and hit the session token
+  limit before writing its chunk — so the journal contributed no new nodes this build; its August
+  nodes survive via `build_merge`. The 33 new screenshots were **deliberately excluded** (a vision
+  subagent each, and a JPEG of a phone screen cannot carry an ADR invariant), as was
+  `Packages/EmbroideryEngine/README.md`, which the `swift-documenter` pass was rewriting at dispatch
+  time. All 35 are left **unstamped in the manifest** and re-queue on any later `--update`; this was
+  verified in the merge output rather than assumed.
+- **`--update` is file-granular, not diff-granular, and that is now the dominant cost.** 13 of 43
+  docs files changed, but two of them — the journal at 487 KB and `DECISIONS.md` at 256 KB — are
+  68 % of the changed bytes and change on *every* story. The run cost **568 020 input tokens** for
+  4 of 5 chunks; the August full build was 854 446. So an "incremental" update cost two-thirds of a
+  full rebuild, and will grow, because the append-only journal only ever gets longer. Two mitigations
+  exist and neither was taken today: set `GEMINI_API_KEY` (the skill supports Gemini natively and
+  reads no other provider key — a local model is not a supported option and would in any case be the
+  wrong reader for a cross-document invariant check), or sharding the journal per milestone, which
+  would preserve append-only exactly while capping what each update re-reads.
+- **Graph after merge: 3 549 nodes, 9 196 edges, 196 communities**, 74 % EXTRACTED / 26 % INFERRED /
+  0 % AMBIGUOUS. Only `GRAPH_REPORT.md` is tracked, per the existing rule.
+
+## 2026-09-18 — M3 final verification: a third instrument, and two corrections that came from the next measurement
+
+- **The Instruments item was the last one anybody expected to produce a finding, and it produced
+  the session's only one.** It had sat on the list since US-309 described it as "the only artefact
+  that observes the rendering pipeline directly rather than inferring it from display-link
+  timing" — a completeness item. Run against a capsule capture over *the same frames*, it
+  contradicts the capsule: a run scoring `p99 16.670 · max 16.702 · PASS` carries **36 hitches, 22
+  of them over 33.3 ms**, with the panel presenting **51 frames/s against 60 Hz**. The item was
+  worth more than the three that looked more interesting going in.
+- **The pairing is what made it a finding rather than an argument.** Taking the two instruments in
+  one window, on one run, is what excluded observer overhead — under the profiler the capsule
+  reproduces US-310's capture 09 to three decimals, `drawn=251` and worst frame 16.702 ms in both.
+  Without that control the whole result would have been dismissible as profiler cost, and it would
+  have been the *right* dismissal on the evidence available.
+- **My first explanation was wrong, and the next capture refuted it inside an hour.** I wrote into
+  ADR-029 that the display-link instrument "cannot emit a value over 33.3 ms at 60 Hz". The
+  mid-gesture capsule taken minutes later reads `max 38.076`. The corrected mechanism is narrower
+  and fits both captures: a display-link callback is delivered on the **main thread**, so the
+  interval widens for main-thread stalls (mid-gesture, where the plan and the `Path` are built)
+  and not for misses downstream of it (animating, where **27 of 33 hitches name GPU work**). The
+  useful part is the shape: the overclaim was the *stronger, tidier* sentence, and the capture that
+  broke it was already scheduled. **Writing the amendment before the session's captures were
+  finished is what exposed it** — had I waited, I would have written the narrow version and never
+  known the wide one was tempting.
+- **A second correction of the same kind, in the accessibility pass — and there the finding was in
+  the test.** The four directional pan actions were reported *unreachable*: swiping up/down only
+  zoomed. The instruction was wrong. The stage is an `Adjustable` element, so up/down is
+  increment/decrement, and custom actions live behind the rotor — which **ADR-031 already records
+  in terms**, including that `Activate`/`Increment`/`Decrement` are implied by the trait and are
+  not custom actions. Re-run through the rotor, all five actions appear in exactly the order
+  ADR-031 predicts. Two lessons, and the second is the one worth keeping: a manual test procedure
+  is an artefact that can be wrong, and it deserves the same "check it against the ADR before
+  believing it" discipline as a failing test. **The ADR contained the answer before the test was
+  written.**
+- **Four pieces of tooling friction, none discoverable from the tool's own errors**, now appended
+  to `us-309-device-handoff.md`: `xctrace` and Instruments.app cannot see a CoreDevice-only phone
+  until Xcode has been opened once and its access prompt approved (before that the device is
+  `Devices Offline` and `record` reports `Timed out waiting for device to boot`, while `devicectl`
+  calls the same device `available (paired)`, `Transport Type: wired`); `--attach` fails by both
+  name and freshly-printed pid, so `--launch` is the working form; the template records in
+  `Deferred` mode so the shell stays busy ~3 min past the time limit and then terminates the app it
+  launched; and the export XML compresses repeated values into `id`/`ref` pairs, so a naive parse
+  silently drops most durations. **One capture was wasted** pressing Play into a recorder that had
+  never attached — the rule earned is to confirm attachment before asking the human to act.
+- **Both criterion-level questions ruled, both conservatively, and the reasoning is the point.**
+  The `p99` clause stays in the bar and is recorded as non-discriminating rather than dropped,
+  because dropping it would be rewording a criterion in response to a measurement — and this
+  session is a measurement, so it earns no exemption from AC8. The `NO DRAWS` label stays and gains
+  a caveat rather than code. Standing consequence: **a capsule `PASS` is never on its own
+  sufficient evidence for the bar's dropped-frame clause.**
+- **The A15 item is deliberately still open.** The session re-ran the protocol on the same A19,
+  which re-confirms the shipped behaviour against the US-313b gesture — the mid-gesture capture is
+  the cleanest yet at `drawn=987/1018` (97 %) and `max 38.076` against US-310's 84 % and 50.008 —
+  but A19 passing says nothing about A15, which is the entire content of the item. Ticking it would
+  have been the easy and wrong move; nine of the ten final-verification items are closed and this
+  one is named as the exception.
