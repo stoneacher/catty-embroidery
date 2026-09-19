@@ -2134,3 +2134,131 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   fingers while the run grows), US-315 (the canvas and hoop come apart while the keyboard animates)
   — and now US-316. Four of those five are stage or export work, which is a signal about where M3's
   walking skeleton is thinnest.
+
+## 2026-09-19 (M4 planning) — three agents, one executed premise that deleted a human session, and a sample that refutes the roadmap
+
+- **The planning pass spent three agents in parallel and each returned something the other two
+  could not have.** `swift-architect` produced the target layout, the `EditAction` shape and the
+  story breakdown; a read-only `Explore` sweep of Catroid and Catty produced the reference facts;
+  `swift-search` produced the package/app inventory. The division that made it work is the one
+  CLAUDE.md already names — **retrieval and verification delegated freely, generation only against
+  a complete spec**. The architecture agent was the only one asked to *decide* anything, and its
+  decisions were the ones I then re-verified by hand.
+- **The single highest-value act of the session was executing a premise instead of reasoning about
+  it** — ADR-032 invariant 4, written into an ADR in this same session and then immediately used.
+  The architecture pass rated "a SwiftPM library product can vend two targets, so `EditorCore`
+  becomes importable in the app with no `pbxproj` change" at **85 %**, and scheduled a fallback
+  human Xcode session behind it. Executing it took about three minutes: add the target, vend it
+  through the existing `ProgramModel` product, `swift build`, write a one-line probe file importing
+  it into the app, run the ADR-023 signing-free `build-for-testing`. **`** TEST BUILD SUCCEEDED **`
+  and `git status --porcelain -- '*.pbxproj'` empty.** The probe was reverted. **M4 therefore needs
+  zero human Xcode sessions**, where M3 needed a nine-item one that cost a session boundary. An
+  85 % guess with a fallback is not the same artefact as a measured fact, and the difference here
+  is an entire scheduled human hand-off.
+- **Two planning corrections came from a shipping sample rather than from reasoning.** The ROADMAP
+  gives M4 a number pad and defers the formula keyboard to M6 — a sound-looking scope decision that
+  a grep refutes in one line. `OctagonRosette`, a **bundled sample**, contains
+  `.repeatLoop(times: .variable("Outer Loop"))` and
+  `.turnRight(.binary(.divide, .number(360), .variable("Inner Loop")))`; there are 14 non-literal
+  formula nodes across the two samples. So the M4 editor cannot represent values the M2 model
+  already holds **and the M4 user can already open**, on day one, by tapping. That turned a
+  deferred-scope note into a decided rule (editable where M4 has a control, read-only where it does
+  not) and into US-410's hardest acceptance criterion.
+- **The autosave hole was found the same way, and it belongs to the wrong milestone in the code.**
+  `Formula.swift:8` and `Variable.swift:6-8` both say "the M5 persistence layer pins the policy" for
+  non-finite `Double`s. The ROADMAP puts autosave in **M4**, so M4 owns it. Executed rather than
+  asserted: `JSONEncoder` throws `EncodingError.invalidValue` on `+∞`, `Double("1e400")` is `+∞`,
+  and so is a 310-digit entry. **A user typing a long number into a brick would silently stop
+  autosave working.** Two copies of the stale claim, not the three I first wrote into the story —
+  I checked ROADMAP M5 for a third and it does not contain one, which is invariant 3 catching my
+  own correction rather than someone else's.
+- **`Variable.swift` then caught me overclaiming.** I had written US-404's criterion as "the model
+  never acquires a value the codec cannot write" — but that file's own doc comment says the formula
+  semantics let ±∞ reach a variable **at runtime**, which no input parser guards. The likely answer
+  is that runtime values never reach the document, because the interpreter holds the program by
+  value. That is a *claim*, so the criterion was rewritten to make the story execute it rather than
+  inherit my reasoning. Second time in one session that the correct move was to convert an argument
+  into a check.
+- **The reference sweep's most useful results were three absences.** (1) The `embroideryDesigner`
+  flavor **restricts nothing** — four lines of Gradle flipping a checkbox default — so "the
+  embroidery brick set" is the Embroidery *category*, and the curated palette is ours to design,
+  not to port. (2) Catroid's tap-to-add **forces a drag**: the tap injects the brick at the midpoint
+  of the visible list and enters drag mode, and Catty does the same, so the ROADMAP's "tap-to-add,
+  matching Catroid's flow" is half right and SwiftUI cannot express the other half. (3) Neither
+  reference has anything to port for undo — Catroid has one level, no redo, and does not cover
+  drag-reorder; Catty's script editor has none at all. The ROADMAP's "all editor mutations undoable
+  from day one" is **better than both references**, which is worth knowing before building it,
+  because there is no precedent to check the design against.
+- **Three hand-verifications of the architecture agent's claims, and one of them was wrong.** The
+  `EnvironmentValues.undoManager` get-only claim is **true** (iOS 27 SDK `swiftinterface:21668`) and
+  settles ADR-036's shape. The `movingPair` post-removal destination convention is **true**, and is
+  a guaranteed off-by-one against SwiftUI's pre-removal `toOffset` on every downward move. But the
+  measured ripple for putting IDs in the model was reported as "84 occurrences across 33 files"; it
+  is **84 across 18**. The conclusion is unchanged — still larger than US-211's 41-in-15 — but the
+  number went into ADR-034, and an ADR carrying a number a grep refutes is the failure mode ADR-029
+  was corrected for.
+- **Sebastian's backlog selection went against my recommendation, and the plan records the cost
+  rather than re-arguing it.** I recommended US-316 (M3's unmet exit criterion); the three taken
+  were US-312, US-314 and US-315, and US-316 stays in the backlog. So M3's 60 fps criterion now has
+  **no scheduled work against it** and the A15 capture is blocked for a second milestone. Written
+  into both the M4 README and the backlog entry itself with the accepted risk named — this file's
+  own preamble, where the ±121 trap was deferred once and mis-scoped twice. The value of writing it
+  down is that the third deferral will be made by someone who can see the first two.
+- **US-312 was taken against its own placement advice, and the entry was half right.** It said the
+  sidecar option wants M5 to decide against, which is still true; what it got wrong was treating
+  its three options as one decision. The cheap option — say so in the app — needs nothing from M5,
+  and planning found a reason the entry could not have known because it predates M4's scope: the
+  editor makes the false expectation *stronger*, since the colours become the user's own choice.
+- **The backlog's mechanism now has two clean results and one perfect one.** US-211's analysis was
+  incomplete in a way planning fixed; US-313's was wrong in a way that would have shipped a defect;
+  **US-314's needed no correction at all** — reproduction, scope, rejected alternative and the
+  observation that every existing test misses it by passing the same `Self.fit` every frame, all
+  carried into the story verbatim. That is the first entry in this file's history to survive
+  planning unchanged, and the thing it has in common with the others is that it was written
+  immediately after the review round that found it.
+- **M3's homeless invariants were discharged at planning rather than carried again.** The 2026-09-18
+  drift check found four cross-cutting process invariants no ADR owned, two of them living inside
+  ADR-027's review section. They are now ADR-032, in `DECISIONS.md` rather than a new
+  `METHODOLOGY.md`, so the repo keeps one citation scheme — it is already cited by line number from
+  stories and journal entries, and a second home would split that. The existing statements are left
+  in place rather than deleted, because deleting them would break live citations.
+
+## 2026-09-19 (M4 planning, Codex round 1) — the review layer earned its place on a document, and corrected two of my own numbers
+
+Round 1 verdict: **changes requested. 13 numbered findings (6 High, 7 Medium) plus 7 table corrections and 4 API qualifications — 24 in total, and all but one valid.** Highest severity **High**; the round produced document changes, so the loop continues.
+
+- **The case for reviewing a plan, not just code, is now evidence rather than assertion.** PR #48 and #49 skipped `/codex-review` because they were docs-only closes with no subject. A *planning* PR is the opposite: its documents are the specification every later story is built from, and this round found six High-severity defects that would each have surfaced mid-story. M3 planning's round 1 found the same class (US-304 naming a type a later story created). **The rule that follows: docs-only *close-out* PRs skip the cross-vendor round; docs-only *planning* PRs do not.**
+- **The single best finding was a contradiction between two of my own stories.** US-401 said `EditorCore` "imports no Foundation"; US-404 put `Data` and `JSONEncoder` in that same target. Either the isolation test fails or the story does not compile. I copied "Foundation-free" from the architecture agent and never checked it against the story I wrote four paragraphs later — and ADR-022's `StagePreview` precedent means the *opposite* of what I wrote ("Foundation-only" = Foundation and nothing above it).
+- **Three findings were about the shipped app, not about the plan's internal consistency, and those are the ones a self-review would never reach.** (1) `WindowRootView` owns an `AppModel` **per scene** with `UIApplicationSupportsMultipleScenes = true` — a documented decision that itself came from an earlier cross-vendor round — so US-406's "single working program at a fixed path" **loses data**: two windows on P, edit A to Q, background unchanged B, B writes P over Q. (2) US-314 is **not package-only**: `StageManipulation`'s begin methods receive no fit, and the cancellation path calls only `manipulation.cancelled()`, so the baseline needs app wiring. (3) `BrickDefaults` holds exactly **nine** constants, so "seeds every parameter from `BrickDefaults`" is impossible — there is no repeat-count, variable-name or output-file-name default. Each was verified in the source before being accepted.
+- **It corrected two numbers I had put in an ADR and a journal entry, and one of its own corrections was also wrong.** I wrote "14 non-literal formula nodes across the two samples"; that grep included `Resources/PROVENANCE.md`. Codex said 8. **Both are wrong: it is 7 nodes across 5 brick parameters** (Rosette 6 in 4, Coil 1 in 1) — Codex over-counted the Coil by one. Recounted by hand against the two Swift sources. The lesson is not that the reviewer is unreliable; it is that a *disputed* number is worth measuring, and neither side's figure should be copied.
+- **Yesterday's entry contains the wrong figure and stays that way**, because this journal is append-only: the correction is here, dated, rather than applied in place. Same for the "84 occurrences across 33 files" the architecture agent reported and I corrected to 18 during planning — that one I caught before it shipped; this one I did not.
+- **The backlog's entries age against the code, and that is a failure mode the file's own preamble does not mention.** US-315 inherited, verbatim, the claim that `StageCanvas` "argues it is safe because a manipulation and a fit animation cannot coexist". The code says that argument **is false** and explicitly retracts it (`StageCanvas.swift:92-104`, `swift-code-reviewer` Q3) — the retraction landed *after* the backlog entry was written. So the entry was accurate when written and wrong when scheduled, and the story I built from it proposed a test against a claim the code does not make. **Yesterday I wrote that US-314's entry was "the first to survive planning unchanged" and drew a general lesson from entries being written immediately after the round that found them. That lesson needs the qualifier this finding supplies**: an entry is a snapshot of the *code* as well as of the reasoning, and only the reasoning keeps.
+- **Two findings were about criteria that could not fail.** US-411's totality test — the one that *is* exit criterion 2 — was specified as "enumerate `EditAction`'s cases", but `EditAction` has associated values and cannot be `CaseIterable`; an exhaustive switch plus a hand-iterated fixture array leaves the array green when a case is added. ADR-026 already records this exact associated-value-enum coverage failure, which makes it a reinvention the drift check would have caught a milestone later. And a fixture whose action happens to be rejected satisfies the round-trip assertion while testing nothing. The criterion written to prove coverage was itself the "test that cannot fail" pattern (ADR-032 invariant 2) — written on the same day I put that invariant into an ADR.
+- **One overclaim of mine was narrowed rather than refuted, and the narrowing is right.** I wrote that the environment's `UndoManager` is "not one we own". Get-only is confirmed; the ownership inference is not, since an overridden responder getter can return an owned manager. The design never depended on it, so the sentence is dropped rather than defended. Same shape for "no API reports a sheet's height" (a `GeometryReader` can measure the content) and "SwiftUI has no multi-row drag preview" (true of the iOS-17 `List.onMove` path, not of SwiftUI).
+- **What it confirmed matters too, because a reviewer that only ever finds things is not calibrated**: the 57-hour total, the ADR numbering and reservation ownership, `Brick` lacking `Hashable`/`Identifiable`, the 84-across-18 ripple, `select(_:)`'s behaviour, both non-finite doc comments, and — explicitly — that **the pair semantics in ADR-035 hold for every balanced input it tried**: nested, empty, first/last and adjacent sibling loops. That was the section most likely to contain a defect and it did not.
+- **It also answered a question I had left open for a story to execute.** US-404's runtime-variable question — can ±∞ reach the document through `changeVariableBy`? — is answerable against package code alone, with no app layer and no US-405, because the interpreter builds independent runtime stores. The criterion now says so, and the story keeps the obligation to execute it rather than inherit it.
+
+## 2026-09-19 (M4 planning, Codex round 2) — the verification round found defects in four of my own fixes, and corrected my correction
+
+Round 2 verdict: **changes requested. 9 findings (2 High, 6 Medium, 1 Low)**, of which **four are defects introduced or left behind by round 1's fixes**. Highest severity **High** — the same as round 1, so severity is **flat and the loop does not stop**. Round 1: High, code changed. Round 2: High, code changed.
+
+- **This is the round the skill's stop condition exists for.** A fixed cap of two would have handed over here, and the two High findings are both in text round 1 *added*. US-302's lesson — that severity trend beats round count, and that a round can find a defect in the previous round's fix — reproduced exactly.
+- **The single most useful finding is that my recommended `UndoManager` recipe does not work.** Round 1 established that the bridge must re-sync after every transition; I then *prescribed the mechanism* — `removeAllActions(withTarget:)` then register one undo and one redo — without executing it. `UndoManager` puts an ordinary registration on the **undo** side and only treats one as redo when it is made **while the manager is performing an undo**, and an ordinary registration clears the redo stack. So the recipe registers two undos, provides no system redo, and **fails the very test round 1 added for it** (7d). I wrote ADR-032 invariant 4 — *execute a framework premise, do not reason about it* — into `DECISIONS.md` in this same session, applied it correctly to the SwiftPM question, and then violated it one story later on a Foundation API. The fix is to stop prescribing: the story now owes an executed mechanism and records the outcome in ADR-036.
+- **The multi-window fix was the right diagnosis with the wrong remedy.** Round 1 found that a single autosave path loses data across scenes; my remedy was "only a window that has applied an edit writes". Round 2: *has edited* is not *last edited*. A edits→saves Q, B edits→saves R, A backgrounds — A qualifies under the flag and its stale lifecycle save puts Q over newer R, and serialising writes cannot help because that request genuinely arrives last. The remedy needs a **revision carried by the save**, not a boolean. A per-window flag is the kind of fix that looks sufficient because it repairs the one scenario you were shown.
+- **One fix over-corrected into contradicting the criterion above it.** Round 1 rightly killed "any action on any program validates or is rejected"; my replacement said an already-unbalanced program is "neither repaired nor rejected", which contradicts the delegation criterion two lines earlier — `movingPair` **must** throw `.unbalancedPair` for `[repeatLoop(2), moveNSteps(10)]` moved from index 0, and ADR-008 requires it. The rule is narrower than either version: *no rejection **solely** because of unrelated imbalance*. Both the over-broad claim and the over-narrow correction were caught by the same mechanism, one round apart.
+- **I corrected the reviewer and was wrong.** The formula-node count has now been 14 (mine — a grep that swept `PROVENANCE.md`), 8 (Codex round 1), 7 (mine, presented in round 1's journal entry as "both are wrong… Codex over-counted the Coil by one"), and **8** (Codex round 2, with the mechanism: `coilLoop` is a helper *called twice*, at `SquareCoilProgram.swift:64` and `:71`, so it produces two variable-valued bricks from one source expression). **Codex was right the first time.** Settled now by parsing the checked-in JSON rather than reading source a fourth time: **8 nodes across 6 parameters**. The lesson is narrower than "trust the reviewer": my two wrong counts were both *source greps*, and the right answer came from the artefact. When a number is disputed, count the built thing, not the text that builds it.
+- **Round 1's own propagation was incomplete — three corrected claims stayed stale in the README** (the node count, the retracted "not ours" inference, and "holds the program by value"), plus `.unaryMinus` missing from the README's read-only policy. That is **ADR-032 invariant 3 failing on the commit that first applied it**: I fixed each claim in its story and did not grep for the other copies. The invariant says a claim lives in three places and correcting the one you are looking at leaves two; I left two.
+- **The best new finding is a functional gap, not a wording defect.** US-410's variable menu reads `Object.variables + Program.variables`, **no `EditAction` case declares a variable there**, and running `setVariable` only creates a runtime entry (`Interpreter+Step.swift:263`). So from the blank program the menu is empty *forever*, and the control/data palette round 1 added cannot express a variable-driven design at all. Neither review layer nor I would have found this by reading the story; it needs the workflow traced end to end from an empty program. It now forces a decision — declare-on-use, or a manage-variables affordance — and either is an ADR-035 amendment, because it changes what an `EditAction` may do.
+- **Two "tests that cannot fail" survived round 1 and were caught here**, both of them tests round 1 introduced or strengthened. US-401's "a template using a bare literal fails this test" is false — `.number(10)` and `.number(BrickDefaults.moveSteps)` are equal today, so the mutation stays green; the honest guarantee is only "the template tracks the constant if the constant changes". And US-407's samples-based label coverage cannot cover `forever`, `wait`, `placeAt` or `setX`, because neither sample contains them. Third and fourth instances of the pattern in one planning session.
+
+## 2026-09-19 (M4 planning, Codex round 3) — severity falls for the first time, and a finding about story *order* rather than story text
+
+Round 3 verdict: **changes requested. 8 findings (7 Medium, 1 Low), all valid.** Highest severity **Medium**. History so far: round 1 **High**, round 2 **High**, round 3 **Medium** — **one strict decrease**, so the loop continues; the rule needs two.
+
+- **The most valuable finding is the only one that is not about text: US-408 shipped destructive deletion three stories before undo was reachable.** ADR-035 justifies deleting a whole loop without a confirmation dialog *because undo exists*, and the ROADMAP promises mutations "undoable from day one" — but US-403's stack is headless and the toolbar buttons were in US-411. At US-408's handover a user could destroy five bricks with **no recovery reachable from the UI**. Neither the justification nor the promise was wrong; the *sequencing* falsified both. The plain toolbar pair moves into US-408 (+1 h, total 57 → 58), and US-411 keeps the bridge, the announcements and the totality proof. **A dependency table proves symbols exist; it cannot see that an affordance's justification arrives later than the thing it justifies.**
+- **Round 2's fixes were themselves checked, and two were incomplete in the same way: I fixed the story and not the summary.** The README still recommended the per-window "has edited" boolean that round 2 had just disproved, and the ROADMAP still promised "minimal arithmetic entry" (US-410 makes `.binary`/`.unaryMinus` read-only) and still said the undo stack is the *first* M4 story (it is US-403, the third). **Three rounds, three propagation failures, all mine, all instances of ADR-032 invariant 3** — the invariant I wrote into an ADR at the start of this session. The pattern is now specific enough to name: I correct the place the finding points at, and the finding points at the story, so the README and the ROADMAP keep the old claim.
+- **Two of my own mutation predictions were false, which makes them the same class of defect as a test that cannot fail.** US-403 claimed that replacing the top snapshot during coalescing "is green for test 4"; it is not — twenty increments from 0 would restore 19, and test 4 demands 0. US-402 predicted the same-kind guard mutation backwards. A mutation target is a *claim about what the evidence discriminates*, so ADR-032 invariant 2 governs it, and an unchecked prediction is exactly as misleading as an unchecked assertion. Both replaced, one with a genuinely subtle alternative (coalescing keyed on address alone, green until two sessions touch one brick).
+- **A hole in exit criterion 4 that all three rounds had walked past.** US-402's non-introduction guarantee rests on "everything entering the app is balanced — a sample or the blank program". US-406 adds a **third door**: a decoded JSON document. A version-1 file containing a bare `[loopEnd]` decodes fine through the synthesized `Codable` model, and US-404 checked the version but not the balance. So a hand-edited file falsifies both US-402's criterion and US-408's unconditional `validate()` test. US-404 now refuses an unbalanced document at admission and preserves it, exactly as it treats an unsupported version. **The reachability argument was sound when written and was invalidated by a story added later in the same plan.**
+- **One finding was a fix contradicting the test the previous round added for it.** US-411 now permits a bridge policy where system redo is unavailable — and test 7d, added in round 1, unconditionally demanded that `UndoManager`'s `canRedo` agree with the package stack. The permitted fallback fails the mandatory test. Scoped the test to the chosen policy.
+- **Calibration note: the reviewer corrected my prompt's premise.** I told it the README claimed a five-case `EditAction` set; it does not — that claim lives only in US-402 and US-411, and the README's other "five"s count different things. Worth recording because I have now twice asserted something about this repo that the reviewer checked and I had not, and once "corrected" it wrongly (the formula count). The reviewer is not more reliable than me in general; it is more reliable than me *about things I have not executed*.
+- **What it confirmed**: the round-2 default inventory is now complete for all 22 insertable kinds, enumerated against `BrickValues.java`; the 8/6 formula count re-confirmed from the JSON; US-407's all-`BrickKind` coverage guard is sound; US-401's weakened constant claim is now true of the test described; and the revision rule genuinely defeats the stale-lifecycle-save case.
