@@ -2097,3 +2097,40 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   but A19 passing says nothing about A15, which is the entire content of the item. Ticking it would
   have been the easy and wrong move; nine of the ten final-verification items are closed and this
   one is named as the exception.
+
+## 2026-09-19 — M3 closes with a criterion unmet, named rather than reworded
+
+- **The close was a documentation act with exactly one real decision in it: how to state the 60 fps
+  criterion.** "Substantially met" was available and would have been defensible — two of three
+  criteria are met outright, the third passes on the animating path, and the failing path's median
+  and p95 both sit at one refresh period. It was not taken. The milestone closes with the criterion
+  **met on the animating path and unmet on the mid-gesture tail**, because US-309's AC8 — never
+  reword a criterion in response to a measurement — does not stop applying at a milestone boundary.
+  A close *is* a judgement made in the presence of a measurement, which is precisely when the rule
+  earns its keep.
+- **The unmet criterion leaves with a home rather than as a carry-forward.** US-316 is written into
+  `backlog.md` at the moment of the close, with the two refuted explanations and the named
+  experiment. The precedent that makes this worth the twenty minutes is in the backlog's own
+  preamble: the ±121 coordinate trap sat as a journal carry-forward from 2026-07-09 to M2 planning
+  and was then **mis-scoped twice by review** before it became US-210. The thing that decays is not
+  the finding, it is the reasoning around it.
+- **The item that leaves unticked is worth less than when it was written, and saying so is the
+  useful part.** The A15-class capture has been open since 2026-09-02. Three device sessions have
+  run on an A19 without ticking it, correctly. But US-313b's controls changed what it would buy: an
+  A15 capture today would confirm a fix that does not exist, so the order inverts — **US-316 first,
+  then A15**. An open item that has been open for two weeks deserves to be re-read against what has
+  been learned since, not just re-deferred.
+- **The milestone's most durable output may be its negative results.** Three of M3's most-cited
+  findings are things that turned out not to be true: ADR-029's ladder was re-pointed twice (rung 1
+  cannot touch a path that never bakes; rung 2 landed and the tail did not move), the frame-time
+  instrument scored a flawless `PASS` over a renderer that drew **zero** frames, and the Instruments
+  pairing then showed the capsule itself is blind to misses downstream of the main thread. None of
+  those is a feature. All three are why the exit criterion's status is now a measured claim instead
+  of a hope, and they are the reason the ladder's value was never its ordering — which has been
+  wrong twice — but that the ordering was written down and could therefore be falsified.
+- **What M4 planning inherits, listed so it is not re-derived**: the four cross-cutting process
+  invariants that no ADR owns (2026-09-18's drift check), three specified backlog stories — US-312
+  (thread colours cannot survive DST and nothing tells the user), US-314 (the stage moves under the
+  fingers while the run grows), US-315 (the canvas and hoop come apart while the keyboard animates)
+  — and now US-316. Four of those five are stage or export work, which is a signal about where M3's
+  walking skeleton is thinnest.
