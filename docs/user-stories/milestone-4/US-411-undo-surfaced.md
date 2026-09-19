@@ -6,6 +6,8 @@
 
 Last by construction: it is the only story that can prove coverage, because it is the only one that comes after every mutation site exists.
 
+**The plain toolbar undo/redo pair lands earlier, in US-408**, because that story introduces destructive deletion whose justification depends on undo being reachable *(Codex round 3)*. What remains here is the `UndoManager` bridge, the VoiceOver announcements, the run/export/autosave consequences of a history transition, and the totality proof. The first criterion below is therefore a **restatement of what US-408 shipped**, verified rather than built.
+
 ## The `UndoManager` constraint, verified rather than assumed
 
 **`EnvironmentValues.undoManager` is get-only** — confirmed in the iOS 27 SDK's `SwiftUI.swiftinterface` (line 21668), where the property declares only a `get`. So `.environment(\.undoManager, myManager)` **does not compile**, and the manager the environment surfaces comes from the responder chain. It may also be `nil`. *(Codex round 1 narrowed this: the first draft added "not one we own", which does not follow — `UIHostingController.undoManager` is an overridden getter, and an overridden responder getter **can** return a manager we own. The design does not depend on the stronger claim, so it is dropped rather than defended.)*
@@ -38,7 +40,7 @@ That settles the architecture rather than constraining it (ADR-036): **the packa
 7. Undo of a run-voiding edit leaves the run idle and the exporter discarded.
 7b. **Undo of an edit whose program was then run to completion** voids *that* run and discards *its* prepared export — the case the first draft missed. Redo does the same.
 7c. Every successful undo and redo triggers an autosave of the resulting program.
-7d. A toolbar undo leaves `UndoManager`'s `canUndo`/`canRedo` agreeing with the package stack's; likewise after a redo, after a coalesced session closes, and after the 50-entry bound evicts.
+7d. A toolbar undo leaves `UndoManager` in the state **the chosen bridge policy specifies** — likewise after a redo, after a coalesced session closes, and after the 50-entry bound evicts. Written against the policy rather than against "agrees with the package stack", because the criterion above explicitly permits a policy in which **system redo is unavailable**, and an unconditional agreement assertion would forbid the fallback the same story allows *(Codex round 3)*. If the policy is full agreement, this test asserts it; if the policy is "undo bridged, redo toolbar-only", it asserts *that*, including that system `canRedo` is false while package `canRedo` is true.
 8. Undo across a coalesced US-410 session reverts the whole session, not one keystroke — the integration of US-403's unit behaviour with the real editor.
 
 **Mutation targets**: the enumeration test written as a hand-listed array — it passes today and silently stops covering the milestone the moment someone adds a case, the "test that cannot fail" pattern (ADR-032 invariant 2) in its slowest-acting form. And the bridge synchronised only on `loadProgram`, which is green for every test that does not perform a *toolbar* undo first.

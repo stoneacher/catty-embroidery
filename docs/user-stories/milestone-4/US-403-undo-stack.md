@@ -36,7 +36,7 @@ That reasoning is **not** asserted as a timing or memory bound. US-309 is the pr
 9. `reset()` leaves `canUndo` and `canRedo` both false.
 10. An empty stack's `undo()` returns `nil` rather than trapping — the totality test.
 
-**Mutation targets**: off-by-one in the bound (49/51 both pass several of the tests above); coalescing that *replaces* the top snapshot instead of skipping the record, which is green for test 4 and wrong for test 7.
+**Mutation targets**: off-by-one in the bound (49/51 both pass several of the tests above); coalescing that *replaces* the top snapshot instead of skipping the record — **which test 4 catches**, since twenty increments from 0 would then restore 19 rather than 0. *(The first draft claimed that mutation stayed green for test 4 and was caught only by test 7; that is wrong, and a wrong mutation prediction is a claim about the evidence — Codex round 3.)* A mutation that is genuinely subtle here: keying coalescence on the address alone rather than address-plus-session-token, which is green until two separate sessions edit the same brick.
 
 **Not in this story**: any UI, and the `UndoManager` bridge. Both are US-411's. This story's stack is complete and headless, and US-411 proves it covers every `EditAction` case by enumeration.
 
