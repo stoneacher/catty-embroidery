@@ -16,10 +16,12 @@ This is the M4 counterpart of US-302: the load-bearing values land first, on the
 
 ## Acceptance criteria
 
-- [ ] `EditorCore` exists as a target depending on `ProgramModel` **only**, and an isolation test pins that — the pattern `StagePreviewTargetIsolationTests` established. It imports no Foundation, no SwiftUI, no CoreGraphics.
+- [ ] `EditorCore` exists as a target depending on `ProgramModel` **only** among package targets, and imports **no SwiftUI and no CoreGraphics**. **Foundation is permitted** — ADR-033 restricts *package dependencies*, not the standard library, and US-404 puts `Data`/`JSONEncoder` in this target, so a Foundation ban would make that story unbuildable. This mirrors what ADR-022 means by `StagePreview` being "Foundation-only": Foundation and nothing above it. *(Corrected at Codex round 1 — the first draft said "imports no Foundation", which contradicted US-404 outright.)*
+- [ ] An isolation test pins the above. **It cannot be modelled on `StagePreviewTargetIsolationTests`' mechanism**, which does not scan source imports — it binds public APIs to explicit function types, and its own comment distinguishes that from dependency enforcement. The dependency restriction is enforced by the manifest and by the build; what the test adds is a guard against a SwiftUI/CoreGraphics import creeping in, which needs a source scan or an equivalent. Choose the mechanism deliberately and say which guarantee it actually gives.
 - [ ] **`import EditorCore` compiles in the app target with `project.pbxproj` unmodified.** Verified at planning time and re-verified here as the story's own first step; if it fails, stop and raise a human Xcode session rather than working around it.
 - [ ] `BrickKind`'s `Brick → BrickKind` switch is **exhaustive with no `default:`** — the pattern `RunBatch.reducing` already uses — so adding a `Brick` case is a compile error rather than a silent gap.
-- [ ] `BrickKind.template()` seeds every parameter from `BrickDefaults` (Catroid's `BrickValues.java`, already ported verbatim in `Brick.swift` with a doc comment naming this story's consumer). A loop opener's template is **two** bricks, opener then `.loopEnd`.
+- [ ] `BrickKind.template()` seeds every parameter from `BrickDefaults` where a constant exists, and **this story adds the ones that do not**. `BrickDefaults` holds exactly **nine** constants — `moveSteps`, `turnDegrees`, `placeAtX`, `placeAtY`, `stitchLength`, `zigZagLength`, `zigZagWidth`, `threadColorHex`, `waitSeconds` — and the palette needs more than that: a **repeat count**, a **variable name and initial value** for `setVariable`/`changeVariableBy`, and an **output file name** for `writeEmbroideryToFile`. Each new constant is added to `BrickDefaults` **with its Catroid provenance in a comment**, matching the existing nine; where Catroid has no counterpart, say so in the comment rather than inventing a silent default. *(Codex round 1: the first draft said "seeds every parameter from `BrickDefaults`", which is impossible against the shipped nine.)*
+- [ ] A loop opener's template is **two** bricks, opener then `.loopEnd`.
 - [ ] `Script.indentDepths` returns one depth per brick: body bricks are deeper than their opener, a `loopEnd` sits at its **opener's** depth (not the body's), and nested loops accumulate. An **unbalanced** script — which the model permits even though no `EditAction` can create one — yields depths without trapping and without going negative.
 - [ ] `BrickAddress`/`ScriptAddress` address a brick through `Program → Scene → Object → Script → index`. M4's working program is realistically one scene / one object / one script (both shipped samples are), but the address stays honest against the model that permits more.
 
@@ -27,11 +29,11 @@ This is the M4 counterpart of US-302: the load-bearing values land first, on the
 
 ## Test-first plan
 
-1. `EditorCore` imports only `ProgramModel` — the isolation test, asserted over the target's source the way `StagePreviewTargetIsolationTests` does.
+1. `EditorCore` imports no SwiftUI and no CoreGraphics — by whichever mechanism the criterion above settles on. Foundation is allowed and is **not** asserted against.
 2. Every `Brick` case maps to a distinct `BrickKind`, asserted by iterating `BrickKind.allCases` and round-tripping a template through the mapping — which also proves `template()` is total.
 3. `BrickKind.repeatLoop.template()` is exactly `[.repeatLoop(times: .number(…)), .loopEnd]`, and `.forever.template()` is `[.forever, .loopEnd]`.
 4. Every non-loop template is exactly one brick.
-5. Each template's parameter values equal the corresponding `BrickDefaults` constant — asserted against `BrickDefaults` by name, not against re-typed literals, so a change to the defaults cannot leave this test passing against a stale copy.
+5. Each template's parameter values equal the corresponding `BrickDefaults` constant — asserted against `BrickDefaults` by name, not against re-typed literals, so a change to the defaults cannot leave this test passing against a stale copy. This test covers the **new** constants this story adds as well as the existing nine, and a `BrickKind` whose template uses a bare literal instead of a named constant fails it.
 6. `indentDepths` on a flat script is all zeros; on one loop it is `[0, 1, …, 1, 0]` with the `loopEnd` back at 0; on nested loops it accumulates; on an unbalanced script it returns a value rather than trapping and never goes below 0.
 7. `indentDepths` returns exactly `bricks.count` elements for every script it is given, including the empty one.
 

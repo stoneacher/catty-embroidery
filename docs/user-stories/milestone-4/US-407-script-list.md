@@ -14,7 +14,7 @@ The first M4 story with pixels. It is **read-only**: no reorder, no delete, no a
 - [ ] `BrickRowPresentation` produces each row's text from `BrickKind` plus the brick's parameter values, **entirely from the String Catalog** with translator comments. A brick label is a sentence with values interpolated into it, which is precisely the case where word order differs by language — so the strings must be formatted, not concatenated.
 - [ ] **Each row is a single VoiceOver element** whose label includes the brick's name *and* its parameter values, per the ROADMAP's M4 wording (`.accessibilityElement(children: .combine)`). Its nesting depth is conveyed too — a user who cannot see the indentation still needs to know a brick is inside a loop.
 - [ ] Rows are ≥ 44 pt and reflow rather than truncate at AX1. A brick label carrying two parameters is the longest string in the app so far; indentation makes it worse by narrowing the row.
-- [ ] **A `.binary` formula renders as readable text** (e.g. `360 ÷ Inner Loop`) rather than as a placeholder. `OctagonRosette` ships two of them, so this is on screen the first time anyone opens that sample. Rendering is this story's; the fact that it will not be *editable* is US-410's.
+- [ ] **Every `Formula` case renders as readable text** rather than as a placeholder — `.number`, `.variable`, `.binary` (e.g. `360 ÷ Inner Loop`) **and `.unaryMinus`**, which is the fourth shipped case and which the first draft omitted *(Codex round 1)*. `OctagonRosette` ships two `.binary` nodes, so this is on screen the first time anyone opens that sample. The renderer switches exhaustively over `Formula` with no `default:`, so a fifth case would be a compile error. Rendering is this story's; which of them are *editable* is US-410's.
 - [ ] Where the editor lives in the ADR-010 layout is settled here: compact and regular both, with the stage. Settling it now rather than in US-409 means the palette has somewhere defined to present from.
 - [ ] Empty state: a blank program shows an invitation to add a brick, not a blank rectangle. It is the first thing a new user sees, and after US-405 it is the *default* state.
 - [ ] **Story-specific definition of done**: screenshots at compact and regular, at AX1, in dark mode, and of the empty state. Thread colours in any swatch are design data and must not adapt to dark mode (M3 definition of done).
@@ -26,7 +26,7 @@ The first M4 story with pixels. It is **read-only**: no reorder, no delete, no a
 3. Every row's accessibility label is non-empty, localised, and contains the brick's name and each of its parameter values.
 4. A loop opener's label conveys "repeat 10 times"; its `loopEnd`'s conveys the end of that loop rather than a bare word.
 5. A row's label conveys its nesting depth for a brick inside a loop.
-6. `.number`, `.variable` and `.binary` formulas each render to their expected strings; `.binary` nests correctly for `360 ÷ Inner Loop`.
+6. All four `Formula` cases render to their expected strings: `.number`, `.variable`, `.binary` nesting correctly for `360 ÷ Inner Loop`, and `.unaryMinus` (including `-(a + b)`, where dropping the parentheses would change the meaning).
 7. Both shipped samples produce a full set of non-empty row labels — the cheap guard that no `BrickKind` was forgotten, and it fails loudly for a new brick case.
 8. The empty program yields zero rows and the empty state.
 

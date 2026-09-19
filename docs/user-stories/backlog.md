@@ -145,5 +145,12 @@ in the same spirit as US-211's and US-313's above.
   simulator-reproducible instance two device sessions failed to produce. The entry could not have
   found that, because it predates M4 having a palette. Its "estimate: unknown until reproduced"
   is honoured as a **timebox** rather than converted into a number.
+  **One correction, and it is the useful kind**: the entry said `StageCanvas` "argues it is safe
+  because a manipulation and a fit animation cannot coexist". The code says the opposite — that
+  argument is explicitly **retracted** at `StageCanvas.swift:92-104` ("is false", `swift-code-reviewer`
+  Q3), and the live argument is narrower. The entry was written before that retraction landed and
+  **aged against the code**; the story inherited the stale citation verbatim and the cross-vendor
+  round caught it. That is a real failure mode of this file — an entry is a snapshot of the code as
+  well as of the reasoning, and only the reasoning is durable.
 
 **Left in this file at M4 planning: US-316 only** — see above for why, and for what it costs.

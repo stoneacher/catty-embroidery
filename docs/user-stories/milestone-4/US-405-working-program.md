@@ -15,7 +15,7 @@
 - `exporter.name = sample.id.resourceName` must be re-sourced.
 - Affected app tests: `AppModelTests`, `SampleLinkageTests`, `SampleRowAccessibilityTests`, `StageViewWiringTests`, `ExportWiringTests`.
 
-**What does *not* break, and it is the lucky part of M3's design**: `RunViewModel.play(_ program: Program)` already takes a `Program`, and `Interpreter(program:clock:)` takes it **by value**. An in-flight run holds its own immutable copy, so mutating the editor's program **cannot corrupt a running interpreter**. Nothing in `InterpreterDriver`, `PreviewRunState`, `RunUpdate` or `RunTermination` changes.
+**What does *not* break, and it is the lucky part of M3's design**: `RunViewModel.play(_ program: Program)` already takes a `Program`, and `Interpreter(program:clock:)` takes it **by value** — it compiles the scripts and builds independent runtime stores rather than retaining the `Program` and reading through it. Either way the editor's later mutations **cannot reach a running interpreter**. Nothing in `InterpreterDriver`, `PreviewRunState`, `RunUpdate` or `RunTermination` changes. *(Codex round 1 corrected the mechanism: the first draft said the run "holds its own immutable copy", which overstates what `Interpreter` retains. The isolation conclusion is unaffected.)*
 
 ## The thing that actually goes stale
 

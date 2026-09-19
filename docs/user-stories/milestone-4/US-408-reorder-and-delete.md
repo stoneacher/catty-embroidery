@@ -6,7 +6,15 @@
 
 ## The off-by-one this story exists to get right
 
-`Script.movingPair(at:to:)` documents its destination as an insertion index into the list **with the block already removed** (`0 ... remaining.count`, verified in the source). SwiftUI's `.onMove` gives a `toOffset` expressed against the array **before** removal. **They are different numbers for every downward move.** The adapter is three lines and it needs its own test, or reorder lands one position off in half of all cases — and "half of all cases" is the kind of bug that looks like a SwiftUI quirk rather than an arithmetic error.
+`Script.movingPair(at:to:)` documents its destination as an insertion index into the list **with the block already removed** (`0 ... remaining.count`, verified in the source). SwiftUI's `.onMove` gives a `toOffset` expressed against the array **before** removal. **They differ for every downward move**, and the adapter needs its own test or reorder lands wrong in half of all cases — the kind of bug that looks like a SwiftUI quirk rather than an arithmetic error.
+
+**The conversion is not "subtract one", and the first draft implied it was** *(Codex round 1)*. It is:
+
+```
+destination = toOffset − count(removed indices < toOffset)
+```
+
+For a single brick that is a difference of one; **for a pair it is the whole block length**. Concrete: moving `[R, A, E]` below `B` in `[R, A, E, B]` gives `toOffset = 4` and `destination = 1` — a difference of **three**. Two consequences the implementation must handle rather than discover: blindly subtracting the block length whenever `toOffset > source` can produce a **negative** destination, and a drop **inside the moving pair's own original range** must resolve to a **no-op** rather than to an out-of-range index.
 
 ## Settle before implementing
 
@@ -21,7 +29,7 @@
 - [ ] **Multi-index moves are handled or refused explicitly.** The closure takes an `IndexSet`; a single-finger drag gives one index but the signature permits more. Handle `count == 1` and refuse the rest, rather than silently moving the first.
 - [ ] **Swipe-to-delete on a loop opener deletes the whole loop including its body**, and on a `loopEnd` does the same (ADR-035). **No confirmation dialog** — undo is the affordance that makes one unnecessary, and Catroid has none either.
 - [ ] **Pair-aware custom accessibility actions** — Move Up, Move Down, Delete — on every row. A VoiceOver user cannot drag, so these are the **primary** path for them, not a courtesy. "Move up" on a loop opener jumps the whole preceding **sibling block**, using US-402's sibling-jump helper; moving it one index would leave the model balanced while the screen shows a loop swapping with its neighbour's `loopEnd`.
-- [ ] The drag **preview** shows one row while the model moves a block, and that mismatch is **acknowledged rather than discovered**: SwiftUI has no multi-row drag preview. Accept it and animate the result, and record the decision. (Collapsible loops would fix it and are not in this milestone.)
+- [ ] The drag **preview** shows one row while the model moves a block, and that mismatch is **acknowledged rather than discovered**: the iOS-17-compatible `List` + `.onMove` path has no multi-row drag preview. *(Codex round 1 narrowed this: SwiftUI does support multi-item preview formations on newer platforms and through other drag APIs, so the limitation belongs to the chosen path and the iOS 17 floor, not to SwiftUI as such.)* Accept it and animate the result, and record the decision. (Collapsible loops would fix it and are not in this milestone.)
 - [ ] **Story-specific definition of done**: screenshots including a mid-drag frame, and the VoiceOver action test procedure written as *"rotate to Actions, then swipe"* — US-313b's finding was that the procedure, not the app, was wrong.
 
 ## Test-first plan
@@ -29,6 +37,8 @@
 1. A downward single-brick move produces the expected whole `Program` — the conversion test in its simplest form.
 2. A **downward move of a three-brick loop** produces the expected whole program. This is the test the conversion bug fails and test 1 passes.
 3. An upward move of the same loop — the direction where the two conventions agree, included so the pair brackets the bug.
+3b. A drop **within the moving pair's own original range** is a no-op, and the program is unchanged.
+3c. A downward move to the very end produces a destination within bounds — the case where subtracting the block length naively can underflow or overshoot.
 4. `.onMove` from a `loopEnd` index is refused and the program is unchanged.
 5. An `IndexSet` with two indices is refused and the program is unchanged.
 6. `.onDelete` at a loop opener removes opener, body and end; at the `loopEnd` it produces an equal program.

@@ -15,11 +15,21 @@ ADR-028's baseline is `settled ?? fit`, and `fit` is a **per-frame parameter** t
 
 ## Why it is in M4
 
-It is package-only `StagePreview` work on the fast gate, so it costs no context switch inside M4's package-only block — and **M4 increases its exposure**. ADR-038 makes every applied edit void and restart the run, so "the design grows while the user is manipulating the stage" stops being an edge case and becomes the ordinary rhythm of editing: change a parameter, watch it re-stitch, pinch in to look at the result while it is still going.
+**M4 increases its exposure.** ADR-038 makes every applied edit **void** the run — leaving it idle, to be replayed — so "the design grows while the user is manipulating the stage" stops being an edge case and becomes the ordinary rhythm of editing: change a parameter, replay, pinch in to look at the result while it is still going.
+
+**It is not package-only, and the first draft of this plan said it was** *(Codex round 1)*. The scope has to cross into the app, for a reason in the shipped code:
+
+- `StageManipulation`'s begin methods (`panBegan(at:)`, `pinchBegan(…)`) **receive no fitted transform**, so the baseline cannot be captured there from what those methods are given.
+- `StageInteraction.beginManipulating(fitting:)` **does** take the fit, so that is where a baseline can be captured — but the existing cancellation path in the app calls only `manipulation?.wrappedValue.cancelled()` (`StageManipulationCoordinator.swift:231`) and touches `StageInteraction` not at all. **A baseline owned by `StageInteraction` therefore has no existing path that clears it on cancel.**
+- Concrete consequence: begin at fit A, cancel, render at fit B — the baseline survives the cancel and the stage stays frozen to a gesture that is over.
+
+So the story needs **app wiring plus integration coverage**, and its position moves out of the package-only block's rationale. Its place in the order is unchanged — it depends on nothing M4 builds — but its estimate carries app work, and the buildability table records it as touching both layers.
 
 ## Acceptance criteria
 
-- [ ] A **`manipulationBaseline`** is captured at the **first channel's begin** and cleared at commit or cancel, and is read by `baseline`, `rendering`, `transform` and `commit` while a manipulation is live.
+- [ ] A **`manipulationBaseline`** is captured at the **first channel's begin** and cleared at commit or cancel, and is read by `baseline`, `rendering`, `transform` and `commit` while a manipulation is live. Where it lives is decided by which type actually receives the fit: `StageInteraction.beginManipulating(fitting:)` does and `StageManipulation`'s begin methods do not.
+- [ ] **The cancellation path clears it.** Today `StageManipulationCoordinator.cancel()` calls only `manipulation.cancelled()`; whatever owns the baseline must be reached on cancel too, and the wiring is part of this story rather than assumed.
+- [ ] An **integration test at the app layer** covers begin → cancel → render at a changed fit. The package tests below cannot see the coordinator, and the coordinator is where the gap is.
 - [ ] The baseline is distinct from `settled`. **Pinning `settled` at gesture start instead is explicitly rejected**: it would take the stage permanently off the fit and contradict ADR-028's rule that an identity gesture must not do that. An identity gesture must still leave `settled == nil` when it started `nil`.
 - [ ] Across two frames of one manipulation **at two different fits**, the grabbed stage point maps to the same view point, and `bake` is unchanged.
 - [ ] ADR-028 gains a dated amendment recording that "the baseline cannot move while fingers are down" is now **enforced rather than assumed**, and US-313a's narrowed AC10 wording is reconciled with it (ADR-032 invariant 3 — the claim exists in more than one place).
