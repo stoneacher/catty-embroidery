@@ -27,7 +27,8 @@ The first M4 story with pixels. It is **read-only**: no reorder, no delete, no a
 4. A loop opener's label conveys "repeat 10 times"; its `loopEnd`'s conveys the end of that loop rather than a bare word.
 5. A row's label conveys its nesting depth for a brick inside a loop.
 6. All four `Formula` cases render to their expected strings: `.number`, `.variable`, `.binary` nesting correctly for `360 ÷ Inner Loop`, and `.unaryMinus` (including `-(a + b)`, where dropping the parentheses would change the meaning).
-7. Both shipped samples produce a full set of non-empty row labels — the cheap guard that no `BrickKind` was forgotten, and it fails loudly for a new brick case.
+7. **Every `BrickKind`** — driven from `BrickKind.allCases` via US-401's `template()` — produces a non-empty localised label. This is the coverage guard; the samples cannot be, because neither contains `forever`, `wait`, `placeAt` or `setX`, so a renderer returning an empty label for `.wait` would pass a samples-only test *(Codex round 2)*.
+7b. Both shipped samples additionally produce a full set of non-empty labels — kept as a smoke test over realistic input, not as the coverage claim.
 8. The empty program yields zero rows and the empty state.
 
 ## Watch items
