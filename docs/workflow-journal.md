@@ -2134,3 +2134,91 @@ Final: **6 rounds, 22 findings — 17 fixed, 1 deferred, 4 rejected.** Severity
   fingers while the run grows), US-315 (the canvas and hoop come apart while the keyboard animates)
   — and now US-316. Four of those five are stage or export work, which is a signal about where M3's
   walking skeleton is thinnest.
+
+## 2026-09-19 (M4 planning) — three agents, one executed premise that deleted a human session, and a sample that refutes the roadmap
+
+- **The planning pass spent three agents in parallel and each returned something the other two
+  could not have.** `swift-architect` produced the target layout, the `EditAction` shape and the
+  story breakdown; a read-only `Explore` sweep of Catroid and Catty produced the reference facts;
+  `swift-search` produced the package/app inventory. The division that made it work is the one
+  CLAUDE.md already names — **retrieval and verification delegated freely, generation only against
+  a complete spec**. The architecture agent was the only one asked to *decide* anything, and its
+  decisions were the ones I then re-verified by hand.
+- **The single highest-value act of the session was executing a premise instead of reasoning about
+  it** — ADR-032 invariant 4, written into an ADR in this same session and then immediately used.
+  The architecture pass rated "a SwiftPM library product can vend two targets, so `EditorCore`
+  becomes importable in the app with no `pbxproj` change" at **85 %**, and scheduled a fallback
+  human Xcode session behind it. Executing it took about three minutes: add the target, vend it
+  through the existing `ProgramModel` product, `swift build`, write a one-line probe file importing
+  it into the app, run the ADR-023 signing-free `build-for-testing`. **`** TEST BUILD SUCCEEDED **`
+  and `git status --porcelain -- '*.pbxproj'` empty.** The probe was reverted. **M4 therefore needs
+  zero human Xcode sessions**, where M3 needed a nine-item one that cost a session boundary. An
+  85 % guess with a fallback is not the same artefact as a measured fact, and the difference here
+  is an entire scheduled human hand-off.
+- **Two planning corrections came from a shipping sample rather than from reasoning.** The ROADMAP
+  gives M4 a number pad and defers the formula keyboard to M6 — a sound-looking scope decision that
+  a grep refutes in one line. `OctagonRosette`, a **bundled sample**, contains
+  `.repeatLoop(times: .variable("Outer Loop"))` and
+  `.turnRight(.binary(.divide, .number(360), .variable("Inner Loop")))`; there are 14 non-literal
+  formula nodes across the two samples. So the M4 editor cannot represent values the M2 model
+  already holds **and the M4 user can already open**, on day one, by tapping. That turned a
+  deferred-scope note into a decided rule (editable where M4 has a control, read-only where it does
+  not) and into US-410's hardest acceptance criterion.
+- **The autosave hole was found the same way, and it belongs to the wrong milestone in the code.**
+  `Formula.swift:8` and `Variable.swift:6-8` both say "the M5 persistence layer pins the policy" for
+  non-finite `Double`s. The ROADMAP puts autosave in **M4**, so M4 owns it. Executed rather than
+  asserted: `JSONEncoder` throws `EncodingError.invalidValue` on `+∞`, `Double("1e400")` is `+∞`,
+  and so is a 310-digit entry. **A user typing a long number into a brick would silently stop
+  autosave working.** Two copies of the stale claim, not the three I first wrote into the story —
+  I checked ROADMAP M5 for a third and it does not contain one, which is invariant 3 catching my
+  own correction rather than someone else's.
+- **`Variable.swift` then caught me overclaiming.** I had written US-404's criterion as "the model
+  never acquires a value the codec cannot write" — but that file's own doc comment says the formula
+  semantics let ±∞ reach a variable **at runtime**, which no input parser guards. The likely answer
+  is that runtime values never reach the document, because the interpreter holds the program by
+  value. That is a *claim*, so the criterion was rewritten to make the story execute it rather than
+  inherit my reasoning. Second time in one session that the correct move was to convert an argument
+  into a check.
+- **The reference sweep's most useful results were three absences.** (1) The `embroideryDesigner`
+  flavor **restricts nothing** — four lines of Gradle flipping a checkbox default — so "the
+  embroidery brick set" is the Embroidery *category*, and the curated palette is ours to design,
+  not to port. (2) Catroid's tap-to-add **forces a drag**: the tap injects the brick at the midpoint
+  of the visible list and enters drag mode, and Catty does the same, so the ROADMAP's "tap-to-add,
+  matching Catroid's flow" is half right and SwiftUI cannot express the other half. (3) Neither
+  reference has anything to port for undo — Catroid has one level, no redo, and does not cover
+  drag-reorder; Catty's script editor has none at all. The ROADMAP's "all editor mutations undoable
+  from day one" is **better than both references**, which is worth knowing before building it,
+  because there is no precedent to check the design against.
+- **Three hand-verifications of the architecture agent's claims, and one of them was wrong.** The
+  `EnvironmentValues.undoManager` get-only claim is **true** (iOS 27 SDK `swiftinterface:21668`) and
+  settles ADR-036's shape. The `movingPair` post-removal destination convention is **true**, and is
+  a guaranteed off-by-one against SwiftUI's pre-removal `toOffset` on every downward move. But the
+  measured ripple for putting IDs in the model was reported as "84 occurrences across 33 files"; it
+  is **84 across 18**. The conclusion is unchanged — still larger than US-211's 41-in-15 — but the
+  number went into ADR-034, and an ADR carrying a number a grep refutes is the failure mode ADR-029
+  was corrected for.
+- **Sebastian's backlog selection went against my recommendation, and the plan records the cost
+  rather than re-arguing it.** I recommended US-316 (M3's unmet exit criterion); the three taken
+  were US-312, US-314 and US-315, and US-316 stays in the backlog. So M3's 60 fps criterion now has
+  **no scheduled work against it** and the A15 capture is blocked for a second milestone. Written
+  into both the M4 README and the backlog entry itself with the accepted risk named — this file's
+  own preamble, where the ±121 trap was deferred once and mis-scoped twice. The value of writing it
+  down is that the third deferral will be made by someone who can see the first two.
+- **US-312 was taken against its own placement advice, and the entry was half right.** It said the
+  sidecar option wants M5 to decide against, which is still true; what it got wrong was treating
+  its three options as one decision. The cheap option — say so in the app — needs nothing from M5,
+  and planning found a reason the entry could not have known because it predates M4's scope: the
+  editor makes the false expectation *stronger*, since the colours become the user's own choice.
+- **The backlog's mechanism now has two clean results and one perfect one.** US-211's analysis was
+  incomplete in a way planning fixed; US-313's was wrong in a way that would have shipped a defect;
+  **US-314's needed no correction at all** — reproduction, scope, rejected alternative and the
+  observation that every existing test misses it by passing the same `Self.fit` every frame, all
+  carried into the story verbatim. That is the first entry in this file's history to survive
+  planning unchanged, and the thing it has in common with the others is that it was written
+  immediately after the review round that found it.
+- **M3's homeless invariants were discharged at planning rather than carried again.** The 2026-09-18
+  drift check found four cross-cutting process invariants no ADR owned, two of them living inside
+  ADR-027's review section. They are now ADR-032, in `DECISIONS.md` rather than a new
+  `METHODOLOGY.md`, so the repo keeps one citation scheme — it is already cited by line number from
+  stories and journal entries, and a second home would split that. The existing statements are left
+  in place rather than deleted, because deleting them would break live citations.

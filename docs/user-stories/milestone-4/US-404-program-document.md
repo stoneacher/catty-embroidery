@@ -1,0 +1,55 @@
+# US-404 — The program document: codec, version floor, non-finite policy
+
+**Epic**: E6 Projects & persistence (thin) | **Estimate**: ~4 h | **Depends on**: US-401
+
+**Story**: As a user, I want my program to become a file and come back unchanged — and if the app cannot understand a file, I want it to say so rather than quietly replace my work with a blank page.
+
+**Freely movable** anywhere before US-406: it consumes `Program` only. This is the milestone's slack, of the kind US-211 had in M3.
+
+## The finding that makes this story sharper than it looks
+
+`Program` is Codable end to end today — synthesized all the way down, colours are plain hex `String`s, and `SampleJSONResourceTests` already proves the whole graph round-trips through checked-in JSON. **There is exactly one hole, and it is reachable from an ordinary number pad.**
+
+`Formula.swift` and `Variable.swift` both carry a doc comment saying a non-finite `Double` payload throws under the default `JSONEncoder` and that **"the M5 persistence layer pins the policy"**. That sentence is now wrong about the milestone: the ROADMAP puts autosave in **M4**, so M4 builds the first save path and therefore owns the policy.
+
+Three facts, all executed at planning time rather than reasoned about (ADR-032 invariant 4):
+
+- `JSONEncoder` on a non-finite `Double` throws `EncodingError.invalidValue` — and `ProgramModelTests/BrickTests.swift:73` already asserts exactly that for a `Program` containing `.moveNSteps(.number(.nan))`.
+- `Double("1e400")` is `+∞`. So is a 310-digit entry. Neither is adversarial; both are things a number pad accepts.
+- Normalization to `±greatestFiniteMagnitude` lives in `Formula+Evaluation.swift`, i.e. at **evaluation**. The model can hold `+∞` and still be a valid `Program`.
+
+So without this story, M4 ships an app where typing a long number into a brick silently stops autosave working.
+
+## Acceptance criteria
+
+- [ ] `ProgramDocument.encode(_:) throws -> Data` and `ProgramDocument.decode(_:) throws -> Program` live in `EditorCore` — **pure, no `FileManager`, no `URL`** — with `ProgramDocumentError { unsupportedVersion(Int), corrupt, encodingFailed }`.
+- [ ] **The default `JSONEncoder` is kept.** Changing `nonConformingFloatEncodingStrategy` would put a second, divergent encoding of the same format beside the one `SampleJSONResourceTests` guards. One format, one encoding.
+- [ ] **`FormulaLiteral.parse(_:) -> Result<Formula, FormulaLiteralError>` rejects non-finite input at the boundary** with a reason a person can read. This is ADR-025's shape — reject at the boundary and say which rule was broken — applied one layer up.
+- [ ] **The second route to a non-finite value is closed or proved unreachable, not assumed away.** `Variable.swift`'s own doc comment says "the US-202 formula semantics let ±∞ reach a variable **at runtime**", which input rejection cannot guard. The expected answer is that it does not reach the save path — the interpreter holds the program **by value** (US-405), so runtime variable mutation happens in interpreter state and the saved `Program` keeps the *authored* initial values. **That is a claim this story must execute rather than reason about** (ADR-032 invariant 4): run a program that drives a variable to ±∞ and assert the working `Program`'s `Variable.value` is unchanged and still encodes. If it turns out the runtime value *can* reach the document, input rejection is insufficient and the policy needs a second half — decide it here rather than discovering it in US-406.
+- [ ] `decode` **refuses `formatVersion > 1`** with `unsupportedVersion`, and does not migrate. `Program.currentFormatVersion` already exists and is already stamped and encoded, so this is a check, not a mechanism.
+- [ ] Round-trip: `decode(encode(p)) == p` for a program containing every `Brick` case and every `Formula` case, asserted as whole-`Program` equality.
+- [ ] **Both shipped samples round-trip** through this codec, which ties the new path to the existing `Samples` resources rather than to a fresh fixture.
+
+**Not in this story**: touching the disk. `ProgramStoring`, the Documents path, atomic writes and the load-at-launch flow are US-406's. The split follows US-308's precedent, where `DSTDesign` (the value) and `DSTFileWriting` (the syscall) were deliberately separate.
+
+**Also in this story, because a correction is not finished until every copy is gone** (ADR-032 invariant 3): update the claim that M5 owns this policy. It is in **`Formula.swift:8`** ("the M5 persistence layer pins the policy for the save path") and **`Variable.swift:6-8`** ("the M5 persistence layer must pin a policy … before programs are saved"). Both located by grep at planning time; **ROADMAP.md's M5 section does not contain it**, so there are two copies, not three. Re-grep for `M5 persistence` rather than trusting this list — the point of the invariant is that a written list of locations is itself a copy that can go stale.
+
+## Test-first plan
+
+1. `decode(encode(p)) == p` for a program exercising every `Brick` case.
+2. The same for every `Formula` case, including a deeply nested `.binary`.
+3. Both `SampleLibrary` programs round-trip.
+4. A payload whose `formatVersion` is 2 decodes to `.unsupportedVersion(2)`; one at version 1 succeeds.
+5. Truncated and non-JSON payloads produce `corrupt`, not a trap.
+6. `FormulaLiteral.parse("1e400")` is a failure carrying a non-finite reason — **not** a success carrying `+∞`.
+7. `FormulaLiteral.parse` of a 310-digit string is the same failure. Written separately from test 6 because it is the realistic user route and the one a reviewer will not think of.
+8. `FormulaLiteral.parse` accepts ordinary input — integers, decimals, a leading minus — and rejects empty, alphabetic and multi-decimal-point input.
+9. **The exit test asserts `.success`**: a program built only from parser-accepted literals encodes without throwing. US-211's lesson — for a story that replaces a failure with a guard, asserting `.failure` passes while the bug is present (ADR-032 invariant 2).
+
+## References
+
+- ADR-037 (reserved — this story and US-406 write it), ADR-025 (reject at the boundary with a reason; the `.success` exit-test lesson)
+- ADR-003 — JSON as the project format; ADR-022 — samples already ship a checked-in JSON encoding
+- `Sources/ProgramModel/Formula.swift`, `Variable.swift` — the two doc comments this story corrects
+- `Tests/ProgramModelTests/BrickTests.swift:73` — the existing non-finite `EncodingError` assertion
+- ROADMAP M5 — the project list, versioning UI and migration machinery this story deliberately does not build

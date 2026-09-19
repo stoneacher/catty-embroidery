@@ -12,83 +12,65 @@ ADR and journal references keep resolving.
 
 ---
 
-## US-312 — Thread colours do not survive export, and nothing tells the user
+## US-316 — The mid-gesture tail survives both rungs of the ladder, and the next experiment is named
 
-**Epic**: E7 Export & sharing | **Estimate**: ~3 h | **Discovered**: 2026-08-29, US-308 manual Ink/Stitch verification
+**Considered at M4 planning (2026-09-19) and not taken.** It stays here, and the cost is stated
+rather than glossed: M3's 60 fps exit criterion remains **unmet with no scheduled work against
+it**, and the A15-class capture — open since 2026-09-02, and already re-deferred once at M3 close
+on the explicit grounds that US-316 must precede it — stays blocked for a second milestone. The
+risk being accepted is this file's own preamble: the ±121 trap was deferred once and then
+mis-scoped twice by review. It is accepted knowingly. M4's value is the editor, and US-316 is an
+open-ended measurement story whose first half is building a fixture that may refute ADR-009's bet
+rather than tune it — which is not work that sits comfortably beside a milestone with a
+feature-shaped exit criterion. **Whoever plans M5 should read the next two paragraphs before
+deferring it a third time**, because what it would buy has already changed once (see the
+2026-09-19 journal entry on re-reading an open item against what has been learned since).
 
-**Problem**: the app shows the design in the thread colours the program set, and the exported
-`.dst` cannot carry them. **Tajima DST stores no colour at all** — only stitch coordinates and
-colour-*change* commands — so every viewer and every machine assigns its own palette per block.
-Verified two ways rather than assumed: this repo's writer emits no RGB anywhere
-(`DSTFile`/`DSTHeader`/`DSTStitchRecord` contain no colour bytes), and Catroid's reference
-writer likewise tracks only `colorChangeCount`.
+**Epic**: E4 Stage & preview | **Estimate**: unknown until the fixture exists — the measurement
+*is* the story | **Discovered**: 2026-09-17, US-313b's AC12/AC13 controls; carried out of M3 at
+its close on 2026-09-19 as the one thing standing between the milestone and its own 60 fps exit
+criterion.
 
-Measured on the first file exported through the app path (`squareCoil`, named "SquareCoilexp"):
-the design sets `#1d4ed8` for the inner half and `#f59e0b` for the outer; Ink/Stitch drew the
-inner half **pink** and the outer **green**. The *structure* round-tripped exactly — `CO:2`, one
-colour change at record 1489 of 2976 (50.0%), extents 53.40 × 52.80 mm matching the app's own
-summary to the millimetre — so this is a **fidelity-of-expectation** problem, not a byte
-problem. Nothing on screen prepares the user for it, which makes a correct export look broken.
+**Problem**: every mid-gesture capture at 50 001 stitches still reads FAIL on the bar, and on the
+tail alone — worst frame **50.008 ms** in US-310's device session and **38.076 ms** in the cleanest
+capture to date (2026-09-18), against a bar of 33.3 ms. Median and p95 are both at one refresh
+period, so this is a tail, not a throughput problem.
 
-**Why it is a story rather than a note**: US-308's whole value proposition is that what you name
-is what the machine displays. The colour half of that promise is one a user will reasonably
-assume and the format cannot keep, and they will meet it the first time they open their own
-file.
+**Both standing explanations are refuted by measurement, which is what makes this a story rather
+than a rung.** ADR-029's ladder has now been re-pointed twice. Rung 1 (the bake schedule) cannot
+touch a path that never bakes — US-309's device session. Rung 2 (draw fewer segments) landed in
+US-310, moved the median from 69.1 ms to 16.670 ms on device, and **did not move the tail at any of
+four stride values**; doubling the target left the worst frame *identical* at 50.008 ms. US-313b's
+two control criteria then closed the door from the other side: a 3 194-stitch design drawing *more*
+uncoarsened segments than the coarsened 50 001-stitch one runs at exactly one refresh period, while
+halving the coarsened count changes nothing. **The mid-gesture frame cost is not the number of
+segments drawn**, and the gesture-end commit — the suspect ADR-030 named — is not it either, since
+the tail is present in a capture holding a single gesture that is never released.
 
-**Options to weigh at planning** (none decided — that is the story's job):
-- Say so in the app: a line near the share control, or in the share sheet's preview, that thread
-  colours are chosen on the machine. Cheapest, and honest.
-- Ship a **companion colour file** beside the `.dst`. Several toolchains read a sidecar for
-  per-block colours; which formats are actually read by Ink/Stitch and by common machines is the
-  research this story owes, and it interacts with the exported UTType (ADR-026) and with sharing
-  two files instead of one.
-- Write the colours into a format that does carry them. Out of scope for M3's DST-only promise
-  (ROADMAP E7) and a much larger change.
+**The named experiment, recorded in ADR-029 as a hypothesis rather than acted on**: the two designs
+differ in *area covered* far more than in geometry, so fill rate and overdraw are the candidate. A
+**50 000-stitch fixture covering a small area** discriminates — if it sits at the floor, area is the
+variable and the tail is a rasterisation cost rather than a planning one. This repo has no such
+fixture, and building it is the story's first half.
 
-**Not** a defect in US-308: ADR-012 pins the byte semantics, ADR-015 pins when a colour change is
-emitted, and both are met. ADR-026 records the finding.
+**Open at planning, nothing decided**: whether the discriminator is a new `Samples` design or a
+test-only synthetic (they answer different questions — only a sample can be captured on device with
+the shipping instrument); whether a positive result implicates `Canvas` blending or the dot
+ellipses specifically; and whether the answer touches **ADR-009's bet itself** rather than its
+constants, which is the outcome that would matter most and the one no evidence yet supports.
 
-**Placement, decided 2026-09-14**: **not** taken into M3. It changes no bytes and no gesture, and
-its sidecar option is better decided once M5's file handling exists to decide it against.
-Candidate for **M4 or M5**.
-
----
-
-## US-314 — The stage is not frozen under the fingers while the design is still growing
-
-**Epic**: E4 Stage & preview | **Estimate**: ~3 h | **Discovered**: 2026-09-14, `/codex-review`
-round 2 on US-313a
-
-**Problem**: ADR-028's baseline is `settled ?? fit`, and `fit` is a *per-frame parameter* the view
-recomputes from the display list's bounds. While the user has never zoomed — `settled == nil`,
-"following the fit", the state a fresh stage is in — a run whose design grows beyond the hoop
-changes `StageGeometry.fitTarget(including:)`, and therefore changes the fit, the bake key and the
-drawn transform **mid-manipulation**. The stage shifts under the fingers, and the point a finger
-grabbed is no longer under it.
-
-**Reproduction** (Codex's, at viewport 100 × 100): a fresh interaction, `panBegan`, `pinchBegan` at
-(20, 20), `pinchChanged(to: 2)`, then render once with `fit.scale == 1` and once with
-`fit.scale == 0.5` without ending the manipulation. The grabbed stage point maps to x = 20 in the
-first frame and x = 0 in the second, and `bake` changes between them.
-
-**Why it is not US-313a's**: it is pre-existing — US-307 shipped this and US-313a changes nothing
-about it. What US-313a did was *claim* the invariant more loudly (its AC10 said "`bake` is
-identical across every frame of a manipulation"), so that criterion is narrowed to "at a constant
-fit" rather than left overstating what the code does. The fix is a design decision this story
-should not take in passing: a manipulation needs a **frozen baseline** distinct from `settled`,
-because pinning `settled` at gesture start instead would take the stage permanently off the fit
-and contradict ADR-028's rule that an identity gesture must not do that.
-
-**Scope when scheduled**: a `manipulationBaseline` captured at the first channel's begin and
-cleared at commit or cancel, read by `baseline`, `rendering`, `transform` and `commit` while a
-manipulation is live; an ADR-028 amendment recording that "the baseline cannot move while fingers
-are down" is now enforced rather than assumed; and a test that drives two different fits through
-one manipulation, which is the shape every existing test misses by passing the same `Self.fit`
-every frame.
+**Blocks** the A15-class capture M3 carried out alongside it: confirming a fix on A15 requires
+there to be a fix. Read ADR-029's 2026-09-18 amendment before taking any capture for this story — a
+capsule `PASS` is not on its own sufficient evidence for the bar's dropped-frame clause.
 
 ---
 
-**Otherwise empty.** The mechanism worked as designed and is worth recording:
+## Scheduled out of this file — the record, because the mechanism is the point
+
+Entries keep their ID when they are scheduled, so existing ADR and journal references keep
+resolving. What is recorded here is whether the analysis captured at discovery time survived
+contact with a planning session, which is the only way to tell whether this file is worth
+maintaining.
 
 - **US-211 — DST serialization field-width chokepoint.** Specified here at discovery time on
   2026-07-31, scheduled into M3 on 2026-08-04 →
@@ -129,83 +111,39 @@ question are now placed in
 [`milestone-3/US-308`](milestone-3/US-308-design-name-and-dst-export.md) and
 [`milestone-3/US-211`](milestone-3/US-211-dst-field-width-chokepoint.md) respectively.
 
-## US-315 — The canvas and the hoop come apart while the keyboard animates
+**Scheduled into M4 (2026-09-19): US-312, US-314 and US-315.** Three of the four entries this
+file held at M3 close. Each keeps its ID and moves to
+[`milestone-4/`](milestone-4/); what each one's analysis was worth at planning is recorded below,
+in the same spirit as US-211's and US-313's above.
 
-**Epic**: E4 Stage & preview | **Estimate**: unknown until reproduced — the diagnosis *is* the
-story | **Discovered**: 2026-09-17, US-313b device session (Sebastian, on the phone)
+- **US-312 — thread colours do not survive export** →
+  [`milestone-4/US-312`](milestone-4/US-312-thread-colours-do-not-survive-export.md). **Its own
+  placement advice was overridden, and was half right.** The entry said "not taken into M3 … its
+  sidecar option is better decided once M5's file handling exists to decide it against", and that
+  is still correct **about the sidecar** — which is why the scheduled story explicitly builds only
+  the first option (say so in the app) and defers the sidecar to M5 with a research obligation
+  attached. The entry's mistake was treating its three options as one decision: the cheapest
+  option needs nothing from M5 and is the half the user actually meets. Planning also found a
+  reason to take it *now* that the entry could not have known, because it predates the M4 scope
+  being fixed: M4 is the first milestone where the colours are the **user's own choice** rather
+  than a sample author's, so the false expectation gets stronger exactly as the editor gets
+  better.
+- **US-314 — the stage is not frozen under the fingers** →
+  [`milestone-4/US-314`](milestone-4/US-314-frozen-manipulation-baseline.md). **The entry needed
+  no correction at all** — the first one in this file's history. Its reproduction, its scope
+  ("a `manipulationBaseline` captured at the first channel's begin"), its rejected alternative
+  (pinning `settled`, which would contradict ADR-028), and its note that every existing test
+  misses this by passing the same `Self.fit` every frame all survived planning unchanged and are
+  carried into the story verbatim. That is what an entry written immediately after the review
+  round that found it looks like.
+- **US-315 — the canvas and the hoop come apart** →
+  [`milestone-4/US-315`](milestone-4/US-315-keyboard-transform-transient.md). The entry's two
+  refuted explanations and three failed simulator reproductions were its whole value and are
+  carried over intact — they are the hour the next attempt does not spend. What planning added is
+  a **position**: immediately after US-409, because the palette is a detented sheet resizing the
+  stage area, i.e. the same transient class, and it may hand this story the
+  simulator-reproducible instance two device sessions failed to produce. The entry could not have
+  found that, because it predates M4 having a palette. Its "estimate: unknown until reproduced"
+  is honoured as a **timebox** rather than converted into a number.
 
-**Problem**: focusing the design-name field glitches the drawn canvas while the keyboard animates
-in or out — the **design and the hoop field are briefly drawn at different transforms**, so the
-design sits off-centre and spills outside the hoop onto the mat. Visible in the session's screen
-recording at 3.01 s with the keyboard mid-dismiss. Every *committed* state before and after is
-correct; this is a transient, which is the class ADR-028 records as invisible to stills and which
-has now produced three defects in this milestone.
-
-**Already ruled out, written down so the next attempt does not spend the same hour.** Two
-mechanical explanations were built and **refuted by reading the code**:
-
-1. *A stale cached raster composited into the new size.* `CanvasStitchLayers.BakeKey` includes
-   `width` and `height`, so a resize changes the key, `baked?.key != bakeKey`, and
-   `compositingRaster` returns false — the frame takes the full-stroke path at `transform.current`.
-2. *An explicit `settled` transform that does not follow the viewport.* True of `settled` itself,
-   but the hoop field is drawn by `StageFieldView(transform: render.current)` — the **same** value
-   the renderer strokes with, so the two cannot disagree by that route.
-
-**Not reproducible on the simulator**, tried three ways: focusing the field from a fresh fit (the
-export row hides, so the canvas resizes with no keyboard at all); with the software keyboard
-enabled; and at 200 % zoom with `settled` non-`nil`. All settle correctly, and no intermediate
-frame showed the mismatch when sampled at 20 ms from a 60 fps `simctl recordVideo`.
-
-**Next step, and it is a question rather than a fix**: the missing variable is the interaction
-state before focusing — had the stage been zoomed or panned, and does it reproduce from a fresh
-fit? A device recording of both discriminates. After that, the two remaining suspects are SwiftUI
-snapshotting and scaling a view whose frame is animating (the canvas would be a *rendered* layer
-being interpolated rather than re-stroked), and the `SettlingProgress` shim's captured closure
-holding a `fitted` from the previous layout pass — `StageCanvas` documents that staleness and
-argues it is safe because a manipulation and a fit animation cannot coexist. **A keyboard resize
-is neither**, so that argument does not cover this case.
-
-**Not US-313b's.** Nothing that story changed is on this path: the catcher is an overlay that draws
-nothing, and the renderer, the bake key and the field are untouched by it. The interaction is
-US-308's name field against US-305's canvas.
-
----
-
-## US-316 — The mid-gesture tail survives both rungs of the ladder, and the next experiment is named
-
-**Epic**: E4 Stage & preview | **Estimate**: unknown until the fixture exists — the measurement
-*is* the story | **Discovered**: 2026-09-17, US-313b's AC12/AC13 controls; carried out of M3 at
-its close on 2026-09-19 as the one thing standing between the milestone and its own 60 fps exit
-criterion.
-
-**Problem**: every mid-gesture capture at 50 001 stitches still reads FAIL on the bar, and on the
-tail alone — worst frame **50.008 ms** in US-310's device session and **38.076 ms** in the cleanest
-capture to date (2026-09-18), against a bar of 33.3 ms. Median and p95 are both at one refresh
-period, so this is a tail, not a throughput problem.
-
-**Both standing explanations are refuted by measurement, which is what makes this a story rather
-than a rung.** ADR-029's ladder has now been re-pointed twice. Rung 1 (the bake schedule) cannot
-touch a path that never bakes — US-309's device session. Rung 2 (draw fewer segments) landed in
-US-310, moved the median from 69.1 ms to 16.670 ms on device, and **did not move the tail at any of
-four stride values**; doubling the target left the worst frame *identical* at 50.008 ms. US-313b's
-two control criteria then closed the door from the other side: a 3 194-stitch design drawing *more*
-uncoarsened segments than the coarsened 50 001-stitch one runs at exactly one refresh period, while
-halving the coarsened count changes nothing. **The mid-gesture frame cost is not the number of
-segments drawn**, and the gesture-end commit — the suspect ADR-030 named — is not it either, since
-the tail is present in a capture holding a single gesture that is never released.
-
-**The named experiment, recorded in ADR-029 as a hypothesis rather than acted on**: the two designs
-differ in *area covered* far more than in geometry, so fill rate and overdraw are the candidate. A
-**50 000-stitch fixture covering a small area** discriminates — if it sits at the floor, area is the
-variable and the tail is a rasterisation cost rather than a planning one. This repo has no such
-fixture, and building it is the story's first half.
-
-**Open at planning, nothing decided**: whether the discriminator is a new `Samples` design or a
-test-only synthetic (they answer different questions — only a sample can be captured on device with
-the shipping instrument); whether a positive result implicates `Canvas` blending or the dot
-ellipses specifically; and whether the answer touches **ADR-009's bet itself** rather than its
-constants, which is the outcome that would matter most and the one no evidence yet supports.
-
-**Blocks** the A15-class capture M3 carried out alongside it: confirming a fix on A15 requires
-there to be a fix. Read ADR-029's 2026-09-18 amendment before taking any capture for this story — a
-capsule `PASS` is not on its own sufficient evidence for the bar's dropped-frame clause.
+**Left in this file at M4 planning: US-316 only** — see above for why, and for what it costs.
