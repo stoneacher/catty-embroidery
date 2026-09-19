@@ -168,3 +168,44 @@ is neither**, so that argument does not cover this case.
 **Not US-313b's.** Nothing that story changed is on this path: the catcher is an overlay that draws
 nothing, and the renderer, the bake key and the field are untouched by it. The interaction is
 US-308's name field against US-305's canvas.
+
+---
+
+## US-316 — The mid-gesture tail survives both rungs of the ladder, and the next experiment is named
+
+**Epic**: E4 Stage & preview | **Estimate**: unknown until the fixture exists — the measurement
+*is* the story | **Discovered**: 2026-09-17, US-313b's AC12/AC13 controls; carried out of M3 at
+its close on 2026-09-19 as the one thing standing between the milestone and its own 60 fps exit
+criterion.
+
+**Problem**: every mid-gesture capture at 50 001 stitches still reads FAIL on the bar, and on the
+tail alone — worst frame **50.008 ms** in US-310's device session and **38.076 ms** in the cleanest
+capture to date (2026-09-18), against a bar of 33.3 ms. Median and p95 are both at one refresh
+period, so this is a tail, not a throughput problem.
+
+**Both standing explanations are refuted by measurement, which is what makes this a story rather
+than a rung.** ADR-029's ladder has now been re-pointed twice. Rung 1 (the bake schedule) cannot
+touch a path that never bakes — US-309's device session. Rung 2 (draw fewer segments) landed in
+US-310, moved the median from 69.1 ms to 16.670 ms on device, and **did not move the tail at any of
+four stride values**; doubling the target left the worst frame *identical* at 50.008 ms. US-313b's
+two control criteria then closed the door from the other side: a 3 194-stitch design drawing *more*
+uncoarsened segments than the coarsened 50 001-stitch one runs at exactly one refresh period, while
+halving the coarsened count changes nothing. **The mid-gesture frame cost is not the number of
+segments drawn**, and the gesture-end commit — the suspect ADR-030 named — is not it either, since
+the tail is present in a capture holding a single gesture that is never released.
+
+**The named experiment, recorded in ADR-029 as a hypothesis rather than acted on**: the two designs
+differ in *area covered* far more than in geometry, so fill rate and overdraw are the candidate. A
+**50 000-stitch fixture covering a small area** discriminates — if it sits at the floor, area is the
+variable and the tail is a rasterisation cost rather than a planning one. This repo has no such
+fixture, and building it is the story's first half.
+
+**Open at planning, nothing decided**: whether the discriminator is a new `Samples` design or a
+test-only synthetic (they answer different questions — only a sample can be captured on device with
+the shipping instrument); whether a positive result implicates `Canvas` blending or the dot
+ellipses specifically; and whether the answer touches **ADR-009's bet itself** rather than its
+constants, which is the outcome that would matter most and the one no evidence yet supports.
+
+**Blocks** the A15-class capture M3 carried out alongside it: confirming a fix on A15 requires
+there to be a fix. Read ADR-029's 2026-09-18 amendment before taking any capture for this story — a
+capsule `PASS` is not on its own sufficient evidence for the bar's dropped-frame clause.
