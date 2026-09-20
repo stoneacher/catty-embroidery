@@ -2,13 +2,15 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~4 h | **Depends on**: — (M2 `ProgramModel`, shipped)
 
-**Status**: Implemented and reviewed — 2026-09-20. **Awaiting Sebastian's call on one escalation**; the code is complete and green. All eight acceptance criteria are met and all seven test-plan items landed, plus a thirteenth test for the addressing criterion the plan's seven items do not reach. **334 engine tests green** (from 257), CI green on `449ae74`, SwiftLint clean by exit code. PR [#51](https://github.com/stoneacher/catty-embroidery/pull/51).
+**Status**: Done — 2026-09-20. Implemented, reviewed over three Codex rounds, and closed out the same day. The round-3 escalation was **resolved by Sebastian on 2026-09-20: merge as-is, leave [US-317](../backlog.md) in the backlog** — the import scan stays an explicitly-scoped heuristic rather than being tightened for a fourth round. All eight acceptance criteria are met and all seven test-plan items landed, plus a thirteenth test for the addressing criterion the plan's seven items do not reach. **334 engine tests green** (from 257), CI green on `449ae74`, SwiftLint clean by exit code. PR [#51](https://github.com/stoneacher/catty-embroidery/pull/51).
 
 **Three Codex rounds: 12 findings, all valid, none rejected.** Severity **Medium → Medium → Medium** — three rounds flat, which is the repo's early-escalation threshold, so the loop stopped at round 3 and went to Sebastian rather than to round 4. Findings fell 5 → 4 → 3 while severity did not, which is the pair that rule exists to separate.
 
 **Not one finding was in the shipped vocabulary.** All six Mediums sat in one of two artifacts — the import scan or the dependency check. Codex re-confirmed, three rounds running, all 23 kind mappings, both exhaustive switches, the pair-shaped opener templates, every one of the eight new `BrickDefaults` values against `BrickValues.java`, and 29 524 generated opener/end sequences against its own stack oracle with no disagreement on `indentDepths`.
 
-**The escalation, in one line**: the dependency check *converged* (its textual proxy was replaced by `swift package dump-package` in CI, and round 3's finding against it was an ordinary bug in a sound mechanism); the **import scan cannot**, because it is a text classifier being asked to be exhaustive over Swift's grammar — ADR-023's documented failure shape. Filed as [US-317](../backlog.md) in the backlog: a Linux engine-test job, where these four modules do not exist and an import is a hard build error.
+**The escalation, and its resolution**: Sebastian's call (2026-09-20) was to merge as-is and leave the structural fix in the backlog.
+
+In one line: the dependency check *converged* (its textual proxy was replaced by `swift package dump-package` in CI, and round 3's finding against it was an ordinary bug in a sound mechanism); the **import scan cannot**, because it is a text classifier being asked to be exhaustive over Swift's grammar — ADR-023's documented failure shape. Filed as [US-317](../backlog.md) in the backlog: a Linux engine-test job, where these four modules do not exist and an import is a hard build error.
 
 ## What this story creates
 
