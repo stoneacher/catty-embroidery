@@ -19,15 +19,40 @@ struct ScriptIndentDepthsTests {
     }
 
     /// Scripts the model permits but no `EditAction` can create (ADR-035): a
-    /// bare `loopEnd`, an opener that is never closed, and both at once. They
-    /// must yield depths rather than trap, and must never go negative.
-    static let unbalanced: [Script] = [
-        Script(bricks: [.loopEnd]),
-        Script(bricks: [.loopEnd, .stitch]),
-        Script(bricks: [.forever]),
-        Script(bricks: [.forever, .stitch]),
-        Script(bricks: [.loopEnd, .forever, .stitch, .loopEnd, .loopEnd])
+    /// bare `loopEnd`, an opener that is never closed, and both at once.
+    ///
+    /// Each carries its **exact** expected depths, not just the "non-negative,
+    /// right length" properties the first version asserted. Codex round 1 named
+    /// the blind spot that left: an implementation returning all zeros *only for
+    /// unbalanced scripts* passed the whole suite, because the balanced
+    /// expectations live in separate tests and these cases asserted no values at
+    /// all. `[.forever, .stitch]` is the case that pins it — an unclosed opener
+    /// still indents what follows it.
+    static let unbalancedCases: [DepthCase] = [
+        DepthCase(name: "a bare loopEnd", script: Script(bricks: [.loopEnd]), expected: [0]),
+        DepthCase(
+            name: "a leading loopEnd does not drag what follows below zero",
+            script: Script(bricks: [.loopEnd, .stitch]),
+            expected: [0, 0]
+        ),
+        DepthCase(
+            name: "an opener that is never closed",
+            script: Script(bricks: [.forever]),
+            expected: [0]
+        ),
+        DepthCase(
+            name: "an unclosed opener still indents its body",
+            script: Script(bricks: [.forever, .stitch]),
+            expected: [0, 1]
+        ),
+        DepthCase(
+            name: "a stray end, a real pair, and a trailing stray end",
+            script: Script(bricks: [.loopEnd, .forever, .stitch, .loopEnd, .loopEnd]),
+            expected: [0, 0, 1, 0, 0]
+        )
     ]
+
+    static let unbalanced: [Script] = unbalancedCases.map(\.script)
 
     static let balanced: [Script] = [
         Script(bricks: []),
@@ -66,12 +91,13 @@ struct ScriptIndentDepthsTests {
     /// Test plan 6, fourth clause. The `>= 0` assertion is not decoration: the
     /// leading-`loopEnd` cases are the only ones in the suite that discriminate
     /// the clamp (mutation M2).
-    @Test("an unbalanced script yields depths without trapping or going negative",
-          arguments: ScriptIndentDepthsTests.unbalanced)
-    func unbalancedScriptsYieldNonNegativeDepths(_ script: Script) {
-        let depths = script.indentDepths
+    @Test("an unbalanced script yields exact depths without trapping or going negative",
+          arguments: ScriptIndentDepthsTests.unbalancedCases)
+    func unbalancedScriptsYieldNonNegativeDepths(_ depthCase: DepthCase) {
+        let depths = depthCase.script.indentDepths
+        #expect(depths == depthCase.expected, "\(depthCase.name)")
         #expect(depths.allSatisfy { $0 >= 0 })
-        #expect(depths.count == script.bricks.count)
+        #expect(depths.count == depthCase.script.bricks.count)
     }
 
     /// Test plan 7 — including the empty script. This is a *narrower* claim than

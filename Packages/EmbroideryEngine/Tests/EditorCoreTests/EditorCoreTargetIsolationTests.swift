@@ -51,6 +51,52 @@ struct EditorCoreTargetIsolationTests {
     /// absent on purpose — see the suite comment.
     private static let forbiddenModules = ["SwiftUI", "CoreGraphics", "UIKit", "AppKit"]
 
+    /// Swift source with comments removed and every whitespace run — including
+    /// newlines — collapsed to a single space.
+    ///
+    /// Both of these are load-bearing, and Codex round 1 found why by defeating
+    /// the first version of this suite twice. An import may be split across
+    /// lines (`import\nCoreGraphics`) or interrupted by a comment
+    /// (`import /* why */ CoreGraphics`); the parser accepts both, and a
+    /// line-by-line regex sees neither. And a *commented-out* declaration in
+    /// `Package.swift` satisfied the manifest pin while the live declaration
+    /// next to it violated ADR-033.
+    ///
+    /// Block comments are dropped whole, which is what lets the interrupted form
+    /// close up into `import CoreGraphics` and match. The residual weakness is
+    /// stated rather than hidden: this is not a Swift lexer, so a `//` or `/*`
+    /// inside a string literal is treated as a comment. That direction can only
+    /// *hide* text, so the honest claim is that the scan catches every import an
+    /// ordinary source file can express, not every one a hostile file could.
+    private static func strippedAndNormalised(_ source: String) -> String {
+        var stripped = ""
+        var index = source.startIndex
+        var blockDepth = 0
+
+        while index < source.endIndex {
+            let rest = source[index...]
+            if rest.hasPrefix("/*") {
+                blockDepth += 1
+                index = source.index(index, offsetBy: 2)
+            } else if blockDepth > 0 {
+                if rest.hasPrefix("*/") {
+                    blockDepth -= 1
+                    index = source.index(index, offsetBy: 2)
+                } else {
+                    index = source.index(after: index)
+                }
+            } else if rest.hasPrefix("//") {
+                while index < source.endIndex, source[index] != "\n" {
+                    index = source.index(after: index)
+                }
+            } else {
+                stripped.append(source[index])
+                index = source.index(after: index)
+            }
+        }
+        return stripped.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+    }
+
     /// The package root, derived from this file's compile-time path rather than
     /// hardcoded: `<root>/Tests/EditorCoreTests/<this file>`. Not a fixed path in
     /// the sense CLAUDE.md forbids — nothing is written, and the value is derived,
@@ -83,17 +129,18 @@ struct EditorCoreTargetIsolationTests {
 
         for relativePath in swiftFiles {
             let file = sourceDirectory.appendingPathComponent(relativePath)
-            let source = try String(contentsOf: file, encoding: .utf8)
-            for line in source.split(separator: "\n", omittingEmptySubsequences: false) {
-                for module in Self.forbiddenModules {
-                    // Matches `import X`, `@_exported import X`, the member form
-                    // `import struct X.Y`, and the submodule form `import X.Y`.
-                    let pattern = "(?:^|\\s)import\\s+(?:[A-Za-z]+\\s+)?\(module)\\b"
-                    #expect(
-                        line.range(of: pattern, options: .regularExpression) == nil,
-                        "\(relativePath) imports \(module); EditorCore is Foundation-and-below (ADR-033)"
-                    )
-                }
+            // Scanned as one normalised string rather than line by line, so an
+            // import split across lines or interrupted by a comment cannot slip
+            // between two individually-innocent lines.
+            let source = try Self.strippedAndNormalised(String(contentsOf: file, encoding: .utf8))
+            for module in Self.forbiddenModules {
+                // Matches `import X`, `@_exported import X`, the member form
+                // `import struct X.Y`, and the submodule form `import X.Y`.
+                let pattern = "(?:^|\\s)import\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s+)?\(module)\\b"
+                #expect(
+                    source.range(of: pattern, options: .regularExpression) == nil,
+                    "\(relativePath) imports \(module); EditorCore is Foundation-and-below (ADR-033)"
+                )
             }
         }
     }
@@ -104,14 +151,17 @@ struct EditorCoreTargetIsolationTests {
             contentsOf: Self.packageRoot.appendingPathComponent("Package.swift"),
             encoding: .utf8
         )
-        // Whitespace-normalised so SwiftFormat cannot re-wrap the declaration into
-        // a silent pass; re-wrapping it across lines is a deliberate red, and the
-        // fix is to update this pin rather than to delete it. A `contains` pin,
-        // not a parser — one claim, no regex surface.
-        let normalised = manifest.replacingOccurrences(
-            of: "\\s+", with: " ", options: .regularExpression
-        )
+        // Comments stripped *before* normalising, because a commented-out copy of
+        // the correct declaration satisfied the first version of this pin while
+        // the live declaration beside it added a second dependency (Codex round
+        // 1). Whitespace is normalised so SwiftFormat cannot re-wrap the
+        // declaration into a silent pass; re-wrapping it is a deliberate red, and
+        // the fix is to update this pin rather than delete it.
+        let normalised = Self.strippedAndNormalised(manifest)
         #expect(normalised.contains(#".target(name: "EditorCore", dependencies: ["ProgramModel"])"#))
+        // …and it is the *only* declaration of the target, so the pinned one
+        // cannot sit beside a second, live one that widens the dependencies.
+        #expect(normalised.components(separatedBy: #".target(name: "EditorCore""#).count - 1 == 1)
     }
 
     @Test("the editor vocabulary's boundary is ProgramModel and stdlib types")
@@ -121,11 +171,14 @@ struct EditorCoreTargetIsolationTests {
         let depths: (Script) -> [Int] = { $0.indentDepths }
         let address: (Int) -> BrickAddress = { BrickAddress(brickIndex: $0) }
 
-        let script = Script(bricks: [.forever, .stitch, .loopEnd])
-
-        #expect(kind(.stitch) == BrickKind(of: .stitch))
-        #expect(template(.sewUp) == BrickKind.sewUp.template())
-        #expect(depths(script) == script.indentDepths)
-        #expect(address(2) == BrickAddress(brickIndex: 2))
+        // Asserted against independently known values, not against the same call
+        // made directly: `depths(script) == script.indentDepths` is true of *any*
+        // implementation, including one returning all zeros, so it discriminates
+        // nothing (Codex round 1). The compile-time signature claim above is what
+        // this test is for, but its runtime half should not be a tautology.
+        #expect(kind(.stitch) == .stitch)
+        #expect(template(.sewUp) == [.sewUp])
+        #expect(depths(Script(bricks: [.forever, .stitch, .loopEnd])) == [0, 1, 0])
+        #expect(address(2).brickIndex == 2)
     }
 }

@@ -8,10 +8,15 @@ public extension BrickKind {
     /// inserts `[opener, .loopEnd]` together so a balanced script stays balanced
     /// by construction and `Script.validate()` is never needed as a repair.
     ///
-    /// Total over every kind, including `.loopEnd` — which mints nothing loose,
-    /// because ADR-035 keeps `.loopEnd` out of the palette (US-409) and makes
-    /// `insert(.loopEnd, …)` a rejection (US-402). Exhaustive with no `default:`,
-    /// so a new kind is a compile error rather than a missing template.
+    /// Total over every kind, including `.loopEnd`. Note precisely what that
+    /// does and does not claim: `BrickKind.loopEnd.template()` **is** `[.loopEnd]`,
+    /// and appending it to a balanced script would unbalance it — `validate()`
+    /// would throw `.unmatchedLoopEnd(index: 0)`. What keeps that unreachable is
+    /// the *insertion* policy, not this function: ADR-035 keeps `.loopEnd` out of
+    /// the palette (US-409) and makes `insert(.loopEnd, …)` a rejection (US-402).
+    /// This function describes a kind's shape; authorising an edit is US-402's
+    /// job. Exhaustive with no `default:`, so a new kind is a compile error
+    /// rather than a missing template.
     ///
     /// Where two kinds share a constant, it is because **Catroid shares the same
     /// Java constant** — `setX`/`setY`/`placeAt` all take `X_POSITION`/
