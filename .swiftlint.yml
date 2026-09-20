@@ -19,6 +19,17 @@ opt_in_rules:
   - weak_delegate
   - yoda_condition
 
+# An exhaustive `switch` with no `default:` is this repo's compile-time guard
+# against a silently unhandled enum case (ADR-033/US-401 require it of
+# `BrickKind`; `RunBatch.reducing` established the pattern). `Brick` has 23
+# cases, so every such mapping scores 23 against a default threshold of 10 —
+# while having no conditional branching at all, since each arm is a one-line
+# mapping. That is the metric misreading the code, and SwiftLint ships this
+# option for exactly that shape. `if`/`guard`/loop complexity is still counted,
+# which is the part of the rule worth keeping.
+cyclomatic_complexity:
+  ignores_case_statements: true
+
 identifier_name:
   excluded: # canonical coordinate component and delta names (CGPoint precedent)
     - x

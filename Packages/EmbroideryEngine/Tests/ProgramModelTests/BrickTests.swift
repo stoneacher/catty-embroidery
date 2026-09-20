@@ -71,7 +71,7 @@ struct BrickTests {
         // No Catroid counterpart: SetVariableBrick(double) seeds only the value
         // and picks the name from a spinner over the project's variables, so ""
         // is the model's honest spelling of "no variable chosen yet".
-        #expect(BrickDefaults.variableName == "")
+        #expect(BrickDefaults.variableName.isEmpty)
         // No BrickValues counterpart either: Catroid localises this one
         // (R.string.brick_default_embroidery_file), the same pattern its own
         // closing comment notes for the "Send web request" brick.

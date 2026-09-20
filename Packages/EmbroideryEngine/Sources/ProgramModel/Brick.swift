@@ -63,4 +63,37 @@ public enum BrickDefaults {
     public static let zigZagWidth: Double = 10 // ZIGZAG_STITCH_WIDTH
     public static let threadColorHex = "#ff0000" // THREAD_COLOR
     public static let waitSeconds: Double = 1.0 // WAIT (1000 ms)
+
+    // MARK: US-401 additions — the rest of what the M4 palette seeds
+
+    public static let repeatTimes: Double = 10 // REPEAT
+    /// Catroid's own constant, **not** `turnDegrees`: `POINT_IN_DIRECTION` is 90
+    /// and `TURN_DEGREES` is 15, so reusing the existing angle would ship a
+    /// different default direction.
+    public static let pointInDirection: Double = 90 // POINT_IN_DIRECTION
+    /// `CHANGE_X_BY`/`CHANGE_Y_BY` are separate constants in Catroid that merely
+    /// happen to equal `MOVE_STEPS`. Named separately here for the same reason:
+    /// equal values today are not the same decision.
+    public static let changeXBy: Double = 10 // CHANGE_X_BY
+    public static let changeYBy: Double = 10 // CHANGE_Y_BY
+    /// Catroid has two distinct constants for the two variable bricks, both
+    /// `1d` — the same shape as `CHANGE_X_BY`/`CHANGE_Y_BY`, so they get two
+    /// names rather than one shared value.
+    public static let setVariableValue: Double = 1 // SET_VARIABLE
+    public static let changeVariableByValue: Double = 1 // CHANGE_VARIABLE
+    /// **No Catroid counterpart.** `SetVariableBrick(double)` seeds only the
+    /// value formula and leaves the variable unset; the brick's spinner then
+    /// offers the project's existing variables. Our `Brick.setVariable(name:)`
+    /// is non-optional, so `""` is the model's honest spelling of "no variable
+    /// chosen yet" rather than an invented English name. It cannot misbehave —
+    /// `VariableScope.value(of:)` resolves an unknown name to 0 (Catroid
+    /// `Conversions.FALSE` parity). It does carry a UI obligation: US-407's row
+    /// and US-410's editor must render the empty name as a placeholder.
+    public static let variableName = ""
+    /// **No `BrickValues` counterpart**: Catroid localises this one
+    /// (`R.string.brick_default_embroidery_file`, `strings.xml` = "embroidery.dst"),
+    /// the same pattern its own closing comment notes for the "Send web request"
+    /// brick. Kept a plain Swift constant here — it is a filename, and
+    /// `ProgramModel` ships no localized resources.
+    public static let embroideryFileName = "embroidery.dst"
 }

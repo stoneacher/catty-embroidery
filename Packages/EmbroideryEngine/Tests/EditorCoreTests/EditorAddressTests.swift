@@ -30,8 +30,8 @@ struct EditorAddressTests {
     @Test("a brick address reaches its brick through scene, object, script and index")
     func addressReachesItsBrick() {
         let address = BrickAddress(
-            script: ScriptAddress(sceneIndex: 1, objectIndex: 1, scriptIndex: 1),
-            brickIndex: 2
+            brickIndex: 2,
+            script: ScriptAddress(sceneIndex: 1, objectIndex: 1, scriptIndex: 1)
         )
         let script = Self.program
             .scenes[address.script.sceneIndex]
@@ -49,8 +49,8 @@ struct EditorAddressTests {
         #expect(
             BrickAddress(brickIndex: 0)
                 == BrickAddress(
-                    script: ScriptAddress(sceneIndex: 0, objectIndex: 0, scriptIndex: 0),
-                    brickIndex: 0
+                    brickIndex: 0,
+                    script: ScriptAddress(sceneIndex: 0, objectIndex: 0, scriptIndex: 0)
                 )
         )
     }
