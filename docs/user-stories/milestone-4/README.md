@@ -57,7 +57,7 @@ Placement decided by Sebastian at this planning session (2026-09-19).
 | US-409 | `PaletteView`, popover/sheet adaptation, insertion rule, scroll-to-inserted | 401's templates, 402's `.insert`, 407's list | ✅ |
 | US-315 | A diagnosis, and a fix if it is small | M3 stage code; 409 for the reproduction | ✅ |
 | US-410 | `ParameterEditorView`, number pad, variable menu, thread palette | 403's sessions, 404's parser, 407's rows | ✅ |
-| US-411 | `UndoManager` bridge, announcements, run/export/autosave consequences, totality test | 403, 408's toolbar pair, and every mutation site (409, 410) | ✅ — last by construction |
+| US-411 | `UndoManager` bridge, announcements, totality test — **not** the run/export/autosave consequences, which US-408 creates and this story re-verifies through the bridge | 403, 408's toolbar pair **and its consequences**, and every mutation site (409, 410) | ✅ — last by construction |
 
 ## Milestone exit criteria
 
