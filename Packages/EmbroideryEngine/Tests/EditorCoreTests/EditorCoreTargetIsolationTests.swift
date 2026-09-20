@@ -76,12 +76,26 @@ struct EditorCoreTargetIsolationTests {
     /// `Package.swift` satisfied the manifest pin while the live declaration
     /// next to it violated ADR-033.
     ///
-    /// Block comments are dropped whole, which is what lets the interrupted form
-    /// close up into `import CoreGraphics` and match. The residual weakness is
-    /// stated rather than hidden: this is not a Swift lexer, so a `//` or `/*`
-    /// inside a string literal is treated as a comment. That direction can only
-    /// *hide* text, so the honest claim is that the scan catches every import an
-    /// ordinary source file can express, not every one a hostile file could.
+    /// Block comments collapse to a space, which is what lets the interrupted
+    /// form close up into `import CoreGraphics` and match.
+    ///
+    /// The residual weakness is stated rather than hidden: this is not a Swift
+    /// lexer, so a `//` or `/*` inside a string literal is treated as a comment.
+    /// **That cuts both ways, and an earlier version of this comment claiming it
+    /// "can only hide text" was wrong** (Codex round 3, ADR-032 invariant 3):
+    /// since the fix, `let note = "import/* example */CoreGraphics"` normalises
+    /// to `import CoreGraphics` and reds the suite, so misclassification can
+    /// manufacture a match as well as suppress one. A false positive here is
+    /// loud and one edit from resolved, which is why the policy stands.
+    ///
+    /// **The honest scope**: this catches every spelling an ordinary source file
+    /// can express, and is not a proof. A NUL byte between `import` and the
+    /// module name compiles with a warning and is not matched by `\s`. If this
+    /// guarantee ever needs to be total rather than good, the answer is not a
+    /// longer regex — it is a **Linux engine-test job**, where SwiftUI, UIKit,
+    /// CoreGraphics and AppKit do not exist and any import of them is a hard
+    /// build error. See ADR-023 on what happens to a text classifier that is
+    /// asked to be exhaustive.
     private static func strippedAndNormalised(_ source: String) -> String {
         var stripped = ""
         var index = source.startIndex
@@ -107,7 +121,12 @@ struct EditorCoreTargetIsolationTests {
                     index = source.index(after: index)
                 }
             } else if rest.hasPrefix("//") {
-                while index < source.endIndex, source[index] != "\n" {
+                // `.isNewline`, not `!= "\n"`: Swift folds CRLF into a *single*
+                // `Character` that does not equal `"\n"`, so the explicit
+                // comparison ran past every line ending in a CRLF file and ate
+                // the rest of the source — hiding a real `import CoreGraphics`
+                // on the next line (Codex round 3, reproduced before fixing).
+                while index < source.endIndex, !source[index].isNewline {
                     index = source.index(after: index)
                 }
                 stripped.append(" ")

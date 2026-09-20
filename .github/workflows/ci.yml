@@ -40,19 +40,32 @@ jobs:
 
           manifest = json.load(open("/tmp/package.json"))
 
-          def names(entries):
-              found = set()
+          # The discriminator is checked, not flattened. `dump-package` encodes a
+          # dependency as {"<kind>": [name, ...]}, and for a product the array is
+          # [product, package, ...] -- so flattening every string made
+          # `.product(name: "ProgramModel", package: "ProgramModel")` collapse to
+          # {"ProgramModel"} and pass, while adding an external dependency
+          # ADR-033 forbids (Codex round 3, reproduced before fixing).
+          LOCAL_KINDS = {"byName", "target"}
+
+          def local_dependency_names(entries):
+              found, foreign = set(), []
               for entry in entries:
-                  for value in entry.values():
-                      found.update(item for item in value if isinstance(item, str))
-              return found
+                  for kind, value in entry.items():
+                      if kind in LOCAL_KINDS:
+                          found.add(value[0])
+                      else:
+                          foreign.append(f"{kind}({value[0]})")
+              return found, foreign
 
           target = next(t for t in manifest["targets"] if t["name"] == "EditorCore")
-          deps = names(target["dependencies"])
+          deps, foreign = local_dependency_names(target["dependencies"])
           product = next(p for p in manifest["products"] if p["name"] == "ProgramModel")
           vended = set(product["targets"])
 
           failures = []
+          if foreign:
+              failures.append(f"EditorCore has non-local dependencies {sorted(foreign)}; ADR-033 permits the local ProgramModel target only")
           if deps != {"ProgramModel"}:
               failures.append(f"EditorCore depends on {sorted(deps)}, expected ['ProgramModel'] (ADR-033)")
           if vended != {"ProgramModel", "EditorCore"}:
