@@ -17,7 +17,7 @@ ADR-028's baseline is `settled ?? fit`, and `fit` is a **per-frame parameter** t
 
 **M4 increases its exposure.** ADR-038 makes every applied edit **void** the run — leaving it idle, to be replayed — so "the design grows while the user is manipulating the stage" stops being an edge case and becomes the ordinary rhythm of editing: change a parameter, replay, pinch in to look at the result while it is still going.
 
-**It is not package-only, and the first draft of this plan said it was** *(Codex round 1)*. The scope has to cross into the app, for a reason in the shipped code:
+**It is not package-only**, despite sitting beside the package-only block. The scope has to cross into the app, for a reason in the shipped code:
 
 - `StageManipulation`'s begin methods (`panBegan(at:)`, `pinchBegan(…)`) **receive no fitted transform**, so the baseline cannot be captured there from what those methods are given.
 - `StageInteraction.beginManipulating(fitting:)` **does** take the fit, so that is where a baseline can be captured — but the existing cancellation path in the app calls only `manipulation?.wrappedValue.cancelled()` (`StageManipulationCoordinator.swift:231`) and touches `StageInteraction` not at all. **A baseline owned by `StageInteraction` therefore has no existing path that clears it on cancel.**
@@ -43,8 +43,6 @@ So the story needs **app wiring plus integration coverage**, and its position mo
 4. A real zoom during a changing fit commits a `settled` derived from the **frozen** baseline, not from the fit at commit time.
 5. The baseline is cleared on cancel as well as on commit, so a cancelled manipulation followed by a fit change renders at the new fit.
 6. Two channels beginning in either order capture the baseline **once**, at the first — the ordering test, since a pan and a pinch can begin in either order (ADR-031).
-
-**Mutation targets**: capturing the baseline at *each* channel's begin rather than the first (green for a pinch-only gesture, wrong for the pan-then-pinch order); clearing it on the first channel's end rather than at commit, which US-313b already showed is a different moment.
 
 ## References
 
