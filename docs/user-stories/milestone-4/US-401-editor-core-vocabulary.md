@@ -2,15 +2,13 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~4 h | **Depends on**: — (M2 `ProgramModel`, shipped)
 
-**Status**: Implemented — 2026-09-20, **not yet closed out**. All eight acceptance criteria are met and all seven test-plan items landed, plus a thirteenth test for the addressing criterion the plan's seven items do not reach. **334 engine tests green** (from 257), CI green on `dd34f5f`, SwiftLint clean by exit code. PR [#51](https://github.com/stoneacher/catty-embroidery/pull/51).
+**Status**: Implemented and reviewed — 2026-09-20. **Awaiting Sebastian's call on one escalation**; the code is complete and green. All eight acceptance criteria are met and all seven test-plan items landed, plus a thirteenth test for the addressing criterion the plan's seven items do not reach. **334 engine tests green** (from 257), CI green on `449ae74`, SwiftLint clean by exit code. PR [#51](https://github.com/stoneacher/catty-embroidery/pull/51).
 
-**What is outstanding is the cross-vendor review loop, and it is blocked externally.** Rounds 1 and 2 ran: **9 findings, all valid, none rejected**, severity **Medium → Medium**. That is *flat*, which the project's stop condition explicitly does not accept as convergence, and both rounds changed code — so **round 3 is required**. It did not run: Codex returned `You've hit your usage limit … try again at 7:44 PM`. The story is therefore **not Done**, and this line says so rather than rounding up.
+**Three Codex rounds: 12 findings, all valid, none rejected.** Severity **Medium → Medium → Medium** — three rounds flat, which is the repo's early-escalation threshold, so the loop stopped at round 3 and went to Sebastian rather than to round 4. Findings fell 5 → 4 → 3 while severity did not, which is the pair that rule exists to separate.
 
-Not one finding was in the shipped vocabulary. Codex independently confirmed all 23 kind mappings, both exhaustive switches, the pair-shaped opener templates, every one of the eight new `BrickDefaults` values against `BrickValues.java`, and ran 29 524 generated opener/end sequences against its own stack oracle with no disagreement on `indentDepths`. All nine findings were in the guards, the fixtures or the comments.
+**Not one finding was in the shipped vocabulary.** All six Mediums sat in one of two artifacts — the import scan or the dependency check. Codex re-confirmed, three rounds running, all 23 kind mappings, both exhaustive switches, the pair-shaped opener templates, every one of the eight new `BrickDefaults` values against `BrickValues.java`, and 29 524 generated opener/end sequences against its own stack oracle with no disagreement on `indentDepths`.
 
-**Story**: As the developer, I want the editor's vocabulary to exist as pure values in its own target, so every later editor story is a transformation of tested types rather than a view inventing its own model.
-
-This is the M4 counterpart of US-302: the load-bearing values land first, on the fast `swift test` gate, before any pixel exists. Nothing here is user-visible.
+**The escalation, in one line**: the dependency check *converged* (its textual proxy was replaced by `swift package dump-package` in CI, and round 3's finding against it was an ordinary bug in a sound mechanism); the **import scan cannot**, because it is a text classifier being asked to be exhaustive over Swift's grammar — ADR-023's documented failure shape. Filed as [US-317](../backlog.md) in the backlog: a Linux engine-test job, where these four modules do not exist and an import is a hard build error.
 
 ## What this story creates
 
