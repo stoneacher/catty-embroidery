@@ -77,7 +77,7 @@ Detailed stories: [`user-stories/milestone-4/`](user-stories/milestone-4/)
 
 **Not inherited**: M3's 60 fps criterion left that milestone **unmet on the mid-gesture tail**, and no M4 story addresses it. US-316 remains in the backlog, and the A15-class capture stays blocked behind it for a second milestone. Named here rather than allowed to lapse quietly.
 
-Three planning-time corrections to the paragraphs below, which were written before either reference was swept:
+Five planning-time corrections to the paragraphs below, which were written before either reference was swept:
 
 - **"Tap-to-add, matching Catroid's flow" is half right.** Catroid's palette is tap-only, but the tap injects the brick at the *midpoint of the visible list* and immediately enters drag mode, so the user must place it (`ScriptFragment.java:613-634`); Catty does the same. SwiftUI has no programmatic drag initiation, so the flow is not portable — M4 inserts at a defined point and scrolls to it (US-409).
 - **The parity target is the Embroidery *category*, not the flavor.** The `embroideryDesigner` flavor restricts nothing: it is four lines of Gradle flipping a checkbox default, and its users see every stock category plus one more. The curated palette is ours to design.

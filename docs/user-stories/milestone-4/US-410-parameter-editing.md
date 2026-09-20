@@ -52,7 +52,7 @@ Neither reference helps: Catroid routes **every** number through the full formul
 9. A `.binary` parameter's editor is non-editable and exposes a non-empty localised reason; likewise `.unaryMinus`. Opening and dismissing either leaves the whole `Program` unchanged.
 10. `replaceBrick` with a different kind never occurs from this UI — asserted at the view-model boundary, since ADR-035 already rejects it in the funnel.
 
-**Mutation targets**: a session keyed on the brick's *value* rather than its address plus token (green while values differ, coalescing wrongly when a user sets a value back); the palette committing a normalised or lowercased hex that does not match the constant.
+**Mutation targets**: the palette committing a normalised or lowercased hex that does not match the constant; and `endEdit()` implemented as a no-op, which is green for tests 4 and 5 and caught only by test 6. *(The first draft named a value-keyed session as a mutation that "stays green while values differ" — **false**: under US-403's top-key-equality rule twenty successive values give twenty distinct keys and twenty undo entries, so test 4 fails immediately. Codex round 4; the third false mutation prediction in this plan.)*
 
 ## References
 

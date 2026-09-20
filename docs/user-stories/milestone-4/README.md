@@ -53,7 +53,7 @@ Placement decided by Sebastian at this planning session (2026-09-19).
 | US-312 | Export-row copy + its localisation | `StageExportRow` (M3), the selection shape settled by 405 | ✅ |
 | US-406 | `ProgramStoring`, `DocumentsProgramStore`, test double, load-at-launch | 404's codec, 405's view model | ✅ |
 | US-407 | `ScriptListView`, `BrickRowView`, `BrickRowPresentation` | 401's `indentDepths`/`BrickKind`, 405's program. **Not** 402 | ✅ |
-| US-408 | `.onMove`/`.onDelete` adapters, index conversion, pair-aware a11y actions | 402's actions, 407's rows | ✅ |
+| US-408 | `.onMove`/`.onDelete` adapters, index conversion, pair-aware a11y actions, **toolbar undo/redo and the run/export/autosave consequences of a history transition** | 402's actions, **403's stack**, 407's rows | ✅ — the toolbar pair and its consequences moved here from 411 because this story introduces destructive delete (Codex rounds 3–4) |
 | US-409 | `PaletteView`, popover/sheet adaptation, insertion rule, scroll-to-inserted | 401's templates, 402's `.insert`, 407's list | ✅ |
 | US-315 | A diagnosis, and a fix if it is small | M3 stage code; 409 for the reproduction | ✅ |
 | US-410 | `ParameterEditorView`, number pad, variable menu, thread palette | 403's sessions, 404's parser, 407's rows | ✅ |

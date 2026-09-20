@@ -43,7 +43,7 @@ It sits after US-405 so the export surface is touched once, after the selection 
 
 1. The export row's copy includes the colour statement, from the String Catalog, not a literal.
 2. The statement is present regardless of whether the design has one colour or several — a single-colour design still gets machine-assigned colour, so suppressing it there would be wrong.
-3. The export row's accessibility label contains the statement.
+3. The statement is reachable by VoiceOver **in whichever arrangement the criteria adopt** — contained in the export row's combined label, *or* exposed as the adjacent element the criteria expressly permit. Written against the chosen arrangement, because an unconditional "the label contains it" would fail a layout the acceptance criteria allow, and `StageExportRow` derives its label from its button title rather than absorbing a neighbour *(Codex round 4)*.
 4. The DST goldens are unchanged — the assertion that this story is UI-only.
 
 No manual Ink/Stitch verification is needed for the *change*; the Ink/Stitch observation is what produced the story and is already recorded.
