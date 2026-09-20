@@ -51,6 +51,33 @@ struct BrickTests {
         #expect(BrickDefaults.waitSeconds == 1.0) // WAIT = 1000 ms → seconds
     }
 
+    /// US-401 added eight more, because the M4 palette needs defaults the
+    /// original nine do not cover. Same provenance rule as above: the Catroid
+    /// constant is named in the trailing comment, and where Catroid has no
+    /// counterpart the absence is stated rather than papered over.
+    @Test("the M4 palette defaults match Catroid, or say where Catroid has none")
+    func editorBrickDefaultsMatchCatroid() {
+        #expect(BrickDefaults.repeatTimes == 10) // REPEAT
+        // POINT_IN_DIRECTION, deliberately *not* TURN_DEGREES (15).
+        #expect(BrickDefaults.pointInDirection == 90) // POINT_IN_DIRECTION
+        // CHANGE_X_BY/CHANGE_Y_BY are their own constants in Catroid and merely
+        // happen to equal MOVE_STEPS; they are not the same decision.
+        #expect(BrickDefaults.changeXBy == 10) // CHANGE_X_BY
+        #expect(BrickDefaults.changeYBy == 10) // CHANGE_Y_BY
+        // Catroid has two distinct constants here, both 1d — the same shape as
+        // CHANGE_X_BY/CHANGE_Y_BY, so they get two names rather than one.
+        #expect(BrickDefaults.setVariableValue == 1.0) // SET_VARIABLE
+        #expect(BrickDefaults.changeVariableByValue == 1.0) // CHANGE_VARIABLE
+        // No Catroid counterpart: SetVariableBrick(double) seeds only the value
+        // and picks the name from a spinner over the project's variables, so ""
+        // is the model's honest spelling of "no variable chosen yet".
+        #expect(BrickDefaults.variableName.isEmpty)
+        // No BrickValues counterpart either: Catroid localises this one
+        // (R.string.brick_default_embroidery_file), the same pattern its own
+        // closing comment notes for the "Send web request" brick.
+        #expect(BrickDefaults.embroideryFileName == "embroidery.dst")
+    }
+
     /// Test plan 4 (formulas): Codable was deferred from US-202 to here, where
     /// formulas ship embedded under `Program`.
     @Test("a Formula tree round-trips through Codable")

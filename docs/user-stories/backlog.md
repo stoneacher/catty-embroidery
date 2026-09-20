@@ -65,6 +65,40 @@ capsule `PASS` is not on its own sufficient evidence for the bar's dropped-frame
 
 ---
 
+## US-317 — A Linux engine-test job, so target isolation is structural rather than textual
+
+**Raised by US-401's review loop (2026-09-20), not scheduled.** `EditorCoreTargetIsolationTests`
+guards ADR-033's "no SwiftUI, no CoreGraphics" with a **textual scan** of the target's sources.
+Three Codex rounds found six distinct *legal* Swift spellings that escaped successive versions
+of it — split across lines, interrupted by a comment with and without surrounding spaces,
+backtick-escaped, separated by `;`, and hidden behind a CRLF line ending — and the reviewer's
+own conclusion is that the scan "cannot claim to cover every legal spelling" (a NUL byte
+between `import` and the module name compiles with a warning and is not matched by `\s`).
+
+**This is ADR-023's documented failure shape**: a text classifier asked to be exhaustive, where
+each fix enlarges the surface it defends. ADR-023's own ending is the precedent — *asking the
+working tree instead is what ended it.*
+
+**The structural answer exists and is cheap to state**: run the engine tests on Linux as well as
+`macos-26`. SwiftUI, UIKit, CoreGraphics and AppKit **do not exist there**, so importing any of
+them is a hard compile error — total, regex-free, and it guards every package target at once
+rather than only `EditorCore`. The manifest half of the same criterion already made this move
+successfully in US-401: the textual pin was replaced by `swift package dump-package` in CI once
+it was clear that a proxy for an evaluated fact cannot be repaired, only replaced.
+
+**Why it was not done inside US-401**: it is a CI-wide change with its own unknowns, not a story
+line item. The package must actually *build* on Linux — `Samples` ships localized resources
+through `Bundle.module`, and Foundation on Linux is not Foundation on Darwin. That is a spike,
+and its first deliverable is a yes/no answer rather than a job.
+
+**If it is never taken**, the cost is bounded and should be stated rather than assumed: the scan
+still catches every spelling an ordinary source file can express, which is the actual threat
+model — an import *creeping in* because someone reached for a SwiftUI type. Every escape found
+across three rounds was a deliberately hostile construction, not a plausible accident. The
+in-file comment says exactly this, so a later reader is not misled about what the guard proves.
+
+---
+
 ## Scheduled out of this file — the record, because the mechanism is the point
 
 Entries keep their ID when they are scheduled, so existing ADR and journal references keep

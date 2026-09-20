@@ -12,7 +12,13 @@ let package = Package(
     ],
     products: [
         .library(name: "EmbroideryEngine", targets: ["EmbroideryEngine"]),
-        .library(name: "ProgramModel", targets: ["ProgramModel"]),
+        // ADR-033: two targets, one product. `EditorCore` is vended through the
+        // *existing* `ProgramModel` product so the app — which already links it —
+        // can `import EditorCore` with no `project.pbxproj` change and no human
+        // Xcode session. This is the first place in this manifest where product
+        // and target stop being 1:1, so ADR-022's "five products, five targets"
+        // bookkeeping no longer holds: six targets, five products.
+        .library(name: "ProgramModel", targets: ["ProgramModel", "EditorCore"]),
         .library(name: "Interpreter", targets: ["Interpreter"]),
         .library(name: "Samples", targets: ["Samples"]),
         .library(name: "StagePreview", targets: ["StagePreview"])
@@ -39,6 +45,16 @@ let package = Package(
             // en.lproj/ localization layout its standard handling.
             resources: [.process("Resources")]
         ),
+        // ADR-033's editor target: the M4 block editor's vocabulary — brick kinds,
+        // palette templates, addressing, and (from US-402) the pure `apply` funnel.
+        // Depends on `ProgramModel` **only**, the shape ADR-022 gave `Samples`, so
+        // ADR-016's DAG stays a straight line inward. Deliberately *not* inside
+        // `ProgramModel`: that target's public API is the serialized format
+        // (`SampleJSONResourceTests` asserts `decode(resource) == builder()`), and
+        // an undo stack and a palette catalogue are not part of the file.
+        // Foundation is permitted — US-404 puts `Data`/`JSONEncoder` here — but
+        // nothing above it; `EditorCoreTargetIsolationTests` guards that.
+        .target(name: "EditorCore", dependencies: ["ProgramModel"]),
         // ADR-022's second app-support target: the display list, the stage
         // geometry, the zoom/pan math and the event reducer. **Foundation-only**
         // — no SwiftUI, no CoreGraphics — which is what keeps the milestone's
@@ -53,6 +69,7 @@ let package = Package(
             resources: [.copy("Resources")]
         ),
         .testTarget(name: "ProgramModelTests", dependencies: ["ProgramModel"]),
+        .testTarget(name: "EditorCoreTests", dependencies: ["EditorCore", "ProgramModel"]),
         .testTarget(
             name: "InterpreterTests",
             dependencies: ["Interpreter", "ProgramModel", "EmbroideryEngine"],

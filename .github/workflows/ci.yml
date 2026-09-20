@@ -20,6 +20,62 @@ jobs:
       - uses: actions/checkout@v5
       - name: Show toolchain
         run: swift --version
+      # ADR-033: EditorCore depends on ProgramModel *only*, and is vended through
+      # the existing ProgramModel product so the app needs no pbxproj change.
+      #
+      # This runs here rather than as a test, and the reason is measured rather
+      # than stylistic: `dump-package` evaluates the manifest, which is the only
+      # oracle that sees a dependency added after the initializer (a textual pin
+      # on the declaration does not) -- but spawning it from inside `swift test`
+      # deadlocks on SwiftPM's build lock; it blocked for 608 s before being
+      # killed. Outside the test process there is no lock to contend for.
+      #
+      # ADR-023's division: EditorCoreTargetIsolationTests' textual pin is the
+      # fast local convenience, this required status check is the enforcement.
+      - name: Pin EditorCore's evaluated dependencies (ADR-033)
+        run: |
+          swift package --package-path Packages/EmbroideryEngine dump-package > /tmp/package.json
+          python3 - <<'CHECK'
+          import json, sys
+
+          manifest = json.load(open("/tmp/package.json"))
+
+          # The discriminator is checked, not flattened. `dump-package` encodes a
+          # dependency as {"<kind>": [name, ...]}, and for a product the array is
+          # [product, package, ...] -- so flattening every string made
+          # `.product(name: "ProgramModel", package: "ProgramModel")` collapse to
+          # {"ProgramModel"} and pass, while adding an external dependency
+          # ADR-033 forbids (Codex round 3, reproduced before fixing).
+          LOCAL_KINDS = {"byName", "target"}
+
+          def local_dependency_names(entries):
+              found, foreign = set(), []
+              for entry in entries:
+                  for kind, value in entry.items():
+                      if kind in LOCAL_KINDS:
+                          found.add(value[0])
+                      else:
+                          foreign.append(f"{kind}({value[0]})")
+              return found, foreign
+
+          target = next(t for t in manifest["targets"] if t["name"] == "EditorCore")
+          deps, foreign = local_dependency_names(target["dependencies"])
+          product = next(p for p in manifest["products"] if p["name"] == "ProgramModel")
+          vended = set(product["targets"])
+
+          failures = []
+          if foreign:
+              failures.append(f"EditorCore has non-local dependencies {sorted(foreign)}; ADR-033 permits the local ProgramModel target only")
+          if deps != {"ProgramModel"}:
+              failures.append(f"EditorCore depends on {sorted(deps)}, expected ['ProgramModel'] (ADR-033)")
+          if vended != {"ProgramModel", "EditorCore"}:
+              failures.append(f"ProgramModel product vends {sorted(vended)}, expected both targets (ADR-033)")
+
+          for failure in failures:
+              print(f"::error::{failure}")
+          sys.exit(1 if failures else 0)
+          CHECK
+
       - name: Run engine tests
         run: swift test --package-path Packages/EmbroideryEngine
 
