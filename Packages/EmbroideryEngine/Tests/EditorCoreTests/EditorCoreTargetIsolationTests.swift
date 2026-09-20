@@ -33,6 +33,20 @@ import Testing
 ///    target's `dependencies` and then importing it legitimately. Mutation M12
 ///    demonstrates precisely that: the build stays green and only this test
 ///    goes red.
+///
+///    **What it pins is the declaration's text, not the evaluated graph**, and
+///    Codex round 2 showed the difference is reachable: appending
+///    `package.targets.first { $0.name == "EditorCore" }!.dependencies
+///    .append("EmbroideryEngine")` after the initializer is legal, violates
+///    ADR-033, and leaves every textual check green. The real oracle is
+///    `swift package dump-package`, which *evaluates* the manifest — but
+///    spawning it from inside `swift test` deadlocks on SwiftPM's build lock
+///    (measured: it blocked for 608 s before being killed, it did not merely
+///    run slowly). So the evaluated check runs in CI, one step before the test
+///    suite, and this pin stays as the fast local signal. That split is
+///    ADR-023's standing division exactly: the local check is a convenience
+///    that catches mistakes, the required status check is the enforcement
+///    boundary.
 /// 3. **Function-type bindings** (`theEditorVocabularyBoundaryIsPackageTypes`)
 ///    — the repo's established pattern, and honestly thin *today*: this
 ///    story's API is `Brick`, `[Brick]`, `Script`, `[Int]` and two index
@@ -82,6 +96,13 @@ struct EditorCoreTargetIsolationTests {
                 if rest.hasPrefix("*/") {
                     blockDepth -= 1
                     index = source.index(index, offsetBy: 2)
+                    // A comment is a token *separator* in Swift, so it collapses
+                    // to a space rather than to nothing: `import/* why */Foo` is
+                    // legal, and deleting the comment outright would splice it
+                    // into `importFoo` and hide it (Codex round 2).
+                    if blockDepth == 0 {
+                        stripped.append(" ")
+                    }
                 } else {
                     index = source.index(after: index)
                 }
@@ -89,6 +110,7 @@ struct EditorCoreTargetIsolationTests {
                 while index < source.endIndex, source[index] != "\n" {
                     index = source.index(after: index)
                 }
+                stripped.append(" ")
             } else {
                 stripped.append(source[index])
                 index = source.index(after: index)
@@ -135,8 +157,13 @@ struct EditorCoreTargetIsolationTests {
             let source = try Self.strippedAndNormalised(String(contentsOf: file, encoding: .utf8))
             for module in Self.forbiddenModules {
                 // Matches `import X`, `@_exported import X`, the member form
-                // `import struct X.Y`, and the submodule form `import X.Y`.
-                let pattern = "(?:^|\\s)import\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s+)?\(module)\\b"
+                // `import struct X.Y`, the submodule form `import X.Y`, the
+                // backtick-escaped spelling, and an `import` separated by `;`
+                // rather than whitespace — the last three found legal and
+                // unmatched in Codex round 2.
+                let name = "`?\(module)`?"
+                let kind = "(?:`?[A-Za-z_][A-Za-z0-9_]*`?\\s+)?"
+                let pattern = "(?<![A-Za-z0-9_])import\\s+\(kind)\(name)(?![A-Za-z0-9_])"
                 #expect(
                     source.range(of: pattern, options: .regularExpression) == nil,
                     "\(relativePath) imports \(module); EditorCore is Foundation-and-below (ADR-033)"
@@ -145,18 +172,18 @@ struct EditorCoreTargetIsolationTests {
         }
     }
 
-    @Test("the manifest gives EditorCore exactly one package dependency")
+    @Test("the manifest's EditorCore declaration is the pinned, unique one")
     func dependsOnProgramModelOnly() throws {
         let manifest = try String(
             contentsOf: Self.packageRoot.appendingPathComponent("Package.swift"),
             encoding: .utf8
         )
-        // Comments stripped *before* normalising, because a commented-out copy of
-        // the correct declaration satisfied the first version of this pin while
-        // the live declaration beside it added a second dependency (Codex round
-        // 1). Whitespace is normalised so SwiftFormat cannot re-wrap the
-        // declaration into a silent pass; re-wrapping it is a deliberate red, and
-        // the fix is to update this pin rather than delete it.
+        // Comments are stripped before the pin, because a commented-out copy of
+        // the correct declaration satisfied the first version while the live one
+        // beside it added a second dependency (Codex round 1). Whitespace is
+        // normalised so SwiftFormat cannot re-wrap the declaration into a silent
+        // pass; re-wrapping it is a deliberate red, and the fix is to update this
+        // pin rather than delete it.
         let normalised = Self.strippedAndNormalised(manifest)
         #expect(normalised.contains(#".target(name: "EditorCore", dependencies: ["ProgramModel"])"#))
         // …and it is the *only* declaration of the target, so the pinned one

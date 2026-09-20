@@ -6,10 +6,15 @@ import Testing
 /// US-407 renders as indentation.
 ///
 /// The load-bearing case is the `loopEnd`, which sits at its **opener's** depth
-/// rather than its body's. That is the mistake the story names as plausible,
-/// and only `oneLoopReturnsItsEndToTheOpenerDepth` and `nestedLoopsAccumulate`
-/// discriminate it — the flat, unbalanced and count tests all stay green under
-/// it (mutation M1).
+/// rather than its body's. That is the mistake the story names as plausible.
+/// When M1 was run, only `oneLoopReturnsItsEndToTheOpenerDepth` and
+/// `nestedLoopsAccumulate` discriminated it, and the flat, unbalanced and count
+/// tests all stayed green. **That is no longer true of the unbalanced test**:
+/// once Codex round 2 gave those cases exact expectations, the last of them
+/// rejects the mutation too — it would yield `[0, 0, 1, 1, 0]` rather than
+/// `[0, 0, 1, 0, 0]`. Corrected here rather than left standing, because a stale
+/// claim about what the evidence discriminates is the same defect as a test
+/// that cannot fail (ADR-032 invariants 2 and 3).
 @Suite("Script indent depths")
 struct ScriptIndentDepthsTests {
     struct DepthCase: Sendable {

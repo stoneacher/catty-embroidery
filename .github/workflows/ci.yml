@@ -20,6 +20,49 @@ jobs:
       - uses: actions/checkout@v5
       - name: Show toolchain
         run: swift --version
+      # ADR-033: EditorCore depends on ProgramModel *only*, and is vended through
+      # the existing ProgramModel product so the app needs no pbxproj change.
+      #
+      # This runs here rather than as a test, and the reason is measured rather
+      # than stylistic: `dump-package` evaluates the manifest, which is the only
+      # oracle that sees a dependency added after the initializer (a textual pin
+      # on the declaration does not) -- but spawning it from inside `swift test`
+      # deadlocks on SwiftPM's build lock; it blocked for 608 s before being
+      # killed. Outside the test process there is no lock to contend for.
+      #
+      # ADR-023's division: EditorCoreTargetIsolationTests' textual pin is the
+      # fast local convenience, this required status check is the enforcement.
+      - name: Pin EditorCore's evaluated dependencies (ADR-033)
+        run: |
+          swift package --package-path Packages/EmbroideryEngine dump-package > /tmp/package.json
+          python3 - <<'CHECK'
+          import json, sys
+
+          manifest = json.load(open("/tmp/package.json"))
+
+          def names(entries):
+              found = set()
+              for entry in entries:
+                  for value in entry.values():
+                      found.update(item for item in value if isinstance(item, str))
+              return found
+
+          target = next(t for t in manifest["targets"] if t["name"] == "EditorCore")
+          deps = names(target["dependencies"])
+          product = next(p for p in manifest["products"] if p["name"] == "ProgramModel")
+          vended = set(product["targets"])
+
+          failures = []
+          if deps != {"ProgramModel"}:
+              failures.append(f"EditorCore depends on {sorted(deps)}, expected ['ProgramModel'] (ADR-033)")
+          if vended != {"ProgramModel", "EditorCore"}:
+              failures.append(f"ProgramModel product vends {sorted(vended)}, expected both targets (ADR-033)")
+
+          for failure in failures:
+              print(f"::error::{failure}")
+          sys.exit(1 if failures else 0)
+          CHECK
+
       - name: Run engine tests
         run: swift test --package-path Packages/EmbroideryEngine
 

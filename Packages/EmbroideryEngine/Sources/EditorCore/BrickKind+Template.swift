@@ -11,7 +11,8 @@ public extension BrickKind {
     /// Total over every kind, including `.loopEnd`. Note precisely what that
     /// does and does not claim: `BrickKind.loopEnd.template()` **is** `[.loopEnd]`,
     /// and appending it to a balanced script would unbalance it — `validate()`
-    /// would throw `.unmatchedLoopEnd(index: 0)`. What keeps that unreachable is
+    /// would throw `.unmatchedLoopEnd` at *that brick's own index*, which is `0`
+    /// only when the script was empty. What keeps that unreachable is
     /// the *insertion* policy, not this function: ADR-035 keeps `.loopEnd` out of
     /// the palette (US-409) and makes `insert(.loopEnd, …)` a rejection (US-402).
     /// This function describes a kind's shape; authorising an edit is US-402's
