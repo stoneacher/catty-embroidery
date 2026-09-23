@@ -80,31 +80,35 @@ struct EditorCoreApplyTests {
         #expect(EditorCore.apply(.renameProgram(name), to: Fixtures.program) == .applied(expected))
     }
 
-    /// The "nothing else" half of the acceptance criterion. Value semantics give
-    /// it for free; it is asserted rather than assumed because the *implementation*
-    /// is free to build a mutable copy, edit it, and then return `.rejected`
-    /// having already handed that copy somewhere.
+    /// The "nothing else" half of the acceptance criterion: a rejection carries
+    /// the reason and **no program**, so there is no partially-mutated value for a
+    /// caller to pick up.
     ///
-    /// Two things are checked: the result carries no program at all (a
-    /// `.rejected` result has no `.applied` payload to leak one through), and
-    /// the input is untouched afterwards.
+    /// The first draft closed with `#expect(Fixtures.program == before)`, and
+    /// `swift-code-reviewer` correctly called it a test that cannot fail:
+    /// `Program` is a `struct`, the fixture is a `static let`, and `apply` takes
+    /// its argument by value — so no implementation, not even one that builds a
+    /// mutable copy and leaks it, can make that comparison false. It is the
+    /// canonical shape ADR-032 invariant 2 names, and it is gone.
+    ///
+    /// What replaces it discriminates: each rejection is asserted as an **exact
+    /// value**, one per case of `EditRejection`, so a result that is `.rejected`
+    /// for the *wrong reason* is red — which the old "is it `.applied`?" loop let
+    /// through.
     @Test("a rejected action returns the rejection and no program")
     func rejectionCarriesNoProgram() {
-        let before = Fixtures.program
-        let results = [
-            EditorCore.apply(.insert(.loopEnd, at: Fixtures.at(0)), to: Fixtures.program),
-            EditorCore.apply(.delete(at: Fixtures.at(99)), to: Fixtures.program),
-            EditorCore.apply(.move(from: Fixtures.at(5), to: 0), to: Fixtures.program),
-            EditorCore.apply(
+        let expectations: [(EditAction, EditRejection)] = [
+            (.insert(.loopEnd, at: Fixtures.at(0)), .cannotInsertLoopEnd),
+            (.delete(at: Fixtures.at(99)), .addressOutOfBounds(.brick, at: Fixtures.at(99))),
+            (.move(from: Fixtures.at(5), to: 0), .cannotMoveLoopEnd(at: Fixtures.at(5))),
+            (
                 .replaceBrick(at: Fixtures.at(0), with: .sewUp),
-                to: Fixtures.program
-            )
+                .cannotChangeBrickKind(from: .moveNSteps, to: .sewUp)
+            ),
+            (.move(from: Fixtures.at(0), to: 99), .destinationOutOfBounds(index: 99))
         ]
-        for result in results {
-            if case let .applied(program) = result {
-                Issue.record("expected a rejection, got .applied(\(program.name))")
-            }
+        for (action, rejection) in expectations {
+            #expect(EditorCore.apply(action, to: Fixtures.program) == .rejected(rejection))
         }
-        #expect(Fixtures.program == before)
     }
 }

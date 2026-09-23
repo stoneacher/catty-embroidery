@@ -135,6 +135,37 @@ struct EditInsertAndDeleteTests {
         )
     }
 
+    /// The redirect must resolve the `loopEnd`'s **matching** opener, not the
+    /// nearest opener above it — and those two rules agree on every *sibling*
+    /// layout, which is all `Fixtures.bricks` contains (deliberately, for the
+    /// move tests). Under nesting they diverge, and nothing here saw it: the
+    /// balance property is blind because removing *either* complete pair stays
+    /// balanced, and `matchingOpener`'s own nested test proves the helper without
+    /// proving that `delete` uses it.
+    ///
+    /// Found by `swift-code-reviewer` as a surviving mutant — swapping
+    /// `matchingOpener(ofLoopEndAt:)` for `lastIndex(where: \.opensLoop)` deleted
+    /// the *inner* loop and left the whole suite green.
+    @Test("the redirect resolves the matching opener, not the nearest one above")
+    func theRedirectResolvesTheMatchingOpenerUnderNesting() {
+        let nested = Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: [
+            .forever, .repeatLoop(times: .number(2)), .stitch, .loopEnd, .sewUp, .loopEnd
+        ])])])])
+        let outerEnd = EditorCore.apply(.delete(at: BrickAddress(brickIndex: 5)), to: nested)
+
+        // The outer `loopEnd` takes the outer loop — i.e. the whole script.
+        #expect(outerEnd == EditorCore.apply(.delete(at: BrickAddress(brickIndex: 0)), to: nested))
+        guard case let .applied(program) = outerEnd else {
+            Issue.record("expected .applied, got \(outerEnd)")
+            return
+        }
+        #expect(program.scenes[0].objects[0].scripts[0].bricks.isEmpty)
+
+        // …and emphatically not the inner one, which is what "nearest opener
+        // above" would have picked.
+        #expect(outerEnd != EditorCore.apply(.delete(at: BrickAddress(brickIndex: 1)), to: nested))
+    }
+
     // MARK: Delete on a malformed script
 
     /// **Decision (Sebastian, 2026-09-23)**, extending ADR-035, which pins delete

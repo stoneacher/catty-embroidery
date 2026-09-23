@@ -28,6 +28,16 @@ public extension Script {
         guard bricks.indices.contains(index), !bricks[index].isLoopEnd, index > 0 else {
             return nil
         }
+        // The same refusal `nextSiblingIndex` makes, applied to *this* function's
+        // own index rather than only to its predecessor. Without it the two stop
+        // being mirrors on exactly one input — an unclosed opener — and the
+        // conservatism promised above becomes false: US-408 would offer an
+        // enabled "Move Up" for a block that `apply` then always rejects with
+        // `.unbalancedPair`, an action that is offered and can never succeed.
+        // Found by `swift-code-reviewer`, 2026-09-23.
+        guard !bricks[index].opensLoop || matchingEnd(ofBrickAt: index) != nil else {
+            return nil
+        }
         let predecessor = bricks[index - 1]
         if predecessor.isLoopEnd {
             // A sibling *pair* sits above: jump over it to its opener. `nil` here

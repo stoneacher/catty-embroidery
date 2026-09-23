@@ -109,6 +109,28 @@ struct ScriptSiblingJumpTests {
         #expect(script.nextSiblingIndex(ofBrickAt: 0) == nil)
     }
 
+    /// The previous-direction counterpart, and the one place the two functions
+    /// had stopped being mirrors. `nextSiblingIndex` already refused for an
+    /// unclosed opener; `previousSiblingIndex` answered `0` — "a plausible-looking
+    /// index", which is exactly what its own doc promises not to return.
+    ///
+    /// The consequence was concrete rather than theoretical: US-408 renders Move
+    /// Up/Move Down from these, so VoiceOver would have offered an enabled Move Up
+    /// for this opener, and `apply(.move(from: 1, to: 0))` then rejects it with
+    /// `.unbalancedPair` every time — an action always offered and never able to
+    /// succeed. Found by `swift-code-reviewer`, 2026-09-23.
+    @Test("an unclosed opener has no previous sibling either")
+    func unclosedOpenerHasNoPreviousSibling() {
+        let script = Script(bricks: [
+            .stitch, .repeatLoop(times: .number(2)), .moveNSteps(.number(10))
+        ])
+        #expect(script.previousSiblingIndex(ofBrickAt: 1) == nil)
+        #expect(script.nextSiblingIndex(ofBrickAt: 1) == nil)
+        // The leaf beside it is unaffected: the refusal is about the queried
+        // block's own extent, not about the script being unbalanced.
+        #expect(script.nextSiblingIndex(ofBrickAt: 0) == 1)
+    }
+
     /// A stray `loopEnd` cannot be resolved to an opener, so the brick after it
     /// has no previous sibling either.
     @Test("a stray loopEnd yields no previous sibling for the brick after it")

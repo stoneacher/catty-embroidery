@@ -101,6 +101,39 @@ struct EditBalanceInvariantTests {
         #expect(program.scenes[0].objects[0].scripts[0].bricks == [.loopEnd])
     }
 
+    /// The acceptance criterion's own worked counterexample, which exists to stop
+    /// the "insert of a loop opener yields a balanced script" promise from being
+    /// written unconditionally: inserting a repeat into `[loopEnd, moveNSteps(10)]`
+    /// gives `[loopEnd, moveNSteps(10), repeatLoop(10), loopEnd]`, which
+    /// **must be accepted** — preservation — and which **does not validate**.
+    ///
+    /// The two halves contradict each other unless the promise is qualified, so
+    /// both are asserted here in one test rather than left implicit.
+    @Test("inserting a loop opener into an unbalanced script is accepted and stays unbalanced")
+    func insertingIntoAnUnbalancedScriptIsAcceptedAndNotRepaired() {
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [
+            Script(bricks: [.loopEnd, .moveNSteps(.number(10))])
+        ])])])
+        var expected = program
+        expected.scenes[0].objects[0].scripts[0].bricks = [
+            .loopEnd,
+            .moveNSteps(.number(10)),
+            .repeatLoop(times: .number(BrickDefaults.repeatTimes)),
+            .loopEnd
+        ]
+
+        let result = EditorCore.apply(
+            .insert(.repeatLoop, at: BrickAddress(brickIndex: 2)),
+            to: program
+        )
+        #expect(result == .applied(expected))
+
+        guard case let .applied(edited) = result else { return }
+        #expect(throws: ScriptValidationError.unmatchedLoopEnd(index: 0)) {
+            try edited.scenes[0].objects[0].scripts[0].validate()
+        }
+    }
+
     /// The same claim for the *same* script: the acceptance criterion says an
     /// imbalance "elsewhere in the same script" also leaves the action's own
     /// outcome unchanged. Deleting the trailing leaf of

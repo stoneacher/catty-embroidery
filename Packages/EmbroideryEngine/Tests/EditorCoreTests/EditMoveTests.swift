@@ -79,6 +79,25 @@ struct EditMoveTests {
         )
     }
 
+    /// ADR-035 states the rule unconditionally — "a source that `isLoopEnd` is
+    /// **rejected**" — so it holds for a *stray* end too, where `delete`
+    /// deliberately behaves as a leaf instead. That divergence is argued in prose
+    /// in two places and was pinned on the `delete` side twice and on the `move`
+    /// side not at all.
+    ///
+    /// The property test cannot reach here: its seed is balanced and `apply`
+    /// preserves balance, so a stray `loopEnd` never appears in a generated run.
+    /// Found by `swift-code-reviewer` as a surviving mutant — relaxing the guard
+    /// to `isLoopEnd && matchingOpener(…) != nil` left the whole suite green.
+    @Test("moving a stray loopEnd is rejected too")
+    func movingAStrayLoopEndIsRejected() {
+        let address = BrickAddress(brickIndex: 0)
+        #expect(
+            EditorCore.apply(.move(from: address, to: 1), to: Fixtures.withStrayLoopEnd)
+                == .rejected(.cannotMoveLoopEnd(at: address))
+        )
+    }
+
     /// **The normalisation test.** A pair move gets its destination bound from
     /// `movingPair`; a leaf move gets it from `EditorCore`. The same user-visible
     /// failure must therefore not acquire two spellings selected by what kind of

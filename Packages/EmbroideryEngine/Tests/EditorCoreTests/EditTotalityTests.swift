@@ -66,20 +66,33 @@ struct EditTotalityTests {
     /// "out of bounds" without a discriminator is ambiguous. Each hop is asserted
     /// separately: a single collapsed `guard` over all four would otherwise
     /// satisfy a test that only checked for *some* rejection.
-    @Test("each address component reports itself when it is the one out of bounds")
-    func eachComponentIsDiscriminated() {
-        let cases: [(AddressComponent, ScriptAddress)] = [
-            (.scene, ScriptAddress(sceneIndex: 2, objectIndex: 2, scriptIndex: 1)),
-            (.object, ScriptAddress(sceneIndex: 1, objectIndex: 3, scriptIndex: 1)),
-            (.script, ScriptAddress(sceneIndex: 1, objectIndex: 2, scriptIndex: 2))
-        ]
-        for (component, script) in cases {
-            let address = BrickAddress(brickIndex: 0, script: script)
-            #expect(
-                EditorCore.apply(.delete(at: address), to: Fixtures.program)
-                    == .rejected(.addressOutOfBounds(component, at: address))
-            )
+    /// Swept over `AddressComponent.allCases` rather than a hand-listed table, so
+    /// a fifth hop cannot be added without a test — the same friction
+    /// `BrickKind.allCases` already buys elsewhere. The builder's switch is
+    /// exhaustive with no `default:`, so the compile error arrives there first.
+    @Test("each address component reports itself when it is the one out of bounds",
+          arguments: AddressComponent.allCases)
+    func eachComponentIsDiscriminated(component: AddressComponent) {
+        let address = Self.addressOutOfBounds(at: component)
+        #expect(
+            EditorCore.apply(.delete(at: address), to: Fixtures.program)
+                == .rejected(.addressOutOfBounds(component, at: address))
+        )
+    }
+
+    /// An address that is out of bounds at **exactly** `component` and valid at
+    /// every other hop. The fixture's real script is scene 1 / object 2 /
+    /// script 1, with 2 scenes, 3 objects, 2 scripts and 10 bricks.
+    private static func addressOutOfBounds(at component: AddressComponent) -> BrickAddress {
+        var script = Fixtures.address
+        var brickIndex = 0
+        switch component {
+        case .scene: script.sceneIndex = 2
+        case .object: script.objectIndex = 3
+        case .script: script.scriptIndex = 2
+        case .brick: brickIndex = 10
         }
+        return BrickAddress(brickIndex: brickIndex, script: script)
     }
 
     /// Resolution is outside-in, so an address that is wrong at several hops
@@ -127,10 +140,20 @@ struct EditTotalityTests {
 
     /// The destination half of item 9. `.destinationOutOfBounds` carries the
     /// index rather than a component, because a destination has only one.
-    @Test("an out-of-range move destination is rejected", arguments: [-1, 10, Int.min, Int.max])
-    func outOfRangeDestination(destination: Int) {
+    ///
+    /// Swept over **both source kinds**, which is the point: the leaf path bounds
+    /// its destination in `EditorCore` and the pair path learns it from
+    /// `movingPair`, so a probe from one source says nothing about the other.
+    /// This originally ran from the leaf alone, and `swift-code-reviewer` found
+    /// the gap as a surviving mutant — clamping the pair path's destination with
+    /// `max(0, destination)` silently relocated a loop to the front of the script
+    /// and left the whole suite green. Item 9 asks for "`Int.max` and a negative
+    /// index"; the negative half was reaching only one of the two paths.
+    @Test("an out-of-range move destination is rejected on both source kinds",
+          arguments: [-1, 10, Int.min, Int.max], [0, 1])
+    func outOfRangeDestination(destination: Int, source: Int) {
         #expect(
-            EditorCore.apply(.move(from: Fixtures.at(0), to: destination), to: Fixtures.program)
+            EditorCore.apply(.move(from: Fixtures.at(source), to: destination), to: Fixtures.program)
                 == .rejected(.destinationOutOfBounds(index: destination))
         )
     }
