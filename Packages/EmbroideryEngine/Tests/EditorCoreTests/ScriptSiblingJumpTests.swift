@@ -135,10 +135,32 @@ struct ScriptSiblingJumpTests {
         #expect(script.nextSiblingIndex(ofBrickAt: 0) == nil)
     }
 
+    /// A **resolvable** pair keeps its siblings even when the script is
+    /// unbalanced elsewhere. `[.loopEnd, .forever, .loopEnd, .stitch]` has a
+    /// stray end at 0 *and* a well-formed pair at 1…2 whose sibling is 3.
+    ///
+    /// This is the positive counterpart the mirror property below cannot supply
+    /// on its own: `next(i) == j ⟹ previous(j) == i` is satisfied vacuously by
+    /// an implementation that returns `nil` more often, and every other positive
+    /// expectation in this suite uses a *balanced* script. Codex round 3's
+    /// mutant — `do { try validate() } catch { return nil }` at the top of both
+    /// functions — is symmetric over-rejection, so it passes the mirror test and
+    /// fails only here. ADR-035's amendment refuses *unresolvable blocks*; an
+    /// unrelated stray end does not make this pair unresolvable.
+    @Test("a resolvable pair keeps its siblings on an otherwise unbalanced script")
+    func aResolvablePairKeepsItsSiblings() {
+        let script = Script(bricks: [.loopEnd, .forever, .loopEnd, .stitch])
+        #expect(script.nextSiblingIndex(ofBrickAt: 1) == 3)
+        #expect(script.previousSiblingIndex(ofBrickAt: 3) == 1)
+    }
+
     /// The mirror property stated directly, over both balanced and malformed
     /// scripts: if one direction names a neighbour, the other must name it back.
     /// An asymmetry here is what US-408 would render as an action offered in one
     /// direction and missing in the other for the same pair of blocks.
+    ///
+    /// Necessary but **not sufficient** on its own — see the positive
+    /// expectations above and throughout this suite.
     @Test("the two directions agree on every script, balanced or not")
     func theTwoDirectionsAgree() {
         let scripts = [

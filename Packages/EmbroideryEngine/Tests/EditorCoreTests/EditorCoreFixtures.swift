@@ -232,7 +232,8 @@ enum EditorCoreFixtures {
         case let .turnLeft(value): .turnLeft(bumped(value))
         case let .turnRight(value): .turnRight(bumped(value))
         case let .pointInDirection(value): .pointInDirection(bumped(value))
-        case let .placeAt(x, y): .placeAt(x: bumped(x), y: bumped(y))
+        // Two slots, two **different** values — see `bumped(_:salt:)`.
+        case let .placeAt(x, y): .placeAt(x: bumped(x), y: bumped(y, salt: 7))
         case let .setX(value): .setX(bumped(value))
         case let .setY(value): .setY(bumped(value))
         case let .changeXBy(value): .changeXBy(bumped(value))
@@ -245,23 +246,38 @@ enum EditorCoreFixtures {
         case let .changeVariableBy(name, value):
             .changeVariableBy(name: toggled(name), value: bumped(value))
         case .stitch: .stitch
-        case let .setThreadColor(hex): .setThreadColor(hex: hex == "#00ff00" ? "#0000ff" : "#00ff00")
+        // Upper-case on purpose, for the same reason the variable names are mixed
+        // case: `Brick.setThreadColor` stores an unrestricted `String`, and
+        // nothing at this boundary canonicalises it, so an unwanted
+        // `.lowercased()` here should be visible through whole-`Program`
+        // equality (Codex round 3).
+        case let .setThreadColor(hex): .setThreadColor(hex: hex == "#00FF00" ? "#0000FF" : "#00FF00")
         case let .runningStitch(length): .runningStitch(length: bumped(length))
         case let .zigZagStitch(length, width):
-            .zigZagStitch(length: bumped(length), width: bumped(width))
+            .zigZagStitch(length: bumped(length), width: bumped(width, salt: 7))
         case let .tripleStitch(length): .tripleStitch(length: bumped(length))
         case .sewUp: .sewUp
         case .stopRunningStitch: .stopRunningStitch
-        case let .writeEmbroideryToFile(name): .writeEmbroideryToFile(name: toggled(name))
+        case let .writeEmbroideryToFile(name):
+            .writeEmbroideryToFile(name: name == "Design A.dst" ? "Design B.dst" : "Design A.dst")
         }
     }
 
     /// A different `Formula`, and a *bounded* one: the property applies hundreds
     /// of actions, so an unbounded `+1` would drift a literal far from anything
     /// the editor can produce and turn a coverage helper into a numeric fuzzer.
-    private static func bumped(_ formula: Formula) -> Formula {
-        guard case let .number(value) = formula else { return .number(1) }
-        return .number(value == 1 ? 2 : 1)
+    ///
+    /// **`salt` is what makes a multi-slot brick discriminating.** The first
+    /// version used one constant, so `placeAt(100, 200)` perturbed to
+    /// `placeAt(1, 1)` and `zigZagStitch(2, 10)` to `(1, 1)` — equal slots, which
+    /// cannot detect a transposition. Codex round 3 found it, and it is the same
+    /// defect `EditorAddressTests` fixed after Codex round 2 of US-401: a fixture
+    /// whose components share a value proves nothing about which component was
+    /// read. Distinct salts per slot; `+ 10` on collision so the result always
+    /// differs from the input too.
+    private static func bumped(_ formula: Formula, salt: Double = 3) -> Formula {
+        guard case let .number(value) = formula else { return .number(salt) }
+        return .number(value == salt ? salt + 10 : salt)
     }
 
     /// Likewise bounded: two names that alternate, never a growing string.
