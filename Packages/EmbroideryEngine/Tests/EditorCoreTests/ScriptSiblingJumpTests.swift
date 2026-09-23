@@ -126,9 +126,46 @@ struct ScriptSiblingJumpTests {
         ])
         #expect(script.previousSiblingIndex(ofBrickAt: 1) == nil)
         #expect(script.nextSiblingIndex(ofBrickAt: 1) == nil)
-        // The leaf beside it is unaffected: the refusal is about the queried
-        // block's own extent, not about the script being unbalanced.
-        #expect(script.nextSiblingIndex(ofBrickAt: 0) == 1)
+        // …and **nothing points at it either**. The first version of this test
+        // asserted `next(0) == 1`, pinning an asymmetry rather than catching it:
+        // `previousSiblingIndex` already refuses when its *answer* is an
+        // unresolvable block (a stray `loopEnd` above it), so a `next` that
+        // happily returns an unresolvable opener made the two one-way. Codex
+        // round 2 found it, and the expectation was wrong, not the code.
+        #expect(script.nextSiblingIndex(ofBrickAt: 0) == nil)
+    }
+
+    /// The mirror property stated directly, over both balanced and malformed
+    /// scripts: if one direction names a neighbour, the other must name it back.
+    /// An asymmetry here is what US-408 would render as an action offered in one
+    /// direction and missing in the other for the same pair of blocks.
+    @Test("the two directions agree on every script, balanced or not")
+    func theTwoDirectionsAgree() {
+        let scripts = [
+            Self.script,
+            Script(bricks: [.stitch, .forever]),
+            Script(bricks: [.loopEnd, .stitch]),
+            Script(bricks: [.repeatLoop(times: .number(2)), .moveNSteps(.number(10))]),
+            Script(bricks: [.forever, .repeatLoop(times: .number(2)), .stitch, .loopEnd, .loopEnd]),
+            Script(bricks: [.loopEnd, .forever, .loopEnd, .stitch]),
+            Script(bricks: [])
+        ]
+        for script in scripts {
+            for index in script.bricks.indices {
+                if let next = script.nextSiblingIndex(ofBrickAt: index) {
+                    #expect(
+                        script.previousSiblingIndex(ofBrickAt: next) == index,
+                        "next(\(index)) == \(next) but previous(\(next)) disagrees in \(script.bricks)"
+                    )
+                }
+                if let previous = script.previousSiblingIndex(ofBrickAt: index) {
+                    #expect(
+                        script.nextSiblingIndex(ofBrickAt: previous) == index,
+                        "previous(\(index)) == \(previous) but next(\(previous)) disagrees in \(script.bricks)"
+                    )
+                }
+            }
+        }
     }
 
     /// A stray `loopEnd` cannot be resolved to an opener, so the brick after it

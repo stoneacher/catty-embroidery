@@ -228,15 +228,15 @@ enum EditorCoreFixtures {
     /// `before != after` guard then correctly declines to count them.
     static func perturbed(_ brick: Brick) -> Brick {
         switch brick {
-        case let .moveNSteps(f): .moveNSteps(bumped(f))
-        case let .turnLeft(f): .turnLeft(bumped(f))
-        case let .turnRight(f): .turnRight(bumped(f))
-        case let .pointInDirection(f): .pointInDirection(bumped(f))
+        case let .moveNSteps(value): .moveNSteps(bumped(value))
+        case let .turnLeft(value): .turnLeft(bumped(value))
+        case let .turnRight(value): .turnRight(bumped(value))
+        case let .pointInDirection(value): .pointInDirection(bumped(value))
         case let .placeAt(x, y): .placeAt(x: bumped(x), y: bumped(y))
-        case let .setX(f): .setX(bumped(f))
-        case let .setY(f): .setY(bumped(f))
-        case let .changeXBy(f): .changeXBy(bumped(f))
-        case let .changeYBy(f): .changeYBy(bumped(f))
+        case let .setX(value): .setX(bumped(value))
+        case let .setY(value): .setY(bumped(value))
+        case let .changeXBy(value): .changeXBy(bumped(value))
+        case let .changeYBy(value): .changeYBy(bumped(value))
         case let .repeatLoop(times): .repeatLoop(times: bumped(times))
         case .forever: .forever
         case .loopEnd: .loopEnd
@@ -265,8 +265,15 @@ enum EditorCoreFixtures {
     }
 
     /// Likewise bounded: two names that alternate, never a growing string.
+    ///
+    /// **Mixed case on purpose.** Codex round 2 showed that lowercase-only names
+    /// (`""`, `"a"`, `"b"`) make a payload-mangling mutant invisible — writing
+    /// `name.lowercased()` into a `setVariable` replacement changes *which
+    /// variable the brick addresses* and leaves every generated action, result
+    /// and tally identical. A name that is not already lower-cased is what makes
+    /// that mutation observable.
     private static func toggled(_ name: String) -> String {
-        name == "a" ? "b" : "a"
+        name == "Side" ? "Outer Loop" : "Side"
     }
 
     /// An index in `0 ... count`, with an out-of-bounds tail about one time in

@@ -74,6 +74,17 @@ public extension Script {
         guard bricks.indices.contains(candidate) else { return nil }
         // A `loopEnd` here closes the *enclosing* loop, so `index` is the last
         // brick of a body — the symmetric counterpart of the opener case above.
-        return bricks[candidate].isLoopEnd ? nil : candidate
+        guard !bricks[candidate].isLoopEnd else { return nil }
+        // The *answer* must be a resolvable block too, not just the query.
+        // `previousSiblingIndex` already refuses here — a stray `loopEnd` above
+        // it resolves to no opener and yields `nil` — so without this the two
+        // were one-way around an unresolvable neighbour: on `[.stitch, .forever]`
+        // next(0) was 1 while previous(1) was nil. US-408 would then offer a
+        // "Move Down" that lands a brick after an opener with no end, i.e. inside
+        // a loop the renderer indents forever. Found by Codex round 2, 2026-09-23.
+        guard !bricks[candidate].opensLoop || matchingEnd(ofBrickAt: candidate) != nil else {
+            return nil
+        }
+        return candidate
     }
 }

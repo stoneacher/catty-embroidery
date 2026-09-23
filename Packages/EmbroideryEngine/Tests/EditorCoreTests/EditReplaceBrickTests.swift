@@ -100,6 +100,53 @@ struct EditReplaceBrickTests {
         }
     }
 
+    /// The payload oracle, over **every** `BrickKind` rather than the six the
+    /// fixture happens to contain.
+    ///
+    /// Codex round 2's point: the whole-value assertions above cover only the
+    /// fixture's kinds, and the property generator checks balance and *whether
+    /// something changed*, never whether the requested payload survived. So a
+    /// mutation confined to a kind the fixture lacks is invisible. Its worked
+    /// example writes `name.lowercased()` into a `setVariable` replacement —
+    /// which silently changes **which variable the brick addresses** — and is
+    /// indistinguishable from the correct implementation on every input the
+    /// suite previously supplied.
+    ///
+    /// Swept over `BrickKind.allCases`, so a new kind joins this claim by
+    /// construction. `perturbed(_:)` is exhaustive over `Brick` with no
+    /// `default:`, so a new kind that forgets a payload is a compile error there
+    /// rather than a silent exemption here.
+    ///
+    /// The five payload-free kinds perturb to themselves and are asserted
+    /// separately as no-ops, which is the honest claim for them rather than a
+    /// coverage number that overstates itself.
+    @Test("a same-kind replacement preserves the payload for every kind",
+          arguments: BrickKind.allCases)
+    func everyKindKeepsItsReplacementPayload(kind: BrickKind) {
+        let original = kind.template()[0]
+        let replacement = EditorCoreFixtures.perturbed(original)
+
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [
+            Script(bricks: [original])
+        ])])])
+        var expected = program
+        expected.scenes[0].objects[0].scripts[0].bricks = [replacement]
+
+        #expect(
+            EditorCore.apply(
+                .replaceBrick(at: BrickAddress(brickIndex: 0), with: replacement),
+                to: program
+            ) == .applied(expected)
+        )
+
+        // Non-vacuity: for a kind that carries a payload, the assertion above is
+        // only discriminating if the replacement actually differs. Named rather
+        // than assumed — `perturbed` returning its input for a payload-bearing
+        // kind would quietly turn this row into a tautology.
+        let payloadFree: Set<BrickKind> = [.stitch, .sewUp, .stopRunningStitch, .forever, .loopEnd]
+        #expect((replacement != original) == !payloadFree.contains(kind))
+    }
+
     /// The named case from Codex round 1, kept as its own test so the payload
     /// claim does not depend on the fixture continuing to hold a `turnRight`
     /// whose value differs from `BrickDefaults.turnDegrees`.
