@@ -192,9 +192,8 @@ enum EditorCoreFixtures {
         case 3:
             // Same kind most of the time, so the parameter-edit path actually
             // applies; a different kind sometimes, so the guard is walked.
-            let replacement: Brick = if generator.next() % 4 == 0 || !script.bricks.indices
-                .contains(address.brickIndex)
-            {
+            let inBounds = script.bricks.indices.contains(address.brickIndex)
+            let replacement: Brick = if !inBounds || generator.next() % 4 == 0 {
                 BrickKind.allCases.randomElement(using: &generator)!.template()[0]
             } else {
                 BrickKind(of: script.bricks[address.brickIndex]).template()[0]

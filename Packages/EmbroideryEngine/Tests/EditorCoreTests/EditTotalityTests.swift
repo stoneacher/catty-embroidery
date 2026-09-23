@@ -52,14 +52,12 @@ struct EditTotalityTests {
     /// implementation that rejects *everything*.
     @Test("the last legal index of each case is accepted")
     func lastLegalIndexIsAccepted() {
-        if case let .rejected(rejection) =
-            EditorCore.apply(.insert(.stitch, at: Fixtures.at(10)), to: Fixtures.program)
-        {
+        let inserted = EditorCore.apply(.insert(.stitch, at: Fixtures.at(10)), to: Fixtures.program)
+        if case let .rejected(rejection) = inserted {
             Issue.record("insert at 10 (== count) should be legal, got \(rejection)")
         }
-        if case let .rejected(rejection) =
-            EditorCore.apply(.delete(at: Fixtures.at(9)), to: Fixtures.program)
-        {
+        let deleted = EditorCore.apply(.delete(at: Fixtures.at(9)), to: Fixtures.program)
+        if case let .rejected(rejection) = deleted {
             Issue.record("delete at 9 (== count − 1) should be legal, got \(rejection)")
         }
     }

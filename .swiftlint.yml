@@ -37,6 +37,9 @@ identifier_name:
     - dx
     - dy
     - to # Brick.setVariable(name:to:) — reads "set variable … to …" (Catroid parity)
+    - at # EditAction.insert(_:at:)/delete(at:)/replaceBrick(at:with:) — the same case as
+         # `to` above: an argument label that reads as English at the call site, and the
+         # rule is measuring it as if it were a variable name
     - id # Identifiable's required property name — spelled by the protocol, not chosen
     - up # StagePanDirection's cardinal direction — its three siblings clear the floor and
          # abbreviating around the rule ("upward") would name one direction differently
