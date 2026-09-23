@@ -62,23 +62,59 @@ struct EditReplaceBrickTests {
         )
     }
 
-    /// A same-kind replacement is balance-preserving for **every** kind,
+    /// A same-kind replacement is balance-preserving at **every position**,
     /// including the two openers and `.loopEnd` itself, because the kind decides
-    /// `opensLoop`/`isLoopEnd`. Swept over `BrickKind.allCases` so a new kind
-    /// joins this claim automatically rather than being quietly exempt.
-    @Test("a same-kind replacement of any brick leaves the script balanced")
-    func sameKindPreservesBalanceForEveryKind() throws {
+    /// `opensLoop`/`isLoopEnd`.
+    ///
+    /// It asserts the **whole `Program`**, not merely acceptance and balance.
+    /// Codex round 1 found the weaker version to be a test that cannot fail in a
+    /// specific way: a mutant that skipped the write for one kind
+    /// (`if existing != .turnRight { edited.bricks[index] = brick }`) silently
+    /// discarded the parameter edit and left the whole suite green — verified by
+    /// running it. Balance is preserved by *doing nothing*, so a balance-only
+    /// assertion cannot see a replacement that never happened.
+    ///
+    /// The replacement is each brick's own `template()`, whose defaults differ
+    /// from the fixture's deliberately distinct payloads (`moveNSteps` 1 vs 10,
+    /// `turnRight` 3 vs 15, `repeatLoop` 2 vs 10, `changeXBy` 4 vs 10) — so for
+    /// those four the assertion is discriminating. For the payload-free kinds in
+    /// the fixture (`stitch`, `sewUp`, `loopEnd`, `forever`, `stopRunningStitch`)
+    /// the replacement equals the original and the case contributes acceptance
+    /// and balance only. Said plainly rather than left as an implied claim about
+    /// all 23 kinds.
+    @Test("a same-kind replacement is applied verbatim and leaves the script balanced")
+    func sameKindReplacementIsAppliedVerbatim() throws {
         for (index, brick) in Fixtures.bricks.enumerated() {
             let replacement = BrickKind(of: brick).template()[0]
+            var expected = Fixtures.bricks
+            expected[index] = replacement
+
             let result = EditorCore.apply(
                 .replaceBrick(at: Fixtures.at(index), with: replacement),
                 to: Fixtures.program
             )
-            guard case let .applied(program) = result else {
-                Issue.record("same-kind replacement at \(index) was rejected: \(result)")
-                continue
-            }
+            #expect(result == .applied(Fixtures.expecting(expected)))
+
+            guard case let .applied(program) = result else { continue }
             try program.scenes[1].objects[2].scripts[1].validate()
         }
+    }
+
+    /// The named case from Codex round 1, kept as its own test so the payload
+    /// claim does not depend on the fixture continuing to hold a `turnRight`
+    /// whose value differs from `BrickDefaults.turnDegrees`.
+    @Test("a parameter-only edit keeps the new value")
+    func aParameterOnlyEditKeepsTheNewValue() {
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [
+            Script(bricks: [.turnRight(.number(3))])
+        ])])])
+        var expected = program
+        expected.scenes[0].objects[0].scripts[0].bricks = [.turnRight(.number(99))]
+        #expect(
+            EditorCore.apply(
+                .replaceBrick(at: BrickAddress(brickIndex: 0), with: .turnRight(.number(99))),
+                to: program
+            ) == .applied(expected)
+        )
     }
 }

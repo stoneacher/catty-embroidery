@@ -48,15 +48,34 @@ struct EditBalanceInvariantTests {
             }
         }
 
-        // ADR-032 invariant 2. A generator that rejects everything, or that
-        // never produces a loop, satisfies the invariant above perfectly — which
-        // is US-309's `drawn=0` capture scoring PASS, one milestone later. These
-        // floors are what make the property a claim rather than a hope.
+        // ADR-032 invariant 2. A generator that rejects everything, or that never
+        // produces a loop, satisfies the invariant above perfectly — which is
+        // US-309's `drawn=0` capture scoring PASS, one milestone later.
+        //
+        // The first version of these floors counted `.move` + `.applied` as a
+        // move and required no replacement at all. **Codex round 1 constructed a
+        // 400-action sequence that passes every one of them while performing zero
+        // real relocations and zero replacements**: insert a loop, delete it, a
+        // no-op `move(from: i, to: i)`, one rejected `.loopEnd` insert, one
+        // out-of-bounds delete, then 395 renames. That does not prove these seeds
+        // degenerate — it proves the floors could not have detected it, which is
+        // the invariant-2 failure exactly.
+        //
+        // So the counters now distinguish a *relocation* (the brick list actually
+        // changed) from an accepted no-op, count pair moves separately from leaf
+        // moves, and require accepted replacements. Renames are excluded from the
+        // applied floor entirely, since they can never be rejected and so measure
+        // nothing about structural coverage.
         #expect(tally.steps == 400)
-        #expect(tally.applied > 100, "seed \(String(seed, radix: 16)) applied only \(tally.applied)")
+        #expect(
+            tally.appliedStructuralEdits > 50,
+            "seed \(String(seed, radix: 16)) applied only \(tally.appliedStructuralEdits)"
+        )
         #expect(tally.appliedLoopOpenerInserts > 0)
         #expect(tally.appliedPairDeletes > 0)
-        #expect(tally.appliedMoves > 0)
+        #expect(tally.appliedPairRelocations > 0)
+        #expect(tally.appliedLeafRelocations > 0)
+        #expect(tally.appliedReplacements > 0)
         #expect(tally.rejectedLoopEndInserts > 0)
         #expect(tally.rejectedOutOfBounds > 0)
     }
@@ -134,6 +153,50 @@ struct EditBalanceInvariantTests {
         }
     }
 
+    /// Item 10b says "**each** addressed action that targets a different,
+    /// balanced script", and the version above exercised only `insert`. Codex
+    /// round 1 caught the omission, and it is not bookkeeping: adding
+    /// `try script.validate()` before `movingPair` — a plausible "be safe" edit —
+    /// rejects a perfectly legal move because of an imbalance in *another script
+    /// entirely*, and left the whole suite green. Verified by running it.
+    @Test("every addressed action applies to a balanced script beside an unbalanced one")
+    func everyAddressedActionAppliesBesideAnImbalance() {
+        let script = ScriptAddress(scriptIndex: 1) // [.stitch, .forever, .sewUp, .loopEnd]
+        let actions: [EditAction] = [
+            .insert(.stitch, at: BrickAddress(brickIndex: 1, script: script)),
+            .delete(at: BrickAddress(brickIndex: 0, script: script)),
+            .move(from: BrickAddress(brickIndex: 1, script: script), to: 0),
+            .replaceBrick(at: BrickAddress(brickIndex: 0, script: script), with: .stitch)
+        ]
+        for action in actions {
+            let result = EditorCore.apply(action, to: Fixtures.withStrayLoopEnd)
+            if case let .rejected(rejection) = result {
+                Issue.record("\(action) should apply beside an unrelated imbalance, got \(rejection)")
+                continue
+            }
+            // …and the imbalance is still there afterwards, unrepaired.
+            guard case let .applied(program) = result else { continue }
+            #expect(program.scenes[0].objects[0].scripts[0].bricks == [.loopEnd])
+        }
+    }
+
+    /// The same claim for a **resolvable pair** in the same script as an
+    /// unrelated stray end — the case item 10c's counterpart could be misread as
+    /// forbidding. `[.loopEnd, .forever, .loopEnd, .stitch]` has a stray end at
+    /// index 0 *and* a well-formed pair at 1…2; moving that pair must succeed.
+    @Test("a resolvable pair moves even with a stray end elsewhere in the same script")
+    func aResolvablePairMovesBesideAStrayEnd() {
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [
+            Script(bricks: [.loopEnd, .forever, .loopEnd, .stitch])
+        ])])])
+        var expected = program
+        expected.scenes[0].objects[0].scripts[0].bricks = [.forever, .loopEnd, .loopEnd, .stitch]
+        #expect(
+            EditorCore.apply(.move(from: BrickAddress(brickIndex: 1), to: 0), to: program)
+                == .applied(expected)
+        )
+    }
+
     /// The same claim for the *same* script: the acceptance criterion says an
     /// imbalance "elsewhere in the same script" also leaves the action's own
     /// outcome unchanged. Deleting the trailing leaf of
@@ -156,36 +219,58 @@ struct EditBalanceInvariantTests {
 /// the test's own local `var` — nothing shared, so parallel execution is safe.
 private struct Tally {
     var steps = 0
-    var applied = 0
+    /// Applied edits that **changed the brick list**. Renames are excluded: they
+    /// can never be rejected, so counting them measures the generator's coin
+    /// flips rather than the funnel's coverage.
+    var appliedStructuralEdits = 0
     var appliedLoopOpenerInserts = 0
     var appliedPairDeletes = 0
-    var appliedMoves = 0
+    var appliedPairRelocations = 0
+    var appliedLeafRelocations = 0
+    var appliedReplacements = 0
     var rejectedLoopEndInserts = 0
     var rejectedOutOfBounds = 0
 
     mutating func record(action: EditAction, result: EditResult, in program: Program) {
         steps += 1
-        let bricks = program.scenes[0].objects[0].scripts[0].bricks
+        let before = program.scenes[0].objects[0].scripts[0].bricks
 
-        switch (action, result) {
-        case let (.insert(kind, _), .applied) where kind == .repeatLoop || kind == .forever:
-            applied += 1
+        guard case let .applied(next) = result else {
+            switch result {
+            case .rejected(.cannotInsertLoopEnd): rejectedLoopEndInserts += 1
+            case .rejected(.addressOutOfBounds), .rejected(.destinationOutOfBounds):
+                rejectedOutOfBounds += 1
+            default: break
+            }
+            return
+        }
+
+        // An accepted no-op is not coverage. This single line is what the first
+        // version lacked, and it is what let a 400-step run of renames and
+        // `move(from: i, to: i)` satisfy every floor.
+        let after = next.scenes[0].objects[0].scripts[0].bricks
+        guard before != after else { return }
+        appliedStructuralEdits += 1
+
+        switch action {
+        case let .insert(kind, _) where kind == .repeatLoop || kind == .forever:
             appliedLoopOpenerInserts += 1
-        case (.insert(.loopEnd, _), .rejected(.cannotInsertLoopEnd)):
-            rejectedLoopEndInserts += 1
-        case let (.delete(address), .applied)
-            where bricks.indices.contains(address.brickIndex)
-            && (bricks[address.brickIndex].opensLoop || bricks[address.brickIndex].isLoopEnd):
-            applied += 1
+        case let .delete(address)
+            where before.indices.contains(address.brickIndex)
+            && (before[address.brickIndex].opensLoop || before[address.brickIndex].isLoopEnd):
             appliedPairDeletes += 1
-        case (.move, .applied):
-            applied += 1
-            appliedMoves += 1
-        case (_, .applied):
-            applied += 1
-        case (_, .rejected(.addressOutOfBounds)), (_, .rejected(.destinationOutOfBounds)):
-            rejectedOutOfBounds += 1
-        case (_, .rejected):
+        case let .move(address, _):
+            // A pair move and a leaf move take different code paths — the first
+            // delegates to `movingPair`, the second is `EditorCore`'s own — so
+            // they are counted apart rather than lumped together.
+            if before.indices.contains(address.brickIndex), before[address.brickIndex].opensLoop {
+                appliedPairRelocations += 1
+            } else {
+                appliedLeafRelocations += 1
+            }
+        case .replaceBrick:
+            appliedReplacements += 1
+        default:
             break
         }
     }

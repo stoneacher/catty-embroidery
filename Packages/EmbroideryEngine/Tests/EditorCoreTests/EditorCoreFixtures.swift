@@ -188,20 +188,85 @@ enum EditorCoreFixtures {
         case 1:
             return .delete(at: address)
         case 2:
-            return .move(from: address, to: index(upTo: count, using: &generator))
+            // The destination range depends on the *span* of the block being
+            // moved — `0 ... (count − span)` — so sampling it from `0 ... count`
+            // rejects most pair moves out of hand. One seed recorded zero applied
+            // pair relocations because of it. Asking the model for the span is
+            // what "adaptive rather than blind" already means here; the
+            // out-of-bounds tail still fires through `index(upTo:)`.
+            let span = script.range(ofPairAt: address.brickIndex)?.count ?? 1
+            return .move(from: address, to: index(upTo: max(0, count - span), using: &generator))
         case 3:
             // Same kind most of the time, so the parameter-edit path actually
             // applies; a different kind sometimes, so the guard is walked.
+            //
+            // The same-kind replacement is `perturbed(_:)`, **not** the kind's
+            // own `template()`. Codex round 1's strengthened non-vacuity floors
+            // showed why: every brick a generated run inserts comes *from*
+            // `template()`, so replacing one with its template is a no-op, and all
+            // three seeds recorded **zero** applied replacements while the old
+            // floors reported coverage.
             let inBounds = script.bricks.indices.contains(address.brickIndex)
             let replacement: Brick = if !inBounds || generator.next() % 4 == 0 {
                 BrickKind.allCases.randomElement(using: &generator)!.template()[0]
             } else {
-                BrickKind(of: script.bricks[address.brickIndex]).template()[0]
+                perturbed(script.bricks[address.brickIndex])
             }
             return .replaceBrick(at: address, with: replacement)
         default:
             return .renameProgram("name \(generator.next() % 1000)")
         }
+    }
+
+    /// A brick of the **same kind** carrying a different payload — what a
+    /// parameter edit actually looks like (US-410's path).
+    ///
+    /// Exhaustive with no `default:`, the pattern `BrickKind.init(of:)`
+    /// established, so a new `Brick` case is a compile error here rather than a
+    /// silent no-op that quietly weakens the property's replacement coverage.
+    /// The five payload-free kinds return themselves; the property test's
+    /// `before != after` guard then correctly declines to count them.
+    static func perturbed(_ brick: Brick) -> Brick {
+        switch brick {
+        case let .moveNSteps(f): .moveNSteps(bumped(f))
+        case let .turnLeft(f): .turnLeft(bumped(f))
+        case let .turnRight(f): .turnRight(bumped(f))
+        case let .pointInDirection(f): .pointInDirection(bumped(f))
+        case let .placeAt(x, y): .placeAt(x: bumped(x), y: bumped(y))
+        case let .setX(f): .setX(bumped(f))
+        case let .setY(f): .setY(bumped(f))
+        case let .changeXBy(f): .changeXBy(bumped(f))
+        case let .changeYBy(f): .changeYBy(bumped(f))
+        case let .repeatLoop(times): .repeatLoop(times: bumped(times))
+        case .forever: .forever
+        case .loopEnd: .loopEnd
+        case let .wait(seconds): .wait(seconds: bumped(seconds))
+        case let .setVariable(name, to): .setVariable(name: toggled(name), to: bumped(to))
+        case let .changeVariableBy(name, value):
+            .changeVariableBy(name: toggled(name), value: bumped(value))
+        case .stitch: .stitch
+        case let .setThreadColor(hex): .setThreadColor(hex: hex == "#00ff00" ? "#0000ff" : "#00ff00")
+        case let .runningStitch(length): .runningStitch(length: bumped(length))
+        case let .zigZagStitch(length, width):
+            .zigZagStitch(length: bumped(length), width: bumped(width))
+        case let .tripleStitch(length): .tripleStitch(length: bumped(length))
+        case .sewUp: .sewUp
+        case .stopRunningStitch: .stopRunningStitch
+        case let .writeEmbroideryToFile(name): .writeEmbroideryToFile(name: toggled(name))
+        }
+    }
+
+    /// A different `Formula`, and a *bounded* one: the property applies hundreds
+    /// of actions, so an unbounded `+1` would drift a literal far from anything
+    /// the editor can produce and turn a coverage helper into a numeric fuzzer.
+    private static func bumped(_ formula: Formula) -> Formula {
+        guard case let .number(value) = formula else { return .number(1) }
+        return .number(value == 1 ? 2 : 1)
+    }
+
+    /// Likewise bounded: two names that alternate, never a growing string.
+    private static func toggled(_ name: String) -> String {
+        name == "a" ? "b" : "a"
     }
 
     /// An index in `0 ... count`, with an out-of-bounds tail about one time in
