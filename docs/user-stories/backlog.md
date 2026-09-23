@@ -99,6 +99,44 @@ in-file comment says exactly this, so a later reader is not misled about what th
 
 ---
 
+## US-318 — The package does not build its tests in release configuration
+
+**Found**: 2026-09-23, in passing during US-402's review. **Pre-existing on `main`**, unrelated to
+that branch, and **invisible to every gate the project runs**.
+
+`swift build -c release --build-tests` inside `Packages/EmbroideryEngine` fails:
+
+```
+error: ... Tests/EmbroideryEngineTests/CoordinateChokepointManagerTests.swift:1:8 unable to
+resolve Swift module dependency to a compatible module: 'EmbroideryEngine'
+error: SwiftDriver EmbroideryEngineTests normal arm64 ... failed with a nonzero exit code
+```
+
+The proximate cause is almost certainly that `-c release` disables testability while several test
+files use `@testable import` (`DSTStitchRecordTests`, `DSTHeaderTests`, `DSTRecordDecoder`,
+`InterpreterDriverTests`) — but **that diagnosis is a hypothesis, not a finding**: it was not
+confirmed, and a cross-vendor reviewer hitting the same wall in the same session reported a
+*different* failing file, so only the fact of the failure is established.
+
+**Why it is worth an entry rather than a fix.** Nothing is masked today: the pre-commit gate, the
+CI engine-test job and the app build all use debug, so no branch can be green here and broken
+there. The cost is latent and narrow — anyone who reaches for a release build to time something
+(which is exactly how it surfaced: an attempt to speed up a fuzz run) loses the session to
+diagnosing it instead. That is a small cost paid rarely, which is the definition of a backlog item
+rather than a story.
+
+**What taking it would involve**: decide whether release-configuration test builds are something
+this project wants at all. If yes, the `@testable` uses need auditing — US-401's
+`EditorCoreTargetIsolationTests` comment already argues that `@testable` is used here sparingly and
+with a stated reason each time, so the audit is small. If no, the honest outcome is a line in the
+README saying debug is the supported configuration, which costs nothing and stops the next person
+rediscovering this.
+
+**Not** to be taken as a reason to remove a `@testable` that earns its place. `InterpreterDriverTests`
+documents why it needs one, and a release build is a weaker claim than that test.
+
+---
+
 ## Scheduled out of this file — the record, because the mechanism is the point
 
 Entries keep their ID when they are scheduled, so existing ADR and journal references keep
@@ -188,3 +226,4 @@ in the same spirit as US-211's and US-313's above.
   well as of the reasoning, and only the reasoning is durable.
 
 **Left in this file at M4 planning: US-316 only** — see above for why, and for what it costs.
+**Added since**: US-317 (2026-09-20, US-401's escalation) and US-318 (2026-09-23, found in passing during US-402).
