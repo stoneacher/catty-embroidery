@@ -3,7 +3,8 @@ import ProgramModel
 import Samples
 import Testing
 
-/// Story item 6 — the JSON encoding that M5 inherits (ADR-003).
+/// Story item 6 — the JSON encoding the program document (US-404) and M4's
+/// autosave inherit first, and M5 after them (ADR-003, ADR-037).
 @Suite("Sample JSON resources")
 struct SampleJSONResourceTests {
     /// `Program`'s `==` chain is NaN-aware all the way down (Program → Object →

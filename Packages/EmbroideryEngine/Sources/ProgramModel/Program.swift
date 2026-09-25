@@ -4,9 +4,9 @@
 /// every model↔engine conversion.
 public struct Program: Sendable, Equatable, Codable {
     /// Version of the serialized format (ADR-003), stamped so later milestones
-    /// can migrate old files. The synthesized decoder accepts any version —
-    /// validation and migration of unsupported versions belong to the M5
-    /// persistence layer, which owns the load path.
+    /// can migrate old files. The synthesized decoder accepts any version;
+    /// `ProgramDocument.decode` (US-404, ADR-037) is the load path, and refuses
+    /// any version but this one. Migration is still M5's.
     public static let currentFormatVersion: Int = 1
 
     public var formatVersion: Int

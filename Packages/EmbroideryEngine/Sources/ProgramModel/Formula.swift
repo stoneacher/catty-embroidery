@@ -5,7 +5,9 @@
 /// every associated value is itself `Codable`) lands in US-203, where formulas
 /// ship embedded under `Program`. Like `Variable.value`, a non-finite `.number`
 /// payload throws under the default `JSONEncoder` (`.throw` non-conforming-float
-/// strategy) — the M5 persistence layer pins the policy for the save path.
+/// strategy). ADR-037 (US-404) pins the policy in M4, which builds the first save
+/// path: reject at input (`FormulaLiteral.parse`), keep the default coder, and
+/// report an escaping value as `ProgramDocumentError.encodingFailed`.
 public indirect enum Formula: Sendable, Equatable, Codable {
     case number(Double)
     case variable(String)

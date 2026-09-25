@@ -79,7 +79,7 @@ struct ProgramModelTests {
     }
 
     // The two tests below characterize the v1 Codable contract as shipped
-    // (Codex review, US-201) so the M5 persistence story changes them
+    // (Codex review, US-201) so the persistence stories change them
     // deliberately rather than discovering them as crashes.
 
     @Test(

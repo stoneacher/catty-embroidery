@@ -68,12 +68,13 @@ public struct SampleProgram: Sendable, Hashable, Identifiable {
     /// URL of the checked-in JSON encoding of `program`, shipped as a package
     /// resource (ADR-003).
     ///
-    /// **M3 never reads this.** The Swift builder is the single source of truth
-    /// and the app links it directly — there is no decode path and no error
-    /// state to design for (US-304). The file exists so US-301's round-trip test
-    /// can prove the encoding still matches the builder, and so M5 can copy it
-    /// into Documents to create a real project instead of re-deriving ADR-003's
-    /// format.
+    /// **The app never reads this.** The Swift builder is the single source of
+    /// truth and the app links it directly, so there is no error state to design
+    /// for (US-304). The file exists so US-301's round-trip test can prove the
+    /// encoding still matches the builder, so US-404's tests can prove the
+    /// program document (`ProgramDocument.decode`) opens these exact bytes, and
+    /// so M5 can copy it into Documents to create a real project instead of
+    /// re-deriving ADR-003's format.
     ///
     /// Optional rather than force-unwrapped: a missing resource is a build
     /// misconfiguration, and this package does not trap on states a caller could

@@ -94,8 +94,8 @@ struct BrickTests {
 
     /// A NaN Formula payload stays reflexively equal all the way up the graph
     /// (Brick → Script → Object → Program delegate to Formula's NaN-aware ==),
-    /// but the default JSONEncoder refuses to encode it — the M5-deferred
-    /// persistence-policy boundary of the new Codable conformance.
+    /// but the default JSONEncoder refuses to encode it — the boundary ADR-037
+    /// (US-404) keeps deliberately, rejecting non-finite values at input instead.
     @Test("a NaN Formula payload is reflexive up to Program but does not JSON-encode")
     func nanFormulaPayloadReflexiveButNotEncodable() {
         let brick = Brick.moveNSteps(.number(.nan))
