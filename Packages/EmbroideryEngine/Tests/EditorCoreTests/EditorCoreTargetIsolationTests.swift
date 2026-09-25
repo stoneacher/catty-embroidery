@@ -191,6 +191,31 @@ struct EditorCoreTargetIsolationTests {
         }
     }
 
+    /// US-403's acceptance criterion is stricter than the target's: the undo
+    /// stack is "pure, `Sendable`, **no Foundation**", while the target as a
+    /// whole may import Foundation (US-404 needs it — see the suite comment). So
+    /// the stricter rule is pinned per file, not added to `forbiddenModules`.
+    @Test("the undo stack's sources do not import Foundation")
+    func undoSourcesImportNoFoundation() throws {
+        let sourceDirectory = Self.packageRoot
+            .appendingPathComponent("Sources")
+            .appendingPathComponent("EditorCore")
+        let pattern = "(?<![A-Za-z0-9_])import\\s+(?:`?[A-Za-z_][A-Za-z0-9_]*`?\\s+)?`?Foundation`?(?![A-Za-z0-9_])"
+
+        for name in ["UndoStack.swift", "CoalescingKey.swift"] {
+            // `#require` on the read, so a renamed or missing file is red rather
+            // than a scan over nothing.
+            let source = try #require(
+                try? String(contentsOf: sourceDirectory.appendingPathComponent(name), encoding: .utf8),
+                "\(name) must exist in Sources/EditorCore"
+            )
+            #expect(
+                Self.strippedAndNormalised(source).range(of: pattern, options: .regularExpression) == nil,
+                "\(name) imports Foundation; US-403's undo stack is Foundation-free"
+            )
+        }
+    }
+
     @Test("the manifest's EditorCore declaration is the pinned, unique one")
     func dependsOnProgramModelOnly() throws {
         let manifest = try String(
@@ -226,5 +251,27 @@ struct EditorCoreTargetIsolationTests {
         #expect(template(.sewUp) == [.sewUp])
         #expect(depths(Script(bricks: [.forever, .stitch, .loopEnd])) == [0, 1, 0])
         #expect(address(2).brickIndex == 2)
+    }
+
+    /// US-403: the undo API speaks `Program`, `EditAction`, `EditResult` and
+    /// `BrickAddress` only.
+    @Test("the undo stack's boundary is editor and ProgramModel types")
+    func theUndoBoundaryIsPackageTypes() {
+        let make: (Program) -> UndoStack = UndoStack.init(program:)
+        let apply: (inout UndoStack, EditAction, CoalescingKey?) -> EditResult = {
+            $0.apply($1, coalescing: $2)
+        }
+        let undo: (inout UndoStack) -> Program? = { $0.undo() }
+        let begin: (inout UndoStack, BrickAddress) -> CoalescingKey = { $0.beginEdit(of: $1) }
+
+        let seed = Program(name: "seed", scenes: [])
+        var renamed = seed
+        renamed.name = "renamed"
+
+        var stack = make(seed)
+        let key = begin(&stack, BrickAddress(brickIndex: 0))
+        #expect(key.address == BrickAddress(brickIndex: 0))
+        #expect(apply(&stack, .renameProgram("renamed"), nil) == .applied(renamed))
+        #expect(undo(&stack) == seed)
     }
 }
