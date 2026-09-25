@@ -314,9 +314,9 @@ struct ProgramDocumentAdmissionTests {
     @Test("a version-1 formula nested past the JSON parser's ceiling is corrupt, not a trap")
     func formulaPastTheParserCeilingIsCorrupt() throws {
         let leaf = #"{"number":{"_0":7}}"#
-        let shallow = try String(decoding: Self.rawJSON(Program(scenes: [Scene(objects: [Object(scripts: [
+        let shallow = try #require(String(bytes: Self.rawJSON(Program(scenes: [Scene(objects: [Object(scripts: [
             Script(bricks: [.moveNSteps(.number(7))])
-        ])])])), as: UTF8.self)
+        ])])])), encoding: .utf8))
         #expect(shallow.components(separatedBy: leaf).count == 2, "fixture must hold the leaf exactly once")
         let nested = (0 ..< 300).reduce(leaf) { inner, _ in #"{"unaryMinus":{"_0":"# + inner + "}}" }
         #expect(throws: ProgramDocumentError.corrupt) {
