@@ -10,11 +10,13 @@ import Testing
 struct ProgramDocumentRoundTripTests {
     // MARK: Fixtures
 
-    /// Every `Brick` case, by construction: each kind's template, concatenated.
-    /// Templates are balanced (an opener ships with its `loopEnd`), so the
-    /// program also passes the admission check — a round trip that tripped over
-    /// its own fixture would prove nothing about the codec.
-    static let everyBrick: [Brick] = BrickKind.allCases.flatMap { $0.template() }
+    /// Every `Brick` case, by construction: each kind's template, concatenated —
+    /// except `.loopEnd`'s own, which is a bare `[.loopEnd]` (ADR-035 keeps it
+    /// out of the palette, not out of `template()`). The openers' templates
+    /// already ship their `loopEnd`s, so the case is still covered and the
+    /// program passes the admission check; a round trip that tripped over its
+    /// own fixture would prove nothing about the codec.
+    static let everyBrick: [Brick] = BrickKind.allCases.filter { $0 != .loopEnd }.flatMap { $0.template() }
 
     /// Every `Formula` case, and every `BinaryOperator`, with the finite extremes
     /// a `Double` can hold. The shape is deliberately wider than the templates'

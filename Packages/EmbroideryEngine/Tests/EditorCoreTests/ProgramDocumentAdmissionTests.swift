@@ -96,9 +96,10 @@ struct ProgramDocumentAdmissionTests {
 
     static let corruptPayloads: [(label: String, data: Data)] = {
         let valid = (try? JSONEncoder().encode(EditorCoreFixtures.program)) ?? Data()
-        let unknownBrick = String(decoding: valid, as: UTF8.self)
+        let text = String(bytes: valid, encoding: .utf8) ?? ""
+        let unknownBrick = text
             .replacingOccurrences(of: "\"stopRunningStitch\"", with: "\"embroiderAMoon\"")
-        let infiniteLiteral = String(decoding: valid, as: UTF8.self)
+        let infiniteLiteral = text
             .replacingOccurrences(of: "\"value\":5", with: "\"value\":1e400")
         return [
             ("empty", Data()),
