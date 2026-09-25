@@ -318,6 +318,53 @@ struct UndoCoalescingTests {
         #expect(bottom == Fixtures.named("p1"))
     }
 
+    // MARK: An entry that can no longer fold is sealed
+
+    /// Codex round 2: a keyed entry pushed at capacity held its evicted
+    /// snapshot after its session closed — invisible in the history, but a
+    /// retained graph nothing could ever restore. Once an entry can no longer
+    /// fold it is sealed, so the stack equals one that recorded the same edit
+    /// un-keyed (same serial consumed, same session state).
+    enum Closure: CaseIterable, Sendable {
+        case endEdit, abandonEdit, supersede, staleKey
+    }
+
+    @Test("an entry that can no longer fold holds no key and no eviction", arguments: Closure.allCases)
+    func closedEntryIsSealed(closure: Closure) throws {
+        var full = UndoStack(program: Fixtures.undoSeed)
+        for index in 1 ... 50 {
+            full.apply(.renameProgram("p\(index)"))
+        }
+        try #require(full.undoDepth == UndoStack.capacity)
+
+        var keyed = full
+        var unkeyed = full
+        let key = keyed.beginEdit(of: Fixtures.stepperAddress)
+        _ = unkeyed.beginEdit(of: Fixtures.stepperAddress)
+        unkeyed.abandonEdit()
+
+        switch closure {
+        case .endEdit:
+            keyed.apply(Fixtures.step(to: 1), coalescing: key)
+            keyed.endEdit(key)
+            unkeyed.apply(Fixtures.step(to: 1))
+        case .abandonEdit:
+            keyed.apply(Fixtures.step(to: 1), coalescing: key)
+            keyed.abandonEdit()
+            unkeyed.apply(Fixtures.step(to: 1))
+        case .supersede:
+            keyed.apply(Fixtures.step(to: 1), coalescing: key)
+            _ = keyed.beginEdit(of: Fixtures.stepperAddress)
+            unkeyed.apply(Fixtures.step(to: 1))
+            _ = unkeyed.beginEdit(of: Fixtures.stepperAddress)
+        case .staleKey:
+            keyed.endEdit(key)
+            keyed.apply(Fixtures.step(to: 1), coalescing: key)
+            unkeyed.apply(Fixtures.step(to: 1))
+        }
+        #expect(keyed == unkeyed)
+    }
+
     // MARK: Rejection inside a session
 
     /// A rejected keystroke during a live session records nothing — including

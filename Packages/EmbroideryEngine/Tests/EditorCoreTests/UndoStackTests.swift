@@ -190,6 +190,21 @@ struct UndoStackTests {
         #expect(stack == before)
     }
 
+    /// The third no-op shape ADR-036 names (Codex round 2): a leaf moved to
+    /// its own post-removal index.
+    @Test("a leaf moved to its own index records nothing and keeps redo")
+    func selfMoveRecordsNothing() throws {
+        var stack = Self.stack(afterRenames: 2)
+        stack.undo()
+        try #require(stack.canRedo)
+        let before = stack
+
+        let result = stack.apply(.move(from: BrickAddress(brickIndex: 0), to: 0))
+
+        #expect(result == .applied(Fixtures.named("p1")))
+        #expect(stack == before)
+    }
+
     // MARK: Sendable
 
     @Test("the stack and its key are Sendable values")

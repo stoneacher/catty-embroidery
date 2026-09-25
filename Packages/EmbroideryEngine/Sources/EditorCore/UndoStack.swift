@@ -85,7 +85,9 @@ public struct UndoStack: Equatable, Sendable {
 
         let coalesces = key != nil && key == openSession && undoEntries.last?.key == key
         if !coalesces {
-            push(before: current, key: key)
+            // A key that is not the open session's can never fold, so its
+            // entry is recorded sealed rather than under a dead key.
+            push(before: current, key: key == openSession ? key : nil)
         } else if undoEntries.last?.before == program {
             let dropped = undoEntries.removeLast()
             if let evicted = dropped.evicted {
@@ -130,6 +132,7 @@ public struct UndoStack: Equatable, Sendable {
     public mutating func beginEdit(of address: BrickAddress) -> CoalescingKey {
         let key = CoalescingKey(address: address, serial: nextSerial)
         nextSerial += 1
+        sealTop(ifKeyedBy: openSession)
         openSession = key
         return key
     }
@@ -139,6 +142,7 @@ public struct UndoStack: Equatable, Sendable {
     /// superseded sheet must not close its successor's session.
     public mutating func endEdit(_ key: CoalescingKey) {
         if openSession == key {
+            sealTop(ifKeyedBy: key)
             openSession = nil
         }
     }
@@ -146,6 +150,7 @@ public struct UndoStack: Equatable, Sendable {
     /// Close whatever session is open, for teardown paths that hold no key
     /// (ADR-023's container swap can dismiss a sheet without its `endEdit`).
     public mutating func abandonEdit() {
+        sealTop(ifKeyedBy: openSession)
         openSession = nil
     }
 
@@ -158,14 +163,23 @@ public struct UndoStack: Equatable, Sendable {
         openSession = nil
     }
 
+    /// A closing session's entry can never fold again, so it is sealed — which
+    /// also releases the snapshot its push evicted (Codex round 2).
+    private mutating func sealTop(ifKeyedBy key: CoalescingKey?) {
+        guard let key, undoEntries.last?.key == key else { return }
+        undoEntries[undoEntries.count - 1].seal()
+    }
+
     /// Evicts only when an edit pushes. A redo can never overflow:
     /// `undoDepth + redoDepth <= capacity` holds, because only undo feeds redo
     /// and every push from an edit clears it.
     ///
     /// A **keyed** entry pushed at capacity keeps the snapshot it evicted, for
     /// as long as it can still fold: the net-zero drop in `apply` gives it back
-    /// (Codex round 1). Only the top entry can fold, so the entry being covered
-    /// here is sealed first — at most one extra snapshot is ever held.
+    /// (Codex round 1). Only the top entry of the open session can fold, so the
+    /// entry being covered here is cleared first, and closing or superseding a
+    /// session seals its entry — at most one extra snapshot is ever held, and
+    /// only while it can still be restored.
     private mutating func push(before: Program, key: CoalescingKey?) {
         if !undoEntries.isEmpty {
             undoEntries[undoEntries.count - 1].evicted = nil
