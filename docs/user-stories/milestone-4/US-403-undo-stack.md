@@ -2,6 +2,8 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~4 h | **Depends on**: US-402
 
+**Status**: Done — 2026-09-25, PR #53. Implemented test-first, reviewed by `swift-code-reviewer` (4 surviving mutants and 2 false doc claims, all fixed) and then over **five Codex rounds**: Medium → Low → Low → Low → clean. The loop was escalated at three flat Lows and Sebastian chose to continue; round 5 was clean. ADR-036 written. The criteria on `record(before:key:)` and the key-less `endEdit()` are met **as amended below** (`apply(_:coalescing:)`, `endEdit(_ key:)` + `abandonEdit()`). 891 → 921 engine tests; 36 mutants, 35 killed, 1 equivalent.
+
 **Story**: As a user, I want to undo anything I do to my program — and I want twenty taps on a stepper to be one undo, not twenty — so experimenting is cheap and a mistake is never expensive.
 
 **This is better than both references, and there is nothing to port.** Catroid has exactly **one** level of undo, stored as a whole-project `undo_code.xml` file, with **no redo**; drag-reorder, brick-add and copy are not undoable at all (`ScriptFragment.java:882-943`). Catty's script editor has **no undo whatsoever** — `NSUndoManager` appears only in PocketPaint. So this is our design, judged against ADR-006 rather than against a reference.
@@ -14,14 +16,14 @@ That reasoning is **not** asserted as a timing or memory bound. US-309 is the pr
 
 ## Acceptance criteria
 
-- [ ] `UndoStack` lives in `EditorCore` — pure, `Sendable`, no Foundation, on the fast gate.
-- [ ] It is **snapshot-before**: it holds the program as it was *before* each edit, plus the current one. This is what makes coalescing expressible and undo a pop rather than an index dance.
-- [ ] **Bounded at 50 entries, and the bound is exercised**: after 60 pushes the depth is 50, the oldest snapshot is gone, and `canUndo` is still true. A bound that is never exercised is not a bound.
-- [ ] **Redo exists** and is invalidated by a new edit: undo twice, edit, and `canRedo` is false.
-- [ ] **Coalescing is an explicit session, never a timer.** `record(before:key:)` takes an optional `CoalescingKey`; a non-`nil` key matching the top of the stack **skips** the record, because the "before" already on the stack is the right one. Sessions are opened and closed by the caller (`beginEdit(of:)` / `endEdit()`), so there is **no clock anywhere** and the whole thing is a pure value.
-- [ ] **`endEdit()` is idempotent**, and the stack exposes a way to clear a session without ending a well-formed one. ADR-023's container swap tears down a presented sheet on a size-class change, so `endEdit()` may never fire — and a stale session key would silently swallow the *next*, unrelated edit's undo entry. That is the failure mode this criterion exists to prevent.
-- [ ] A **rejected** `EditResult` records nothing. Asserted, because it is the reason ADR-033 made `apply` return a result instead of throwing.
-- [ ] `reset()` clears both directions, for the whole-program replacements US-405 introduces (pick a sample, load from disk, new program).
+- [x] `UndoStack` lives in `EditorCore` — pure, `Sendable`, no Foundation, on the fast gate.
+- [x] It is **snapshot-before**: it holds the program as it was *before* each edit, plus the current one. This is what makes coalescing expressible and undo a pop rather than an index dance.
+- [x] **Bounded at 50 entries, and the bound is exercised**: after 60 pushes the depth is 50, the oldest snapshot is gone, and `canUndo` is still true. A bound that is never exercised is not a bound.
+- [x] **Redo exists** and is invalidated by a new edit: undo twice, edit, and `canRedo` is false.
+- [x] **Coalescing is an explicit session, never a timer.** `record(before:key:)` takes an optional `CoalescingKey`; a non-`nil` key matching the top of the stack **skips** the record, because the "before" already on the stack is the right one. Sessions are opened and closed by the caller (`beginEdit(of:)` / `endEdit()`), so there is **no clock anywhere** and the whole thing is a pure value.
+- [x] **`endEdit()` is idempotent**, and the stack exposes a way to clear a session without ending a well-formed one. ADR-023's container swap tears down a presented sheet on a size-class change, so `endEdit()` may never fire — and a stale session key would silently swallow the *next*, unrelated edit's undo entry. That is the failure mode this criterion exists to prevent.
+- [x] A **rejected** `EditResult` records nothing. Asserted, because it is the reason ADR-033 made `apply` return a result instead of throwing.
+- [x] `reset()` clears both directions, for the whole-program replacements US-405 introduces (pick a sample, load from disk, new program).
 
 **Amended 2026-09-25 at implementation planning, by Sebastian (after a `swift-architect` pass; recorded in ADR-036).** Three changes to the criteria above, each on purpose:
 
