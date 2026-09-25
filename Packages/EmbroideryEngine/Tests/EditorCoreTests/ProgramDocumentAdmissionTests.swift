@@ -266,6 +266,19 @@ struct ProgramDocumentAdmissionTests {
         }
     }
 
+    /// Every chain above leans left, so a depth that counted only the left
+    /// operand passed them all (mutation R8 survived). The same chain mirrored.
+    @Test("the depth limit applies to a right-leaning chain")
+    func depthLimitCoversRightOperands() {
+        let deep = (1 ..< 129).reduce(Formula.number(0)) { tree, level in
+            .binary(.minus, .number(Double(level)), tree)
+        }
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: [.moveNSteps(deep)])])])])
+        #expect(throws: ProgramDocumentError.formulaTooDeep(limit: 128)) {
+            _ = try ProgramDocument.encode(program)
+        }
+    }
+
     @Test("the depth limit applies inside a unary minus")
     func depthLimitCoversUnaryMinus() {
         let deep = Formula.unaryMinus(Self.chain(depth: 128))
