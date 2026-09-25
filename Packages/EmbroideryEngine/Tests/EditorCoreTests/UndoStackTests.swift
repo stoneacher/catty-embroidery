@@ -174,6 +174,22 @@ struct UndoStackTests {
         #expect(stack == before)
     }
 
+    /// A structurally different no-op from the rename above (Codex round 1):
+    /// a guard special-cased to `.renameProgram` would pass that test alone.
+    @Test("an identical replaceBrick records nothing and keeps redo")
+    func identicalReplaceRecordsNothing() throws {
+        var stack = Self.stack(afterRenames: 2)
+        stack.undo()
+        try #require(stack.canRedo)
+        let before = stack
+        let brick = stack.current.scenes[0].objects[0].scripts[0].bricks[Fixtures.stepperAddress.brickIndex]
+
+        let result = stack.apply(.replaceBrick(at: Fixtures.stepperAddress, with: brick))
+
+        #expect(result == .applied(Fixtures.named("p1")))
+        #expect(stack == before)
+    }
+
     // MARK: Sendable
 
     @Test("the stack and its key are Sendable values")

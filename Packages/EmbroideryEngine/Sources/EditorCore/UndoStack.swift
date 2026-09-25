@@ -71,7 +71,9 @@ public struct UndoStack: Equatable, Sendable {
     /// `apply` return a result) or when it applied but changed nothing — a
     /// dead undo tap, and clearing redo for it would destroy history over an
     /// edit that did not happen. For the same reason a fold that returns the
-    /// session to its entry's `before` (stepper 10 → 11 → 10) drops the entry.
+    /// session to its entry's `before` (stepper 10 → 11 → 10) drops the entry
+    /// — and gives back the entry its push evicted, if it was pushed at
+    /// capacity, so a session that changed nothing costs no history either.
     ///
     /// The key is trusted: the stack checks that it names the open session,
     /// not that `action` touches `key.address`. Only the parameter sheet that
@@ -83,9 +85,12 @@ public struct UndoStack: Equatable, Sendable {
 
         let coalesces = key != nil && key == openSession && undoEntries.last?.key == key
         if !coalesces {
-            push(Entry(before: current, key: key))
+            push(before: current, key: key)
         } else if undoEntries.last?.before == program {
-            undoEntries.removeLast()
+            let dropped = undoEntries.removeLast()
+            if let evicted = dropped.evicted {
+                undoEntries.insert(Entry(before: evicted, key: nil), at: 0)
+            }
         }
         redoPrograms.removeAll()
         current = program
@@ -101,7 +106,7 @@ public struct UndoStack: Equatable, Sendable {
     public mutating func undo() -> Program? {
         guard let entry = undoEntries.popLast() else { return nil }
         if !undoEntries.isEmpty {
-            undoEntries[undoEntries.count - 1].key = nil
+            undoEntries[undoEntries.count - 1].seal()
         }
         redoPrograms.append(current)
         current = entry.before
@@ -115,7 +120,7 @@ public struct UndoStack: Equatable, Sendable {
     @discardableResult
     public mutating func redo() -> Program? {
         guard let program = redoPrograms.popLast() else { return nil }
-        push(Entry(before: current, key: nil))
+        push(before: current, key: nil)
         current = program
         return current
     }
@@ -156,11 +161,20 @@ public struct UndoStack: Equatable, Sendable {
     /// Evicts only when an edit pushes. A redo can never overflow:
     /// `undoDepth + redoDepth <= capacity` holds, because only undo feeds redo
     /// and every push from an edit clears it.
-    private mutating func push(_ entry: Entry) {
-        undoEntries.append(entry)
-        if undoEntries.count > Self.capacity {
-            undoEntries.removeFirst(undoEntries.count - Self.capacity)
+    ///
+    /// A **keyed** entry pushed at capacity keeps the snapshot it evicted, for
+    /// as long as it can still fold: the net-zero drop in `apply` gives it back
+    /// (Codex round 1). Only the top entry can fold, so the entry being covered
+    /// here is sealed first — at most one extra snapshot is ever held.
+    private mutating func push(before: Program, key: CoalescingKey?) {
+        if !undoEntries.isEmpty {
+            undoEntries[undoEntries.count - 1].evicted = nil
         }
+        var evicted: Program?
+        if undoEntries.count >= Self.capacity {
+            evicted = undoEntries.removeFirst().before
+        }
+        undoEntries.append(Entry(before: before, key: key, evicted: key == nil ? nil : evicted))
     }
 
     /// The program as it was before an edit, and the session it was recorded
@@ -168,5 +182,19 @@ public struct UndoStack: Equatable, Sendable {
     private struct Entry: Equatable, Sendable {
         let before: Program
         var key: CoalescingKey?
+        /// What this entry's push evicted, restored if the session nets to zero.
+        var evicted: Program?
+
+        init(before: Program, key: CoalescingKey?, evicted: Program? = nil) {
+            self.before = before
+            self.key = key
+            self.evicted = evicted
+        }
+
+        /// Never fold into this entry again — and so never drop it either.
+        mutating func seal() {
+            key = nil
+            evicted = nil
+        }
     }
 }

@@ -278,6 +278,65 @@ struct UndoCoalescingTests {
         #expect(last == Fixtures.undoSeed)
     }
 
+    /// Codex round 1: the session's first push happens **at** capacity, so it
+    /// evicts the seed; the session then nets to zero and its entry is dropped.
+    /// Dropping it must also give back what its push evicted, or a session that
+    /// changed nothing has still cost the user their oldest undo step.
+    @Test("a net-zero session at capacity restores the entry its push evicted")
+    func netZeroSessionAtCapacityRestoresTheEvictedEntry() throws {
+        var stack = UndoStack(program: Fixtures.undoSeed)
+        for index in 1 ... 50 {
+            stack.apply(.renameProgram("p\(index)"))
+        }
+        try #require(stack.undoDepth == UndoStack.capacity)
+        let before = stack
+
+        let key = stack.beginEdit(of: Fixtures.stepperAddress)
+        stack.apply(Fixtures.step(to: 11), coalescing: key)
+        stack.apply(Fixtures.step(to: 10), coalescing: key)
+        stack.endEdit(key)
+
+        #expect(stack.current == Fixtures.named("p50"))
+        #expect(stack.undoDepth == UndoStack.capacity)
+        var last: Program?
+        while let program = stack.undo() {
+            last = program
+        }
+        #expect(last == Fixtures.undoSeed)
+
+        // And a session at capacity that does *not* net to zero still evicts:
+        // the seed is gone, exactly as for an un-keyed edit.
+        var kept = before
+        let other = kept.beginEdit(of: Fixtures.stepperAddress)
+        kept.apply(Fixtures.step(to: 11), coalescing: other)
+        kept.apply(Fixtures.step(to: 12), coalescing: other)
+        #expect(kept.undoDepth == UndoStack.capacity)
+        var bottom: Program?
+        while let program = kept.undo() {
+            bottom = program
+        }
+        #expect(bottom == Fixtures.named("p1"))
+    }
+
+    // MARK: Rejection inside a session
+
+    /// A rejected keystroke during a live session records nothing — including
+    /// not closing the session (Codex round 1).
+    @Test("a rejected edit inside a session leaves the whole stack unchanged")
+    func rejectionInsideASessionChangesNothing() {
+        var stack = UndoStack(program: Fixtures.undoSeed)
+        let key = stack.beginEdit(of: Fixtures.stepperAddress)
+        stack.apply(Fixtures.step(to: 1), coalescing: key)
+        let before = stack
+
+        let result = stack.apply(
+            .replaceBrick(at: Fixtures.stepperAddress, with: .sewUp),
+            coalescing: key
+        )
+        #expect(result == .rejected(.cannotChangeBrickKind(from: .moveNSteps, to: .sewUp)))
+        #expect(stack == before)
+    }
+
     // MARK: Reset keeps minting fresh keys
 
     /// If `reset` restarted the serial, a key from before the reset would equal
