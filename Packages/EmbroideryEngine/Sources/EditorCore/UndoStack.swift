@@ -176,9 +176,10 @@ public struct UndoStack: Equatable, Sendable {
     /// A **keyed** entry pushed at capacity keeps the snapshot it evicted, for
     /// as long as it can still fold: the net-zero drop in `apply` gives it back
     /// (Codex round 1). Only the top entry of the open session can fold, and a
-    /// covered entry can never be top again except through undo — which seals
-    /// it — so the entry being covered is sealed here (Codex round 3), and
-    /// closing or superseding a session seals the top one. **Invariant: only
+    /// covered entry can become top again only through undo, *after* it has
+    /// been covered — so sealing it here, at the moment it is covered, is what
+    /// keeps undo from exposing a foldable entry (Codex round 3). Closing,
+    /// abandoning or superseding a session seals the top one. **Invariant: only
     /// the top entry can carry a key or an eviction** — at most one extra
     /// snapshot is ever held, and only while it can still be restored.
     private mutating func push(before: Program, key: CoalescingKey?) {

@@ -195,8 +195,8 @@ struct UndoCoalescingTests {
     /// The case the first version got wrong (swift-code-reviewer): with
     /// `[K, nil, K]` on the stack, two undos expose the *first* K entry while K
     /// is still open, and the next keystroke folded into it — so "a history
-    /// transition is a coalescing boundary" was false. Undo now seals the entry
-    /// it exposes.
+    /// transition is a coalescing boundary" was false. The entry undo exposes
+    /// is now always sealed — since Codex round 3, by the push that covered it.
     @Test("undo seals the entry it exposes, even one recorded under the open key")
     func undoSealsTheExposedEntry() {
         var stack = UndoStack(program: Fixtures.undoSeed)

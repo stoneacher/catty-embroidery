@@ -54,6 +54,16 @@ struct UndoEvictionTests {
 
         #expect(stack.current == Fixtures.named("p50"))
         #expect(stack.undoDepth == UndoStack.capacity)
+
+        // The whole stack is back where it was — the restored entry sealed —
+        // bar the serial the session consumed. Walking program values alone
+        // could not see a restored entry carrying the session's key (Codex
+        // round 4).
+        var reference = before
+        _ = reference.beginEdit(of: Fixtures.stepperAddress)
+        reference.abandonEdit()
+        #expect(stack == reference)
+
         var last: Program?
         while let program = stack.undo() {
             last = program
@@ -82,7 +92,7 @@ struct UndoEvictionTests {
     /// fold it is sealed, so the stack equals one that recorded the same edit
     /// un-keyed (same serial consumed, same session state).
     enum Closure: CaseIterable, Sendable {
-        case endEdit, abandonEdit, supersede, staleKey
+        case endEdit, abandonEdit, supersede, staleKey, coveredThenClosed
     }
 
     @Test("an entry that can no longer fold holds no key and no eviction", arguments: Closure.allCases)
@@ -117,6 +127,15 @@ struct UndoEvictionTests {
             keyed.endEdit(key)
             keyed.apply(Fixtures.step(to: 1), coalescing: key)
             unkeyed.apply(Fixtures.step(to: 1))
+        case .coveredThenClosed:
+            // The keyed entry holds an eviction when an un-keyed edit covers
+            // it: covering must drop the eviction as well as the key, or the
+            // buried entry keeps a snapshot nothing can restore (Codex round 4).
+            keyed.apply(Fixtures.step(to: 1), coalescing: key)
+            keyed.apply(.renameProgram("x"))
+            keyed.endEdit(key)
+            unkeyed.apply(Fixtures.step(to: 1))
+            unkeyed.apply(.renameProgram("x"))
         }
         #expect(keyed == unkeyed)
     }
