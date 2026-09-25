@@ -10,9 +10,22 @@ import ProgramModel
 /// cases rather than casting.
 ///
 /// The contract is symmetric: **whatever `encode` returns, `decode` accepts.**
-/// Both refuse a foreign version and an unbalanced script, so an autosave can
-/// never write a file the next launch would refuse and set aside.
+/// Both refuse a foreign version, an unbalanced script and a formula deeper than
+/// `maximumFormulaDepth`, so an autosave can never write a file the next launch
+/// would refuse and set aside, and nothing decode admits fails to re-encode.
 public enum ProgramDocument {
+    /// The deepest formula the document admits, counted in `Formula` nodes on
+    /// the longest root-to-leaf path (a bare literal is 1).
+    ///
+    /// Without a cap, the failure mode of a deep formula depended on the
+    /// thread's stack: `JSONEncoder` spends two JSON levels per node and threw
+    /// at ~250 deep on the 8 MB main thread, but overflowed the stack — a crash,
+    /// not a throw — from ~230 on a cooperative-pool thread (measured by
+    /// `swift-code-reviewer`, debug build). 128 is half the main-thread ceiling,
+    /// deep enough for any formula a person writes, and M6's formula editor
+    /// inherits it as a named limit rather than a stack-size accident (ADR-037).
+    public static let maximumFormulaDepth = 128
+
     /// The document's bytes for `program`.
     ///
     /// Keeps the default non-conforming-float strategy (`.throw`): one format,
@@ -69,8 +82,9 @@ public enum ProgramDocument {
         }
     }
 
-    /// The version, then every script in scene → object → script order; the
-    /// first imbalance found is the reason.
+    /// The version, then every script in scene → object → script order; for
+    /// each script its balance, then its formulas' depth. The first failure
+    /// found is the reason.
     private static func admit(_ program: Program) throws(ProgramDocumentError) {
         try admit(version: program.formatVersion)
         for scene in program.scenes {
@@ -78,16 +92,57 @@ public enum ProgramDocument {
                 for script in object.scripts {
                     do {
                         try script.validate()
-                    } catch let error as ScriptValidationError {
-                        throw .unbalancedScript(error)
                     } catch {
-                        // Unreachable: `validate()` throws only
-                        // `ScriptValidationError`, but its signature is untyped.
-                        // No mutation can reach this branch.
-                        throw .corrupt
+                        throw .unbalancedScript(error)
+                    }
+                    for brick in script.bricks {
+                        for formula in brick.formulas where formula.depth > maximumFormulaDepth {
+                            throw .formulaTooDeep(limit: maximumFormulaDepth)
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+private extension Brick {
+    /// Every formula this brick carries. Exhaustive on purpose: a new brick case
+    /// with a formula payload must be added here, or the compiler says so.
+    var formulas: [Formula] {
+        switch self {
+        case let .moveNSteps(formula), let .turnLeft(formula), let .turnRight(formula),
+             let .pointInDirection(formula), let .setX(formula), let .setY(formula),
+             let .changeXBy(formula), let .changeYBy(formula),
+             let .repeatLoop(times: formula), let .wait(seconds: formula),
+             let .setVariable(_, to: formula), let .changeVariableBy(_, value: formula),
+             let .runningStitch(length: formula), let .tripleStitch(length: formula):
+            [formula]
+        case let .placeAt(x, y):
+            [x, y]
+        case let .zigZagStitch(length, width):
+            [length, width]
+        case .forever, .loopEnd, .stitch, .setThreadColor, .sewUp, .stopRunningStitch,
+             .writeEmbroideryToFile:
+            []
+        }
+    }
+}
+
+private extension Formula {
+    /// `Formula` nodes on the longest root-to-leaf path. Recursive, which is
+    /// safe here: `JSONDecoder` refuses input nested past a few hundred nodes
+    /// (a 250-deep chain decodes, 300 does not) before this runs, and the model API cannot build a tree deep enough to
+    /// matter without
+    /// having built it recursively itself.
+    var depth: Int {
+        switch self {
+        case .number, .variable:
+            1
+        case let .unaryMinus(operand):
+            1 + operand.depth
+        case let .binary(_, left, right):
+            1 + max(left.depth, right.depth)
         }
     }
 }

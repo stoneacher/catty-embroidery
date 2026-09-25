@@ -78,8 +78,9 @@ public extension Script {
 
     /// Throws the first balance error found: a `loopEnd` with no open loop, or,
     /// once the list is scanned, a loop opener that was never closed — reporting
-    /// the innermost (last-opened) unclosed opener when several remain.
-    func validate() throws {
+    /// the innermost (last-opened) unclosed opener when several remain. Typed
+    /// (US-404) so a caller mapping the reason needs no unreachable `catch`.
+    func validate() throws(ScriptValidationError) {
         var openerStack: [Int] = []
         for (index, brick) in bricks.enumerated() {
             if brick.opensLoop {

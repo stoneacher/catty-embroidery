@@ -33,13 +33,10 @@ struct ProgramDocumentRoundTripTests {
         .unaryMinus(.variable("x"))
     ] + BinaryOperator.allCases.map { .binary($0, .number(2), .variable("y")) }
 
-    /// A left-leaning `.binary` chain 64 deep. **Not deeper, deliberately**:
-    /// `JSONEncoder` throws `invalidValue` at about 512 JSON nesting levels and
-    /// each `Formula` node costs two, so a chain of roughly 250 fails to encode
-    /// for a reason that has nothing to do with this story (executed at
-    /// planning). Nothing in M4 builds `.binary`; M6's formula editor owns that
-    /// ceiling. 64 is deep enough that a codec flattening or truncating the tree
-    /// fails the equality, and far enough from the ceiling to stay out of it.
+    /// A left-leaning `.binary` chain 64 deep. Deep enough that a codec
+    /// flattening or truncating the tree fails the equality; well inside
+    /// `ProgramDocument.maximumFormulaDepth`, whose own edges are pinned in
+    /// `ProgramDocumentAdmissionTests`.
     static let deepFormula: Formula = (1 ... 64).reduce(Formula.number(0)) { tree, level in
         .binary(BinaryOperator.allCases[level % BinaryOperator.allCases.count], tree, .number(Double(level)))
     }
