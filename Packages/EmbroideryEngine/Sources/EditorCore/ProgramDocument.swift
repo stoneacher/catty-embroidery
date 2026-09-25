@@ -6,8 +6,8 @@ import ProgramModel
 /// US-308 drew between `DSTDesign` and `DSTFileWriting`.
 ///
 /// Typed throws because this is a boundary (ADR-033: boundary conversions throw,
-/// the inner `apply` funnel returns a value), so a caller switches over four
-/// cases rather than casting.
+/// the inner `apply` funnel returns a value), so a caller switches over the
+/// error's cases rather than casting.
 ///
 /// The contract is symmetric: **whatever `encode` returns, `decode` accepts.**
 /// Both refuse a foreign version, an unbalanced script and a formula deeper than
@@ -96,7 +96,7 @@ public enum ProgramDocument {
                         throw .unbalancedScript(error)
                     }
                     for brick in script.bricks {
-                        for formula in brick.formulas where formula.depth > maximumFormulaDepth {
+                        for formula in brick.formulas where formula.exceedsDepth(maximumFormulaDepth) {
                             throw .formulaTooDeep(limit: maximumFormulaDepth)
                         }
                     }
@@ -130,19 +130,29 @@ private extension Brick {
 }
 
 private extension Formula {
-    /// `Formula` nodes on the longest root-to-leaf path. Recursive, which is
-    /// safe here: `JSONDecoder` refuses input nested past a few hundred nodes
-    /// (a 250-deep chain decodes, 300 does not) before this runs, and the model API cannot build a tree deep enough to
-    /// matter without
-    /// having built it recursively itself.
-    var depth: Int {
-        switch self {
-        case .number, .variable:
-            1
-        case let .unaryMinus(operand):
-            1 + operand.depth
-        case let .binary(_, left, right):
-            1 + max(left.depth, right.depth)
+    /// Whether some root-to-leaf path holds more than `limit` `Formula` nodes (a
+    /// bare literal is 1).
+    ///
+    /// **Iterative and bounded** (Codex round 1): an explicit stack, and no node
+    /// deeper than `limit + 1` is ever visited, so the cost is independent of how
+    /// deep the tree really is. A recursive walk of the whole tree overflowed the
+    /// stack on a model-built chain 100 000 deep instead of refusing it.
+    func exceedsDepth(_ limit: Int) -> Bool {
+        var pending: [(formula: Formula, depth: Int)] = [(self, 1)]
+        while let (formula, depth) = pending.popLast() {
+            guard depth <= limit else {
+                return true
+            }
+            switch formula {
+            case .number, .variable:
+                break
+            case let .unaryMinus(operand):
+                pending.append((operand, depth + 1))
+            case let .binary(_, left, right):
+                pending.append((left, depth + 1))
+                pending.append((right, depth + 1))
+            }
         }
+        return false
     }
 }
