@@ -120,4 +120,31 @@ struct UndoEvictionTests {
         }
         #expect(keyed == unkeyed)
     }
+
+    /// Codex round 3: sealing only the top entry on close left a session's
+    /// **buried** keyed entries — separated by un-keyed edits — carrying the
+    /// dead key. A covered entry can never fold again, so it is sealed when it
+    /// is covered, and the invariant becomes: only the top entry can carry a
+    /// key or an eviction.
+    @Test("a closed session's buried entries are sealed too")
+    func buriedEntriesAreSealed() {
+        var keyed = UndoStack(program: Fixtures.undoSeed)
+        var unkeyed = keyed
+        let key = keyed.beginEdit(of: Fixtures.stepperAddress)
+        _ = unkeyed.beginEdit(of: Fixtures.stepperAddress)
+        unkeyed.abandonEdit()
+
+        keyed.apply(Fixtures.step(to: 1), coalescing: key)
+        keyed.apply(.renameProgram("x"))
+        keyed.apply(Fixtures.step(to: 2), coalescing: key)
+        keyed.apply(.renameProgram("y"))
+        keyed.endEdit(key)
+
+        unkeyed.apply(Fixtures.step(to: 1))
+        unkeyed.apply(.renameProgram("x"))
+        unkeyed.apply(Fixtures.step(to: 2))
+        unkeyed.apply(.renameProgram("y"))
+
+        #expect(keyed == unkeyed)
+    }
 }

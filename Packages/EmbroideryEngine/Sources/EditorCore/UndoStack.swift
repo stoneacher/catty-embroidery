@@ -101,15 +101,14 @@ public struct UndoStack: Equatable, Sendable {
 
     /// Step back one entry; `nil`, with nothing changed, when there is none.
     ///
-    /// The entry this exposes is **sealed**: without that, `[K, nil, K]` undone
-    /// twice left the first K entry on top with K still open, and the next
-    /// keystroke folded into history the user had just stepped back through.
+    /// The entry this exposes is already **sealed** — `push` sealed it when it
+    /// was covered — so the next keystroke cannot fold into history the user
+    /// just stepped back through. (Before that rule, `[K, nil, K]` undone twice
+    /// left the first K entry on top with K still open, and undo had to seal it
+    /// here.)
     @discardableResult
     public mutating func undo() -> Program? {
         guard let entry = undoEntries.popLast() else { return nil }
-        if !undoEntries.isEmpty {
-            undoEntries[undoEntries.count - 1].seal()
-        }
         redoPrograms.append(current)
         current = entry.before
         return current
@@ -176,13 +175,15 @@ public struct UndoStack: Equatable, Sendable {
     ///
     /// A **keyed** entry pushed at capacity keeps the snapshot it evicted, for
     /// as long as it can still fold: the net-zero drop in `apply` gives it back
-    /// (Codex round 1). Only the top entry of the open session can fold, so the
-    /// entry being covered here is cleared first, and closing or superseding a
-    /// session seals its entry — at most one extra snapshot is ever held, and
-    /// only while it can still be restored.
+    /// (Codex round 1). Only the top entry of the open session can fold, and a
+    /// covered entry can never be top again except through undo — which seals
+    /// it — so the entry being covered is sealed here (Codex round 3), and
+    /// closing or superseding a session seals the top one. **Invariant: only
+    /// the top entry can carry a key or an eviction** — at most one extra
+    /// snapshot is ever held, and only while it can still be restored.
     private mutating func push(before: Program, key: CoalescingKey?) {
         if !undoEntries.isEmpty {
-            undoEntries[undoEntries.count - 1].evicted = nil
+            undoEntries[undoEntries.count - 1].seal()
         }
         var evicted: Program?
         if undoEntries.count >= Self.capacity {
