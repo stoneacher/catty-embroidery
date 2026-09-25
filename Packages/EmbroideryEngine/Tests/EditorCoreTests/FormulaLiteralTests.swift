@@ -66,18 +66,35 @@ struct FormulaLiteralTests {
         #expect(FormulaLiteral.parse(text) == .success(.number(expected)))
     }
 
+    /// Pinned at review: typed `-0` is a negative zero, as `Double("-0")` gives
+    /// it — the literal is what was typed, and the document keeps the sign
+    /// (`negativeZeroKeepsItsSign`). Exact equality cannot see the sign, so it is
+    /// asserted on its own.
+    @Test("test plan 8: -0 parses to a negative zero")
+    func negativeZeroIsNegative() throws {
+        guard case let .number(value) = try FormulaLiteral.parse("-0").get() else {
+            Issue.record("-0 did not parse to a number literal")
+            return
+        }
+        #expect(value == 0)
+        #expect(value.sign == .minus)
+    }
+
     @Test("test plan 8: empty input is its own reason")
     func emptyIsEmpty() {
         #expect(FormulaLiteral.parse("") == .failure(.empty))
     }
 
     /// `inf`/`nan` must be *malformed*, not *non-finite*, and `0x1p3` must not be
-    /// `.success(8)`: those three are what show the grammar runs before
-    /// `Double(_:)`. The Unicode digits and U+2212 are there because `\d` in a
-    /// Swift `Regex` matches them.
+    /// `.success(8)`: those are what show the grammar runs before `Double(_:)`.
+    /// **Only `+1`, the inf/nan family and hex floats get past `Double(_:)`**;
+    /// every other entry here it already rejects, so those pin the outcome, not
+    /// the scanner (`swift-code-reviewer` probed each). The Unicode digits and
+    /// U+2212 are there because `\d` in a Swift `Regex` matches them.
     @Test("test plan 8: anything outside the grammar is malformed", arguments: [
         "abc", "1.2.3", "-", ".", "+1", " 1", "1 ", "1,5", "1_000", "--1", "1e", "e5", "1e5.5",
-        "inf", "-inf", "Infinity", "nan", "NaN", "0x1p3",
+        "inf", "-inf", "Infinity", "infinity", "nan", "NaN", "-nan", "snan", "nan(0x1)",
+        "0x1p3", "0X1P3", "0x10",
         "٣", "１", "\u{2212}1"
     ])
     func outsideTheGrammarIsMalformed(_ text: String) {

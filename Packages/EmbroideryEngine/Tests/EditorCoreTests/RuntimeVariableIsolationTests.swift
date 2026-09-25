@@ -19,18 +19,23 @@ import Testing
 /// guard (ADR-037).
 @Suite("Runtime variables never reach the document")
 struct RuntimeVariableIsolationTests {
-    /// `x` starts at MAX. `MAX + MAX` is `+∞` in the runtime store (the store is
-    /// raw; only formula *leaves* normalize). `∞ − MAX` stays `+∞` — whereas a
-    /// store that clamped to MAX would give `0` — and `setY(x)` normalizes the
-    /// `+∞` leaf back to MAX. So the needle's `y` tells the two apart.
+    /// `x` starts at 0 and takes three deltas: `+MAX`, `+MAX`, `−MAX`. A raw store
+    /// (only formula *leaves* normalize) goes `MAX → +∞ → +∞`, and `setY(x)`
+    /// normalizes the `+∞` leaf back to MAX. Every alternative ends at `0`
+    /// instead: a store that clamps or normalizes on write (`MAX → MAX → 0`), and
+    /// a `changeVariableBy` that does nothing. So `y == MAX` is reachable only
+    /// through a store that really held `+∞`. *(`swift-code-reviewer`: the first
+    /// fixture started `x` at MAX, so a no-op `changeVariableBy` also landed at
+    /// MAX and the witness could not tell it apart.)*
     static let program = Program(
         name: "overflow",
         scenes: [Scene(objects: [Object(scripts: [Script(bricks: [
             .changeVariableBy(name: "x", value: .number(.greatestFiniteMagnitude)),
+            .changeVariableBy(name: "x", value: .number(.greatestFiniteMagnitude)),
             .changeVariableBy(name: "x", value: .unaryMinus(.number(.greatestFiniteMagnitude))),
             .setY(.variable("x"))
         ])])])],
-        variables: [Variable(name: "x", value: .greatestFiniteMagnitude)]
+        variables: [Variable(name: "x", value: 0)]
     )
 
     @Test("a variable driven to +∞ at runtime leaves the authored program unchanged and encodable")
@@ -46,7 +51,7 @@ struct RuntimeVariableIsolationTests {
         #expect(update.position.y == .greatestFiniteMagnitude)
 
         // The authored value is untouched, and the document still accepts it.
-        #expect(Self.program.variables == [Variable(name: "x", value: .greatestFiniteMagnitude)])
+        #expect(Self.program.variables == [Variable(name: "x", value: 0)])
         let data = try #require(try? ProgramDocument.encode(Self.program), "the authored program failed to encode")
         #expect(try ProgramDocument.decode(data) == Self.program)
     }

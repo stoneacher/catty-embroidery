@@ -172,6 +172,109 @@ struct ProgramDocumentAdmissionTests {
         #expect(try ProgramDocument.decode(Self.rawJSON(program)) == program)
     }
 
+    /// The fixtures above all break the **last** scene and object, so an
+    /// admission check reading only `suffix(1)` passed them. These break a decoy
+    /// at the *first* scene or object instead (`swift-code-reviewer`).
+    @Test("5b: an imbalance in the first scene's decoy is refused")
+    func firstSceneDecoyImbalanceIsRefused() throws {
+        var program = EditorCoreFixtures.program
+        program.scenes[0].objects[0].scripts[0].bricks = [.loopEnd]
+        #expect(throws: ProgramDocumentError.unbalancedScript(.unmatchedLoopEnd(index: 0))) {
+            _ = try ProgramDocument.decode(Self.rawJSON(program))
+        }
+    }
+
+    @Test("5b: an imbalance in the first object's decoy is refused")
+    func firstObjectDecoyImbalanceIsRefused() throws {
+        var program = EditorCoreFixtures.program
+        program.scenes[1].objects[0].scripts[0].bricks = [.forever]
+        #expect(throws: ProgramDocumentError.unbalancedScript(.unmatchedLoopOpener(index: 0))) {
+            _ = try ProgramDocument.decode(Self.rawJSON(program))
+        }
+    }
+
+    /// ADR-037: scene → object → script order, first imbalance wins. Two
+    /// imbalances with different reasons, so a reversed traversal names the
+    /// other one.
+    @Test("5b: of two imbalances, the first in document order is the reason")
+    func firstImbalanceInDocumentOrderWins() throws {
+        var program = Self.editorFixture(withRealScript: [.stitch, .loopEnd])
+        program.scenes[0].objects[0].scripts[0].bricks = [.forever]
+        #expect(throws: ProgramDocumentError.unbalancedScript(.unmatchedLoopOpener(index: 0))) {
+            _ = try ProgramDocument.decode(Self.rawJSON(program))
+        }
+    }
+
+    // MARK: Formula depth
+
+    /// A left-leaning `.binary` chain whose deepest path holds exactly `depth`
+    /// `Formula` nodes (the leaf counts as one).
+    static func chain(depth: Int) -> Formula {
+        (1 ..< depth).reduce(Formula.number(0)) { tree, level in
+            .binary(.plus, tree, .number(Double(level)))
+        }
+    }
+
+    static func program(formulaDepth depth: Int) -> Program {
+        Program(scenes: [Scene(objects: [Object(scripts: [
+            Script(bricks: [.stitch]),
+            Script(bricks: [.stitch, .placeAt(x: .number(1), y: chain(depth: depth))])
+        ])])])
+    }
+
+    /// Decided at review (Sebastian, 2026-09-25): without a cap, the encoder's
+    /// failure mode depended on the thread's stack — `.encodingFailed` at ~250
+    /// deep on the 8 MB main thread, a **stack-overflow crash** from ~230 on a
+    /// cooperative-pool thread — and a hand-edited file at 241–250 decoded but
+    /// could never be encoded again. A named cap makes admission deterministic
+    /// and keeps "decode accepts ⇔ encode succeeds" true in both directions.
+    @Test("a formula at the depth limit round-trips")
+    func formulaAtTheLimitRoundTrips() throws {
+        #expect(ProgramDocument.maximumFormulaDepth == 128)
+        let program = Self.program(formulaDepth: ProgramDocument.maximumFormulaDepth)
+        #expect(try ProgramDocument.decode(ProgramDocument.encode(program)) == program)
+    }
+
+    @Test("a formula past the depth limit is refused by decode, with the limit")
+    func formulaPastTheLimitIsRefusedOnDecode() throws {
+        let data = try Self.rawJSON(Self.program(formulaDepth: ProgramDocument.maximumFormulaDepth + 1))
+        #expect(throws: ProgramDocumentError.formulaTooDeep(limit: 128)) {
+            _ = try ProgramDocument.decode(data)
+        }
+    }
+
+    @Test("a formula past the depth limit is refused by encode, with the limit")
+    func formulaPastTheLimitIsRefusedOnEncode() {
+        #expect(throws: ProgramDocumentError.formulaTooDeep(limit: 128)) {
+            _ = try ProgramDocument.encode(Self.program(formulaDepth: ProgramDocument.maximumFormulaDepth + 1))
+        }
+    }
+
+    /// Every formula-carrying brick position is measured, not just the first
+    /// payload: a deep formula in `placeAt`'s *second* argument is caught above,
+    /// and here in a loop count and a variable assignment.
+    @Test("the depth limit applies to every formula-carrying brick", arguments: [
+        Brick.repeatLoop(times: chain(depth: 129)),
+        Brick.setVariable(name: "v", to: chain(depth: 129)),
+        Brick.zigZagStitch(length: .number(1), width: chain(depth: 129))
+    ])
+    func depthLimitCoversEveryFormulaPosition(_ brick: Brick) {
+        let bricks = brick.opensLoop ? [brick, .loopEnd] : [brick]
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: bricks)])])])
+        #expect(throws: ProgramDocumentError.formulaTooDeep(limit: 128)) {
+            _ = try ProgramDocument.encode(program)
+        }
+    }
+
+    @Test("the depth limit applies inside a unary minus")
+    func depthLimitCoversUnaryMinus() {
+        let deep = Formula.unaryMinus(Self.chain(depth: 128))
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: [.moveNSteps(deep)])])])])
+        #expect(throws: ProgramDocumentError.formulaTooDeep(limit: 128)) {
+            _ = try ProgramDocument.encode(program)
+        }
+    }
+
     // MARK: Encode refuses what decode refuses
 
     /// Decided at planning (Sebastian, 2026-09-25): `encode` returning `Data`

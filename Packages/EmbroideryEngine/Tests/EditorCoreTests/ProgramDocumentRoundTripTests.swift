@@ -128,6 +128,16 @@ struct ProgramDocumentRoundTripTests {
         #expect(try ProgramDocument.decode(Data(contentsOf: url)) == sample.program)
     }
 
+    /// The document's bytes **are** the checked-in resources' bytes: one format,
+    /// one encoding, byte for byte (`SampleResourceRegenerationTests` writes them
+    /// with the same formatting). Without this, dropping `.sortedKeys` — which
+    /// makes key order vary per object — survived (`swift-code-reviewer`).
+    @Test("encoding a sample reproduces its checked-in bytes", arguments: SampleLibrary.all)
+    func encodeMatchesCheckedInBytes(_ sample: SampleProgram) throws {
+        let url = try #require(sample.programJSONURL)
+        #expect(try ProgramDocument.encode(sample.program) == Data(contentsOf: url))
+    }
+
     // MARK: The default coder
 
     /// The public API can still build a non-finite payload (ADR-017 leaves the
