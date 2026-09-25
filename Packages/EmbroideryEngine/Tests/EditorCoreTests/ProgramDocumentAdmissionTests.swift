@@ -279,6 +279,60 @@ struct ProgramDocumentAdmissionTests {
         }
     }
 
+    /// Codex round 1 (High): the depth check measured the *whole* tree
+    /// recursively before comparing, so a tree built iteratively through the
+    /// model API overflowed the stack inside admission instead of being refused.
+    /// The check is bounded: it stops descending at `maximumFormulaDepth + 1`.
+    ///
+    /// The fixture is a `static let` **on purpose, and it is never freed**.
+    /// Swift releases an indirect enum recursively, so dropping a chain this deep
+    /// crashes its owner — measured at ~3 500 nodes on a 512 KB thread, before
+    /// any codec code runs. Held for the process's lifetime, the only recursion
+    /// left for this test to hit is the one under test. Red under the recursive
+    /// check is a crashed test process, not a failed expectation.
+    static let hostilelyDeep: Program = {
+        var formula = Formula.number(0)
+        for _ in 0 ..< 100_000 {
+            formula = .unaryMinus(formula)
+        }
+        return Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: [.moveNSteps(formula)])])])])
+    }()
+
+    @Test("a model-built formula far past the limit is refused without walking all of it")
+    func hostileDepthIsRefusedBoundedly() {
+        #expect(throws: ProgramDocumentError.formulaTooDeep(limit: 128)) {
+            _ = try ProgramDocument.encode(Self.hostilelyDeep)
+        }
+    }
+
+    /// Codex round 1 (Medium ×2), decided with Sebastian (2026-09-25): past
+    /// Foundation's JSON nesting ceiling (512 levels, two per formula node) the
+    /// parser refuses the file before the version or the depth can be read, so it
+    /// is `.corrupt`. **Pinned, not fixed**: nothing traps, and US-406 sets the
+    /// file aside either way — only the reason differs. A pre-scan that
+    /// classified it would be a hand-written JSON lexer for a hostile file.
+    @Test("a version-1 formula nested past the JSON parser's ceiling is corrupt, not a trap")
+    func formulaPastTheParserCeilingIsCorrupt() throws {
+        let leaf = #"{"number":{"_0":7}}"#
+        let shallow = try String(decoding: Self.rawJSON(Program(scenes: [Scene(objects: [Object(scripts: [
+            Script(bricks: [.moveNSteps(.number(7))])
+        ])])])), as: UTF8.self)
+        #expect(shallow.components(separatedBy: leaf).count == 2, "fixture must hold the leaf exactly once")
+        let nested = (0 ..< 300).reduce(leaf) { inner, _ in #"{"unaryMinus":{"_0":"# + inner + "}}" }
+        #expect(throws: ProgramDocumentError.corrupt) {
+            _ = try ProgramDocument.decode(Data(shallow.replacingOccurrences(of: leaf, with: nested).utf8))
+        }
+    }
+
+    @Test("a later version nested past the JSON parser's ceiling is corrupt, not a trap")
+    func futureShapePastTheParserCeilingIsCorrupt() {
+        let arrays = String(repeating: "[", count: 10000) + "0" + String(repeating: "]", count: 10000)
+        let data = Data((#"{"formatVersion":2,"future":"# + arrays + "}").utf8)
+        #expect(throws: ProgramDocumentError.corrupt) {
+            _ = try ProgramDocument.decode(data)
+        }
+    }
+
     @Test("the depth limit applies inside a unary minus")
     func depthLimitCoversUnaryMinus() {
         let deep = Formula.unaryMinus(Self.chain(depth: 128))
