@@ -2436,3 +2436,8 @@ Round 1 returned one High, two Mediums and two Lows. **The High was in the in-lo
 ## 2026-09-25 (US-404, correction) — the test count was written before it was counted
 
 The entry above gives "921 → 955 engine tests". Counted afterwards by running `swift test` on `main` and on the branch and summing every run: **921 → 966**. I wrote the figure from memory, not from a run, before handover. That is the same mistake this journal's US-403 correction records, and the fix is the same: count, then write.
+
+## 2026-09-25 (US-404, CI) — a lint slip, and an out-of-scope timing bound refuted a sixth time
+
+- **CI was red on the round-1 commits, and I reported it green.** SwiftLint's `optional_data_string_conversion` failed on the parser-ceiling test, which I had not linted before committing. It was fixed in `1eb6350`. I found out only because I watched the final run rather than trusting the earlier green. **"Green" has to name the commit it was observed on.**
+- **`BakeSchedulingTests.aLargerSettleChunkCostsProportionallyLessTotalBakeWork` (US-309) failed once on CI**, measuring 1.83× against its bound of 2. The same commit passed in the parallel pull-request run and on a rerun of the job. US-404 touches nothing it measures. Its own doc comment records this as the fifth bound set between the ~1× regression it catches and the CI-observed 2.75×, so this is the **sixth refutation**. Out of scope here and tracked, not fixed: whether to lower the bound again or replace the timing assertion is Sebastian's call, and it belongs in a backlog item rather than on a persistence branch.
