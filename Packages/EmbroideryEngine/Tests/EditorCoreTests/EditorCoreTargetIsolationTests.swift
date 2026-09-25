@@ -274,4 +274,21 @@ struct EditorCoreTargetIsolationTests {
         #expect(apply(&stack, .renameProgram("renamed"), nil) == .applied(renamed))
         #expect(undo(&stack) == seed)
     }
+
+    /// US-404: the document speaks `Program`, `Data` and its own typed error;
+    /// the literal parser speaks `String` and `Formula`. `Data` is Foundation,
+    /// which this target may import (the suite comment reserves it for US-404).
+    @Test("the program document's boundary is Foundation data and ProgramModel types")
+    func theDocumentBoundaryIsPackageTypes() throws {
+        let encode: (Program) throws(ProgramDocumentError) -> Data = ProgramDocument.encode
+        let decode: (Data) throws(ProgramDocumentError) -> Program = ProgramDocument.decode
+        let parse: (String) -> Result<Formula, FormulaLiteralError> = FormulaLiteral.parse
+
+        let program = Program(name: "bound", scenes: [Scene(objects: [Object(scripts: [
+            Script(bricks: [.moveNSteps(.number(7))])
+        ])])])
+        #expect(try decode(encode(program)) == program)
+        #expect(parse("7") == .success(.number(7)))
+        #expect(parse("") == .failure(.empty))
+    }
 }
