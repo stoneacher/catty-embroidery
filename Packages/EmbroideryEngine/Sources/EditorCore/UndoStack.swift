@@ -18,8 +18,13 @@ import ProgramModel
 /// **Coalescing is an explicit session, never a timer**, so this is a pure value
 /// with no clock. `beginEdit(of:)` mints a key; an applied edit folds into the
 /// top entry iff its key is the open session's *and* the top entry's. Anything
-/// else — a `nil` key, a closed or superseded key, a top entry changed by undo,
-/// redo or an un-keyed edit — pushes.
+/// else — a `nil` key, a closed or superseded key, a top entry exposed by undo
+/// or pushed by redo (both are sealed), or one recorded by an un-keyed edit —
+/// pushes. A history transition is therefore a coalescing boundary, but not a
+/// dismissal: undo and redo leave the session open.
+///
+/// **Equality is whole-history** — every snapshot plus the key serial — which
+/// is what the tests want and O(history). Observe `current`, not the stack.
 ///
 /// Never persisted (ADR-006).
 public struct UndoStack: Equatable, Sendable {
@@ -65,7 +70,12 @@ public struct UndoStack: Equatable, Sendable {
     /// Records nothing when the action is rejected (the reason ADR-033 made
     /// `apply` return a result) or when it applied but changed nothing — a
     /// dead undo tap, and clearing redo for it would destroy history over an
-    /// edit that did not happen.
+    /// edit that did not happen. For the same reason a fold that returns the
+    /// session to its entry's `before` (stepper 10 → 11 → 10) drops the entry.
+    ///
+    /// The key is trusted: the stack checks that it names the open session,
+    /// not that `action` touches `key.address`. Only the parameter sheet that
+    /// opened the session holds its key (ADR-036).
     @discardableResult
     public mutating func apply(_ action: EditAction, coalescing key: CoalescingKey? = nil) -> EditResult {
         let result = EditorCore.apply(action, to: current)
@@ -74,6 +84,8 @@ public struct UndoStack: Equatable, Sendable {
         let coalesces = key != nil && key == openSession && undoEntries.last?.key == key
         if !coalesces {
             push(Entry(before: current, key: key))
+        } else if undoEntries.last?.before == program {
+            undoEntries.removeLast()
         }
         redoPrograms.removeAll()
         current = program
@@ -81,9 +93,16 @@ public struct UndoStack: Equatable, Sendable {
     }
 
     /// Step back one entry; `nil`, with nothing changed, when there is none.
+    ///
+    /// The entry this exposes is **sealed**: without that, `[K, nil, K]` undone
+    /// twice left the first K entry on top with K still open, and the next
+    /// keystroke folded into history the user had just stepped back through.
     @discardableResult
     public mutating func undo() -> Program? {
         guard let entry = undoEntries.popLast() else { return nil }
+        if !undoEntries.isEmpty {
+            undoEntries[undoEntries.count - 1].key = nil
+        }
         redoPrograms.append(current)
         current = entry.before
         return current
@@ -134,6 +153,9 @@ public struct UndoStack: Equatable, Sendable {
         openSession = nil
     }
 
+    /// Evicts only when an edit pushes. A redo can never overflow:
+    /// `undoDepth + redoDepth <= capacity` holds, because only undo feeds redo
+    /// and every push from an edit clears it.
     private mutating func push(_ entry: Entry) {
         undoEntries.append(entry)
         if undoEntries.count > Self.capacity {
@@ -145,6 +167,6 @@ public struct UndoStack: Equatable, Sendable {
     /// under (`nil` for an un-keyed or sealed entry).
     private struct Entry: Equatable, Sendable {
         let before: Program
-        let key: CoalescingKey?
+        var key: CoalescingKey?
     }
 }

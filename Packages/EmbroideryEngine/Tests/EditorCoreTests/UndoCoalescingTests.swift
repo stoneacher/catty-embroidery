@@ -77,6 +77,7 @@ struct UndoCoalescingTests {
 
         // The session is still open, but the top entry is the nil-keyed one, so
         // the next keyed edit cannot fold into it.
+        #expect(stack.openSession == key)
         stack.apply(Fixtures.step(to: 2), coalescing: key)
         #expect(stack.undoDepth == 4)
 
@@ -134,10 +135,18 @@ struct UndoCoalescingTests {
         var stack = UndoStack(program: Fixtures.undoSeed)
         let sheetA = stack.beginEdit(of: Fixtures.stepperAddress)
         stack.apply(Fixtures.step(to: 1), coalescing: sheetA)
-        _ = stack.beginEdit(of: Fixtures.stepperAddress)
+        let sheetB = stack.beginEdit(of: Fixtures.stepperAddress)
 
         stack.apply(Fixtures.step(to: 2), coalescing: sheetA)
         #expect(stack.undoDepth == 2)
+
+        // …and a late keystroke from A must not close B's session either: B's
+        // edits still fold — one entry for B, not two.
+        #expect(stack.openSession == sheetB)
+        stack.apply(Fixtures.step(to: 3), coalescing: sheetB)
+        stack.apply(Fixtures.step(to: 4), coalescing: sheetB)
+        #expect(stack.undoDepth == 3)
+        #expect(stack.undo() == Fixtures.stepped(to: 2))
     }
 
     /// The view model's teardown path, where no key is at hand: the acceptance
@@ -171,11 +180,36 @@ struct UndoCoalescingTests {
             stack.apply(Fixtures.step(to: Double(value)), coalescing: key)
         }
         #expect(stack.undo() == Fixtures.undoSeed)
+        // Undo is a boundary, not a dismissal: the sheet is still up, so the
+        // session stays open and later keystrokes still coalesce.
+        #expect(stack.openSession == key)
 
         stack.apply(Fixtures.step(to: 4), coalescing: key)
-        #expect(stack.current == Fixtures.stepped(to: 4))
+        stack.apply(Fixtures.step(to: 5), coalescing: key)
+        #expect(stack.current == Fixtures.stepped(to: 5))
         #expect(stack.undoDepth == 1)
         #expect(!stack.canRedo)
+        #expect(stack.undo() == Fixtures.undoSeed)
+    }
+
+    /// The case the first version got wrong (swift-code-reviewer): with
+    /// `[K, nil, K]` on the stack, two undos expose the *first* K entry while K
+    /// is still open, and the next keystroke folded into it — so "a history
+    /// transition is a coalescing boundary" was false. Undo now seals the entry
+    /// it exposes.
+    @Test("undo seals the entry it exposes, even one recorded under the open key")
+    func undoSealsTheExposedEntry() {
+        var stack = UndoStack(program: Fixtures.undoSeed)
+        let key = stack.beginEdit(of: Fixtures.stepperAddress)
+        stack.apply(Fixtures.step(to: 1), coalescing: key)
+        stack.apply(.renameProgram("x"))
+        stack.apply(Fixtures.step(to: 2), coalescing: key)
+        #expect(stack.undo() == Fixtures.stepped(to: 1, name: "x"))
+        #expect(stack.undo() == Fixtures.stepped(to: 1))
+
+        stack.apply(Fixtures.step(to: 3), coalescing: key)
+        #expect(stack.undoDepth == 2)
+        #expect(stack.undo() == Fixtures.stepped(to: 1))
         #expect(stack.undo() == Fixtures.undoSeed)
     }
 
@@ -188,10 +222,60 @@ struct UndoCoalescingTests {
         stack.apply(Fixtures.step(to: 1), coalescing: key)
         stack.undo()
         #expect(stack.redo() == Fixtures.stepped(to: 1))
+        #expect(stack.openSession == key)
 
         stack.apply(Fixtures.step(to: 2), coalescing: key)
         #expect(stack.undoDepth == 2)
         #expect(stack.undo() == Fixtures.stepped(to: 1))
+    }
+
+    // MARK: A session that returns to where it started
+
+    /// Stepper 10 → 11 → 10: every edit changes `current`, so the no-op guard
+    /// passes each time, yet the session as a whole changed nothing. Its entry
+    /// is dropped at the fold that makes it a no-op, rather than left as an undo
+    /// tap that visibly does nothing (ADR-036).
+    @Test("a session that nets to zero leaves no entry, and stays open")
+    func netZeroSessionLeavesNoEntry() {
+        var stack = UndoStack(program: Fixtures.undoSeed)
+        stack.apply(.renameProgram("pre"))
+        let key = stack.beginEdit(of: Fixtures.stepperAddress)
+
+        stack.apply(Fixtures.step(to: 11), coalescing: key)
+        stack.apply(Fixtures.step(to: 10), coalescing: key)
+        #expect(stack.current == Fixtures.named("pre"))
+        #expect(stack.undoDepth == 1)
+        #expect(stack.openSession == key)
+
+        // Carrying on in the same session records afresh from here.
+        stack.apply(Fixtures.step(to: 12), coalescing: key)
+        stack.apply(Fixtures.step(to: 13), coalescing: key)
+        #expect(stack.undoDepth == 2)
+        #expect(stack.undo() == Fixtures.named("pre"))
+        #expect(stack.undo() == Fixtures.undoSeed)
+    }
+
+    // MARK: The bound under a session
+
+    /// At capacity, folded edits must neither grow the stack nor evict: the
+    /// oldest surviving entry is still reachable at the bottom.
+    @Test("folding at capacity neither grows the stack nor evicts")
+    func foldingAtCapacityDoesNotEvict() {
+        var stack = UndoStack(program: Fixtures.undoSeed)
+        for index in 1 ... 49 {
+            stack.apply(.renameProgram("p\(index)"))
+        }
+        let key = stack.beginEdit(of: Fixtures.stepperAddress)
+        for value in 1 ... 5 {
+            stack.apply(Fixtures.step(to: Double(value)), coalescing: key)
+        }
+        #expect(stack.undoDepth == UndoStack.capacity)
+
+        var last: Program?
+        while let program = stack.undo() {
+            last = program
+        }
+        #expect(last == Fixtures.undoSeed)
     }
 
     // MARK: Reset keeps minting fresh keys

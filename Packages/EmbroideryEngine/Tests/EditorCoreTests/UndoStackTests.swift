@@ -45,6 +45,18 @@ struct UndoStackTests {
         // One step left in each direction — not zero, not two.
         #expect(stack.undoDepth == 2)
         #expect(stack.redoDepth == 1)
+
+        // The entry redo pushed must restore what redo replaced: undo straight
+        // after a redo lands back on p1, and the whole history still walks down
+        // to the seed and back up to p3 (swift-code-reviewer: a redo that pushed
+        // its *own* result survived every assertion above).
+        #expect(stack.undo() == programs[1])
+        #expect(stack.undo() == programs[0])
+        #expect(stack.undo() == nil)
+        #expect(stack.redo() == programs[1])
+        #expect(stack.redo() == programs[2])
+        #expect(stack.redo() == programs[3])
+        #expect(stack.redo() == nil)
     }
 
     // MARK: 2 — the bound is structural, and it evicts the *oldest*
