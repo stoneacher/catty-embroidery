@@ -139,6 +139,42 @@ enum EditorCoreFixtures {
         ]
     )
 
+    // MARK: Undo (US-403)
+
+    /// The undo suites' seed, and the base of every program they compare.
+    static let undoSeed = named("p0")
+
+    /// `undoSeed` renamed — what `.renameProgram(name)` applied to it yields.
+    ///
+    /// The undo suites need **many pairwise-distinct programs**, and a rename is
+    /// the cheapest action that can never be rejected (US-402 pins that), so a
+    /// run of `"p1"`, `"p2"`, … is guaranteed to apply and guaranteed distinct.
+    /// Distinctness is what makes an undo assertion discriminating: a stack that
+    /// restores the wrong snapshot lands on a program that differs, not on a
+    /// look-alike.
+    static func named(_ name: String) -> Program {
+        var program = propertySeed
+        program.name = name
+        return program
+    }
+
+    /// Where the undo suites' parameter edits land: `moveNSteps(10)` at index 2
+    /// of `propertySeed`'s only script — the shape of a US-410 stepper session.
+    static let stepperAddress = BrickAddress(brickIndex: 2)
+
+    /// The stepper edit that sets that brick's value to `value`.
+    static func step(to value: Double) -> EditAction {
+        .replaceBrick(at: stepperAddress, with: .moveNSteps(.number(value)))
+    }
+
+    /// `undoSeed` with the stepper brick set to `value` — `step(to:)`'s result.
+    static func stepped(to value: Double, name: String = "p0") -> Program {
+        var program = named(name)
+        program.scenes[0].objects[0].scripts[0].bricks[stepperAddress.brickIndex] =
+            .moveNSteps(.number(value))
+        return program
+    }
+
     // MARK: The generator
 
     /// A small balanced program for the property test — one scene, one object,
