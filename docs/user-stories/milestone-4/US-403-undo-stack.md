@@ -23,6 +23,14 @@ That reasoning is **not** asserted as a timing or memory bound. US-309 is the pr
 - [ ] A **rejected** `EditResult` records nothing. Asserted, because it is the reason ADR-033 made `apply` return a result instead of throwing.
 - [ ] `reset()` clears both directions, for the whole-program replacements US-405 introduces (pick a sample, load from disk, new program).
 
+**Amended 2026-09-25 at implementation planning, by Sebastian (after a `swift-architect` pass; recorded in ADR-036).** Three changes to the criteria above, each on purpose:
+
+- The stack **owns the working program**, and its public verb is `apply(_ action:, coalescing:) -> EditResult`, which runs `EditorCore.apply` on `current`. `record(before:key:)` is not public. That removes the second copy of the program a view model would otherwise keep in step, and it means a result computed from a stale base cannot be recorded. Tests use real actions (renames for distinct programs, a genuinely rejected action for item 8).
+- **`endEdit(_ key:)` closes only the session it names**, and **`abandonEdit()`** is the key-less "clear a session without ending a well-formed one". A key-less `endEdit()` arriving late from a torn-down sheet A would close sheet B's session during a container swap. `beginEdit` supersedes, and `reset(to:)` clears the session while the key serial keeps counting.
+- **An applied edit that leaves the program unchanged records nothing** and keeps redo.
+
+Added tests beyond the ten: a late `endEdit` from a superseded key; a superseded key never coalesces and never closes the open session; `abandonEdit`; session → undo → edit starts a new entry; undo seals the entry it exposes; redo seals its entry; a net-zero session leaves no entry; folding at capacity does not evict; the serial survives `reset`; `reset` closes the session; a no-op records nothing; `Sendable`; the per-file no-Foundation scan; and the boundary bindings. The two sealing and net-zero rules came out of `swift-code-reviewer`'s pass, not the plan.
+
 ## Test-first plan
 
 1. Push three edits, undo twice, redo once — the resulting `Program` equals the expected whole value at each step.
