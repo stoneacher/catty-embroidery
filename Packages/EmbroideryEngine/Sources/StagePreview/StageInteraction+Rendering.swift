@@ -2,8 +2,10 @@
 ///
 /// In its own file for the reason `StageInteraction+Magnification.swift` gives — the main file
 /// sits at SwiftLint's 400-line limit under `--strict`, and what can move is what only *reads*.
-/// Everything that writes `settled` stays in `StageInteraction.swift`, whose `private(set)` is
-/// what lets one file own the invariant "settled is not written while fingers are down".
+/// Everything that writes `settled` stays in `StageInteraction.swift`, whose `private(set)` keeps
+/// its writers in one file. That is *not* the invariant "settled is not written while fingers
+/// are down": none of those writers is told whether a manipulation is live, and ADR-028's US-314
+/// amendment records the double tap and accessibility actions that can still reach one.
 /// `transform(with:…)` stays there too: it calls the private `moved(by:…)`.
 public extension StageInteraction {
     /// The committed transform, as the current phase has it.

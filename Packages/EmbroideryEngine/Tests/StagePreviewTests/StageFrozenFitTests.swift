@@ -101,6 +101,33 @@ struct StageFrozenFitTests {
         #expect(!after.canUseRaster)
     }
 
+    /// **The clamp reads the frozen fit too, not only the baseline** — the half of the design
+    /// the other tests cannot see, because they all start from `settled == nil` and pinch far
+    /// from either bound. Zoomed to scale 1 over a tiny fit (0.01), the floor is 0.01, so a
+    /// pinch to 0.02 is honoured; if the fit grows to 0.05 mid-pinch, a clamp against the live
+    /// fit raises the floor to 0.05 while the tracker still holds 0.02, and the next rebase
+    /// jumps. Found as a blind spot by `/codex-review` round 1.
+    @Test("the pinch clamp holds while the fit changes under a zoomed stage")
+    func thePinchClampHoldsUnderAZoomedStage() {
+        let tiny = StageTransform(scale: 0.01)
+        let grown = StageTransform(scale: 0.05)
+        var interaction = StageInteraction()
+        interaction.commit(StageGesture(magnification: 100), fitting: tiny, in: Self.viewport)
+        #expect(interaction.settled?.scale == 1)
+
+        var manipulation = StageManipulation()
+        interaction.beginManipulating(joining: manipulation, fitting: tiny)
+        manipulation.pinchBegan(
+            scale: 1, centroid: Self.grab, within: interaction.magnificationLimits(fitting: tiny)
+        )
+        manipulation.pinchChanged(to: 0.02)
+
+        let before = Self.frame(interaction, manipulation, at: tiny)
+        let after = Self.frame(interaction, manipulation, at: grown)
+        #expect(before.current.scale == 0.02)
+        #expect(after == before)
+    }
+
     // MARK: - Test-first plan 3 and 4: what the commit keeps
 
     /// **Why the cheap fix is ruled out.** Pinning `settled` at gesture start would freeze the
