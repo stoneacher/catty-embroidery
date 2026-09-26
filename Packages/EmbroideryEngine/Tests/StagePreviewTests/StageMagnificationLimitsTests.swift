@@ -76,7 +76,7 @@ struct StageMagnificationLimitsTests {
         _ = try #require(started)
         let visible = interaction.baseline(fitting: Self.fit, settlingAt: 0.25)
 
-        interaction.beginManipulating(fitting: Self.fit, settlingAt: 0.25)
+        interaction.beginManipulating(joining: StageManipulation(), fitting: Self.fit, settlingAt: 0.25)
 
         #expect(!interaction.isSettling)
         #expect(interaction.baseline(fitting: Self.fit) == visible)
@@ -169,8 +169,8 @@ struct StageMagnificationLimitsTests {
     func beginningAManipulationWithNothingAnimatingChangesNothing() {
         var interaction = StageInteraction()
 
-        interaction.beginManipulating(fitting: Self.fit)
-        interaction.beginManipulating(fitting: Self.fit)
+        interaction.beginManipulating(joining: StageManipulation(), fitting: Self.fit)
+        interaction.beginManipulating(joining: StageManipulation(), fitting: Self.fit)
 
         #expect(interaction.isFollowingFit)
         #expect(!interaction.isSettling)

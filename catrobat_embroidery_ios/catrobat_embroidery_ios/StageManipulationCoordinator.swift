@@ -207,8 +207,11 @@ extension StageManipulationCatcher {
             // Idempotent and inert when nothing is animating, so every channel's `.began` may
             // call it without tracking which was first. It is what makes the baseline something
             // that cannot move under the fingers — the assumption the tracker's rebase makes.
+            guard let manipulation else { return }
             interaction?.wrappedValue.beginManipulating(
-                fitting: snapshot.fitted, settlingAt: snapshot.settlingProgress
+                joining: manipulation.wrappedValue,
+                fitting: snapshot.fitted,
+                settlingAt: snapshot.settlingProgress
             )
         }
 

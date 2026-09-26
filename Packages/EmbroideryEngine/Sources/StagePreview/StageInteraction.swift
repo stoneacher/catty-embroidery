@@ -195,9 +195,16 @@ public struct StageInteraction: Equatable, Sendable {
     ///
     /// Idempotent, and inert when nothing is animating, so a coordinator may call it from every
     /// recogniser's `.began` without tracking which one was first.
-    public mutating func beginManipulating(fitting _: StageTransform, settlingAt progress: Double = 1) {
+    public mutating func beginManipulating(
+        joining _: StageManipulation,
+        fitting _: StageTransform,
+        settlingAt progress: Double = 1
+    ) {
         interrupt(settlingAt: progress)
     }
+
+    /// US-314 red phase: the signature only.
+    public mutating func cancelManipulating() {}
 
     /// One activation of a directional pan accessibility action.
     ///
