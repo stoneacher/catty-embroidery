@@ -3,8 +3,11 @@
 /// In its own file because `StageInteraction.swift` crossed SwiftLint's 400-line limit under
 /// `--strict` — and this is the piece that can move: it only *reads*. The toggle and the
 /// directional pan would be the more natural extraction, but both write `settled`, whose setter
-/// is `private(set)` so that one file owns the invariant "settled is not written while fingers
-/// are down"; moving them would mean widening it to `internal(set)` and giving that away.
+/// is `private(set)` so that its writers stay in one file; moving them would mean widening it to
+/// `internal(set)`. That locality is **not** the invariant "settled is not written while fingers
+/// are down" — no writer is told whether a manipulation is live, and ADR-028's US-314 amendment
+/// records the double tap and accessibility actions that can still reach one (`/codex-review`
+/// round 2 on US-314).
 public extension StageInteraction {
     /// What a live pinch may multiply the baseline by, as a ratio, before
     /// `StageTransform.pinched` starts clamping.

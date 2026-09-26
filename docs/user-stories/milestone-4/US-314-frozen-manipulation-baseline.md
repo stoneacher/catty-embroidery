@@ -3,6 +3,8 @@
 **Epic**: E4 Stage & preview | **Estimate**: ~3 h | **Depends on**: — (M3 `StagePreview`, shipped)
 **Discovered**: 2026-09-14, `/codex-review` round 2 on US-313a. **Scheduled into M4**: 2026-09-19.
 
+**Status**: Done — 2026-09-26, PR #55. Implemented test-first: signature-only stubs in the `[red]` commit, so the reds were behavioural. Reviewed by `swift-code-reviewer`: 16 mutants, 2 survivors, both now killed. Then two Codex rounds, Low → Low, the second a comment-only fix, which ends the loop on condition 1. AC1 was amended at planning (approved by Sebastian; see the note under the criteria). **One human check remains open, on a device** (the simulator cannot pinch): replay a design that grows past the hoop and pinch while it stitches. The grabbed point should stay under the fingers, with no shift at lift.
+
 **Story**: As a user, I want the stage to stay still under my fingers while I pinch, even though the design is still being stitched, so the point I grabbed is the point I am still holding.
 
 ## Problem
@@ -27,13 +29,13 @@ So the story needs **app wiring plus integration coverage**, and its position mo
 
 ## Acceptance criteria
 
-- [ ] A **`manipulationBaseline`** is captured at the **first channel's begin** and cleared at commit or cancel, and is read by `baseline`, `rendering`, `transform` and `commit` while a manipulation is live. Where it lives is decided by which type actually receives the fit: `StageInteraction.beginManipulating(fitting:)` does and `StageManipulation`'s begin methods do not.
-- [ ] **The cancellation path clears it.** Today `StageManipulationCoordinator.cancel()` calls only `manipulation.cancelled()`; whatever owns the baseline must be reached on cancel too, and the wiring is part of this story rather than assumed.
-- [ ] An **integration test at the app layer** covers begin → cancel → render at a changed fit. The package tests below cannot see the coordinator, and the coordinator is where the gap is.
-- [ ] The baseline is distinct from `settled`. **Pinning `settled` at gesture start instead is explicitly rejected**: it would take the stage permanently off the fit and contradict ADR-028's rule that an identity gesture must not do that. An identity gesture must still leave `settled == nil` when it started `nil`.
-- [ ] Across two frames of one manipulation **at two different fits**, the grabbed stage point maps to the same view point, and `bake` is unchanged.
-- [ ] ADR-028 gains a dated amendment recording that "the baseline cannot move while fingers are down" is now **enforced rather than assumed**, and US-313a's narrowed AC10 wording is reconciled with it (ADR-032 invariant 3 — the claim exists in more than one place).
-- [ ] No regression in the M3 manipulation suite, which is the real risk: this touches the type US-313a and US-313b both built on.
+- [x] A **`manipulationBaseline`** is captured at the **first channel's begin** and cleared at commit or cancel, and is read by `baseline`, `rendering`, `transform` and `commit` while a manipulation is live. Where it lives is decided by which type actually receives the fit: `StageInteraction.beginManipulating(fitting:)` does and `StageManipulation`'s begin methods do not.
+- [x] **The cancellation path clears it.** Today `StageManipulationCoordinator.cancel()` calls only `manipulation.cancelled()`; whatever owns the baseline must be reached on cancel too, and the wiring is part of this story rather than assumed.
+- [x] An **integration test at the app layer** covers begin → cancel → render at a changed fit. The package tests below cannot see the coordinator, and the coordinator is where the gap is.
+- [x] The baseline is distinct from `settled`. **Pinning `settled` at gesture start instead is explicitly rejected**: it would take the stage permanently off the fit and contradict ADR-028's rule that an identity gesture must not do that. An identity gesture must still leave `settled == nil` when it started `nil`.
+- [x] Across two frames of one manipulation **at two different fits**, the grabbed stage point maps to the same view point, and `bake` is unchanged.
+- [x] ADR-028 gains a dated amendment recording that "the baseline cannot move while fingers are down" is now **enforced rather than assumed**, and US-313a's narrowed AC10 wording is reconciled with it (ADR-032 invariant 3 — the claim exists in more than one place).
+- [x] No regression in the M3 manipulation suite, which is the real risk: this touches the type US-313a and US-313b both built on.
 
 **AC1 amended 2026-09-26, approved by Sebastian at planning.** Three changes. What is frozen is the **fit** (`StageInteraction.manipulationFit`), not the baseline: the zoom bounds read the fit too, so a frozen baseline alone still lets the pinch clamp drift away from the limits `StageManipulation` holds. "The first channel's begin" is decided by **the joined tracker not being live** (`beginManipulating(joining:fitting:settlingAt:)`), not by nothing being held. `StageInteraction` outlives the view-local tracker, so a teardown that drops the tracker without a cancel would otherwise freeze every later manipulation to a stale fit. And the frozen fit is **honoured only while a gesture is present**, so a stale capture cannot reach an at-rest frame. Recorded in ADR-028's US-314 amendment. One wording in AC1 is **not met literally, by design**: the public `baseline(fitting:)` does not read the frozen fit. Its only mid-gesture caller is `transform`, which passes the frozen fit in, and giving the public method a hidden input would make it answer differently from its signature. The consequence the Problem section predicts for a missing cancel wire ("the stage stays frozen to a gesture that is over") **does not arise** under capture by liveness. The wire is still made, and is observable only through `Equatable` (measured by mutation at review).
 
