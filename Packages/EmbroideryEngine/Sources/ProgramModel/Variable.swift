@@ -3,9 +3,11 @@
 /// enforced by the editor/interpreter, not the model.
 ///
 /// Non-finite values: the US-202 formula semantics let ±∞ reach a variable at
-/// runtime, and the default `JSONEncoder` throws on non-finite doubles — the M5
-/// persistence layer must pin a policy (non-conforming-float strategy or clamp)
-/// before programs are saved.
+/// runtime, and the default `JSONEncoder` throws on non-finite doubles. ADR-037
+/// (US-404) pins the policy: no float strategy and no clamp. The runtime value
+/// lives in the interpreter's own stores and never reaches this model (executed
+/// by `RuntimeVariableIsolationTests`), so any future runtime → model write-back
+/// must pass the same finite check the number pad does, or be refused.
 public struct Variable: Sendable, Equatable, Codable {
     public var name: String
     public var value: Double

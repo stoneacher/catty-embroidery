@@ -69,7 +69,14 @@ let package = Package(
             resources: [.copy("Resources")]
         ),
         .testTarget(name: "ProgramModelTests", dependencies: ["ProgramModel"]),
-        .testTarget(name: "EditorCoreTests", dependencies: ["EditorCore", "ProgramModel"]),
+        // US-404 widens the *test* target only: the program document's suites
+        // round-trip the shipped samples and run the interpreter to prove a
+        // runtime ±∞ never reaches the document. `EditorCore` itself still
+        // depends on `ProgramModel` alone (`EditorCoreTargetIsolationTests`).
+        .testTarget(
+            name: "EditorCoreTests",
+            dependencies: ["EditorCore", "ProgramModel", "Samples", "Interpreter", "EmbroideryEngine"]
+        ),
         .testTarget(
             name: "InterpreterTests",
             dependencies: ["Interpreter", "ProgramModel", "EmbroideryEngine"],
