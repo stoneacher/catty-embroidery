@@ -35,6 +35,8 @@ So the story needs **app wiring plus integration coverage**, and its position mo
 - [ ] ADR-028 gains a dated amendment recording that "the baseline cannot move while fingers are down" is now **enforced rather than assumed**, and US-313a's narrowed AC10 wording is reconciled with it (ADR-032 invariant 3 — the claim exists in more than one place).
 - [ ] No regression in the M3 manipulation suite, which is the real risk: this touches the type US-313a and US-313b both built on.
 
+**AC1 amended 2026-09-26, approved by Sebastian at planning.** Three changes. What is frozen is the **fit** (`StageInteraction.manipulationFit`), not the baseline: the zoom bounds read the fit too, so a frozen baseline alone still lets the pinch clamp drift away from the limits `StageManipulation` holds. "The first channel's begin" is decided by **the joined tracker not being live** (`beginManipulating(joining:fitting:settlingAt:)`), not by nothing being held. `StageInteraction` outlives the view-local tracker, so a teardown that drops the tracker without a cancel would otherwise freeze every later manipulation to a stale fit. And the frozen fit is **honoured only while a gesture is present**, so a stale capture cannot reach an at-rest frame. Recorded in ADR-028's US-314 amendment.
+
 ## Test-first plan
 
 1. **The test every existing test misses**: drive two *different* fits through one manipulation and assert the grabbed point's view position is unchanged. Every current test passes the same `Self.fit` every frame, which is exactly why this defect survived two stories and six review rounds.
@@ -43,6 +45,8 @@ So the story needs **app wiring plus integration coverage**, and its position mo
 4. A real zoom during a changing fit commits a `settled` derived from the **frozen** baseline, not from the fit at commit time.
 5. The baseline is cleared on cancel as well as on commit, so a cancelled manipulation followed by a fit change renders at the new fit.
 6. Two channels beginning in either order capture the baseline **once**, at the first — the ordering test, since a pan and a pinch can begin in either order (ADR-031).
+7. *(Added at planning, 2026-09-26.)* A manipulation lost without a cancel or a commit neither freezes an at-rest frame nor the next manipulation, which recaptures because the tracker it joins is not live.
+8. *(Added at planning.)* `followFit()` clears the frozen fit — a new design arrives fitted.
 
 ## References
 

@@ -106,7 +106,8 @@ public struct StageManipulation: Equatable, Sendable {
     /// The magnification range the transform will actually honour, as a ratio of the baseline.
     ///
     /// Set at `pinchBegan` and held for the manipulation, because the baseline cannot move while
-    /// fingers are down — that is ADR-030 §7's invariant, read from the other side.
+    /// fingers are down. That is ADR-028's claim, enforced since US-314 by
+    /// `StageInteraction`'s frozen fit, which the limits are computed against.
     private var limits: ClosedRange<Double> = unlimitedMagnification
 
     /// Limits wide enough never to bite, for callers with no bounds to impose.
