@@ -29,6 +29,20 @@ public struct StageInteraction: Equatable, Sendable {
     /// design framed for a viewport that no longer exists.
     public private(set) var settled: StageTransform?
 
+    /// The fit the live manipulation is measured against: captured when its first channel
+    /// begins, cleared at commit, cancel and `followFit()` (US-314).
+    ///
+    /// **The objection to a stored fit above does not apply, because of how short this one
+    /// lives.** A fit is a per-frame parameter, so while the stage follows it a design growing
+    /// past the hoop mid-pinch moved the drawn transform, the bake key and the pinch's clamp
+    /// under the fingers. Freezing the *fit* rather than the baseline is deliberate: with
+    /// `settled` non-`nil` the baseline cannot move, but the zoom bounds still read the fit, and
+    /// `StageManipulation` holds limits computed from it at `pinchBegan`. It is honoured only
+    /// while a gesture is present, so a manipulation the view lost without a cancel cannot
+    /// freeze an at-rest frame; and the next manipulation recaptures, because it joins a tracker
+    /// that is not live.
+    private(set) var manipulationFit: StageTransform?
+
     public private(set) var phase: Phase = .idle
 
     /// Hands out the next animation's identity. Monotonic, so an id is never reused and a
@@ -73,6 +87,7 @@ public struct StageInteraction: Equatable, Sendable {
         in viewport: ViewSize,
         settlingAt progress: Double = 1
     ) -> StageTransform {
+        let fit = self.fit(for: gesture, current: fit)
         let committed = baseline(fitting: fit, settlingAt: progress)
         guard let gesture, !gesture.isIdentity else { return committed }
         return moved(by: gesture, from: committed, fitting: fit, in: viewport)
@@ -99,6 +114,12 @@ public struct StageInteraction: Equatable, Sendable {
         in viewport: ViewSize,
         settlingAt progress: Double = 1
     ) {
+        // The fit the frames were drawn at, not the one at finger-lift: live and committed are
+        // the same number by construction (ADR-028), and committing against a fit that moved
+        // mid-gesture would jump the stage as the fingers leave.
+        let fit = manipulationFit ?? fit
+        manipulationFit = nil
+
         // A gesture always ends any animation — at what is on screen, not at where the
         // animation was going.
         interrupt(settlingAt: progress)
@@ -193,18 +214,30 @@ public struct StageInteraction: Equatable, Sendable {
     /// something that cannot move under a manipulation, which is what the rebase derivation
     /// assumes.
     ///
-    /// Idempotent, and inert when nothing is animating, so a coordinator may call it from every
-    /// recogniser's `.began` without tracking which one was first.
+    /// It also freezes the fit for the manipulation (US-314) — **captured when the tracker it
+    /// joins is not yet live**, which is exactly "this is the first channel's begin" asked of
+    /// the lifecycle rather than inferred. Not "when nothing is captured": a manipulation the
+    /// view dropped without a cancel would then freeze every later one to a stale fit. So a
+    /// coordinator may still call this from every recogniser's `.began` without tracking which
+    /// one was first, as long as it calls it *before* that channel begins.
+    /// - Parameter manipulation: the tracker the beginning channel is about to join. Required,
+    ///   with no default — `finish(in:touchesRemain:)`'s precedent: a default would silently
+    ///   select one branch.
     public mutating func beginManipulating(
-        joining _: StageManipulation,
-        fitting _: StageTransform,
+        joining manipulation: StageManipulation,
+        fitting fit: StageTransform,
         settlingAt progress: Double = 1
     ) {
         interrupt(settlingAt: progress)
+        guard !manipulation.isLive else { return }
+        manipulationFit = fit
     }
 
-    /// US-314 red phase: the signature only.
-    public mutating func cancelManipulating() {}
+    /// The system took the touches away: release the frozen fit, so the next frame is drawn at
+    /// the fit on screen now. Nothing else changes — a cancel commits nothing.
+    public mutating func cancelManipulating() {
+        manipulationFit = nil
+    }
 
     /// One activation of a directional pan accessibility action.
     ///
@@ -314,6 +347,7 @@ public struct StageInteraction: Equatable, Sendable {
     public mutating func followFit() {
         phase = .idle
         settled = nil
+        manipulationFit = nil
     }
 
     private func moved(

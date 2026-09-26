@@ -69,10 +69,17 @@ public extension StageInteraction {
         // they caught this.
         guard gesture != nil || isSettling else { return .settled(baseline(fitting: fit)) }
         return .live(
-            bake: settled ?? fit,
+            bake: settled ?? self.fit(for: gesture, current: fit),
             current: transform(
                 with: gesture, fitting: fit, in: viewport, settlingAt: progress
             )
         )
+    }
+
+    /// The fit a frame is drawn against: the frozen one while a gesture is present, the one on
+    /// screen otherwise. The gesture check is what keeps a frozen fit that outlived its
+    /// manipulation — a view torn down without a cancel — away from an at-rest frame.
+    internal func fit(for gesture: StageGesture?, current fit: StageTransform) -> StageTransform {
+        gesture == nil ? fit : manipulationFit ?? fit
     }
 }

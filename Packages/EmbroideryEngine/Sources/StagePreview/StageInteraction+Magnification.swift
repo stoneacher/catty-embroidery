@@ -31,6 +31,10 @@ public extension StageInteraction {
         fitting fit: StageTransform,
         settlingAt progress: Double = 1
     ) -> ClosedRange<Double> {
+        // The frozen fit, unconditionally: the coordinator asks only after `beginManipulating`,
+        // which has just captured or kept it — and a pinch re-beginning mid-manipulation must be
+        // clamped against the fit its frames are drawn at (US-314).
+        let fit = manipulationFit ?? fit
         let scale = baseline(fitting: fit, settlingAt: progress).scale
         guard scale > 0, scale.isFinite else { return StageManipulation.unlimitedMagnification }
 
@@ -55,6 +59,9 @@ public extension StageInteraction {
         fitting fit: StageTransform,
         in viewport: ViewSize
     ) -> Double {
+        // Divides by the fit on screen, not the frozen one, deliberately: after the commit the
+        // spoken value is `settled.scale / fit.scale`, so dividing by the frozen fit mid-gesture
+        // would make the number jump at finger-lift.
         transform(with: gesture, fitting: fit, in: viewport).scale / fit.scale
     }
 }

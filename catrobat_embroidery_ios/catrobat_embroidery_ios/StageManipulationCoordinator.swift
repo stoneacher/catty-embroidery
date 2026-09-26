@@ -204,9 +204,11 @@ extension StageManipulationCatcher {
         }
 
         private func beginManipulating() {
-            // Idempotent and inert when nothing is animating, so every channel's `.began` may
-            // call it without tracking which was first. It is what makes the baseline something
-            // that cannot move under the fingers — the assumption the tracker's rebase makes.
+            // Every channel's `.began` may call it without tracking which was first: it ends any
+            // fit animation, and freezes the fit only when the tracker is not yet live. So it
+            // must run **before** the channel begins — after, the tracker already looks live and
+            // the first channel never captures. It is what makes the baseline something that
+            // cannot move under the fingers — the assumption the tracker's rebase makes (US-314).
             guard let manipulation else { return }
             interaction?.wrappedValue.beginManipulating(
                 joining: manipulation.wrappedValue,
@@ -233,6 +235,9 @@ extension StageManipulationCatcher {
 
         private func cancel() {
             manipulation?.wrappedValue.cancelled()
+            // The frozen fit is the interaction's, not the tracker's, so resetting the tracker
+            // does not release it (US-314).
+            interaction?.wrappedValue.cancelManipulating()
             isSuppressed = true
         }
 
