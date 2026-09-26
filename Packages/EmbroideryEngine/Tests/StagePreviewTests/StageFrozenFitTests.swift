@@ -153,11 +153,36 @@ struct StageFrozenFitTests {
         #expect(interaction == reference, "the commit left a frozen fit behind")
     }
 
+    /// **The spoken zoom divides by the fit on screen, not the frozen one**, so the number does
+    /// not jump at finger-lift: a 2× pinch begun at scale 1 and still held at a 0.5 fit reads
+    /// 400 % both before and after the commit. Dividing by the frozen fit would read 200 % and
+    /// then 400 % (`swift-code-reviewer`, mutant k).
+    @Test("the spoken zoom does not jump at finger-lift when the fit changed")
+    func theSpokenZoomDoesNotJumpAtFingerLift() throws {
+        var interaction = StageInteraction()
+        var manipulation = StageManipulation()
+        Self.grabbedPinch(&interaction, &manipulation)
+        let live = interaction.magnification(
+            gesture: manipulation.gesture(in: Self.viewport), fitting: Self.fitB, in: Self.viewport
+        )
+
+        let gesture = try Self.finished(&manipulation)
+        interaction.commit(gesture, fitting: Self.fitB, in: Self.viewport)
+
+        #expect(live == 4)
+        #expect(
+            interaction.magnification(gesture: nil, fitting: Self.fitB, in: Self.viewport) == live
+        )
+    }
+
     // MARK: - Test-first plan 5: cancel clears it
 
     /// Observed through `Equatable` and the limits as well as the frame, because the frame alone
     /// cannot see it: with no gesture present the frozen fit is not honoured. The limits can —
-    /// 50 / 1 at the frozen fit against 50 / 0.5 at the new one.
+    /// 50 / 1 at the frozen fit against 50 / 0.5 at the new one. **The frame assertion cannot
+    /// fail** and is kept as documentation: since the next manipulation recaptures from a fresh
+    /// tracker anyway, the clear is invisible to anything drawn, and `Equatable` plus the limits
+    /// are its only discriminators.
     @Test("cancelling clears the frozen fit")
     func cancellingClearsTheFrozenFit() {
         var interaction = StageInteraction()
@@ -231,6 +256,10 @@ struct StageFrozenFitTests {
 
         var fresh = StageManipulation()
         #expect(Self.frame(interaction, fresh, at: Self.fitB) == .settled(Self.fitB))
+        // `rendering`'s own guard answers the line above; these two are what the gesture check
+        // in `fit(for:current:)` actually protects (`swift-code-reviewer`, mutant c).
+        #expect(interaction.transform(with: nil, fitting: Self.fitB, in: Self.viewport) == Self.fitB)
+        #expect(interaction.magnification(gesture: nil, fitting: Self.fitB, in: Self.viewport) == 1)
 
         interaction.beginManipulating(joining: fresh, fitting: Self.fitB)
         fresh.panBegan(at: .zero)

@@ -77,8 +77,12 @@ public extension StageInteraction {
     }
 
     /// The fit a frame is drawn against: the frozen one while a gesture is present, the one on
-    /// screen otherwise. The gesture check is what keeps a frozen fit that outlived its
-    /// manipulation — a view torn down without a cancel — away from an at-rest frame.
+    /// screen otherwise.
+    ///
+    /// An at-rest frame never gets here — `rendering` returns `.settled` at the live fit first.
+    /// What the gesture check protects is every *other* gesture-less read of a frozen fit that
+    /// outlived its manipulation (a view torn down without a cancel): `transform(with: nil…)`,
+    /// the spoken `magnification`, and the bake of a fit animation running with no fingers down.
     internal func fit(for gesture: StageGesture?, current fit: StageTransform) -> StageTransform {
         gesture == nil ? fit : manipulationFit ?? fit
     }

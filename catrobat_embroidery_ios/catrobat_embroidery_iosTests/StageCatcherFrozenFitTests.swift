@@ -48,6 +48,12 @@ struct StageCatcherFrozenFitTests {
 
     // MARK: - AC3: begin → cancel → render at a changed fit
 
+    /// **Only the `Equatable` line discriminates the cancel wiring**, and that is measured
+    /// (`swift-code-reviewer`, mutant l): with `cancelManipulating()` deleted both frame
+    /// assertions still pass, because an at-rest frame ignores the frozen fit and the next
+    /// manipulation recaptures from its fresh tracker. The story expected a cancel left uncleared
+    /// to freeze the stage; with capture by liveness it cannot, so what this pins is that the
+    /// interaction's stored state is honest.
     @Test func aCancelledManipulationRendersAtTheNewFit() {
         let recording = Recording()
         let wiring = CatcherHarness.wired(recording)

@@ -37,10 +37,13 @@ public struct StageInteraction: Equatable, Sendable {
     /// past the hoop mid-pinch moved the drawn transform, the bake key and the pinch's clamp
     /// under the fingers. Freezing the *fit* rather than the baseline is deliberate: with
     /// `settled` non-`nil` the baseline cannot move, but the zoom bounds still read the fit, and
-    /// `StageManipulation` holds limits computed from it at `pinchBegan`. It is honoured only
-    /// while a gesture is present, so a manipulation the view lost without a cancel cannot
-    /// freeze an at-rest frame; and the next manipulation recaptures, because it joins a tracker
-    /// that is not live.
+    /// `StageManipulation` holds limits computed from it at `pinchBegan`. `transform` and
+    /// `rendering` honour it only while a gesture is present, so a manipulation the view lost
+    /// without a cancel cannot freeze a gesture-less read; `commit` and `magnificationLimits`
+    /// honour it unconditionally, because both run only inside a manipulation. And the next
+    /// manipulation recaptures, because it joins a tracker that is not live — which also makes
+    /// the clears redundant for anything drawn: they keep the stored state honest, and
+    /// `Equatable` is the only thing that can see them.
     private(set) var manipulationFit: StageTransform?
 
     public private(set) var phase: Phase = .idle

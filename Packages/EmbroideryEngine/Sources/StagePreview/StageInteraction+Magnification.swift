@@ -23,6 +23,11 @@ public extension StageInteraction {
     ///   user pinches against what is on screen, and round 1's clamped-rebase jump comes back by
     ///   another route (`/codex-review` round 2).
     ///
+    /// **Precondition since US-314: ask straight after `beginManipulating`.** Inside a
+    /// manipulation the range is computed against the frozen fit, not `fit`, and a frozen fit
+    /// that outlived its manipulation would be returned to any other caller. The coordinator
+    /// is the only caller and always asks in that order.
+    ///
     /// The floor is a **ratio**, never `StageTransform.minimumRepresentableScale`: that constant
     /// bounds a transform's scale, not a factor, and using it here narrowed the fit-aware range
     /// for a very small fit — the stage could not pinch down to a zoom the bounds explicitly
