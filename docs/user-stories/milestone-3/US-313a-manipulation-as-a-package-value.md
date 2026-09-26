@@ -246,6 +246,9 @@ attached, not smuggled in here.
     the stage under the user's fingers. Pre-existing (US-307 shipped it) and **not fixed here**;
     tracked as US-314 in [`backlog.md`](../backlog.md). The criterion is narrowed rather than the
     claim quietly kept, because a story must not assert an invariant its code does not enforce.
+    **Made unconditional 2026-09-26 by US-314**: the fit is now frozen for the manipulation
+    (ADR-028's US-314 amendment), so `bake` is identical across every frame of a manipulation
+    at any fit. The narrowing above is kept as the record of when the claim was false.
 11. **A resting manipulation — fingers down, nothing moved — is still live**, and its bake key
     is the committed transform. **Inverted 2026-09-14 during implementation**: this criterion
     originally said the opposite (that an identity gesture renders from the settled path), and

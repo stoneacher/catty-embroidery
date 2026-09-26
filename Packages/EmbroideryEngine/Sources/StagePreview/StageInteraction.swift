@@ -29,6 +29,23 @@ public struct StageInteraction: Equatable, Sendable {
     /// design framed for a viewport that no longer exists.
     public private(set) var settled: StageTransform?
 
+    /// The fit the live manipulation is measured against: captured when its first channel
+    /// begins, cleared at commit, cancel and `followFit()` (US-314).
+    ///
+    /// **The objection to a stored fit above does not apply, because of how short this one
+    /// lives.** A fit is a per-frame parameter, so while the stage follows it a design growing
+    /// past the hoop mid-pinch moved the drawn transform, the bake key and the pinch's clamp
+    /// under the fingers. Freezing the *fit* rather than the baseline is deliberate: with
+    /// `settled` non-`nil` the baseline cannot move, but the zoom bounds still read the fit, and
+    /// `StageManipulation` holds limits computed from it at `pinchBegan`. `transform` and
+    /// `rendering` honour it only while a gesture is present, so a manipulation the view lost
+    /// without a cancel cannot freeze a gesture-less read; `commit` and `magnificationLimits`
+    /// honour it unconditionally, because both run only inside a manipulation. And the next
+    /// manipulation recaptures, because it joins a tracker that is not live — which also makes
+    /// the clears redundant for anything drawn: they keep the stored state honest, and
+    /// `Equatable` is the only thing that can see them.
+    private(set) var manipulationFit: StageTransform?
+
     public private(set) var phase: Phase = .idle
 
     /// Hands out the next animation's identity. Monotonic, so an id is never reused and a
@@ -64,75 +81,7 @@ public struct StageInteraction: Equatable, Sendable {
 
     // MARK: - What to draw
 
-    /// The committed transform, as the current phase has it.
-    ///
-    /// During a fit animation this is the interpolated value, so a gesture starting mid-spring
-    /// continues from what is on screen rather than from where the spring began.
-    public func baseline(fitting fit: StageTransform) -> StageTransform {
-        switch phase {
-        case .idle:
-            settled ?? fit
-        case let .settling(_, from, to, progress, _, _):
-            from.interpolated(to: to, progress: progress)
-        }
-    }
-
-    /// The baseline with the animation's progress supplied from outside.
-    ///
-    /// **The view owns the interpolation, because only SwiftUI can produce it.** A
-    /// `StageTransform` is not animatable and a `Canvas`'s drawing closure is not either, so
-    /// `withAnimation` around a mutation of this value animates *nothing* — it snaps. The view
-    /// wraps the canvas in an `Animatable` shim whose `animatableData` is the progress, and
-    /// feeds the interpolated value back in here, which is what makes the reset re-stroke at
-    /// each step rather than jump. (The first rewrite deleted that shim and, with it, the
-    /// animation; the tests could not see it because they only ever observed progress 0 and 1 —
-    /// Codex round 7.)
-    public func baseline(fitting fit: StageTransform, settlingAt progress: Double) -> StageTransform {
-        guard case let .settling(_, from, to, _, _, _) = phase else { return baseline(fitting: fit) }
-        return from.interpolated(to: to, progress: progress)
-    }
-
-    /// The progress the *model* holds — the endpoint `withAnimation` is moving toward, which
-    /// the view's shim interpolates from.
-    public var settlingProgress: Double {
-        guard case let .settling(_, _, _, progress, _, _) = phase else { return 0 }
-        return progress
-    }
-
-    /// **The one place the bake/draw split is decided.**
-    ///
-    /// `.settled` only when nothing is happening — never inferred from two transforms being
-    /// equal, which is what let a raster rebuild land in the middle of a gesture. While a
-    /// gesture or an animation is in flight the frame is re-stroked at `current` and the
-    /// raster's key stays on `bake`, so the settled prefix is rasterised once, on commit, and
-    /// the frame can still reveal content the canvas had not drawn (ADR-028).
-    /// - Parameter settlingAt: the animation's interpolated progress, supplied by the view's
-    ///   `Animatable` shim. Ignored unless a fit animation is in flight.
-    public func rendering(
-        gesture: StageGesture?,
-        fitting fit: StageTransform,
-        in viewport: ViewSize,
-        settlingAt progress: Double = 1
-    ) -> StageRenderTransform {
-        // **Presence, not movement — and US-313 tried to weaken this and was refuted here.**
-        // Going `.live` the instant a finger lands does degrade the image on a stationary frame
-        // (US-310 made liveness cost fidelity), and the planning pass proposed gating on
-        // `!gesture.isIdentity` on the argument that an unmoved gesture leaves the bake key
-        // where it is, so nothing could be re-baked. **The bake key is not the transform alone**:
-        // `CanvasStitchRenderer.BakeKey` also carries `settledCount`, which advances while a run
-        // is still producing stitches. So a resting frame reporting `canUseRaster` mid-gesture
-        // lets a bake fire at a *new* watermark — a full rasterisation of the settled prefix,
-        // during the gesture, which is ADR-028's Codex round 2 defect exactly and the expense
-        // ADR-009's cache exists to avoid. The two tests below were written for that defect and
-        // they caught this.
-        guard gesture != nil || isSettling else { return .settled(baseline(fitting: fit)) }
-        return .live(
-            bake: settled ?? fit,
-            current: transform(
-                with: gesture, fitting: fit, in: viewport, settlingAt: progress
-            )
-        )
-    }
+    // `baseline`, `settlingProgress` and `rendering` are in `StageInteraction+Rendering.swift`.
 
     /// Where the stage is right now, gesture included.
     public func transform(
@@ -141,6 +90,7 @@ public struct StageInteraction: Equatable, Sendable {
         in viewport: ViewSize,
         settlingAt progress: Double = 1
     ) -> StageTransform {
+        let fit = self.fit(for: gesture, current: fit)
         let committed = baseline(fitting: fit, settlingAt: progress)
         guard let gesture, !gesture.isIdentity else { return committed }
         return moved(by: gesture, from: committed, fitting: fit, in: viewport)
@@ -167,6 +117,12 @@ public struct StageInteraction: Equatable, Sendable {
         in viewport: ViewSize,
         settlingAt progress: Double = 1
     ) {
+        // The fit the frames were drawn at, not the one at finger-lift: live and committed are
+        // the same number by construction (ADR-028), and committing against a fit that moved
+        // mid-gesture would jump the stage as the fingers leave.
+        let fit = manipulationFit ?? fit
+        manipulationFit = nil
+
         // A gesture always ends any animation — at what is on screen, not at where the
         // animation was going.
         interrupt(settlingAt: progress)
@@ -232,7 +188,9 @@ public struct StageInteraction: Equatable, Sendable {
         // transform that no later refit could move, and repeated double-taps stayed no-ops
         // (`/codex-review` round 1) — so the fit branch adopts the fit regardless.
         guard destination != from else {
-            if !zoomingIn { settled = nil }
+            if !zoomingIn {
+                settled = nil
+            }
             return nil
         }
 
@@ -259,10 +217,29 @@ public struct StageInteraction: Equatable, Sendable {
     /// something that cannot move under a manipulation, which is what the rebase derivation
     /// assumes.
     ///
-    /// Idempotent, and inert when nothing is animating, so a coordinator may call it from every
-    /// recogniser's `.began` without tracking which one was first.
-    public mutating func beginManipulating(fitting fit: StageTransform, settlingAt progress: Double = 1) {
+    /// It also freezes the fit for the manipulation (US-314) — **captured when the tracker it
+    /// joins is not yet live**, which is exactly "this is the first channel's begin" asked of
+    /// the lifecycle rather than inferred. Not "when nothing is captured": a manipulation the
+    /// view dropped without a cancel would then freeze every later one to a stale fit. So a
+    /// coordinator may still call this from every recogniser's `.began` without tracking which
+    /// one was first, as long as it calls it *before* that channel begins.
+    /// - Parameter manipulation: the tracker the beginning channel is about to join. Required,
+    ///   with no default — `finish(in:touchesRemain:)`'s precedent: a default would silently
+    ///   select one branch.
+    public mutating func beginManipulating(
+        joining manipulation: StageManipulation,
+        fitting fit: StageTransform,
+        settlingAt progress: Double = 1
+    ) {
         interrupt(settlingAt: progress)
+        guard !manipulation.isLive else { return }
+        manipulationFit = fit
+    }
+
+    /// The system took the touches away: release the frozen fit, so the next frame is drawn at
+    /// the fit on screen now. Nothing else changes — a cancel commits nothing.
+    public mutating func cancelManipulating() {
+        manipulationFit = nil
     }
 
     /// One activation of a directional pan accessibility action.
@@ -373,6 +350,7 @@ public struct StageInteraction: Equatable, Sendable {
     public mutating func followFit() {
         phase = .idle
         settled = nil
+        manipulationFit = nil
     }
 
     private func moved(

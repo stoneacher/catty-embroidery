@@ -76,7 +76,7 @@ struct StageMagnificationLimitsTests {
         _ = try #require(started)
         let visible = interaction.baseline(fitting: Self.fit, settlingAt: 0.25)
 
-        interaction.beginManipulating(fitting: Self.fit, settlingAt: 0.25)
+        interaction.beginManipulating(joining: StageManipulation(), fitting: Self.fit, settlingAt: 0.25)
 
         #expect(!interaction.isSettling)
         #expect(interaction.baseline(fitting: Self.fit) == visible)
@@ -161,22 +161,23 @@ struct StageMagnificationLimitsTests {
         #expect(interaction.baseline(fitting: Self.fit) == zoomed)
     }
 
-    /// `beginManipulating` claims to be inert when nothing is animating and safe to call from
-    /// every recogniser's `.began`. Pinned, because an idle-only side effect would otherwise take
-    /// a fit-following stage off the fit — the thing ADR-028's identity guard exists to prevent.
-    /// Found by `/codex-review` round 4.
-    @Test("beginning a manipulation with nothing animating changes nothing")
-    func beginningAManipulationWithNothingAnimatingChangesNothing() {
+    /// `beginManipulating` is safe to call from every recogniser's `.began`, and with nothing
+    /// animating it never takes a fit-following stage off the fit — the thing ADR-028's identity
+    /// guard exists to prevent. Found by `/codex-review` round 4. Since US-314 it does change one
+    /// thing, the frozen fit, so the last line pins that an identity commit releases it again.
+    @Test("beginning a manipulation with nothing animating keeps following the fit")
+    func beginningAManipulationWithNothingAnimatingKeepsFollowingTheFit() {
         var interaction = StageInteraction()
 
-        interaction.beginManipulating(fitting: Self.fit)
-        interaction.beginManipulating(fitting: Self.fit)
+        interaction.beginManipulating(joining: StageManipulation(), fitting: Self.fit)
+        interaction.beginManipulating(joining: StageManipulation(), fitting: Self.fit)
 
         #expect(interaction.isFollowingFit)
         #expect(!interaction.isSettling)
 
         interaction.commit(StageGesture(), fitting: Self.fit, in: Self.viewport)
         #expect(interaction.isFollowingFit)
+        #expect(interaction == StageInteraction())
     }
 
     /// **The widened bounds must not ratchet.** Each commit makes the new transform the next

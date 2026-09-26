@@ -81,9 +81,12 @@ enum CatcherHarness {
         StageTransform.fitting(StageGeometry.box, in: viewport)
     }
 
-    static func snapshot(settlingAt progress: Double = 1) -> StageManipulationCatcher.Snapshot {
+    static func snapshot(
+        fitted: StageTransform = fit,
+        settlingAt progress: Double = 1
+    ) -> StageManipulationCatcher.Snapshot {
         StageManipulationCatcher.Snapshot(
-            fitted: fit, viewport: viewport, settlingProgress: progress
+            fitted: fitted, viewport: viewport, settlingProgress: progress
         )
     }
 
@@ -98,8 +101,20 @@ enum CatcherHarness {
         let coordinator = StageManipulationCatcher.Coordinator()
         let view = StageTouchTrackingView()
         coordinator.install(on: view)
-        coordinator.update(
-            snapshot: snapshot(settlingAt: progress),
+        let wiring = Wiring(coordinator: coordinator, view: view)
+        update(wiring, recording, snapshot: snapshot(settlingAt: progress))
+        return wiring
+    }
+
+    /// What `updateUIView` does on every evaluation — the same bindings, a new snapshot. A run
+    /// growing the design past the hoop reaches the coordinator this way, mid-manipulation.
+    static func update(
+        _ wiring: Wiring,
+        _ recording: Recording,
+        snapshot: StageManipulationCatcher.Snapshot
+    ) {
+        wiring.coordinator.update(
+            snapshot: snapshot,
             manipulation: Binding(
                 get: { recording.manipulation }, set: { recording.manipulation = $0 }
             ),
@@ -109,6 +124,5 @@ enum CatcherHarness {
             onDoubleTap: { recording.taps.append($0) },
             onCommitted: { recording.commits += 1 }
         )
-        return Wiring(coordinator: coordinator, view: view)
     }
 }
