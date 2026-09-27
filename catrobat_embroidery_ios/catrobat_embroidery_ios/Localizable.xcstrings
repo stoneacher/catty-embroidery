@@ -409,6 +409,18 @@
         }
       }
     },
+    "stage.export.thread.colors": {
+      "comment": "Shown under the Share DST File button whenever that button is visible, and read by VoiceOver right after it. Information, not a warning: the exported file is correct. The DST embroidery format records only where stitches go and where the thread changes, never which colour, so every embroidery machine or viewer app assigns its own colours to each thread section, and the colours chosen on screen will not appear in the file. \"DST\" is the Tajima file-format name: keep it in Latin letters and uppercase. \"Thread\" means embroidery thread.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DST files don't store thread colours. The machine or viewer chooses them."
+          }
+        }
+      }
+    },
     "stage.export.too.few.stitches": {
       "comment": "Shown under the stage, and spoken as the dimmed Share button's hint, when a design ran but produced fewer than two stitches - so there is nothing a machine could sew. \"Stitches\" are the individual needle penetrations. Covers both a design that stitched nothing and one that stitched a single point; they are one sentence to a reader even though they are different facts.",
       "extractionState": "manual",

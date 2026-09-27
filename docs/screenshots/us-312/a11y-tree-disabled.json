@@ -1,0 +1,43 @@
+{
+  "schema": "xcodebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "8B4782CC-C3F9-4075-983C-2C3053F8D135"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "1i49ioq",
+      "seq": 23,
+      "count": 35,
+      "targets": [
+        "e22|typeText|text-field|Design name|SquareCoil|",
+        "e9|tap|button|Embroidery Designer||BackButton",
+        "e31|tap|button|Play||"
+      ],
+      "scroll": [
+        "e19|swipe|scroll-view|||"
+      ],
+      "text": [
+        "e17|text|text|Ready to Stitch||",
+        "e18|text|text|Press Play to watch the stitches appear inside the hoop.||",
+        "e21|text|text|Hoop 100 mm × 100 mm||",
+        "e29|text|text|Share DST File||",
+        "e30|text|text|DST files don't store thread colours. The machine or viewer chooses them.||",
+        "e33|text|text|Play||"
+      ],
+      "udid": "8B4782CC-C3F9-4075-983C-2C3053F8D135"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: xcodebuildmcp ui-automation snapshot-ui --simulator-id 8B4782CC-C3F9-4075-983C-2C3053F8D135",
+    "Wait for UI to settle: xcodebuildmcp ui-automation wait-for-ui --simulator-id 8B4782CC-C3F9-4075-983C-2C3053F8D135 --predicate settled",
+    "Scroll visible content: xcodebuildmcp ui-automation swipe --simulator-id 8B4782CC-C3F9-4075-983C-2C3053F8D135 --within-element-ref e19 --direction up --distance 0.5"
+  ]
+}

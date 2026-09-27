@@ -3,6 +3,8 @@
 **Epic**: E7 Export & sharing | **Estimate**: ~3 h | **Depends on**: US-405
 **Discovered**: 2026-08-29, US-308 manual Ink/Stitch verification. **Scheduled into M4**: 2026-09-19.
 
+**Status**: Done — 2026-09-27, PR #59. Implemented test-first (`[red]` commit `63ebb6d`: three tests failed on behaviour). Reviewed by `swift-code-reviewer` (11 mutants; two valid findings fixed, one rejected, two view-level mutants covered only by runtime evidence) and over **two Codex rounds**, Low → Low, the second doc-only. All seven acceptance criteria met; the caption is capped at AX1 by Sebastian's decision and AX5's pre-existing squeeze is backlog US-319. The sidecar research M5 inherits is below.
+
 **Story**: As a user, I want to know before I open my file somewhere else that the machine, not my design, picks the thread colours — so a correct export does not look broken.
 
 ## Problem
@@ -31,13 +33,13 @@ It sits after US-405 so the export surface is touched once, after the selection 
 
 ## Acceptance criteria
 
-- [ ] The export area states that thread colours are not stored in the file and are chosen by the machine or viewer. **Localised** with a translator comment, per the M3+ definition of done — this is a sentence about a file format and is exactly the kind of string a translator needs context for.
-- [ ] It is visible **before** the share sheet, not inside it. The user should learn this while deciding to export, not while exporting. A `ShareLink` also cannot be relied on to present our copy.
-- [ ] It does **not** read as an error or a warning. The export is correct; the sentence is information. This is a visual-design criterion and is checked on the screenshot, not in a test.
-- [ ] It is part of the export row's single accessibility element or an adjacent one — not a floating string a VoiceOver user meets out of context.
-- [ ] Nothing about the emitted bytes changes. Asserted: the DST goldens are untouched and byte-identical.
-- [ ] **Story-specific definition of done**: a screenshot of the export area at default and at AX1, where the added sentence is the most likely thing to overflow.
-- [ ] Close-out records the **sidecar research** for M5: which sidecar formats Ink/Stitch reads, whether common consumer machines read any, and what it would cost against ADR-026's UTType and single-file share.
+- [x] The export area states that thread colours are not stored in the file and are chosen by the machine or viewer. **Localised** with a translator comment, per the M3+ definition of done — this is a sentence about a file format and is exactly the kind of string a translator needs context for.
+- [x] It is visible **before** the share sheet, not inside it. The user should learn this while deciding to export, not while exporting. A `ShareLink` also cannot be relied on to present our copy.
+- [x] It does **not** read as an error or a warning. The export is correct; the sentence is information. This is a visual-design criterion and is checked on the screenshot, not in a test.
+- [x] It is part of the export row's single accessibility element or an adjacent one — not a floating string a VoiceOver user meets out of context.
+- [x] Nothing about the emitted bytes changes. Asserted: the DST goldens are untouched and byte-identical.
+- [x] **Story-specific definition of done**: a screenshot of the export area at default and at AX1, where the added sentence is the most likely thing to overflow.
+- [x] Close-out records the **sidecar research** for M5: which sidecar formats Ink/Stitch reads, whether common consumer machines read any, and what it would cost against ADR-026's UTType and single-file share.
 
 ## Test-first plan
 
@@ -53,3 +55,55 @@ No manual Ink/Stitch verification is needed for the *change*; the Ink/Stitch obs
 - ADR-026 (the export gate, the UTType, and where this finding is already recorded), ADR-015 (thread-colour emission semantics), ADR-012 (byte semantics — met, not violated)
 - ROADMAP E7 — the DST-only promise that rules out option 3
 - `docs/user-stories/backlog.md` — the original entry and its three options
+
+## Close-out (2026-09-27)
+
+**What shipped.**
+- A caption under **Share DST File**, "DST files don't store thread colours. The machine or viewer chooses them." The copy was chosen by Sebastian.
+- It comes from `ExportControl.Readiness.threadColorNote`, catalog key `stage.export.thread.colors`, which has a translator comment.
+- It shows in every state the row renders, and is `nil` only for `.noSelection`, which is never rendered.
+- Plain `.caption` in `.secondary`, with no glyph, outside `.disabled`.
+- Placement came from a `swift-ui-design` pass (adjacent, not combined) and was agreed with `swift-architect`. The amendment is recorded in ADR-026.
+
+**Evidence per criterion.**
+- **Localised, from the catalog, pinned.** `ExportControlTests.theThreadColorNoteComesFromTheCatalog` pins the English value. The reviewer's opposite-claim mutant survived until that pin existed.
+- **Before the share sheet.** It sits in the row, under the button.
+- **Not a warning.** Checked on the screenshots.
+- **Adjacent accessibility element.** Two runtime snapshots of the stage's accessibility tree (XcodeBuildMCP `snapshot-ui --output json`, iPhone 17e; committed as `docs/screenshots/us-312/a11y-tree-finished.json` and `a11y-tree-disabled.json`) read **Share DST File → caption → Play Again** after a finished run and **Share DST File → caption → Play** in the disabled not-run state. These snapshots are also the only thing that catches the view-level mutants no unit test can see: caption dropped, caption shown only when enabled, or the row combined into one element. **Not** `.disabled` moved onto the whole row: the trees record no enabled state, so a dimmed caption leaves them unchanged (Codex, PR #59 round 2); the `disabled.png` screenshot is the only evidence of that, and it is manual. **They are evidence, not enforcement**: nothing re-runs them, so a later regression in the view would stay green (Codex, PR #59 round 1, tracked). The finished-run tree comes from the pre-cap build `97c8478`; the cap changes no element or order.
+- **Bytes unchanged.** `git diff main -- Packages/` is empty, and all 981 engine tests pass, including the byte-for-byte goldens.
+- **One colour or several.** `ExportWiringTests.aReadyExportCarriesTheNoteWhateverTheColorCount` runs Octagon Rosette (1 colour) and Square Coil (2 colours). It pins colour-independence at the `Readiness` level only; a gate added in the view is caught only by the snapshots.
+- **Screenshots** on the iPhone 17e, the smallest available simulator, in `docs/screenshots/us-312/`:
+  - `default.png` and `ax1.png`, the story's bar;
+  - `disabled.png`, where the caption is not dimmed with the button.
+
+**AX5, measured.**
+- **The caption is capped at AX1** (Sebastian's decision).
+- Uncapped, at AX5 the Share label spilled out of its own background (`ax5-uncapped.png`).
+- The cause predates this story: `main` at AX5 already loses the design-name field (`ax5-main-before.png`).
+- With the cap the button is intact, and the name counter is half hidden (`ax5-capped.png`).
+- The squeeze is **backlog US-319**. That entry also records a pre-existing "Ready to St…" title truncated at default size on this device.
+
+### Sidecar research for M5
+
+Verified in the pyembroidery (`c16d1b4`), Ink/Stitch (`d59c9ab`) and pystitch (`b72b557`) sources unless marked otherwise.
+
+- **pyembroidery's extended DST header** writes these lines into the 512-byte header when opted in with `settings={"version": "extended"}`, after `PD:`:
+  - `AU:`, `CP:`;
+  - one `TC:#rrggbb,<description>,<catalog>` line per thread.
+
+  Its reader parses them back. **There is no overflow guard**: past 512 bytes the stitch records start at the wrong offset. The budget after the fixed fields is 387 bytes, which is about 18 threads as `TC:#rrggbb,None,None` (an empty field is written as the literal `None`), or about 29 with truly empty fields. No other producer was found — not the same as none existing; the EduTech wiki calls the tags "exceptionally rare" (secondary source). Machine tolerance of unknown header lines is **unverified**.
+- **Ink/Stitch** imports through pystitch (a pyembroidery fork with the same DST reader), so **`TC:` colours reach the SVG** with no user action. Without them it uses random filler threads. It does **not** apply a sibling file automatically: its *Apply Threadlist* extension accepts **`.txt`, `.edr`, `.col`, `.inf`**, applied in colour-change order. Its `.txt` is its own threadlist format: lines containing `(#rrggbb)`.
+- **Sidecar formats in pyembroidery**:
+  - `.edr`, read/write: raw RGB0, 4 bytes per colour;
+  - `.col`, read/write: a count line, then `index,r,g,b` lines;
+  - `.inf`, read/write: binary, with RGB, needle, description and chart;
+  - `.rgb` and `.thr`: not supported;
+  - `.txt`: a debug dump, not a threadlist.
+- **Home machines: no evidence of colour from DST, and the claim is scoped to what was checked.** Brother states officially that DST carries no colour and that the machine applies its default thread sequence (primary source). For Janome, Viking/Pfaff and Singer, only secondary sources were found, and they say the same. No source for any of these mentions reading a sidecar or `TC:` lines; that is absence of evidence, not proof, and says nothing about vendors not checked. The colour-carrying native formats of the checked vendors are PES, JEF, VP3, XXX and Bernina's EXP+INF. The one sidecar convention *found* is Bernina's `.inf`, and it goes with EXP, not DST.
+- **Sharing two files**: `ShareLink(items:)` and `UIActivityViewController` accept several. Apple guarantees nothing about AirDrop or Files keeping them together, which is unverified and needs a device test. A ZIP is the only guaranteed bundle.
+
+**What M5 inherits.**
+- **First candidate: a `.col`/`.edr` sidecar or an Ink/Stitch `.txt` threadlist.** It is trivial to write, read by the one consumer verified to use colour, and leaves the DST bytes (ADR-012/025, the goldens) untouched. It costs a second UTType or a ZIP, which interacts with ADR-026's single-file share.
+- **Second, gated: the `TC:` header.** It needs an ADR, an explicit 512-byte overflow rule (pyembroidery has none), and a hardware tolerance test.
+- **For the vendors checked, colour on home machines means a native format**, which is out of scope for the DST-only promise (ROADMAP E7).
+

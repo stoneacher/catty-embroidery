@@ -13,10 +13,45 @@ import SwiftUI
 /// Every question about *whether* and *what to say* is answered by `ExportControl.Readiness`,
 /// which is a value precisely so that it can be tested: nothing can read a rendered
 /// `.accessibilityHint` back out of a hosted view. This view re-derives none of it.
+///
+/// **US-312 adds a caption under the button**: DST files carry no thread colours. It is read
+/// by VoiceOver as the element straight after the button rather than being combined into it —
+/// combining would replace the button's label (its title, below) and push a disabled
+/// control's reason behind a sentence that is not a reason.
 struct StageExportRow: View {
     let readiness: ExportControl.Readiness
 
     var body: some View {
+        VStack(spacing: 4) {
+            button
+            if let note = readiness.threadColorNote {
+                // The screen's plain-fact style — the hoop-size caption's, which is `.caption`
+                // and inherits `.secondary` from `StageNotices`' block — and deliberately none of
+                // a notice's: no glyph, no colour. The export is correct;
+                // this is information. Outside `.disabled`, so it is not dimmed with the
+                // button and does not read as the reason it is dimmed.
+                Text(note)
+                    .font(.caption)
+                    // **Capped at AX1**, the story's Dynamic Type bar, and a measured choice
+                    // rather than a reflex (Sebastian, 2026-09-27). At AX5 an uncapped caption
+                    // grows to five lines in a pinned row and the Share button's label spills
+                    // out of its own background. That is on top of a squeeze that predates
+                    // this story: on `main` at AX5 the design-name field already disappears
+                    // behind the pinned rows, which is backlog US-319's stage-chrome overflow
+                    // entry and not something a caption can fix. Secondary text may stop
+                    // scaling under the HIG; the button and the field it gates may not.
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    // Wraps rather than truncating at large type sizes; the row is pinned, so
+                    // every line comes out of the canvas, which gives up space first.
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    @ViewBuilder private var button: some View {
         let styled = control
             // `.bordered`, **not** `.borderedProminent`: `StageTransportRow` is this
             // screen's one prominent control, and `RunControl` records why two prominent

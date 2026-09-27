@@ -194,6 +194,66 @@ struct ExportControlTests {
         }
     }
 
+    // MARK: - US-312: the thread-colour note
+
+    /// Test-first item 1: the note is the catalog's sentence, not a literal and not a
+    /// neighbouring export string. Compared as rendered text against the generated symbol, so
+    /// returning `.stageExportShare` — the resource one line away in the row — fails too.
+    ///
+    /// **The English value is pinned as well**, because comparing the catalog with itself
+    /// cannot catch a wrong sentence: `swift-code-reviewer` replaced it with the opposite claim
+    /// ("Thread colours are saved in the file.") and the test stayed green. The copy was chosen
+    /// by Sebastian on 2026-09-27, so changing it is a decision and should fail a test.
+    /// Rendered with an **explicit English locale**, not the process's: a first version skipped
+    /// the pin whenever the test runner was not English, so a German runner falling back to the
+    /// English entry would have let the opposite claim through (Codex, PR #59 round 1).
+    @Test("the thread-colour note is the catalog's sentence")
+    func theThreadColorNoteComesFromTheCatalog() throws {
+        let url = URL.temporaryDirectory.appending(path: "Rose.dst")
+        let note = try #require(ExportControl.Readiness.ready(url).threadColorNote)
+
+        let text = String(localized: note)
+        #expect(text == String(localized: .stageExportThreadColors))
+        #expect(text != String(localized: .stageExportShare))
+        #expect(!text.contains("stage.export"), "the note fell back to its key")
+        var english = note
+        english.locale = Locale(identifier: "en")
+        #expect(
+            String(localized: english)
+                == "DST files don't store thread colours. The machine or viewer chooses them."
+        )
+    }
+
+    /// The note is about the **format**, not about this file or this state, so it is shown in
+    /// every state the row renders — including every disabled one. A ready-only note would
+    /// appear and vanish on every Play and finish, which is exactly the movement
+    /// `StageExportRow`'s doc comment rules out for the control itself.
+    ///
+    /// `.noSelection` is the one `nil`: the row is not rendered then (`StageView` gates it on a
+    /// selection), and ADR-028 records that no copy ships for a state nothing renders.
+    @Test("the note is shown in every state the export row renders, and only those")
+    func theNoteIsShownInEveryRenderedState() {
+        let url = URL.temporaryDirectory.appending(path: "Rose.dst")
+        let rendered = ExportControl.Readiness.reasonsOwingAHint + [.ready(url)]
+
+        for readiness in rendered {
+            #expect(readiness.threadColorNote == .stageExportThreadColors, "\(readiness) lost the note")
+        }
+        #expect(ExportControl.Readiness.noSelection.threadColorNote == nil)
+    }
+
+    /// The note is information, and must never be mistaken for — or become — a reason. If it
+    /// were ever routed into `hint` or `notice` it would replace a disabled control's
+    /// explanation, or show up styled as a problem.
+    @Test("the note is never a hint or a notice")
+    func theNoteIsNeverAHintOrANotice() {
+        let url = URL.temporaryDirectory.appending(path: "Rose.dst")
+        for readiness in ExportControl.Readiness.reasonsOwingAHint + [.ready(url), .noSelection] {
+            #expect(readiness.hint != .stageExportThreadColors)
+            #expect(readiness.notice != .stageExportThreadColors)
+        }
+    }
+
     /// A failed export speaks the error's own message, so US-211's limit reaches the user
     /// through the control as well as through the notice.
     @Test("a failed export speaks the error's message")

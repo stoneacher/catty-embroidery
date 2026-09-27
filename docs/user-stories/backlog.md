@@ -99,6 +99,44 @@ in-file comment says exactly this, so a later reader is not misled about what th
 
 ---
 
+## US-319 — The stage's chrome runs out of room at AX4–AX5, and nothing on it can scroll
+
+**Found**: 2026-09-27, US-312's AX5 spot check on the iPhone 17e (the smallest simulator available).
+**Pre-existing on `main`**, measured rather than inferred: `docs/screenshots/us-312/ax5-main-before.png`
+is `main` at AX5 after a finished Square Coil run, and the **design-name text field is gone**. Only its
+label and the `10/15` counter fit between the scrolling notices and the two pinned action rows.
+
+**Mechanism.** `StageView` stacks the canvas (with a 120 pt floor), the scrolling `StageNotices` block
+(ending with the name field) and two pinned rows (export, then transport) that never shrink. There is
+deliberately no outer `ScrollView` (`StageView.canvasSlot`'s comment says why: a flexible canvas inside
+a scroll view gets an unbounded height proposal). At AX5 the pinned rows plus the canvas floor exceed a
+6.1-inch screen, and the notices block is squeezed to nothing. Its `ScrollView` scrolls, but the field is
+the last thing in it and the first thing to disappear.
+
+**What US-312 did about it, and what it did not.** US-312 added a caption under the Share button. Left
+uncapped, it made AX5 visibly worse: the Share label spilled out of its own background
+(`ax5-uncapped.png`). It is therefore capped at AX1 (`.dynamicTypeSize(...DynamicTypeSize.accessibility1)`,
+Sebastian's decision, 2026-09-27). With the cap the button is intact, but the counter is half-hidden
+behind it (`ax5-capped.png`). The cap stops US-312 from making things worse; it does not fix the squeeze,
+which is this entry.
+
+**Also seen, same device, default text size** (`disabled.png`): the not-yet-run empty state's title
+renders as "Ready to St…", truncated inside the dashed hoop. It is a different mechanism (a
+`ContentUnavailableView` in an aspect-fitted square with 24 pt insets), recorded here because it is the
+same screen, the same device and the same class of problem.
+
+**What taking it would involve.** Decide how the stage adapts when the chrome cannot fit. Candidates:
+- let the pinned rows join the scrolling region above some Dynamic Type size;
+- give the notices block a layout priority over the canvas floor;
+- use `ViewThatFits` over a compact arrangement.
+
+It needs a `swift-ui-design` pass and screenshots at AX3–AX5 on the smallest device, and it interacts with
+US-315 (the keyboard transient) and US-409's palette sheet, both of which also take height from this
+screen. **The ROADMAP's Dynamic Type bar is AX1**, which the stage meets, so this entry is below the
+definition of done. That is why it is a backlog item rather than a defect in any shipped story.
+
+---
+
 ## US-318 — The package does not build its tests in release configuration
 
 **Found**: 2026-09-23, in passing during US-402's review. **Pre-existing on `main`**, unrelated to
