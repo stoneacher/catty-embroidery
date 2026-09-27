@@ -93,10 +93,10 @@ struct RootView: View {
         @Bindable var exporter = model.exporter
 
         return StageView(
-            title: model.selection?.sample.displayName,
+            title: model.selection?.title,
             // By id, in every build: `.us309Synthetic` is a case in release too, and it is only
             // *listed* in debug (`AppModel.samples`), so outside debug this is always false.
-            showsFrameTimeReadout: model.selection?.sample.id == .us309Synthetic,
+            showsFrameTimeReadout: model.selection?.provenance == .us309Synthetic,
             display: model.runner.run.display,
             runState: model.runner.run.state,
             needle: model.runner.run.visibleNeedle,

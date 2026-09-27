@@ -12,7 +12,9 @@
 // stated. It is here because the zoom must outlive the ADR-023 container swap and because
 // `RootView` builds the stage at two call sites; see `interaction`. Recorded rather than left
 // for a reader to notice the comment above had quietly stopped being true.
+import EditorCore
 import Observation
+import ProgramModel
 import Samples
 import StagePreview
 
@@ -100,11 +102,19 @@ final class AppModel {
     /// different names that disagree.
     let exporter: ExportViewModel
 
-    /// Both are injectable so tests can supply immediate pacing and a recording writer;
+    /// The working program and its history (US-405).
+    let editor: EditorViewModel
+
+    /// All three are injectable so tests can supply immediate pacing and a recording writer;
     /// the defaults are what the app runs with.
-    init(runner: RunViewModel = RunViewModel(), exporter: ExportViewModel = ExportViewModel()) {
+    init(
+        runner: RunViewModel = RunViewModel(),
+        exporter: ExportViewModel = ExportViewModel(),
+        editor: EditorViewModel = EditorViewModel()
+    ) {
         self.runner = runner
         self.exporter = exporter
+        self.editor = editor
 
         // The export is prepared when the run *ends*, which is what a `ShareLink` needs:
         // it takes its item at construction time, so there is nothing to hand it unless the
@@ -118,7 +128,12 @@ final class AppModel {
         runner.onRunDiscarded = { [weak self] in
             self?.exporter.discard()
         }
+        editor.onEditApplied = { [weak self] in
+            self?.editApplied()
+        }
     }
+
+    private func editApplied() {}
 
     /// Starts the selected design from the beginning, throwing away whatever the last run
     /// prepared.
@@ -130,8 +145,8 @@ final class AppModel {
     /// invariant as a convention: `runner.play(_:)` and `runner.reset()` are both reachable
     /// directly. This method now only resolves the selection.
     func play() {
-        guard let program = selection?.program else { return }
-        runner.play(program)
+        guard selection != nil else { return }
+        runner.play(editor.program)
     }
 
     /// Rewrites the file under the name the user has just committed.
@@ -166,7 +181,7 @@ final class AppModel {
     /// `private(set)` so every mutation goes through `select(_:)` and the
     /// generation can never be skipped — an assignment that bypassed it would
     /// reintroduce exactly the no-op this story exists to forbid.
-    private(set) var selection: SampleSelection?
+    private(set) var selection: ProgramSelection?
 
     /// The compact navigation stack's path.
     ///
@@ -218,7 +233,10 @@ final class AppModel {
     /// resize they would wipe a design the user had just watched finish. This method
     /// already has exactly one writer; the reset belongs with it.
     func select(_ sample: SampleProgram) {
-        selection = SampleSelection(sample: sample, generation: nextGeneration)
+        selection = ProgramSelection(
+            generation: nextGeneration, provenance: sample.id, title: sample.displayName
+        )
+        editor.load(sample.program)
         nextGeneration += 1
         path = [.stage]
         // `reset()` discards the run, which fires `onRunDiscarded` and takes the previous
@@ -249,6 +267,6 @@ final class AppModel {
     /// whole `Program` tree along, and this runs for every row on every body
     /// evaluation.
     func isSelected(_ sample: SampleProgram) -> Bool {
-        selection?.sample.id == sample.id
+        selection?.provenance == sample.id
     }
 }
