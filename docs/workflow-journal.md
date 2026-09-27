@@ -2554,3 +2554,23 @@ A Codex review of the probe PR was deliberately skipped, because a PR that is ne
 - **Simulator tooling, corrected.** US-405's "tap does not navigate, reproduced on `main`" was **my error, not the tool's**: I had used camelCase flags, which the CLI silently ignored while printing "simulated successfully". The kebab-case flags work, and memory is updated. Two more traps from this session: zsh does not word-split a command held in a variable; and a parallel reviewer running `xcodebuild test` on the same simulator shuts it down (US-405). The fix for that was to give the reviewer a different device.
 - **Sidecar research** was delegated to a general-purpose agent, which read pyembroidery, pystitch and Ink/Stitch at pinned commits. It is recorded in the story's close-out and ADR-026, and M5 inherits a ranked answer.
 - **Totals**: app tests 256 → 260; engine tests unchanged at 981; `Packages/` byte-identical to `main`.
+
+## 2026-09-28 (CI) — the second flake, reproduced on demand, and the double runs removed
+
+**The flake (PR #59, 2026-09-27).** One of the two `App build & test` jobs on US-312's final commit failed `StageManipulationWiringTests.theDoubleTapTogglesToTwiceTheFitAboutTheTappedPoint`. The result bundle's message: `isSettling → false`, with `settled` already at 2× the fit and phase `.idle`. The order the 2026-09-20 entry set was followed again: **diagnose, then re-run.**
+- US-312 touched no stage-manipulation code.
+- The same commit's other run passed.
+- The failure was a race: `finishSettling` runs from `withAnimation`'s completion, on real animation time, and on a contended runner the toggle landed before the assertion.
+
+The re-run of the failed job passed, and the merge state went `CLEAN`.
+
+**The fix (Sebastian asked for both follow-ups).**
+- **The test** now accepts *in flight or landed*: `isSettling || settled != nil`. Before the tap the stage follows the fit, so a no-op still fails, and the destination checks hold in both states.
+- It was **proved with three mutant runs rather than argued**:
+  - a `StageCanvas.toggle` that finishes synchronously reproduces the CI flake **deterministically** against the old assertion from `main`;
+  - the same mutant passes the new one;
+  - a no-op toggle fails the new one.
+
+  So a flake that happened once in CI is now a failure reproducible on demand, which is the only way to know a flake fix fixes the flake.
+- **What the test gave up, stated in its comment**: it no longer claims the app *animates* the toggle. The package pins `beginToggle` returning a settling id; that `StageCanvas.toggle` wraps it in `withAnimation` is pinned nowhere, and it never was reliably.
+- **The trigger**: `ci.yml` runs `push` on `main` only, which removes the duplicate PR-commit runs that competed for runners (ADR-023 amendment). **Its cost is a process change**: a branch without a PR gets no CI, so the draft-PR-at-branch-start convention is proposed to Sebastian rather than assumed.

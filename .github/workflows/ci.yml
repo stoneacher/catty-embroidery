@@ -1,7 +1,17 @@
 name: CI
 
+# `push` runs on `main` only; branches are covered by their pull request. Until 2026-09-28 both
+# triggers ran for every PR commit, and they never cancel each other — the concurrency group
+# below is keyed on `github.ref`, which is `refs/heads/<branch>` for a push and
+# `refs/pull/<n>/merge` for a pull request — so two macOS runners booted simulators for the same
+# commit and competed. That contention is the standing condition behind both CI flakes so far
+# (US-401 on 2026-09-20, a wall-clock `.timeLimit`; PR #59 on 2026-09-27, a double-tap assertion
+# racing real animation time). The cost, stated rather than hidden: a branch with no pull
+# request gets no CI, so a story opens its (draft) PR before relying on CI. `main` keeps a run
+# for every merge.
 on:
   push:
+    branches: [main]
   pull_request:
 
 concurrency:
