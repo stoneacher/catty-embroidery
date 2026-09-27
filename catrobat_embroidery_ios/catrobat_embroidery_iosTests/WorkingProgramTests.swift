@@ -256,11 +256,15 @@ struct WorkingProgramTests {
         try #require(!model.interaction.isFollowingFit, "premise: the stage is zoomed")
         model.play()
         try #require(model.runner.run.state != .idle, "premise: there is a run to void")
+        let zoomed = model.interaction
 
         model.editor.apply(Self.edit)
 
         #expect(model.runner.run.state == .idle, "the edit must still void the run")
         #expect(!model.interaction.isFollowingFit, "an edit re-fitted the camera")
+        // The whole value, not only the flag: an edit that moved the pan or changed the zoom
+        // while staying zoomed would pass the line above (Codex US-405 round 1).
+        #expect(model.interaction == zoomed, "an edit changed the zoom or pan")
 
         // And the other caller still does.
         model.select(sample)
