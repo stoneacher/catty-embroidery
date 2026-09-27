@@ -2463,3 +2463,7 @@ US-314 freezes the stage's fit while fingers are down: `StageInteraction.manipul
 ## 2026-09-27 (US-314, device check) — the open human check passed
 
 The 2026-09-26 US-314 entry left one check open: pinching on a device while a growing design stitches, which the simulator cannot do. Sebastian ran it on his iPhone and reports it verified: the grabbed point stays under the fingers, with no shift at lift. The story's Status line now records the pass. Nothing else changed.
+
+## 2026-09-27 (US-314, decision) — the auxiliary-action exposure gets no story
+
+The 2026-09-26 US-314 entry offered Codex's "concrete known defect" to Sebastian as a backlog candidate: a double tap during a pan, or an accessibility pan or adjust during a live manipulation, can write `settled` under the fingers. **Sebastian decided it should not become a story.** It stays where ADR-028's US-314 amendment already puts it, as ADR-030 §7's recorded, accepted exposure, and no backlog entry is written.
