@@ -2467,3 +2467,36 @@ The 2026-09-26 US-314 entry left one check open: pinching on a device while a gr
 ## 2026-09-27 (US-314, decision) — the auxiliary-action exposure gets no story
 
 The 2026-09-26 US-314 entry offered Codex's "concrete known defect" to Sebastian as a backlog candidate: a double tap during a pan, or an accessibility pan or adjust during a live manipulation, can write `settled` under the fingers. **Sebastian decided it should not become a story.** It stays where ADR-028's US-314 amendment already puts it, as ADR-030 §7's recorded, accepted exposure, and no backlog entry is written.
+
+## 2026-09-27 (US-405) — the working program replaces the sample selection
+
+- **Planning**: `swift-architect` produced the type design and the test mapping, and flagged three decisions that belonged to Sebastian rather than the plan. **Sebastian decided all three the recommended way**: (a) launch holds `Program.blank` in the editor, but the stage does not treat it as a selection; (b) only an edit that *changes* the program voids the run; (c) `StageView` takes a title, not a `Program`. That is three deviations from the story's literal text, all recorded in ADR-038 and inline in the acceptance criteria rather than silently absorbed. The architect also found two affected test files the story's list missed (`SyntheticHarnessTests`, `StageManipulationWiringTests`) and three it listed that needed no change. Both lists are now in the story.
+- **The risk the story warned about did not materialise.** US-405 was flagged as the milestone story most likely to overrun and to need a US-405b split. The `StageView` narrowing went in as one green commit before the red phase, so no split was needed.
+- **Red phase**: the stubs recorded nothing and announced nothing, `AppModel.editApplied` was empty, and `Program.blank == Program()`. 4 package tests and 9 app tests failed for behavioural reasons, and every existing test stayed green after the rename. Nine guard tests were green against the stubs by design (rejected edit, no-op edit, launch, load). The reviewer's mutants later showed every one of them catches something.
+- **`swift-code-reviewer` found the story's only real defect, and it was mine: the Release build did not compile.**
+  - The chain:
+    - `SampleID.us309Synthetic` exists only under `#if DEBUG`.
+    - My `RootView` call site compared against it without a guard.
+    - The comment I wrote above that line claimed the opposite ("a case in release too"). My planning grep had shown the `case` line without the `#if` two lines above it.
+    - Neither the commit hook nor CI compiles Release, so every gate stayed green.
+  - The fix moves the comparison behind `#if DEBUG` in `AppModel.showsFrameTimeReadout`, and a Release build was verified in a clean worktree.
+  - This is ADR-032 invariant 3 again: a false comment sat next to a real defect and vouched for it. **A Release compile step in CI is offered to Sebastian as a candidate, not added here.**
+  - Also from the reviewer: 18 mutants, 16 killed.
+    - M7 (re-create the stack in `load`) survived as equivalent until something mints a coalescing key. US-410 owes the test.
+    - M16 (`StageView` with `hasSelection: true`) survived because the same mapping was already untested on `main`.
+  - It also found seven comments that still assumed a single writer to `selection` or a single caller of `reset()`. Two of them I had already fixed in the docs commit it had not seen: the delegated review was pinned to `fa05d71`, which is the same staleness as US-314's.
+- **Codex: two rounds, none → none.**
+  - Round 1 found no correctness defect after tracing every sequence in the prompt. Its one actionable blind spot: the camera test checked `isFollowingFit`, not the whole `StageInteraction`. Now closed, and proved by a mutant that zooms further on edit: the flag check passes it and the whole-value check kills it.
+  - Round 2 verified that fix is non-vacuous (the synthesized `==` covers all four fields, and nothing between capture and assertion writes the value) and found nothing new. The loop ended on condition 1.
+  - **Complementarity, again**: the in-loop reviewer found the build break by *running a configuration nobody runs*. Codex, reading the diff, confirmed the guard but would not have found the break it guards against, because it cannot build. Codex found a test that could not discriminate, which no mutant the reviewer wrote had probed.
+- **Tracked, not fixed** (Codex round 1):
+  - no Release compile in CI;
+  - no hosted-picker test through an edit (a missing Observation invalidation would leave the highlight stale unnoticed);
+  - no dedicated stop-then-edit-before-terminal test;
+  - container swap and multi-window isolation are still guaranteed by construction, not tested;
+  - `reset(to:)` vs re-create (US-410).
+- **Two process slips.**
+  - I told Sebastian CI had passed on commit 1. It had been **cancelled** by the next push, and `gh run watch --exit-status` exited 0 for it. Corrected in the same session. A watcher's exit code is not a conclusion; read the run's `conclusion`.
+  - I chained `swiftlint … ; git commit`, so a lint failure did not stop a commit. It was caught and fixed one commit later, before CI ran red.
+- **UI definition of done, partly unmet.** The launch screenshot was taken and is unchanged. The stage screenshot was not: `xcodebuildmcp ui-automation tap` (and `batch`) reports success but does not navigate, **reproduced on a `main` build**, so it is the tooling on this simulator (iOS 26.5), not the branch. Separately, Sebastian's uncommitted local bundle-ID/`Info.plist` edits make the local app fail simulator preflight and fail `UTTypeDeclarationTests`. The screenshots were built from a clean temporary worktree instead, and the working-tree edits were left untouched.
+- **Totals** (counted from runs): engine tests 976 → 981; app tests 239 → 256. CI green on every non-red commit that ran to completion.

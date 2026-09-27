@@ -2,6 +2,8 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~5 h ⚠️ | **Depends on**: US-402, US-403
 
+**Status**: Done — 2026-09-27, PR #56. Implemented test-first (`[red]` commit `93dea31`: 4 package and 9 app tests failed for behavioural reasons; the guards that were green against the stubs are proved by mutation). Not split: the `StageView` narrowing took one commit, so US-405b was not needed. Reviewed by `swift-code-reviewer` (18 mutants, 16 killed, 2 recorded as equivalent or pre-existing; one **critical** finding — the Release build did not compile, `SampleID.us309Synthetic` is DEBUG-only — fixed) and over **two Codex rounds**: none → none, round 1 adding a whole-value camera assertion proved by mutation. All seven acceptance criteria are met, two with the planning refinements noted inline. ADR-038 written. 22 new tests (5 package, 17 app). Stage screenshot not taken — simulator taps do not navigate on `main` either (tooling); the launch screen is unchanged.
+
 **Story**: As a user, I want the app to hold *my* program rather than a read-only sample, so that everything the editor does has something to edit — and so picking a sample means "start from this" rather than "look at this".
 
 **Nothing new is visible on screen when this story ends.** It is the milestone's US-303: a refactor that makes every later story possible. ⚠️ It is also the story most likely to exceed its estimate — it changes a type five views read and touches five app test files. If it measures over ~5 h, split the `StageView(sample:) → title` narrowing out as **US-405b** rather than letting it run.
@@ -27,13 +29,15 @@ Chosen over the alternative — let the run finish and gate export on a version 
 
 ## Acceptance criteria
 
-- [ ] An `EditorViewModel` (`@Observable`, `@MainActor`) owns the working `Program`, the US-403 undo stack, and the single `apply(_:)` entry point. **No view mutates the program** (ADR-006 pattern 1).
-- [ ] `AppModel`'s selection is generalised from `SampleSelection` to the working program plus a **`provenance: SampleID?`**, which is **cleared on the first applied edit**. The picker highlight therefore stops claiming a program is a sample once it is not.
-- [ ] Picking a sample loads a **copy** into the working program — editing it never mutates `SampleLibrary`, which is a `let` of in-process values shared process-wide. Asserted, because value semantics make this true by construction and a future refactor could make it false silently.
-- [ ] A **blank program** path exists (one scene, one object, one empty `whenStarted` script), since M4's whole point is building from nothing. It is what the app shows with no sample picked.
-- [ ] **An applied edit calls `runner.reset()`; a rejected edit does not.** Both asserted — the second is the reason ADR-033 made `apply` return a result rather than throw.
-- [ ] **`reset()` from an edit must not call `interaction.followFit()`** the way `select(_:)` does. Re-fitting the camera every time the user nudges a parameter would be unusable. This is a real divergence between two callers of one path and is the detail most likely to be missed.
-- [ ] Every existing app test passes or is deliberately updated, with each update explained. A silently rewritten assertion is how a refactor hides a regression.
+- [x] An `EditorViewModel` (`@Observable`, `@MainActor`) owns the working `Program`, the US-403 undo stack, and the single `apply(_:)` entry point. **No view mutates the program** (ADR-006 pattern 1).
+- [x] `AppModel`'s selection is generalised from `SampleSelection` to the working program plus a **`provenance: SampleID?`**, which is **cleared on the first applied edit**. The picker highlight therefore stops claiming a program is a sample once it is not.
+- [x] Picking a sample loads a **copy** into the working program — editing it never mutates `SampleLibrary`, which is a `let` of in-process values shared process-wide. Asserted, because value semantics make this true by construction and a future refactor could make it false silently.
+- [x] A **blank program** path exists (one scene, one object, one empty `whenStarted` script), since M4's whole point is building from nothing. It is what the app shows with no sample picked. *(Met at the model level: `editor.program == .blank` at launch. The stage does not yet treat it as a selection — Sebastian, 2026-09-27, ADR-038; US-407 owns the blank empty state.)*
+- [x] **An applied edit calls `runner.reset()`; a rejected edit does not.** *(Refined, Sebastian 2026-09-27, ADR-038: an edit that applies but leaves the program unchanged does not either.)* Both asserted — the second is the reason ADR-033 made `apply` return a result rather than throw.
+- [x] **`reset()` from an edit must not call `interaction.followFit()`** the way `select(_:)` does. Re-fitting the camera every time the user nudges a parameter would be unusable. This is a real divergence between two callers of one path and is the detail most likely to be missed.
+- [x] Every existing app test passes or is deliberately updated, with each update explained. A silently rewritten assertion is how a refactor hides a regression.
+
+**Existing app tests, audited (2026-09-27).** Deliberately updated, each for the reason in the test's own comment: `AppModelTests` (four tests read `selection.sample`/`selection.program`; they now read `provenance`/`title` and `editor.program` — the claims are unchanged, the value moved), `SyntheticHarnessTests` (`selection?.sample.id` → `provenance`; missing from the list above), and the two `StageView` hosting helpers in `StageViewWiringTests` and `StageManipulationWiringTests` (`sample:` → `title:` + `showsFrameTimeReadout:`; the second file is also missing from the list above; nothing is asserted about the value). **Listed above, verified unaffected, not edited**: `SampleLinkageTests`, `SampleRowAccessibilityTests` and `ExportWiringTests` read neither `selection` nor `StageView`, and `select(_:)` still seeds the export name.
 
 ## Test-first plan
 

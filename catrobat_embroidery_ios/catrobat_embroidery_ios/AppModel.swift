@@ -12,7 +12,9 @@
 // stated. It is here because the zoom must outlive the ADR-023 container swap and because
 // `RootView` builds the stage at two call sites; see `interaction`. Recorded rather than left
 // for a reader to notice the comment above had quietly stopped being true.
+import EditorCore
 import Observation
+import ProgramModel
 import Samples
 import StagePreview
 
@@ -100,11 +102,19 @@ final class AppModel {
     /// different names that disagree.
     let exporter: ExportViewModel
 
-    /// Both are injectable so tests can supply immediate pacing and a recording writer;
+    /// The working program and its history (US-405).
+    let editor: EditorViewModel
+
+    /// All three are injectable so tests can supply immediate pacing and a recording writer;
     /// the defaults are what the app runs with.
-    init(runner: RunViewModel = RunViewModel(), exporter: ExportViewModel = ExportViewModel()) {
+    init(
+        runner: RunViewModel = RunViewModel(),
+        exporter: ExportViewModel = ExportViewModel(),
+        editor: EditorViewModel = EditorViewModel()
+    ) {
         self.runner = runner
         self.exporter = exporter
+        self.editor = editor
 
         // The export is prepared when the run *ends*, which is what a `ShareLink` needs:
         // it takes its item at construction time, so there is nothing to hand it unless the
@@ -118,6 +128,34 @@ final class AppModel {
         runner.onRunDiscarded = { [weak self] in
             self?.exporter.discard()
         }
+        editor.onEditApplied = { [weak self] in
+            self?.editApplied()
+        }
+    }
+
+    /// What an applied edit does to the rest of the window (ADR-038): the program is no longer
+    /// the sample it was loaded from, and the run on the stage no longer describes it.
+    ///
+    /// **`runner.reset()` and nothing else from `select(_:)`'s list**, and each omission is
+    /// deliberate:
+    ///
+    /// - **No `interaction.followFit()`.** A new *design* arrives fitted; an edit to the design
+    ///   on screen keeps the zoom the user chose. Re-fitting on every parameter nudge would be
+    ///   unusable, and this is the divergence between the two callers of one path that the
+    ///   story names as the detail most likely to be missed.
+    /// - **No new generation.** An edit is not a new selection; nothing downstream should treat
+    ///   it as "start over".
+    /// - **No `path` write.** The stage is already on screen.
+    /// - **No `exporter.name` re-seed.** The name may be one the user typed.
+    ///
+    /// `reset()` is ADR-027's existing discard path: it cancels the consumer, bumps the run
+    /// generation so buffered frames from the voided run cannot land, clears the display list
+    /// and needle, and fires `onRunDiscarded`, which deletes the prepared file. The file is the
+    /// part that actually goes stale — the interpreter took the program by value (ADR-026's
+    /// eager preparation is why a stale file would otherwise be offered).
+    private func editApplied() {
+        selection?.provenance = nil
+        runner.reset()
     }
 
     /// Starts the selected design from the beginning, throwing away whatever the last run
@@ -128,10 +166,15 @@ final class AppModel {
     /// already cleared the design. The discard lives on `RunViewModel.onRunDiscarded` rather
     /// than here, because round 2 pointed out that putting it in this method left the
     /// invariant as a convention: `runner.play(_:)` and `runner.reset()` are both reachable
-    /// directly. This method now only resolves the selection.
+    /// directly. This method now only checks that something is selected and runs the
+    /// **working** program — `editor.program`, not the sample it was loaded from, which since
+    /// US-405 the selection no longer carries.
+    ///
+    /// The guard keeps the blank program unrunnable at launch, which is ADR-038's "the stage
+    /// does not yet treat the blank program as a selection" (US-407 flips it).
     func play() {
-        guard let program = selection?.program else { return }
-        runner.play(program)
+        guard selection != nil else { return }
+        runner.play(editor.program)
     }
 
     /// Rewrites the file under the name the user has just committed.
@@ -161,12 +204,15 @@ final class AppModel {
     /// no lifecycle, so a reference type would be an abstraction with nothing to justify it.
     var interaction = StageInteraction()
 
-    /// The chosen sample, or `nil` before the first tap.
+    /// What the stage shows — its title, the sample it came from while it still is that
+    /// sample, and which time it was chosen — or `nil` before the first tap. The program
+    /// itself is `editor.program` (US-405, ADR-038).
     ///
-    /// `private(set)` so every mutation goes through `select(_:)` and the
+    /// `private(set)` so every new selection goes through `select(_:)` and the
     /// generation can never be skipped — an assignment that bypassed it would
-    /// reintroduce exactly the no-op this story exists to forbid.
-    private(set) var selection: SampleSelection?
+    /// reintroduce exactly the no-op this story exists to forbid. The one other
+    /// writer is `editApplied()`, which clears `provenance` and nothing else.
+    private(set) var selection: ProgramSelection?
 
     /// The compact navigation stack's path.
     ///
@@ -199,6 +245,12 @@ final class AppModel {
 
     /// Selects `sample` and shows the stage.
     ///
+    /// **Loads a copy** into the editor and resets its history (US-405): the working program
+    /// is a value, so editing it can never reach `SampleLibrary`, which is shared
+    /// process-wide — asserted by `WorkingProgramTests` because a reference-typed model would
+    /// make it false without a compiler error. Picking the sample again therefore throws the
+    /// edits away, which is US-304's "start over" reaching the history too.
+    ///
     /// Never a no-op, even for the sample already selected: the fresh generation
     /// makes the new value unequal to the old one, which is what lets a later
     /// consumer treat any selection as "start over" (US-306).
@@ -215,10 +267,14 @@ final class AppModel {
     /// so here rather than in a view. The view-side spellings — `.onChange(of:
     /// initial:)`, `.task(id:)` — re-fire when `RootView` rebuilds a navigation
     /// container after a horizontal size-class change (ADR-023), so on an iPad window
-    /// resize they would wipe a design the user had just watched finish. This method
-    /// already has exactly one writer; the reset belongs with it.
+    /// resize they would wipe a design the user had just watched finish. Selection has
+    /// exactly one writer, so the reset belongs with it — and the one other caller of
+    /// `runner.reset()`, `editApplied()`, is the other thing that invalidates a run.
     func select(_ sample: SampleProgram) {
-        selection = SampleSelection(sample: sample, generation: nextGeneration)
+        selection = ProgramSelection(
+            generation: nextGeneration, provenance: sample.id, title: sample.displayName
+        )
+        editor.load(sample.program)
         nextGeneration += 1
         path = [.stage]
         // `reset()` discards the run, which fires `onRunDiscarded` and takes the previous
@@ -242,6 +298,21 @@ final class AppModel {
         interaction.followFit()
     }
 
+    /// Whether the stage draws US-309's frame-time readout: only for the measurement fixture,
+    /// and only while it is still that fixture.
+    ///
+    /// Here rather than at `RootView`'s call site because `SampleID.us309Synthetic` exists only
+    /// under `#if DEBUG` — comparing against it unguarded broke the Release build, which
+    /// neither the commit gate nor CI compiles (`swift-code-reviewer`, US-405). An edit clears
+    /// `provenance` and so hides the readout; it is a measurement harness, not a design.
+    var showsFrameTimeReadout: Bool {
+        #if DEBUG
+        selection?.provenance == .us309Synthetic
+        #else
+        false
+        #endif
+    }
+
     /// Whether `sample` is the current selection — the row highlight and the
     /// `.isSelected` VoiceOver trait.
     ///
@@ -249,6 +320,6 @@ final class AppModel {
     /// whole `Program` tree along, and this runs for every row on every body
     /// evaluation.
     func isSelected(_ sample: SampleProgram) -> Bool {
-        selection?.sample.id == sample.id
+        selection?.provenance == sample.id
     }
 }

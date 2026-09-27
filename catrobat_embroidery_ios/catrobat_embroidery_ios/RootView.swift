@@ -1,3 +1,4 @@
+import Samples
 import StagePreview
 import SwiftUI
 
@@ -67,10 +68,11 @@ struct RootView: View {
     ///
     /// **US-305's `.task(id: model.selection)` drain is gone**, and nothing replaced it
     /// here. The run is started by the user pressing play, and it is discarded by
-    /// `AppModel.select(_:)` — deliberately not by a view modifier keyed on the
-    /// selection. `.task(id:)` and `.onChange(of:initial:)` both re-fire when this view
-    /// rebuilds its navigation container after a horizontal size-class change (ADR-023),
-    /// so either would wipe a finished design on an iPad window resize.
+    /// `AppModel.select(_:)` and, since US-405, by an applied edit (ADR-038) — deliberately
+    /// not by a view modifier keyed on the selection. `.task(id:)` and
+    /// `.onChange(of:initial:)` both re-fire when this view rebuilds its navigation container
+    /// after a horizontal size-class change (ADR-023), so either would wipe a finished design
+    /// on an iPad window resize.
     ///
     /// The needle comes from `visibleNeedle`, which **is** the "only while running" rule
     /// rather than a place that reimplements it. It was spelled out here as a conditional,
@@ -92,7 +94,8 @@ struct RootView: View {
         @Bindable var exporter = model.exporter
 
         return StageView(
-            sample: model.selection?.sample,
+            title: model.selection?.title,
+            showsFrameTimeReadout: model.showsFrameTimeReadout,
             display: model.runner.run.display,
             runState: model.runner.run.state,
             needle: model.runner.run.visibleNeedle,
@@ -116,8 +119,8 @@ struct RootView: View {
             ),
             designName: $exporter.name,
             nameValidation: model.exporter.validatedName,
-            // `model.play()` only because it resolves the selection. The exporter cleanup is
-            // **not** this call's doing — it hangs off `RunViewModel.onRunDiscarded`, so a
+            // `model.play()` only because it checks the selection and runs the working program.
+            // The exporter cleanup is **not** this call's doing — it hangs off `RunViewModel.onRunDiscarded`, so a
             // direct `runner.play(_:)` would be equally safe. An earlier version of this
             // comment claimed the pairing lived here; cross-vendor round 3 pointed out that
             // round 2 had already moved it.
