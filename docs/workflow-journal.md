@@ -2467,3 +2467,11 @@ The 2026-09-26 US-314 entry left one check open: pinching on a device while a gr
 ## 2026-09-27 (US-314, decision) — the auxiliary-action exposure gets no story
 
 The 2026-09-26 US-314 entry offered Codex's "concrete known defect" to Sebastian as a backlog candidate: a double tap during a pan, or an accessibility pan or adjust during a live manipulation, can write `settled` under the fingers. **Sebastian decided it should not become a story.** It stays where ADR-028's US-314 amendment already puts it, as ADR-030 §7's recorded, accepted exposure, and no backlog entry is written.
+
+## 2026-09-27 (CI) — a required Release compile, after US-405's Debug-only blind spot
+
+US-405's in-loop review found a Release-only compile break that every gate had passed, because every gate builds Debug. **Sebastian decided** to add a Release build. His first suggestion was tags only; he settled on **pull requests and tags, as a required status check**, once it was pointed out that the repository has no tags yet and a tag-only job would find a break after it had reached `main`.
+
+- **Shape**: its own workflow (`release-build.yml`), a compile only (`-configuration Release`, `generic/platform=iOS Simulator`, `CODE_SIGNING_ALLOWED=NO`), and no tests. It is not a job in `ci.yml`: that file also runs on every branch push, and an `if:`-skipped job there would report a second, "skipped" check of the same name on the pull request's head commit. ADR-023 gets a dated amendment, and CLAUDE.md's list of required checks is updated. `AGENTS.md` has no such list, so there was nothing to sync.
+- **Proved to discriminate before being trusted**, locally, in a clean worktree off `main` with the job's exact command. `main` builds Release. A probe file holding an unguarded `SampleID.us309Synthetic` **fails Release** (`type 'SampleID' has no member 'us309Synthetic'`, US-405's error) and **passes Debug**. The job catches exactly the gap it exists for, and nothing else in the pipeline does.
+- **Order of operations, because a required check that has never reported blocks every PR**: the workflow merges first, and the ruleset gains the check only afterwards. PR #56 (US-405) needs `main` merged into it to pick the check up.
