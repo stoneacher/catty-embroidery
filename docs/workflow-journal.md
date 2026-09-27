@@ -2520,3 +2520,18 @@ Codex verified all three round-1 fixes and found nothing new. It also confirmed 
   - I chained `swiftlint … ; git commit`, so a lint failure did not stop a commit. It was caught and fixed one commit later, before CI ran red.
 - **UI definition of done, partly unmet.** The launch screenshot was taken and is unchanged. The stage screenshot was not: `xcodebuildmcp ui-automation tap` (and `batch`) reports success but does not navigate, **reproduced on a `main` build**, so it is the tooling on this simulator (iOS 26.5), not the branch. Separately, Sebastian's uncommitted local bundle-ID/`Info.plist` edits make the local app fail simulator preflight and fail `UTTypeDeclarationTests`. The screenshots were built from a clean temporary worktree instead, and the working-tree edits were left untouched.
 - **Totals** (counted from runs): engine tests 976 → 981; app tests 239 → 256. CI green on every non-red commit that ran to completion.
+
+## 2026-09-27 (CI) — the required Release check, proved end to end
+
+After #57 merged, Sebastian added `App Release build (xcodebuild)` to the `Protect main` ruleset. The first read of the effective rules showed only the three original checks: the setting had not been saved. Reading the rules back through `gh api repos/…/rules/branches/main` rather than trusting the UI caught it. Once saved, the check is pinned to the GitHub Actions app (integration 15368).
+
+**Probe, PR #58 (draft, closed unmerged, branch deleted).** The PR reproduced US-405's bug: `let releaseProbe: SampleID = .us309Synthetic`, unguarded.
+
+- Local commit hook (Debug compile): **passed.** This is the gap the check exists for.
+- Engine tests, SwiftLint, Debug app build & test: **passed**, on both the push and PR runs.
+- `App Release build (xcodebuild)`: **failed**, with `ReleaseProbe.swift:4:31: error: type 'SampleID' has no member 'us309Synthetic'`.
+- Merge state: **BLOCKED.**
+
+The Release check is therefore the only gate that catches a Debug-only symbol, and GitHub enforces it. **The planned step 3, merging `main` into PR #56, never happened**: #56 had already merged at 18:32, before #57, so US-405 itself never ran under the new check. The branch-level `release-build.yml` runs on PR #57 compiled US-405's merged code in Release and passed.
+
+A Codex review of the probe PR was deliberately skipped, because a PR that is never meant to merge has nothing to hand over.
