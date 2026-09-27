@@ -133,7 +133,30 @@ final class AppModel {
         }
     }
 
-    private func editApplied() {}
+    /// What an applied edit does to the rest of the window (ADR-038): the program is no longer
+    /// the sample it was loaded from, and the run on the stage no longer describes it.
+    ///
+    /// **`runner.reset()` and nothing else from `select(_:)`'s list**, and each omission is
+    /// deliberate:
+    ///
+    /// - **No `interaction.followFit()`.** A new *design* arrives fitted; an edit to the design
+    ///   on screen keeps the zoom the user chose. Re-fitting on every parameter nudge would be
+    ///   unusable, and this is the divergence between the two callers of one path that the
+    ///   story names as the detail most likely to be missed.
+    /// - **No new generation.** An edit is not a new selection; nothing downstream should treat
+    ///   it as "start over".
+    /// - **No `path` write.** The stage is already on screen.
+    /// - **No `exporter.name` re-seed.** The name may be one the user typed.
+    ///
+    /// `reset()` is ADR-027's existing discard path: it cancels the consumer, bumps the run
+    /// generation so buffered frames from the voided run cannot land, clears the display list
+    /// and needle, and fires `onRunDiscarded`, which deletes the prepared file. The file is the
+    /// part that actually goes stale — the interpreter took the program by value (ADR-026's
+    /// eager preparation is why a stale file would otherwise be offered).
+    private func editApplied() {
+        selection?.provenance = nil
+        runner.reset()
+    }
 
     /// Starts the selected design from the beginning, throwing away whatever the last run
     /// prepared.
