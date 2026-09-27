@@ -208,6 +208,11 @@ in the same spirit as US-211's and US-313's above.
   misses this by passing the same `Self.fit` every frame all survived planning unchanged and are
   carried into the story verbatim. That is what an entry written immediately after the review
   round that found it looks like.
+  **Qualified 2026-09-26 at implementation**: the scope needed two corrections after all. What
+  is frozen is the *fit* (`manipulationFit`), because the zoom bounds read it as well as the
+  baseline. And it is captured when the tracker is not live, not when nothing is held, because
+  a view torn down without a cancel would otherwise freeze every later manipulation. See
+  ADR-028's US-314 amendment.
 - **US-315 — the canvas and the hoop come apart** →
   [`milestone-4/US-315`](milestone-4/US-315-keyboard-transform-transient.md). The entry's two
   refuted explanations and three failed simulator reproductions were its whole value and are

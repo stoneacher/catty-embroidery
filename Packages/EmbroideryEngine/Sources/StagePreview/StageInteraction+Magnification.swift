@@ -3,8 +3,11 @@
 /// In its own file because `StageInteraction.swift` crossed SwiftLint's 400-line limit under
 /// `--strict` — and this is the piece that can move: it only *reads*. The toggle and the
 /// directional pan would be the more natural extraction, but both write `settled`, whose setter
-/// is `private(set)` so that one file owns the invariant "settled is not written while fingers
-/// are down"; moving them would mean widening it to `internal(set)` and giving that away.
+/// is `private(set)` so that its writers stay in one file; moving them would mean widening it to
+/// `internal(set)`. That locality is **not** the invariant "settled is not written while fingers
+/// are down" — no writer is told whether a manipulation is live, and ADR-028's US-314 amendment
+/// records the double tap and accessibility actions that can still reach one (`/codex-review`
+/// round 2 on US-314).
 public extension StageInteraction {
     /// What a live pinch may multiply the baseline by, as a ratio, before
     /// `StageTransform.pinched` starts clamping.
@@ -23,6 +26,11 @@ public extension StageInteraction {
     ///   user pinches against what is on screen, and round 1's clamped-rebase jump comes back by
     ///   another route (`/codex-review` round 2).
     ///
+    /// **Precondition since US-314: ask straight after `beginManipulating`.** Inside a
+    /// manipulation the range is computed against the frozen fit, not `fit`, and a frozen fit
+    /// that outlived its manipulation would be returned to any other caller. The coordinator
+    /// is the only caller and always asks in that order.
+    ///
     /// The floor is a **ratio**, never `StageTransform.minimumRepresentableScale`: that constant
     /// bounds a transform's scale, not a factor, and using it here narrowed the fit-aware range
     /// for a very small fit — the stage could not pinch down to a zoom the bounds explicitly
@@ -31,6 +39,10 @@ public extension StageInteraction {
         fitting fit: StageTransform,
         settlingAt progress: Double = 1
     ) -> ClosedRange<Double> {
+        // The frozen fit, unconditionally: the coordinator asks only after `beginManipulating`,
+        // which has just captured or kept it — and a pinch re-beginning mid-manipulation must be
+        // clamped against the fit its frames are drawn at (US-314).
+        let fit = manipulationFit ?? fit
         let scale = baseline(fitting: fit, settlingAt: progress).scale
         guard scale > 0, scale.isFinite else { return StageManipulation.unlimitedMagnification }
 
@@ -55,6 +67,9 @@ public extension StageInteraction {
         fitting fit: StageTransform,
         in viewport: ViewSize
     ) -> Double {
+        // Divides by the fit on screen, not the frozen one, deliberately: after the commit the
+        // spoken value is `settled.scale / fit.scale`, so dividing by the frozen fit mid-gesture
+        // would make the number jump at finger-lift.
         transform(with: gesture, fitting: fit, in: viewport).scale / fit.scale
     }
 }

@@ -52,7 +52,7 @@ Placement decided by Sebastian at this planning session (2026-09-19).
 | US-402 | `EditAction`, `EditRejection`, `EditResult`, `EditorCore.apply(_:to:)`, sibling-jump helper | US-401; wraps `Script.movingPair`/`range(ofPairAt:)`/`matchingEnd` (M2, shipped) | ✅ |
 | US-403 | `UndoStack`, `EditSession`, coalescing key | `Program` (M2), `EditResult` (402) | ✅ |
 | US-404 | `ProgramDocument.encode/decode`, `ProgramDocumentError`, `FormulaLiteral.parse` | US-401 (the target); `Program` + `formatVersion` (M2, shipped); `Samples`/`Interpreter` in tests | ✅ **freely movable** between 401 and 406 |
-| US-314 | `manipulationBaseline` + its cancellation wiring | `StagePreview` **and** the app's `StageManipulationCoordinator` (M3, shipped) | ✅ independent of the editor entirely — but **not package-only** |
+| US-314 | `manipulationBaseline` (landed as `manipulationFit`, 2026-09-26) + its cancellation wiring | `StagePreview` **and** the app's `StageManipulationCoordinator` (M3, shipped) | ✅ independent of the editor entirely — but **not package-only** |
 | US-405 | `EditorViewModel`, `provenance: SampleID?`, generalised `AppModel` selection, edit ⇒ `runner.reset()` | 402, 403, `AppModel`/`RunViewModel`/`SampleProgram` (M3, shipped) | ✅ **position forced** — first story importing `EditorCore` into the app |
 | US-312 | Export-row copy + its localisation | `StageExportRow` (M3), the selection shape settled by 405 | ✅ |
 | US-406 | `ProgramStoring`, `DocumentsProgramStore`, test double, load-at-launch | 404's codec, 405's view model | ✅ |
