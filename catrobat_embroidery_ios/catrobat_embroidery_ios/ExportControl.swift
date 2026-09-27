@@ -189,7 +189,26 @@ extension ExportControl.Readiness {
     }
 
     /// The sentence under the share control saying DST files carry no thread colours (US-312).
+    ///
+    /// **Information, never a reason** — which is why it is its own property rather than a
+    /// `notice`. DST stores stitch positions and colour-change points and no colour at all
+    /// (ADR-012, ADR-026), so every machine and viewer assigns its own palette; the colours on
+    /// screen do not survive, and a correct export would otherwise look broken (US-308's
+    /// Ink/Stitch check drew `#1d4ed8` as pink).
+    ///
+    /// The same sentence in **every state the row renders**, disabled ones included: it is a
+    /// fact about the format rather than about this file, and a note that appeared only when a
+    /// share is offered would move the row on every Play and finish — the movement
+    /// `StageExportRow` keeps a disabled button to avoid. It does not depend on the design's
+    /// colour count either; a single-colour design still gets machine-assigned colour.
+    ///
+    /// `nil` only for `.noSelection`, which `StageView` never renders (ADR-028: no copy for a
+    /// state nothing shows). Exhaustive with no `default:`, so a new case must choose.
     var threadColorNote: LocalizedStringResource? {
-        nil
+        switch self {
+        case .noSelection: nil
+        case .running, .notRun, .tooFewStitches, .nothingEmbroiderable, .nameEmpty, .nameInvalid,
+             .failed, .ready: .stageExportThreadColors
+        }
     }
 }
