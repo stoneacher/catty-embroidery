@@ -9,17 +9,23 @@ name: Release build
 #
 # Why its own file rather than a job in `ci.yml`: `ci.yml` runs on every branch push as
 # well as on pull requests, and this job is wanted on pull requests and tags only. A job
-# skipped with `if:` would still report a "skipped" check of the same name on the same
-# commit as the pull-request run — a poor thing to make a required status check. A separate
-# workflow with its own triggers reports once per pull-request head, and not at all on a
-# plain branch push.
+# skipped with `if:` would still report a check of the same name from the push run — against
+# the branch head, while the pull-request run reports against GitHub's test-merge commit —
+# and a skipped job reports *success*, so two same-named checks, one of them a vacuous pass,
+# is a poor thing to make a required status check. A separate workflow with its own triggers
+# reports only from pull-request runs, and not at all on a plain branch push.
+#
+# Scope: the app target and the package's production targets, with `DEBUG` undefined. Test
+# targets are **not** compiled in Release — several reference `#if DEBUG` symbols on purpose
+# (`SyntheticHarnessTests`) and are only ever built Debug.
 #
 # Required status check (ADR-023): CI, not the local hook, is the enforcement boundary.
 on:
   pull_request:
   push:
     tags:
-      - '*'
+      # `**`, not `*`: `*` does not match a `/`, so `release/v1.0` would not trigger.
+      - '**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -41,13 +47,16 @@ jobs:
       - name: Show toolchain
         run: xcodebuild -version
       - name: Build the app in Release
-        # A generic simulator destination, so no device and no simulator boot is needed,
-        # and CODE_SIGNING_ALLOWED=NO so the runner needs no identity. -project is explicit
-        # for the reason ci.yml gives: the project is nested below the repository root.
+        # The generic *device* destination, because that is what ships: a simulator build
+        # excludes `#if !targetEnvironment(simulator)` code, so a device-only break would pass
+        # it (Codex, PR #57 round 1). It needs no device attached and no simulator boot, and
+        # CODE_SIGNING_ALLOWED=NO means the runner needs no identity — the same signing-free
+        # device compile the local commit hook already runs in Debug (ADR-023). -project is
+        # explicit for the reason ci.yml gives: the project is nested below the repository root.
         run: |
           xcodebuild build \
             -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj \
             -scheme catrobat_embroidery_ios \
             -configuration Release \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO
