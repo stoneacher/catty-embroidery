@@ -69,9 +69,10 @@ struct RootView: View {
     /// **US-305's `.task(id: model.selection)` drain is gone**, and nothing replaced it
     /// here. The run is started by the user pressing play, and it is discarded by
     /// `AppModel.select(_:)` and, since US-405, by an applied edit (ADR-038) — deliberately
-    /// not by a view modifier keyed on the selection. `.task(id:)` and `.onChange(of:initial:)` both re-fire when this view
-    /// rebuilds its navigation container after a horizontal size-class change (ADR-023),
-    /// so either would wipe a finished design on an iPad window resize.
+    /// not by a view modifier keyed on the selection. `.task(id:)` and
+    /// `.onChange(of:initial:)` both re-fire when this view rebuilds its navigation container
+    /// after a horizontal size-class change (ADR-023), so either would wipe a finished design
+    /// on an iPad window resize.
     ///
     /// The needle comes from `visibleNeedle`, which **is** the "only while running" rule
     /// rather than a place that reimplements it. It was spelled out here as a conditional,
