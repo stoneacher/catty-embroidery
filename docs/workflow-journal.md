@@ -2459,3 +2459,7 @@ US-314 freezes the stage's fit while fingers are down: `StageInteraction.manipul
   - I added a Claude co-author trailer to the first commit against the standing no-trailer rule. I amended it out before the push.
   - The `swift-code-reviewer` report claimed the docs were missing. That was stale: it reviewed a commit from before the docs landed. Delegated reviews should be pinned to the commit they were given, and triaged knowing that.
 - **Totals** (counted from runs, not memory): engine tests 966 → 976; the app suite is 239, with four new cases. Human check open: pinch on a device while a growing design stitches.
+
+## 2026-09-27 (US-314, device check) — the open human check passed
+
+The 2026-09-26 US-314 entry left one check open: pinching on a device while a growing design stitches, which the simulator cannot do. Sebastian ran it on his iPhone and reports it verified: the grabbed point stays under the fingers, with no shift at lift. The story's Status line now records the pass. Nothing else changed.

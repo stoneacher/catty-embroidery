@@ -3,7 +3,7 @@
 **Epic**: E4 Stage & preview | **Estimate**: ~3 h | **Depends on**: — (M3 `StagePreview`, shipped)
 **Discovered**: 2026-09-14, `/codex-review` round 2 on US-313a. **Scheduled into M4**: 2026-09-19.
 
-**Status**: Done — 2026-09-26, PR #55. Implemented test-first: signature-only stubs in the `[red]` commit, so the reds were behavioural. Reviewed by `swift-code-reviewer`: 16 mutants, 2 survivors, both now killed. Then two Codex rounds, Low → Low, the second a comment-only fix, which ends the loop on condition 1. AC1 was amended at planning (approved by Sebastian; see the note under the criteria). **One human check remains open, on a device** (the simulator cannot pinch): replay a design that grows past the hoop and pinch while it stitches. The grabbed point should stay under the fingers, with no shift at lift.
+**Status**: Done — 2026-09-26, PR #55. Implemented test-first: signature-only stubs in the `[red]` commit, so the reds were behavioural. Reviewed by `swift-code-reviewer`: 16 mutants, 2 survivors, both now killed. Then two Codex rounds, Low → Low, the second a comment-only fix, which ends the loop on condition 1. AC1 was amended at planning (approved by Sebastian; see the note under the criteria). **Human device check: passed 2026-09-27**, Sebastian on his iPhone. He replayed a design growing past the hoop and pinched while it stitched; the grabbed point stays under the fingers, with no shift at lift.
 
 **Story**: As a user, I want the stage to stay still under my fingers while I pinch, even though the design is still being stitched, so the point I grabbed is the point I am still holding.
 
