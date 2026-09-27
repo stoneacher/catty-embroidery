@@ -249,6 +249,38 @@ struct ExportWiringTests {
         #expect(model.exporter.state == .idle)
     }
 
+    // MARK: - US-312
+
+    /// Test-first item 2, end to end: a single-colour design and a two-colour design both get
+    /// the thread-colour note once their file is ready. A single-colour design still gets
+    /// machine-assigned colour, so suppressing the note there would be wrong.
+    ///
+    /// `Readiness` takes no colour input, so today this holds by construction; the test exists
+    /// so a later "only when there is more than one colour" gate — the tempting refinement —
+    /// fails here rather than shipping. The colour counts are required as premises, so the
+    /// test cannot silently stop covering both cases if a sample changes.
+    @Test("one colour or several, a ready export carries the thread-colour note",
+          .timeLimit(.minutes(1)),
+          arguments: [(SampleID.octagonRosette, 1), (SampleID.squareCoil, 2)])
+    func aReadyExportCarriesTheNoteWhateverTheColorCount(id: SampleID, colors: Int) async throws {
+        let model = Self.immediateModel(writer: RecordingDSTFileWriter())
+        model.select(SampleLibrary[id])
+        model.play()
+        await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
+        try #require(model.runner.run.summary.colorCount == colors, "premise: \(id) has \(colors) colour(s)")
+
+        let readiness = ExportControl.readiness(
+            hasSelection: model.selection != nil,
+            runState: model.runner.run.state,
+            eligibility: model.runner.run.exportEligibility,
+            name: model.exporter.validatedName,
+            exportState: model.exporter.state
+        )
+
+        try #require(readiness.isEnabled, "premise: the file is ready to share")
+        #expect(readiness.threadColorNote == .stageExportThreadColors)
+    }
+
     private static func threeStitchStream() -> EmbroideryStream {
         var stream = EmbroideryStream()
         for x in 0 ..< 3 {

@@ -63,13 +63,15 @@ struct AppStringsTests {
             (.stageCanvasAccessibilityActionPanRight, "stage.canvas.accessibility.action.pan.right"),
             (.stageCanvasAccessibilityActionPanUp, "stage.canvas.accessibility.action.pan.up"),
             (.stageCanvasAccessibilityActionPanDown, "stage.canvas.accessibility.action.pan.down"),
-            // US-308. Only the three non-parameterised, non-hint entries are listed here.
+            // US-308. Only the non-parameterised, non-hint entries are listed here.
             // The seven disabled-reason hints are covered by
             // `ExportControlTests.everyHintResolves`, which additionally asserts they are
             // pairwise distinct; the five error messages by `ExportViewModelTests`; and the
             // three name-problem messages by `DesignNamePresentationTests`. Listing them
             // twice would be two places to update and one to forget.
             (.stageExportShare, "stage.export.share"),
+            // US-312: the thread-colour note under the share control.
+            (.stageExportThreadColors, "stage.export.thread.colors"),
             (.stageNameLabel, "stage.name.label"),
             (.stageNamePrompt, "stage.name.prompt")
         ]

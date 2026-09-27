@@ -187,4 +187,9 @@ extension ExportControl.Readiness {
         case .noSelection, .running, .notRun, .nameEmpty, .nameInvalid, .ready: nil
         }
     }
+
+    /// The sentence under the share control saying DST files carry no thread colours (US-312).
+    var threadColorNote: LocalizedStringResource? {
+        nil
+    }
 }
