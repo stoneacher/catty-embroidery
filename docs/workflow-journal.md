@@ -2468,6 +2468,26 @@ The 2026-09-26 US-314 entry left one check open: pinching on a device while a gr
 
 The 2026-09-26 US-314 entry offered Codex's "concrete known defect" to Sebastian as a backlog candidate: a double tap during a pan, or an accessibility pan or adjust during a live manipulation, can write `settled` under the fingers. **Sebastian decided it should not become a story.** It stays where ADR-028's US-314 amendment already puts it, as ADR-030 §7's recorded, accepted exposure, and no backlog entry is written.
 
+## 2026-09-27 (CI) — a required Release compile, after US-405's Debug-only blind spot
+
+US-405's in-loop review found a Release-only compile break that every gate had passed, because every gate builds Debug. **Sebastian decided** to add a Release build. His first suggestion was tags only; he settled on **pull requests and tags, as a required status check**, once it was pointed out that the repository has no tags yet and a tag-only job would find a break after it had reached `main`.
+
+- **Shape**: its own workflow (`release-build.yml`), a compile only (`-configuration Release`, `generic/platform=iOS Simulator`, `CODE_SIGNING_ALLOWED=NO`), and no tests. It is not a job in `ci.yml`: that file also runs on every branch push, and an `if:`-skipped job there would report a second, "skipped" check of the same name on the pull request's head commit. ADR-023 gets a dated amendment, and CLAUDE.md's list of required checks is updated. `AGENTS.md` has no such list, so there was nothing to sync.
+- **Proved to discriminate before being trusted**, locally, in a clean worktree off `main` with the job's exact command. `main` builds Release. A probe file holding an unguarded `SampleID.us309Synthetic` **fails Release** (`type 'SampleID' has no member 'us309Synthetic'`, US-405's error) and **passes Debug**. The job catches exactly the gap it exists for, and nothing else in the pipeline does.
+- **Order of operations, because a required check that has never reported blocks every PR**: the workflow merges first, and the ruleset gains the check only afterwards. PR #56 (US-405) needs `main` merged into it to pick the check up.
+
+## 2026-09-27 (CI, Codex round 1 on PR #57) — correcting the entry above
+
+Corrects two things in the entry above (per the append-only rule, that entry is not edited):
+
+- **The destination is now `generic/platform=iOS`, not the simulator.** Codex (Medium) pointed out that a simulator build excludes `#if !targetEnvironment(simulator)` code, so a device-only Release break would pass. The device build is what ships. It was re-proved locally with the same probe: `main` builds, and the probe fails with US-405's error.
+- **The duplicate-check mechanics were stated wrongly.** The push run reports against the branch head, while the pull-request run reports against GitHub's test-merge commit; they are not "the same commit". The conclusion stands for a different reason: an `if:`-skipped job reports *success*, and two same-named checks with one of them a vacuous pass are ambiguous.
+- Also fixed (Low): the tag pattern is `'**'`, because `'*'` does not match `/`. Recorded as a limit rather than fixed: test targets are not compiled in Release, because some reference `#if DEBUG` symbols deliberately.
+- Codex's other checks held. `DEBUG` is undefined in the project's Release configuration, and the package does not reintroduce it. Fork PRs need no secrets. Concurrency cancellation fails closed. The ruleset must name the job's display name, `App Release build (xcodebuild)`, exactly.
+
+## 2026-09-27 (CI, Codex round 2 on PR #57) — clean
+
+Codex verified all three round-1 fixes and found nothing new. It also confirmed that the pinned Xcode 26.6 path exists on the current `macos-26` runner image. The loop ends on condition 1; severity history **Medium → none**, no finding rejected. **Delegation note**: the in-loop reviewer found the gap (US-405's Release break); Codex then found that the first fix for the gap had a smaller gap of its own (the simulator destination). This is the same pattern as US-108's re-round catching a defect in the line added to satisfy round 1. What Codex could not check is the GitHub ruleset itself; adding the check to it is a manual step after merge.
 ## 2026-09-27 (US-405) — the working program replaces the sample selection
 
 - **Planning**: `swift-architect` produced the type design and the test mapping, and flagged three decisions that belonged to Sebastian rather than the plan. **Sebastian decided all three the recommended way**: (a) launch holds `Program.blank` in the editor, but the stage does not treat it as a selection; (b) only an edit that *changes* the program voids the run; (c) `StageView` takes a title, not a `Program`. That is three deviations from the story's literal text, all recorded in ADR-038 and inline in the acceptance criteria rather than silently absorbed. The architect also found two affected test files the story's list missed (`SyntheticHarnessTests`, `StageManipulationWiringTests`) and three it listed that needed no change. Both lists are now in the story.

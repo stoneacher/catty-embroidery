@@ -1,0 +1,62 @@
+name: Release build
+
+# A compile of the app in the Release configuration — no tests, no signing.
+#
+# Why it exists: `#if DEBUG` code is invisible to every other gate. The local commit hook
+# and `ci.yml` both build Debug, so a Release-only compile error passes all of them. US-405
+# shipped exactly that to a PR branch (an unguarded `SampleID.us309Synthetic`, which exists
+# only under `#if DEBUG`) and only an in-loop reviewer who happened to build Release found it.
+#
+# Why its own file rather than a job in `ci.yml`: `ci.yml` runs on every branch push as
+# well as on pull requests, and this job is wanted on pull requests and tags only. A job
+# skipped with `if:` would still report a check of the same name from the push run — against
+# the branch head, while the pull-request run reports against GitHub's test-merge commit —
+# and a skipped job reports *success*, so two same-named checks, one of them a vacuous pass,
+# is a poor thing to make a required status check. A separate workflow with its own triggers
+# reports only from pull-request runs, and not at all on a plain branch push.
+#
+# Scope: the app target and the package's production targets, with `DEBUG` undefined. Test
+# targets are **not** compiled in Release — several reference `#if DEBUG` symbols on purpose
+# (`SyntheticHarnessTests`) and are only ever built Debug.
+#
+# Required status check (ADR-023): CI, not the local hook, is the enforcement boundary.
+on:
+  pull_request:
+  push:
+    tags:
+      # `**`, not `*`: `*` does not match a `/`, so `release/v1.0` would not trigger.
+      - '**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app-release-build:
+    name: App Release build (xcodebuild)
+    runs-on: macos-26
+    # A compile only, so well under the app-test job's 20; a wedged runner fails in a
+    # useful time rather than burning the 360-minute default.
+    timeout-minutes: 15
+    env:
+      # Same pin and the same reason as ci.yml: the runner-default Xcode drifts and breaks
+      # Swift 6.x builds. Xcode 26.6 (Swift 6.3.3) matches the local development toolchain.
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+      - name: Show toolchain
+        run: xcodebuild -version
+      - name: Build the app in Release
+        # The generic *device* destination, because that is what ships: a simulator build
+        # excludes `#if !targetEnvironment(simulator)` code, so a device-only break would pass
+        # it (Codex, PR #57 round 1). It needs no device attached and no simulator boot, and
+        # CODE_SIGNING_ALLOWED=NO means the runner needs no identity — the same signing-free
+        # device compile the local commit hook already runs in Debug (ADR-023). -project is
+        # explicit for the reason ci.yml gives: the project is nested below the repository root.
+        run: |
+          xcodebuild build \
+            -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj \
+            -scheme catrobat_embroidery_ios \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO
