@@ -25,12 +25,22 @@ struct StageExportRow: View {
         VStack(spacing: 4) {
             button
             if let note = readiness.threadColorNote {
-                // The screen's plain-fact style — the hoop-size caption's — and deliberately
-                // none of a notice's: no glyph, no colour, `.secondary`. The export is correct;
+                // The screen's plain-fact style — the hoop-size caption's, which is `.caption`
+                // and inherits `.secondary` from `StageNotices`' block — and deliberately none of
+                // a notice's: no glyph, no colour. The export is correct;
                 // this is information. Outside `.disabled`, so it is not dimmed with the
                 // button and does not read as the reason it is dimmed.
                 Text(note)
                     .font(.caption)
+                    // **Capped at AX1**, the story's Dynamic Type bar, and a measured choice
+                    // rather than a reflex (Sebastian, 2026-09-27). At AX5 an uncapped caption
+                    // grows to five lines in a pinned row and the Share button's label spills
+                    // out of its own background. That is on top of a squeeze that predates
+                    // this story: on `main` at AX5 the design-name field already disappears
+                    // behind the pinned rows, which is backlog US-319's stage-chrome overflow
+                    // entry and not something a caption can fix. Secondary text may stop
+                    // scaling under the HIG; the button and the field it gates may not.
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     // Wraps rather than truncating at large type sizes; the row is pinned, so

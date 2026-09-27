@@ -199,6 +199,12 @@ struct ExportControlTests {
     /// Test-first item 1: the note is the catalog's sentence, not a literal and not a
     /// neighbouring export string. Compared as rendered text against the generated symbol, so
     /// returning `.stageExportShare` — the resource one line away in the row — fails too.
+    ///
+    /// **The English value is pinned as well**, because comparing the catalog with itself
+    /// cannot catch a wrong sentence: `swift-code-reviewer` replaced it with the opposite claim
+    /// ("Thread colours are saved in the file.") and the test stayed green. The copy was chosen
+    /// by Sebastian on 2026-09-27, so changing it is a decision and should fail a test. Only
+    /// when the test process renders English — the one locale the catalog ships today.
     @Test("the thread-colour note is the catalog's sentence")
     func theThreadColorNoteComesFromTheCatalog() throws {
         let url = URL.temporaryDirectory.appending(path: "Rose.dst")
@@ -208,6 +214,9 @@ struct ExportControlTests {
         #expect(text == String(localized: .stageExportThreadColors))
         #expect(text != String(localized: .stageExportShare))
         #expect(!text.contains("stage.export"), "the note fell back to its key")
+        if Locale.current.language.languageCode == .english {
+            #expect(text == "DST files don't store thread colours. The machine or viewer chooses them.")
+        }
     }
 
     /// The note is about the **format**, not about this file or this state, so it is shown in
