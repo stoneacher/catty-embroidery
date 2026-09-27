@@ -35,6 +35,8 @@ Chosen over the alternative — let the run finish and gate export on a version 
 - [ ] **`reset()` from an edit must not call `interaction.followFit()`** the way `select(_:)` does. Re-fitting the camera every time the user nudges a parameter would be unusable. This is a real divergence between two callers of one path and is the detail most likely to be missed.
 - [ ] Every existing app test passes or is deliberately updated, with each update explained. A silently rewritten assertion is how a refactor hides a regression.
 
+**Existing app tests, audited (2026-09-27).** Deliberately updated, each for the reason in the test's own comment: `AppModelTests` (four tests read `selection.sample`/`selection.program`; they now read `provenance`/`title` and `editor.program` — the claims are unchanged, the value moved), `SyntheticHarnessTests` (`selection?.sample.id` → `provenance`; missing from the list above), and the two `StageView` hosting helpers in `StageViewWiringTests` and `StageManipulationWiringTests` (`sample:` → `title:` + `showsFrameTimeReadout:`; the second file is also missing from the list above; nothing is asserted about the value). **Listed above, verified unaffected, not edited**: `SampleLinkageTests`, `SampleRowAccessibilityTests` and `ExportWiringTests` read neither `selection` nor `StageView`, and `select(_:)` still seeds the export name.
+
 ## Test-first plan
 
 1. The editor view model's `apply` of a valid action updates the working program to the expected whole value and pushes one undo entry.

@@ -52,7 +52,7 @@ final class RunViewModel {
     /// if a suspension is ever introduced between the check and the apply, or if a future path
     /// bumps the generation without cancelling. No test through the public API can distinguish
     /// the two today — confirmed in round 3 — so this says so rather than implying a test
-    /// proves it. The device is the one `SampleSelection.generation` uses to tell two
+    /// proves it. The device is the one `ProgramSelection.generation` uses to tell two
     /// selections of the same design apart.
     @ObservationIgnored private var generation = 0
 

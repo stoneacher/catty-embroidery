@@ -166,7 +166,12 @@ final class AppModel {
     /// already cleared the design. The discard lives on `RunViewModel.onRunDiscarded` rather
     /// than here, because round 2 pointed out that putting it in this method left the
     /// invariant as a convention: `runner.play(_:)` and `runner.reset()` are both reachable
-    /// directly. This method now only resolves the selection.
+    /// directly. This method now only checks that something is selected and runs the
+    /// **working** program — `editor.program`, not the sample it was loaded from, which since
+    /// US-405 the selection no longer carries.
+    ///
+    /// The guard keeps the blank program unrunnable at launch, which is ADR-038's "the stage
+    /// does not yet treat the blank program as a selection" (US-407 flips it).
     func play() {
         guard selection != nil else { return }
         runner.play(editor.program)
@@ -199,11 +204,14 @@ final class AppModel {
     /// no lifecycle, so a reference type would be an abstraction with nothing to justify it.
     var interaction = StageInteraction()
 
-    /// The chosen sample, or `nil` before the first tap.
+    /// What the stage shows — its title, the sample it came from while it still is that
+    /// sample, and which time it was chosen — or `nil` before the first tap. The program
+    /// itself is `editor.program` (US-405, ADR-038).
     ///
-    /// `private(set)` so every mutation goes through `select(_:)` and the
+    /// `private(set)` so every new selection goes through `select(_:)` and the
     /// generation can never be skipped — an assignment that bypassed it would
-    /// reintroduce exactly the no-op this story exists to forbid.
+    /// reintroduce exactly the no-op this story exists to forbid. The one other
+    /// writer is `editApplied()`, which clears `provenance` and nothing else.
     private(set) var selection: ProgramSelection?
 
     /// The compact navigation stack's path.
@@ -236,6 +244,12 @@ final class AppModel {
     @ObservationIgnored private var nextGeneration = 0
 
     /// Selects `sample` and shows the stage.
+    ///
+    /// **Loads a copy** into the editor and resets its history (US-405): the working program
+    /// is a value, so editing it can never reach `SampleLibrary`, which is shared
+    /// process-wide — asserted by `WorkingProgramTests` because a reference-typed model would
+    /// make it false without a compiler error. Picking the sample again therefore throws the
+    /// edits away, which is US-304's "start over" reaching the history too.
     ///
     /// Never a no-op, even for the sample already selected: the fresh generation
     /// makes the new value unequal to the old one, which is what lets a later

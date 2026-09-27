@@ -120,8 +120,8 @@ struct RootView: View {
             ),
             designName: $exporter.name,
             nameValidation: model.exporter.validatedName,
-            // `model.play()` only because it resolves the selection. The exporter cleanup is
-            // **not** this call's doing — it hangs off `RunViewModel.onRunDiscarded`, so a
+            // `model.play()` only because it checks the selection and runs the working program.
+            // The exporter cleanup is **not** this call's doing — it hangs off `RunViewModel.onRunDiscarded`, so a
             // direct `runner.play(_:)` would be equally safe. An earlier version of this
             // comment claimed the pairing lived here; cross-vendor round 3 pointed out that
             // round 2 had already moved it.
