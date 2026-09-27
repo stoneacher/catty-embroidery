@@ -1,3 +1,4 @@
+import Samples
 import StagePreview
 import SwiftUI
 
@@ -92,7 +93,10 @@ struct RootView: View {
         @Bindable var exporter = model.exporter
 
         return StageView(
-            sample: model.selection?.sample,
+            title: model.selection?.sample.displayName,
+            // By id, in every build: `.us309Synthetic` is a case in release too, and it is only
+            // *listed* in debug (`AppModel.samples`), so outside debug this is always false.
+            showsFrameTimeReadout: model.selection?.sample.id == .us309Synthetic,
             display: model.runner.run.display,
             runState: model.runner.run.state,
             needle: model.runner.run.visibleNeedle,

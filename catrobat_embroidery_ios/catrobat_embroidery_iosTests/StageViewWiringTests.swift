@@ -1,6 +1,5 @@
 @testable import catrobat_embroidery_ios
 import EmbroideryEngine
-import Samples
 import StagePreview
 import SwiftUI
 import Testing
@@ -50,7 +49,8 @@ struct StageViewWiringTests {
         exportReadiness: ExportControl.Readiness = .notRun
     ) -> some View {
         StageView(
-            sample: SampleLibrary.all.first,
+            title: "Octagon Rosette",
+            showsFrameTimeReadout: false,
             display: display,
             runState: runState,
             needle: needle,

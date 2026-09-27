@@ -1,5 +1,4 @@
 import EmbroideryEngine
-import Samples
 import StagePreview
 import SwiftUI
 
@@ -15,9 +14,20 @@ import SwiftUI
 /// replacement renderer inherits the hoop, the fields and the fit for free — and so the
 /// one place appearance adapts stays separate from the one place it must not.
 struct StageView<Renderer: StagePreviewRenderer>: View {
-    /// The chosen design, or `nil` before anything is picked. No default: a defaulted
-    /// `nil` would let a call site silently keep the empty state.
-    let sample: SampleProgram?
+    /// The chosen design's title, or `nil` before anything is picked. No default: a
+    /// defaulted `nil` would let a call site silently keep the empty state.
+    ///
+    /// **A title, not a `SampleProgram` (US-405)** — an edited program has no `SampleID`, so a
+    /// view keyed on the sample would have nothing to show once the user changed anything. Nor
+    /// a `Program`, although the story first asked for one: nothing in this view reads it, and a
+    /// value nothing reads would still be compared, tree and all, on every diff (ADR-038). A
+    /// resource rather than a `String`, so the title localises exactly as it did when it was
+    /// the sample's `displayName`.
+    let title: LocalizedStringResource?
+
+    /// Whether the US-309/US-310 frame-time readout is drawn — true for the measurement
+    /// fixture, which this view can no longer recognise by id now that it takes a title.
+    let showsFrameTimeReadout: Bool
 
     let display: StitchDisplayList
 
@@ -72,7 +82,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
 
     private var state: StageContentState {
         .resolving(
-            hasSelection: sample != nil,
+            hasSelection: title != nil,
             hasStitches: !display.isEmpty,
             isRunning: runState.isRunning
         )
@@ -104,12 +114,12 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             // two pinned rows plus the canvas floor exceed a short device's height, and there
             // is no outer `ScrollView` to absorb it (`canvasSlot`). You cannot share a name
             // you are still typing, and the keyboard's Done key is the way out.
-            if !isNameFocused, sample != nil {
+            if !isNameFocused, title != nil {
                 StageExportRow(readiness: exportReadiness)
             }
             StageTransportRow(
                 runState: runState,
-                hasSelection: sample != nil,
+                hasSelection: title != nil,
                 onPlay: onPlay,
                 onStop: onStop
             )
@@ -118,7 +128,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
-        .navigationTitle(sample.map { Text($0.displayName) } ?? Text(.stageTitle))
+        .navigationTitle(title.map { Text($0) } ?? Text(.stageTitle))
         .navigationBarTitleDisplayMode(.inline)
         // Twice per run at most, and semantic rather than an impact weight, so it honours
         // the system haptics setting for free. It matters here because the screen's
@@ -143,7 +153,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         ZStack {
             switch state {
             case .drawn:
-                drawnStage(sample: sample)
+                drawnStage
             case .notRun, .noSelection:
                 emptyStage
             }
@@ -172,7 +182,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     /// have before, because an ordinary debug run does not pass the flag.
     @ViewBuilder private var frameTimeReadout: some View {
         #if DEBUG
-        if sample?.id == .us309Synthetic || FrameTimeReadout.isForcedForEverySample,
+        if showsFrameTimeReadout || FrameTimeReadout.isForcedForEverySample,
            case .drawn = state {
             FrameTimeReadout()
         }
@@ -185,14 +195,14 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     /// SwiftLint's hard 400 (CI runs `--strict`) and the gestures plus the accessibility
     /// summary are more than that. The seam is a real one — everything that moved is about
     /// *inspecting* the design, everything left is about its state and its absence.
-    private func drawnStage(sample: SampleProgram?) -> some View {
+    private var drawnStage: some View {
         StageCanvas(
             display: display,
             runState: runState,
             needle: needle,
             renderer: renderer,
             summary: summary,
-            designName: sample.map { String(localized: $0.displayName) },
+            designName: title.map { String(localized: $0) },
             interaction: $interaction
         )
     }
@@ -280,7 +290,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             leavesTheHoop: leavesTheHoop,
             exportNotice: exportReadiness.notice
         ) {
-            if sample != nil {
+            if title != nil {
                 DesignNameField(
                     name: $designName,
                     validation: nameValidation,
@@ -302,7 +312,8 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
 #Preview("Nothing selected") {
     NavigationStack {
         StageView(
-            sample: nil,
+            title: nil,
+            showsFrameTimeReadout: false,
             display: StitchDisplayList(),
             runState: .idle,
             needle: nil,
@@ -322,7 +333,8 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
 #Preview("Selected, not yet run") {
     NavigationStack {
         StageView(
-            sample: SampleLibrary.all.first,
+            title: "Octagon Rosette",
+            showsFrameTimeReadout: false,
             display: StitchDisplayList(),
             runState: .idle,
             needle: nil,

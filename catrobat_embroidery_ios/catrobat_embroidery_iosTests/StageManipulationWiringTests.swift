@@ -1,6 +1,5 @@
 @testable import catrobat_embroidery_ios
 import EmbroideryEngine
-import Samples
 import StagePreview
 import SwiftUI
 import Testing
@@ -36,7 +35,8 @@ struct StageManipulationWiringTests {
 
         var body: some View {
             StageView(
-                sample: SampleLibrary.all.first,
+                title: "Octagon Rosette",
+                showsFrameTimeReadout: false,
                 display: display,
                 runState: .finished(.programFinished),
                 needle: nil,
