@@ -53,7 +53,7 @@ struct SyntheticHarnessTests {
 
         model.select(synthetic)
 
-        #expect(model.selection?.sample.id == .us309Synthetic)
+        #expect(model.selection?.provenance == .us309Synthetic)
         #expect(model.isSelected(synthetic))
         // Seeded from the sample, exactly as US-308 does for the shipping two, and valid —
         // a name the field rejected would leave the export gate shut in every screenshot.

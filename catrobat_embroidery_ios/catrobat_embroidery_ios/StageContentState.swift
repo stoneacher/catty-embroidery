@@ -17,9 +17,9 @@ enum StageContentState: Hashable {
     case drawn
 
     static func resolving(hasSelection: Bool, hasStitches: Bool, isRunning: Bool) -> Self {
-        // Stitches win over the absence of a selection: not reachable today, since
-        // nothing clears a selection and only a selected sample produces stitches, but
-        // total rather than trapping — and it resolves toward showing what is actually
+        // Stitches win over the absence of a selection: not reachable today, since nothing
+        // clears a selection and only a selected (possibly edited) program produces stitches,
+        // but total rather than trapping — and it resolves toward showing what is actually
         // there rather than claiming nothing is selected while a design is on screen.
         //
         // **A run in flight also wins, even with nothing stitched yet** (US-306). A script

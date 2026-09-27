@@ -60,6 +60,11 @@ struct AppModelTests {
     /// `program` reach-through is precisely the seam US-306 consumes, and an
     /// implementation that resolved it through anything other than the passed
     /// sample would still pass a one-sample test. (In-loop review.)
+    ///
+    /// **US-405 moved the program out of the selection**, so this now asserts the two halves
+    /// where they live: the selection names the sample (`provenance`) and the editor holds its
+    /// program, which is what `play()` hands the runner. The claim is unchanged — selecting a
+    /// sample makes *its* program the one that runs — and so is the parameterisation.
     @Test(arguments: SampleLibrary.all)
     func selectingASamplePublishesItAndExposesItsProgram(_ sample: SampleProgram) throws {
         let model = AppModel()
@@ -68,11 +73,13 @@ struct AppModelTests {
         model.select(sample)
 
         let selection = try #require(model.selection)
-        #expect(selection.sample == sample)
-        #expect(selection.program == sample.program)
+        #expect(selection.provenance == sample.id)
+        #expect(selection.title == sample.displayName)
+        #expect(model.editor.program == sample.program)
     }
 
-    /// `SampleSelection` must not become `Identifiable`.
+    /// `ProgramSelection` must not become `Identifiable` (renamed from `SampleSelection` in
+    /// US-405; the reason is unchanged).
     ///
     /// Its doc comment explains why — `.task(id: selection.id)` would compile
     /// and silently dedupe re-selection, defeating the generation — but a
@@ -81,17 +88,19 @@ struct AppModelTests {
     /// conformance is added rather than at the moment a run stops restarting.
     @Test func theSelectionIsDeliberatelyNotIdentifiable() throws {
         let sample = try #require(SampleLibrary.all.first)
-        let selection: Any = SampleSelection(sample: sample, generation: 0)
+        let selection: Any = ProgramSelection(
+            generation: 0, provenance: sample.id, title: sample.displayName
+        )
 
         #expect(
             !(selection is any Identifiable),
-            "SampleSelection became Identifiable — see its doc comment before removing this test"
+            "ProgramSelection became Identifiable — see its doc comment before removing this test"
         )
     }
 
     /// Re-selecting the currently selected sample re-publishes it.
     ///
-    /// The whole reason `SampleSelection` carries a generation. Without it the
+    /// The whole reason `ProgramSelection` carries a generation. Without it the
     /// two states are byte-identical and no expectation can tell them apart —
     /// and, worse, the consumers US-306 will write (`.onChange(of:)`,
     /// `.task(id:)`) compare `Equatable` values and would dedupe the second
@@ -110,7 +119,7 @@ struct AppModelTests {
         let second = try #require(model.selection)
 
         #expect(second != first, "re-selecting was a no-op")
-        #expect(second.sample.id == first.sample.id)
+        #expect(second.provenance == first.provenance)
         #expect(second.generation == first.generation + 1)
     }
 
@@ -156,7 +165,7 @@ struct AppModelTests {
         // What the back button and the interactive swipe both do.
         model.path = []
 
-        #expect(model.selection?.sample.id == sample.id)
+        #expect(model.selection?.provenance == sample.id)
     }
 
     /// Only the selected sample reports as selected.
