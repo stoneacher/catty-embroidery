@@ -2588,3 +2588,23 @@ Round 2 was **Medium again**: flat, so a round 3 is owed. All five findings were
 - **The adopted convention was not executable as written.** "Open the draft PR before the first real commit" is impossible: `gh pr create` refuses a branch with no commits beyond `main`. It now reads "right after the branch's first commit", which is enough, because opening the PR runs CI on the commits already there. That applies in CLAUDE.md, AGENTS.md, the ADR, `ci.yml` and memory.
 - **The inline reminder hook misfired five ways.** Codex listed them: `-d` not recognised as draft; `--draft` inside a title; `--draft;` missed; `env X=1 gh pr ready` missed; `git commit -m "… gh pr ready"` treated as a ready PR. **The old hook then demonstrated the last class live in this session**: my test script's quoted cases made it emit both the "PR marked ready" and the "git push" reminders, and nothing had been pushed or marked. The logic is now `.claude/hooks/post_bash_reminders.py`. It tokenises with `shlex` (quote-aware, splitting on `;`/`&&`/`|`) and classifies each command segment by its leading words. It was tested on 20 cases, all of Codex's included, and then live: a command whose only mention of `gh pr ready` was inside quotes fired nothing. **Lesson, and it is ADR-023's again**: five rounds of regex refinement on the commit gate in US-303 ended with "ask the repository, don't parse the command"; this hook needed the smaller version of that, "parse the command properly, don't grep it".
 - **The contention claim survived in two newly written places**, a CLAUDE.md bullet and the test comment, after round 1 had corrected it elsewhere. Also stale: `release-build.yml`'s rationale and ROADMAP's M1 line still said `ci.yml` runs on every branch push. All four are fixed. That is ADR-032 invariant 3 on my own freshly written text: a claim corrected in three places and missed in two.
+
+## 2026-09-28 (CI, PR #60 Codex round 3) — three flat Mediums, escalated, closed by decision
+
+Round 3 was **Medium for the third time** (Medium → Medium → Medium). Per the loop's own rule, that means escalate early rather than run on. The pattern was clear by then: the test fix and the trigger change held from round 1, and every Medium since was a new layer of edge cases in the reminder hook. The round-3 findings:
+- `-d=true`, `--undo=true` and `--dry-run` were misclassified.
+- A heredoc body and a redirection target invented events.
+- A `\`-newline continuation, `(…)`, `sudo`, `command` and `$(…)` hid events.
+- ROADMAP's M1 line still ended "on every push".
+
+**Sebastian's decision: fix the cheap ones, record the rest as accepted limits, and stop.** Fixed:
+- flag values on `-d`/`--draft`/`--undo`;
+- `--dry-run` is not a created PR;
+- heredoc bodies are dropped before tokenising;
+- `\`-newline is joined;
+- any unexpected input is silent instead of a traceback, since a PostToolUse exit 1 only loses the reminder;
+- the ROADMAP line.
+
+Accepted and documented in the script's docstring: subshells, `$(…)`/backticks, `sudo`/`command`/`exec` prefixes, and redirection targets. It is 24 cases, all green.
+
+**The loop ended on a human decision, not on convergence, and that is recorded as such.** Severity history: **Medium → Medium → Medium**, then closed. This is the first time the three-flat-rounds escalation clause has actually fired. It fired on exactly the kind of code the clause anticipates: a heuristic parser over an unbounded input domain (shell syntax), where every round's fix is new surface. The same shape was US-303's commit gate, which ended by abandoning parsing. Here the parser stays, because the hook's job is only to remind, and ADR-023 already says a text-matching hook is a convenience, not a boundary.

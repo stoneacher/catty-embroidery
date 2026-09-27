@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PostToolUse(Bash) reminders: push + watch CI after a commit, and when to run /codex-review.
+r"""PostToolUse(Bash) reminders: push + watch CI after a commit, and when to run /codex-review.
 
 Reads the hook payload on stdin and prints a `hookSpecificOutput.additionalContext` JSON object,
 or nothing. Moved out of an inline `settings.json` one-liner on 2026-09-28 (PR #60) because the
@@ -11,7 +11,15 @@ classifies each command segment by its leading words, so quoted prose can never 
 
 Like ADR-023's commit gate, this is a convenience that matches command *text* — shell expansion
 and unusual spellings can still slip past it. It is a reminder, not an enforcement boundary.
+**Accepted limits** (Sebastian, 2026-09-28, closing PR #60's review loop after three Medium rounds
+on this file): commands inside `( … )`, `$( … )` or backticks, or behind `sudo`/`command`/`exec`,
+are not recognised, so their reminder is missed; and a word used as a redirection target (`>&git push`) is misread as a command, so a reminder can appear spuriously. Handled: quoting, `;`/`&&`/`||`/`|`/newlines,
+`VAR=` and `env` prefixes, git's global options, `-d`/`--draft[=value]`, `--undo[=value]`,
+`--dry-run`, heredoc bodies (dropped, so data never reads as a command), and `\`-newline
+continuations. Any unexpected input is silent rather than a traceback.
 """
+
+import re
 
 import json
 import shlex
@@ -45,8 +53,25 @@ SEPARATORS = {";", "&&", "||", "|", "&", "\n"}
 GIT_VALUE_OPTIONS = {"-C", "-c", "--git-dir", "--work-tree", "--namespace"}
 
 
+HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+
+
+def without_heredoc_bodies(command):
+    """Drops every heredoc body, so text fed to `cat <<EOF` is never read as a command."""
+    kept, terminators = [], []
+    for line in command.split("\n"):
+        if terminators:
+            if line.strip() == terminators[0]:
+                terminators.pop(0)
+            continue
+        kept.append(line)
+        terminators.extend(match.group(2) for match in HEREDOC.finditer(line))
+    return "\n".join(kept)
+
+
 def segments(command):
     """The command split into simple commands, quotes respected."""
+    command = without_heredoc_bodies(command.replace("\\\n", " "))
     lexer = shlex.shlex(command.replace("\n", " ; "), posix=True, punctuation_chars=";&|")
     lexer.whitespace_split = True
     current = []
@@ -80,14 +105,16 @@ def git_subcommand(words):
     return words[index] if index < len(words) else None
 
 
-def is_draft(arguments):
-    draft = False
+def flag_is_set(arguments, *names):
+    """Whether a boolean flag is on: bare (`-d`), or with a value (`--draft=true`, `-d=false`)."""
+    on = False
     for argument in arguments:
-        if argument in ("-d", "--draft"):
-            draft = True
-        elif argument.startswith("--draft="):
-            draft = argument.split("=", 1)[1].lower() not in ("false", "0", "no")
-    return draft
+        for name in names:
+            if argument == name:
+                on = True
+            elif argument.startswith(name + "="):
+                on = argument.split("=", 1)[1].lower() not in ("false", "0", "no")
+    return on
 
 
 def classify(command):
@@ -101,11 +128,12 @@ def classify(command):
     for words in parsed:
         if words[:3] == ["gh", "pr", "create"]:
             arguments = words[3:]
-            if "--help" in arguments or "-h" in arguments:
+            if flag_is_set(arguments, "--help", "-h") or flag_is_set(arguments, "--dry-run"):
                 continue
-            found.append("pr_draft_created" if is_draft(arguments) else "pr_ready_created")
+            draft = flag_is_set(arguments, "-d", "--draft")
+            found.append("pr_draft_created" if draft else "pr_ready_created")
         elif words[:3] == ["gh", "pr", "ready"]:
-            if "--undo" not in words[3:] and "--help" not in words[3:]:
+            if not flag_is_set(words[3:], "--undo", "--help", "-h"):
                 found.append("pr_marked_ready")
         elif words[:1] == ["git"]:
             sub = git_subcommand(words)
@@ -124,9 +152,12 @@ def classify(command):
 
 
 def main():
-    payload = json.load(sys.stdin)
-    command = (payload.get("tool_input") or {}).get("command") or ""
-    events = classify(command)
+    try:
+        payload = json.load(sys.stdin)
+        command = (payload.get("tool_input") or {}).get("command") or ""
+        events = classify(command) if isinstance(command, str) else []
+    except Exception:  # A reminder hook must never surface a traceback; missing one is fine.
+        return
     if events:
         context = " ".join(MESSAGES[event] for event in events)
         print(json.dumps({
