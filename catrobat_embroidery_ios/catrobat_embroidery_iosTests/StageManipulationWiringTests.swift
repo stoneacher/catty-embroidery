@@ -200,7 +200,7 @@ struct StageManipulationWiringTests {
         //
         // **In flight *or* already landed — not "in flight".** This asserted `isSettling` alone
         // and flaked on CI (PR #59, 2026-09-27): `finishSettling` runs from `withAnimation`'s
-        // completion, i.e. on *real* animation time, and on a contended runner the animation
+        // completion, i.e. on *real* animation time, and on a slow CI runner the animation
         // finished before `layOutAgain` returned — the model was `.idle` with `settled` already
         // at 2× the fit, so every destination check below passed and only this one lost the
         // race. Either state proves the toggle happened: before the tap the stage follows the fit
