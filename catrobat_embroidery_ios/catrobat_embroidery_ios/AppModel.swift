@@ -267,8 +267,9 @@ final class AppModel {
     /// so here rather than in a view. The view-side spellings — `.onChange(of:
     /// initial:)`, `.task(id:)` — re-fire when `RootView` rebuilds a navigation
     /// container after a horizontal size-class change (ADR-023), so on an iPad window
-    /// resize they would wipe a design the user had just watched finish. This method
-    /// already has exactly one writer; the reset belongs with it.
+    /// resize they would wipe a design the user had just watched finish. Selection has
+    /// exactly one writer, so the reset belongs with it — and the one other caller of
+    /// `runner.reset()`, `editApplied()`, is the other thing that invalidates a run.
     func select(_ sample: SampleProgram) {
         selection = ProgramSelection(
             generation: nextGeneration, provenance: sample.id, title: sample.displayName
@@ -295,6 +296,21 @@ final class AppModel {
         // reason the run's reset is here: the view-side spellings re-fire on the ADR-023
         // container rebuild.
         interaction.followFit()
+    }
+
+    /// Whether the stage draws US-309's frame-time readout: only for the measurement fixture,
+    /// and only while it is still that fixture.
+    ///
+    /// Here rather than at `RootView`'s call site because `SampleID.us309Synthetic` exists only
+    /// under `#if DEBUG` — comparing against it unguarded broke the Release build, which
+    /// neither the commit gate nor CI compiles (`swift-code-reviewer`, US-405). An edit clears
+    /// `provenance` and so hides the readout; it is a measurement harness, not a design.
+    var showsFrameTimeReadout: Bool {
+        #if DEBUG
+        selection?.provenance == .us309Synthetic
+        #else
+        false
+        #endif
     }
 
     /// Whether `sample` is the current selection — the row highlight and the

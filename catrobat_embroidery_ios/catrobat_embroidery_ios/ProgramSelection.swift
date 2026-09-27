@@ -33,9 +33,15 @@ import Samples
 /// program in the value there is nothing expensive left to compare. The generation is still
 /// part of the comparison, which is the point of the type.
 ///
-/// `nonisolated` for the reason `AppRunClock` records: the app target builds with
-/// `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, and a value type that is main-actor isolated
-/// by default cannot be read from the driver's task.
+/// **Consumers that mean "start over" must key on `generation`, not on the whole value.**
+/// Since US-405 an applied edit clears `provenance` without a new generation, so the value
+/// changes on the first edit too; a future `.task(id: selection)` would treat that edit as a
+/// restart. No such consumer exists today (US-305's drain is gone).
+///
+/// `nonisolated` although the original reason has gone: `SampleSelection` needed it because
+/// the driver's task read `program` off the main actor, and this type holds no program. Kept
+/// because a plain `Sendable` value has no reason to be main-actor isolated, and dropping it
+/// would make the value unusable from any future off-actor reader for no gain.
 nonisolated struct ProgramSelection: Equatable, Sendable {
     /// Monotonically increasing, assigned by `AppModel.select(_:)`. Never displayed; its only
     /// job is to make two selections of the same sample unequal.

@@ -129,7 +129,8 @@ final class RunViewModel {
         session?.stop()
     }
 
-    /// Discards the run entirely — for a new selection, not for a user stop.
+    /// Discards the run entirely — for a new selection or an applied edit (ADR-038), not for a
+    /// user stop.
     func reset() {
         discard()
         run.reset()

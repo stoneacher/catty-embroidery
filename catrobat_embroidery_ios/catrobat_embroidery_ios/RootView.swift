@@ -68,8 +68,8 @@ struct RootView: View {
     ///
     /// **US-305's `.task(id: model.selection)` drain is gone**, and nothing replaced it
     /// here. The run is started by the user pressing play, and it is discarded by
-    /// `AppModel.select(_:)` — deliberately not by a view modifier keyed on the
-    /// selection. `.task(id:)` and `.onChange(of:initial:)` both re-fire when this view
+    /// `AppModel.select(_:)` and, since US-405, by an applied edit (ADR-038) — deliberately
+    /// not by a view modifier keyed on the selection. `.task(id:)` and `.onChange(of:initial:)` both re-fire when this view
     /// rebuilds its navigation container after a horizontal size-class change (ADR-023),
     /// so either would wipe a finished design on an iPad window resize.
     ///
@@ -94,9 +94,7 @@ struct RootView: View {
 
         return StageView(
             title: model.selection?.title,
-            // By id, in every build: `.us309Synthetic` is a case in release too, and it is only
-            // *listed* in debug (`AppModel.samples`), so outside debug this is always false.
-            showsFrameTimeReadout: model.selection?.provenance == .us309Synthetic,
+            showsFrameTimeReadout: model.showsFrameTimeReadout,
             display: model.runner.run.display,
             runState: model.runner.run.state,
             needle: model.runner.run.visibleNeedle,
