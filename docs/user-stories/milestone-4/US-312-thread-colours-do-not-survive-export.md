@@ -69,7 +69,7 @@ No manual Ink/Stitch verification is needed for the *change*; the Ink/Stitch obs
 - **Localised, from the catalog, pinned.** `ExportControlTests.theThreadColorNoteComesFromTheCatalog` pins the English value. The reviewer's opposite-claim mutant survived until that pin existed.
 - **Before the share sheet.** It sits in the row, under the button.
 - **Not a warning.** Checked on the screenshots.
-- **Adjacent accessibility element.** Two runtime snapshots of the stage's accessibility tree (XcodeBuildMCP `snapshot-ui --output json`, iPhone 17e) read **Share DST File → caption → Play Again** after a finished run and **Share DST File → caption → Play** in the disabled not-run state. These snapshots are also the only thing that catches the two view-level mutants the reviewer found unit-untestable: caption dropped, and caption shown only when enabled.
+- **Adjacent accessibility element.** Two runtime snapshots of the stage's accessibility tree (XcodeBuildMCP `snapshot-ui --output json`, iPhone 17e; committed as `docs/screenshots/us-312/a11y-tree-finished.json` and `a11y-tree-disabled.json`) read **Share DST File → caption → Play Again** after a finished run and **Share DST File → caption → Play** in the disabled not-run state. These snapshots are also the only thing that catches the view-level mutants no unit test can see: caption dropped, caption shown only when enabled, `.disabled` moved onto the whole row, or the row combined into one element. **They are evidence, not enforcement**: nothing re-runs them, so a later regression in the view would stay green (Codex, PR #59 round 1, tracked). The finished-run tree comes from the pre-cap build `97c8478`; the cap changes no element or order.
 - **Bytes unchanged.** `git diff main -- Packages/` is empty, and all 981 engine tests pass, including the byte-for-byte goldens.
 - **One colour or several.** `ExportWiringTests.aReadyExportCarriesTheNoteWhateverTheColorCount` runs Octagon Rosette (1 colour) and Square Coil (2 colours). It pins colour-independence at the `Readiness` level only; a gate added in the view is caught only by the snapshots.
 - **Screenshots** on the iPhone 17e, the smallest available simulator, in `docs/screenshots/us-312/`:
@@ -91,7 +91,7 @@ Verified in the pyembroidery (`c16d1b4`), Ink/Stitch (`d59c9ab`) and pystitch (`
   - `AU:`, `CP:`;
   - one `TC:#rrggbb,<description>,<catalog>` line per thread.
 
-  Its reader parses them back. **There is no overflow guard**: past 512 bytes the stitch records start at the wrong offset. The budget after the fixed fields is 387 bytes, which is about 18 threads as `TC:#rrggbb,None,None` (an empty field is written as the literal `None`), or about 29 with truly empty fields. No other producer is known; the EduTech wiki calls the tags "exceptionally rare" (secondary source). Machine tolerance of unknown header lines is **unverified**.
+  Its reader parses them back. **There is no overflow guard**: past 512 bytes the stitch records start at the wrong offset. The budget after the fixed fields is 387 bytes, which is about 18 threads as `TC:#rrggbb,None,None` (an empty field is written as the literal `None`), or about 29 with truly empty fields. No other producer was found — not the same as none existing; the EduTech wiki calls the tags "exceptionally rare" (secondary source). Machine tolerance of unknown header lines is **unverified**.
 - **Ink/Stitch** imports through pystitch (a pyembroidery fork with the same DST reader), so **`TC:` colours reach the SVG** with no user action. Without them it uses random filler threads. It does **not** apply a sibling file automatically: its *Apply Threadlist* extension accepts **`.txt`, `.edr`, `.col`, `.inf`**, applied in colour-change order. Its `.txt` is its own threadlist format: lines containing `(#rrggbb)`.
 - **Sidecar formats in pyembroidery**:
   - `.edr`, read/write: raw RGB0, 4 bytes per colour;
@@ -99,11 +99,11 @@ Verified in the pyembroidery (`c16d1b4`), Ink/Stitch (`d59c9ab`) and pystitch (`
   - `.inf`, read/write: binary, with RGB, needle, description and chart;
   - `.rgb` and `.thr`: not supported;
   - `.txt`: a debug dump, not a threadlist.
-- **Home machines read no colour from DST.** Brother says so officially (primary source). Janome, Viking/Pfaff and Singer are the same per secondary sources. Colour on those machines comes only from native formats: PES, JEF, VP3, XXX, and Bernina's EXP+INF. The one real sidecar convention is Bernina's `.inf`, and it goes with EXP, not DST.
+- **Home machines: no evidence of colour from DST, and the claim is scoped to what was checked.** Brother states officially that DST carries no colour and that the machine applies its default thread sequence (primary source). For Janome, Viking/Pfaff and Singer, only secondary sources were found, and they say the same. No source for any of these mentions reading a sidecar or `TC:` lines; that is absence of evidence, not proof, and says nothing about vendors not checked. The colour-carrying native formats of the checked vendors are PES, JEF, VP3, XXX and Bernina's EXP+INF. The one sidecar convention *found* is Bernina's `.inf`, and it goes with EXP, not DST.
 - **Sharing two files**: `ShareLink(items:)` and `UIActivityViewController` accept several. Apple guarantees nothing about AirDrop or Files keeping them together, which is unverified and needs a device test. A ZIP is the only guaranteed bundle.
 
 **What M5 inherits.**
 - **First candidate: a `.col`/`.edr` sidecar or an Ink/Stitch `.txt` threadlist.** It is trivial to write, read by the one consumer verified to use colour, and leaves the DST bytes (ADR-012/025, the goldens) untouched. It costs a second UTType or a ZIP, which interacts with ADR-026's single-file share.
 - **Second, gated: the `TC:` header.** It needs an ADR, an explicit 512-byte overflow rule (pyembroidery has none), and a hardware tolerance test.
-- **Colour on home machines means a native format**, which is out of scope for the DST-only promise (ROADMAP E7).
+- **For the vendors checked, colour on home machines means a native format**, which is out of scope for the DST-only promise (ROADMAP E7).
 
