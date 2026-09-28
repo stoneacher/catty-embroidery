@@ -1,6 +1,114 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "autosave.failure.paused": {
+      "comment": "Banner at the top of every window while saving is paused to avoid writing over an earlier design that could not be opened. It may appear in a window that never showed the alert, so it must make sense alone. It disappears on its own.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving is paused so your earlier design stays safe."
+          }
+        }
+      }
+    },
+    "autosave.failure.save": {
+      "comment": "Banner at the top of every window while the app cannot save the user's work. It disappears on its own once saving works again, which happens on the next change or when the app goes to the background. Not an alert, and there is no button. Keep it short: it stays on screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your latest changes couldn't be saved. The app will try again."
+          }
+        }
+      }
+    },
+    "autosave.refusal.message.blocks.kept": {
+      "comment": "Alert message: the saved design was read, but its blocks (the visual programming pieces, e.g. a 'repeat' without its end) do not form a valid program. 'Kept safe' means the old design was moved out of the way untouched. It was not copied, so do not say 'copy'. The user cannot open it yet, so promise nothing about getting it back. Keep the two sentences in one entry so pronouns can agree.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some of its blocks don't fit together. It's been kept safe, and a new, empty design is open instead."
+          }
+        }
+      }
+    },
+    "autosave.refusal.message.blocks.paused": {
+      "comment": "Alert message: the saved design was read, but its blocks (the visual programming pieces, e.g. a 'repeat' without its end) do not form a valid program. The old design could not be moved out of the way, so the app stops saving to avoid writing over it. 'For now' matters: saving may start again later. Must match autosave.failure.paused in meaning.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some of its blocks don't fit together. A new, empty design is open instead, and to protect the old one, nothing will be saved for now."
+          }
+        }
+      }
+    },
+    "autosave.refusal.message.damaged.kept": {
+      "comment": "Alert message: the saved design could not be read. It may be damaged. Written for young users: do not use technical words like 'file' or 'data format'. 'Kept safe' means the old design was moved out of the way untouched. It was not copied, so do not say 'copy'. The user cannot open it yet, so promise nothing about getting it back. Keep the two sentences in one entry so pronouns can agree.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It seems to be damaged. It's been kept safe, and a new, empty design is open instead."
+          }
+        }
+      }
+    },
+    "autosave.refusal.message.damaged.paused": {
+      "comment": "Alert message: the saved design could not be read. It may be damaged. Written for young users: do not use technical words like 'file' or 'data format'. The old design could not be moved out of the way, so the app stops saving to avoid writing over it. 'For now' matters: saving may start again later. Must match autosave.failure.paused in meaning.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It seems to be damaged. A new, empty design is open instead, and to protect the old one, nothing will be saved for now."
+          }
+        }
+      }
+    },
+    "autosave.refusal.message.newer.kept": {
+      "comment": "Alert message: the saved design was made by a newer version of this app, which this version cannot read. It is not broken. 'Kept safe' means the old design was moved out of the way untouched. It was not copied, so do not say 'copy'. The user cannot open it yet, so promise nothing about getting it back. Keep the two sentences in one entry so pronouns can agree.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It was made with a newer version of this app. It's been kept safe, and a new, empty design is open instead."
+          }
+        }
+      }
+    },
+    "autosave.refusal.message.newer.paused": {
+      "comment": "Alert message: the saved design was made by a newer version of this app, which this version cannot read. It is not broken. The old design could not be moved out of the way, so the app stops saving to avoid writing over it. 'For now' matters: saving may start again later. Must match autosave.failure.paused in meaning.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It was made with a newer version of this app. A new, empty design is open instead, and to protect the old one, nothing will be saved for now."
+          }
+        }
+      }
+    },
+    "autosave.refusal.title": {
+      "comment": "Title of the alert shown once at launch when the design saved last time could not be opened. The message below says why and what happened. Title case, matching the other titles. 'Design' means an embroidery design the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Open Your Last Design"
+          }
+        }
+      }
+    },
     "program.title.named": {
       "comment": "The stage's title for a design reopened from the last session. %@ is the name the design was saved under, exactly as the user or the sample gave it. Do not translate: keep %@ alone, with nothing around it.",
       "extractionState": "manual",
