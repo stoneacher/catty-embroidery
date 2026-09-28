@@ -13,6 +13,8 @@
 // `RootView` builds the stage at two call sites; see `interaction`. Recorded rather than left
 // for a reader to notice the comment above had quietly stopped being true.
 import EditorCore
+import EmbroideryEngine
+import Foundation
 import Observation
 import ProgramModel
 import Samples
@@ -105,9 +107,22 @@ final class AppModel {
     /// The working program and its history (US-405).
     let editor: EditorViewModel
 
-    /// All three are injectable so tests can supply immediate pacing and a recording writer;
-    /// the defaults are what the app runs with.
+    /// The saved working program's guard, shared with every other window (US-406).
+    let autosave: ProgramAutosave
+
+    /// A saved program found at launch and not opened, until the user has been told.
+    private(set) var launchRefusal: ProgramRefusal?
+
+    /// Why the working program is not being saved, or `nil` while it is.
+    var saveFailure: ProgramSaveFailure? {
+        autosave.failure
+    }
+
+    /// The rest are injectable so tests can supply immediate pacing and a recording writer;
+    /// the defaults are what the app runs with. `autosave` has no default: it is shared across
+    /// windows, so only their owner can supply it, and a default would be silent non-saving.
     init(
+        autosave: ProgramAutosave,
         runner: RunViewModel = RunViewModel(),
         exporter: ExportViewModel = ExportViewModel(),
         editor: EditorViewModel = EditorViewModel()
@@ -115,6 +130,7 @@ final class AppModel {
         self.runner = runner
         self.exporter = exporter
         self.editor = editor
+        self.autosave = autosave
 
         // The export is prepared when the run *ends*, which is what a `ShareLink` needs:
         // it takes its item at construction time, so there is nothing to hand it unless the
@@ -156,6 +172,64 @@ final class AppModel {
     private func editApplied() {
         selection?.provenance = nil
         runner.reset()
+        persistWorkingProgram()
+    }
+
+    /// The revision of exactly the program this window holds; `nil` until it changes one. Not a
+    /// "has edited" flag, which would let a superseded window put an older program back (3b).
+    @ObservationIgnored private var heldRevision: SaveRevision?
+
+    /// `onAppear` may fire twice; a second restore would replace the user's edits with the disk.
+    @ObservationIgnored private var hasRestored = false
+
+    /// Stamps the working program with a new revision and saves it — for every user-initiated
+    /// change and nothing else. ADR-037 keeps the list; a rejected or unchanging edit and a
+    /// restore are not on it.
+    private func persistWorkingProgram() {
+        let revision = autosave.mintRevision()
+        heldRevision = revision
+        autosave.save(editor.program, revision: revision)
+    }
+
+    /// Opens the saved working program, once per window (US-406) — from `onAppear`, not `init`,
+    /// which `State(initialValue:)` evaluates on every view initialisation.
+    ///
+    /// A selection **without provenance** (ADR-038): the file records a program, not a sample.
+    /// Its name is the title, and seeds the export only if the `LA` field can hold it. It holds
+    /// no revision, so the window writes nothing until the user changes something.
+    func restoreSavedProgram() {
+        guard !hasRestored else { return }
+        hasRestored = true
+        switch autosave.restore() {
+        case .nothingSaved:
+            break
+        case let .restored(program):
+            editor.load(program)
+            heldRevision = nil
+            let title: LocalizedStringResource = program.name.isEmpty
+                ? .programTitleUntitled : .programTitleNamed(program.name)
+            selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: title)
+            nextGeneration += 1
+            path = [.stage]
+            if case .success = DesignName.validating(program.name) {
+                exporter.name = program.name
+            }
+            interaction.followFit()
+        case let .refused(refusal):
+            launchRefusal = refusal
+        }
+    }
+
+    /// The window stopped being active: save what it holds, carrying the revision of the change
+    /// that produced it, so the save is dropped if another window has changed the program since.
+    func sceneDidLeaveActive() {
+        guard let heldRevision else { return }
+        autosave.save(editor.program, revision: heldRevision)
+    }
+
+    /// The user has read the launch refusal.
+    func dismissLaunchRefusal() {
+        launchRefusal = nil
     }
 
     /// Starts the selected design from the beginning, throwing away whatever the last run
@@ -210,8 +284,8 @@ final class AppModel {
     ///
     /// `private(set)` so every new selection goes through `select(_:)` and the
     /// generation can never be skipped — an assignment that bypassed it would
-    /// reintroduce exactly the no-op this story exists to forbid. The one other
-    /// writer is `editApplied()`, which clears `provenance` and nothing else.
+    /// reintroduce exactly the no-op this story exists to forbid. `restoreSavedProgram()` also
+    /// mints one; `editApplied()` only clears `provenance`.
     private(set) var selection: ProgramSelection?
 
     /// The compact navigation stack's path.
@@ -223,11 +297,11 @@ final class AppModel {
     /// earlier version of this comment got wrong.
     ///
     /// It is an unrestricted `var`, so the invariant "a non-empty path implies a
-    /// selection" is upheld by there being exactly one writer today
-    /// (`select(_:)`) and not by the type. A later story that pushes `.stage`
-    /// without selecting — a deep link, state restoration — would reach a stage
-    /// titled "Stage" showing the empty state. Worth encoding when there is a
-    /// second writer; not worth the binding machinery while there is one.
+    /// selection" is upheld by its two writers — `select(_:)` and, since US-406,
+    /// `restoreSavedProgram()` — each setting `selection` first, and not by the type.
+    /// A writer that pushed `.stage` without selecting — a deep link — would reach a
+    /// stage titled "Stage" showing the empty state. Worth encoding when a third
+    /// writer arrives; not worth the binding machinery for two that both select.
     var path: [StageDestination] = []
 
     /// `@ObservationIgnored` on purpose: bumping the counter is bookkeeping, not
@@ -267,14 +341,15 @@ final class AppModel {
     /// so here rather than in a view. The view-side spellings — `.onChange(of:
     /// initial:)`, `.task(id:)` — re-fire when `RootView` rebuilds a navigation
     /// container after a horizontal size-class change (ADR-023), so on an iPad window
-    /// resize they would wipe a design the user had just watched finish. Selection has
-    /// exactly one writer, so the reset belongs with it — and the one other caller of
-    /// `runner.reset()`, `editApplied()`, is the other thing that invalidates a run.
+    /// resize they would wipe a design the user had just watched finish. The reset belongs
+    /// with the selection's writers — `restoreSavedProgram()` skips it only because it runs
+    /// once, before anything can play — and `editApplied()` is the other thing that voids a run.
     func select(_ sample: SampleProgram) {
         selection = ProgramSelection(
             generation: nextGeneration, provenance: sample.id, title: sample.displayName
         )
         editor.load(sample.program)
+        persistWorkingProgram()
         nextGeneration += 1
         path = [.stage]
         // `reset()` discards the run, which fires `onRunDiscarded` and takes the previous

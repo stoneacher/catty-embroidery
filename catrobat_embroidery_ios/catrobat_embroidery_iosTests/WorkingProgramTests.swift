@@ -25,6 +25,7 @@ struct WorkingProgramTests {
 
     private static func immediateModel(writer: RecordingDSTFileWriter = RecordingDSTFileWriter()) -> AppModel {
         AppModel(
+            autosave: .inMemory(),
             runner: RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing())),
             exporter: ExportViewModel(writer: writer)
         )

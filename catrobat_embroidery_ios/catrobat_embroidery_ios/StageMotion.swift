@@ -30,4 +30,11 @@ enum StageMotion {
     static func symbolTransition(reduceMotion: Bool) -> ContentTransition {
         reduceMotion ? .identity : .symbolEffect(.replace)
     }
+
+    /// The autosave banner's arrival and departure (US-406). `nil` under Reduce Motion rather
+    /// than a fade: the banner is stacked above the window's content, so it also pushes all of
+    /// it down, and an animated layout shift is motion.
+    static func bannerAnimation(reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .easeOut(duration: 0.25)
+    }
 }
