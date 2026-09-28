@@ -51,6 +51,25 @@ struct FormulaTextTests {
         #expect(Self.text(Self.n(-5)) == "\u{2212}5")
     }
 
+    /// `-0.0` survives a JSON round trip and is what typing "-0" produces; the formatter would
+    /// print it with a hyphen-minus, breaking the one-minus-sign rule (`swift-code-reviewer`).
+    @Test("negative zero renders as zero")
+    func negativeZero() {
+        #expect(Self.text(Self.n(-0.0)) == "0")
+    }
+
+    /// Six fixed decimals would print a non-zero `1e-7` as "0" — "Wait 0 seconds" for a wait
+    /// that is not zero — and `1e20` as 21 digits. Outside `[1e-6, 1e15)` the notation is
+    /// scientific, so a value never reads as another one (`swift-code-reviewer`).
+    @Test("a value too small or too large for plain digits renders in scientific notation")
+    func scientificOutsideThePlainRange() {
+        #expect(Self.text(Self.n(1e-7)) == "1E-7")
+        #expect(Self.text(Self.n(-1e-7)) == "\u{2212}1E-7")
+        #expect(Self.text(Self.n(1e20)) == "1E20")
+        #expect(Self.text(Self.n(0.000001)) == "0.000001")
+        #expect(Self.text(Self.n(123_456.5)) == "123456.5")
+    }
+
     @Test("the decimal separator follows the locale")
     func decimalSeparatorFollowsLocale() {
         #expect(FormulaText.text(for: Self.n(2.5), locale: Locale(identifier: "de_DE")) == "2,5")
@@ -145,8 +164,36 @@ struct FormulaTextTests {
         #expect(Self.text(.binary(.mult, Self.n(2), .unaryMinus(Self.varA))) == "2 × (\u{2212}a)")
     }
 
+    /// Negation binds tighter than any binary operator but `^`, so on the left of a product or
+    /// quotient the conventional reading gives back the same tree.
+    @Test("a negated or negative left operand of a product needs no parentheses")
+    func negativeLeftOperandOfAProduct() {
+        #expect(Self.text(.binary(.mult, Self.n(-5), Self.n(2))) == "\u{2212}5 × 2")
+        #expect(Self.text(.binary(.divide, .unaryMinus(Self.varA), Self.n(2))) == "\u{2212}a ÷ 2")
+    }
+
     @Test("a negative left operand of a sum needs no parentheses")
     func negativeLeftOperand() {
         #expect(Self.text(.binary(.plus, Self.n(-5), Self.n(1))) == "\u{2212}5 + 1")
+    }
+
+    // MARK: - Counts
+
+    /// The `%lld` plural form takes only a value `Int` can hold and that `%lld` prints the same
+    /// way `FormulaText` would: `Int(1e20)` traps, and `%lld` prints a negative with a
+    /// hyphen-minus (`swift-code-reviewer`: every guard survived mutation before this test).
+    @Test("only a non-negative whole number an Int holds counts",
+          arguments: [
+              (0.0, 0), (3.0, 3), (2.5, nil), (-1.0, nil), (1e15, nil), (1e20, nil),
+              (Double.infinity, nil), (Double.nan, nil)
+          ] as [(Double, Int?)])
+    func counts(_ value: Double, _ expected: Int?) {
+        #expect(FormulaText.count(of: .number(value)) == expected)
+    }
+
+    @Test("a formula has no count")
+    func formulaHasNoCount() {
+        #expect(FormulaText.count(of: Self.varA) == nil)
+        #expect(FormulaText.count(of: .binary(.plus, Self.n(1), Self.n(2))) == nil)
     }
 }

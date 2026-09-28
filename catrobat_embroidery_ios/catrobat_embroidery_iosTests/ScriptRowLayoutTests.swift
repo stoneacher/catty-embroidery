@@ -48,4 +48,15 @@ struct ScriptRowLayoutTests {
         #expect(Set(guides).count == guides.count, "two guides drawn on top of each other read as one level")
         #expect(guides.allSatisfy { $0 >= 0 && $0 < indent })
     }
+
+    /// Exact offsets: the properties above survive a guide drawn at the start of its step
+    /// rather than its middle (`swift-code-reviewer`, M15).
+    @Test("a guide sits in the middle of its step, and past the cap the steps shrink evenly")
+    func exactGuideOffsets() {
+        #expect(ScriptRowLayout.guideOffsets(forDepth: 2, isAccessibilitySize: false) == [8, 24])
+        #expect(
+            ScriptRowLayout.guideOffsets(forDepth: 12, isAccessibilitySize: true)
+                == (0 ..< 12).map { (CGFloat($0) + 0.5) * 4 }
+        )
+    }
 }

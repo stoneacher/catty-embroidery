@@ -114,13 +114,13 @@ nonisolated private struct Sentence {
         case let .changeVariableBy(name, value):
             resolve(.brickChangeVariable(formula(.variable(name)), formula(value)))
         case .stitch: resolve(.brickStitch)
-        case let .setThreadColor(hex): resolve(.brickThreadColor(hex))
+        case let .setThreadColor(hex): resolve(.brickThreadColor(verbatim(hex)))
         case let .runningStitch(length): resolve(.brickRunningStitch(formula(length)))
         case let .zigZagStitch(length, width): resolve(.brickZigzagStitch(formula(length), formula(width)))
         case let .tripleStitch(length): resolve(.brickTripleStitch(formula(length)))
         case .sewUp: resolve(.brickSewUp)
         case .stopRunningStitch: resolve(.brickStopStitch)
-        case let .writeEmbroideryToFile(name): resolve(.brickWriteFile(name))
+        case let .writeEmbroideryToFile(name): resolve(.brickWriteFile(verbatim(name)))
         }
     }
 
@@ -158,6 +158,12 @@ nonisolated private struct Sentence {
             return resolve(counted(count))
         }
         return resolve(text(formula(value)))
+    }
+
+    /// A string parameter shown as stored — or, when empty, a placeholder, so the sentence is
+    /// not left cut off ("Write embroidery to file "). Variables have their own placeholder.
+    private func verbatim(_ text: String) -> String {
+        text.isEmpty ? resolve(.scriptTextPlaceholder) : text
     }
 
     private func formula(_ formula: Formula) -> String {

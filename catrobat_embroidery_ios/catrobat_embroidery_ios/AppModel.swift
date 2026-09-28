@@ -215,7 +215,7 @@ final class AppModel {
                 ? .programTitleUntitled : .programTitleNamed(program.name)
             selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: title)
             nextGeneration += 1
-            path = [.script]
+            path = [.script] // Already so from `init`; kept so restore does not depend on it.
             if case .success = DesignName.validating(program.name) {
                 exporter.name = program.name
             }

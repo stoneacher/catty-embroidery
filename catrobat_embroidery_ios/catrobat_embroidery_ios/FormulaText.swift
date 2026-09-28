@@ -16,12 +16,16 @@ import ProgramModel
 /// - a left operand is bracketed when it binds more loosely than its parent;
 /// - a right operand also when it binds *equally* loosely, since `+ − × ÷` associate left —
 ///   so `1 − (2 − 3)` keeps its parentheses. `^` associates right, and mirrors both rules;
-/// - a negation or negative literal is bracketed wherever it is an operand of anything but a
-///   sum's left side: `1 − (−5)`, `(−5) ^ 2`, `−(−a)`. `1 − −5` reads as a typo to a child.
+/// - a negation or negative literal binds tighter than `+ − × ÷` and looser than `^`, so it is
+///   bare as a left operand of the four (`−5 × 2`), bracketed as the base of a power
+///   (`(−5) ^ 2`) and under another negation (`−(−a)`) — and **always** bracketed as a right
+///   operand, `1 − (−5)`, because `1 − −5` reads as a typo to a child.
 ///
 /// Numbers use the injected locale's decimal separator and **no grouping**: the plural brick
 /// labels print their counts through `%lld`, which never groups, and one value spelled `1000`
-/// in one row and `1,000` in the next would be two spellings on one screen.
+/// in one row and `1,000` in the next would be two spellings on one screen. Up to six decimals
+/// inside `[1e-6, 1e15)`, scientific outside it, so a non-zero value never reads as "0" and a
+/// huge one is not a line of digits; `-0` reads as `0`.
 nonisolated enum FormulaText {
     static func text(for formula: Formula, locale: Locale = .current) -> String {
         Renderer(locale: locale).render(formula)
@@ -53,7 +57,9 @@ nonisolated private struct Renderer {
 
     func render(_ formula: Formula) -> String {
         switch formula {
-        case let .number(value):
+        case var .number(value):
+            // `-0.0 == 0`, so this turns negative zero into zero and leaves everything else alone.
+            if value == 0 { value = 0 }
             if value < 0 {
                 return resolve(.formulaNegate(number(-value)))
             }
@@ -102,13 +108,13 @@ nonisolated private struct Renderer {
         }
     }
 
+    /// `value` is never negative here: `render` has already taken the sign off.
     private func number(_ value: Double) -> String {
-        value.formatted(
-            .number
-                .grouping(.never)
-                .precision(.fractionLength(0 ... 6))
-                .locale(locale)
-        )
+        let plain = FloatingPointFormatStyle<Double>.number.grouping(.never).locale(locale)
+        if value != 0, value < 1e-6 || value >= 1e15 {
+            return value.formatted(plain.notation(.scientific))
+        }
+        return value.formatted(plain.precision(.fractionLength(0 ... 6)))
     }
 
     private func resolve(_ resource: LocalizedStringResource) -> String {

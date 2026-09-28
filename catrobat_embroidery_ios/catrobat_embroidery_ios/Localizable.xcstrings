@@ -674,7 +674,7 @@
       }
     },
     "program.title.untitled": {
-      "comment": "The stage's title for a design reopened from the last session that has no name yet.",
+      "comment": "The title of a design that has no name yet: the blank design every new window starts with, and a design reopened from the last session without a name.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -779,8 +779,20 @@
         }
       }
     },
+    "script.text.placeholder": {
+      "comment": "Shown inside a block in place of a file name or thread colour the block holds as empty text, e.g. \"Write embroidery to file (empty)\", so the sentence does not look cut off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(empty)"
+          }
+        }
+      }
+    },
     "script.title": {
-      "comment": "Title of the list of blocks that make up a design's program, used where there is no design name to show. On iPad this labels the middle column.",
+      "comment": "Title of the list of blocks that make up a design's program. On iPad this labels the middle column, between the list of example designs and the stage, which shows the design's own name.",
       "extractionState": "manual",
       "localizations": {
         "en": {

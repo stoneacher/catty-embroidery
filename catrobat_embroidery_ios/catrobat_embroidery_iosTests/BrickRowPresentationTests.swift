@@ -233,6 +233,32 @@ struct BrickRowPresentationTests {
         #expect(rows.map(\.text) == ["Wait 0.5 seconds", "Wait t seconds", "Move 2 × n steps"])
     }
 
+    @Test("a negative whole number keeps the formula form and its minus sign")
+    func negativeWholeNumber() {
+        #expect(Self.rows([.moveNSteps(.number(-5))]).map(\.text) == ["Move \u{2212}5 steps"])
+    }
+
+    /// Deterministic on any simulator: the English catalog with a German decimal comma. Before
+    /// this, dropping the locale on its way to `FormulaText` was caught only because the review
+    /// simulator's region happened to use a comma (`swift-code-reviewer`, M13).
+    @Test("the locale reaches every value in the row")
+    func localeReachesValues() {
+        let rows = BrickRowPresentation.rows(
+            for: Self.program([.wait(seconds: .number(0.5)), .placeAt(x: .number(1.5), y: .number(2.5))]),
+            locale: Locale(identifier: "de_DE")
+        )
+        #expect(rows.map(\.text) == ["Wait 0,5 seconds", "Place at x: 1,5 y: 2,5"])
+    }
+
+    /// Reachable through a file today and through US-410's editors later; "Write embroidery to
+    /// file " reads as a sentence cut off.
+    @Test("an empty name or colour reads as empty rather than as a cut-off sentence")
+    func emptyStrings() {
+        let rows = Self.rows([.writeEmbroideryToFile(name: ""), .setThreadColor(hex: "")])
+
+        #expect(rows.map(\.text) == ["Write embroidery to file (empty)", "Set thread colour to (empty)"])
+    }
+
     // MARK: - Thread colour swatch
 
     @Test("a thread colour row carries the colour the stage would stitch in; no other row does")

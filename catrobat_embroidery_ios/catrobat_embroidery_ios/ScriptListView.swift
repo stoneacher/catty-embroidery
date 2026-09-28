@@ -16,11 +16,22 @@ import SwiftUI
 /// and the selection's title alone. `RootView`'s own body reads the run — once per batch while
 /// a design stitches — and a value parameter would hand this view a fresh copy each time.
 struct ScriptListView: View {
+    /// Where the list sits, decided by the container — the `SamplePickerView.showsSelection`
+    /// pattern; this view never reads the size class.
+    enum Placement {
+        /// Compact: the list is the screen a selection opens, titled with the design's name, and
+        /// the stage is a push away from its toolbar.
+        case stack
+        /// Regular: the middle column. The stage beside it already carries the design's name, so
+        /// this column is titled "Script", and a link to the stage would be a button that does
+        /// nothing visible.
+        case column
+    }
+
     let model: AppModel
-    /// Compact only: the stage is a push away. On regular it is the column beside this one, and
-    /// a link to it would be a button that does nothing visible. Decided by the container, the
-    /// same pattern as `SamplePickerView.showsSelection` — this view never reads the size class.
-    let showsStageLink: Bool
+    let placement: Placement
+
+    @Environment(\.locale) private var locale
 
     static var emptyStateTitle: String {
         String(localized: .scriptEmptyTitle)
@@ -31,7 +42,7 @@ struct ScriptListView: View {
     }
 
     var body: some View {
-        let rows = BrickRowPresentation.rows(for: model.editor.program)
+        let rows = BrickRowPresentation.rows(for: model.editor.program, locale: locale)
 
         Group {
             if rows.isEmpty {
@@ -64,9 +75,9 @@ struct ScriptListView: View {
                 .environment(\.defaultMinListRowHeight, 44)
             }
         }
-        .navigationTitle(Text(model.selection?.title ?? .scriptTitle))
+        .navigationTitle(Text(title))
         .toolbar {
-            if showsStageLink {
+            if placement == .stack {
                 ToolbarItem(placement: .primaryAction) {
                     NavigationLink(value: StageDestination.stage) {
                         Label {
@@ -78,6 +89,15 @@ struct ScriptListView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+private extension ScriptListView {
+    var title: LocalizedStringResource {
+        switch placement {
+        case .stack: model.selection?.title ?? .scriptTitle
+        case .column: .scriptTitle
         }
     }
 }
@@ -148,10 +168,12 @@ struct ScriptRowView: View {
         ZStack(alignment: .leading) {
             let offsets = ScriptRowLayout.guideOffsets(forDepth: row.depth, isAccessibilitySize: isAccessibilitySize)
             ForEach(offsets.indices, id: \.self) { level in
+                // Leading padding rather than `.offset(x:)`, which does not mirror: in a
+                // right-to-left layout the guides must follow the indentation to the right.
                 Rectangle()
                     .fill(.separator)
                     .frame(width: 2)
-                    .offset(x: offsets[level] - 1)
+                    .padding(.leading, offsets[level] - 1)
             }
         }
         .frame(maxHeight: .infinity)

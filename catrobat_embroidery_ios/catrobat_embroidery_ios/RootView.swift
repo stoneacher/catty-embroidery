@@ -54,7 +54,7 @@ struct RootView: View {
                 // `SamplePickerView.showsSelection`.
                 SamplePickerView(model: model, showsSelection: true)
             } content: {
-                ScriptListView(model: model, showsStageLink: false)
+                ScriptListView(model: model, placement: .column)
             } detail: {
                 // The content and detail columns ignore `path` entirely: they show the
                 // selection. Two representations of "which sample" would be two things able
@@ -69,7 +69,7 @@ struct RootView: View {
                 SamplePickerView(model: model, showsSelection: false)
                     .navigationDestination(for: StageDestination.self) { destination in
                         switch destination {
-                        case .script: ScriptListView(model: model, showsStageLink: true)
+                        case .script: ScriptListView(model: model, placement: .stack)
                         case .stage: stage
                         }
                     }
