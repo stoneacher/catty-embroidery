@@ -21,8 +21,8 @@ struct FormulaTextTests {
         FormulaText.text(for: formula, locale: english)
     }
 
-    private static let a = Formula.variable("a")
-    private static let b = Formula.variable("b")
+    private static let varA = Formula.variable("a")
+    private static let varB = Formula.variable("b")
 
     private static func n(_ value: Double) -> Formula {
         .number(value)
@@ -71,15 +71,15 @@ struct FormulaTextTests {
     // MARK: - Operators
 
     @Test("each binary operator renders infix with its own glyph", arguments: BinaryOperator.allCases)
-    func binaryOperators(_ op: BinaryOperator) {
-        let glyph = switch op {
+    func binaryOperators(_ operation: BinaryOperator) {
+        let glyph = switch operation {
         case .plus: "+"
         case .minus: "\u{2212}"
         case .mult: "×"
         case .divide: "÷"
         case .pow: "^"
         }
-        #expect(Self.text(.binary(op, Self.n(1), Self.n(2))) == "1 \(glyph) 2")
+        #expect(Self.text(.binary(operation, Self.n(1), Self.n(2))) == "1 \(glyph) 2")
     }
 
     /// The case `OctagonRosette` puts on screen the first time anyone opens it.
@@ -90,23 +90,23 @@ struct FormulaTextTests {
 
     @Test("unary minus over a leaf needs no parentheses")
     func unaryMinusOverALeaf() {
-        #expect(Self.text(.unaryMinus(Self.a)) == "\u{2212}a")
+        #expect(Self.text(.unaryMinus(Self.varA)) == "\u{2212}a")
     }
 
     /// The story names this one: dropping the parentheses changes the meaning.
     @Test("unary minus over a sum keeps the parentheses")
     func unaryMinusOverASum() {
-        #expect(Self.text(.unaryMinus(.binary(.plus, Self.a, Self.b))) == "\u{2212}(a + b)")
+        #expect(Self.text(.unaryMinus(.binary(.plus, Self.varA, Self.varB))) == "\u{2212}(a + b)")
     }
 
     @Test("unary minus over a power keeps the parentheses")
     func unaryMinusOverAPower() {
-        #expect(Self.text(.unaryMinus(.binary(.pow, Self.a, Self.n(2)))) == "\u{2212}(a ^ 2)")
+        #expect(Self.text(.unaryMinus(.binary(.pow, Self.varA, Self.n(2)))) == "\u{2212}(a ^ 2)")
     }
 
     @Test("a double negation is bracketed rather than reading as one symbol")
     func doubleNegation() {
-        #expect(Self.text(.unaryMinus(.unaryMinus(Self.a))) == "\u{2212}(\u{2212}a)")
+        #expect(Self.text(.unaryMinus(.unaryMinus(Self.varA))) == "\u{2212}(\u{2212}a)")
         #expect(Self.text(.unaryMinus(Self.n(-5))) == "\u{2212}(\u{2212}5)")
     }
 
@@ -136,13 +136,13 @@ struct FormulaTextTests {
     @Test("a negative base of a power is bracketed")
     func negativeBase() {
         #expect(Self.text(.binary(.pow, Self.n(-5), Self.n(2))) == "(\u{2212}5) ^ 2")
-        #expect(Self.text(.binary(.pow, .unaryMinus(Self.a), Self.n(2))) == "(\u{2212}a) ^ 2")
+        #expect(Self.text(.binary(.pow, .unaryMinus(Self.varA), Self.n(2))) == "(\u{2212}a) ^ 2")
     }
 
     @Test("a negated or negative right operand is bracketed")
     func negativeRightOperand() {
         #expect(Self.text(.binary(.minus, Self.n(1), Self.n(-5))) == "1 \u{2212} (\u{2212}5)")
-        #expect(Self.text(.binary(.mult, Self.n(2), .unaryMinus(Self.a))) == "2 × (\u{2212}a)")
+        #expect(Self.text(.binary(.mult, Self.n(2), .unaryMinus(Self.varA))) == "2 × (\u{2212}a)")
     }
 
     @Test("a negative left operand of a sum needs no parentheses")

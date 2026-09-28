@@ -109,6 +109,558 @@
         }
       }
     },
+    "brick.change.variable": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Adds an amount to a variable. %1$@ is the variable's name, chosen by the user and never translated; %2$@ is the amount; %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change %1$@ by %2$@"
+          }
+        }
+      }
+    },
+    "brick.change.x": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle horizontally by an amount. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Keep x as the axis name. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change x by %@"
+          }
+        }
+      }
+    },
+    "brick.change.y": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle vertically by an amount. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Keep y as the axis name. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change y by %@"
+          }
+        }
+      }
+    },
+    "brick.forever": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens a loop whose blocks run until the program is stopped.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forever"
+          }
+        }
+      }
+    },
+    "brick.loop.end.forever": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a Forever loop. Must read as the end of that specific kind of loop.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End of forever"
+          }
+        }
+      }
+    },
+    "brick.loop.end.repeat": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a repeat loop. It repeats the loop's own count so a user can tell which loop it closes. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. This form is used when the value is a formula, a variable or a fraction. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End of repeat %@ times"
+          }
+        }
+      }
+    },
+    "brick.loop.end.repeat.count": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a repeat loop. It repeats the loop's own count so a user can tell which loop it closes. %lld is a whole number written literally in the block; this form is used only then, so that the unit agrees with it (\"1 second\", \"2 seconds\"). Add the plural categories your language needs. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "End of repeat %lld time"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "End of repeat %lld times"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "brick.loop.end.unmatched": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a loop whose start is missing. Rare; appears only in a damaged design.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End of loop"
+          }
+        }
+      }
+    },
+    "brick.move": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle forward by a number of steps. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. This form is used when the value is a formula, a variable or a fraction. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move %@ steps"
+          }
+        }
+      }
+    },
+    "brick.move.count": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle forward by a number of steps. %lld is a whole number written literally in the block; this form is used only then, so that the unit agrees with it (\"1 second\", \"2 seconds\"). Add the plural categories your language needs. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Move %lld step"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Move %lld steps"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "brick.place.at": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle to a point. %1$@ is the x coordinate, %2$@ the y coordinate; %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Keep x and y as the axis names. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Place at x: %1$@ y: %2$@"
+          }
+        }
+      }
+    },
+    "brick.point.direction": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Sets the needle's heading; 90 degrees points right. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. This form is used when the value is a formula, a variable or a fraction. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Point in direction %@ degrees"
+          }
+        }
+      }
+    },
+    "brick.point.direction.count": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Sets the needle's heading; 90 degrees points right. %lld is a whole number written literally in the block; this form is used only then, so that the unit agrees with it (\"1 second\", \"2 seconds\"). Add the plural categories your language needs. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Point in direction %lld degree"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Point in direction %lld degrees"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "brick.repeat": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens a loop: the blocks inside it run this many times. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. This form is used when the value is a formula, a variable or a fraction. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeat %@ times"
+          }
+        }
+      }
+    },
+    "brick.repeat.count": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens a loop: the blocks inside it run this many times. %lld is a whole number written literally in the block; this form is used only then, so that the unit agrees with it (\"1 second\", \"2 seconds\"). Add the plural categories your language needs. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Repeat %lld time"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Repeat %lld times"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "brick.running.stitch": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Starts sewing a running stitch as the needle moves. %@ is the stitch length; %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start running stitch with length %@"
+          }
+        }
+      }
+    },
+    "brick.set.variable": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Stores a value in a variable. %1$@ is the variable's name, chosen by the user and never translated; %2$@ is the value; %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set %1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "brick.set.x": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle horizontally to a coordinate. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Keep x as the axis name. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set x to %@"
+          }
+        }
+      }
+    },
+    "brick.set.y": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle vertically to a coordinate. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Keep y as the axis name. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set y to %@"
+          }
+        }
+      }
+    },
+    "brick.sew.up": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Sews a short securing stitch so the thread does not come loose.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sew up"
+          }
+        }
+      }
+    },
+    "brick.stitch": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Sews one stitch at the needle's position. An imperative verb.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stitch"
+          }
+        }
+      }
+    },
+    "brick.stop.stitch": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Stops whichever running, zigzag or triple stitch was started.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop running stitch"
+          }
+        }
+      }
+    },
+    "brick.thread.color": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Changes the thread colour. %@ is the colour as a web hex code such as #ff0000, shown exactly as stored. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set thread colour to %@"
+          }
+        }
+      }
+    },
+    "brick.triple.stitch": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Starts sewing a triple (reinforced) stitch as the needle moves. %@ is the stitch length; %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start triple stitch with length %@"
+          }
+        }
+      }
+    },
+    "brick.turn.left": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Turns the needle's heading anticlockwise. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. This form is used when the value is a formula, a variable or a fraction. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn left %@ degrees"
+          }
+        }
+      }
+    },
+    "brick.turn.left.count": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Turns the needle's heading anticlockwise. %lld is a whole number written literally in the block; this form is used only then, so that the unit agrees with it (\"1 second\", \"2 seconds\"). Add the plural categories your language needs. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Turn left %lld degree"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Turn left %lld degrees"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "brick.turn.right": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Turns the needle's heading clockwise. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. This form is used when the value is a formula, a variable or a fraction. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn right %@ degrees"
+          }
+        }
+      }
+    },
+    "brick.turn.right.count": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Turns the needle's heading clockwise. %lld is a whole number written literally in the block; this form is used only then, so that the unit agrees with it (\"1 second\", \"2 seconds\"). Add the plural categories your language needs. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Turn right %lld degree"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Turn right %lld degrees"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "brick.wait": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Pauses the program. %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. This form is used when the value is a formula, a variable or a fraction. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wait %@ seconds"
+          }
+        }
+      }
+    },
+    "brick.wait.count": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Pauses the program. %lld is a whole number written literally in the block; this form is used only then, so that the unit agrees with it (\"1 second\", \"2 seconds\"). Add the plural categories your language needs. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Wait %lld second"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Wait %lld seconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "brick.write.file": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Saves the design so far to a file. %@ is the file name, shown exactly as stored. Word order is yours: the value is interpolated, not appended.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write embroidery to file %@"
+          }
+        }
+      }
+    },
+    "brick.zigzag.stitch": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Starts sewing a zigzag stitch as the needle moves. %1$@ is the stitch length, %2$@ the zigzag width; %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start zigzag stitch with length %1$@ and width %2$@"
+          }
+        }
+      }
+    },
+    "formula.divide": {
+      "comment": "An arithmetic operator inside a block's value, e.g. in \"360 ÷ Inner Loop\". %1$@ and %2$@ are its two operands, already formatted. Use the symbol a pupil in your language would write; keep the spaces unless your language does not use them. Division. Some languages write a colon instead.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ÷ %2$@"
+          }
+        }
+      }
+    },
+    "formula.group": {
+      "comment": "Parentheses around part of a formula inside a block's value, e.g. the \"(a + b)\" in \"−(a + b)\". %@ is the part, already formatted.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(%@)"
+          }
+        }
+      }
+    },
+    "formula.minus": {
+      "comment": "An arithmetic operator inside a block's value, e.g. in \"360 ÷ Inner Loop\". %1$@ and %2$@ are its two operands, already formatted. Use the symbol a pupil in your language would write; keep the spaces unless your language does not use them. Subtraction. The symbol is the true minus sign (U+2212), not a hyphen, so VoiceOver reads it as \"minus\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ − %2$@"
+          }
+        }
+      }
+    },
+    "formula.mult": {
+      "comment": "An arithmetic operator inside a block's value, e.g. in \"360 ÷ Inner Loop\". %1$@ and %2$@ are its two operands, already formatted. Use the symbol a pupil in your language would write; keep the spaces unless your language does not use them. Multiplication.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ × %2$@"
+          }
+        }
+      }
+    },
+    "formula.negate": {
+      "comment": "A negative value or negated formula inside a block's value, e.g. \"−5\". %@ is the value, already formatted. The symbol is the true minus sign (U+2212), not a hyphen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "−%@"
+          }
+        }
+      }
+    },
+    "formula.plus": {
+      "comment": "An arithmetic operator inside a block's value, e.g. in \"360 ÷ Inner Loop\". %1$@ and %2$@ are its two operands, already formatted. Use the symbol a pupil in your language would write; keep the spaces unless your language does not use them. Addition.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ + %2$@"
+          }
+        }
+      }
+    },
+    "formula.pow": {
+      "comment": "An arithmetic operator inside a block's value, e.g. in \"360 ÷ Inner Loop\". %1$@ and %2$@ are its two operands, already formatted. Use the symbol a pupil in your language would write; keep the spaces unless your language does not use them. Raising %1$@ to the power %2$@.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ^ %2$@"
+          }
+        }
+      }
+    },
     "program.title.named": {
       "comment": "The stage's title for a design reopened from the last session. %@ is the name the design was saved under, exactly as the user or the sample gave it. Do not translate: keep %@ alone, with nothing around it.",
       "extractionState": "manual",
@@ -165,6 +717,88 @@
           "stringUnit": {
             "state": "translated",
             "value": "Embroidery Designer"
+          }
+        }
+      }
+    },
+    "script.empty.description": {
+      "comment": "Below 'No Bricks Yet'. Names the action, not a button: the button to add a brick arrives in a later version, and this text must stay true both before and after it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a brick to start your design."
+          }
+        }
+      }
+    },
+    "script.empty.title": {
+      "comment": "Title of the empty state shown in place of a design's list of blocks when it has none — the first thing a new user sees. 'Brick' is Catrobat's name for a block.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Bricks Yet"
+          }
+        }
+      }
+    },
+    "script.row.accessibility.nested": {
+      "comment": "Spoken by VoiceOver for a block inside one or more loops, because a user who cannot see the indentation still needs to know it. %1$@ is the block's own sentence, e.g. \"Move 10 steps\"; %2$lld is how many loops it sits inside. Never shown on screen. Add the plural categories your language needs. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, inside %#@loops@"
+          },
+          "substitutions": {
+            "loops": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg loop"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg loops"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script.title": {
+      "comment": "Title of the list of blocks that make up a design's program, used where there is no design name to show. On iPad this labels the middle column.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Script"
+          }
+        }
+      }
+    },
+    "script.variable.placeholder": {
+      "comment": "Shown inside a block in place of a variable's name when the block has no variable chosen yet, e.g. \"Set (no variable) to 1\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(no variable)"
           }
         }
       }

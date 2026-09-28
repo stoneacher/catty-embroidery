@@ -63,3 +63,16 @@ nonisolated struct ProgramSelection: Equatable, Sendable {
     /// picked — has one spelling.
     let title: LocalizedStringResource?
 }
+
+extension ProgramSelection {
+    /// What a window selects at launch: the blank working program, as an untitled design of
+    /// no sample (US-407, ADR-039 — the flip ADR-038 handed that story).
+    ///
+    /// Until US-407 a window launched with no selection at all, and since `AppModel.play()` is
+    /// gated on one, a program built from nothing could never run — M4's exit criterion 1.
+    /// `restoreSavedProgram()` replaces it with the saved program's own title; a refused file
+    /// leaves it, which is right, because the window holds the blank program either way.
+    static func launch(generation: Int) -> ProgramSelection {
+        ProgramSelection(generation: generation, provenance: nil, title: .programTitleUntitled)
+    }
+}

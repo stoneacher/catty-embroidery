@@ -128,9 +128,9 @@ struct AppModelTests {
     /// **Since US-407 the destination is the script, not the stage** (ADR-039): the list is
     /// what a sample *is* in an editor, and the stage is pushed from it. `select` assigns the
     /// path rather than appending to it. Appending would stack a second script on top of the
-    /// first, so Back would return to a script instead of to the list of samples. Asserting the whole array (rather than
-    /// `NavigationPath`, which exposes only `count`) is why the model stores
-    /// `[StageDestination]`.
+    /// first, so Back would return to a script instead of to the list of samples. Asserting
+    /// the whole array (rather than `NavigationPath`, which exposes only `count`) is why the
+    /// model stores `[StageDestination]`.
     @Test func selectingTwiceLeavesExactlyOneScriptOnThePath() throws {
         let model = AppModel(autosave: .inMemory())
         let sample = try #require(SampleLibrary.all.first)

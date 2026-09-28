@@ -4,11 +4,12 @@ import SwiftUI
 
 /// The app's root, adaptive by size class from the start (ADR-010).
 ///
-/// Compact reaches the stage sequentially through a `NavigationStack`; regular
-/// shows the picker and the stage side by side with the stage on the **detail**
-/// side. Deciding this now rather than "adding iPad support later" is the ADR's
-/// whole point — retrofitting a split layout onto a stack-shaped app means
-/// rewriting the navigation model, not adding a branch.
+/// Compact reaches the script and then the stage sequentially through a
+/// `NavigationStack`; regular shows the picker, the script and the stage side by
+/// side, with the stage on the **detail** side (US-407, ADR-039). Deciding this
+/// now rather than "adding iPad support later" is the ADR's whole point —
+/// retrofitting a split layout onto a stack-shaped app means rewriting the
+/// navigation model, not adding a branch.
 ///
 /// **The size-class swap no longer discards the selection.** US-303 shipped this
 /// view with an `if` that swaps one container for the other, tearing down
@@ -42,23 +43,35 @@ struct RootView: View {
         // safe default; the earlier `== .compact` inverted that and handed an
         // unknown environment the split. (In-loop review.)
         if horizontalSizeClass == .regular {
+            // **Three columns since US-407** (ADR-039): samples, the script, the stage — so the
+            // editor sits beside what it draws, which is ADR-010's whole promise for iPad.
+            // `.balanced` rather than the automatic style, which in portrait *overlays* the
+            // sidebar and content columns on the detail and would hide the script exactly
+            // where it is meant to sit beside the stage.
             NavigationSplitView {
-                // The sidebar shows the selection, because the detail column
-                // beside it *is* the selection. The stack does not — see
+                // The sidebar shows the selection, because the columns beside it
+                // *are* the selection. The stack does not — see
                 // `SamplePickerView.showsSelection`.
                 SamplePickerView(model: model, showsSelection: true)
+            } content: {
+                ScriptListView(model: model, showsStageLink: false)
             } detail: {
-                // The detail column ignores `path` entirely: it shows the
-                // selection, or the empty state before there is one. Two
-                // representations of "which sample" would be two things able to
-                // disagree after a Back.
+                // The content and detail columns ignore `path` entirely: they show the
+                // selection. Two representations of "which sample" would be two things able
+                // to disagree after a Back.
                 stage
             }
+            .navigationSplitViewStyle(.balanced)
         } else {
+            // Compact is a chain: picker → script → stage. Every selection lands on the script
+            // (`AppModel.path`), and the stage is pushed from its toolbar.
             NavigationStack(path: $model.path) {
                 SamplePickerView(model: model, showsSelection: false)
-                    .navigationDestination(for: StageDestination.self) { _ in
-                        stage
+                    .navigationDestination(for: StageDestination.self) { destination in
+                        switch destination {
+                        case .script: ScriptListView(model: model, showsStageLink: true)
+                        case .stage: stage
+                        }
                     }
             }
         }
@@ -131,11 +144,11 @@ struct RootView: View {
     }
 }
 
-/// The single navigation destination the skeleton has.
+/// The compact stack's destinations: a selection's script, and the stage pushed from it
+/// (US-407, ADR-039 — until then the stage was the only one).
 ///
 /// A named type rather than a `Bool` or the sample itself, because
-/// `navigationDestination(for:)` keys on the type: when US-306 adds a run, it
-/// gets its own case here rather than overloading one flag.
+/// `navigationDestination(for:)` keys on the type.
 ///
 /// **It stays valueless, correcting what US-303's comment anticipated.** That
 /// comment expected US-304 to push the chosen sample into the path. Doing so
