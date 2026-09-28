@@ -197,7 +197,24 @@ struct StageManipulationWiringTests {
         // is the *interpolated* one — the toggle animates, so the first frame after the tap is
         // still at the fit, and an assertion on it measures the animation's first step rather
         // than its destination. `baseline(fitting:settlingAt: 1)` is where the toggle is going.
-        #expect(model.interaction.isSettling, "the double tap did not start an animation")
+        //
+        // **In flight *or* already landed — not "in flight".** This asserted `isSettling` alone
+        // and flaked on CI (PR #59, 2026-09-27): `finishSettling` runs from `withAnimation`'s
+        // completion, i.e. on *real* animation time, and on a slow CI runner the animation
+        // finished before `layOutAgain` returned — the model was `.idle` with `settled` already
+        // at 2× the fit, so every destination check below passed and only this one lost the
+        // race. Either state proves the toggle happened: before the tap the stage follows the fit
+        // (`settled == nil`, not settling), so a double tap that did nothing still fails here,
+        // and in both states `baseline(fitting:settlingAt: 1)` is the destination (`.idle`
+        // returns `settled`). What this no longer claims is that the change *animated* rather
+        // than jumped. Half of that is pinned where no clock runs — `beginToggle` returning the
+        // settling id its completion needs (`StageToggleAndPanTests`) — and half is not pinned
+        // anywhere: that `StageCanvas.toggle` wraps it in `withAnimation` instead of finishing at
+        // once. That half was only ever this race, never a reliable assertion.
+        #expect(
+            model.interaction.isSettling || model.interaction.settled != nil,
+            "the double tap neither started nor completed a toggle"
+        )
         let destination = model.interaction.baseline(fitting: fitted, settlingAt: 1)
 
         #expect(abs(destination.scale - fitted.scale * StageInteraction.toggleStep) < 1e-6)

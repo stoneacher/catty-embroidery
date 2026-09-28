@@ -1,7 +1,19 @@
 name: CI
 
+# `push` runs on `main` only; branches are covered by their pull request. Until 2026-09-28 both
+# triggers ran for every PR commit, and they never cancel each other — the concurrency group
+# below is keyed on `github.ref`, which is `refs/heads/<branch>` for a push and
+# `refs/pull/<n>/merge` for a pull request. That was two full macOS runs per commit: twice the
+# minutes, and two draws at every timing-sensitive test, so a flake had two chances per commit
+# to turn a PR red. Both recorded flakes (2026-09-20, a wall-clock `.timeLimit`; 2026-09-27, a
+# double-tap assertion racing real animation time) failed on exactly one of the two runs. The
+# runs are on **separate VMs**, so this is not a claim that they slowed each other down — only
+# that one run per commit halves the cost and the exposure. The cost, stated rather than hidden:
+# a branch with no pull request gets no CI, which is why a story opens a draft PR right after its
+# first commit (CLAUDE.md). `main` keeps a `ci.yml` run for every merge.
 on:
   push:
+    branches: [main]
   pull_request:
 
 concurrency:

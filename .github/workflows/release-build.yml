@@ -7,13 +7,12 @@ name: Release build
 # shipped exactly that to a PR branch (an unguarded `SampleID.us309Synthetic`, which exists
 # only under `#if DEBUG`) and only an in-loop reviewer who happened to build Release found it.
 #
-# Why its own file rather than a job in `ci.yml`: `ci.yml` runs on every branch push as
-# well as on pull requests, and this job is wanted on pull requests and tags only. A job
-# skipped with `if:` would still report a check of the same name from the push run — against
-# the branch head, while the pull-request run reports against GitHub's test-merge commit —
-# and a skipped job reports *success*, so two same-named checks, one of them a vacuous pass,
-# is a poor thing to make a required status check. A separate workflow with its own triggers
-# reports only from pull-request runs, and not at all on a plain branch push.
+# Why its own file rather than a job in `ci.yml`: the triggers differ. This job runs on pull
+# requests and tag pushes; `ci.yml` runs on pull requests and pushes to `main` (and, until
+# 2026-09-28, on every branch push). A job skipped with `if:` inside `ci.yml` would report a
+# check of the same name from each push run, and a skipped job reports *success* — a vacuous
+# pass under a required check's name. A separate workflow with its own triggers reports only
+# when it actually builds.
 #
 # Scope: the app target and the package's production targets, with `DEBUG` undefined. Test
 # targets are **not** compiled in Release — several reference `#if DEBUG` symbols on purpose

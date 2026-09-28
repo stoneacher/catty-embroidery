@@ -2554,3 +2554,57 @@ A Codex review of the probe PR was deliberately skipped, because a PR that is ne
 - **Simulator tooling, corrected.** US-405's "tap does not navigate, reproduced on `main`" was **my error, not the tool's**: I had used camelCase flags, which the CLI silently ignored while printing "simulated successfully". The kebab-case flags work, and memory is updated. Two more traps from this session: zsh does not word-split a command held in a variable; and a parallel reviewer running `xcodebuild test` on the same simulator shuts it down (US-405). The fix for that was to give the reviewer a different device.
 - **Sidecar research** was delegated to a general-purpose agent, which read pyembroidery, pystitch and Ink/Stitch at pinned commits. It is recorded in the story's close-out and ADR-026, and M5 inherits a ranked answer.
 - **Totals**: app tests 256 → 260; engine tests unchanged at 981; `Packages/` byte-identical to `main`.
+
+## 2026-09-28 (CI) — the second flake, reproduced on demand, and the double runs removed
+
+**The flake (PR #59, 2026-09-27).** One of the two `App build & test` jobs on US-312's final commit failed `StageManipulationWiringTests.theDoubleTapTogglesToTwiceTheFitAboutTheTappedPoint`. The result bundle's message: `isSettling → false`, with `settled` already at 2× the fit and phase `.idle`. The order the 2026-09-20 entry set was followed again: **diagnose, then re-run.**
+- US-312 touched no stage-manipulation code.
+- The same commit's other run passed.
+- The failure was a race: `finishSettling` runs from `withAnimation`'s completion, on real animation time, and on a contended runner the toggle landed before the assertion.
+
+The re-run of the failed job passed, and the merge state went `CLEAN`.
+
+**The fix (Sebastian asked for both follow-ups).**
+- **The test** now accepts *in flight or landed*: `isSettling || settled != nil`. Before the tap the stage follows the fit, so a no-op still fails, and the destination checks hold in both states.
+- It was **proved with three mutant runs rather than argued**:
+  - a `StageCanvas.toggle` that finishes synchronously reproduces the CI flake **deterministically** against the old assertion from `main`;
+  - the same mutant passes the new one;
+  - a no-op toggle fails the new one.
+
+  So a flake that happened once in CI is now a failure reproducible on demand, which is the only way to know a flake fix fixes the flake.
+- **What the test gave up, stated in its comment**: it no longer claims the app *animates* the toggle. The package pins `beginToggle` returning a settling id; that `StageCanvas.toggle` wraps it in `withAnimation` is pinned nowhere, and it never was reliably.
+- **The trigger**: `ci.yml` runs `push` on `main` only, which removes the duplicate PR-commit runs that competed for runners (ADR-023 amendment). **Its cost is a process change**: a branch without a PR gets no CI, so the draft-PR-at-branch-start convention is proposed to Sebastian rather than assumed.
+
+## 2026-09-28 (CI, PR #60 Codex round 1) — correcting two claims in the entry above, and the convention adopted
+
+Corrects the entry above (append-only, so it is not edited):
+- **The causal claim was unsupported.** The entry, the ADR-023 amendment and the `ci.yml` comment all said the duplicate push/PR runs "competed for runners" and that this contention was "the standing condition behind both flakes". Codex pointed out that the two jobs run on **separate GitHub-hosted VMs**, sharing no simulator and no CPU. What the evidence shows is narrower: both flakes are timing-sensitive tests, and each failed on exactly one of its commit's two runs. So removing the duplicate halves the *exposure* (two draws per commit become one) and the cost; it is not a fix for contention that was never shown. The 2026-09-20 entry's "two macOS runners … compete" framing made the same leap, and this corrects it too. The actual fix for the second flake is the assertion change, which stands on its own.
+- **The draft-PR convention was "proposed", and it is now adopted.** Sebastian agreed the same day. It is written into CLAUDE.md (a workflow bullet, plus the `[red]` sentence, which now names the draft PR) and into AGENTS.md (process rule 7). The PostToolUse PR hook now tells a draft from a ready PR: `gh pr create --draft` says CI is live and Codex waits; `gh pr ready` (not `--undo`) carries the Codex reminder. It was tested on six sample commands before commit. Without the hook change, the convention would have fired the "run /codex-review now" reminder at branch start, hours before there is anything to review.
+- Also corrected: "`main` still runs every check on every merge" was false for the Release compile, which runs on pull requests and tags only.
+
+## 2026-09-28 (CI, PR #60 Codex round 2) — the hook moved out of a one-liner, and the timing rule that could not be followed
+
+Round 2 was **Medium again**: flat, so a round 3 is owed. All five findings were valid.
+- **The adopted convention was not executable as written.** "Open the draft PR before the first real commit" is impossible: `gh pr create` refuses a branch with no commits beyond `main`. It now reads "right after the branch's first commit", which is enough, because opening the PR runs CI on the commits already there. That applies in CLAUDE.md, AGENTS.md, the ADR, `ci.yml` and memory.
+- **The inline reminder hook misfired five ways.** Codex listed them: `-d` not recognised as draft; `--draft` inside a title; `--draft;` missed; `env X=1 gh pr ready` missed; `git commit -m "… gh pr ready"` treated as a ready PR. **The old hook then demonstrated the last class live in this session**: my test script's quoted cases made it emit both the "PR marked ready" and the "git push" reminders, and nothing had been pushed or marked. The logic is now `.claude/hooks/post_bash_reminders.py`. It tokenises with `shlex` (quote-aware, splitting on `;`/`&&`/`|`) and classifies each command segment by its leading words. It was tested on 20 cases, all of Codex's included, and then live: a command whose only mention of `gh pr ready` was inside quotes fired nothing. **Lesson, and it is ADR-023's again**: five rounds of regex refinement on the commit gate in US-303 ended with "ask the repository, don't parse the command"; this hook needed the smaller version of that, "parse the command properly, don't grep it".
+- **The contention claim survived in two newly written places**, a CLAUDE.md bullet and the test comment, after round 1 had corrected it elsewhere. Also stale: `release-build.yml`'s rationale and ROADMAP's M1 line still said `ci.yml` runs on every branch push. All four are fixed. That is ADR-032 invariant 3 on my own freshly written text: a claim corrected in three places and missed in two.
+
+## 2026-09-28 (CI, PR #60 Codex round 3) — three flat Mediums, escalated, closed by decision
+
+Round 3 was **Medium for the third time** (Medium → Medium → Medium). Per the loop's own rule, that means escalate early rather than run on. The pattern was clear by then: the test fix and the trigger change held from round 1, and every Medium since was a new layer of edge cases in the reminder hook. The round-3 findings:
+- `-d=true`, `--undo=true` and `--dry-run` were misclassified.
+- A heredoc body and a redirection target invented events.
+- A `\`-newline continuation, `(…)`, `sudo`, `command` and `$(…)` hid events.
+- ROADMAP's M1 line still ended "on every push".
+
+**Sebastian's decision: fix the cheap ones, record the rest as accepted limits, and stop.** Fixed:
+- flag values on `-d`/`--draft`/`--undo`;
+- `--dry-run` is not a created PR;
+- heredoc bodies are dropped before tokenising;
+- `\`-newline is joined;
+- any unexpected input is silent instead of a traceback, since a PostToolUse exit 1 only loses the reminder;
+- the ROADMAP line.
+
+Accepted and documented in the script's docstring: subshells, `$(…)`/backticks, `sudo`/`command`/`exec` prefixes, and redirection targets. It is 24 cases, all green.
+
+**The loop ended on a human decision, not on convergence, and that is recorded as such.** Severity history: **Medium → Medium → Medium**, then closed. This is the first time the three-flat-rounds escalation clause has actually fired. It fired on exactly the kind of code the clause anticipates: a heuristic parser over an unbounded input domain (shell syntax), where every round's fix is new surface. The same shape was US-303's commit gate, which ended by abandoning parsing. Here the parser stays, because the hook's job is only to remind, and ADR-023 already says a text-matching hook is a convenience, not a boundary.
