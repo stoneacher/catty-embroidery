@@ -2624,3 +2624,40 @@ Round 1 used a persistence-semantics rubric, since the story writes no DST bytes
 - **Why, most likely: the in-loop pass had already done the adversarial work.** `swift-code-reviewer` ran 34 mutants. It found the one ordering the revision rule depends on ("accepted, not written") untested, along with a real data-loss sequence under mutation. It also found three false doc comments and a block that could outlive its cause. All were fixed before Codex saw the branch. The sequences Codex was asked to construct (older-over-newer, clobbering a refused file, restore writing back) are exactly the ones those tests now pin. **The two reviewers found nothing in common, because only one of them found anything**, so this round is weak evidence about Codex's blind spots. Its value was independent confirmation of an ordering argument; it found no new defect.
 - **Its six test blind spots are all real and all tracked**, in the PR verdict. The notable one is that no unit test exercises `WindowRootView`'s `onAppear`/`scenePhase` wiring: making `ProgramAutosave` per-window, or reversing the `scenePhase` condition, would pass the suite. That wiring's only evidence is the simulator session. The M4 final verification's force-quit check (owed, since there is no edit UI yet) is the place it gets exercised again.
 - Codex again could not run the iOS tests in its read-only sandbox (`xcodebuild` exit 74). Its verdict is from reading the code, not from executing it.
+
+## 2026-09-28 (US-407) — the script list: two planning agents that disagreed, a red run that crashed, and a gap only the simulator showed
+
+US-407 put the first editor pixels on screen: a read-only script list with brick labels from the String Catalog, formula text, one VoiceOver element per row, and the ADR-039 layout. It also made launch select the blank program.
+- **`swift-architect` and `swift-ui-design` ran in parallel and disagreed on the iPad layout.**
+  - The architect proposed a three-column split. The UI pass proposed two columns with the script and stage side by side in the detail column, on HIG grounds.
+  - Both agreed on everything else, including the same deviation from the story's wording (`.ignore` plus an explicit label instead of `.combine`, because a `.combine` label cannot be read back).
+  - The disagreement went to Sebastian as one of three planning decisions: layout, the launch flip, plurals. He chose the recommended option on each.
+  - Running the two agents in parallel made the disagreement visible. A single agent would have picked one option silently.
+- **The first red run was a crash, not a red.** All 79 selected tests "failed" because the new tests indexed `rows[2]` against a stub returning `[]`. The trap took the whole test process down, and with it every unrelated suite in the run.
+  - Adding a `try #require(rows.count == N)` guard before each indexed access turned it into 43 behavioural reds.
+  - Lesson for red phases in this repo: a stub that returns an empty collection needs count guards in front of every subscript, or the red baseline shows only that the tests crash.
+- **Green found two compile issues that the red run could not.**
+  - The app target's default `@MainActor` isolation reached the new file-private helper structs.
+  - A catalog *substitution* (`%#@loops@`) generates a labelled symbol argument (`loops:`).
+  - Both were invisible at red, because the stubs never touched the catalog.
+- **The simulator caught a layout gap no test could.** The nesting guides stopped short between rows. The runtime snapshot's frames gave the cause: 51 pt cells around 44 pt rows, from the list's default minimum row height. Fixed with `defaultMinListRowHeight` plus `maxHeight: .infinity`.
+- **The accessibility snapshot needed a control before it could serve as evidence.** Its verbose tree listed each row's `Text` beside the row element, which looked like two VoiceOver stops per brick. The picker's `SampleRowView`, the proven single-element precedent, showed the same shape. The tool lists descendants that `.ignore` hides, and the row element carries the full label ("Move 100 steps, inside 2 loops"). A real VoiceOver pass is still not run.
+- **`swift-code-reviewer` (worktree, separate simulator):** 11 findings and 5 mutants run, 4 of them surviving.
+  - The count guards could all be deleted without a red. One of them prevents `Int(1e20)` from trapping.
+  - `-0` printed with a hyphen-minus.
+  - A non-zero `1e-7` printed as "0".
+  - The locale-drop mutant was killed only because the review simulator's region used a decimal comma. The kill was environmental, so it proved nothing.
+  - All 11 findings were acted on, test-first. The nine new tests kill all four survivors, and a re-run of those mutants confirmed it.
+- **Tooling.** "Application failed preflight checks" again, fixed by uninstalling and reinstalling (as the US-406 memory says). The iPad simulator was left at AX5 by an earlier session, which produced an accidental AX5 regular-width screenshot. There is still no rotate command, so there is no iPad landscape screenshot.
+
+## 2026-09-28 (US-407, Codex rounds 1–2) — a finding outside the rubric's own frame, and a decision that belonged to the human
+
+Round 1 used a presentation-semantics rubric, since the story writes no DST bytes. Its focus was formula text faithful to the tree, catalog specifiers, and the launch-flip state.
+- **Codex found what `swift-code-reviewer` did not look for: the operands are free text.** The in-loop review probed numbers exhaustively (`-0`, `1e-7`, `1e20`, NaN). Codex asked instead what a *variable name* can contain, and `.variable("a + b") × c` read as a sum. The fix changes visible output, including the story's own example (`360 ÷ Inner Loop` became `360 ÷ "Inner Loop"`), so it went to Sebastian as a decision rather than being applied. He chose Catroid's convention, always quoting.
+- **Round 1's Low was a doc contradiction that the in-loop round created.** `swift-code-reviewer` asked for a pinned rule on negation's left-operand placement, and the code comment was corrected. The ADR bullet, written before that round, still said the old rule. Codex caught ADR and code disagreeing. The ADR was reworded; the behaviour stayed as decided.
+- **Round 2 confirmed both fixes and found their edge.** A quote character inside the name defeats the quoting. A name spelled `(no variable)` collides with the placeholder. Both were **tracked in US-410 rather than fixed**, and the reasoning is recorded in case the stop rule looks gamed:
+  - no UI creates names before US-410;
+  - escaping ASCII `"` would be wrong for every translator who picks other quotation marks, so a renderer-side patch would be partial and would feed the next round;
+  - the owning story is where names are created.
+- **Severity history: Medium (code) → Medium (no code). The loop ended on condition 1.** Flat severity with no code change is a stop, not convergence. The stop is honest only because the remaining findings have a named owner that is better placed to fix them.
+- As in US-406, Codex ran read-only and did not execute the iOS tests. Its verdicts come from reading the code.

@@ -147,6 +147,11 @@ final class AppModel {
         editor.onEditApplied = { [weak self] in
             self?.editApplied()
         }
+
+        // Launch selects the blank program, opening on its script (US-407) — see `.launch`.
+        selection = .launch(generation: nextGeneration)
+        nextGeneration += 1
+        path = [.script]
     }
 
     /// What an applied edit does to the rest of the window (ADR-038): the program is no longer
@@ -161,7 +166,7 @@ final class AppModel {
     ///   story names as the detail most likely to be missed.
     /// - **No new generation.** An edit is not a new selection; nothing downstream should treat
     ///   it as "start over".
-    /// - **No `path` write.** The stage is already on screen.
+    /// - **No `path` write.** Whatever the user is looking at — the script or the stage — stays.
     /// - **No `exporter.name` re-seed.** The name may be one the user typed.
     ///
     /// `reset()` is ADR-027's existing discard path: it cancels the consumer, bumps the run
@@ -210,7 +215,7 @@ final class AppModel {
                 ? .programTitleUntitled : .programTitleNamed(program.name)
             selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: title)
             nextGeneration += 1
-            path = [.stage]
+            path = [.script] // Already so from `init`; kept so restore does not depend on it.
             if case .success = DesignName.validating(program.name) {
                 exporter.name = program.name
             }
@@ -244,8 +249,7 @@ final class AppModel {
     /// **working** program — `editor.program`, not the sample it was loaded from, which since
     /// US-405 the selection no longer carries.
     ///
-    /// The guard keeps the blank program unrunnable at launch, which is ADR-038's "the stage
-    /// does not yet treat the blank program as a selection" (US-407 flips it).
+    /// Since US-407 launch selects the blank program (ADR-039), so this guard no longer bites.
     func play() {
         guard selection != nil else { return }
         runner.play(editor.program)
@@ -279,7 +283,7 @@ final class AppModel {
     var interaction = StageInteraction()
 
     /// What the stage shows — its title, the sample it came from while it still is that
-    /// sample, and which time it was chosen — or `nil` before the first tap. The program
+    /// sample, and which time it was chosen; set from `init` on (US-407). The program
     /// itself is `editor.program` (US-405, ADR-038).
     ///
     /// `private(set)` so every new selection goes through `select(_:)` and the
@@ -296,28 +300,24 @@ final class AppModel {
     /// the reason is readability of its *contents*, not equality, which an
     /// earlier version of this comment got wrong.
     ///
-    /// It is an unrestricted `var`, so the invariant "a non-empty path implies a
-    /// selection" is upheld by its two writers — `select(_:)` and, since US-406,
-    /// `restoreSavedProgram()` — each setting `selection` first, and not by the type.
-    /// A writer that pushed `.stage` without selecting — a deep link — would reach a
-    /// stage titled "Stage" showing the empty state. Worth encoding when a third
-    /// writer arrives; not worth the binding machinery for two that both select.
+    /// Every writer — `init`, `select(_:)`, `restoreSavedProgram()` — assigns `[.script]`
+    /// (US-407, ADR-039); the stage is pushed from the script by a `NavigationLink`. "A
+    /// non-empty path implies a selection" holds from `init` on, since launch selects.
     var path: [StageDestination] = []
 
     /// `@ObservationIgnored` on purpose: bumping the counter is bookkeeping, not
     /// state anyone renders, and the attribute keeps it out of the observation
     /// graph entirely.
     ///
-    /// It is **not** what keeps `select(_:)` to a single notification, which an
-    /// earlier version of this comment claimed. Observation is keypath-granular,
-    /// so an un-ignored counter would notify only observers that had *read* it,
-    /// and nothing reads it — it is `private`. And `select(_:)` mutates two
-    /// observed properties anyway (`selection` and `path`), so the "exactly one
-    /// observable mutation" discipline US-306 is held to is not a property this
+    /// It is **not** what keeps `select(_:)` to a single notification, which an earlier version
+    /// of this comment claimed. Observation is keypath-granular, so an un-ignored counter would
+    /// notify only observers that had *read* it, and nothing reads it — it is `private`. And
+    /// `select(_:)` mutates two observed properties anyway (`selection` and `path`), so the
+    /// "exactly one observable mutation" discipline US-306 is held to is not a property this
     /// class has ever had. (In-loop review.)
     @ObservationIgnored private var nextGeneration = 0
 
-    /// Selects `sample` and shows the stage.
+    /// Selects `sample` and shows its script (US-407; the stage until then).
     ///
     /// **Loads a copy** into the editor and resets its history (US-405): the working program
     /// is a value, so editing it can never reach `SampleLibrary`, which is shared
@@ -330,8 +330,8 @@ final class AppModel {
     /// consumer treat any selection as "start over" (US-306).
     ///
     /// The path is **assigned**, not appended to. Appending would stack a second
-    /// stage on the first, so Back would return to a stage rather than to the
-    /// list.
+    /// script on the first, so Back would return to a script rather than to the
+    /// list of samples.
     ///
     /// It writes `path` even when the split layout is showing, which ignores it.
     /// That is deliberate rather than a leak: it means a window resized down to
@@ -351,7 +351,7 @@ final class AppModel {
         editor.load(sample.program)
         persistWorkingProgram()
         nextGeneration += 1
-        path = [.stage]
+        path = [.script]
         // `reset()` discards the run, which fires `onRunDiscarded` and takes the previous
         // design's file with it. Leaving the file would offer a share button that sends the
         // *last* design — the staleness ADR-023 exists to prevent, one layer up.
