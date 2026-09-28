@@ -160,5 +160,5 @@ enum StageDestination: Hashable {
 // next author trusts it. Both size classes are covered by the simulator
 // screenshots the UI definition of done requires.
 #Preview {
-    RootView(model: AppModel())
+    RootView(model: AppModel(autosave: .preview))
 }

@@ -24,14 +24,14 @@ import Testing
 struct SyntheticHarnessTests {
     @Test("the picker offers the synthetic design in debug builds")
     func thePickerOffersTheSyntheticDesignInDebugBuilds() {
-        #expect(AppModel().samples.map(\.id).contains(.us309Synthetic))
+        #expect(AppModel(autosave: .inMemory()).samples.map(\.id).contains(.us309Synthetic))
     }
 
     /// It is **last**, so it can never displace a shipping sample from the top of the picker
     /// and every existing screenshot and index-based expectation keeps its meaning.
     @Test("the synthetic design is last in the picker")
     func theSyntheticDesignIsLastInThePicker() {
-        let ids = AppModel().samples.map(\.id)
+        let ids = AppModel(autosave: .inMemory()).samples.map(\.id)
         #expect(ids.last == .us309Synthetic)
         #expect(ids.dropLast() == SampleLibrary.all.map(\.id))
     }
@@ -48,7 +48,7 @@ struct SyntheticHarnessTests {
     /// screenshots this story owes are of a different screen from the one users see.
     @Test("selecting the synthetic design configures the stage like any other")
     func selectingTheSyntheticDesignConfiguresTheStageLikeAnyOther() throws {
-        let model = AppModel()
+        let model = AppModel(autosave: .inMemory())
         let synthetic = try #require(model.samples.last)
 
         model.select(synthetic)
@@ -68,7 +68,7 @@ struct SyntheticHarnessTests {
     /// `SyntheticDesignTests` and still capture a 3 000-stitch design.
     @Test("the synthetic design the app links reaches fifty thousand stitches")
     func theSyntheticDesignTheAppLinksReachesFiftyThousandStitches() throws {
-        let model = AppModel()
+        let model = AppModel(autosave: .inMemory())
         let synthetic = try #require(model.samples.last)
 
         var interpreter = Interpreter(program: synthetic.program, clock: InterpreterClock(tickDelta: 1.0 / 60.0))

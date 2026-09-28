@@ -287,7 +287,7 @@ struct PickerRowButtonStyle: ButtonStyle {
 /// A function rather than statements inside `#Preview`, because that closure is
 /// a `@ViewBuilder` and cannot hold a `let` and a mutation.
 private func previewModelWithASelection() -> AppModel {
-    let model = AppModel()
+    let model = AppModel(autosave: .preview)
     if let first = SampleLibrary.all.first {
         model.select(first)
     }

@@ -2,9 +2,11 @@ import SwiftUI
 
 @main
 struct CatrobatEmbroideryApp: App {
+    @State private var autosave = ProgramAutosave(store: DocumentsProgramStore())
+
     var body: some Scene {
         WindowGroup {
-            WindowRootView()
+            WindowRootView(autosave: autosave)
         }
     }
 }
@@ -40,7 +42,11 @@ struct CatrobatEmbroideryApp: App {
 /// level deep". It is three — this view, `RootView`, then the picker and the
 /// stage — and the argument never needed the depth claim.)
 struct WindowRootView: View {
-    @State private var model = AppModel()
+    @State private var model: AppModel
+
+    init(autosave: ProgramAutosave) {
+        _model = State(initialValue: AppModel(autosave: autosave))
+    }
 
     var body: some View {
         RootView(model: model)

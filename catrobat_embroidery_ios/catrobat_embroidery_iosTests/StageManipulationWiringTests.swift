@@ -121,7 +121,7 @@ struct StageManipulationWiringTests {
     /// the package.
     @Test func theRendererSeesLiveThenSettledAcrossAManipulation() {
         let renderer = RecordingRenderer()
-        let model = AppModel()
+        let model = AppModel(autosave: .inMemory())
         let hosted = Self.hostingRetained(
             Harness(model: model, renderer: renderer, display: StageRenderRecording.drawnList()),
             at: CGSize(width: 390, height: 700)
@@ -169,7 +169,7 @@ struct StageManipulationWiringTests {
     /// the app at all before this story, so this is new wiring, not a re-test of package math.
     @Test func theDoubleTapTogglesToTwiceTheFitAboutTheTappedPoint() {
         let renderer = RecordingRenderer()
-        let model = AppModel()
+        let model = AppModel(autosave: .inMemory())
         let hosted = Self.hostingRetained(
             Harness(model: model, renderer: renderer, display: StageRenderRecording.drawnList()),
             at: CGSize(width: 390, height: 700)

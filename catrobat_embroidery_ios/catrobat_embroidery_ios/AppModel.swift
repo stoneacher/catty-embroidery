@@ -105,16 +105,30 @@ final class AppModel {
     /// The working program and its history (US-405).
     let editor: EditorViewModel
 
-    /// All three are injectable so tests can supply immediate pacing and a recording writer;
-    /// the defaults are what the app runs with.
+    /// The saved working program's guard, shared with every other window (US-406).
+    let autosave: ProgramAutosave
+
+    /// A saved program found at launch and not opened, until the user has been told.
+    private(set) var launchRefusal: ProgramRefusal?
+
+    /// Why the working program is not being saved, or `nil` while it is.
+    var saveFailure: ProgramSaveFailure? {
+        autosave.failure
+    }
+
+    /// The first three are injectable so tests can supply immediate pacing and a recording
+    /// writer; the defaults are what the app runs with. `autosave` has no default: it is shared
+    /// across windows, so only the owner of every window can supply it.
     init(
         runner: RunViewModel = RunViewModel(),
         exporter: ExportViewModel = ExportViewModel(),
-        editor: EditorViewModel = EditorViewModel()
+        editor: EditorViewModel = EditorViewModel(),
+        autosave: ProgramAutosave
     ) {
         self.runner = runner
         self.exporter = exporter
         self.editor = editor
+        self.autosave = autosave
 
         // The export is prepared when the run *ends*, which is what a `ShareLink` needs:
         // it takes its item at construction time, so there is nothing to hand it unless the
@@ -156,6 +170,17 @@ final class AppModel {
     private func editApplied() {
         selection?.provenance = nil
         runner.reset()
+    }
+
+    /// Opens the saved working program, once per window.
+    func restoreSavedProgram() {}
+
+    /// The window stopped being active: persist what it holds, if it changed anything.
+    func sceneDidLeaveActive() {}
+
+    /// The user has read the launch refusal.
+    func dismissLaunchRefusal() {
+        launchRefusal = nil
     }
 
     /// Starts the selected design from the beginning, throwing away whatever the last run
