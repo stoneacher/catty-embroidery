@@ -57,6 +57,11 @@ struct ScriptListView: View {
                         .listRowSeparator(.hidden)
                 }
                 .listStyle(.plain)
+                // The system's default minimum is taller than a one-line row, so the cell would
+                // centre the row inside itself and every guide would stop short of its
+                // neighbour's — measured at 51 pt cells around 44 pt rows. The row keeps its own
+                // 44 pt floor.
+                .environment(\.defaultMinListRowHeight, 44)
             }
         }
         .navigationTitle(Text(model.selection?.title ?? .scriptTitle))
@@ -86,12 +91,15 @@ struct ScriptRowView: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var swatchSize: CGFloat = 18
+    /// One width for every leading symbol and the swatch, so the sentences start on one line.
+    @ScaledMetric(relativeTo: .body) private var leadingWidth: CGFloat = 24
 
     var body: some View {
         let isAccessibilitySize = dynamicTypeSize.isAccessibilitySize
 
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             leading
+                .frame(width: leadingWidth)
             Text(row.text)
                 .font(.body)
                 // A loop's end is structure rather than an instruction; secondary keeps the eye
@@ -105,8 +113,9 @@ struct ScriptRowView: View {
         }
         .padding(.vertical, 11)
         .padding(.leading, ScriptRowLayout.indent(forDepth: row.depth, isAccessibilitySize: isAccessibilitySize))
-        // A floor for the thumb, not a size — see `SampleRowView`.
-        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        // A floor for the thumb, not a size — see `SampleRowView`. `maxHeight: .infinity` so the
+        // row fills its cell and the guides behind it reach the cell's edges.
+        .frame(maxWidth: .infinity, minHeight: 44, maxHeight: .infinity, alignment: .leading)
         .background(alignment: .leading) {
             guides(isAccessibilitySize: isAccessibilitySize)
         }
@@ -132,7 +141,6 @@ struct ScriptRowView: View {
             Image(systemName: Self.symbol(for: row.kind))
                 .font(.body)
                 .foregroundStyle(Self.tint(for: row.kind))
-                .frame(minWidth: swatchSize)
         }
     }
 
