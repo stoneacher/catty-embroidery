@@ -32,9 +32,9 @@ struct ExportWiringTests {
         writer: RecordingDSTFileWriter
     ) -> AppModel {
         AppModel(
+            autosave: .inMemory(),
             runner: RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing())),
-            exporter: ExportViewModel(writer: writer),
-            autosave: .inMemory()
+            exporter: ExportViewModel(writer: writer)
         )
     }
 

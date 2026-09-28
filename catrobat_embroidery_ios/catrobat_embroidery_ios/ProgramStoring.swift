@@ -46,12 +46,48 @@ final class DocumentsProgramStore: ProgramStoring {
     }
 
     func load() throws(ProgramLoadError) -> Program? {
-        nil
+        let data: Data
+        do {
+            data = try Data(contentsOf: workingURL)
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
+            return nil
+        } catch {
+            throw .unreadable
+        }
+        do {
+            return try ProgramDocument.decode(data)
+        } catch {
+            throw .document(error)
+        }
     }
 
-    func save(_: Program) throws {}
+    /// Encode first: a program the codec refuses throws here, before anything on disk has
+    /// been touched. The write is atomic — the new bytes replace the old file in one rename —
+    /// so an interrupted save leaves the previous program, never half of the new one.
+    func save(_ program: Program) throws {
+        let data = try ProgramDocument.encode(program)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try data.write(to: workingURL, options: .atomic)
+    }
 
+    /// `moveItem` refuses an existing destination (`fileWriteFileExists`) and leaves its source
+    /// in place, so trying successive names is race-free and can never overwrite a file set
+    /// aside earlier. The names keep `.json`, so a later version of the app can offer to
+    /// recover them; M5 owns that list.
     func setAside() throws -> URL {
-        workingURL
+        for attempt in 1 ... Self.maximumSetAsideAttempts {
+            let destination = directory.appending(path: "WorkingProgram-refused-\(attempt).json")
+            do {
+                try FileManager.default.moveItem(at: workingURL, to: destination)
+                return destination
+            } catch let error as CocoaError where error.code == .fileWriteFileExists {
+                continue
+            }
+        }
+        throw CocoaError(.fileWriteFileExists)
     }
+
+    /// A bound on the names `setAside()` tries: past this many refused files something other
+    /// than a bad file is wrong, and the caller treats the file as unpreserved.
+    private static let maximumSetAsideAttempts = 1000
 }

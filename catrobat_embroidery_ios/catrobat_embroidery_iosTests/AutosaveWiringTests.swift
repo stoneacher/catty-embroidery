@@ -23,9 +23,9 @@ struct AutosaveWiringTests {
     /// A window, launched the way `WindowRootView` launches one: built, then restored.
     private static func window(_ autosave: ProgramAutosave) -> AppModel {
         let model = AppModel(
+            autosave: autosave,
             runner: RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing())),
-            exporter: ExportViewModel(writer: RecordingDSTFileWriter()),
-            autosave: autosave
+            exporter: ExportViewModel(writer: RecordingDSTFileWriter())
         )
         model.restoreSavedProgram()
         return model
@@ -66,11 +66,11 @@ struct AutosaveWiringTests {
         let windowB = Self.window(autosave)
 
         windowA.editor.apply(Self.editQ)
-        let q = windowA.editor.program
+        let programQ = windowA.editor.program
         windowB.sceneDidLeaveActive()
 
-        #expect(store.stored == q)
-        #expect(store.saves == [q])
+        #expect(store.stored == programQ)
+        #expect(store.saves == [programQ])
     }
 
     // MARK: 2 — what an edit writes
@@ -148,13 +148,13 @@ struct AutosaveWiringTests {
         let windowB = Self.window(autosave)
 
         windowA.editor.apply(Self.editQ)
-        let q = windowA.editor.program
+        let programQ = windowA.editor.program
         windowB.editor.apply(Self.editR)
-        let r = windowB.editor.program
+        let programR = windowB.editor.program
         windowA.sceneDidLeaveActive()
 
-        #expect(store.stored == r)
-        #expect(store.saves == [q, r])
+        #expect(store.stored == programR)
+        #expect(store.saves == [programQ, programR])
     }
 
     /// Test-plan item 3c. The one that fails a rule phrased as "only an edit writes": a sample
@@ -240,7 +240,7 @@ struct AutosaveWiringTests {
 
         let title = try #require(model.selection?.title)
         #expect(String(localized: title) == "Untitled Design")
-        #expect(model.exporter.name == "")
+        #expect(model.exporter.name.isEmpty)
     }
 
     /// A name the `LA` field cannot hold is still the title, but must not open the stage
@@ -255,47 +255,18 @@ struct AutosaveWiringTests {
 
         let title = try #require(model.selection?.title)
         #expect(String(localized: title) == "A name much longer than fifteen")
-        #expect(model.exporter.name == "")
+        #expect(model.exporter.name.isEmpty)
     }
 
     // MARK: 5, 6, 6b — a refused file
-
-    enum Refused: CaseIterable, CustomTestStringConvertible {
-        case futureVersion, corrupt, unbalanced
-
-        var bytes: Data {
-            get throws {
-                switch self {
-                case .futureVersion: try RefusedDocument.futureVersion
-                case .corrupt: RefusedDocument.corrupt
-                case .unbalanced: try RefusedDocument.unbalanced
-                }
-            }
-        }
-
-        func matches(_ reason: ProgramLoadError) -> Bool {
-            switch (self, reason) {
-            case (.futureVersion, .document(.unsupportedVersion(2))),
-                 (.corrupt, .document(.corrupt)),
-                 (.unbalanced, .document(.unbalancedScript)):
-                true
-            default:
-                false
-            }
-        }
-
-        var testDescription: String {
-            "\(self)"
-        }
-    }
 
     /// Preservation is asserted on the **original bytes at the preserved location**, and only
     /// after an edit and a lifecycle save have both had their chance to write — "a file exists
     /// at the working path" would also pass a load that deleted the document and an autosave
     /// that recreated the path.
     @Test("a refused file opens a blank program, says why, and its bytes survive later saves",
-          arguments: Refused.allCases)
-    func aRefusedFileIsPreserved(_ refused: Refused) throws {
+          arguments: RefusedFixture.allCases)
+    func aRefusedFileIsPreserved(_ refused: RefusedFixture) throws {
         try inDisposableDirectory { directory in
             let disk = DocumentsProgramStore(directory: directory)
             let original = try refused.bytes
@@ -378,5 +349,35 @@ struct AutosaveWiringTests {
 
         #expect(relaunched.editor.program == model.editor.program)
         #expect(!relaunched.editor.undoStack.canUndo)
+    }
+}
+
+/// The three refused-file fixtures test-plan items 5, 6 and 6b share.
+enum RefusedFixture: CaseIterable, CustomTestStringConvertible {
+    case futureVersion, corrupt, unbalanced
+
+    var bytes: Data {
+        get throws {
+            switch self {
+            case .futureVersion: try RefusedDocument.futureVersion
+            case .corrupt: RefusedDocument.corrupt
+            case .unbalanced: try RefusedDocument.unbalanced
+            }
+        }
+    }
+
+    func matches(_ reason: ProgramLoadError) -> Bool {
+        switch (self, reason) {
+        case (.futureVersion, .document(.unsupportedVersion(2))),
+             (.corrupt, .document(.corrupt)),
+             (.unbalanced, .document(.unbalancedScript)):
+            true
+        default:
+            false
+        }
+    }
+
+    var testDescription: String {
+        "\(self)"
     }
 }

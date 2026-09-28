@@ -13,6 +13,8 @@
 // `RootView` builds the stage at two call sites; see `interaction`. Recorded rather than left
 // for a reader to notice the comment above had quietly stopped being true.
 import EditorCore
+import EmbroideryEngine
+import Foundation
 import Observation
 import ProgramModel
 import Samples
@@ -116,14 +118,14 @@ final class AppModel {
         autosave.failure
     }
 
-    /// The first three are injectable so tests can supply immediate pacing and a recording
-    /// writer; the defaults are what the app runs with. `autosave` has no default: it is shared
-    /// across windows, so only the owner of every window can supply it.
+    /// The rest are injectable so tests can supply immediate pacing and a recording writer;
+    /// the defaults are what the app runs with. `autosave` has no default: it is shared across
+    /// windows, so only their owner can supply it, and a default would be silent non-saving.
     init(
+        autosave: ProgramAutosave,
         runner: RunViewModel = RunViewModel(),
         exporter: ExportViewModel = ExportViewModel(),
-        editor: EditorViewModel = EditorViewModel(),
-        autosave: ProgramAutosave
+        editor: EditorViewModel = EditorViewModel()
     ) {
         self.runner = runner
         self.exporter = exporter
@@ -170,13 +172,60 @@ final class AppModel {
     private func editApplied() {
         selection?.provenance = nil
         runner.reset()
+        persistWorkingProgram()
     }
 
-    /// Opens the saved working program, once per window.
-    func restoreSavedProgram() {}
+    /// The revision of exactly the program this window holds; `nil` until it changes one. Not a
+    /// "has edited" flag, which would let a superseded window put an older program back (3b).
+    @ObservationIgnored private var heldRevision: SaveRevision?
 
-    /// The window stopped being active: persist what it holds, if it changed anything.
-    func sceneDidLeaveActive() {}
+    /// `onAppear` may fire twice; a second restore would replace the user's edits with the disk.
+    @ObservationIgnored private var hasRestored = false
+
+    /// Stamps the working program with a new revision and saves it — for every user-initiated
+    /// change and nothing else. ADR-037 keeps the list; a rejected or unchanging edit and a
+    /// restore are not on it.
+    private func persistWorkingProgram() {
+        let revision = autosave.mintRevision()
+        heldRevision = revision
+        autosave.save(editor.program, revision: revision)
+    }
+
+    /// Opens the saved working program, once per window (US-406) — from `onAppear`, not `init`,
+    /// which `State(initialValue:)` evaluates on every view initialisation.
+    ///
+    /// A selection **without provenance** (ADR-038): the file records a program, not a sample.
+    /// Its name is the title, and seeds the export only if the `LA` field can hold it. It holds
+    /// no revision, so the window writes nothing until the user changes something.
+    func restoreSavedProgram() {
+        guard !hasRestored else { return }
+        hasRestored = true
+        switch autosave.restore() {
+        case .nothingSaved:
+            break
+        case let .restored(program):
+            editor.load(program)
+            heldRevision = nil
+            let title: LocalizedStringResource = program.name.isEmpty
+                ? .programTitleUntitled : .programTitleNamed(program.name)
+            selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: title)
+            nextGeneration += 1
+            path = [.stage]
+            if case .success = DesignName.validating(program.name) {
+                exporter.name = program.name
+            }
+            interaction.followFit()
+        case let .refused(refusal):
+            launchRefusal = refusal
+        }
+    }
+
+    /// The window stopped being active: save what it holds, carrying the revision of the change
+    /// that produced it, so the save is dropped if another window has changed the program since.
+    func sceneDidLeaveActive() {
+        guard let heldRevision else { return }
+        autosave.save(editor.program, revision: heldRevision)
+    }
 
     /// The user has read the launch refusal.
     func dismissLaunchRefusal() {
@@ -235,8 +284,8 @@ final class AppModel {
     ///
     /// `private(set)` so every new selection goes through `select(_:)` and the
     /// generation can never be skipped — an assignment that bypassed it would
-    /// reintroduce exactly the no-op this story exists to forbid. The one other
-    /// writer is `editApplied()`, which clears `provenance` and nothing else.
+    /// reintroduce exactly the no-op this story exists to forbid. `restoreSavedProgram()` also
+    /// mints one; `editApplied()` only clears `provenance`.
     private(set) var selection: ProgramSelection?
 
     /// The compact navigation stack's path.
@@ -300,6 +349,7 @@ final class AppModel {
             generation: nextGeneration, provenance: sample.id, title: sample.displayName
         )
         editor.load(sample.program)
+        persistWorkingProgram()
         nextGeneration += 1
         path = [.stage]
         // `reset()` discards the run, which fires `onRunDiscarded` and takes the previous

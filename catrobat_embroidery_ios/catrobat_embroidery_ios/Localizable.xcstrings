@@ -1,6 +1,30 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "program.title.named": {
+      "comment": "The stage's title for a design reopened from the last session. %@ is the name the design was saved under, exactly as the user or the sample gave it. Do not translate: keep %@ alone, with nothing around it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@"
+          }
+        }
+      }
+    },
+    "program.title.untitled": {
+      "comment": "The stage's title for a design reopened from the last session that has no name yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untitled Design"
+          }
+        }
+      }
+    },
     "root.sample.accessibility.label": {
       "comment": "Spoken by VoiceOver for one row of the list of example designs. %1$@ is the design's name, %2$@ is a one-line description of what it looks like; both arrive already translated. The separator is what makes VoiceOver pause between them — use the sentence-ending punctuation and spacing your language reads naturally (which is not a full stop everywhere). Arguments are positional and may be reordered.",
       "extractionState": "manual",
