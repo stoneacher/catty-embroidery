@@ -661,6 +661,18 @@
         }
       }
     },
+    "formula.variable": {
+      "comment": "A variable's name inside a block's value, e.g. the \"Inner Loop\" in 360 ÷ \"Inner Loop\". %@ is the name, chosen by the user and never translated. The quotes are what keep a name like \"a + b\" reading as one variable rather than as a sum — use your language's quotation marks, but keep them.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\"%@\""
+          }
+        }
+      }
+    },
     "program.title.named": {
       "comment": "The stage's title for a design reopened from the last session. %@ is the name the design was saved under, exactly as the user or the sample gave it. Do not translate: keep %@ alone, with nothing around it.",
       "extractionState": "manual",

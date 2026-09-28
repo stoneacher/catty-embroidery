@@ -857,7 +857,8 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - **Formula text is faithful to the tree.** Operators are whole catalog infix formats (`formula.divide` = `"%1$@ ÷ %2$@"`), so a language can write `:`.
   - Minus is U+2212.
   - A right operand is bracketed at equal precedence (`1 − (2 − 3)`), and `^` associates right.
-  - A negation or negative literal is bracketed wherever it is an operand, except on the left of a sum.
+  - A negation or negative literal binds tighter than `+ − × ÷` and looser than `^`. So it is bare as a left operand of the four (`−5 × 2`, pinned in the review round). It is bracketed as the base of a power (`(−5) ^ 2`), under another negation (`−(−a)`), and **always** as a right operand (`1 − (−5)`). An earlier wording of this bullet said "except on the left of a sum"; Codex round 1 caught the contradiction, and the behaviour is what was decided.
+  - **A variable is quoted in a formula**, `360 ÷ "Inner Loop"`, which is Catroid's convention (`InternToExternGenerator`, `USER_VARIABLE`). The format is the catalog entry `formula.variable`. This was decided by Sebastian after Codex round 1 showed that free-text names break the tree: `.variable("a + b") × c` read as a sum, and `.variable("1")` as a number. Set/Change Variable bricks keep the bare name, as Catroid's spinner shows it.
   - Numbers use the locale's decimal separator and no grouping, because the plural labels' `%lld` counts never group.
 - **The seven unit-bearing labels have plural twins**, used only for a non-negative whole-number literal: move, turn left/right, point, repeat, the repeat loop's end, and wait. So the Wait template's default reads "Wait 1 second". Formulas, fractions and negatives keep the plural `%@` form.
 - **Indentation is a fixed 16 pt step, capped** at 6 levels, or 3 at accessibility sizes. Past the cap, one guide per level is still drawn, packed into the capped gutter. The spoken depth is exact.

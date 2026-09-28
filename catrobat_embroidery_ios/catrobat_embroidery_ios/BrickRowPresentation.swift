@@ -110,9 +110,8 @@ nonisolated private struct Sentence {
         case .loopEnd: loopEnd(closing: opener)
         case let .wait(seconds):
             unit(seconds, counted: LocalizedStringResource.brickWaitCount, formula: LocalizedStringResource.brickWait)
-        case let .setVariable(name, value): resolve(.brickSetVariable(formula(.variable(name)), formula(value)))
-        case let .changeVariableBy(name, value):
-            resolve(.brickChangeVariable(formula(.variable(name)), formula(value)))
+        case let .setVariable(name, value): resolve(.brickSetVariable(variable(name), formula(value)))
+        case let .changeVariableBy(name, value): resolve(.brickChangeVariable(variable(name), formula(value)))
         case .stitch: resolve(.brickStitch)
         case let .setThreadColor(hex): resolve(.brickThreadColor(verbatim(hex)))
         case let .runningStitch(length): resolve(.brickRunningStitch(formula(length)))
@@ -158,6 +157,13 @@ nonisolated private struct Sentence {
             return resolve(counted(count))
         }
         return resolve(text(formula(value)))
+    }
+
+    /// The variable a Set or Change Variable brick names: bare, as Catroid's spinner shows it —
+    /// it is the brick's subject, not an operand, so there is no tree for it to be confused
+    /// with. Only a formula quotes a variable.
+    private func variable(_ name: String) -> String {
+        name.isEmpty ? resolve(.scriptVariablePlaceholder) : name
     }
 
     /// A string parameter shown as stored — or, when empty, a placeholder, so the sentence is

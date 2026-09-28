@@ -79,26 +79,26 @@ struct BrickRowPresentationTests {
             "Set Inner Loop to 8",
             "Set Outer Loop to 8",
             "Start zigzag stitch with length 2 and width 10",
-            "Repeat Outer Loop times",
-            "Repeat Inner Loop times",
+            "Repeat \"Outer Loop\" times",
+            "Repeat \"Inner Loop\" times",
             "Move 100 steps",
-            "Turn right 360 ÷ Inner Loop degrees",
-            "End of repeat Inner Loop times",
-            "Turn right 360 ÷ Outer Loop degrees",
-            "End of repeat Outer Loop times"
+            "Turn right 360 ÷ \"Inner Loop\" degrees",
+            "End of repeat \"Inner Loop\" times",
+            "Turn right 360 ÷ \"Outer Loop\" degrees",
+            "End of repeat \"Outer Loop\" times"
         ])
         #expect(rows.map(\.depth) == [0, 0, 0, 0, 1, 2, 2, 1, 1, 0])
         #expect(rows.map(\.accessibilityLabel) == [
             "Set Inner Loop to 8",
             "Set Outer Loop to 8",
             "Start zigzag stitch with length 2 and width 10",
-            "Repeat Outer Loop times",
-            "Repeat Inner Loop times, inside 1 loop",
+            "Repeat \"Outer Loop\" times",
+            "Repeat \"Inner Loop\" times, inside 1 loop",
             "Move 100 steps, inside 2 loops",
-            "Turn right 360 ÷ Inner Loop degrees, inside 2 loops",
-            "End of repeat Inner Loop times, inside 1 loop",
-            "Turn right 360 ÷ Outer Loop degrees, inside 1 loop",
-            "End of repeat Outer Loop times"
+            "Turn right 360 ÷ \"Inner Loop\" degrees, inside 2 loops",
+            "End of repeat \"Inner Loop\" times, inside 1 loop",
+            "Turn right 360 ÷ \"Outer Loop\" degrees, inside 1 loop",
+            "End of repeat \"Outer Loop\" times"
         ])
         #expect(rows.map(\.openerIndex) == [nil, nil, nil, nil, nil, nil, nil, 4, nil, 3])
     }
@@ -136,8 +136,9 @@ struct BrickRowPresentationTests {
         case let .placeAt(x, y): [formula(x), formula(y)]
         case let .repeatLoop(times): [formula(times)]
         case let .wait(seconds): [formula(seconds)]
+        // The brick names its variable bare, as Catroid's spinner does; only a formula quotes it.
         case let .setVariable(name, value), let .changeVariableBy(name, value):
-            [formula(.variable(name)), formula(value)]
+            [name.isEmpty ? formula(.variable(name)) : name, formula(value)]
         case let .setThreadColor(hex): [hex]
         case let .runningStitch(length), let .tripleStitch(length): [formula(length)]
         case let .zigZagStitch(length, width): [formula(length), formula(width)]
@@ -230,7 +231,7 @@ struct BrickRowPresentationTests {
             .moveNSteps(.binary(.mult, .number(2), .variable("n")))
         ])
 
-        #expect(rows.map(\.text) == ["Wait 0.5 seconds", "Wait t seconds", "Move 2 × n steps"])
+        #expect(rows.map(\.text) == ["Wait 0.5 seconds", "Wait \"t\" seconds", "Move 2 × \"n\" steps"])
     }
 
     @Test("a negative whole number keeps the formula form and its minus sign")

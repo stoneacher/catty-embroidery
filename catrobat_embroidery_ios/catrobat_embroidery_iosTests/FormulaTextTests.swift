@@ -75,9 +75,9 @@ struct FormulaTextTests {
         #expect(FormulaText.text(for: Self.n(2.5), locale: Locale(identifier: "de_DE")) == "2,5")
     }
 
-    @Test("a variable renders as its name, verbatim")
+    @Test("a variable renders as its name in quotes, as Catroid shows it")
     func variable() {
-        #expect(Self.text(.variable("Inner Loop")) == "Inner Loop")
+        #expect(Self.text(.variable("Inner Loop")) == "\"Inner Loop\"")
     }
 
     /// `BrickDefaults.variableName` is `""`, so every Set Variable brick the palette adds shows
@@ -102,30 +102,40 @@ struct FormulaTextTests {
     }
 
     /// The case `OctagonRosette` puts on screen the first time anyone opens it.
-    @Test("360 ÷ Inner Loop")
+    @Test("360 ÷ \"Inner Loop\"")
     func theRosettesTurn() {
-        #expect(Self.text(.binary(.divide, Self.n(360), .variable("Inner Loop"))) == "360 ÷ Inner Loop")
+        #expect(Self.text(.binary(.divide, Self.n(360), .variable("Inner Loop"))) == "360 ÷ \"Inner Loop\"")
+    }
+
+    /// A variable's name is free text, so unquoted it can read as a different tree: a
+    /// multiplication of `a + b` by `c` would read as a sum, and a variable named `1` would read
+    /// as the number (Codex round 1). Quoting is Catroid's own convention
+    /// (`InternToExternGenerator`, `USER_VARIABLE`).
+    @Test("a variable whose name looks like a formula still reads as one variable")
+    func ambiguousVariableNames() {
+        #expect(Self.text(.binary(.mult, .variable("a + b"), .variable("c"))) == "\"a + b\" × \"c\"")
+        #expect(Self.text(.variable("1")) != Self.text(Self.n(1)))
     }
 
     @Test("unary minus over a leaf needs no parentheses")
     func unaryMinusOverALeaf() {
-        #expect(Self.text(.unaryMinus(Self.varA)) == "\u{2212}a")
+        #expect(Self.text(.unaryMinus(Self.varA)) == "\u{2212}\"a\"")
     }
 
     /// The story names this one: dropping the parentheses changes the meaning.
     @Test("unary minus over a sum keeps the parentheses")
     func unaryMinusOverASum() {
-        #expect(Self.text(.unaryMinus(.binary(.plus, Self.varA, Self.varB))) == "\u{2212}(a + b)")
+        #expect(Self.text(.unaryMinus(.binary(.plus, Self.varA, Self.varB))) == "\u{2212}(\"a\" + \"b\")")
     }
 
     @Test("unary minus over a power keeps the parentheses")
     func unaryMinusOverAPower() {
-        #expect(Self.text(.unaryMinus(.binary(.pow, Self.varA, Self.n(2)))) == "\u{2212}(a ^ 2)")
+        #expect(Self.text(.unaryMinus(.binary(.pow, Self.varA, Self.n(2)))) == "\u{2212}(\"a\" ^ 2)")
     }
 
     @Test("a double negation is bracketed rather than reading as one symbol")
     func doubleNegation() {
-        #expect(Self.text(.unaryMinus(.unaryMinus(Self.varA))) == "\u{2212}(\u{2212}a)")
+        #expect(Self.text(.unaryMinus(.unaryMinus(Self.varA))) == "\u{2212}(\u{2212}\"a\")")
         #expect(Self.text(.unaryMinus(Self.n(-5))) == "\u{2212}(\u{2212}5)")
     }
 
@@ -155,13 +165,13 @@ struct FormulaTextTests {
     @Test("a negative base of a power is bracketed")
     func negativeBase() {
         #expect(Self.text(.binary(.pow, Self.n(-5), Self.n(2))) == "(\u{2212}5) ^ 2")
-        #expect(Self.text(.binary(.pow, .unaryMinus(Self.varA), Self.n(2))) == "(\u{2212}a) ^ 2")
+        #expect(Self.text(.binary(.pow, .unaryMinus(Self.varA), Self.n(2))) == "(\u{2212}\"a\") ^ 2")
     }
 
     @Test("a negated or negative right operand is bracketed")
     func negativeRightOperand() {
         #expect(Self.text(.binary(.minus, Self.n(1), Self.n(-5))) == "1 \u{2212} (\u{2212}5)")
-        #expect(Self.text(.binary(.mult, Self.n(2), .unaryMinus(Self.varA))) == "2 × (\u{2212}a)")
+        #expect(Self.text(.binary(.mult, Self.n(2), .unaryMinus(Self.varA))) == "2 × (\u{2212}\"a\")")
     }
 
     /// Negation binds tighter than any binary operator but `^`, so on the left of a product or
@@ -169,7 +179,7 @@ struct FormulaTextTests {
     @Test("a negated or negative left operand of a product needs no parentheses")
     func negativeLeftOperandOfAProduct() {
         #expect(Self.text(.binary(.mult, Self.n(-5), Self.n(2))) == "\u{2212}5 × 2")
-        #expect(Self.text(.binary(.divide, .unaryMinus(Self.varA), Self.n(2))) == "\u{2212}a ÷ 2")
+        #expect(Self.text(.binary(.divide, .unaryMinus(Self.varA), Self.n(2))) == "\u{2212}\"a\" ÷ 2")
     }
 
     @Test("a negative left operand of a sum needs no parentheses")

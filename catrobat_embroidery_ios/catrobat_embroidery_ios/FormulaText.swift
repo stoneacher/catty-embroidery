@@ -21,6 +21,9 @@ import ProgramModel
 ///   (`(−5) ^ 2`) and under another negation (`−(−a)`) — and **always** bracketed as a right
 ///   operand, `1 − (−5)`, because `1 − −5` reads as a typo to a child.
 ///
+/// **A variable is quoted** (`"Inner Loop"`), Catroid's own convention, so a name that looks
+/// like a formula still reads as one variable. The quote marks are a catalog format too.
+///
 /// Numbers use the injected locale's decimal separator and **no grouping**: the plural brick
 /// labels print their counts through `%lld`, which never groups, and one value spelled `1000`
 /// in one row and `1,000` in the next would be two spellings on one screen. Up to six decimals
@@ -65,7 +68,10 @@ nonisolated private struct Renderer {
             }
             return number(value)
         case let .variable(name):
-            return name.isEmpty ? resolve(.scriptVariablePlaceholder) : name
+            // Quoted, as Catroid shows a variable in a formula (`InternToExternGenerator`): a name
+            // is free text, and bare it could read as a different tree — `a + b` times `c`
+            // would read as a sum, and a variable named `1` as the number (Codex round 1).
+            return name.isEmpty ? resolve(.scriptVariablePlaceholder) : resolve(.formulaVariable(name))
         case let .binary(operation, left, right):
             let parent = level(of: formula)
             let rightAssociative = operation == .pow
