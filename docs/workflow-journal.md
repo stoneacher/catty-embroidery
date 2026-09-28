@@ -2649,3 +2649,15 @@ US-407 put the first editor pixels on screen: a read-only script list with brick
   - The locale-drop mutant was killed only because the review simulator's region used a decimal comma. The kill was environmental, so it proved nothing.
   - All 11 findings were acted on, test-first. The nine new tests kill all four survivors, and a re-run of those mutants confirmed it.
 - **Tooling.** "Application failed preflight checks" again, fixed by uninstalling and reinstalling (as the US-406 memory says). The iPad simulator was left at AX5 by an earlier session, which produced an accidental AX5 regular-width screenshot. There is still no rotate command, so there is no iPad landscape screenshot.
+
+## 2026-09-28 (US-407, Codex rounds 1–2) — a finding outside the rubric's own frame, and a decision that belonged to the human
+
+Round 1 used a presentation-semantics rubric, since the story writes no DST bytes. Its focus was formula text faithful to the tree, catalog specifiers, and the launch-flip state.
+- **Codex found what `swift-code-reviewer` did not look for: the operands are free text.** The in-loop review probed numbers exhaustively (`-0`, `1e-7`, `1e20`, NaN). Codex asked instead what a *variable name* can contain, and `.variable("a + b") × c` read as a sum. The fix changes visible output, including the story's own example (`360 ÷ Inner Loop` became `360 ÷ "Inner Loop"`), so it went to Sebastian as a decision rather than being applied. He chose Catroid's convention, always quoting.
+- **Round 1's Low was a doc contradiction that the in-loop round created.** `swift-code-reviewer` asked for a pinned rule on negation's left-operand placement, and the code comment was corrected. The ADR bullet, written before that round, still said the old rule. Codex caught ADR and code disagreeing. The ADR was reworded; the behaviour stayed as decided.
+- **Round 2 confirmed both fixes and found their edge.** A quote character inside the name defeats the quoting. A name spelled `(no variable)` collides with the placeholder. Both were **tracked in US-410 rather than fixed**, and the reasoning is recorded in case the stop rule looks gamed:
+  - no UI creates names before US-410;
+  - escaping ASCII `"` would be wrong for every translator who picks other quotation marks, so a renderer-side patch would be partial and would feed the next round;
+  - the owning story is where names are created.
+- **Severity history: Medium (code) → Medium (no code). The loop ended on condition 1.** Flat severity with no code change is a stop, not convergence. The stop is honest only because the remaining findings have a named owner that is better placed to fix them.
+- As in US-406, Codex ran read-only and did not execute the iOS tests. Its verdicts come from reading the code.

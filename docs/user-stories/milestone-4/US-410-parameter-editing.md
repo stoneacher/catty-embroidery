@@ -52,6 +52,14 @@ Neither reference helps: Catroid routes **every** number through the full formul
 9. A `.binary` parameter's editor is non-editable and exposes a non-empty localised reason; likewise `.unaryMinus`. Opening and dismissing either leaves the whole `Program` unchanged.
 10. `replaceBrick` with a different kind never occurs from this UI — asserted at the view-model boundary, since ADR-035 already rejects it in the funnel.
 
+## Inherited from US-407 (Codex round 2, 2026-09-28): names that imitate the display syntax
+
+US-407 renders a variable inside a formula as `"name"` (the `formula.variable` catalog format, which is Catroid's convention). It renders an empty name or string as a placeholder: `(no variable)` for a variable, `(empty)` for a file name or colour. Two inputs still defeat that, and both are free text that this story is the first to let a user create:
+- **A name containing the quotation mark**: `.variable("a\" + \"b") × c` renders `"a" + "b" × "c"`, which reads as a sum.
+- **A name spelled like a placeholder**: a variable named `(no variable)` reads the same as an unset one. A file named `(empty)` reads the same as an empty file name.
+
+They were deliberately left out of US-407. No UI there creates names, and escaping ASCII `"` would be wrong in every language whose translator picked other quotation marks. Decide here, where names are created: restrict the characters a name may hold, escape against the localized delimiters, or render the placeholders so that no name can collide with them.
+
 ## References
 
 - ADR-039 (off-row presentation), ADR-040 (reserved — this story writes the curated palette), ADR-035 (same-kind `replaceBrick`), ADR-034 (why no control goes in a row), ADR-023 (the container swap)

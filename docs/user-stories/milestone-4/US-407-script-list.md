@@ -2,7 +2,9 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~5 h | **Depends on**: US-401, US-405
 
-**Status**: In review, 2026-09-28, [PR #62](https://github.com/stoneacher/catty-embroidery/pull/62).
+**Status**: Done — 2026-09-28, [PR #62](https://github.com/stoneacher/catty-embroidery/pull/62) (pending merge).
+- **Codex:** two rounds, Medium (code: variables quoted in formulas, Sebastian's decision) → Medium (no code; two name-syntax edge cases tracked in US-410). The loop ended on condition 1.
+- **Launch-time name message:** accepted and moved to backlog US-320.
 - **Test-first:** the `[red]` commit `893a2e3` had signature-only stubs, and 43 tests failed on behaviour. Two tests passed against the stubs and were proved by mutation.
 - **`swift-code-reviewer`:** 11 findings, all acted on, and four surviving mutants, all now killed.
 - **Layout (ADR-039):** decided by Sebastian at planning.
