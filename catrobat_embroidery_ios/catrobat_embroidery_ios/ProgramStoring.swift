@@ -71,9 +71,9 @@ final class DocumentsProgramStore: ProgramStoring {
     }
 
     /// `moveItem` refuses an existing destination (`fileWriteFileExists`) and leaves its source
-    /// in place, so trying successive names is race-free and can never overwrite a file set
-    /// aside earlier. The names keep `.json`, so a later version of the app can offer to
-    /// recover them; M5 owns that list.
+    /// in place, so trying successive names can never overwrite a file set aside earlier. The
+    /// names keep `.json`, so a later version of the app can offer to recover them; M5 owns
+    /// that list.
     func setAside() throws -> URL {
         for attempt in 1 ... Self.maximumSetAsideAttempts {
             let destination = directory.appending(path: "WorkingProgram-refused-\(attempt).json")

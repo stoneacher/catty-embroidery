@@ -175,6 +175,8 @@ struct ProgramAutosaveTests {
 
             switchable.setAsideFails = false
             let second = autosave.restore()
+            // The banner clears when the block lifts, not only at the next write.
+            #expect(autosave.failure == nil)
             let outcome = autosave.save(Self.rosette, revision: autosave.mintRevision())
 
             #expect(second == .refused(ProgramRefusal(reason: .document(.corrupt), preserved: true)))
@@ -182,6 +184,72 @@ struct ProgramAutosaveTests {
             #expect(autosave.failure == nil)
             #expect(try disk.load() == Self.rosette)
             #expect(try setAsideFiles(in: directory) == [RefusedDocument.corrupt])
+        }
+    }
+
+    // MARK: Accepted is not written
+
+    /// "Accepted", not "written": a newer save that *failed* must still stop an older one landing
+    /// after it, or a retry-less failure would let stale work overwrite nothing-yet-saved.
+    @Test("a newer save that failed still supersedes an older one")
+    func aFailedNewerSaveStillSupersedes() {
+        let store = InMemoryProgramStore()
+        let autosave = ProgramAutosave(store: store)
+        let older = autosave.mintRevision()
+        let newer = autosave.mintRevision()
+
+        store.failsSaves = true
+        let failed = autosave.save(Self.coil, revision: newer)
+        store.failsSaves = false
+        let stale = autosave.save(Self.rosette, revision: older)
+
+        #expect(failed == .failed)
+        #expect(stale == .superseded)
+        #expect(store.saves.isEmpty)
+    }
+
+    /// The data-loss sequence `swift-code-reviewer` found against a mutant: two edits while
+    /// blocked, the block lifts, and the *older* window backgrounds first.
+    @Test("a newer save that was blocked still supersedes an older one once the block lifts")
+    func aBlockedNewerSaveStillSupersedes() throws {
+        try inDisposableDirectory { directory in
+            let disk = DocumentsProgramStore(directory: directory)
+            try RefusedDocument.corrupt.write(to: disk.workingURL)
+            let store = SetAsideFailingStore(wrapping: disk)
+            let autosave = ProgramAutosave(store: store)
+            _ = autosave.restore()
+            let older = autosave.mintRevision()
+            let newer = autosave.mintRevision()
+
+            let blocked = autosave.save(Self.coil, revision: newer)
+            store.setAsideFails = false
+            _ = autosave.restore()
+            let stale = autosave.save(Self.rosette, revision: older)
+
+            #expect(blocked == .blocked)
+            #expect(stale == .superseded)
+            #expect(try disk.load() == nil)
+        }
+    }
+
+    /// The block waits for the refused file to be moved; if it has gone some other way, there
+    /// is nothing left to protect and saving must not stay paused until a relaunch.
+    @Test("a block whose refused file has vanished is lifted by the next restore")
+    func aVanishedRefusedFileLiftsTheBlock() throws {
+        try inDisposableDirectory { directory in
+            let disk = DocumentsProgramStore(directory: directory)
+            try RefusedDocument.corrupt.write(to: disk.workingURL)
+            let autosave = ProgramAutosave(store: SetAsideFailingStore(wrapping: disk))
+            _ = autosave.restore()
+            try #require(autosave.failure == .unpreservedDocument)
+
+            try FileManager.default.removeItem(at: disk.workingURL)
+            let second = autosave.restore()
+            let outcome = autosave.save(Self.rosette, revision: autosave.mintRevision())
+
+            #expect(second == .nothingSaved)
+            #expect(autosave.failure == nil)
+            #expect(outcome == .written)
         }
     }
 }

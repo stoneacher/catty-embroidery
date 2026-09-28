@@ -68,6 +68,27 @@ struct DocumentsProgramStoreTests {
         }
     }
 
+    /// A proxy for `.atomic`, which no in-process test can observe directly: an atomic write
+    /// renames a new file into place, so the path gets a new inode, where a plain write
+    /// truncates the old one. The force-quit check on the simulator is the real evidence.
+    @Test("each save replaces the file rather than rewriting it in place")
+    func eachSaveReplacesTheFile() throws {
+        try inDisposableDirectory { directory in
+            let store = DocumentsProgramStore(directory: directory)
+
+            try store.save(Self.rosette)
+            let before = try Self.inode(of: store.workingURL)
+            try store.save(Self.coil)
+            let after = try Self.inode(of: store.workingURL)
+
+            #expect(before != after)
+        }
+    }
+
+    private static func inode(of url: URL) throws -> Int? {
+        try FileManager.default.attributesOfItem(atPath: url.path)[.systemFileNumber] as? Int
+    }
+
     // MARK: A failed encode
 
     /// "A half-written program is worse than a stale one": the encode runs before the disk is

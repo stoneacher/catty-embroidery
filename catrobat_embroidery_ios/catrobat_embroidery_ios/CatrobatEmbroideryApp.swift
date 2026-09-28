@@ -92,7 +92,13 @@ struct WindowRootView: View {
             message: { Text(AutosaveNotice.message(for: $0)) }
         )
         .onAppear {
-            model.restoreSavedProgram()
+            // Without animation: on iPhone the restore pushes the stage, and the window should
+            // open on it rather than animate there from the picker.
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                model.restoreSavedProgram()
+            }
         }
         .onChange(of: scenePhase) { old, _ in
             if old == .active {

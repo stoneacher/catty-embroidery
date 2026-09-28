@@ -297,11 +297,11 @@ final class AppModel {
     /// earlier version of this comment got wrong.
     ///
     /// It is an unrestricted `var`, so the invariant "a non-empty path implies a
-    /// selection" is upheld by there being exactly one writer today
-    /// (`select(_:)`) and not by the type. A later story that pushes `.stage`
-    /// without selecting — a deep link, state restoration — would reach a stage
-    /// titled "Stage" showing the empty state. Worth encoding when there is a
-    /// second writer; not worth the binding machinery while there is one.
+    /// selection" is upheld by its two writers — `select(_:)` and, since US-406,
+    /// `restoreSavedProgram()` — each setting `selection` first, and not by the type.
+    /// A writer that pushed `.stage` without selecting — a deep link — would reach a
+    /// stage titled "Stage" showing the empty state. Worth encoding when a third
+    /// writer arrives; not worth the binding machinery for two that both select.
     var path: [StageDestination] = []
 
     /// `@ObservationIgnored` on purpose: bumping the counter is bookkeeping, not
@@ -341,9 +341,9 @@ final class AppModel {
     /// so here rather than in a view. The view-side spellings — `.onChange(of:
     /// initial:)`, `.task(id:)` — re-fire when `RootView` rebuilds a navigation
     /// container after a horizontal size-class change (ADR-023), so on an iPad window
-    /// resize they would wipe a design the user had just watched finish. Selection has
-    /// exactly one writer, so the reset belongs with it — and the one other caller of
-    /// `runner.reset()`, `editApplied()`, is the other thing that invalidates a run.
+    /// resize they would wipe a design the user had just watched finish. The reset belongs
+    /// with the selection's writers — `restoreSavedProgram()` skips it only because it runs
+    /// once, before anything can play — and `editApplied()` is the other thing that voids a run.
     func select(_ sample: SampleProgram) {
         selection = ProgramSelection(
             generation: nextGeneration, provenance: sample.id, title: sample.displayName

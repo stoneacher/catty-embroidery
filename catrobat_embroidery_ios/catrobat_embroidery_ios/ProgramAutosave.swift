@@ -115,8 +115,8 @@ final class ProgramAutosave {
             return .superseded
         }
         highestAccepted = revision
+        // `failure` is already `.unpreservedDocument` while this holds: `setAside()` sets both.
         guard !unpreservedDocument else {
-            failure = .unpreservedDocument
             return .blocked
         }
         do {
@@ -134,7 +134,8 @@ final class ProgramAutosave {
     /// Writes nothing: restoring is not an edit, and writing back what was just read would
     /// be a no-op at best. A refused file is moved aside, never overwritten; if that fails,
     /// every later save is blocked until a restore — another window, or the next launch —
-    /// manages to move it.
+    /// manages to move it, or finds it gone. A window whose edit was blocked is not flushed when
+    /// the block lifts; its next change or lifecycle save writes it.
     func restore() -> ProgramRestore {
         let loaded: Program?
         do {
@@ -143,6 +144,9 @@ final class ProgramAutosave {
             return .refused(ProgramRefusal(reason: error, preserved: setAside()))
         }
         guard let loaded else {
+            // A refused file that has gone some other way leaves nothing to protect: saving
+            // must not stay paused until a relaunch.
+            liftBlock()
             return .nothingSaved
         }
         return .restored(loaded)
@@ -156,11 +160,14 @@ final class ProgramAutosave {
             failure = .unpreservedDocument
             return false
         }
-        if unpreservedDocument {
-            unpreservedDocument = false
-            failure = nil
-        }
+        liftBlock()
         return true
+    }
+
+    private func liftBlock() {
+        guard unpreservedDocument else { return }
+        unpreservedDocument = false
+        failure = nil
     }
 }
 
