@@ -20,7 +20,7 @@ struct AutosaveNoticeTests {
             (.document(.encodingFailed), .damaged),
             (.unreadable, .damaged),
             (.document(.unbalancedScript(.unmatchedLoopEnd(index: 0))), .blocksDontFit),
-            (.document(.formulaTooDeep(limit: 128)), .blocksDontFit),
+            (.document(.formulaTooDeep(limit: 128)), .blocksDontFit)
         ]
         for (reason, expected) in groups {
             #expect(AutosaveNotice.cause(of: reason) == expected, "\(reason)")
@@ -32,17 +32,18 @@ struct AutosaveNoticeTests {
     /// The key pins which sentence each combination gets, without asserting English.
     @Test("each reason group and outcome has its own message")
     func eachCombinationHasItsOwnMessage() {
-        let cases: [(ProgramLoadError, Bool, String)] = [
-            (.document(.unsupportedVersion(2)), true, "autosave.refusal.message.newer.kept"),
-            (.document(.unsupportedVersion(2)), false, "autosave.refusal.message.newer.paused"),
-            (.document(.corrupt), true, "autosave.refusal.message.damaged.kept"),
-            (.unreadable, false, "autosave.refusal.message.damaged.paused"),
-            (.document(.formulaTooDeep(limit: 128)), true, "autosave.refusal.message.blocks.kept"),
-            (.document(.formulaTooDeep(limit: 128)), false, "autosave.refusal.message.blocks.paused")
+        let newer = ProgramLoadError.document(.unsupportedVersion(2))
+        let tooDeep = ProgramLoadError.document(.formulaTooDeep(limit: 128))
+        let cases: [(refusal: ProgramRefusal, key: String)] = [
+            (.init(reason: newer, preserved: true), "autosave.refusal.message.newer.kept"),
+            (.init(reason: newer, preserved: false), "autosave.refusal.message.newer.paused"),
+            (.init(reason: .document(.corrupt), preserved: true), "autosave.refusal.message.damaged.kept"),
+            (.init(reason: .unreadable, preserved: false), "autosave.refusal.message.damaged.paused"),
+            (.init(reason: tooDeep, preserved: true), "autosave.refusal.message.blocks.kept"),
+            (.init(reason: tooDeep, preserved: false), "autosave.refusal.message.blocks.paused")
         ]
-        for (reason, preserved, key) in cases {
-            let refusal = ProgramRefusal(reason: reason, preserved: preserved)
-            #expect(AutosaveNotice.message(for: refusal).key == key, "\(reason), preserved: \(preserved)")
+        for (refusal, key) in cases {
+            #expect(AutosaveNotice.message(for: refusal).key == key, "\(refusal)")
         }
     }
 
