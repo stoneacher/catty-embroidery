@@ -175,6 +175,28 @@ documents why it needs one, and a release build is a weaker claim than that test
 
 ---
 
+## US-320 — A new window opens on a validation error the user did not cause
+
+**Found**: 2026-09-28, US-407's simulator pass. **Accepted by Sebastian for US-407 and moved here.**
+Since ADR-039, launch selects the blank program as an untitled design, so the stage shows its
+design-name field with an empty name. `DesignNameField` reports the empty name at once, in red: "Enter a
+name so the file has one." On iPad the stage sits beside the script, so this is on screen the first time
+anyone opens the app. On iPhone it is one push away.
+- US-406 already showed the same message for a restored untitled design, but that was a rarer path.
+- `ExportControl` ranks its run-related reasons above the name reason, so the Share button's own hint is
+  correct. It is only the field's inline message that fires early.
+
+**What taking it would involve.** Decide when an empty name counts as a mistake. Candidates:
+- after the user has edited the field;
+- once a run has finished, which is when a name first matters, because only then is there a file to share;
+- when Share is attempted.
+
+The rule lives in `ExportViewModel`/`DesignNameField` (US-308, ADR-026). It needs its own test-first pass,
+since the reason precedence is pinned there. Seeding a default name was the rejected alternative: it
+changes what an exported file is called.
+
+---
+
 ## Scheduled out of this file — the record, because the mechanism is the point
 
 Entries keep their ID when they are scheduled, so existing ADR and journal references keep
