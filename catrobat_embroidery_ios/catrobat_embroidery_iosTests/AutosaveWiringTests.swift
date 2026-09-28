@@ -174,14 +174,14 @@ struct AutosaveWiringTests {
     // MARK: 3d, 4 — launch
 
     /// Test-plan item 3d. The "writes nothing back" half needs mutation proof.
-    @Test("restoring a saved program opens it on the stage and writes nothing back")
+    @Test("restoring a saved program opens its script and writes nothing back")
     func restoringOpensTheProgramAndWritesNothing() {
         let store = InMemoryProgramStore(stored: Self.coil.program)
 
         let model = Self.relaunch(store)
 
         #expect(model.editor.program == Self.coil.program)
-        #expect(model.path == [.stage])
+        #expect(model.path == [.script])
         #expect(model.selection != nil)
         #expect(model.selection?.provenance == nil)
         #expect(model.launchRefusal == nil)
@@ -189,15 +189,21 @@ struct AutosaveWiringTests {
     }
 
     /// Test-plan item 4. Needs mutation proof: it is the state a do-nothing stub leaves.
-    @Test("with nothing saved, launch is the blank program with no error")
-    func nothingSavedIsAFirstLaunch() {
+    ///
+    /// **Since US-407 the blank program is a selection** (ADR-038 handed the flip to this
+    /// story): an untitled design of no sample, whose script — the empty state — is the first
+    /// screen a new user sees.
+    @Test("with nothing saved, launch opens the blank program's script with no error")
+    func nothingSavedIsAFirstLaunch() throws {
         let store = InMemoryProgramStore()
 
         let model = Self.relaunch(store)
 
         #expect(model.editor.program == .blank)
-        #expect(model.selection == nil)
-        #expect(model.path.isEmpty)
+        let selection = try #require(model.selection)
+        #expect(selection.provenance == nil)
+        #expect(String(localized: try #require(selection.title)) == "Untitled Design")
+        #expect(model.path == [.script])
         #expect(model.launchRefusal == nil)
         #expect(model.saveFailure == nil)
         #expect(store.saves.isEmpty)
@@ -275,7 +281,8 @@ struct AutosaveWiringTests {
             let model = Self.relaunch(disk)
 
             #expect(model.editor.program == .blank)
-            #expect(model.selection == nil)
+            #expect(model.selection?.provenance == nil, "the refused file is not opened as a sample")
+            #expect(model.path == [.script])
             let refusal = try #require(model.launchRefusal)
             #expect(refused.matches(refusal.reason), "reason was \(refusal.reason)")
             #expect(refusal.preserved)

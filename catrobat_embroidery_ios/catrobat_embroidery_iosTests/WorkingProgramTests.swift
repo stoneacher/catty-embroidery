@@ -1,6 +1,7 @@
 @testable import catrobat_embroidery_ios
 import EditorCore
 import EmbroideryEngine
+import Foundation
 import ProgramModel
 import Samples
 import StagePreview
@@ -50,19 +51,36 @@ struct WorkingProgramTests {
 
     // MARK: 8 — launch
 
-    /// The blank program is what the model holds with nothing picked — and, decided at
-    /// planning (2026-09-27), the stage does **not** yet treat it as a selection: US-405 is
-    /// "nothing new visible", and US-407 owns the blank program's empty state.
-    @Test("launch holds the blank program and selects nothing")
-    func launchHoldsTheBlankProgramAndSelectsNothing() {
+    /// The blank program is what the model holds with nothing picked. US-405 deliberately left
+    /// it unselected ("nothing new visible"); **US-407 flips that** (ADR-038's hand-off,
+    /// ADR-039): launch selects it as an untitled design of no sample, because a program built
+    /// from nothing must be playable — M4's exit criterion 1 — and play is gated on a
+    /// selection.
+    @Test("launch selects the blank program as an untitled design, and it plays")
+    func launchSelectsTheBlankProgram() throws {
         let model = Self.immediateModel()
 
         #expect(model.editor.program == .blank)
-        #expect(model.selection == nil)
-        #expect(!model.samples.contains { model.isSelected($0) })
+        let selection = try #require(model.selection)
+        #expect(selection.provenance == nil)
+        #expect(String(localized: try #require(selection.title)) == "Untitled Design")
+        #expect(!model.samples.contains { model.isSelected($0) }, "no sample row claims the blank program")
+        #expect(model.path == [.script], "the first screen is the blank program's script")
 
         model.play()
-        #expect(model.runner.run.state == .idle, "play with nothing selected must not run the blank program")
+        #expect(model.runner.run.state != .idle, "a program built from nothing must be playable")
+    }
+
+    /// Launch takes a generation like any other selection, so picking a sample afterwards is a
+    /// genuinely different value — the property `ProgramSelection` exists for.
+    @Test("selecting a sample after launch is a new generation")
+    func selectingAfterLaunchIsANewGeneration() throws {
+        let model = Self.immediateModel()
+        let launch = try #require(model.selection)
+
+        model.select(SampleLibrary[.squareCoil])
+
+        #expect(try #require(model.selection).generation == launch.generation + 1)
     }
 
     // MARK: 3 — provenance
@@ -87,7 +105,7 @@ struct WorkingProgramTests {
         // typed.
         #expect(edited.title == loaded.title)
         #expect(edited.generation == loaded.generation)
-        #expect(model.path == [.stage])
+        #expect(model.path == [.script])
         #expect(model.exporter.name == sample.id.resourceName)
     }
 

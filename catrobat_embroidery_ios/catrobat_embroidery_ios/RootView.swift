@@ -144,6 +144,7 @@ struct RootView: View {
 /// that makes re-selection meaningful could not live coherently in two places.
 /// The destination closure reads the selection instead. One owner.
 enum StageDestination: Hashable {
+    case script
     case stage
 }
 

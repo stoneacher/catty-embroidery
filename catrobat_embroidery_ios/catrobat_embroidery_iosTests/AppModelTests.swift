@@ -68,7 +68,7 @@ struct AppModelTests {
     @Test(arguments: SampleLibrary.all)
     func selectingASamplePublishesItAndExposesItsProgram(_ sample: SampleProgram) throws {
         let model = AppModel(autosave: .inMemory())
-        #expect(model.selection == nil, "nothing is selected before the first tap")
+        #expect(model.selection?.provenance == nil, "no sample is selected before the first tap")
 
         model.select(sample)
 
@@ -123,23 +123,24 @@ struct AppModelTests {
         #expect(second.generation == first.generation + 1)
     }
 
-    /// Selecting shows the stage — once, however often it is selected.
+    /// Selecting shows the sample's script — once, however often it is selected.
     ///
-    /// `select` assigns the path rather than appending to it. Appending would
-    /// stack a second stage on top of the first, so Back would return to a stage
-    /// instead of to the list. Asserting the whole array (rather than
+    /// **Since US-407 the destination is the script, not the stage** (ADR-039): the list is
+    /// what a sample *is* in an editor, and the stage is pushed from it. `select` assigns the
+    /// path rather than appending to it. Appending would stack a second script on top of the
+    /// first, so Back would return to a script instead of to the list of samples. Asserting the whole array (rather than
     /// `NavigationPath`, which exposes only `count`) is why the model stores
     /// `[StageDestination]`.
-    @Test func selectingTwiceLeavesExactlyOneStageOnThePath() throws {
+    @Test func selectingTwiceLeavesExactlyOneScriptOnThePath() throws {
         let model = AppModel(autosave: .inMemory())
         let sample = try #require(SampleLibrary.all.first)
-        #expect(model.path.isEmpty)
+        model.path = [.script, .stage]
 
         model.select(sample)
-        #expect(model.path == [.stage])
+        #expect(model.path == [.script])
 
         model.select(sample)
-        #expect(model.path == [.stage], "a second selection pushed a second stage")
+        #expect(model.path == [.script], "a second selection pushed a second script")
     }
 
     /// Going back keeps the selection.
