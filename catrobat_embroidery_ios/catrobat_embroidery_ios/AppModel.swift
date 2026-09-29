@@ -154,21 +154,9 @@ final class AppModel {
         path = [.script]
     }
 
-    /// What an applied edit — or since US-408 an undo or a redo — does to the rest of the window
-    /// (ADR-038): the program is no longer the one the run on the stage describes.
-    ///
-    /// **One handler for all three**, because the consequences are the same and a second copy
-    /// would be the drift ADR-038 exists to prevent. Undo is the case that makes it matter:
-    /// delete a loop from P to get Q, run Q, undo to P, and without this Q's preview and its
-    /// prepared `.dst` would still be offered beside P's script. The autosave records nothing
-    /// in the history — it only stores what the stack now holds.
-    ///
-    /// Clearing `provenance` on an undo is harmless rather than meaningful: any entry to undo
-    /// means an earlier edit already cleared it. Undoing all the way back to a pristine sample
-    /// therefore does not restore its picker highlight — a known limitation, not a goal.
-    ///
-    /// **`runner.reset()` and nothing else from `select(_:)`'s list**, and each omission is
-    /// deliberate:
+    /// What an edit, an undo or a redo (US-408) does to the window (ADR-038) — one handler, so
+    /// undoing to P after running Q cannot leave Q's `.dst` offered. **`runner.reset()` and
+    /// nothing else from `select(_:)`'s list**, and each omission is deliberate:
     ///
     /// - **No `interaction.followFit()`.** A new *design* arrives fitted; an edit to the design
     ///   on screen keeps the zoom the user chose. Re-fitting on every parameter nudge would be

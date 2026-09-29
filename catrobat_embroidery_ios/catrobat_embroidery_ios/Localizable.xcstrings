@@ -733,6 +733,66 @@
         }
       }
     },
+    "script.action.delete": {
+      "comment": "VoiceOver action on a brick in the script list: deletes it. On a loop, deletes the whole loop and everything inside it; it can be undone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "script.action.move.above.loop": {
+      "comment": "VoiceOver action on the first brick inside a loop (a Repeat or Forever block): takes the brick out of the loop and puts it just above it. 'Loop' means the Repeat/Forever block the brick is inside.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Above Loop"
+          }
+        }
+      }
+    },
+    "script.action.move.below.loop": {
+      "comment": "VoiceOver action on the last brick inside a loop (a Repeat or Forever block): takes the brick out of the loop and puts it just below it. 'Loop' means the Repeat/Forever block the brick is inside.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Below Loop"
+          }
+        }
+      }
+    },
+    "script.action.move.down": {
+      "comment": "VoiceOver action on a brick in the script list: moves the brick below the brick (or whole loop) after it. Short imperative, like a menu item.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Down"
+          }
+        }
+      }
+    },
+    "script.action.move.up": {
+      "comment": "VoiceOver action on a brick in the script list: moves the brick above the brick (or whole loop) before it. Short imperative, like a menu item.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Up"
+          }
+        }
+      }
+    },
     "script.empty.description": {
       "comment": "Below 'No Bricks Yet'. Names the action, not a button: the button to add a brick arrives in a later version, and this text must stay true both before and after it.",
       "extractionState": "manual",
@@ -753,6 +813,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "No Bricks Yet"
+          }
+        }
+      }
+    },
+    "script.redo": {
+      "comment": "Toolbar button under the script list: redoes the change that was just undone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redo"
           }
         }
       }
@@ -811,6 +883,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Script"
+          }
+        }
+      }
+    },
+    "script.undo": {
+      "comment": "Toolbar button under the script list: undoes the last change to the design.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
           }
         }
       }

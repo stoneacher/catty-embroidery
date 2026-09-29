@@ -5,9 +5,9 @@ import ProgramModel
 /// The working program, its history, and the one door every edit goes through (US-405).
 ///
 /// **No view mutates the program** (ADR-006 pattern 1): the only writers are `apply(_:)`,
-/// `undo()`, `redo()` and `load(_:)`, and all four go through the `UndoStack`, which is the truth (ADR-036). There is no
-/// second stored copy — `program` *reads* `undoStack.current` — so the history and what is on
-/// screen cannot drift apart.
+/// `undo()`, `redo()` and `load(_:)`, and all four go through the `UndoStack`, which is the
+/// truth (ADR-036). There is no second stored copy — `program` *reads* `undoStack.current` —
+/// so the history and what is on screen cannot drift apart.
 ///
 /// Owned by `AppModel`, one per window, for the ADR-023 reason every other piece of this
 /// window's state is: `RootView` tears down a navigation container on a size-class change,

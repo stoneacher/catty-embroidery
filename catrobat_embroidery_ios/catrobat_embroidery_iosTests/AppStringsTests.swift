@@ -73,7 +73,16 @@ struct AppStringsTests {
             // US-312: the thread-colour note under the share control.
             (.stageExportThreadColors, "stage.export.thread.colors"),
             (.stageNameLabel, "stage.name.label"),
-            (.stageNamePrompt, "stage.name.prompt")
+            (.stageNamePrompt, "stage.name.prompt"),
+            // US-408. The row's accessibility actions and the toolbar pair. A missing action
+            // entry would be spoken aloud as its raw key — see US-313b's pans above.
+            (.scriptActionMoveUp, "script.action.move.up"),
+            (.scriptActionMoveDown, "script.action.move.down"),
+            (.scriptActionMoveAboveLoop, "script.action.move.above.loop"),
+            (.scriptActionMoveBelowLoop, "script.action.move.below.loop"),
+            (.scriptActionDelete, "script.action.delete"),
+            (.scriptUndo, "script.undo"),
+            (.scriptRedo, "script.redo")
         ]
 
         for entry in entries {
@@ -213,6 +222,23 @@ struct AppStringsTests {
     ///
     /// Distinctness is the property rather than the wording, so this stays inside the suite's
     /// standing rule of not asserting English.
+    /// US-408: the five row actions share a rotor, so two with one name would be
+    /// indistinguishable — the reason `theFiveNamedStageActionsAreDistinct` exists, one screen
+    /// over. Undo and Redo sit side by side in one toolbar for the same reason.
+    @Test func theRowActionsAndTheHistoryButtonsAreDistinct() {
+        let names = [
+            String(localized: .scriptActionMoveUp),
+            String(localized: .scriptActionMoveDown),
+            String(localized: .scriptActionMoveAboveLoop),
+            String(localized: .scriptActionMoveBelowLoop),
+            String(localized: .scriptActionDelete),
+            String(localized: .scriptUndo),
+            String(localized: .scriptRedo)
+        ]
+
+        #expect(Set(names).count == names.count, "two script actions share a spoken name")
+    }
+
     @Test func theFiveNamedStageActionsAreDistinct() {
         // **Read through the directions rather than through the four symbols**, so this asks the
         // same mapping the view asks. Naming the entries directly would leave the join between a

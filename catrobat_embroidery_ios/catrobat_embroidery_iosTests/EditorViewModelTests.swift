@@ -213,7 +213,10 @@ struct EditorViewModelTests {
     func aRefusedDragChangesNothing() {
         let (editor, announcements) = Self.loopedEditor()
 
-        #expect(editor.moveRows(fromOffsets: [3], toOffset: 0) == .rejected(.cannotMoveLoopEnd(at: BrickAddress(brickIndex: 3))))
+        #expect(
+            editor.moveRows(fromOffsets: [3], toOffset: 0)
+                == .rejected(.cannotMoveLoopEnd(at: BrickAddress(brickIndex: 3)))
+        )
         #expect(editor.moveRows(fromOffsets: [0, 4], toOffset: 2) == nil)
 
         #expect(editor.program == Self.looped)
