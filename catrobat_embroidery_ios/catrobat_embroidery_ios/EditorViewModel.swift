@@ -40,7 +40,7 @@ final class EditorViewModel {
     /// reports a rename to the current name as `.applied`, and `UndoStack` already records
     /// nothing for it. Voiding a finished design over an edit that did not happen would be the
     /// same mistake one layer up.
-    @ObservationIgnored var onEditApplied: (() -> Void)?
+    @ObservationIgnored var onProgramChanged: (() -> Void)?
 
     init(program: Program = .blank) {
         undoStack = UndoStack(program: program)
@@ -55,9 +55,41 @@ final class EditorViewModel {
         let before = undoStack.current
         let result = undoStack.apply(action)
         if case .applied = result, undoStack.current != before {
-            onEditApplied?()
+            onProgramChanged?()
         }
         return result
+    }
+
+    // MARK: History (US-408)
+
+    var canUndo: Bool {
+        false // Stub (US-408 red phase).
+    }
+
+    var canRedo: Bool {
+        false // Stub (US-408 red phase).
+    }
+
+    @discardableResult
+    func undo() -> Bool {
+        false // Stub (US-408 red phase).
+    }
+
+    @discardableResult
+    func redo() -> Bool {
+        false // Stub (US-408 red phase).
+    }
+
+    // MARK: The list's gestures (US-408)
+
+    @discardableResult
+    func moveRows(fromOffsets source: some Collection<Int>, toOffset: Int) -> EditResult? {
+        nil // Stub (US-408 red phase).
+    }
+
+    @discardableResult
+    func deleteRows(atOffsets offsets: some Collection<Int>) -> EditResult? {
+        nil // Stub (US-408 red phase).
     }
 
     /// Replaces the working program wholesale — a picked sample today, a program loaded from

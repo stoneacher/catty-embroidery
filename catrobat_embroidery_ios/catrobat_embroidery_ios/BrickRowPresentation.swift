@@ -37,6 +37,18 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
     /// swatch never shows a colour the stitches will not have.
     let threadColor: ThreadColor?
 
+    // MARK: What the row can do (US-408)
+
+    /// Whether the row refuses a drag before it starts — `.moveDisabled`. `.onMove` has no
+    /// reject hook, so a refusal after the drop springs the row back with no explanation.
+    let isMoveDisabled: Bool
+    /// The accessibility actions, as the edits they make; `nil` where the action is not offered.
+    let moveUp: EditAction?
+    let moveDown: EditAction?
+    let moveAboveLoop: EditAction?
+    let moveBelowLoop: EditAction?
+    let delete: EditAction?
+
     /// The rows for the program's first script, which is the only one M4 edits.
     ///
     /// Total: a program with no scene, object or script yields no rows rather than trapping.
@@ -57,7 +69,14 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
                 text: sentence,
                 accessibilityLabel: text.label(sentence, depth: depths[index]),
                 openerIndex: opener,
-                threadColor: threadColor(of: brick)
+                threadColor: threadColor(of: brick),
+                // Stubs (US-408 red phase).
+                isMoveDisabled: false,
+                moveUp: nil,
+                moveDown: nil,
+                moveAboveLoop: nil,
+                moveBelowLoop: nil,
+                delete: nil
             )
         }
     }

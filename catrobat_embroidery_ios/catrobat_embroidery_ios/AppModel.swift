@@ -144,7 +144,7 @@ final class AppModel {
         runner.onRunDiscarded = { [weak self] in
             self?.exporter.discard()
         }
-        editor.onEditApplied = { [weak self] in
+        editor.onProgramChanged = { [weak self] in
             self?.editApplied()
         }
 
