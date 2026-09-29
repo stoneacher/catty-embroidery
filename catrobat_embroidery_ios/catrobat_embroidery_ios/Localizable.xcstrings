@@ -784,12 +784,26 @@
     "script.action.move.into.loop.above": {
       "comment": "VoiceOver action on a brick just below a loop (a Repeat or Forever block): puts the brick inside that loop, as its last brick. 'Loop' means the Repeat/Forever block.",
       "extractionState": "manual",
-      "localizations": {}
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Into Loop Above"
+          }
+        }
+      }
     },
     "script.action.move.into.loop.below": {
       "comment": "VoiceOver action on a brick just above a loop (a Repeat or Forever block): puts the brick inside that loop, as its first brick. 'Loop' means the Repeat/Forever block.",
       "extractionState": "manual",
-      "localizations": {}
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Into Loop Below"
+          }
+        }
+      }
     },
     "script.action.move.up": {
       "comment": "VoiceOver action on a brick in the script list: moves the brick above the brick (or whole loop) before it. Short imperative, like a menu item.",

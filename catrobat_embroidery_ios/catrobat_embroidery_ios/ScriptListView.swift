@@ -171,6 +171,12 @@ private extension ScriptListView {
         if let action = row.moveBelowLoop {
             Button(.scriptActionMoveBelowLoop) { perform(action) }
         }
+        if let action = row.moveIntoLoopAbove {
+            Button(.scriptActionMoveIntoLoopAbove) { perform(action) }
+        }
+        if let action = row.moveIntoLoopBelow {
+            Button(.scriptActionMoveIntoLoopBelow) { perform(action) }
+        }
         if let action = row.delete {
             Button(.scriptActionDelete, role: .destructive) { perform(action) }
         }
