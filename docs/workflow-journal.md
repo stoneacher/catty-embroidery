@@ -2673,3 +2673,10 @@ US-408 wired `.onMove`/`.onDelete` through the editor, added pair-aware VoiceOve
 - **CI caught what the local gate does not run**: SwiftLint failed the `[red]` commit on a file-length and two line-length warnings, all from doc comments. The commit hook compiles and tests but does not lint.
 - **A local-only red**: `UTTypeDeclarationTests` fails on this machine because the working tree carries an uncommitted signing change (`org.superrandom` bundle id); `pbxproj` was never staged, and the reviewer's clean worktree and CI both pass it.
 - Delegation outcome: planning, design, and review delegated and all useful; story tests written in the main session per the delegation boundary. The estimate grew from ~5 h to ~7 h, all of it the two verb pairs.
+
+## 2026-09-29 (US-408, Codex round 1) — no findings, after the in-loop reviewer had already found the real one
+
+Codex returned no correctness findings, and the loop ended at round 1 on condition 1 (highest severity: none, no code changes).
+- **Both reviewers converged on the same method independently.** Each enumerated the state space instead of reading. `swift-code-reviewer` fuzzed all scripts up to length 7 against a reference. Codex, in a read-only sandbox where `swift test` could not compile, enumerated drag and action reachability over every balanced shape up to six rows and found them identical. The difference is timing, not method: the in-loop reviewer found the into-loop gap *before* the fix, and Codex confirmed the fix.
+- **Its five "blind spots" are the honest limit of this suite, not defects.** The view modifiers and the focus hand-off cannot be unit-tested, a fresh `SaveRevision` is not observable, and iOS 17 is not build-verified. All five were already named in the story or ADRs, or are now in the PR verdict.
+- **Recorded as in US-406:** a clean round is evidence about the diff Codex was shown, not about the untested view layer. The VoiceOver procedure in the story is what covers that layer.

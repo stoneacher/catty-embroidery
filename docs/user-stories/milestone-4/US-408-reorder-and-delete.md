@@ -2,7 +2,7 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~5 h (grew to ~7 h — see below) | **Depends on**: US-402, US-403, US-407
 
-**Status**: Implemented 2026-09-29, in review — [PR #63](https://github.com/stoneacher/catty-embroidery/pull/63). Test-first in two rounds, each with a `[red]` commit (`89ac9cb`, `9995d29`). Reviewed by `swift-code-reviewer` (exhaustive fuzz over 3 280 scripts; no critical findings, four gaps fixed). Codex review pending at handover. The manual VoiceOver pass is bundled with M4's end-of-milestone accessibility pass; its procedure for this story is written below.
+**Status**: Done — 2026-09-29, [PR #63](https://github.com/stoneacher/catty-embroidery/pull/63) (pending merge). Test-first in two rounds, each with a `[red]` commit (`89ac9cb`, `9995d29`). Reviewed by `swift-code-reviewer` (exhaustive fuzz over 3 280 scripts; no critical findings, four gaps fixed, one of which became the Move Into Loop pair by Sebastian's decision) and by **one Codex round with no findings**, which ends the loop on condition 1. All acceptance criteria met except "animate the result", which is deliberately not met as written (see below). The manual VoiceOver pass is bundled with M4's end-of-milestone accessibility pass; its procedure for this story is written below.
 
 **Story**: As a user, I want to drag a brick to a new place and swipe one away — and when I move a loop, I want the whole loop to go with it.
 
