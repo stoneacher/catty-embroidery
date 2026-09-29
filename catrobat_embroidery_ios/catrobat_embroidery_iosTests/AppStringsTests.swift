@@ -80,6 +80,8 @@ struct AppStringsTests {
             (.scriptActionMoveDown, "script.action.move.down"),
             (.scriptActionMoveAboveLoop, "script.action.move.above.loop"),
             (.scriptActionMoveBelowLoop, "script.action.move.below.loop"),
+            (.scriptActionMoveIntoLoopAbove, "script.action.move.into.loop.above"),
+            (.scriptActionMoveIntoLoopBelow, "script.action.move.into.loop.below"),
             (.scriptActionDelete, "script.action.delete"),
             (.scriptUndo, "script.undo"),
             (.scriptRedo, "script.redo")
@@ -222,7 +224,7 @@ struct AppStringsTests {
     ///
     /// Distinctness is the property rather than the wording, so this stays inside the suite's
     /// standing rule of not asserting English.
-    /// US-408: the five row actions share a rotor, so two with one name would be
+    /// US-408: the seven row actions share a rotor, so two with one name would be
     /// indistinguishable — the reason `theFiveNamedStageActionsAreDistinct` exists, one screen
     /// over. Undo and Redo sit side by side in one toolbar for the same reason.
     @Test func theRowActionsAndTheHistoryButtonsAreDistinct() {
@@ -231,6 +233,8 @@ struct AppStringsTests {
             String(localized: .scriptActionMoveDown),
             String(localized: .scriptActionMoveAboveLoop),
             String(localized: .scriptActionMoveBelowLoop),
+            String(localized: .scriptActionMoveIntoLoopAbove),
+            String(localized: .scriptActionMoveIntoLoopBelow),
             String(localized: .scriptActionDelete),
             String(localized: .scriptUndo),
             String(localized: .scriptRedo)

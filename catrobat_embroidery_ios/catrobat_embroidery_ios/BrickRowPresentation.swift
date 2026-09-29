@@ -54,6 +54,8 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
     let moveDown: EditAction?
     let moveAboveLoop: EditAction?
     let moveBelowLoop: EditAction?
+    let moveIntoLoopAbove: EditAction?
+    let moveIntoLoopBelow: EditAction?
     let delete: EditAction?
 
     /// The rows for the program's first script, which is the only one M4 edits.
@@ -84,6 +86,8 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
                 moveDown: script.moveDownAction(ofBrickAt: index, in: address),
                 moveAboveLoop: script.moveAboveLoopAction(ofBrickAt: index, in: address),
                 moveBelowLoop: script.moveBelowLoopAction(ofBrickAt: index, in: address),
+                moveIntoLoopAbove: nil, // Stub (US-408 red phase, round 2).
+                moveIntoLoopBelow: nil, // Stub (US-408 red phase, round 2).
                 delete: script.deleteAction(atOffsets: [index], in: address)
             )
         }

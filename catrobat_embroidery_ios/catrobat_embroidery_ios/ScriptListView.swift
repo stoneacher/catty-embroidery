@@ -15,7 +15,8 @@ import SwiftUI
 /// parameter editing are US-409 and US-410.
 ///
 /// **No drag needs `EditMode`**: a long press lifts the row (checked on an iOS 26.5 simulator
-/// build at planning, 2026-09-29), so there is no Edit button and no mode. The drag preview is
+/// build at planning, 2026-09-29 — **not** on iOS 17, for want of a runtime), so there is no
+/// Edit button and no mode. The drag preview is
 /// one row even when a loop moves as a block — the iOS 17 `List` path has no multi-row preview
 /// — and the body snaps in under its opener on the drop. **Nothing is `withAnimation`-ed**:
 /// rows are identified by index, so after a move every id is still present and only contents

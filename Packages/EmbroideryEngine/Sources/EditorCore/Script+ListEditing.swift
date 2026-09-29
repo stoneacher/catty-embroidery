@@ -90,9 +90,11 @@ public extension Script {
     ///
     /// *Decided 2026-09-29 (Sebastian), closing the gap ADR-035's 2026-09-23 amendment named*:
     /// the sibling jump cannot move a brick out of a loop, because the opener is its parent,
-    /// while a drag can. This is offered exactly where Move Up is absent for that reason, so
-    /// Move Up and this together reach every place a drag does. A separate verb rather than a
-    /// wider Move Up: "up" out of a loop is a change of nesting, and the name says so.
+    /// while a drag can. This is offered exactly where Move Up is absent for that reason. A
+    /// separate verb rather than a wider Move Up: "up" out of a loop is a change of nesting, and
+    /// the name says so. **It moves out, never in**: the sibling jump steps over a whole loop,
+    /// so no accessibility action puts a brick *into* one — the mirror gap, named in ADR-035's
+    /// 2026-09-29 amendment rather than inherited silently.
     ///
     /// Conservative on a malformed script, as the sibling jump is: a block or a loop whose
     /// extent cannot be resolved is offered nothing.
@@ -114,6 +116,18 @@ public extension Script {
         let parentEnd = index + span
         guard matchingOpener(ofLoopEndAt: parentEnd) != nil else { return nil }
         return .move(from: BrickAddress(brickIndex: index, script: script), to: parentEnd + 1 - span)
+    }
+
+    /// VoiceOver's "Move Into Loop Above": the block enters the loop just above it, as the last
+    /// block of its body.
+    func moveIntoLoopAboveAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
+        nil // Stub (US-408 red phase, round 2).
+    }
+
+    /// VoiceOver's "Move Into Loop Below": the block enters the loop just below it, as the first
+    /// block of its body.
+    func moveIntoLoopBelowAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
+        nil // Stub (US-408 red phase, round 2).
     }
 }
 

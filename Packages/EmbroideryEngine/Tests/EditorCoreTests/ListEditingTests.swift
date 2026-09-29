@@ -194,6 +194,8 @@ struct ListEditingTests {
         #expect(Self.script.moveDownAction(ofBrickAt: index, in: Fixtures.address) == nil)
         #expect(Self.script.moveAboveLoopAction(ofBrickAt: index, in: Fixtures.address) == nil)
         #expect(Self.script.moveBelowLoopAction(ofBrickAt: index, in: Fixtures.address) == nil)
+        #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: index, in: Fixtures.address) == nil)
+        #expect(Self.script.moveIntoLoopBelowAction(ofBrickAt: index, in: Fixtures.address) == nil)
     }
 
     // MARK: Move out of a loop
@@ -276,6 +278,152 @@ struct ListEditingTests {
         #expect(script.moveBelowLoopAction(ofBrickAt: 1, in: ScriptAddress()) == nil)
     }
 
+    // MARK: Move into a loop
+
+    /// **Decided 2026-09-29 (Sebastian), at `swift-code-reviewer`'s finding**: the move-out pair
+    /// left the mirror gap — the sibling jump steps over a whole loop, so no action could put a
+    /// brick *into* one. From below, the block joins the end of the loop above it.
+    @Test("Move Into Loop Above makes the block the last of that loop's body")
+    func moveIntoLoopAbove() {
+        #expect(
+            Self.applied(Self.script.moveIntoLoopAboveAction(ofBrickAt: 9, in: Fixtures.address))
+                == .applied(Self.reordered([0, 1, 2, 3, 4, 5, 6, 7, 9, 8]))
+        )
+        // A loop enters a loop as a block.
+        #expect(
+            Self.applied(Self.script.moveIntoLoopAboveAction(ofBrickAt: 6, in: Fixtures.address))
+                == .applied(Self.reordered([0, 1, 2, 3, 4, 6, 7, 8, 5, 9]))
+        )
+    }
+
+    /// From above, the block becomes the first of the loop below it — just after its opener,
+    /// which with the block removed is `opener + 1 − span`.
+    @Test("Move Into Loop Below makes the block the first of that loop's body")
+    func moveIntoLoopBelow() {
+        let expected = EditResult.applied(Self.reordered([1, 0, 2, 3, 4, 5, 6, 7, 8, 9]))
+
+        #expect(Self.applied(Self.script.moveIntoLoopBelowAction(ofBrickAt: 0, in: Fixtures.address)) == expected)
+        #expect(Self.drag([0], to: 2) == expected, "the same place a drag puts it")
+        #expect(
+            Self.applied(Self.script.moveIntoLoopBelowAction(ofBrickAt: 1, in: Fixtures.address))
+                == .applied(Self.reordered([0, 6, 1, 2, 3, 4, 5, 7, 8, 9]))
+        )
+    }
+
+    /// Only where the neighbouring sibling is a loop: a leaf neighbour, no neighbour, or a
+    /// `loopEnd` row offer nothing.
+    @Test("no move-into is offered where the neighbour is not a loop")
+    func moveIntoOnlyBesideALoop() {
+        #expect(Self.script.moveIntoLoopBelowAction(ofBrickAt: 2, in: Fixtures.address) == nil, "leaf below")
+        #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: 3, in: Fixtures.address) == nil, "leaf above")
+        #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: 1, in: Fixtures.address) == nil, "leaf above a loop")
+        #expect(Self.script.moveIntoLoopBelowAction(ofBrickAt: 9, in: Fixtures.address) == nil, "nothing below")
+        #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: 0, in: Fixtures.address) == nil, "nothing above")
+        for end in [5, 8] {
+            #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: end, in: Fixtures.address) == nil)
+            #expect(Self.script.moveIntoLoopBelowAction(ofBrickAt: end, in: Fixtures.address) == nil)
+        }
+    }
+
+    // MARK: Reachability
+
+    /// Every arrangement reachable from `start` by repeatedly applying `actions`.
+    private static func reachable(from start: Script, by actions: (Script) -> [EditAction]) -> Set<String> {
+        func program(_ script: Script) -> Program {
+            Program(name: "", scenes: [Scene(name: "", objects: [Object(name: "", scripts: [script])])])
+        }
+        var seen: Set<String> = [String(describing: start.bricks)]
+        var frontier = [start]
+        while let script = frontier.popLast() {
+            for action in actions(script) {
+                guard case let .applied(next) = EditorCore.apply(action, to: program(script)) else { continue }
+                let moved = next.scenes[0].objects[0].scripts[0]
+                if seen.insert(String(describing: moved.bricks)).inserted { frontier.append(moved) }
+            }
+        }
+        return seen
+    }
+
+    private static func drags(_ script: Script) -> [EditAction] {
+        script.bricks.indices.flatMap { index in
+            (0 ... script.bricks.count).compactMap {
+                script.moveAction(fromOffsets: [index], toOffset: $0, in: ScriptAddress())
+            }
+        }
+    }
+
+    private static func accessibilityMoves(_ script: Script) -> [EditAction] {
+        script.bricks.indices.flatMap { index in
+            [
+                script.moveUpAction(ofBrickAt: index, in: ScriptAddress()),
+                script.moveDownAction(ofBrickAt: index, in: ScriptAddress()),
+                script.moveAboveLoopAction(ofBrickAt: index, in: ScriptAddress()),
+                script.moveBelowLoopAction(ofBrickAt: index, in: ScriptAddress()),
+                script.moveIntoLoopAboveAction(ofBrickAt: index, in: ScriptAddress()),
+                script.moveIntoLoopBelowAction(ofBrickAt: index, in: ScriptAddress())
+            ].compactMap(\.self)
+        }
+    }
+
+    /// **The parity claim, as a property rather than a comment.** A VoiceOver user cannot drag,
+    /// so the six actions are their only way to reorder: whatever a sighted user can arrange
+    /// by dragging, they must be able to arrange too — and nothing more, since every action is
+    /// a `.move` a drag could make. The first fixture is the review's counterexample: before
+    /// the move-into pair, drags reached 12 arrangements of it and the actions only 8.
+    @Test("the accessibility actions reach exactly the arrangements a drag reaches", arguments: [
+        [.stitch, .repeatLoop(times: .number(2)), .sewUp, .loopEnd],
+        [.stitch, .repeatLoop(times: .number(2)), .sewUp, .loopEnd, .forever, .changeXBy(.number(4)), .loopEnd],
+        [.stitch, .repeatLoop(times: .number(3)), .moveNSteps(.number(10)), .forever, .sewUp, .loopEnd, .loopEnd]
+    ] as [[Brick]])
+    func accessibilityReachesWhatADragReaches(bricks: [Brick]) {
+        let start = Script(bricks: bricks)
+        let byDrag = Self.reachable(from: start, by: Self.drags)
+        let byAction = Self.reachable(from: start, by: Self.accessibilityMoves)
+
+        #expect(byDrag.count > 4, "the fixture is too small to say anything")
+        #expect(byAction == byDrag, "\(byDrag.subtracting(byAction).count) arrangements only a drag reaches")
+    }
+
+    // MARK: Loop ends, again
+
+    /// `swift-code-reviewer`'s two surviving mutants: an **empty** loop, where the row before
+    /// the end is its opener, and an end directly after an end. On neither shape may an end
+    /// row offer a move — the fixture above has a leaf before each of its ends.
+    @Test("a loop end offers no move after an empty body or another end", arguments: [
+        ([.stitch, .repeatLoop(times: .number(2)), .loopEnd], 2),
+        ([.repeatLoop(times: .number(2)), .forever, .loopEnd, .loopEnd], 2),
+        ([.repeatLoop(times: .number(2)), .forever, .loopEnd, .loopEnd], 3)
+    ] as [([Brick], Int)])
+    func loopEndOnDegenerateShapes(bricks: [Brick], index: Int) {
+        let script = Script(bricks: bricks)
+        let address = ScriptAddress()
+
+        #expect(script.moveUpAction(ofBrickAt: index, in: address) == nil)
+        #expect(script.moveDownAction(ofBrickAt: index, in: address) == nil)
+        #expect(script.moveAboveLoopAction(ofBrickAt: index, in: address) == nil)
+        #expect(script.moveBelowLoopAction(ofBrickAt: index, in: address) == nil)
+        #expect(script.moveIntoLoopAboveAction(ofBrickAt: index, in: address) == nil)
+        #expect(script.moveIntoLoopBelowAction(ofBrickAt: index, in: address) == nil)
+    }
+
+    // MARK: Inputs SwiftUI does not produce
+
+    /// The two promises the adapter's comments make about rows no drag can come from, pinned
+    /// because a mutant of each survived review: an out-of-range source is still `apply`'s to
+    /// refuse, and an opener that never closes counts as one row.
+    @Test("an out-of-range source is built and refused by apply, with its reason")
+    func outOfRangeSource() {
+        #expect(Self.drag([10], to: 0) == .rejected(.addressOutOfBounds(.brick, at: Fixtures.at(10))))
+    }
+
+    @Test("an opener that never closes counts as one row")
+    func unclosedOpenerIsOneRow() {
+        let script = Script(bricks: [.repeatLoop(times: .number(2)), .moveNSteps(.number(10)), .stitch])
+
+        #expect(script.moveAction(fromOffsets: [0], toOffset: 1, in: ScriptAddress()) == nil)
+        #expect(script.moveAction(fromOffsets: [0], toOffset: 3, in: ScriptAddress()) == .move(from: BrickAddress(brickIndex: 0), to: 2))
+    }
+
     // MARK: 7 — balance
 
     /// Item 7, exhaustively rather than sampled: every drag from every row to every offset,
@@ -297,7 +445,9 @@ struct ListEditingTests {
                 Self.script.moveUpAction(ofBrickAt: index, in: Fixtures.address),
                 Self.script.moveDownAction(ofBrickAt: index, in: Fixtures.address),
                 Self.script.moveAboveLoopAction(ofBrickAt: index, in: Fixtures.address),
-                Self.script.moveBelowLoopAction(ofBrickAt: index, in: Fixtures.address)
+                Self.script.moveBelowLoopAction(ofBrickAt: index, in: Fixtures.address),
+                Self.script.moveIntoLoopAboveAction(ofBrickAt: index, in: Fixtures.address),
+                Self.script.moveIntoLoopBelowAction(ofBrickAt: index, in: Fixtures.address)
             ].compactMap(\.self)
         }
 

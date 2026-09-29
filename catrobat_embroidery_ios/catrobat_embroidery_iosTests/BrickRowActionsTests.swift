@@ -67,6 +67,8 @@ struct BrickRowActionsTests {
         #expect(row.moveDown == nil)
         #expect(row.moveAboveLoop == nil)
         #expect(row.moveBelowLoop == nil)
+        #expect(row.moveIntoLoopAbove == nil)
+        #expect(row.moveIntoLoopBelow == nil)
         #expect(row.delete == .delete(at: BrickAddress(brickIndex: index)))
     }
 
@@ -82,6 +84,14 @@ struct BrickRowActionsTests {
             #expect(row.moveDown == script.moveDownAction(ofBrickAt: row.id, in: address), "row \(row.id)")
             #expect(row.moveAboveLoop == script.moveAboveLoopAction(ofBrickAt: row.id, in: address), "row \(row.id)")
             #expect(row.moveBelowLoop == script.moveBelowLoopAction(ofBrickAt: row.id, in: address), "row \(row.id)")
+            #expect(
+                row.moveIntoLoopAbove == script.moveIntoLoopAboveAction(ofBrickAt: row.id, in: address),
+                "row \(row.id)"
+            )
+            #expect(
+                row.moveIntoLoopBelow == script.moveIntoLoopBelowAction(ofBrickAt: row.id, in: address),
+                "row \(row.id)"
+            )
             #expect(row.delete == script.deleteAction(atOffsets: [row.id], in: address), "row \(row.id)")
         }
     }
@@ -98,5 +108,20 @@ struct BrickRowActionsTests {
         #expect(rows[2].moveAboveLoop == .move(from: BrickAddress(brickIndex: 2), to: 1))
         // The inner loop is three bricks; with it removed, below the outer end (6) is 6 + 1 − 3.
         #expect(rows[3].moveBelowLoop == .move(from: BrickAddress(brickIndex: 3), to: 4))
+        // Into the outer loop from above it, as its first brick; into it from below, as its last.
+        #expect(rows[0].moveIntoLoopBelow == .move(from: BrickAddress(brickIndex: 0), to: 1))
+        #expect(rows[7].moveIntoLoopAbove == .move(from: BrickAddress(brickIndex: 7), to: 6))
+    }
+
+    /// The review's fixture at the row level: the end of an **empty** loop sits right after its
+    /// opener, a shape the nested fixture never has, and must still offer Delete alone.
+    @Test("the end row of an empty loop offers Delete and no move")
+    func emptyLoopEndOffersOnlyDelete() {
+        let row = Self.rows([.stitch, .repeatLoop(times: .number(2)), .loopEnd])[2]
+
+        #expect(row.isMoveDisabled)
+        #expect([row.moveUp, row.moveDown, row.moveAboveLoop, row.moveBelowLoop,
+                 row.moveIntoLoopAbove, row.moveIntoLoopBelow].allSatisfy { $0 == nil })
+        #expect(row.delete == .delete(at: BrickAddress(brickIndex: 2)))
     }
 }
