@@ -4,8 +4,8 @@ import ProgramModel
 
 /// The working program, its history, and the one door every edit goes through (US-405).
 ///
-/// **No view mutates the program** (ADR-006 pattern 1): the only writers are `apply(_:)` and
-/// `load(_:)`, and both go through the `UndoStack`, which is the truth (ADR-036). There is no
+/// **No view mutates the program** (ADR-006 pattern 1): the only writers are `apply(_:)`,
+/// `undo()`, `redo()` and `load(_:)`, and all four go through the `UndoStack`, which is the truth (ADR-036). There is no
 /// second stored copy — `program` *reads* `undoStack.current` — so the history and what is on
 /// screen cannot drift apart.
 ///
@@ -13,8 +13,9 @@ import ProgramModel
 /// window's state is: `RootView` tears down a navigation container on a size-class change,
 /// and an editor held inside one would lose the user's work on an iPad resize.
 ///
-/// Undo and redo are not surfaced yet — US-408 adds the toolbar pair, US-410 the coalescing
-/// sessions, and each will route through the same announcement below.
+/// Three doors change the program, and all three announce through `onProgramChanged`: `apply`,
+/// and since US-408 the toolbar's `undo()` and `redo()`. US-410 adds the coalescing sessions
+/// and US-411 the `UndoManager` bridge, both routing through the same doors.
 @MainActor
 @Observable
 final class EditorViewModel {
@@ -28,8 +29,12 @@ final class EditorViewModel {
         undoStack.current
     }
 
-    /// Called once for every edit that **applied and changed the program**, and never for a
-    /// rejected one or a `load`.
+    /// Called once for every edit that **applied and changed the program**, and for every
+    /// successful undo and redo (US-408) — never for a rejected edit, an empty undo or redo, or
+    /// a `load`.
+    ///
+    /// Renamed from `onEditApplied` in US-408: an undo is not an applied edit, and it needs the
+    /// same consequences (ADR-038's 2026-09-29 amendment).
     ///
     /// A callback on the one door rather than a facade on `AppModel`, for the reason ADR-027
     /// hung the file discard on `RunViewModel.onRunDiscarded`: later views (US-408…US-410) will
@@ -62,34 +67,65 @@ final class EditorViewModel {
 
     // MARK: History (US-408)
 
+    /// Whether the toolbar's undo button is enabled.
     var canUndo: Bool {
-        false // Stub (US-408 red phase).
+        undoStack.canUndo
     }
 
+    /// Whether the toolbar's redo button is enabled.
     var canRedo: Bool {
-        false // Stub (US-408 red phase).
+        undoStack.canRedo
     }
 
+    /// Steps the working program back one entry; `false`, changing nothing, with none to undo.
+    ///
+    /// **Announces through `onProgramChanged`**, and that is the load-bearing line: undo
+    /// restores a snapshot from outside the `EditAction` vocabulary, so nothing that hangs off
+    /// `apply` — the run's void, the prepared file's discard, the autosave (ADR-038) — would
+    /// otherwise follow it. Undoing back to P after running Q would leave Q's preview and its
+    /// `.dst` offered beside P's script. The announcement records nothing: the stack moved
+    /// itself, and the listener only saves and voids.
+    ///
+    /// US-411 puts the `UndoManager` bridge, the spoken announcements and the totality proof
+    /// on top of this; the consequences live here so that every path reaches them.
     @discardableResult
     func undo() -> Bool {
-        false // Stub (US-408 red phase).
+        guard undoStack.undo() != nil else { return false }
+        onProgramChanged?()
+        return true
     }
 
+    /// Steps the working program forward one undone entry; `false`, changing nothing, with none
+    /// to redo. Announces for `undo()`'s reason.
     @discardableResult
     func redo() -> Bool {
-        false // Stub (US-408 red phase).
+        guard undoStack.redo() != nil else { return false }
+        onProgramChanged?()
+        return true
     }
 
     // MARK: The list's gestures (US-408)
 
+    /// The list's `.onMove`, converted by `Script.moveAction(fromOffsets:toOffset:in:)` and then
+    /// applied through the one door. `nil` when the gesture is no edit — several rows, or a
+    /// block dropped back where it was.
+    ///
+    /// The first script, which is the only one M4 edits and the one the list shows.
     @discardableResult
     func moveRows(fromOffsets source: some Collection<Int>, toOffset: Int) -> EditResult? {
-        nil // Stub (US-408 red phase).
+        guard let script = program.scenes.first?.objects.first?.scripts.first,
+              let action = script.moveAction(fromOffsets: source, toOffset: toOffset, in: ScriptAddress())
+        else { return nil }
+        return apply(action)
     }
 
+    /// The list's `.onDelete`, through the one door. `nil` for several rows or none.
     @discardableResult
     func deleteRows(atOffsets offsets: some Collection<Int>) -> EditResult? {
-        nil // Stub (US-408 red phase).
+        guard let script = program.scenes.first?.objects.first?.scripts.first,
+              let action = script.deleteAction(atOffsets: offsets, in: ScriptAddress())
+        else { return nil }
+        return apply(action)
     }
 
     /// Replaces the working program wholesale — a picked sample today, a program loaded from

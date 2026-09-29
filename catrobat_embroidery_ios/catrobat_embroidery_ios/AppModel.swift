@@ -145,7 +145,7 @@ final class AppModel {
             self?.exporter.discard()
         }
         editor.onProgramChanged = { [weak self] in
-            self?.editApplied()
+            self?.programChanged()
         }
 
         // Launch selects the blank program, opening on its script (US-407) — see `.launch`.
@@ -154,8 +154,18 @@ final class AppModel {
         path = [.script]
     }
 
-    /// What an applied edit does to the rest of the window (ADR-038): the program is no longer
-    /// the sample it was loaded from, and the run on the stage no longer describes it.
+    /// What an applied edit — or since US-408 an undo or a redo — does to the rest of the window
+    /// (ADR-038): the program is no longer the one the run on the stage describes.
+    ///
+    /// **One handler for all three**, because the consequences are the same and a second copy
+    /// would be the drift ADR-038 exists to prevent. Undo is the case that makes it matter:
+    /// delete a loop from P to get Q, run Q, undo to P, and without this Q's preview and its
+    /// prepared `.dst` would still be offered beside P's script. The autosave records nothing
+    /// in the history — it only stores what the stack now holds.
+    ///
+    /// Clearing `provenance` on an undo is harmless rather than meaningful: any entry to undo
+    /// means an earlier edit already cleared it. Undoing all the way back to a pristine sample
+    /// therefore does not restore its picker highlight — a known limitation, not a goal.
     ///
     /// **`runner.reset()` and nothing else from `select(_:)`'s list**, and each omission is
     /// deliberate:
@@ -174,7 +184,7 @@ final class AppModel {
     /// and needle, and fires `onRunDiscarded`, which deletes the prepared file. The file is the
     /// part that actually goes stale — the interpreter took the program by value (ADR-026's
     /// eager preparation is why a stale file would otherwise be offered).
-    private func editApplied() {
+    private func programChanged() {
         selection?.provenance = nil
         runner.reset()
         persistWorkingProgram()
@@ -289,7 +299,7 @@ final class AppModel {
     /// `private(set)` so every new selection goes through `select(_:)` and the
     /// generation can never be skipped — an assignment that bypassed it would
     /// reintroduce exactly the no-op this story exists to forbid. `restoreSavedProgram()` also
-    /// mints one; `editApplied()` only clears `provenance`.
+    /// mints one; `programChanged()` only clears `provenance`.
     private(set) var selection: ProgramSelection?
 
     /// The compact navigation stack's path.
@@ -343,7 +353,7 @@ final class AppModel {
     /// container after a horizontal size-class change (ADR-023), so on an iPad window
     /// resize they would wipe a design the user had just watched finish. The reset belongs
     /// with the selection's writers — `restoreSavedProgram()` skips it only because it runs
-    /// once, before anything can play — and `editApplied()` is the other thing that voids a run.
+    /// once, before anything can play — and `programChanged()` is the other thing that voids a run.
     func select(_ sample: SampleProgram) {
         selection = ProgramSelection(
             generation: nextGeneration, provenance: sample.id, title: sample.displayName
