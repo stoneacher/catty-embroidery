@@ -69,7 +69,7 @@ struct InsertionPointTests {
 
     /// The criterion ADR-035 names: between the opener and its `loopEnd`, as the first brick of
     /// the body, one level deeper than the opener.
-    @Test("with a repeat opener selected the brick lands first inside its body",
+    @Test("with a loop opener selected the brick lands first inside its body",
           arguments: [(opener: 1, kind: BrickKind.wait), (opener: 6, kind: .stitch)])
     func insideTheSelectedLoop(opener: Int, kind: BrickKind) throws {
         let result = Self.tap(kind, after: opener)

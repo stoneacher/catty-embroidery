@@ -69,6 +69,9 @@ struct ScriptListView: View {
     /// palette after ADR-023's container swap, not something that must survive one.
     @State private var paletteFrame: CGRect?
 
+    /// The inserted row VoiceOver moves to once the palette has gone (see the `onChange`).
+    @State private var pendingFocus: Int?
+
     static var emptyStateTitle: String {
         String(localized: .scriptEmptyTitle)
     }
@@ -119,12 +122,14 @@ struct ScriptListView: View {
                 guard let insertion else { return }
                 // On the next turn, once the list holds the inserted rows — `perform(_:)`'s
                 // reason. Not animated: the palette's dismissal is already moving the screen.
-                // Focus follows for VoiceOver, whose user would otherwise be left on the
-                // palette's vanished row with no idea where the brick went.
                 Task { @MainActor in
                     proxy.scrollTo(insertion.index, anchor: nil)
-                    focusedRow = insertion.index
                 }
+                // VoiceOver focus waits for the palette to finish leaving. When a presentation
+                // finishes dismissing, UIKit hands focus back to the button that presented it,
+                // which would overwrite a focus set now (`swift-code-reviewer`, US-409). The
+                // user would land on Add with no idea where the brick went.
+                pendingFocus = insertion.index
             }
         }
         .navigationTitle(Text(title))
@@ -291,6 +296,13 @@ private extension ScriptListView {
                 }
                 .onDisappear {
                     paletteFrame = nil
+                    if let pendingFocus {
+                        self.pendingFocus = nil
+                        // One more turn, so this lands after the system's own hand-back.
+                        Task { @MainActor in
+                            focusedRow = pendingFocus
+                        }
+                    }
                 }
         }
     }

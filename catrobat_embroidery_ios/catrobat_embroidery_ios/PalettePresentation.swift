@@ -96,7 +96,7 @@ nonisolated struct PaletteRowPresentation: Equatable, Identifiable {
 ///
 /// A value so that the invariant "every insert is a new request" lives in one mutating method.
 /// Nothing else can write `insertion`.
-struct PaletteState: Equatable {
+nonisolated struct PaletteState: Equatable {
     var isPresented = false
     private(set) var insertion: PaletteInsertion?
 
@@ -109,7 +109,7 @@ struct PaletteState: Equatable {
 
 /// What the script list scrolls to after a palette tap (US-409). The serial makes two inserts
 /// at the same index two distinct values, so the list's `onChange` fires for both.
-struct PaletteInsertion: Equatable {
+nonisolated struct PaletteInsertion: Equatable {
     let index: Int
     let serial: Int
 }

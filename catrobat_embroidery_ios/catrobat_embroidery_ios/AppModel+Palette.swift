@@ -32,4 +32,19 @@ extension AppModel {
         guard let index = editor.insert(kind) else { return }
         palette.inserted(at: index)
     }
+
+    /// `RootView` swapped its navigation container (ADR-023).
+    ///
+    /// On compact the palette is presented from the script's toolbar, so it can only be showing
+    /// while the script is on top. `path`'s own hook covers every *write* of the path, but this
+    /// is the case no write covers: the stage was pushed on compact, the window went regular
+    /// (the split ignores `path`), the palette was opened from the script column, and the
+    /// window went compact again with the stage on top. Left `true`, the flag would either
+    /// present the palette over the stage or make the next Add tap change nothing
+    /// (`swift-code-reviewer`, US-409).
+    func layoutChanged(isCompact: Bool) {
+        if isCompact, path.last != .script {
+            palette.isPresented = false
+        }
+    }
 }

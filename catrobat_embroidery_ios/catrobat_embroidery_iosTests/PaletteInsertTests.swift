@@ -306,6 +306,38 @@ struct PaletteInsertTests {
         #expect(model.isPalettePresented)
     }
 
+    /// `swift-code-reviewer`'s repro: the stage was pushed on compact, the window went regular
+    /// (the split ignores `path`), the palette was opened from the script column, and the window
+    /// went compact again. The stack rebuilds with the stage on top, and the button that
+    /// presented the palette is off-screen, so a flag still `true` would present over the stage
+    /// or turn the next Add tap into a no-op.
+    @Test("becoming compact with the stage on top closes the palette")
+    func compactWithTheStageOnTopClosesThePalette() {
+        let model = Self.window()
+        model.path = [.script, .stage]
+        model.isPalettePresented = true // opened from the regular layout's script column
+
+        model.layoutChanged(isCompact: true)
+
+        #expect(model.isPalettePresented == false)
+    }
+
+    @Test("a layout change that leaves the script on top keeps the palette")
+    func layoutChangeKeepsThePaletteOverTheScript() {
+        let compact = Self.window()
+        compact.path = [.script]
+        compact.isPalettePresented = true
+        compact.layoutChanged(isCompact: true)
+        #expect(compact.isPalettePresented)
+
+        // Regular ignores `path`: the script column is always on screen.
+        let regular = Self.window()
+        regular.path = [.script, .stage]
+        regular.isPalettePresented = true
+        regular.layoutChanged(isCompact: false)
+        #expect(regular.isPalettePresented)
+    }
+
     @Test("restoring a saved program closes the palette")
     func restoringClosesThePalette() {
         let model = Self.window(stored: Self.seed)

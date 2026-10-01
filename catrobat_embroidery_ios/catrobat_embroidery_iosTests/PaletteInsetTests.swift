@@ -13,6 +13,7 @@ import Testing
 /// Written after the view layer, at review, rather than first: `swift-ui-design` proposed the
 /// measurement and the view agent wrote the function. These tests are proved by mutation
 /// instead of by a red run (ADR-032 invariant 2).
+@Suite("Palette inset")
 struct PaletteInsetTests {
     private static let list = CGRect(x: 0, y: 100, width: 400, height: 700)
 
