@@ -208,13 +208,29 @@ private struct CanvasStitchLayers: View {
                 // cannot perturb the frame it is counting.
                 StageDrawCounter.record()
             #endif
+            // **The field first, in this pass, at this frame's transform**, not a sibling view.
+            // The field and the design, as two sibling `Canvas` views, came apart while the
+            // keyboard resized the stage (US-315); one pass cannot. Not baked: it is three fills,
+            // and keeping it out of the raster keeps `BakeKey` exactly what it was. **The needle
+            // is still a sibling layer** (above, for ADR-024's cache reason), so it is exposed to
+            // the same class. No capture could show it, because the needle is absent once a run
+            // has finished.
+            StageField.draw(
+                StageField.geometry(
+                    transform: transform.current,
+                    size: size,
+                    increasedContrast: contrast == .increased
+                ),
+                into: &context
+            )
             // The raster was rendered at `viewport` and is blitted into `size`, so a
             // mismatch would *stretch* the settled layer while the live tail stays
-            // unstretched — a visibly misplaced seam. Today they are equal because this
-            // view fills the `GeometryReader` that measured the viewport, but nothing in
-            // the type system says so, and a future caller framing the renderer smaller
-            // would get the seam with no test able to see it. Falling back to `.entire`
-            // makes the assumption self-enforcing (`swift-code-reviewer`, US-305).
+            // unstretched — a visibly misplaced seam. **They are not always equal, and this
+            // comment used to say they were.** US-315's probe measured a viewport of
+            // 370 × 256.83 against a `size` of 370 × 257.0 in iPhone 17's default layout, so
+            // the exact comparison never passes there and the raster is never used — backlog
+            // US-322. Falling back to `.entire` keeps the frame correct, which is the
+            // guard's job (`swift-code-reviewer`, US-305); what it costs is the cache.
             // `canUseRaster` is false while a gesture or the fit animation is in flight: the
             // raster's pixels were baked at `bake`, so compositing them under a tail stroked
             // at `current` would misplace them. Stroking everything is correct at any

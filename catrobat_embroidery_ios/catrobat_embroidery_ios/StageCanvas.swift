@@ -115,16 +115,28 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                     )
                 )
 
+                // The hoop field is drawn *by the renderer*, in its own pass, rather than by a
+                // sibling view here: two sibling `Canvas` views were presented under different
+                // geometry while the keyboard resized the stage (US-315, `StageField`).
+                //
+                // **The `ZStack` is load-bearing, and it is not obvious why.** Hanging the
+                // modifiers below straight on `renderer.makeBody(…)` failed five hosted wiring
+                // tests: their renderer double returns `EmptyView`, and the catcher overlay never
+                // reached the hierarchy. A stack around it passed (measured by mutation,
+                // `swift-code-reviewer`). `Color.clear` is the remaining half of what the field
+                // view used to give for free: a view that fills the slot whatever the renderer
+                // returns. No test pins that half; the mutant that drops it survives. It draws
+                // nothing, so it cannot come apart from anything.
                 ZStack {
-                    StageFieldView(transform: render.current)
+                    Color.clear
                     renderer.makeBody(
                         display: display, transform: render, needle: needle, viewport: viewport
                     )
                 }
                 // **The mat, painted behind the canvas rather than inside it.**
                 //
-                // `StageFieldView` fills the canvas with the mat, but only across the canvas's
-                // own bounds; a design panned far enough leaves the field's edge visible, and
+                // The renderer fills its canvas with the mat (`StageField`), but only across the
+                // canvas's own bounds; a design panned far enough leaves the field's edge visible, and
                 // before this the pane's grouped-background grey showed through (reported by
                 // Sebastian from the running app).
                 .background(StageChrome.outsideField)
