@@ -208,6 +208,18 @@ private struct CanvasStitchLayers: View {
                 // cannot perturb the frame it is counting.
                 StageDrawCounter.record()
             #endif
+            // **The field first, in this pass, at this frame's transform** — never a sibling
+            // view. Two sibling `Canvas` views came apart while the keyboard resized the stage
+            // (US-315); one pass cannot. Not baked: it is three fills, and keeping it out of the
+            // raster keeps `BakeKey` exactly what it was.
+            StageField.draw(
+                StageField.geometry(
+                    transform: transform.current,
+                    size: size,
+                    increasedContrast: contrast == .increased
+                ),
+                into: &context
+            )
             // The raster was rendered at `viewport` and is blitted into `size`, so a
             // mismatch would *stretch* the settled layer while the live tail stays
             // unstretched — a visibly misplaced seam. Today they are equal because this

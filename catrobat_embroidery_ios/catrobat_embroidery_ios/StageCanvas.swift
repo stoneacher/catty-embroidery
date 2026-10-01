@@ -115,15 +115,24 @@ struct StageCanvas<Renderer: StagePreviewRenderer>: View {
                     )
                 )
 
+                // The hoop field is drawn *by the renderer*, in its own pass, rather than by a
+                // sibling view here: two sibling `Canvas` views were presented under different
+                // geometry while the keyboard resized the stage (US-315, `StageField`).
+                //
+                // **The `Color.clear` is what the field view used to be structurally**: a view
+                // that fills the slot whatever the renderer returns. Without it the stage's very
+                // existence depends on the renderer's body — a renderer returning `EmptyView`
+                // (the hosted tests' double does) takes every modifier below with it, the
+                // catcher included. It draws nothing, so it cannot come apart from anything.
                 ZStack {
-                    StageFieldView(transform: render.current)
+                    Color.clear
                     renderer.makeBody(
                         display: display, transform: render, needle: needle, viewport: viewport
                     )
                 }
                 // **The mat, painted behind the canvas rather than inside it.**
                 //
-                // `StageFieldView` fills the canvas with the mat, but only across the canvas's
+                // The renderer fills its canvas with the mat (`StageField`), but only across the canvas's
                 // own bounds; a design panned far enough leaves the field's edge visible, and
                 // before this the pane's grouped-background grey showed through (reported by
                 // Sebastian from the running app).
