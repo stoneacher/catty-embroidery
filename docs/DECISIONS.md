@@ -881,3 +881,36 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - **iPad titles:** the middle column is titled "Script" (`ScriptListView.Placement.column`), because the stage beside it carries the design's name.
 - **Known cost:** the launch flip puts the stage's empty-name validation message ("Enter a name so the file has one.") on screen at first launch, which US-406 had shown only for a restored untitled program. It is visible immediately on regular, one push away on compact. Sebastian accepted it for US-407 (2026-09-28), and it is backlog US-320.
 - **Rows hold no control** (ADR-034's named symptom). US-410 making a row a single `Button` stays within that.
+
+**Amended 2026-10-01 (US-409), by Sebastian: the presentation half.** The palette, and how a tap decides where a brick goes.
+- **One `.popover` on the script toolbar's Add button, in both placements.** It adapts with the **two-argument** `presentationCompactAdaptation(horizontal: .sheet, vertical: .popover)`. The single-argument form adapts whenever *either* size class is compact. A compact-height sheet ignores detents and would cover the whole script.
+  - Measured: iPhone 17 portrait gives a detented sheet, and an iPad Pro 11-inch gives a popover beside the stage.
+  - **Not measured:** iPhone landscape (both size classes compact, so which axis wins is the system's call) and a short iPad window. The simulator CLI cannot rotate, so both are left to the manual pass.
+  - The empty state's Add button only raises the flag, so popover-versus-sheet is decided in one place.
+- **Detents `[.fraction(0.4), .large]`**, with background interaction up through 0.4 so the script stays live while the user taps. `.presentationContentInteraction(.scrolls)` keeps a scroll of the palette from resizing it.
+- **The list is inset by what the sheet covers, measured rather than predicted.** `ScriptListView.bottomInset(listFrame:paletteFrame:)` compares global frames.
+  - A sheet rises from the window's bottom edge, so it reaches the list's bottom. A popover hangs from the toolbar and stops short, so it gets no inset.
+  - The result is clamped to the list's height and applied as `.contentMargins(.bottom, …, for: .scrollContent)`.
+  - Measured on iPhone: the last row scrolls clear above the 0.4 sheet. This was the criterion most likely to be failed quietly.
+- **`isPalettePresented` is window state** (`AppModel.palette`, ADR-023's container swap). It closes:
+  - on `select(_:)` and `restoreSavedProgram()`;
+  - on any path that leaves the script, because with background interaction the compact Stage link stays tappable under the sheet;
+  - after a tap that inserted.
+  - A refused tap leaves it open and asks for no scroll. **No undo session is involved**: an insert is one sealed entry (ADR-036), so the story's worry about orphaning a coalescing session is US-410's, not this story's.
+- **The insertion point is the selection, and the selection is `List(selection:)`** (decided: a system selection rather than a tap-to-select `Button` row). It brings the highlight, iPad arrow-key selection and VoiceOver double-tap to select. Rows still hold no control, so ADR-034 holds.
+  - **Directly after the selected row, or at the end with none.** After an opener is the first position of its body, so ADR-035's "inside the loop" needs no special case. After a `loopEnd` is after the loop (decided). That is the only tap that appends after a loop that is not last.
+  - The rule is `Script.insertAction(of:after:in:)` in `EditorCore`. Like US-408's builders, it builds an action and never applies one.
+  - **A successful insert selects what it inserted** (a loop's opener), so repeated taps build in reading order and a fresh loop is fillable at once.
+  - **Every change that can move rows clears the selection**: insert, delete, move, undo, redo and load. Rows are identified by index, so a stale index would point at a different brick, and remapping through an undo snapshot would mean diffing programs. A rename or a `replaceBrick` moves no row and keeps it, which US-410 needs. A selection outside the script counts as none, never as a rejected insert.
+- **The curated set is a package value** (`PaletteGroup.kinds`), so "every kind except `.loopEnd` is offered" is a test over `BrickKind.allCases`.
+  - **Embroidery:** Catroid's 8, in its order.
+  - **Motion:** Catroid's peripheral 11 minus `Arc`/`GoThrough`, in its order.
+  - **Control and Data:** wait, forever, repeat, set variable, change variable by, in Catroid's order (decided).
+  - Each row shows the template's sentence through the same `Sentence` the script uses, plus a one-line description. The VoiceOver label is "sentence. description", in the label rather than a hint because hints can be switched off.
+- **This supersedes the line above about US-410 "making a row a single `Button`"**: tap now selects. US-410 opens the parameter editor *from the selected row* and has to choose how (a second tap, a toolbar action, or an accessibility action) without taking the tap back.
+- **Recorded from the `swift-code-reviewer` round:**
+  - **On iPad you select first, then open the palette.** A popover is dismissed by a tap outside it, and background interaction applies to sheets only.
+  - **A popover in a short iPad window may get a small bottom margin.** If the window clamps it so that it ends at or below the list's bottom, `bottomInset` takes it for a sheet. The only effect is extra scroll space, so it is accepted.
+  - **VoiceOver focus moves to the inserted row only after the palette has gone** (`onDisappear`). A dismissal hands focus back to the presenting Add button and would overwrite an earlier focus. This is not verifiable without VoiceOver, so it belongs to the bundled M4 a11y pass, together with whether `List`'s selected state and the row's `.isSelected` trait are both spoken.
+  - **A container swap to compact with the stage on top closes the palette** (`AppModel.layoutChanged(isCompact:)`, called from `RootView`'s `onChange(of: horizontalSizeClass)`). This is the one case `path`'s hook cannot see, since no path write happens. `onChange` re-fires on exactly that rebuild, which is why the run's reset was kept away from it and why this belongs on it.
+- **The reference's flow is only half ported, as the story said.** Catroid and Catty drop the brick mid-list and force a drag (`ScriptFragment.java:613-634`). SwiftUI cannot start a drag programmatically, so we insert at a defined point and scroll to it.

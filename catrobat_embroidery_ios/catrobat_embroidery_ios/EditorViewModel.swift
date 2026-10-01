@@ -60,6 +60,9 @@ final class EditorViewModel {
         let before = undoStack.current
         let result = undoStack.apply(action)
         if case .applied = result, undoStack.current != before {
+            if action.canMoveRows {
+                selectedBrickIndex = nil
+            }
             onProgramChanged?()
         }
         return result
@@ -91,6 +94,7 @@ final class EditorViewModel {
     @discardableResult
     func undo() -> Bool {
         guard undoStack.undo() != nil else { return false }
+        selectedBrickIndex = nil
         onProgramChanged?()
         return true
     }
@@ -100,8 +104,43 @@ final class EditorViewModel {
     @discardableResult
     func redo() -> Bool {
         guard undoStack.redo() != nil else { return false }
+        selectedBrickIndex = nil
         onProgramChanged?()
         return true
+    }
+
+    // MARK: Selection and the palette (US-409)
+
+    /// The row the script list has selected, by index into the first script. It is where a
+    /// palette tap inserts (`Script.insertAction(of:after:in:)`).
+    ///
+    /// **Cleared by every change that can move rows**: an applied insert, delete or move,
+    /// every undo and redo, and a `load`. Rows are identified by position (ADR-034), so after
+    /// any of those the index may hold a different brick. Clearing is the only answer that can
+    /// never point at the wrong one, and remapping through an undo snapshot would mean diffing
+    /// two programs. A rename or a parameter edit moves no row, so it keeps the selection; US-410
+    /// edits the selected brick without losing it. A rejected edit changes nothing, so it keeps
+    /// it too.
+    ///
+    /// Here rather than in the view for the reason the program is: `RootView`'s container swap
+    /// (ADR-023) would drop view state, and the clearing has to happen at the door every edit
+    /// passes through.
+    var selectedBrickIndex: Int?
+
+    /// Inserts `kind` where a palette tap means, and selects what it inserted. Returns the
+    /// inserted head's index, which is the list's scroll target. Returns `nil`, changing
+    /// nothing, when the insert is refused.
+    ///
+    /// Selecting the inserted brick, or a new loop's opener, is what makes repeated taps build
+    /// in reading order. It is also what makes a fresh loop fillable: the next tap lands inside
+    /// it.
+    @discardableResult
+    func insert(_ kind: BrickKind) -> Int? {
+        guard let script = program.scenes.first?.objects.first?.scripts.first else { return nil }
+        let action = script.insertAction(of: kind, after: selectedBrickIndex, in: ScriptAddress())
+        guard case .applied = apply(action), case let .insert(_, address) = action else { return nil }
+        selectedBrickIndex = address.brickIndex
+        return address.brickIndex
     }
 
     // MARK: The list's gestures (US-408)
@@ -138,5 +177,17 @@ final class EditorViewModel {
     /// happens to the run.
     func load(_ program: Program) {
         undoStack.reset(to: program)
+        selectedBrickIndex = nil
+    }
+}
+
+private extension EditAction {
+    /// Whether applying this can change which brick sits at an index, and so make a selection
+    /// stale. Exhaustive with no `default:`, so a new action is a decision here.
+    var canMoveRows: Bool {
+        switch self {
+        case .insert, .delete, .move: true
+        case .replaceBrick, .renameProgram: false
+        }
     }
 }

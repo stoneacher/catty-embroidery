@@ -37,6 +37,17 @@ struct RootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
+        container
+            // The palette's one case `path` cannot see (US-409): a swap back to the stack with
+            // the stage on top. `onChange` re-fires on exactly this rebuild, which is why the
+            // run's reset is kept away from it (`stage`'s comment) and why this belongs on it.
+            .onChange(of: horizontalSizeClass) { _, sizeClass in
+                model.layoutChanged(isCompact: sizeClass != .regular)
+            }
+    }
+
+    @ViewBuilder
+    private var container: some View {
         // Tested for `.regular`, not for `.compact`, so that a **`nil`** size
         // class — an environment SwiftUI has not resolved — falls to the stack.
         // This is an iPhone-first app (ROADMAP), so the sequential layout is the

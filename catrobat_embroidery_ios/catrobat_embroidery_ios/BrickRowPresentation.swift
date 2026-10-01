@@ -93,7 +93,17 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
         }
     }
 
-    private static func threadColor(of brick: Brick) -> ThreadColor? {
+    /// The sentence a brick reads as on its own row, outside any script. Used by the palette
+    /// (US-409), so a palette row and the row it inserts read the same.
+    ///
+    /// No `loopEnd` reaches this from the palette. One that did reads "end of loop" with no
+    /// opener, as an unmatched end does in a script.
+    static func text(of brick: Brick, locale: Locale = .current) -> String {
+        Sentence(locale: locale).of(brick, closing: nil)
+    }
+
+    /// The swatch colour for a thread-colour brick; `nil` for every other brick.
+    static func threadColor(of brick: Brick) -> ThreadColor? {
         guard case let .setThreadColor(hex) = brick else { return nil }
         return ThreadColor(hexString: hex)
     }

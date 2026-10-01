@@ -58,27 +58,27 @@ final class AppModel {
     /// is the entire reason M5 is an edit here instead of an edit to the view.
     var samples: [SampleProgram] {
         #if DEBUG
-        // **Appended here rather than added to `SampleLibrary.all`**, and appended *last*.
-        //
-        // US-309 needs a 50 000-stitch design reachable in the running app — the frame
-        // capture and the screenshots are of the real screen, not of a harness. It needs to
-        // be a real `SampleProgram` because the stage's title, its accessibility label and
-        // `ExportControl.readiness` all key off a selected sample; a launch-argument path
-        // that ran the program without selecting anything would screenshot a
-        // half-configured screen.
-        //
-        // It stays out of the library because five `SamplesTests` suites iterate
-        // `SampleLibrary.all` to assert properties of *shipping* content — a checked-in JSON
-        // encoding, a DST golden, an ADR-019 threshold screen — and because ROADMAP M3
-        // requires the bundled samples to be visually appealing designs "not test shapes".
-        //
-        // Last, so it can never displace a shipping sample from the top of the picker and
-        // every existing screenshot keeps its meaning.
-        SampleLibrary.all + [
-            SampleProgram(id: .us309Synthetic, program: makeUS309SyntheticProgram())
-        ]
+            // **Appended here rather than added to `SampleLibrary.all`**, and appended *last*.
+            //
+            // US-309 needs a 50 000-stitch design reachable in the running app — the frame
+            // capture and the screenshots are of the real screen, not of a harness. It needs to
+            // be a real `SampleProgram` because the stage's title, its accessibility label and
+            // `ExportControl.readiness` all key off a selected sample; a launch-argument path
+            // that ran the program without selecting anything would screenshot a
+            // half-configured screen.
+            //
+            // It stays out of the library because five `SamplesTests` suites iterate
+            // `SampleLibrary.all` to assert properties of *shipping* content — a checked-in JSON
+            // encoding, a DST golden, an ADR-019 threshold screen — and because ROADMAP M3
+            // requires the bundled samples to be visually appealing designs "not test shapes".
+            //
+            // Last, so it can never displace a shipping sample from the top of the picker and
+            // every existing screenshot keeps its meaning.
+            SampleLibrary.all + [
+                SampleProgram(id: .us309Synthetic, program: makeUS309SyntheticProgram())
+            ]
         #else
-        SampleLibrary.all
+            SampleLibrary.all
         #endif
     }
 
@@ -214,6 +214,7 @@ final class AppModel {
             selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: title)
             nextGeneration += 1
             path = [.script] // Already so from `init`; kept so restore does not depend on it.
+            palette.isPresented = false
             if case .success = DesignName.validating(program.name) {
                 exporter.name = program.name
             }
@@ -301,7 +302,20 @@ final class AppModel {
     /// Every writer — `init`, `select(_:)`, `restoreSavedProgram()` — assigns `[.script]`
     /// (US-407, ADR-039); the stage is pushed from the script by a `NavigationLink`. "A
     /// non-empty path implies a selection" holds from `init` on, since launch selects.
-    var path: [StageDestination] = []
+    var path: [StageDestination] = [] {
+        didSet {
+            // On compact the stage link stays tappable under a sheet that allows background
+            // interaction (US-409). Pushing the stage must not carry the palette onto it.
+            if path.last != .script {
+                palette.isPresented = false
+            }
+        }
+    }
+
+    /// The brick palette's presentation and its last insertion (US-409), beside `path` and
+    /// `interaction` for ADR-023's reason: a flag held in the script list would close the palette
+    /// on an iPad resize. Read and written through `AppModel+Palette.swift`.
+    var palette = PaletteState()
 
     /// `@ObservationIgnored` on purpose: bumping the counter is bookkeeping, not
     /// state anyone renders, and the attribute keeps it out of the observation
@@ -350,6 +364,7 @@ final class AppModel {
         persistWorkingProgram()
         nextGeneration += 1
         path = [.script]
+        palette.isPresented = false
         // `reset()` discards the run, which fires `onRunDiscarded` and takes the previous
         // design's file with it. Leaving the file would offer a share button that sends the
         // *last* design — the staleness ADR-023 exists to prevent, one layer up.
@@ -369,30 +384,5 @@ final class AppModel {
         // reason the run's reset is here: the view-side spellings re-fire on the ADR-023
         // container rebuild.
         interaction.followFit()
-    }
-
-    /// Whether the stage draws US-309's frame-time readout: only for the measurement fixture,
-    /// and only while it is still that fixture.
-    ///
-    /// Here rather than at `RootView`'s call site because `SampleID.us309Synthetic` exists only
-    /// under `#if DEBUG` — comparing against it unguarded broke the Release build, which
-    /// neither the commit gate nor CI compiles (`swift-code-reviewer`, US-405). An edit clears
-    /// `provenance` and so hides the readout; it is a measurement harness, not a design.
-    var showsFrameTimeReadout: Bool {
-        #if DEBUG
-        selection?.provenance == .us309Synthetic
-        #else
-        false
-        #endif
-    }
-
-    /// Whether `sample` is the current selection — the row highlight and the
-    /// `.isSelected` VoiceOver trait.
-    ///
-    /// Compares ids, not samples. `SampleProgram`'s synthesized `==` drags the
-    /// whole `Program` tree along, and this runs for every row on every body
-    /// evaluation.
-    func isSelected(_ sample: SampleProgram) -> Bool {
-        selection?.provenance == sample.id
     }
 }

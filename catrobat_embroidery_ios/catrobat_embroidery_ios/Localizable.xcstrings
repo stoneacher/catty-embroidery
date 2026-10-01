@@ -673,6 +673,342 @@
         }
       }
     },
+    "palette.close": {
+      "comment": "Closes the list of bricks without adding one.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "palette.description.change.variable": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds an amount to a variable."
+          }
+        }
+      }
+    },
+    "palette.description.change.x": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the needle left or right."
+          }
+        }
+      }
+    },
+    "palette.description.change.y": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the needle up or down."
+          }
+        }
+      }
+    },
+    "palette.description.forever": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeats the bricks inside it without end."
+          }
+        }
+      }
+    },
+    "palette.description.move": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the needle forward in the direction it points."
+          }
+        }
+      }
+    },
+    "palette.description.place.at": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the needle to a point."
+          }
+        }
+      }
+    },
+    "palette.description.point.direction": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Points the needle in a direction."
+          }
+        }
+      }
+    },
+    "palette.description.repeat": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeats the bricks inside it a number of times."
+          }
+        }
+      }
+    },
+    "palette.description.running.stitch": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sews a line of stitches as the needle moves."
+          }
+        }
+      }
+    },
+    "palette.description.set.variable": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gives a variable a value."
+          }
+        }
+      }
+    },
+    "palette.description.set.x": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the needle to a horizontal position."
+          }
+        }
+      }
+    },
+    "palette.description.set.y": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the needle to a vertical position."
+          }
+        }
+      }
+    },
+    "palette.description.sew.up": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sews a small knot that keeps the thread from coming loose."
+          }
+        }
+      }
+    },
+    "palette.description.stitch": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sews one stitch where the needle is."
+          }
+        }
+      }
+    },
+    "palette.description.stop.stitch": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stops the running, zigzag or triple stitch."
+          }
+        }
+      }
+    },
+    "palette.description.thread.color": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes the thread for the stitches that follow."
+          }
+        }
+      }
+    },
+    "palette.description.triple.stitch": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sews a bold line, three passes per stitch, as the needle moves."
+          }
+        }
+      }
+    },
+    "palette.description.turn.left": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turns the needle to the left."
+          }
+        }
+      }
+    },
+    "palette.description.turn.right": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turns the needle to the right."
+          }
+        }
+      }
+    },
+    "palette.description.wait": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pauses before the next brick."
+          }
+        }
+      }
+    },
+    "palette.description.write.file": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writes the design to a file in Pocket Code. Here, export it from the stage."
+          }
+        }
+      }
+    },
+    "palette.description.zigzag.stitch": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sews a zigzag line as the needle moves."
+          }
+        }
+      }
+    },
+    "palette.group.control": {
+      "comment": "Section header in the list of bricks: waiting, loops, and variables.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Control and Data"
+          }
+        }
+      }
+    },
+    "palette.group.embroidery": {
+      "comment": "Section header in the list of bricks: the bricks that sew.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Embroidery"
+          }
+        }
+      }
+    },
+    "palette.group.motion": {
+      "comment": "Section header in the list of bricks: the bricks that move or turn the needle.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motion"
+          }
+        }
+      }
+    },
+    "palette.row.accessibility.label": {
+      "comment": "Spoken by VoiceOver for one brick in the list of bricks to add. %1$@ is the brick as it will appear in the design, e.g. \"Wait 1 second\"; %2$@ is a one-line description of what it does; both arrive already translated. Use the sentence-ending punctuation and spacing your language reads naturally. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@. %2$@"
+          }
+        }
+      }
+    },
+    "palette.title": {
+      "comment": "Title of the list of bricks a user can add to their design.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Brick"
+          }
+        }
+      }
+    },
     "program.title.named": {
       "comment": "The stage's title for a design reopened from the last session. %@ is the name the design was saved under, exactly as the user or the sample gave it. Do not translate: keep %@ alone, with nothing around it.",
       "extractionState": "manual",
@@ -817,8 +1153,20 @@
         }
       }
     },
+    "script.add": {
+      "comment": "Button in the script's toolbar, and under the empty state, that opens the list of bricks to add. 'Brick' is Catrobat's name for a block.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Brick"
+          }
+        }
+      }
+    },
     "script.empty.description": {
-      "comment": "Below 'No Bricks Yet'. Names the action, not a button: the button to add a brick arrives in a later version, and this text must stay true both before and after it.",
+      "comment": "Below 'No Bricks Yet', above the 'Add Brick' button. Names the action, so it reads naturally with the button directly under it.",
       "extractionState": "manual",
       "localizations": {
         "en": {

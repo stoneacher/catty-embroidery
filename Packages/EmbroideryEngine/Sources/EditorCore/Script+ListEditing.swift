@@ -48,7 +48,9 @@ public extension Script {
         // whatever the destination, so the only thing its span could change is which
         // destination that rejection names.
         let span = bricks[from].opensLoop ? (range(ofPairAt: from)?.count ?? 1) : 1
-        if (from ... from + span).contains(toOffset) { return nil }
+        if (from ... from + span).contains(toOffset) {
+            return nil
+        }
         let destination = toOffset > from ? toOffset - span : toOffset
         return .move(from: address, to: destination)
     }
@@ -146,6 +148,28 @@ public extension Script {
               let span = blockSpan(at: index)
         else { return nil }
         return .move(from: BrickAddress(brickIndex: index, script: script), to: sibling + 1 - span)
+    }
+
+    /// The `.insert` a palette tap means, with `selected` the row the list has selected (US-409).
+    ///
+    /// **Directly after the selected row**, or at the end when nothing is selected. That
+    /// one rule covers the three cases ADR-035 and the story name:
+    /// - **after a leaf**: the next position, at the leaf's depth;
+    /// - **after a loop opener**: the first position of its body, so the brick lands *inside*
+    ///   the loop. That is what makes a loop fillable by tap-to-add. It needs no special case,
+    ///   because nesting is positional (ADR-008). Skipping over the whole block would put the
+    ///   brick after the loop instead;
+    /// - **after a `loopEnd`**: after the loop, at the loop's own depth (decided 2026-10-01).
+    ///   This is the only tap that appends after a loop that is not last.
+    ///
+    /// A selection outside the script counts as none. Rows are identified by index (ADR-034),
+    /// so a stale selection must never become a rejected insert.
+    ///
+    /// The index the action names is where the new brick's head lands, whether a leaf or a
+    /// loop's opener, so it is also the list's scroll target.
+    func insertAction(of kind: BrickKind, after selected: Int?, in script: ScriptAddress) -> EditAction {
+        let index = selected.flatMap { bricks.indices.contains($0) ? $0 + 1 : nil } ?? bricks.count
+        return .insert(kind, at: BrickAddress(brickIndex: index, script: script))
     }
 }
 
