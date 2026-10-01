@@ -16,7 +16,8 @@ import SwiftUI
 ///
 /// **A renderer draws the hoop field too**, beneath the design and in the same pass, through
 /// `StageField.geometry`. It used to be a sibling view under the renderer's output, and the two
-/// came apart for several frames whenever the keyboard resized the stage (US-315).
+/// came apart for several frames while the keyboard resized the stage (US-315). **Nothing
+/// enforces this.** A renderer that forgets shows the `.background` mat and no hoop at all.
 ///
 /// `makeBody` and not `body`: `body` reads as SwiftUI's own computed property and would
 /// collide the moment someone conformed a `View` to this. `makeBody` follows

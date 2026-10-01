@@ -10,12 +10,13 @@ import SwiftUI
 ///
 /// **This used to be a view of its own, `StageFieldView`, a sibling `Canvas` under the
 /// renderer's — and that is what US-315 found.** A keyboard animating in or out resizes the
-/// stage, and each `Canvas` is drawn *once*, at its final size, while SwiftUI animates the
-/// frame. The two siblings were not presented under the same geometry while that happened: for
+/// stage. US-315's probe logged one draw per `Canvas` per layout change, at the final size,
+/// while SwiftUI animated the frame. The two siblings were not presented under the same
+/// geometry while that happened: for
 /// several frames the design spilled out of the hoop, past the mat and over the caption below
 /// it. Captured on the simulator frame by frame; `.drawingGroup()` on the pair did not fix it,
-/// and drawing both in one pass did, in every sampled frame. One pass is also the only
-/// arrangement in which the two *cannot* disagree, whatever SwiftUI does with an animating frame.
+/// and drawing both in one pass did, in every sampled frame. One pass is also an arrangement in
+/// which the two *cannot* disagree, whatever SwiftUI does with an animating frame.
 ///
 /// The price is that the field is now the renderer's job (`StagePreviewRenderer` says so): a
 /// future renderer must draw it too, through `geometry` here, so the two cannot drift apart.
@@ -34,7 +35,8 @@ enum StageField {
     ///   - transform: the transform this frame strokes the design with — the *same* value, which
     ///     is the whole point of drawing the field in the same pass.
     ///   - size: the `Canvas`'s own size, not the viewport the `GeometryReader` measured. The two
-    ///     can differ by a fraction of a point, and the mat has to cover what is actually drawn.
+    ///     differ by a fraction of a point in iPhone 17's default layout (measured: 256.83 against
+    ///     257.0; backlog US-322), and the mat has to cover what is actually drawn.
     ///   - increasedContrast: Increase Contrast thickens the outline.
     static func geometry(
         transform: StageTransform,

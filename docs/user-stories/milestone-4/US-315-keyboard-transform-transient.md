@@ -82,9 +82,19 @@ Deliberately thin, and honestly so: **this story's first deliverable is evidence
    - So "does a keyboard-driven layout change rebuild that closure?" — yes, through the `GeometryReader`, not through the `@State` setter the comment names.
    - One staleness does exist and is not this bug: a fit animation in flight during a resize keeps its old endpoints, and snaps to the new fit at the end. All layers agree while it does.
 
+**Review (`swift-code-reviewer`, in a worktree, with mutations).** The fix is sound: one closure, one `transform.current`, an unchanged `BakeKey`, a transparent baked image (`Image(size:)` is not opaque), and nothing lost for VoiceOver, because a `Canvas` exposes no children. Findings and what was done about them:
+- **Three comments were wrong.**
+  - The `Color.clear` claim: corrected, see below.
+  - "Today they are equal" in `CanvasStitchRenderer`, which US-322's measurement contradicts: corrected, with a pointer.
+  - "whenever the keyboard resized": reworded.
+  The reviewer's call to retract "can differ by a fraction of a point" was **rejected**, because the probe measured exactly that. The comment now cites the numbers.
+- **Mutants of the merged pass survived the geometry tests.** The survivors were the deleted `StageField.draw` call, the field drawn after the strokes, and the field drawn at `bake`. `StageFieldRenderingTests` (`ImageRenderer`, three pixels) now kills all three, each applied and measured. Its mat probe was written to also catch `bake`, and measured, it does not; its title says so.
+- **The needle is still a sibling layer**, so it is exposed to the same class. This is documented at the call site rather than fixed. Keeping it out of the bake key was ADR-024's reason for making it a separate layer.
+- **The renderer contract is not enforced**: a renderer that skips the field shows the mat and no hoop. Stated in `StagePreviewRenderer`.
+
 **The fix.** `StageField` (geometry as a value, plus a draw function) is drawn first in `CanvasStitchLayers`' own `Canvas` pass, at `transform.current` and at the `Canvas`'s own `size`. `StageFieldView` is gone. Consequences, recorded rather than hidden:
 - **The field is now the renderer's job.** `StagePreviewRenderer` says so: a future renderer must draw it, through `StageField.geometry`.
-- **`StageCanvas` keeps a `Color.clear` base under the renderer.** The old field view was what made the stage fill its slot whatever the renderer returned. Without it, the hosted tests' `EmptyView` renderer took every modifier with it, and six hosted wiring tests failed, proving the base load-bearing.
+- **`StageCanvas` keeps a `ZStack { Color.clear; renderer }` around the renderer.** With the field view gone, hanging the modifiers straight on the renderer's body failed the hosted wiring tests (six in the first run, five in the reviewer's mutant). Their renderer double returns `EmptyView`, and the catcher never reached the hierarchy. **It is the `ZStack` that fixes that, not `Color.clear`.** An earlier version of this note and of the code comment said otherwise; `swift-code-reviewer` measured it. `Color.clear` keeps the other half of what the field view gave, a view that fills the slot whatever the renderer returns. No test pins it, and that mutant survives.
 - **The field is not baked.** It is three fills, and keeping it out of the raster leaves `BakeKey` unchanged.
 - **The needle is still a sibling layer**, as ADR-024 intends. It could in principle drift the same way, but it was not visible in any capture, because the needle is absent once a run has finished. That is recorded as unexamined.
 
