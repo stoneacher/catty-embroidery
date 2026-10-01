@@ -28,25 +28,25 @@ let trackOutput = AVAssetReaderTrackOutput(
 reader.add(trackOutput)
 reader.startReading()
 
+// Every failure stops the tool rather than skipping a frame: numbered files that silently miss one
+// would still look consecutive, and these frames are evidence.
 var written = 0
 while let sample = trackOutput.copyNextSampleBuffer() {
     let time = CMSampleBufferGetPresentationTimeStamp(sample).seconds
     guard time >= start else { continue }
-    if time > end {
-        break
-    }
-    guard let buffer = CMSampleBufferGetImageBuffer(sample),
-          let cgImage = CIContext().createCGImage(
-              CIImage(cvPixelBuffer: buffer),
-              from: CGRect(
-                  x: 0, y: 0,
-                  width: CVPixelBufferGetWidth(buffer), height: CVPixelBufferGetHeight(buffer)
-              )
-          ),
+    if time > end { break }
+    guard let buffer = CMSampleBufferGetImageBuffer(sample) else { fatalError("no image at \(time) s") }
+    let bounds = CGRect(
+        x: 0, y: 0, width: CVPixelBufferGetWidth(buffer), height: CVPixelBufferGetHeight(buffer)
+    )
+    guard let cgImage = CIContext().createCGImage(CIImage(cvPixelBuffer: buffer), from: bounds),
           let png = NSBitmapImageRep(cgImage: cgImage).representation(using: .png, properties: [:])
-    else { continue }
+    else { fatalError("could not encode the frame at \(time) s") }
     try png.write(to: output.appendingPathComponent(String(format: "f%04d_%.3f.png", written, time)))
     written += 1
 }
-
+// A reader that fails partway ends the loop exactly as the end of the file does.
+guard reader.status != .failed else {
+    fatalError("reading stopped after \(written) frames: \(String(describing: reader.error))")
+}
 print("wrote \(written) frames")

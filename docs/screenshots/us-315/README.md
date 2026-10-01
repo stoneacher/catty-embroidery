@@ -13,7 +13,8 @@ stage, its caption and the name field. None of these states can be seen in a sti
 
 ## Reproducing it
 
-`capture/` holds the tools that produced these sheets. They are not part of the app.
+`capture/` holds the tools that produced these sheets. They are not part of the app. Every path below
+is relative to this directory, so start with `cd docs/screenshots/us-315` from the repository root.
 
 1. Choose an output directory and the simulator, then build the two tools into it, where
    `capture.sh` looks for the extractor:
