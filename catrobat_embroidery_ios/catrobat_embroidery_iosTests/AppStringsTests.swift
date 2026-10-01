@@ -84,7 +84,15 @@ struct AppStringsTests {
             (.scriptActionMoveIntoLoopBelow, "script.action.move.into.loop.below"),
             (.scriptActionDelete, "script.action.delete"),
             (.scriptUndo, "script.undo"),
-            (.scriptRedo, "script.redo")
+            (.scriptRedo, "script.redo"),
+            // US-409. The 22 brick descriptions are not listed here: `PalettePresentationTests`
+            // reads each one through the palette, which also proves every kind is wired to its own.
+            (.scriptAdd, "script.add"),
+            (.paletteTitle, "palette.title"),
+            (.paletteClose, "palette.close"),
+            (.paletteGroupEmbroidery, "palette.group.embroidery"),
+            (.paletteGroupMotion, "palette.group.motion"),
+            (.paletteGroupControl, "palette.group.control")
         ]
 
         for entry in entries {

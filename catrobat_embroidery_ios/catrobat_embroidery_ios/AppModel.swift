@@ -303,6 +303,15 @@ final class AppModel {
     /// non-empty path implies a selection" holds from `init` on, since launch selects.
     var path: [StageDestination] = []
 
+    /// Whether the brick palette is showing (US-409).
+    var isPalettePresented = false
+
+    /// The last palette insertion, for the script list to scroll to.
+    private(set) var paletteInsertion: PaletteInsertion?
+
+    /// A palette row was tapped.
+    func addFromPalette(_ kind: BrickKind) {}
+
     /// `@ObservationIgnored` on purpose: bumping the counter is bookkeeping, not
     /// state anyone renders, and the attribute keeps it out of the observation
     /// graph entirely.

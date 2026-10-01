@@ -104,6 +104,17 @@ final class EditorViewModel {
         return true
     }
 
+    // MARK: Selection and the palette (US-409)
+
+    /// The row the script list has selected, by index into the first script.
+    var selectedBrickIndex: Int?
+
+    /// Inserts `kind` where a palette tap means, returning the inserted head's index.
+    @discardableResult
+    func insert(_ kind: BrickKind) -> Int? {
+        nil
+    }
+
     // MARK: The list's gestures (US-408)
 
     /// The list's `.onMove`, converted by `Script.moveAction(fromOffsets:toOffset:in:)` and then

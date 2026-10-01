@@ -48,7 +48,9 @@ public extension Script {
         // whatever the destination, so the only thing its span could change is which
         // destination that rejection names.
         let span = bricks[from].opensLoop ? (range(ofPairAt: from)?.count ?? 1) : 1
-        if (from ... from + span).contains(toOffset) { return nil }
+        if (from ... from + span).contains(toOffset) {
+            return nil
+        }
         let destination = toOffset > from ? toOffset - span : toOffset
         return .move(from: address, to: destination)
     }
@@ -146,6 +148,11 @@ public extension Script {
               let span = blockSpan(at: index)
         else { return nil }
         return .move(from: BrickAddress(brickIndex: index, script: script), to: sibling + 1 - span)
+    }
+
+    /// The `.insert` a palette tap means, with `selected` the row the list has selected.
+    func insertAction(of kind: BrickKind, after _: Int?, in script: ScriptAddress) -> EditAction {
+        .insert(kind, at: BrickAddress(brickIndex: 0, script: script))
     }
 }
 
