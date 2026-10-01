@@ -15,13 +15,18 @@ stage, its caption and the name field. None of these states can be seen in a sti
 
 `capture/` holds the tools that produced these sheets. They are not part of the app.
 
-1. Build `capture/frames.swift` (AVFoundation, no ffmpeg needed) and `capture/tile.swift` with `swiftc -O`.
+1. Build the two tools into the output directory, where `capture.sh` looks for the extractor:
+   `swiftc -O capture/frames.swift -o "$OUT/frames"` and `swiftc -O capture/tile.swift -o "$OUT/tile"`.
 2. On the simulator, open the stage for `Synthetic 50k`, play it to the end, and focus the name field.
 3. Raise the software keyboard with **⌘⌥K** in Simulator. A relaunch hides it again.
 4. Run `SIM=<udid> OUT=<dir> bash capture/capture.sh <name>`. It records dismiss → focus → dismiss and
    extracts every frame.
 5. `simctl` writes a frame only when the screen changes, so a burst of closely spaced timestamps marks
-   an animation. Tile that burst with `tile`.
+   an animation. Tile that burst with `"$OUT/tile" sheet.png <frames…>`.
+6. `tile` writes PNG. The committed sheets were converted to JPEG for size:
+   `sips -s format jpeg -s formatOptions 70 sheet.png --out sheet.jpg`.
 
-**The zoomed condition was not captured on the simulator.** A scripted double tap did not land, so
-it is covered only by the device recording.
+**Not captured on the simulator, so pending the device recording:**
+- **The zoomed condition.** A scripted double tap did not land.
+- **A run still stitching.** The needle is still a sibling layer and could come apart the same way.
+  These captures all used a finished run, where the needle is absent.

@@ -210,8 +210,8 @@ design call, so it gets a `swift-ui-design` look, and no test pins the symbol to
 
 ## US-322 — The settled raster is never composited in the stage's default layout on iPhone 17
 
-**Found**: 2026-10-01, US-315's simulator probe. **Severity: performance, possibly large.** This
-cancels ADR-009's cache on the commonest screen and wastes the bake work on top.
+**Found**: 2026-10-01, US-315's simulator probe. **Severity: performance, possibly large.** In the
+measured configuration it cancels ADR-009's cache and wastes the bake work on top.
 
 **What was measured.** On iPhone 17 (a 3× screen), with the export row showing:
 - The `GeometryReader` measures the stage viewport as **370 × 256.833…** pt.
@@ -225,9 +225,10 @@ cancels ADR-009's cache on the commonest screen and wastes the bake work on top.
 That explains a curiosity in US-315's first probe pass: focusing the name field produced a re-bake
 with an unchanged viewport. It was the first frame in which the raster could be used at all.
 
-**Why it matters beyond this device.** Any layout whose `GeometryReader` height is not a whole
-number of pixels-per-point hits it, and Dynamic Type, the caption and the pinned rows make that
-common. ADR-029's device measurements may have been taken in a configuration that happened to be
+**Why it may matter beyond this configuration — unmeasured.** It is measured for one layout only:
+iPhone 17, default text size, export row showing. Whether other fractional viewports get a
+differently rounded `Canvas` size is **not established**; SwiftUI may round both the same way
+elsewhere. Measuring that is the first step of taking this story. ADR-029's device measurements may have been taken in a configuration that happened to be
 integral. If so, the numbers describe the cache working on a screen where, in practice, it rarely
 does. Worth re-checking against the US-309 capture notes before deciding priority.
 
