@@ -2693,3 +2693,10 @@ Codex returned no correctness findings, and the loop ended at round 1 on conditi
   - A compact→regular→compact swap with the stage on top leaves the palette flag set, because no path write happens. It is now closed on the size-class change, with a test, and its mutant is killed.
   - It also traced the surviving view-layer mutants (scroll index, `.isSelected` trait, safe-area extension) and named them honestly as untestable here.
 - **Simulator limits, named.** The XcodeBuildMCP CLI cannot rotate the simulator. Xcode's own device-interaction tool would need an approval prompt, so it was not used. iPhone landscape and short iPad windows are therefore unmeasured and handed to the manual pass.
+
+## 2026-10-01 (US-409, Codex round 1) — no findings; one blind spot closed on the simulator
+
+Codex returned **no correctness findings**, so the loop ended at round 1 on condition 1 (highest severity: none, no code changes). The rubric was adapted from DST bytes to this story's semantics: pair balance, the insertion rule, stale selection, the single apply door, and palette visibility across navigation and the container swap.
+- **It independently confirmed the Catroid ordering** for all three groups, which the in-loop reviewer had also checked. Two vendors agreeing on a reference claim is worth recording, because the planning sweep had predicted Motion's 9 survivors without checking them.
+- **Its four blind spots were all view-layer, and one was cheap to close.** No test hosts a real `List(selection:)` with a row tapped *behind* the 0.4 sheet. That was checked on the simulator straight away and holds. The other three (`onChange` delivery during the ADR-023 swap, landscape adaptation, VoiceOver focus after dismissal) go to the manual pass with the reason stated.
+- **The two reviewers again divided the work by kind.** `swift-code-reviewer` found the two real behavioural gaps: the focus hand-back and the swap with the stage on top. Codex, shown the fixed diff, found nothing new and mapped what the suite cannot see. As in US-406/US-408, a clean Codex round is evidence about the diff, not about the untested view layer.

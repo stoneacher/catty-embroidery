@@ -2,7 +2,7 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~5 h | **Depends on**: US-401, US-402, US-407
 
-**Status**: Implemented and reviewed 2026-10-01, [PR #64](https://github.com/stoneacher/catty-embroidery/pull/64); in Codex review.
+**Status**: Done — 2026-10-01, [PR #64](https://github.com/stoneacher/catty-embroidery/pull/64) (pending merge). Codex round 1 returned no findings, so the loop closed at round 1.
 - **Test-first.** The `[red]` commit `6d3af4f` had signature-only stubs, so the failures were behavioural: 17 package tests (25 issues) and 20 app tests.
 - **Mutation.** 13 mutants were killed and 1 was equivalent: 5 in the package and 8 in the app, plus 1 for the review fix.
 - **Exception: `PaletteInsetTests`.** They were written after the view agent's `bottomInset` and proved by mutation alone, not by a red run.
