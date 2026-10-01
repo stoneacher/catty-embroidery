@@ -11,8 +11,20 @@ import SwiftUI
 /// **Rows hold no control** (ADR-034): they are identified by index, which is safe only while
 /// nothing inside a row has state of its own. Since US-408 the list reorders and deletes —
 /// `.onMove`, `.onDelete` and each row's accessibility actions — and every one of them is an
-/// `EditAction` handed to `model.editor`, never a mutation (ADR-006 pattern 1). Add and
-/// parameter editing are US-409 and US-410.
+/// `EditAction` handed to `model.editor`, never a mutation (ADR-006 pattern 1). Parameter
+/// editing is US-410.
+///
+/// **Selection is `List`'s own** (US-409), bound to `editor.selectedBrickIndex`, which is where
+/// a palette tap inserts. It is still no control inside a row: the cell is what selects, and
+/// the index it writes is cleared by the editor on every change that can move rows, so index
+/// identity never leaves it pointing at a different brick.
+///
+/// **The palette presents from here, once**: the top bar's Add button in both placements owns
+/// the one `.popover`, which adapts to a detented sheet on compact (ADR-039). The empty
+/// state's button only raises `isPalettePresented`, so there is one call site to keep right.
+/// While the sheet is up, the list's bottom content margin grows by what the sheet covers
+/// (`bottomInset(listFrame:paletteFrame:)`), because SwiftUI insets a list for the keyboard
+/// but not for a sheet, and a freshly inserted brick would otherwise land behind it.
 ///
 /// **No drag needs `EditMode`**: a long press lifts the row (checked on an iOS 26.5 simulator
 /// build at planning, 2026-09-29 — **not** on iOS 17, for want of a runtime), so there is no
@@ -49,6 +61,14 @@ struct ScriptListView: View {
     /// holds a different brick, and a second "Move Up" would move that one.
     @AccessibilityFocusState private var focusedRow: Int?
 
+    /// The list's frame in window coordinates, for the sheet overlap.
+    @State private var listFrame: CGRect = .zero
+
+    /// The presented palette's frame in window coordinates, `nil` while it is not showing.
+    /// View state rather than model state on purpose: it is a measurement, re-reported by the
+    /// palette after ADR-023's container swap, not something that must survive one.
+    @State private var paletteFrame: CGRect?
+
     static var emptyStateTitle: String {
         String(localized: .scriptEmptyTitle)
     }
@@ -59,61 +79,60 @@ struct ScriptListView: View {
 
     var body: some View {
         let rows = BrickRowPresentation.rows(for: model.editor.program, locale: locale)
+        @Bindable var editor = model.editor
 
-        Group {
-            if rows.isEmpty {
-                // Names the action, not a control: US-409 fills the `actions:` slot with an
-                // "Add Brick" button, and the copy stays true on both sides of that story.
-                ContentUnavailableView {
-                    Label {
-                        Text(.scriptEmptyTitle)
-                    } icon: {
-                        Image(systemName: "list.bullet.indent")
+        // Around the `Group`, not the `List`: the first insert into an empty script is the one
+        // that brings the list into existence, and an `onChange` on the list itself would not
+        // be there yet to see it.
+        ScrollViewReader { proxy in
+            Group {
+                if rows.isEmpty {
+                    // The description names the action rather than this button, so the copy
+                    // reads the same with or without it (it predates the button, US-407).
+                    ContentUnavailableView {
+                        Label {
+                            Text(.scriptEmptyTitle)
+                        } icon: {
+                            Image(systemName: "list.bullet.indent")
+                        }
+                    } description: {
+                        Text(.scriptEmptyDescription)
+                    } actions: {
+                        // Raises the flag only; the toolbar's Add button owns the presentation,
+                        // so popover-versus-sheet is decided in one place.
+                        Button {
+                            model.isPalettePresented = true
+                        } label: {
+                            Label {
+                                Text(.scriptAdd)
+                            } icon: {
+                                Image(systemName: "plus")
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
-                } description: {
-                    Text(.scriptEmptyDescription)
+                } else {
+                    list(rows: rows, selection: $editor.selectedBrickIndex)
                 }
-            } else {
-                List {
-                    ForEach(rows) { row in
-                        ScriptRowView(row: row)
-                            // On the row's one accessibility element — `ScriptRowView` collapses
-                            // itself into one — so VoiceOver reaches them behind the rotor
-                            // (ADR-031): "rotate to Actions, then swipe".
-                            .accessibilityActions { actions(for: row) }
-                            .accessibilityFocused($focusedRow, equals: row.id)
-                            // `.onMove` has no reject hook, so refuse up front the drags `apply`
-                            // always rejects rather than spring the row back unexplained.
-                            .moveDisabled(row.isMoveDisabled)
-                            // Zero vertical insets so the nesting guides of adjacent rows meet
-                            // into one line; the row re-applies its own vertical padding inside.
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                            // The guides are the structure; a separator across them would cut
-                            // every loop body into rungs.
-                            .listRowSeparator(.hidden)
-                    }
-                    .onMove { source, toOffset in
-                        _ = model.editor.moveRows(fromOffsets: source, toOffset: toOffset)
-                    }
-                    // No confirmation, even for a whole loop (ADR-035): Undo is one tap away.
-                    .onDelete { offsets in
-                        _ = model.editor.deleteRows(atOffsets: offsets)
-                    }
+            }
+            .onChange(of: model.paletteInsertion) { _, insertion in
+                guard let insertion else { return }
+                // On the next turn, once the list holds the inserted rows — `perform(_:)`'s
+                // reason. Not animated: the palette's dismissal is already moving the screen.
+                // Focus follows for VoiceOver, whose user would otherwise be left on the
+                // palette's vanished row with no idea where the brick went.
+                Task { @MainActor in
+                    proxy.scrollTo(insertion.index, anchor: nil)
+                    focusedRow = insertion.index
                 }
-                .listStyle(.plain)
-                // The system's default minimum is taller than a one-line row, so the cell would
-                // centre the row inside itself and every guide would stop short of its
-                // neighbour's — measured at 51 pt cells around 44 pt rows. The row keeps its own
-                // 44 pt floor.
-                .environment(\.defaultMinListRowHeight, 44)
             }
         }
         .navigationTitle(Text(title))
-        // On the `Group`, outside the empty-state branch: after deleting the last brick, the
-        // empty state is exactly where Undo must still be.
+        // Outside the empty-state branch: after deleting the last brick, the empty state is
+        // exactly where Undo must still be — and where Add is the only way forward.
         .toolbar {
             // The bottom bar in both placements (decided 2026-09-29): the top bar holds the
-            // stage link on compact and gets US-409's Add. No ⌘Z here — US-411's `UndoManager`
+            // stage link on compact and Add in both. No ⌘Z here — US-411's `UndoManager`
             // bridge owns the keyboard, and two registrations would undo twice.
             ToolbarItemGroup(placement: .bottomBar) {
                 Button {
@@ -150,6 +169,129 @@ struct ScriptListView: View {
                     }
                 }
             }
+            ToolbarItem(placement: .primaryAction) {
+                addButton
+            }
+        }
+    }
+
+    /// How much of the list's bottom a presented palette covers, which is the bottom content
+    /// margin that keeps every row — above all a freshly inserted one — scrollable into view.
+    ///
+    /// **Zero for a popover, by geometry rather than by size class**: a sheet rises from the
+    /// window's bottom edge, so its frame always reaches the list's bottom; a popover hangs
+    /// from its toolbar button and stops short of it. Asking the frames keeps this view off
+    /// the size class (`Placement`'s rule), and stays right in the configurations where the
+    /// adaptation is the system's call — regular width with compact height, a short iPad
+    /// window — because it measures what was presented instead of predicting it.
+    ///
+    /// Clamped to the list's height: at the large detent the sheet covers the whole list, and
+    /// a margin taller than the list scrolls nothing further into view.
+    nonisolated static func bottomInset(listFrame: CGRect, paletteFrame: CGRect?) -> CGFloat {
+        guard let paletteFrame,
+              paletteFrame.maxY >= listFrame.maxY,
+              paletteFrame.minX < listFrame.maxX,
+              paletteFrame.maxX > listFrame.minX
+        else { return 0 }
+        return min(max(0, listFrame.maxY - paletteFrame.minY), listFrame.height)
+    }
+}
+
+private extension ScriptListView {
+    func list(rows: [BrickRowPresentation], selection: Binding<Int?>) -> some View {
+        List(selection: selection) {
+            ForEach(rows) { row in
+                ScriptRowView(row: row, isSelected: row.id == selection.wrappedValue)
+                    // On the row's one accessibility element — `ScriptRowView` collapses
+                    // itself into one — so VoiceOver reaches them behind the rotor
+                    // (ADR-031): "rotate to Actions, then swipe".
+                    .accessibilityActions { actions(for: row) }
+                    .accessibilityFocused($focusedRow, equals: row.id)
+                    // `.onMove` has no reject hook, so refuse up front the drags `apply`
+                    // always rejects rather than spring the row back unexplained.
+                    .moveDisabled(row.isMoveDisabled)
+                    // Zero vertical insets so the nesting guides of adjacent rows meet
+                    // into one line; the row re-applies its own vertical padding inside.
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    // The guides are the structure; a separator across them would cut
+                    // every loop body into rungs.
+                    .listRowSeparator(.hidden)
+            }
+            .onMove { source, toOffset in
+                _ = model.editor.moveRows(fromOffsets: source, toOffset: toOffset)
+            }
+            // No confirmation, even for a whole loop (ADR-035): Undo is one tap away.
+            .onDelete { offsets in
+                _ = model.editor.deleteRows(atOffsets: offsets)
+            }
+        }
+        .listStyle(.plain)
+        // The system's default minimum is taller than a one-line row, so the cell would
+        // centre the row inside itself and every guide would stop short of its
+        // neighbour's — measured at 51 pt cells around 44 pt rows. The row keeps its own
+        // 44 pt floor.
+        .environment(\.defaultMinListRowHeight, 44)
+        // A content margin rather than a safe-area inset: it moves where scrolling can bring
+        // a row, and leaves the list's background running under the sheet.
+        .contentMargins(
+            .bottom,
+            Self.bottomInset(listFrame: listFrame, paletteFrame: paletteFrame),
+            for: .scrollContent
+        )
+        .onGeometryChange(for: CGRect.self) { proxy in
+            proxy.frame(in: .global)
+        } action: { frame in
+            listFrame = frame
+        }
+    }
+
+    /// The top bar's Add button, and the palette's one presentation (ADR-039).
+    ///
+    /// Anchored to the button so the popover's arrow points at what opened it. The two-argument
+    /// adaptation asks for a sheet only where the *width* is compact: regular width with
+    /// compact height (a large iPhone in landscape, a short iPad window) keeps a popover, which
+    /// leaves the script beside it rather than under a sheet covering most of a short screen.
+    /// Which adaptation wins where both are compact is the system's; `bottomInset` measures the
+    /// result rather than assuming it.
+    var addButton: some View {
+        @Bindable var model = model
+
+        return Button {
+            model.isPalettePresented = true
+        } label: {
+            Label {
+                Text(.scriptAdd)
+            } icon: {
+                Image(systemName: "plus")
+            }
+        }
+        .popover(isPresented: $model.isPalettePresented, arrowEdge: .top) {
+            PaletteView(model: model)
+                .presentationCompactAdaptation(horizontal: .sheet, vertical: .popover)
+                // `.fraction` rather than `.medium`: the small detent leaves most of the script
+                // in view, and its height is a proportion this view does not have to predict —
+                // the inset measures the sheet anyway (US-409's constraints).
+                .presentationDetents([.fraction(0.4), .large])
+                // Mandatory, not a nicety: tap-to-add only makes sense if the script behind
+                // the sheet stays live — to select where the next brick goes — while it is up.
+                .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.4)))
+                // A swipe in the palette scrolls its list rather than resizing the sheet;
+                // the grabber is what resizes.
+                .presentationContentInteraction(.scrolls)
+                .presentationDragIndicator(.visible)
+                .onGeometryChange(for: CGRect.self) { proxy in
+                    // Extended by the bottom safe area, so the sheet's measured bottom is the
+                    // window's and the sheet test in `bottomInset` does not depend on whether
+                    // the content is laid out above the home indicator.
+                    var frame = proxy.frame(in: .global)
+                    frame.size.height += proxy.safeAreaInsets.bottom
+                    return frame
+                } action: { frame in
+                    paletteFrame = frame
+                }
+                .onDisappear {
+                    paletteFrame = nil
+                }
         }
     }
 }
@@ -201,116 +343,6 @@ private extension ScriptListView {
         switch placement {
         case .stack: model.selection?.title ?? .scriptTitle
         case .column: .scriptTitle
-        }
-    }
-}
-
-/// One brick: a leading symbol (or the thread's swatch), its sentence, and one guide per loop
-/// it sits inside.
-///
-/// Internal rather than `private` only for previews.
-struct ScriptRowView: View {
-    let row: BrickRowPresentation
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ScaledMetric(relativeTo: .body) private var swatchSize: CGFloat = 18
-    /// One width for every leading symbol and the swatch, so the sentences start on one line.
-    @ScaledMetric(relativeTo: .body) private var leadingWidth: CGFloat = 24
-
-    var body: some View {
-        let isAccessibilitySize = dynamicTypeSize.isAccessibilitySize
-
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            leading
-                .frame(width: leadingWidth)
-            Text(row.text)
-                .font(.body)
-                // A loop's end is structure rather than an instruction; secondary keeps the eye
-                // on the bricks that do something, and the sentence still says which loop.
-                .foregroundStyle(row.kind == .loopEnd ? .secondary : .primary)
-                // What actually guarantees no truncation at AX1 inside a list row — see the
-                // same line in `SampleRowView`.
-                .fixedSize(horizontal: false, vertical: true)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.vertical, 11)
-        .padding(.leading, ScriptRowLayout.indent(forDepth: row.depth, isAccessibilitySize: isAccessibilitySize))
-        // A floor for the thumb, not a size — see `SampleRowView`. `maxHeight: .infinity` so the
-        // row fills its cell and the guides behind it reach the cell's edges.
-        .frame(maxWidth: .infinity, minHeight: 44, maxHeight: .infinity, alignment: .leading)
-        .background(alignment: .leading) {
-            guides(isAccessibilitySize: isAccessibilitySize)
-        }
-        // One element per row, with a label a test can read (`BrickRowPresentationTests`); the
-        // symbol and the guides are decoration, and the depth is in the label.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(row.accessibilityLabel))
-    }
-
-    @ViewBuilder
-    private var leading: some View {
-        if let threadColor = row.threadColor {
-            // Design data: `Color(threadColor)` never adapts to dark mode. The ring is chrome,
-            // and is what keeps a white thread visible on a white row and a black one on black.
-            Circle()
-                .fill(Color(threadColor))
-                .overlay(Circle().strokeBorder(.separator, lineWidth: 1))
-                .frame(width: swatchSize, height: swatchSize)
-                // A circle has no baseline; sitting its lower fifth on the text's first baseline
-                // centres it on the first line's x-height, as a symbol would be.
-                .alignmentGuide(.firstTextBaseline) { $0.height * 0.8 }
-        } else {
-            Image(systemName: Self.symbol(for: row.kind))
-                .font(.body)
-                .foregroundStyle(Self.tint(for: row.kind))
-        }
-    }
-
-    private func guides(isAccessibilitySize: Bool) -> some View {
-        ZStack(alignment: .leading) {
-            let offsets = ScriptRowLayout.guideOffsets(forDepth: row.depth, isAccessibilitySize: isAccessibilitySize)
-            ForEach(offsets.indices, id: \.self) { level in
-                // Leading padding rather than `.offset(x:)`, which does not mirror: in a
-                // right-to-left layout the guides must follow the indentation to the right.
-                Rectangle()
-                    .fill(.separator)
-                    .frame(width: 2)
-                    .padding(.leading, offsets[level] - 1)
-            }
-        }
-        .frame(maxHeight: .infinity)
-    }
-
-    /// One symbol per category, so category never rests on colour alone; the control bricks
-    /// that are not loops get their own, because "wait" is not a loop.
-    private static func symbol(for kind: BrickKind) -> String {
-        switch kind {
-        case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy:
-            "arrow.up.and.down.and.arrow.left.and.right"
-        case .repeatLoop: "repeat"
-        case .forever: "infinity"
-        case .loopEnd: "arrow.uturn.backward"
-        case .wait: "clock"
-        case .setVariable, .changeVariableBy: "x.squareroot"
-        case .stitch, .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
-             .stopRunningStitch, .writeEmbroideryToFile:
-            "scissors"
-        }
-    }
-
-    /// Chrome, not design data: system colours, which adapt to dark mode and Increase Contrast.
-    private static func tint(for kind: BrickKind) -> Color {
-        switch kind {
-        case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy:
-            .blue
-        case .repeatLoop, .forever, .loopEnd, .wait: .orange
-        case .setVariable, .changeVariableBy: .red
-        case .stitch, .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
-             .stopRunningStitch, .writeEmbroideryToFile:
-            .purple
         }
     }
 }

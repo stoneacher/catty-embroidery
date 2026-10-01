@@ -1166,7 +1166,7 @@
       }
     },
     "script.empty.description": {
-      "comment": "Below 'No Bricks Yet'. Names the action, not a button: the button to add a brick arrives in a later version, and this text must stay true both before and after it.",
+      "comment": "Below 'No Bricks Yet', above the 'Add Brick' button. Names the action, so it reads naturally with the button directly under it.",
       "extractionState": "manual",
       "localizations": {
         "en": {
