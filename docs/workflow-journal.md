@@ -2724,3 +2724,8 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **The pattern is US-207's, in a new place.** Committing the capture tools added new surface, and each round found the next gap in the previous round's fix of that surface. Every fix landed in the README or the scripts that were added *to make the evidence repeatable*. The fixes were real: the round-2 and round-3 frame-dropping fixes close an evidence-integrity hole that would let a capture misreport the transient it exists to show.
 - **Escalated to Sebastian at three flat rounds, as the rule says**, rather than run a fourth automatically. The decision is whether a docs-tooling-only Medium run should keep the loop open.
 - **The two reviewers divided the work by kind again.** `swift-code-reviewer` found the wrong comments and the untested merged pass. Codex found nothing there and everything in the shell and AVFoundation tooling, which the in-loop reviewer was not asked about.
+
+## 2026-10-01 (US-315, close-out) — device check passed; loop stopped at the escalation
+
+- **Device:** Sebastian reported "looking good on the device". The three conditions (fresh fit, zoomed and panned, run still stitching) were not itemised in the report, so the story records a pass without per-condition coverage. The zoomed and stitching conditions had no simulator evidence, so this report is all that covers them.
+- **Codex loop:** stopped after round 3 at the three-flat-Medium escalation. Sebastian's reply was taken as agreement with the recommendation to stop. The recommendation rested on the round-2 and round-3 findings being in the docs capture tooling rather than the app. Final history: Medium → Medium → Medium, 9 findings, all valid, all fixed.
