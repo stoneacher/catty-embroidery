@@ -2,6 +2,14 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~5 h | **Depends on**: US-401, US-402, US-407
 
+**Status**: Implemented and reviewed 2026-10-01, [PR #64](https://github.com/stoneacher/catty-embroidery/pull/64); in Codex review.
+- **Test-first.** The `[red]` commit `6d3af4f` had signature-only stubs, so the failures were behavioural: 17 package tests (25 issues) and 20 app tests.
+- **Mutation.** 13 mutants were killed and 1 was equivalent: 5 in the package and 8 in the app, plus 1 for the review fix.
+- **Exception: `PaletteInsetTests`.** They were written after the view agent's `bottomInset` and proved by mutation alone, not by a red run.
+- **Review.** `swift-code-reviewer` found no blocker. Two findings were fixed: VoiceOver focus after dismissal, and the palette flag across a container swap. The rest is recorded in ADR-039's 2026-10-01 amendment.
+- **Decided by Sebastian at planning:** the selection is `List(selection:)`, an insert after a `loopEnd` lands after the loop, and Control and Data follow Catroid's order.
+- **Not verified:** iPhone landscape and a short iPad window (the simulator CLI cannot rotate), and everything VoiceOver. These go to the bundled M4 a11y pass.
+
 **Story**: As a user, I want to pick a brick from a palette and have it appear in my program, so I can build a design from nothing.
 
 This is the story that satisfies exit criterion 1's "with no bundled sample involved at any point". `swift-ui-design` pass before implementation.
@@ -27,15 +35,15 @@ This is the story that satisfies exit criterion 1's "with no bundled sample invo
 
 ## Acceptance criteria
 
-- [ ] A palette listing the curated brick set, grouped, each row showing the brick as it will appear. `BrickKind` drives it (US-401), so a new brick case cannot be silently missing.
-- [ ] Tapping a row applies `EditAction.insert` through the funnel and dismisses the palette.
-- [ ] **The insertion point is defined and stated**: after the current selection, or at the end when there is none — **and with a loop opener selected, *inside* the loop, immediately after the opener** (ADR-035). Otherwise a loop is unfillable by tap-to-add, which is the only add gesture this milestone has.
-- [ ] **Inserting a loop inserts two bricks** and the list shows both, correctly indented, immediately.
-- [ ] **The newly inserted brick is visible after insertion** — scrolled to, and not behind the sheet. This is the criterion the `.fraction` + safe-area-inset decision exists to satisfy, and the one most likely to be quietly failed.
-- [ ] `.loopEnd` is **not in the palette** (ADR-035).
-- [ ] Popover on regular, detented sheet on compact, from one call site; presentation state hoisted above `RootView`.
-- [ ] Palette rows are ≥ 44 pt, reflow at AX1, and each is a single VoiceOver element naming the brick and what it does.
-- [ ] **Story-specific definition of done**: screenshots on iPhone (sheet, at two detents) and iPad (popover), plus one showing a brick inserted inside a loop.
+- [x] A palette listing the curated brick set, grouped, each row showing the brick as it will appear. `BrickKind` drives it (US-401), so a new brick case cannot be silently missing.
+- [x] Tapping a row applies `EditAction.insert` through the funnel and dismisses the palette.
+- [x] **The insertion point is defined and stated**: after the current selection, or at the end when there is none — **and with a loop opener selected, *inside* the loop, immediately after the opener** (ADR-035). Otherwise a loop is unfillable by tap-to-add, which is the only add gesture this milestone has.
+- [x] **Inserting a loop inserts two bricks** and the list shows both, correctly indented, immediately.
+- [x] **The newly inserted brick is visible after insertion** — scrolled to, and not behind the sheet. This is the criterion the `.fraction` + safe-area-inset decision exists to satisfy, and the one most likely to be quietly failed.
+- [x] `.loopEnd` is **not in the palette** (ADR-035).
+- [x] Popover on regular, detented sheet on compact, from one call site; presentation state hoisted above `RootView`. *The landscape and short-window adaptation is unmeasured; see the Status.*
+- [x] Palette rows are ≥ 44 pt, reflow at AX1, and each is a single VoiceOver element naming the brick and what it does.
+- [x] **Story-specific definition of done**: screenshots on iPhone (sheet, at two detents) and iPad (popover), plus one showing a brick inserted inside a loop. *Done: `docs/screenshots/us-409/`. The two sheet detents, the last row scrolled above the sheet, the iPad popover, an insert inside a loop, and the palette and the empty state at AX1. VoiceOver single-element reading is asserted by `PalettePresentationTests` on the label. Spoken order and traits are left to the M4 a11y pass.*
 
 ## Test-first plan
 
