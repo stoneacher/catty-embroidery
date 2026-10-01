@@ -9,8 +9,10 @@ import AppKit
 let arguments = Array(CommandLine.arguments.dropFirst())
 let destination = URL(fileURLWithPath: arguments[0])
 let crop = NSRect(x: 0, y: 0, width: 1206, height: 1100)
-let tiles = arguments.dropFirst().compactMap { path -> NSImage? in
-    guard let frame = NSImage(contentsOfFile: path) else { return nil }
+// An unreadable path stops the tool rather than being skipped: a sheet that silently loses a frame
+// would still look like consecutive frames, and these sheets are evidence.
+let tiles = arguments.dropFirst().map { path -> NSImage in
+    guard let frame = NSImage(contentsOfFile: path) else { fatalError("cannot read frame \(path)") }
     let tile = NSImage(size: crop.size)
     tile.lockFocus()
     frame.draw(

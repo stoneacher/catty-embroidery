@@ -15,11 +15,13 @@ stage, its caption and the name field. None of these states can be seen in a sti
 
 `capture/` holds the tools that produced these sheets. They are not part of the app.
 
-1. Build the two tools into the output directory, where `capture.sh` looks for the extractor:
+1. Choose an output directory and the simulator, then build the two tools into it, where
+   `capture.sh` looks for the extractor:
+   `export OUT=<dir> SIM=<udid>; mkdir -p "$OUT"`, then
    `swiftc -O capture/frames.swift -o "$OUT/frames"` and `swiftc -O capture/tile.swift -o "$OUT/tile"`.
 2. On the simulator, open the stage for `Synthetic 50k`, play it to the end, and focus the name field.
 3. Raise the software keyboard with **⌘⌥K** in Simulator. A relaunch hides it again.
-4. Run `SIM=<udid> OUT=<dir> bash capture/capture.sh <name>`. It records dismiss → focus → dismiss and
+4. Run `bash capture/capture.sh <name>`. It records dismiss → focus → dismiss and
    extracts every frame.
 5. `simctl` writes a frame only when the screen changes, so a burst of closely spaced timestamps marks
    an animation. Tile that burst with `"$OUT/tile" sheet.png <frames…>`.
