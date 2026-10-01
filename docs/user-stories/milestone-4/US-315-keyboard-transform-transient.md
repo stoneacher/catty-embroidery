@@ -3,6 +3,8 @@
 **Epic**: E4 Stage & preview | **Estimate**: ~3 h ⏱ **timebox, not an estimate** | **Depends on**: US-409 (sequencing only)
 **Discovered**: 2026-09-17, US-313b device session (Sebastian, on the phone). **Scheduled into M4**: 2026-09-19.
 
+**Status**: In review — 2026-10-01, [PR #65](https://github.com/stoneacher/catty-embroidery/pull/65). **Reproduced on the simulator for the first time, diagnosed, and fixed within the timebox.** Cause: the hoop field and the design were two sibling `Canvas` views, and while the keyboard resized the stage SwiftUI presented them under different geometry. The fix draws the field in the stitch `Canvas`'s own pass. The device recordings (criterion 1) are still owed by Sebastian, before and after the fix. A second, unrelated defect found on the way became [US-322](../backlog.md).
+
 **Story**: As a user, I want the design and the hoop to stay locked together while the keyboard appears, so the design does not appear to jump outside the hoop.
 
 ⏱ **The diagnosis *is* the story.** Three hours buys the device recording and a verdict. If the verdict is "reproduced and understood, but the fix is large", the fix becomes a new story and this one closes on the diagnosis. That is the deliverable; a fix is the hoped-for bonus.
@@ -42,12 +44,12 @@ After that, the two remaining suspects:
 
 ## Acceptance criteria
 
-- [ ] **A device recording of both conditions** — focus the name field from a fresh fit, and after a zoom/pan. Owner: Sebastian; this cannot be done from here.
-- [ ] **An explicit outcome even if neither recording reproduces it.** "Not reproduced" is a permitted and useful result, and it ends the timebox: record the two conditions tried, the sampling rate, and a recommendation (close as not-reproducible, or keep open with the next condition named). Requiring a mismatch frame unconditionally would be unsatisfiable when the transient does not appear.
-- [ ] **A verdict on each of the two remaining suspects** — confirmed with evidence, refuted with a reason, or **explicitly recorded as not examined and why**. Those three are the permitted outcomes; "unexamined" is an outcome, not a gap, provided the timebox is what stopped it.
-- [ ] **If the palette reproduces it**, a simulator-reproducible case is captured — the artefact worth more than the fix, because it turns a device-only transient into something a test or a repeatable capture can watch.
-- [ ] If the cause is found **and** the fix is small, it ships with a test at whatever level the cause permits. If the fix is large, a new story is written with the diagnosis and this one closes.
-- [ ] Either way, ADR-028's transient-class note gains a dated line recording what this class has now cost: four defects, none visible to a still.
+- [ ] **A device recording of both conditions** — focus the name field from a fresh fit, and after a zoom/pan. Owner: Sebastian; this cannot be done from here. *Open. The simulator now reproduces the defect from a fresh fit (see the Outcome), so this recording confirms the fix on hardware rather than finding the bug. The zoomed condition rests on it entirely, because a scripted double tap did not land on the simulator.*
+- [x] **An explicit outcome even if neither recording reproduces it.** *Reproduced, so the "not reproduced" branch does not apply. The outcome is recorded below.*
+- [x] **A verdict on each of the two remaining suspects.** *Suspect 1 is confirmed, in a narrower form than stated. Suspect 2 is refuted, by reading and by measurement. See the Outcome.*
+- [x] **If the palette reproduces it**, a simulator-reproducible case is captured. *The premise was wrong: the palette never resizes the stage. The palette is presented from the script list's Add button, and on compact the stage is a separate pushed screen, so the two are never on screen together. `RootView.swift:43-45` also closes the palette on the one size-class swap that would put the stage on top. On iPad the palette is a popover over the script column. The **keyboard** reproduces it on the simulator instead, once the software keyboard is raised (⌘⌥K). The repeatable capture is in [`docs/screenshots/us-315/`](../../screenshots/us-315/), and the tools are in its `capture/` folder.*
+- [x] If the cause is found **and** the fix is small, it ships with a test at whatever level the cause permits. *Small (one pass instead of two views), so it ships. It has a unit test of the field geometry the merged pass draws (`StageFieldTests`, red first on behaviour) and the frame capture as evidence for the merge itself, which no unit test can see.*
+- [x] Either way, ADR-028's transient-class note gains a dated line. *Added 2026-10-01.*
 
 ## Test-first plan
 
@@ -55,6 +57,38 @@ Deliberately thin, and honestly so: **this story's first deliverable is evidence
 
 1. *(Only once the mechanism is known)* A test at the level the cause permits — a transform-equality assertion across a simulated resize if the cause is in `StagePreview`; a capture-based check if it is in the view layer.
 2. If the cause turns out to be the `SettlingProgress` staleness, a test that drives a **layout change** while a fit animation is in flight — the combination the comment's live argument (rebuild-on-`@State`-mutation) does not obviously cover, since a layout change is not a `manipulation` mutation.
+
+## Outcome — 2026-10-01
+
+**How it was reproduced.** The 50k fixture was run to the end on the iPhone 17 simulator, the software keyboard was raised, and the name field was dismissed, focused and dismissed again. `simctl io recordVideo` writes a frame only when the screen changes. Frames were extracted with AVFoundation and the bursts tiled. An uncommitted DEBUG probe logged every `Canvas` draw, with its `size`, transform and raster decision, plus each re-bake and each focus change. The two earlier simulator attempts missed it because the software keyboard was never raised: focusing with a hardware keyboard only hides the export row, and this design is width-bound, so the canvas never resizes.
+
+**What the probe showed.**
+- **Each `Canvas` is drawn once per layout change, not once per animation frame.** Over a whole keyboard animation there were one or two draws per `Canvas`, jumping straight between sizes: focus 309 → 172 pt, dismiss 172 → 309 → 257 pt. Everything on screen in between is SwiftUI presenting views that were already drawn.
+- **Dismiss is two layout changes about 50 ms apart**: the keyboard leaving, then the export row returning (`StageView`'s `!isNameFocused` branch).
+- **After every layout change the stitch `Canvas` alone gets a second draw.** The resize changes `BakeKey`, so `rebakeIfWorthwhile` writes `@State baked` 20–40 ms later, while the keyboard is still animating. The field `Canvas` is never redrawn.
+
+**What the frames showed** ([`docs/screenshots/us-315/`](../../screenshots/us-315/)). Mid-dismiss, the mat and the hoop field follow the stage's animating frame, while the design is already drawn at its final size. It spills past the mat, over the caption and the name label. With baking off it is also **off-centre**, which is the symptom first seen on the device.
+
+**Verdicts on the suspects.**
+1. **SwiftUI snapshotting and scaling a view whose frame is animating — confirmed, in a narrower form.** The `Canvas` views are not re-stroked during the animation, and the two **sibling** `Canvas` views are not presented under the same geometry while the frame animates. Discriminated with one build, switching variants at runtime:
+   - **Baking off:** still comes apart, in a different shape. So the mid-animation re-bake affects the separation but is not its cause.
+   - **`.drawingGroup()` on the pair:** still comes apart. So flattening them into one offscreen pass is not enough.
+   - **Field drawn inside the stitch `Canvas`:** locked in every sampled frame.
+
+   **What is not established** is *why* SwiftUI treats the two siblings differently. The fix does not depend on the answer: one pass cannot disagree with itself, whatever SwiftUI does with an animating frame.
+2. **The `SettlingProgress` shim's closure holding a stale value — refuted.**
+   - *By reading:* a layout change resizes the `GeometryReader`, which re-runs its content and rebuilds `viewport`, `fitted` and the shim's closure. `render` is computed once per evaluation (`StageCanvas.swift:106`), and every layer is handed that one value.
+   - *By measurement:* the probe shows the field and the stitches drawn with identical transforms, at identical sizes, in every logged draw.
+   - So "does a keyboard-driven layout change rebuild that closure?" — yes, through the `GeometryReader`, not through the `@State` setter the comment names.
+   - One staleness does exist and is not this bug: a fit animation in flight during a resize keeps its old endpoints, and snaps to the new fit at the end. All layers agree while it does.
+
+**The fix.** `StageField` (geometry as a value, plus a draw function) is drawn first in `CanvasStitchLayers`' own `Canvas` pass, at `transform.current` and at the `Canvas`'s own `size`. `StageFieldView` is gone. Consequences, recorded rather than hidden:
+- **The field is now the renderer's job.** `StagePreviewRenderer` says so: a future renderer must draw it, through `StageField.geometry`.
+- **`StageCanvas` keeps a `Color.clear` base under the renderer.** The old field view was what made the stage fill its slot whatever the renderer returned. Without it, the hosted tests' `EmptyView` renderer took every modifier with it, and six hosted wiring tests failed, proving the base load-bearing.
+- **The field is not baked.** It is three fills, and keeping it out of the raster leaves `BakeKey` unchanged.
+- **The needle is still a sibling layer**, as ADR-024 intends. It could in principle drift the same way, but it was not visible in any capture, because the needle is absent once a run has finished. That is recorded as unexamined.
+
+**Found on the way, and not this story's: [US-322](../backlog.md).** On iPhone 17 the stage's default layout measures a viewport of 370 × **256.83** pt, while the `Canvas` gets 370 × **257.0**. `compositingRaster`'s exact size comparison therefore never passes there. One full 50k run drew 251 of 251 frames on the full-stroke path and baked 51 times, discarding every bake.
 
 ## References
 

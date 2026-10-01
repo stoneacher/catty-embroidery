@@ -208,6 +208,45 @@ design call, so it gets a `swift-ui-design` look, and no test pins the symbol to
 
 ---
 
+## US-322 — The settled raster is never composited in the stage's default layout on iPhone 17
+
+**Found**: 2026-10-01, US-315's simulator probe. **Severity: performance, possibly large.** This
+cancels ADR-009's cache on the commonest screen and wastes the bake work on top.
+
+**What was measured.** On iPhone 17 (a 3× screen), with the export row showing:
+- The `GeometryReader` measures the stage viewport as **370 × 256.833…** pt.
+- The `Canvas` inside it is handed `size` **370 × 257.0**.
+- `CanvasStitchStroke.compositingRaster` (via `CanvasStitchLayers.matches`) compares the two for
+  exact equality, so the raster gate fails on **every** frame.
+- One full run of the 50k fixture: **251 of 251** stitch draws took the full-stroke path, and
+  `rebakeIfWorthwhile` baked **51 times**, every bake thrown away.
+- In the layout without the export row (309 pt, integral) the raster composites normally.
+
+That explains a curiosity in US-315's first probe pass: focusing the name field produced a re-bake
+with an unchanged viewport. It was the first frame in which the raster could be used at all.
+
+**Why it matters beyond this device.** Any layout whose `GeometryReader` height is not a whole
+number of pixels-per-point hits it, and Dynamic Type, the caption and the pinned rows make that
+common. ADR-029's device measurements may have been taken in a configuration that happened to be
+integral. If so, the numbers describe the cache working on a screen where, in practice, it rarely
+does. Worth re-checking against the US-309 capture notes before deciding priority.
+
+**What taking it would involve.**
+- Decide what the raster is keyed on:
+  - the `Canvas`'s own `size` (baking at the size the frame is drawn into), or
+  - a pixel-rounded viewport, or
+  - a tolerance in `matches` of less than one device pixel.
+
+  The first is the most honest, since the size check exists to stop a stretched blit. But `size`
+  is only known inside the `Canvas` closure, while the bake runs from `onChange`, so the key needs
+  a measured size.
+- A test first: `CanvasStitchStroke.compositingRaster` is already a pure function under
+  `CanvasStitchStrokeTests`, so a red case with a fractional viewport against a rounded `size` is
+  straightforward.
+- Then re-measure the 50k frame times on device (ADR-029's procedure) and record the difference.
+
+---
+
 ## Scheduled out of this file — the record, because the mechanism is the point
 
 Entries keep their ID when they are scheduled, so existing ADR and journal references keep
