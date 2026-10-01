@@ -8,9 +8,20 @@ import SwiftUI
 /// toolbar. That gives US-409's palette a defined place to present from — this view's toolbar,
 /// in both layouts.
 ///
-/// **Read-only, and deliberately so.** No row holds a control: rows are identified by index
-/// (ADR-034), which is safe only while nothing inside a row has state of its own. Reorder,
-/// delete, add and parameter editing are US-408…US-410.
+/// **Rows hold no control** (ADR-034): they are identified by index, which is safe only while
+/// nothing inside a row has state of its own. Since US-408 the list reorders and deletes —
+/// `.onMove`, `.onDelete` and each row's accessibility actions — and every one of them is an
+/// `EditAction` handed to `model.editor`, never a mutation (ADR-006 pattern 1). Add and
+/// parameter editing are US-409 and US-410.
+///
+/// **No drag needs `EditMode`**: a long press lifts the row (checked on an iOS 26.5 simulator
+/// build at planning, 2026-09-29 — **not** on iOS 17, for want of a runtime), so there is no
+/// Edit button and no mode. The drag preview is
+/// one row even when a loop moves as a block — the iOS 17 `List` path has no multi-row preview
+/// — and the body snaps in under its opener on the drop. **Nothing is `withAnimation`-ed**:
+/// rows are identified by index, so after a move every id is still present and only contents
+/// change, and after a delete the ids that vanish are the *last* ones — an animation would
+/// show the bottom rows leaving while a loop in the middle was the one deleted.
 ///
 /// It takes the model rather than the program, so that the body depends on `editor.program`
 /// and the selection's title alone. `RootView`'s own body reads the run — once per batch while
@@ -32,6 +43,11 @@ struct ScriptListView: View {
     let placement: Placement
 
     @Environment(\.locale) private var locale
+
+    /// The row VoiceOver is on, by index. Set after an accessibility move so focus follows the
+    /// moved brick: with index identity it would otherwise stay on the old index, which now
+    /// holds a different brick, and a second "Move Up" would move that one.
+    @AccessibilityFocusState private var focusedRow: Int?
 
     static var emptyStateTitle: String {
         String(localized: .scriptEmptyTitle)
@@ -58,14 +74,31 @@ struct ScriptListView: View {
                     Text(.scriptEmptyDescription)
                 }
             } else {
-                List(rows) { row in
-                    ScriptRowView(row: row)
-                        // Zero vertical insets so the nesting guides of adjacent rows meet into
-                        // one line; the row re-applies its own vertical padding inside.
-                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                        // The guides are the structure; a separator across them would cut every
-                        // loop body into rungs.
-                        .listRowSeparator(.hidden)
+                List {
+                    ForEach(rows) { row in
+                        ScriptRowView(row: row)
+                            // On the row's one accessibility element — `ScriptRowView` collapses
+                            // itself into one — so VoiceOver reaches them behind the rotor
+                            // (ADR-031): "rotate to Actions, then swipe".
+                            .accessibilityActions { actions(for: row) }
+                            .accessibilityFocused($focusedRow, equals: row.id)
+                            // `.onMove` has no reject hook, so refuse up front the drags `apply`
+                            // always rejects rather than spring the row back unexplained.
+                            .moveDisabled(row.isMoveDisabled)
+                            // Zero vertical insets so the nesting guides of adjacent rows meet
+                            // into one line; the row re-applies its own vertical padding inside.
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                            // The guides are the structure; a separator across them would cut
+                            // every loop body into rungs.
+                            .listRowSeparator(.hidden)
+                    }
+                    .onMove { source, toOffset in
+                        _ = model.editor.moveRows(fromOffsets: source, toOffset: toOffset)
+                    }
+                    // No confirmation, even for a whole loop (ADR-035): Undo is one tap away.
+                    .onDelete { offsets in
+                        _ = model.editor.deleteRows(atOffsets: offsets)
+                    }
                 }
                 .listStyle(.plain)
                 // The system's default minimum is taller than a one-line row, so the cell would
@@ -76,7 +109,35 @@ struct ScriptListView: View {
             }
         }
         .navigationTitle(Text(title))
+        // On the `Group`, outside the empty-state branch: after deleting the last brick, the
+        // empty state is exactly where Undo must still be.
         .toolbar {
+            // The bottom bar in both placements (decided 2026-09-29): the top bar holds the
+            // stage link on compact and gets US-409's Add. No ⌘Z here — US-411's `UndoManager`
+            // bridge owns the keyboard, and two registrations would undo twice.
+            ToolbarItemGroup(placement: .bottomBar) {
+                Button {
+                    model.editor.undo()
+                } label: {
+                    Label {
+                        Text(.scriptUndo)
+                    } icon: {
+                        Image(systemName: "arrow.uturn.backward")
+                    }
+                }
+                .disabled(!model.editor.canUndo)
+
+                Button {
+                    model.editor.redo()
+                } label: {
+                    Label {
+                        Text(.scriptRedo)
+                    } icon: {
+                        Image(systemName: "arrow.uturn.forward")
+                    }
+                }
+                .disabled(!model.editor.canRedo)
+            }
             if placement == .stack {
                 ToolbarItem(placement: .primaryAction) {
                     NavigationLink(value: StageDestination.stage) {
@@ -94,6 +155,48 @@ struct ScriptListView: View {
 }
 
 private extension ScriptListView {
+    /// The row's accessibility actions, each present only where it can succeed — the row
+    /// computes them (`BrickRowPresentation`), so a loop end offers Delete alone.
+    @ViewBuilder
+    func actions(for row: BrickRowPresentation) -> some View {
+        if let action = row.moveUp {
+            Button(.scriptActionMoveUp) { perform(action) }
+        }
+        if let action = row.moveDown {
+            Button(.scriptActionMoveDown) { perform(action) }
+        }
+        if let action = row.moveAboveLoop {
+            Button(.scriptActionMoveAboveLoop) { perform(action) }
+        }
+        if let action = row.moveBelowLoop {
+            Button(.scriptActionMoveBelowLoop) { perform(action) }
+        }
+        if let action = row.moveIntoLoopAbove {
+            Button(.scriptActionMoveIntoLoopAbove) { perform(action) }
+        }
+        if let action = row.moveIntoLoopBelow {
+            Button(.scriptActionMoveIntoLoopBelow) { perform(action) }
+        }
+        if let action = row.delete {
+            Button(.scriptActionDelete, role: .destructive) { perform(action) }
+        }
+    }
+
+    /// Applies an accessibility action and, for a move, puts VoiceOver on the moved brick.
+    ///
+    /// A `.move`'s destination is an insertion index into the list with the block removed, so
+    /// it is exactly the moved block's new first row. Set on the next turn, once the list holds
+    /// the new rows. No announcement: moving focus reads the brick's label, which is the
+    /// confirmation, and spoken announcements are US-411's.
+    func perform(_ action: EditAction) {
+        guard case .applied = model.editor.apply(action) else { return }
+        if case let .move(_, destination) = action {
+            Task { @MainActor in
+                focusedRow = destination
+            }
+        }
+    }
+
     var title: LocalizedStringResource {
         switch placement {
         case .stack: model.selection?.title ?? .scriptTitle

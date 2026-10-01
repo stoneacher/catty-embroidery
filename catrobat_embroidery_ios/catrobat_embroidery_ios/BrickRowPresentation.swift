@@ -13,7 +13,9 @@ import ProgramModel
 ///
 /// **Identity is the brick's index** (ADR-034). That is safe only while a row holds no
 /// interactive control; a control inside a row is the named symptom that forces an identity
-/// sidecar, and a reason to redesign the row rather than add the control quietly.
+/// sidecar, and a reason to redesign the row rather than add the control quietly. US-408's
+/// actions are not such a control: each is an `EditAction` computed from the program, held by
+/// value, and rebuilt with every row.
 ///
 /// Every sentence is a formatted String Catalog entry with the values interpolated into it —
 /// never concatenated — because word order differs by language. The seven unit-bearing labels
@@ -37,6 +39,25 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
     /// swatch never shows a colour the stitches will not have.
     let threadColor: ThreadColor?
 
+    // MARK: What the row can do (US-408)
+
+    /// Whether the row refuses a drag before it starts — `.moveDisabled`. `.onMove` has no
+    /// reject hook, so a refusal after the drop springs the row back with no explanation.
+    /// True for the two drags `apply` always rejects: a `loopEnd` (the loop moves from its
+    /// opener) and an opener that never closes (`.unbalancedPair`).
+    let isMoveDisabled: Bool
+    /// The accessibility actions, as the edits they make; `nil` where the action is not
+    /// offered, so no row advertises an action that always fails. Computed by the package
+    /// (`Script+ListEditing.swift`), never re-derived here. A `loopEnd` offers only `delete`
+    /// (decided 2026-09-29), which redirects to its opener.
+    let moveUp: EditAction?
+    let moveDown: EditAction?
+    let moveAboveLoop: EditAction?
+    let moveBelowLoop: EditAction?
+    let moveIntoLoopAbove: EditAction?
+    let moveIntoLoopBelow: EditAction?
+    let delete: EditAction?
+
     /// The rows for the program's first script, which is the only one M4 edits.
     ///
     /// Total: a program with no scene, object or script yields no rows rather than trapping.
@@ -46,6 +67,8 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
         }
         let depths = script.indentDepths
         let text = Sentence(locale: locale)
+        // The first script's address, matching the `guard` above.
+        let address = ScriptAddress()
 
         return script.bricks.enumerated().map { index, brick in
             let opener = script.matchingOpener(ofLoopEndAt: index)
@@ -57,7 +80,15 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
                 text: sentence,
                 accessibilityLabel: text.label(sentence, depth: depths[index]),
                 openerIndex: opener,
-                threadColor: threadColor(of: brick)
+                threadColor: threadColor(of: brick),
+                isMoveDisabled: brick.isLoopEnd || (brick.opensLoop && script.range(ofPairAt: index) == nil),
+                moveUp: script.moveUpAction(ofBrickAt: index, in: address),
+                moveDown: script.moveDownAction(ofBrickAt: index, in: address),
+                moveAboveLoop: script.moveAboveLoopAction(ofBrickAt: index, in: address),
+                moveBelowLoop: script.moveBelowLoopAction(ofBrickAt: index, in: address),
+                moveIntoLoopAbove: script.moveIntoLoopAboveAction(ofBrickAt: index, in: address),
+                moveIntoLoopBelow: script.moveIntoLoopBelowAction(ofBrickAt: index, in: address),
+                delete: script.deleteAction(atOffsets: [index], in: address)
             )
         }
     }

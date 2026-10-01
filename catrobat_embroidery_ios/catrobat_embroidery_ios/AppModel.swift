@@ -144,8 +144,8 @@ final class AppModel {
         runner.onRunDiscarded = { [weak self] in
             self?.exporter.discard()
         }
-        editor.onEditApplied = { [weak self] in
-            self?.editApplied()
+        editor.onProgramChanged = { [weak self] in
+            self?.programChanged()
         }
 
         // Launch selects the blank program, opening on its script (US-407) — see `.launch`.
@@ -154,11 +154,9 @@ final class AppModel {
         path = [.script]
     }
 
-    /// What an applied edit does to the rest of the window (ADR-038): the program is no longer
-    /// the sample it was loaded from, and the run on the stage no longer describes it.
-    ///
-    /// **`runner.reset()` and nothing else from `select(_:)`'s list**, and each omission is
-    /// deliberate:
+    /// What an edit, an undo or a redo (US-408) does to the window (ADR-038) — one handler, so
+    /// undoing to P after running Q cannot leave Q's `.dst` offered. **`runner.reset()` and
+    /// nothing else from `select(_:)`'s list**, and each omission is deliberate:
     ///
     /// - **No `interaction.followFit()`.** A new *design* arrives fitted; an edit to the design
     ///   on screen keeps the zoom the user chose. Re-fitting on every parameter nudge would be
@@ -174,7 +172,7 @@ final class AppModel {
     /// and needle, and fires `onRunDiscarded`, which deletes the prepared file. The file is the
     /// part that actually goes stale — the interpreter took the program by value (ADR-026's
     /// eager preparation is why a stale file would otherwise be offered).
-    private func editApplied() {
+    private func programChanged() {
         selection?.provenance = nil
         runner.reset()
         persistWorkingProgram()
@@ -289,7 +287,7 @@ final class AppModel {
     /// `private(set)` so every new selection goes through `select(_:)` and the
     /// generation can never be skipped — an assignment that bypassed it would
     /// reintroduce exactly the no-op this story exists to forbid. `restoreSavedProgram()` also
-    /// mints one; `editApplied()` only clears `provenance`.
+    /// mints one; `programChanged()` only clears `provenance`.
     private(set) var selection: ProgramSelection?
 
     /// The compact navigation stack's path.
@@ -343,7 +341,7 @@ final class AppModel {
     /// container after a horizontal size-class change (ADR-023), so on an iPad window
     /// resize they would wipe a design the user had just watched finish. The reset belongs
     /// with the selection's writers — `restoreSavedProgram()` skips it only because it runs
-    /// once, before anything can play — and `editApplied()` is the other thing that voids a run.
+    /// once, before anything can play — and `programChanged()` is the other thing that voids a run.
     func select(_ sample: SampleProgram) {
         selection = ProgramSelection(
             generation: nextGeneration, provenance: sample.id, title: sample.displayName

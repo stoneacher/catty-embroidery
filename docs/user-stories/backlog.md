@@ -195,6 +195,17 @@ The rule lives in `ExportViewModel`/`DesignNameField` (US-308, ADR-026). It need
 since the reason precedence is pinned there. Seeding a default name was the rejected alternative: it
 changes what an exported file is called.
 
+## US-321 — A loop's end row wears the Undo glyph
+
+**Found**: 2026-09-29, US-408's simulator pass (flagged by the `swift-ui-design` pass). US-407 gave `loopEnd`
+rows `arrow.uturn.backward`; US-408 put an Undo button in the bottom bar with the same symbol, a few
+centimetres below. A structural marker now reads as a command, and a user may tap it expecting an undo.
+- The row is not a control, so nothing breaks. The cost is legibility, which matters more to a child user.
+
+**What taking it would involve.** Pick a structural symbol for the end row, such as `return` or
+`arrow.turn.left.up`, in `ScriptRowView.symbol(for:)`. Re-take US-407's list screenshots. This is a
+design call, so it gets a `swift-ui-design` look, and no test pins the symbol today.
+
 ---
 
 ## Scheduled out of this file — the record, because the mechanism is the point
