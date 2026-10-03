@@ -785,6 +785,18 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - **Drag needs no `EditMode`.** Settled at planning by a scratch build (iOS 26.5 simulator, throwaway worktree): a long press lifts the row in a plain `List` + `ForEach.onMove`. **No iOS 17 runtime was installed**, so the deployment floor rests on the documented API (`onMove` is iOS 13+) and not on a build — recorded rather than assumed.
 - **The drag preview is one row while the model moves a block, and nothing is `withAnimation`-ed.** The iOS-17 `List` path has no multi-row preview (Catroid hides the body during the drag for the same reason). Rows are identified by index (ADR-034), so after a move every id is still present and only contents change, and after a delete the ids that vanish are the *last* ones — an explicit animation would show the bottom rows leaving while a loop in the middle was deleted. The story's "animate the result" is therefore not met as written; the honest version needs stable row identity, which ADR-034 declines for M4.
 
+**Amended 2026-10-03 (US-410), by Sebastian: a sixth verb, `declareVariable(name:script:)`.** US-410 found that from the blank program the variable menu is empty forever. It reads `Object.variables + Program.variables`, no verb above writes either, and `setVariable` at runtime creates only an interpreter entry. Two options were offered: declare on use, or a manage-variables affordance. **Declare on use was chosen**, as its own case rather than a side effect of `replaceBrick`:
+
+- **It appends `Variable(name:)` (value 0) to the object that owns `script`.** That is object scope, where the runtime also puts an undeclared name. All three script hops resolve, so a declaration aimed at a missing script is refused like any other addressed action. The rejection's `BrickAddress` carries index 0, because only the hop is reported.
+- **Its own case, not an extension of `replaceBrick`.** That verb stays a pure parameter edit, and "applied verbatim" stays true of it.
+- **It refuses two kinds of name:**
+  - A name that breaks a `VariableName` rule (`.invalidVariableName`). The rules are ADR-040's, and they are checked before the address, like `insert(.loopEnd, …)`.
+  - A name the object can already resolve, in its own scope or the project's (`.variableAlreadyDeclared`). This is where `Variable.swift`'s "uniqueness is enforced by the editor" is enforced. An object variable over a project one would silently re-point every existing reference in that object, so that is refused too.
+- **It touches no script, so balance holds by construction.** It is in `EditBalanceInvariantTests`' beside-an-imbalance list and `EditTotalityTests`' empty-program sweep. **It was deliberately not added to the random generator**: a sixth case reshuffles the seeded sequences, and one seed then missed an existing coverage floor. The property's evidence from US-402 is kept, not regenerated.
+- **The editor applies it under the session's coalescing key, together with the `replaceBrick` that uses the name.** The pair is one undo entry, so undo can never leave a brick naming a variable it has just un-declared. The editor declares only on an explicit Create or a menu choice, never per keystroke.
+- **M4 has no rename or delete of a declaration**, and an unused declaration persists. That is the cost of not building the manage-variables affordance. Recorded as a known gap, not a decision against it.
+- Amends US-402's "five cases" (now six; `EditAction`'s doc comment says so) and US-411's totality fixtures, which gain one non-no-op fixture: declare a fresh name on `.blank`.
+
 **Consequences**: `Script.validate()` becomes a **test oracle rather than a runtime repair** — no `EditAction` can produce an unbalanced script, so the app never calls it to fix anything. Exit criterion 4 asserts this as a property over generated action sequences. The one verb M4 deliberately does not have is **unwrap a loop, keeping its body**; it is a different action with a different undo story, no reference precedent, and no user asking for it yet.
 
 **ADR-036 … ADR-040 are reserved by the M4 plan** for the stories that discover them, listed here so the numbers are not taken by something else and so a story knows an ADR is expected of it: **ADR-036** undo (the package stack is the truth, `UndoManager` is a trigger surface re-synchronised after *every* history transition rather than only on load, and coalescing is a session and never a timer) — US-403, completed by US-411's bridge; **ADR-037** autosave (one version, refuse what you do not understand; the non-finite `Double` policy, which moves from M5 to M4 — *US-404's half written 2026-09-25*; and the **multi-window write policy**, since `WindowRootView` owns an `AppModel` per scene and a single fixed path therefore loses data — Codex round 1) — US-404/US-406; **ADR-038** an applied edit voids the run — US-405; **ADR-039** the editor's presentation (popover on regular, detented sheet on compact, parameters off-row) — US-407/US-409, after a `swift-ui-design` pass; **ADR-040** the curated thread palette — US-410.
@@ -916,3 +928,63 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - **VoiceOver focus moves to the inserted row only after the palette has gone** (`onDisappear`). A dismissal hands focus back to the presenting Add button and would overwrite an earlier focus. This is not verifiable without VoiceOver, so it belongs to the bundled M4 a11y pass, together with whether `List`'s selected state and the row's `.isSelected` trait are both spoken.
   - **A container swap to compact with the stage on top closes the palette** (`AppModel.layoutChanged(isCompact:)`, called from `RootView`'s `onChange(of: horizontalSizeClass)`). This is the one case `path`'s hook cannot see, since no path write happens. `onChange` re-fires on exactly that rebuild, which is why the run's reset was kept away from it and why this belongs on it.
 - **The reference's flow is only half ported, as the story said.** Catroid and Catty drop the brick mid-list and force a drag (`ScriptFragment.java:613-634`). SwiftUI cannot start a drag programmatically, so we insert at a defined point and scroll to it.
+
+**Amended 2026-10-03 (US-410): how the parameter editor opens, given that a tap selects.** US-409 settled that tapping a row selects it, so US-410 opens the editor from the selection, not from the row:
+- **An Edit button in the bottom bar**, beside Undo and Redo. It is enabled only while the selected brick has parameters. The top bar is already full on compact.
+- **An "Edit Parameters" accessibility action** on every row that has parameters. It selects the row, then opens the editor. VoiceOver users can reach it without selecting first.
+- **One presentation**, on the Edit button, with the palette's adaptation: a sheet where the width is compact, a popover elsewhere, detents `[.medium, .large]`. **Background interaction stays off**, unlike the palette's: a swipe-delete under the sheet would change which brick the open session's address names.
+- **No flag of its own.** The editor shows exactly while `EditorViewModel.parameterSession` is open, and that session is what US-403's `CoalescingKey` was minted for.
+  - Done and swipe-down write the binding, which ends the session.
+  - Every teardown that can bypass the binding ends the session itself: `load` (so `select` and restore), `undo`/`redo` (which already clear the selection), a path write that leaves the script, and `layoutChanged(isCompact:)`.
+  - **There is no `onDisappear` ending the session**: in the container swap, the old popover's disappearance would end the session the new container is still presenting.
+- **Opening the editor closes the palette**, so two popovers never compete for one toolbar.
+
+## ADR-040 — The parameter editor: editable where M4 has a control, a curated thread palette, names that cannot imitate the display, and live-apply that keeps no rejected prefix (2026-10-03)
+**Context**: US-410 builds the first editor for brick parameters. Three things constrain it:
+- **The model already holds formula trees that M4 has no editor for.** Octagon Rosette has 2 `.binary` and 2 `.variable` parameters; the formula keyboard is M6's.
+- **DST carries no colour** (US-312).
+- **The editor is the first place a user can create a name.** US-407 handed on the two ways a name can imitate the row's display syntax: a quotation mark inside it, and a name spelled like a placeholder.
+
+**Decision** (Sebastian, 2026-10-03, US-410 planning, after `swift-architect` and `swift-ui-design` passes):
+- **Editable where M4 has a control; read-only where it does not.** The mapping is `ParameterEditorKind`:
+  - `.number` gets the number field and stepper. `.variable` gets the variable menu. A segmented switch moves between the two, one `replaceBrick` each way.
+  - **Every `.binary` and every `.unaryMinus` is shown and never written.** That includes `.unaryMinus(.number(5))`, because the pad writes `.number(-5)`, a different tree. Each shows a lock and a localised reason; a disabled field with no explanation reads as a bug.
+  - Opening and closing such a parameter leaves the program byte-identical and records no undo entry.
+  - Switching back to a number restores the number the slot held when the editor opened, or the kind's template default.
+- **Every parameter edit is built by `Brick.replacing(_:with:)`**, which rebuilds the case it matched. The result is always the same kind, so ADR-035's guard is a backstop the UI never reaches. A slot the brick lacks, or a value of the wrong shape, is `nil`, not coerced.
+- **The curated thread palette** (`ThreadSwatch`, 14 swatches), not the system `ColorPicker`, for three reasons:
+  - A swatch is a discrete edit, so there is nothing to coalesce.
+  - `ColorPicker` yields a `Color`, and the `Color`→display-P3→hex round-trip is lossy. It would feed ADR-015's parser strings it has never seen.
+  - DST carries no colour, so a fixed palette is the honest control for a display-only attribute.
+
+  Further rules:
+  - Hex values are spelled `#rrggbb` in lowercase and written verbatim.
+  - The palette includes the template default and every colour a shipped sample stores, so opening those bricks shows a selected swatch.
+  - Lookup is exact-spelling only: `#FF0000` is not `red`, so tapping the selected swatch can never rewrite a stored spelling.
+  - A stored colour that is not a swatch appears first as "Current Colour", selected and untouched.
+  - **Swatches are design data and never adapt to dark mode** (screenshot in the story). Selection shows as a checkmark plus a thicker ring and the `.isSelected` trait, never by colour alone. Each swatch speaks its localised name.
+- **Names cannot imitate the display — restrict the characters** (`VariableName`). Rejected alternatives:
+  - **Escaping:** depends on each locale's delimiters, and does not help with the placeholder.
+  - **Re-rendering placeholders:** would change US-407's rows for a problem only names cause.
+
+  The rules, checked in this order:
+  - not empty;
+  - no surrounding whitespace;
+  - no control characters;
+  - **no Unicode `Quotation_Mark` scalar anywhere**, which covers every locale's `formula.variable` delimiter (the apostrophe included);
+  - **no opening punctuation first**, so `(no variable)` cannot be spelled.
+
+  How the rules are enforced:
+  - The funnel validates exactly, without trimming. The field trims.
+  - `AppStringsTests` pins, for every shipped localisation, that `formula.variable` delimits with a quotation mark and the placeholder starts with opening punctuation. A translator's choice cannot quietly reopen the collision.
+  - **File names are not restricted.** A file literally named `(empty)` stays a known look-alike, because forbidding parentheses in file names would be hostile. The editor never writes an empty file name.
+- **Live-apply inside one session** (decided). Every valid change applies at once under the session's key. The whole session is one undo entry, and each change voids the run and autosaves (ADR-038; a save is about 0.2 ms, per ADR-037). Nothing is buffered, so a container swap loses nothing.
+  - **Variable names are the exception: they commit on Create or a menu choice, never per keystroke.** Under declare-on-use, typing "Side" live would declare "S", "Si" and "Sid".
+  - **A rejected number entry returns its slot to where the typing run began** (found on the simulator). Live-apply commits every prefix that parses, so typing `1e400` commits `1e40` on the way, and the rejection used to leave it there. The field now records an anchor when it gains focus (`beginNumberEntry(for:)`). A rejection restores the anchor, which nets the run to nothing within the session. The anchor is per typing run, so a value committed by an earlier run, or by the stepper, is what a later rejection returns to.
+- **The number field has its own spelling** (`NumberFieldText`), not `FormulaText`'s. The row prints U+2212 and rounds to six decimals. The field prints an ASCII minus and Swift's shortest round-tripping form, with the locale's separator, so opening the editor never rewrites a value. `NumberEntry` accepts the locale's separator *and* `.`; a comma outside a comma locale is malformed, not guessed.
+
+**Consequences**:
+- Every M2 parameter is either editable or explicitly locked, and the lock is the M6 formula editor's starting point, not a dead end.
+- A variable-driven design can be built from the blank program. Rename and delete of a declaration are known M4 gaps (ADR-035's 2026-10-03 amendment).
+- The palette is 14 colours, and anything else is reachable only from a file. That matches what DST can carry.
+
