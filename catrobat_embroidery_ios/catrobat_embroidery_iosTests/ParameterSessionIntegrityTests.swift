@@ -158,4 +158,20 @@ struct ParameterSessionIntegrityTests {
         bricks[0] = .moveNSteps(.variable("a\"b"))
         #expect(editor.program == Self.program(bricks, variables: [Variable(name: "a\"b")]))
     }
+
+    /// Codex round 1: the menu lists names exactly as declared, so choosing one must reference
+    /// exactly that one. Trimming first turned a loaded `" Side "` into a fresh `"Side"`
+    /// declaration. Trimming belongs to the Create path only.
+    @Test("choosing a declared name with surrounding spaces references it exactly")
+    func declaredNameIsNotTrimmed() {
+        let loaded = Self.program(variables: [Variable(name: " Side ", value: 7)])
+        let editor = EditorViewModel(program: loaded)
+        editor.beginParameterEdit(at: 0)
+
+        editor.useVariable(named: " Side ", for: .steps)
+
+        var bricks = Self.bricks
+        bricks[0] = .moveNSteps(.variable(" Side "))
+        #expect(editor.program == Self.program(bricks, variables: [Variable(name: " Side ", value: 7)]))
+    }
 }

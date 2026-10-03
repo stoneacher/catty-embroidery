@@ -44,6 +44,18 @@ struct VariableNameTests {
         #expect(VariableName.validate(name) == .failure(.controlCharacter))
     }
 
+    /// Codex round 1: invisible is a Unicode *property*, not a category. U+034F COMBINING
+    /// GRAPHEME JOINER and the variation selectors are `Mn`, so a category check passes them,
+    /// yet they are default-ignorable — rendered as nothing. `Default_Ignorable_Code_Point` is
+    /// the rule; one consequence, accepted, is that an emoji's U+FE0F presentation selector is
+    /// refused too.
+    @Test("a default-ignorable scalar outside Cf is refused", arguments: [
+        "\u{034F}(no variable)", "Si\u{034F}de", "x\u{FE0F}", "\u{FE00}(empty)", "a\u{E0100}"
+    ])
+    func defaultIgnorable(name: String) {
+        #expect(VariableName.validate(name) == .failure(.controlCharacter))
+    }
+
     @Test("a control character is refused", arguments: ["Si\u{0}de", "Si\u{7}de", "a\nb"])
     func controlCharacter(name: String) {
         #expect(VariableName.validate(name) == .failure(.controlCharacter))
