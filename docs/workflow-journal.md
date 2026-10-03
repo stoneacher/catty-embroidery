@@ -2741,3 +2741,14 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Tooling:**
   - `simctl` "failed preflight checks" again; uninstall and rebuild fixed it, as the memory note says.
   - The automation `tap` and `touch` do not open a SwiftUI `Picker(.menu)`. That screenshot is left to the manual pass.
+
+## 2026-10-03 (US-410, review and Codex rounds 1–3) — flat Medium, one family, escalated
+
+- **History:** round 1 Medium (2 findings), round 2 Medium (3), round 3 Medium (1). All 6 were valid and none was rejected; every round changed code, and each fix was written red first. Each verification round confirmed the previous fixes.
+- **The findings share one family: free-text entry under live-apply.**
+  - Round 1: the menu path trimmed a declared name, and a property-based invisibility rule had been written as a category check.
+  - Round 2: one method served both the menu and Create, so it inferred the origin from the text. File names were trimmed although ADR-040 calls them unrestricted.
+  - Round 3: backspacing a file name to blank left a committed prefix. That is the `1e400` defect again, on the other free-text slot.
+  - The pattern is US-207's: each fix to the text-entry surface exposes the next edge of the same surface. **The number-field anchor should have been generalised to every live free-text slot when it was first written**, not one slot at a time.
+- **The two reviewers again divided the work by kind.** `swift-code-reviewer` found the state and lifecycle defects: the session surviving a row-moving edit, stale `@State`, the stepper anchor, and the mutants. Codex found every Unicode and text-normalisation edge. Neither found the other's.
+- **Escalated to Sebastian at three flat rounds, as the rule says**, rather than running round 4 automatically. The round-3 fix is unverified by Codex.
