@@ -11,14 +11,16 @@ struct ParameterSession: Equatable {
     let address: BrickAddress
     let key: CoalescingKey
     let opening: Brick
-    /// What a rejected number entry returns its slot to (`beginNumberEntry(for:)`).
-    var numberAnchor: NumberAnchor?
+    /// What a refused entry — a rejected number, a blank file name — returns its slot to
+    /// (`beginNumberEntry(for:)`, `beginFileNameEntry()`).
+    var entryAnchor: EntryAnchor?
 }
 
-/// A slot's literal as it stood when the number field started a typing run.
-struct NumberAnchor: Equatable {
+/// A slot's value as it stood when a text field started a typing run. Live-apply commits every
+/// prefix that is valid, so a run that ends refused would otherwise leave the last one behind.
+struct EntryAnchor: Equatable {
     let slot: ParameterSlot
-    let value: Double
+    let value: ParameterValue
 }
 
 /// The parameter editor's edits (US-410). Every one goes through `apply(_:coalescing:)` with the
@@ -81,8 +83,8 @@ extension EditorViewModel {
             // Live-apply committed every prefix that parsed on the way here — typing `1e400`
             // commits `1e40` — so a rejection puts the slot back where the typing run began.
             // Within the session that nets the run to nothing (found on the simulator).
-            if let anchor = session.numberAnchor, anchor.slot == slot {
-                setParameter(slot, to: .formula(.number(anchor.value)))
+            if let anchor = session.entryAnchor, anchor.slot == slot {
+                setParameter(slot, to: anchor.value)
             }
             return error
         }
@@ -97,7 +99,7 @@ extension EditorViewModel {
         setParameter(slot, to: .formula(.number(stepped)))
         // A tap is a committed value, so a later rejected entry returns here rather than
         // silently discarding the taps. Only an anchor this slot already holds moves.
-        if parameterSession?.numberAnchor?.slot == slot {
+        if parameterSession?.entryAnchor?.slot == slot {
             beginNumberEntry(for: slot)
         }
     }
@@ -157,9 +159,16 @@ extension EditorViewModel {
     /// `writeEmbroideryToFile`'s name, **exactly as typed** — file names are not restricted
     /// (ADR-040), and trimming would silently rewrite a loaded `" report "` at the first keystroke
     /// (Codex round 2). Only an empty or blank name is never written: the brick keeps the one it
-    /// had, so the row never shows the `(empty)` placeholder because of this editor.
+    /// had, so the row never shows the `(empty)` placeholder because of this editor — and it is
+    /// put back where the typing run began, because backspacing `"old"` to nothing live-commits
+    /// `"ol"` and `"o"` on the way (Codex round 3).
     func setFileName(_ text: String) {
-        guard text.contains(where: { !$0.isWhitespace }) else { return }
+        guard text.contains(where: { !$0.isWhitespace }) else {
+            if let anchor = parameterSession?.entryAnchor, anchor.slot == .fileName {
+                setParameter(.fileName, to: anchor.value)
+            }
+            return
+        }
         setParameter(.fileName, to: .fileName(text))
     }
 

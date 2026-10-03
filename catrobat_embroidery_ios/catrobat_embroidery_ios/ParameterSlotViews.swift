@@ -254,6 +254,7 @@ struct VariableChooser: View {
 struct FileNameField: View {
     let editor: EditorViewModel
     @State private var name: String
+    @FocusState private var isFocused: Bool
 
     init(editor: EditorViewModel, initialName: String) {
         self.editor = editor
@@ -271,6 +272,17 @@ struct FileNameField: View {
         .textInputAutocapitalization(.never)
         .submitLabel(.done)
         .frame(minHeight: RunControl.minimumTouchTarget)
+        .focused($isFocused)
+        .onChange(of: isFocused) { _, focused in
+            if focused {
+                editor.beginFileNameEntry()
+            } else if !name.contains(where: { !$0.isWhitespace }) {
+                // Leaving a blank field shows the name the brick actually holds.
+                if case let .fileName(stored) = editor.editedBrick?.parameters.first?.value {
+                    name = stored
+                }
+            }
+        }
         .onChange(of: name) { _, newName in
             editor.setFileName(newName)
         }

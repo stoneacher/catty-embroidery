@@ -191,12 +191,19 @@ final class EditorViewModel {
         guard var session = parameterSession,
               case let .formula(.number(value)) = editedBrick?.parameters.first(where: { $0.slot == slot })?.value
         else { return }
-        session.numberAnchor = NumberAnchor(slot: slot, value: value)
+        session.entryAnchor = EntryAnchor(slot: slot, value: .formula(.number(value)))
         parameterSession = session
     }
 
-    /// The file-name field gained focus (Codex round 3).
-    func beginFileNameEntry() {}
+    /// The file-name field gained focus: record the name as the anchor a blank entry returns to
+    /// (Codex round 3 — the number field's rule, for the other free-text slot).
+    func beginFileNameEntry() {
+        guard var session = parameterSession,
+              let value = editedBrick?.parameters.first(where: { $0.slot == .fileName })?.value
+        else { return }
+        session.entryAnchor = EntryAnchor(slot: .fileName, value: value)
+        parameterSession = session
+    }
 
     /// Closes the session: one undo entry for everything it changed. Idempotent, and safe to call
     /// from every teardown path — `UndoStack.endEdit(_:)` ignores a key that is not open.
