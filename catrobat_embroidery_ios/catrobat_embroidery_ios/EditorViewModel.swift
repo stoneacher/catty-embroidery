@@ -1,4 +1,5 @@
 import EditorCore
+import Foundation
 import Observation
 import ProgramModel
 
@@ -47,8 +48,15 @@ final class EditorViewModel {
     /// same mistake one layer up.
     @ObservationIgnored var onProgramChanged: (() -> Void)?
 
-    init(program: Program = .blank) {
+    /// The open parameter editor's session (US-410).
+    private(set) var parameterSession: ParameterSession?
+
+    /// The locale's decimal separator, which the number field accepts beside `.` (US-410).
+    let decimalSeparator: String
+
+    init(program: Program = .blank, decimalSeparator: String = Locale.current.decimalSeparator ?? ".") {
         undoStack = UndoStack(program: program)
+        self.decimalSeparator = decimalSeparator
     }
 
     /// Applies `action` to the working program, recording it for undo.
