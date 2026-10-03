@@ -180,6 +180,17 @@ final class EditorViewModel {
         return true
     }
 
+    /// The number field gained focus: record the slot's literal as the anchor a rejected entry
+    /// returns to. A slot holding anything but a literal records nothing — the field is not
+    /// showing then.
+    func beginNumberEntry(for slot: ParameterSlot) {
+        guard var session = parameterSession,
+              case let .formula(.number(value)) = editedBrick?.parameters.first(where: { $0.slot == slot })?.value
+        else { return }
+        session.numberAnchor = NumberAnchor(slot: slot, value: value)
+        parameterSession = session
+    }
+
     /// Closes the session: one undo entry for everything it changed. Idempotent, and safe to call
     /// from every teardown path — `UndoStack.endEdit(_:)` ignores a key that is not open.
     func endParameterEdit() {

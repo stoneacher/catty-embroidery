@@ -13,6 +13,7 @@ struct FormulaSlotEditor: View {
     @State private var text = ""
     @State private var problem: FormulaLiteralError?
     @State private var isNaming = false
+    @FocusState private var isFocused: Bool
 
     @Environment(\.locale) private var locale
 
@@ -84,6 +85,19 @@ struct FormulaSlotEditor: View {
             .autocorrectionDisabled()
             .monospacedDigit()
             .frame(minHeight: RunControl.minimumTouchTarget)
+            // A `Form` row's `TextField` label is not used as its accessibility label — the
+            // simulator's snapshot showed the field unlabelled — so it is stated outright.
+            .accessibilityLabel(Text(ParameterEditorText.title(of: slot, locale: locale)))
+            .focused($isFocused)
+            .onChange(of: isFocused) { _, focused in
+                if focused {
+                    // A typing run starts: a rejected entry will return the slot here.
+                    editor.beginNumberEntry(for: slot)
+                } else if problem != nil {
+                    // Leaving a rejected entry shows the value the brick actually holds.
+                    syncText()
+                }
+            }
             .onChange(of: text) { _, newText in
                 let rejected = editor.enterNumber(newText, for: slot)
                 if rejected != problem {

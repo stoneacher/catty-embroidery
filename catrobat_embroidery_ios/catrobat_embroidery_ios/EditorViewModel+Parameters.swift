@@ -11,6 +11,14 @@ struct ParameterSession: Equatable {
     let address: BrickAddress
     let key: CoalescingKey
     let opening: Brick
+    /// What a rejected number entry returns its slot to (`beginNumberEntry(for:)`).
+    var numberAnchor: NumberAnchor?
+}
+
+/// A slot's literal as it stood when the number field started a typing run.
+struct NumberAnchor: Equatable {
+    let slot: ParameterSlot
+    let value: Double
 }
 
 /// The parameter editor's edits (US-410). Every one goes through `apply(_:coalescing:)` with the
@@ -60,19 +68,25 @@ extension EditorViewModel {
 
     /// The number field's text: parsed for the locale and committed, or the reason it was not.
     /// `nil` means committed — or, with no session, that there was nothing to commit to.
+    ///
+    /// A rejection returns the slot to the anchor `beginNumberEntry(for:)` recorded, so the
+    /// brick never keeps a value the user typed past.
     func enterNumber(_ text: String, for slot: ParameterSlot) -> FormulaLiteralError? {
         switch NumberEntry.parse(text, decimalSeparator: decimalSeparator) {
         case let .success(formula):
             setParameter(slot, to: .formula(formula))
             return nil
         case let .failure(error):
-            return parameterSession == nil ? nil : error
+            guard let session = parameterSession else { return nil }
+            // Live-apply committed every prefix that parsed on the way here — typing `1e400`
+            // commits `1e40` — so a rejection puts the slot back where the typing run began.
+            // Within the session that nets the run to nothing (found on the simulator).
+            if let anchor = session.numberAnchor, anchor.slot == slot {
+                setParameter(slot, to: .formula(.number(anchor.value)))
+            }
+            return error
         }
     }
-
-    /// The number field gained focus: remember the slot's value as the anchor a rejected entry
-    /// returns to.
-    func beginNumberEntry(for slot: ParameterSlot) {}
 
     /// The stepper. Only a literal steps, and only to a finite value — a value the document can
     /// save (ADR-037).
