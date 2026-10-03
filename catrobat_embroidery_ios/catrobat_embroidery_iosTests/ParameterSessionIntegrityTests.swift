@@ -284,4 +284,3 @@ struct ParameterSessionIntegrityTests {
         #expect(editor.program == expected)
     }
 }
-
