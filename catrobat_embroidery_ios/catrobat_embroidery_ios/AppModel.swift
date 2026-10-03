@@ -305,9 +305,11 @@ final class AppModel {
     var path: [StageDestination] = [] {
         didSet {
             // On compact the stage link stays tappable under a sheet that allows background
-            // interaction (US-409). Pushing the stage must not carry the palette onto it.
+            // interaction (US-409). Pushing the stage must not carry the palette onto it — nor the
+            // parameter editor's session (US-410).
             if path.last != .script {
                 palette.isPresented = false
+                editor.endParameterEdit()
             }
         }
     }

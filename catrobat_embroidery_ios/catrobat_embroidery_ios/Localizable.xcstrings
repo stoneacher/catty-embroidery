@@ -1009,6 +1009,426 @@
         }
       }
     },
+    "parameter.editor.action.edit": {
+      "comment": "VoiceOver action on a brick row. Selects the brick and opens the editor for its numbers, variable, colour or file name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Parameters"
+          }
+        }
+      }
+    },
+    "parameter.editor.done": {
+      "comment": "Closes the brick editor. Changes are already applied; this only closes it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "parameter.editor.edit": {
+      "comment": "Toolbar button under the brick list. Opens the editor for the selected brick's numbers, variable, colour or file name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        }
+      }
+    },
+    "parameter.editor.title": {
+      "comment": "Title of the sheet or popover that edits one brick's values.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Brick"
+          }
+        }
+      }
+    },
+    "parameter.literal.error.empty": {
+      "comment": "Shown under the number field when it is empty. Nothing is changed until a number is entered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a number."
+          }
+        }
+      }
+    },
+    "parameter.literal.error.malformed": {
+      "comment": "Shown under the number field when the text is not a number. Nothing is changed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That isn't a number. Use digits, an optional minus sign and one decimal separator."
+          }
+        }
+      }
+    },
+    "parameter.literal.error.too.large": {
+      "comment": "Shown under the number field when the number is too large to be stored. Nothing is changed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That number is too large to save."
+          }
+        }
+      }
+    },
+    "parameter.name.error.bracket": {
+      "comment": "Shown under the variable-name field. Placeholders such as \"(no variable)\" start with a bracket, so a name may not.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A name can't start with a bracket."
+          }
+        }
+      }
+    },
+    "parameter.name.error.control": {
+      "comment": "Shown under the variable-name field when it contains a line break or another invisible control character.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A name can't contain line breaks."
+          }
+        }
+      }
+    },
+    "parameter.name.error.empty": {
+      "comment": "Shown under the variable-name field when it is empty.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a name for the variable."
+          }
+        }
+      }
+    },
+    "parameter.name.error.quote": {
+      "comment": "Shown under the variable-name field. Variable names are shown inside quotation marks, so a name containing one would be misread.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A name can't contain quotation marks."
+          }
+        }
+      }
+    },
+    "parameter.name.error.whitespace": {
+      "comment": "Shown under the variable-name field.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A name can't start or end with a space."
+          }
+        }
+      }
+    },
+    "parameter.name.prompt": {
+      "comment": "Placeholder in the text field where a variable's name is typed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable name"
+          }
+        }
+      }
+    },
+    "parameter.readonly.binary": {
+      "comment": "Explains why a value cannot be edited: it is a formula with an operator such as + or ÷, which a later version of the app will be able to edit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This value is a calculation. Calculations can't be edited yet, so it is kept exactly as it is."
+          }
+        }
+      }
+    },
+    "parameter.readonly.negation": {
+      "comment": "Explains why a value cannot be edited: it is a formula with a minus sign in front, which a later version of the app will be able to edit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This value is a negated formula. It can't be edited yet, so it is kept exactly as it is."
+          }
+        }
+      }
+    },
+    "parameter.slot.degrees": {
+      "comment": "Label of the number field for an angle in degrees.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Degrees"
+          }
+        }
+      }
+    },
+    "parameter.slot.file": {
+      "comment": "Label of the field for the name of the embroidery file a brick writes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File Name"
+          }
+        }
+      }
+    },
+    "parameter.slot.length": {
+      "comment": "Label of the number field for the length of a stitch.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length"
+          }
+        }
+      }
+    },
+    "parameter.slot.seconds": {
+      "comment": "Label of the number field for a waiting time in seconds.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seconds"
+          }
+        }
+      }
+    },
+    "parameter.slot.steps": {
+      "comment": "Label of the number field for how many steps the needle moves.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steps"
+          }
+        }
+      }
+    },
+    "parameter.slot.thread": {
+      "comment": "Heading above the grid of embroidery thread colours.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thread Colour"
+          }
+        }
+      }
+    },
+    "parameter.slot.times": {
+      "comment": "Label of the number field for how many times a loop repeats.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Times"
+          }
+        }
+      }
+    },
+    "parameter.slot.value": {
+      "comment": "Label of the number field for the value a variable is set to or changed by.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Value"
+          }
+        }
+      }
+    },
+    "parameter.slot.variable": {
+      "comment": "Label of the field naming which variable a brick sets or changes.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable"
+          }
+        }
+      }
+    },
+    "parameter.slot.width": {
+      "comment": "Label of the number field for the width of a zigzag stitch.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Width"
+          }
+        }
+      }
+    },
+    "parameter.slot.x": {
+      "comment": "Label of the number field for the horizontal position. Usually kept as the letter X.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "X"
+          }
+        }
+      }
+    },
+    "parameter.slot.y": {
+      "comment": "Label of the number field for the vertical position. Usually kept as the letter Y.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Y"
+          }
+        }
+      }
+    },
+    "parameter.source.number": {
+      "comment": "Segment of a two-way switch: the value is a number typed in.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Number"
+          }
+        }
+      }
+    },
+    "parameter.source.variable": {
+      "comment": "Segment of a two-way switch: the value is read from a variable.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Variable"
+          }
+        }
+      }
+    },
+    "parameter.thread.current": {
+      "comment": "Accessibility name of the extra swatch showing a thread colour that is not one of the palette's colours.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Colour"
+          }
+        }
+      }
+    },
+    "parameter.variable.create": {
+      "comment": "Button that creates the variable named in the text field and uses it in this brick.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create"
+          }
+        }
+      }
+    },
+    "parameter.variable.new": {
+      "comment": "Menu item and button that start naming a new variable.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Variable…"
+          }
+        }
+      }
+    },
+    "parameter.variable.none": {
+      "comment": "Shown when the program has no variables to choose from.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No variables yet. Create one to use it here."
+          }
+        }
+      }
+    },
+    "parameter.variable.section.object": {
+      "comment": "Heading of the variables that belong to the object being programmed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Object"
+          }
+        }
+      }
+    },
+    "parameter.variable.section.project": {
+      "comment": "Heading of the variables shared by every object in the program.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All Objects"
+          }
+        }
+      }
+    },
     "program.title.named": {
       "comment": "The stage's title for a design reopened from the last session. %@ is the name the design was saved under, exactly as the user or the sample gave it. Do not translate: keep %@ alone, with nothing around it.",
       "extractionState": "manual",
@@ -1903,6 +2323,174 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stage"
+          }
+        }
+      }
+    },
+    "thread.color.amber": {
+      "comment": "Embroidery thread colour name: a warm golden yellow-orange.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amber"
+          }
+        }
+      }
+    },
+    "thread.color.black": {
+      "comment": "Embroidery thread colour name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Black"
+          }
+        }
+      }
+    },
+    "thread.color.brown": {
+      "comment": "Embroidery thread colour name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brown"
+          }
+        }
+      }
+    },
+    "thread.color.green": {
+      "comment": "Embroidery thread colour name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Green"
+          }
+        }
+      }
+    },
+    "thread.color.grey": {
+      "comment": "Embroidery thread colour name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grey"
+          }
+        }
+      }
+    },
+    "thread.color.navy": {
+      "comment": "Embroidery thread colour name: a very dark blue.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Navy"
+          }
+        }
+      }
+    },
+    "thread.color.orange": {
+      "comment": "Embroidery thread colour name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
+        }
+      }
+    },
+    "thread.color.pink": {
+      "comment": "Embroidery thread colour name: a strong magenta pink.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pink"
+          }
+        }
+      }
+    },
+    "thread.color.purple": {
+      "comment": "Embroidery thread colour name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purple"
+          }
+        }
+      }
+    },
+    "thread.color.red": {
+      "comment": "Embroidery thread colour name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red"
+          }
+        }
+      }
+    },
+    "thread.color.royal.blue": {
+      "comment": "Embroidery thread colour name: a bright, deep blue.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Royal Blue"
+          }
+        }
+      }
+    },
+    "thread.color.teal": {
+      "comment": "Embroidery thread colour name: a blue-green.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teal"
+          }
+        }
+      }
+    },
+    "thread.color.white": {
+      "comment": "Embroidery thread colour name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "White"
+          }
+        }
+      }
+    },
+    "thread.color.yellow": {
+      "comment": "Embroidery thread colour name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yellow"
           }
         }
       }

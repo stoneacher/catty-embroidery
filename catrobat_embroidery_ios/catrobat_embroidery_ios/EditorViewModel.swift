@@ -15,8 +15,8 @@ import ProgramModel
 /// and an editor held inside one would lose the user's work on an iPad resize.
 ///
 /// Three doors change the program, and all three announce through `onProgramChanged`: `apply`,
-/// and since US-408 the toolbar's `undo()` and `redo()`. US-410 adds the coalescing sessions
-/// and US-411 the `UndoManager` bridge, both routing through the same doors.
+/// and since US-408 the toolbar's `undo()` and `redo()`. US-410's parameter sessions pass a
+/// coalescing key through `apply`, and US-411 adds the `UndoManager` bridge on the same doors.
 @MainActor
 @Observable
 final class EditorViewModel {
@@ -48,7 +48,11 @@ final class EditorViewModel {
     /// same mistake one layer up.
     @ObservationIgnored var onProgramChanged: (() -> Void)?
 
-    /// The open parameter editor's session (US-410).
+    /// The open parameter editor's session (US-410), and so whether the editor is showing.
+    ///
+    /// Opened by `beginParameterEdit(at:)` and closed by `endParameterEdit()` and by every
+    /// teardown path: `load`, `undo` and `redo`. Undo and redo end it for the reason they clear
+    /// the selection — the address may now name a different brick.
     private(set) var parameterSession: ParameterSession?
 
     /// The locale's decimal separator, which the number field accepts beside `.` (US-410).
@@ -63,10 +67,13 @@ final class EditorViewModel {
     ///
     /// Returns the result rather than a `Bool` so a caller can say *why* an edit was refused
     /// — the reason ADR-033 made `apply` total and non-throwing in the first place.
+    ///
+    /// `key` folds the edit into an open parameter session (US-410, ADR-036); only the session's
+    /// own methods pass one.
     @discardableResult
-    func apply(_ action: EditAction) -> EditResult {
+    func apply(_ action: EditAction, coalescing key: CoalescingKey? = nil) -> EditResult {
         let before = undoStack.current
-        let result = undoStack.apply(action)
+        let result = undoStack.apply(action, coalescing: key)
         if case .applied = result, undoStack.current != before {
             if action.canMoveRows {
                 selectedBrickIndex = nil
@@ -102,6 +109,7 @@ final class EditorViewModel {
     @discardableResult
     func undo() -> Bool {
         guard undoStack.undo() != nil else { return false }
+        endParameterEdit()
         selectedBrickIndex = nil
         onProgramChanged?()
         return true
@@ -112,6 +120,7 @@ final class EditorViewModel {
     @discardableResult
     func redo() -> Bool {
         guard undoStack.redo() != nil else { return false }
+        endParameterEdit()
         selectedBrickIndex = nil
         onProgramChanged?()
         return true
@@ -151,6 +160,34 @@ final class EditorViewModel {
         return address.brickIndex
     }
 
+    // MARK: The parameter session (US-410)
+
+    /// Opens the parameter editor's session on the brick at `index` in the first script, and
+    /// selects it. `false`, opening nothing, for a brick with no parameters or no brick.
+    ///
+    /// A session already open is ended first, so its entry is sealed before the new key exists.
+    @discardableResult
+    func beginParameterEdit(at index: Int) -> Bool {
+        guard let bricks = program.scenes.first?.objects.first?.scripts.first?.bricks,
+              bricks.indices.contains(index), !bricks[index].parameters.isEmpty
+        else { return false }
+        endParameterEdit()
+        let address = BrickAddress(brickIndex: index)
+        parameterSession = ParameterSession(
+            address: address, key: undoStack.beginEdit(of: address), opening: bricks[index]
+        )
+        selectedBrickIndex = index
+        return true
+    }
+
+    /// Closes the session: one undo entry for everything it changed. Idempotent, and safe to call
+    /// from every teardown path — `UndoStack.endEdit(_:)` ignores a key that is not open.
+    func endParameterEdit() {
+        guard let session = parameterSession else { return }
+        undoStack.endEdit(session.key)
+        parameterSession = nil
+    }
+
     // MARK: The list's gestures (US-408)
 
     /// The list's `.onMove`, converted by `Script.moveAction(fromOffsets:toOffset:in:)` and then
@@ -184,7 +221,10 @@ final class EditorViewModel {
     /// session. Announces nothing: a load is not an edit, and its caller already decides what
     /// happens to the run.
     func load(_ program: Program) {
+        // `reset(to:)` already closes the stack's session; the view model's copy goes too, so a
+        // late write from the torn-down editor finds no session to write through (US-410).
         undoStack.reset(to: program)
+        parameterSession = nil
         selectedBrickIndex = nil
     }
 }
