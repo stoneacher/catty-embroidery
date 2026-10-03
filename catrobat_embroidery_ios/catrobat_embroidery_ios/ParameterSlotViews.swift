@@ -98,6 +98,9 @@ struct FormulaSlotEditor: View {
                     syncText()
                 }
             }
+            // Also fires for `syncText`'s own writes — on appear, after a stepper tap, on blur.
+            // Harmless only because `NumberFieldText` round-trips exactly (`NumberFieldTextTests`):
+            // the re-parse yields the stored value, and the stack drops an unchanged edit.
             .onChange(of: text) { _, newText in
                 let rejected = editor.enterNumber(newText, for: slot)
                 if rejected != problem {
@@ -158,9 +161,13 @@ struct VariableChooser: View {
     }
 
     private var current: String? {
-        switch editor.editedBrick?.parameters.first(where: { $0.slot == slot })?.value {
-        case let .formula(.variable(name)), let .variableName(name): name
-        default: nil
+        guard let value = editor.editedBrick?.parameters.first(where: { $0.slot == slot })?.value else {
+            return nil
+        }
+        // Exhaustive, so a new value shape is a decision here (the repo's no-`default:` rule).
+        switch value {
+        case let .formula(.variable(name)), let .variableName(name): return name
+        case .formula(.number), .formula(.binary), .formula(.unaryMinus), .threadColor, .fileName: return nil
         }
     }
 
@@ -257,6 +264,9 @@ struct FileNameField: View {
         TextField(text: $name) {
             Text(.parameterSlotFile)
         }
+        // Stated outright, as on the other two fields: a `Form` row's `TextField` label is not
+        // its accessibility label (`swift-code-reviewer`, US-410).
+        .accessibilityLabel(Text(.parameterSlotFile))
         .autocorrectionDisabled()
         .textInputAutocapitalization(.never)
         .submitLabel(.done)

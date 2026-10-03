@@ -15,7 +15,7 @@
 ///   begins with one, so no name can be spelled like it. Only the start is
 ///   constrained; `x(1)` is fine. `AppStringsTests` pins that every locale's
 ///   placeholder does begin with opening punctuation.
-/// - Not empty, no surrounding whitespace, no control characters.
+/// - Not empty, no surrounding whitespace, no control or invisible format characters.
 ///
 /// The check is **exact** — it does not trim — so the funnel accepts a name
 /// only as given. Trimming what someone typed is the text field's job.
@@ -29,7 +29,10 @@ public enum VariableName {
         if scalars.first!.properties.isWhitespace || scalars.last!.properties.isWhitespace {
             return .failure(.surroundingWhitespace)
         }
-        if scalars.contains(where: { $0.properties.generalCategory == .control }) {
+        // Format characters (Cf) as well as controls (Cc): a zero-width space hides a leading
+        // bracket from the rule below, makes two names that look identical compare unequal, and
+        // a bidi override can reverse what is displayed (`swift-code-reviewer`, US-410).
+        if scalars.contains(where: { [.control, .format].contains($0.properties.generalCategory) }) {
             return .failure(.controlCharacter)
         }
         if scalars.contains(where: \.properties.isQuotationMark) {
@@ -49,7 +52,8 @@ public enum VariableNameProblem: Error, Sendable, Equatable {
     case empty
     /// Leading or trailing whitespace.
     case surroundingWhitespace
-    /// A control character, such as a newline inside the name.
+    /// A control character, such as a newline inside the name, or an invisible format
+    /// character — a zero-width space, a joiner, a byte-order mark, a bidi override.
     case controlCharacter
     /// A quotation mark of any script — the display delimiter.
     case quotationMark

@@ -44,13 +44,15 @@ struct ThreadPaletteGrid: View {
         .padding(.vertical, 4)
     }
 
+    /// The ring is chrome and adapts — `.secondary`, not `.separator`, which left black, navy and
+    /// brown nearly edgeless on a dark sheet (`swift-code-reviewer`, US-410).
     private func swatch(color: ThreadColor?, name: String, isSelected: Bool) -> some View {
         ZStack {
             Circle()
                 // A hex ADR-015's parser refuses has no colour; the stage keeps the previous
                 // thread for it, so the swatch shows an empty ring rather than a guess.
                 .fill(color.map { Color($0) } ?? .clear)
-                .overlay(Circle().strokeBorder(.separator, lineWidth: isSelected ? 3 : 1))
+                .overlay(Circle().strokeBorder(isSelected ? .primary : .secondary, lineWidth: isSelected ? 3 : 1))
             if isSelected {
                 Image(systemName: "checkmark")
                     .font(.caption.weight(.bold))

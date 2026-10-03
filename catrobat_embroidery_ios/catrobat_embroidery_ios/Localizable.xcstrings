@@ -1106,13 +1106,13 @@
       }
     },
     "parameter.name.error.control": {
-      "comment": "Shown under the variable-name field when it contains a line break or another invisible control character.",
+      "comment": "Shown under the variable-name field when it contains a line break, a tab, or an invisible character such as a zero-width space.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A name can't contain line breaks."
+            "value": "A name can't contain line breaks or invisible characters."
           }
         }
       }

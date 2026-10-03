@@ -25,17 +25,23 @@ public enum ParameterEditorKind: Sendable, Equatable {
 
     public init(_ value: ParameterValue) {
         switch value {
-        case let .formula(.number(number)):
-            self = .number(number)
-        case let .formula(.variable(name)):
-            self = .variableReference(name)
-        case let .formula(formula) where formula.isBinary:
-            self = .readOnlyFormula(formula, reason: .binary)
         case let .formula(formula):
-            // Every `.unaryMinus`, `.unaryMinus(.number(5))` included: the pad
-            // writes `.number(-5)`, a different tree, so one rule — anything
-            // the pad cannot write back byte-identically is read-only.
-            self = .readOnlyFormula(formula, reason: .unaryMinus)
+            // Exhaustive over `Formula` with no `default:`, so M6's next case
+            // is a compile error here rather than a silently mislabelled lock.
+            switch formula {
+            case let .number(number):
+                self = .number(number)
+            case let .variable(name):
+                self = .variableReference(name)
+            case .binary:
+                self = .readOnlyFormula(formula, reason: .binary)
+            case .unaryMinus:
+                // Every `.unaryMinus`, `.unaryMinus(.number(5))` included: the
+                // pad writes `.number(-5)`, a different tree, so one rule —
+                // anything the pad cannot write back byte-identically is
+                // read-only.
+                self = .readOnlyFormula(formula, reason: .unaryMinus)
+            }
         case let .variableName(name):
             self = .variableName(name)
         case let .threadColor(hex):
@@ -51,14 +57,4 @@ public enum ParameterEditorKind: Sendable, Equatable {
 public enum ReadOnlyFormulaReason: Sendable, Equatable {
     case binary
     case unaryMinus
-}
-
-private extension Formula {
-    var isBinary: Bool {
-        if case .binary = self {
-            true
-        } else {
-            false
-        }
-    }
 }

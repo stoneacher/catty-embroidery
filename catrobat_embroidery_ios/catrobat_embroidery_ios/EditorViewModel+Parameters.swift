@@ -95,6 +95,11 @@ extension EditorViewModel {
         let stepped = value + delta
         guard stepped.isFinite else { return }
         setParameter(slot, to: .formula(.number(stepped)))
+        // A tap is a committed value, so a later rejected entry returns here rather than
+        // silently discarding the taps. Only an anchor this slot already holds moves.
+        if parameterSession?.numberAnchor?.slot == slot {
+            beginNumberEntry(for: slot)
+        }
     }
 
     /// Switches a variable slot back to a number: the number it held when the editor opened, or
@@ -118,12 +123,16 @@ extension EditorViewModel {
     func useVariable(named name: String, for slot: ParameterSlot) -> EditResult? {
         guard let session = parameterSession else { return nil }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if case let .failure(problem) = VariableName.validate(trimmed) {
+        // The character rules govern names this editor *creates*. A name the object can
+        // already resolve — from a loaded file, say — is chosen, not created, so it is usable
+        // whatever it contains; refusing it would offer a menu item that silently does nothing.
+        let isDeclared = variableMenu.scope(of: trimmed) != nil
+        if !isDeclared, case let .failure(problem) = VariableName.validate(trimmed) {
             return .rejected(.invalidVariableName(problem))
         }
         let value: ParameterValue = slot == .variableName ? .variableName(trimmed) : .formula(.variable(trimmed))
         guard brick(at: session.address)?.replacing(slot, with: value) != nil else { return nil }
-        if variableMenu.scope(of: trimmed) == nil {
+        if !isDeclared {
             let declared = apply(
                 .declareVariable(name: trimmed, script: session.address.script),
                 coalescing: session.key

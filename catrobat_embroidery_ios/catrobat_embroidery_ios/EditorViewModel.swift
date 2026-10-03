@@ -76,6 +76,10 @@ final class EditorViewModel {
         let result = undoStack.apply(action, coalescing: key)
         if case .applied = result, undoStack.current != before {
             if action.canMoveRows {
+                // For the reason undo and redo end it: the session's address may now name a
+                // different brick (`swift-code-reviewer`, US-410 — an iPad popover does not keep
+                // a VoiceOver user from a row's Delete action).
+                endParameterEdit()
                 selectedBrickIndex = nil
             }
             onProgramChanged?()

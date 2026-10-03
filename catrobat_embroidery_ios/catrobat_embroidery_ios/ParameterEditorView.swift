@@ -35,6 +35,10 @@ struct ParameterEditorView: View {
                     }
                 }
             }
+            // The slot editors hold `@State` (the field's text, the file name) seeded from the
+            // brick. A new session — a different brick under the same presentation — must start
+            // them fresh rather than show the last brick's text (`swift-code-reviewer`, US-410).
+            .id(model.editor.parameterSession?.key)
             .navigationTitle(Text(.parameterEditorTitle))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

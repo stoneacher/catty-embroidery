@@ -182,7 +182,8 @@ struct BrickParameterTests {
             case .threadColor: value = .threadColor(hex: "#123456")
             case .fileName: value = .fileName("fresh.dst")
             }
-            let read = head.replacing(parameter.slot, with: value)?.parameters.first { $0.slot == parameter.slot }?.value
+            let replaced = head.replacing(parameter.slot, with: value)
+            let read = replaced?.parameters.first { $0.slot == parameter.slot }?.value
             #expect(read == value, "\(kind).\(parameter.slot)")
         }
     }
