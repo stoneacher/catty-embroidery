@@ -2,7 +2,7 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~5 h | **Depends on**: US-403, US-404, US-407
 
-**Status**: Implemented, in review — 2026-10-03, [PR #66](https://github.com/stoneacher/catty-embroidery/pull/66). Test-first in four `[red]` slices (package, app, number-field spelling, review round). Reviewed by `swift-code-reviewer`: 25 mutants, 10 survived. All 10 are now killed or covered by new tests, spot-checked by rerunning D2, M1, A8 and A15. Codex loop pending.
+**Status**: Done — 2026-10-03, [PR #66](https://github.com/stoneacher/catty-embroidery/pull/66) (pending merge). Test-first in seven `[red]` slices: package, app, number-field spelling, the in-loop review round, and Codex rounds 1–3. Reviewed by `swift-code-reviewer`: 25 mutants, 10 survived, all 10 now killed by new tests, four re-run to confirm. **Four Codex rounds**: Medium → Medium → Medium → none. That is 6 findings, all valid and all fixed. The loop was escalated after round 3 at flat Medium, and Sebastian chose to run round 4, which was clean. Screenshots are in `docs/screenshots/us-410/`. The manual items below go to the bundled M4 pass.
 
 ## Decisions taken in this story (Sebastian, 2026-10-03, after `swift-architect` and `swift-ui-design` passes)
 
