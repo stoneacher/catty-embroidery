@@ -2,7 +2,7 @@ import EditorCore
 import ProgramModel
 import Testing
 
-/// US-410's sixth `EditAction`: `declareVariable(name:in:)`, the way a variable
+/// US-410's sixth `EditAction`: `declareVariable(name:script:)`, the way a variable
 /// comes into existence in the editor (decided by Sebastian, 2026-10-03;
 /// ADR-035 amendment).
 ///
@@ -20,9 +20,9 @@ struct EditDeclareVariableTests {
     @Test("declaring appends a zero-valued variable to the addressed object only")
     func declares() {
         var expected = Fixtures.program
-        expected.scenes[1].objects[2].variables.append(Variable(name: "Side"))
+        expected.scenes[1].objects[2].variables.append(Variable(name: "Count"))
         #expect(
-            EditorCore.apply(.declareVariable(name: "Side", in: Fixtures.address), to: Fixtures.program)
+            EditorCore.apply(.declareVariable(name: "Count", script: Fixtures.address), to: Fixtures.program)
                 == .applied(expected)
         )
     }
@@ -32,7 +32,7 @@ struct EditDeclareVariableTests {
         var program = Program.blank
         program.scenes[0].objects[0].variables = [Variable(name: "Side", value: 3)]
         #expect(
-            EditorCore.apply(.declareVariable(name: "Side", in: ScriptAddress()), to: program)
+            EditorCore.apply(.declareVariable(name: "Side", script: ScriptAddress()), to: program)
                 == .rejected(.variableAlreadyDeclared(name: "Side"))
         )
     }
@@ -45,7 +45,7 @@ struct EditDeclareVariableTests {
         var program = Program.blank
         program.variables = [Variable(name: "Speed")]
         #expect(
-            EditorCore.apply(.declareVariable(name: "Speed", in: ScriptAddress()), to: program)
+            EditorCore.apply(.declareVariable(name: "Speed", script: ScriptAddress()), to: program)
                 == .rejected(.variableAlreadyDeclared(name: "Speed"))
         )
     }
@@ -54,11 +54,11 @@ struct EditDeclareVariableTests {
     @Test("an invalid name is refused with the rule it broke")
     func invalidName() {
         #expect(
-            EditorCore.apply(.declareVariable(name: "", in: ScriptAddress()), to: .blank)
+            EditorCore.apply(.declareVariable(name: "", script: ScriptAddress()), to: .blank)
                 == .rejected(.invalidVariableName(.empty))
         )
         #expect(
-            EditorCore.apply(.declareVariable(name: "a\"b", in: ScriptAddress()), to: .blank)
+            EditorCore.apply(.declareVariable(name: "a\"b", script: ScriptAddress()), to: .blank)
                 == .rejected(.invalidVariableName(.quotationMark))
         )
     }
@@ -69,7 +69,7 @@ struct EditDeclareVariableTests {
     func outOfBounds() {
         let address = ScriptAddress(sceneIndex: 1, objectIndex: 9)
         #expect(
-            EditorCore.apply(.declareVariable(name: "Side", in: address), to: Fixtures.program)
+            EditorCore.apply(.declareVariable(name: "Side", script: address), to: Fixtures.program)
                 == .rejected(.addressOutOfBounds(.object, at: BrickAddress(brickIndex: 0, script: address)))
         )
     }
@@ -77,7 +77,7 @@ struct EditDeclareVariableTests {
     /// A declaration touches no script, so balance holds by construction.
     @Test("no script changes")
     func touchesNoScript() {
-        let result = EditorCore.apply(.declareVariable(name: "Side", in: Fixtures.address), to: Fixtures.program)
+        let result = EditorCore.apply(.declareVariable(name: "Count", script: Fixtures.address), to: Fixtures.program)
         guard case let .applied(program) = result else {
             Issue.record("expected applied, got \(result)")
             return
@@ -98,7 +98,7 @@ struct EditDeclareVariableTests {
         stack.apply(.insert(.setVariable, at: BrickAddress(brickIndex: 0)))
 
         let naming = stack.beginEdit(of: BrickAddress(brickIndex: 0))
-        stack.apply(.declareVariable(name: "Side", in: script), coalescing: naming)
+        stack.apply(.declareVariable(name: "Side", script: script), coalescing: naming)
         stack.apply(
             .replaceBrick(at: BrickAddress(brickIndex: 0), with: .setVariable(name: "Side", to: .number(1))),
             coalescing: naming

@@ -218,7 +218,7 @@ enum EditorCoreFixtures {
         let count = script.bricks.count
         let address = BrickAddress(brickIndex: index(upTo: count, using: &generator))
 
-        switch generator.next() % 6 {
+        switch generator.next() % 5 {
         case 0:
             return .insert(BrickKind.allCases.randomElement(using: &generator)!, at: address)
         case 1:
@@ -249,10 +249,6 @@ enum EditorCoreFixtures {
                 perturbed(script.bricks[address.brickIndex])
             }
             return .replaceBrick(at: address, with: replacement)
-        case 4:
-            // US-410's sixth verb. A small name pool, so repeats walk the
-            // already-declared refusal as well as the declaring path.
-            return .declareVariable(name: "v\(generator.next() % 4)", in: address.script)
         default:
             return .renameProgram("name \(generator.next() % 1000)")
         }

@@ -187,7 +187,7 @@ private extension EditAction {
     var canMoveRows: Bool {
         switch self {
         case .insert, .delete, .move: true
-        case .replaceBrick, .renameProgram: false
+        case .replaceBrick, .renameProgram, .declareVariable: false
         }
     }
 }
