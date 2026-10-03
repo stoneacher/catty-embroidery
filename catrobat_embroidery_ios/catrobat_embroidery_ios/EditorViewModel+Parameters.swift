@@ -24,8 +24,13 @@ extension EditorViewModel {
     /// Whether the toolbar's Edit button is enabled: a brick is selected and it has something to
     /// edit.
     var canEditSelectedBrick: Bool {
-        guard let index = selectedBrickIndex,
-              let bricks = program.scenes.first?.objects.first?.scripts.first?.bricks,
+        selectedBrickIndex.map(hasParameters(at:)) ?? false
+    }
+
+    /// Whether the brick at `index` in the first script has anything to edit — the row's
+    /// "Edit Parameters" action is offered only then.
+    func hasParameters(at index: Int) -> Bool {
+        guard let bricks = program.scenes.first?.objects.first?.scripts.first?.bricks,
               bricks.indices.contains(index)
         else { return false }
         return !bricks[index].parameters.isEmpty

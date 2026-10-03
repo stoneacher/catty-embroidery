@@ -330,4 +330,3 @@ struct ParameterEditingTests {
         #expect(NumberFieldText.text(for: 2.5, decimalSeparator: ",") == "2,5")
     }
 }
-

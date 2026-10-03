@@ -161,6 +161,10 @@ struct ScriptListView: View {
                     }
                 }
                 .disabled(!model.editor.canRedo)
+
+                Spacer()
+
+                editButton
             }
             if placement == .stack {
                 ToolbarItem(placement: .primaryAction) {
@@ -330,6 +334,10 @@ private extension ScriptListView {
         }
         if let action = row.moveIntoLoopBelow {
             Button(.scriptActionMoveIntoLoopBelow) { perform(action) }
+        }
+        // US-410: the same editor the toolbar opens, reachable without first selecting the row.
+        if model.editor.hasParameters(at: row.id) {
+            Button(.parameterEditorActionEdit) { model.openParameterEditor(at: row.id) }
         }
         if let action = row.delete {
             Button(.scriptActionDelete, role: .destructive) { perform(action) }
