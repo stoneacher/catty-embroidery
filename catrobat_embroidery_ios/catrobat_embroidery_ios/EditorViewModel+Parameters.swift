@@ -112,60 +112,65 @@ extension EditorViewModel {
         setParameter(slot, to: .formula(.number(seed)))
     }
 
-    /// Points a slot at the variable `name` — a formula slot as `.variable(name)`, a
-    /// `setVariable`/`changeVariableBy` target as its name — declaring it first if nothing in
-    /// scope does (declare on use, ADR-035 amendment).
+    /// The variable menu: points a slot at a variable the object already declares, exactly as
+    /// the menu lists it — a formula slot as `.variable(name)`, a `setVariable`/`changeVariableBy`
+    /// target as its name. `nil`, changing nothing, for a name nothing declares: the menu offers
+    /// only declared names, so a choice is never a declaration.
     ///
-    /// The name is trimmed, then validated **before** anything is applied, so a refused name
-    /// declares nothing. The declaration and the replacement share the session's key: one undo
-    /// entry, so undo can never leave a brick naming a variable it just un-declared.
-    @discardableResult
-    func useVariable(named name: String, for slot: ParameterSlot) -> EditResult? {
-        guard let session = parameterSession else { return nil }
-        // The character rules — and the trim — govern names this editor *creates*. A name the
-        // object can already resolve, from a loaded file say, is chosen exactly as the menu
-        // lists it: trimming `" Side "` first would declare and reference a new `"Side"`
-        // (Codex round 1), and refusing it would offer a menu item that silently does nothing.
-        let isDeclared = variableMenu.scope(of: name) != nil
-        let trimmed = isDeclared ? name : name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !isDeclared, case let .failure(problem) = VariableName.validate(trimmed) {
-            return .rejected(.invalidVariableName(problem))
-        }
-        let value: ParameterValue = slot == .variableName ? .variableName(trimmed) : .formula(.variable(trimmed))
-        guard brick(at: session.address)?.replacing(slot, with: value) != nil else { return nil }
-        if !isDeclared {
-            let declared = apply(
-                .declareVariable(name: trimmed, script: session.address.script),
-                coalescing: session.key
-            )
-            if case .rejected = declared {
-                return declared
-            }
-        }
-        return setParameter(slot, to: value)
-    }
-
-    /// A menu choice (Codex round 2).
+    /// No trim and no character rules: those govern names this editor *creates*. A loaded
+    /// `" Side "` is referenced as `" Side "` (Codex round 1), and a loaded name containing a
+    /// quotation mark is still usable.
     @discardableResult
     func chooseVariable(named name: String, for slot: ParameterSlot) -> EditResult? {
-        nil
+        guard variableMenu.scope(of: name) != nil else { return nil }
+        return reference(name, for: slot)
     }
 
-    /// The Create field (Codex round 2).
+    /// The Create field: the typed name, **always** trimmed and validated, then referenced —
+    /// declared first if nothing in scope declares it (declare on use, ADR-035 amendment).
+    ///
+    /// A separate operation from `chooseVariable` because the text alone cannot say where it came
+    /// from: typed `" Side "` must mean `"Side"` even while a loaded `" Side "` exists (Codex
+    /// round 2). Creating a name that is already declared references it rather than refusing it
+    /// as a duplicate — the user asked for that variable, and it exists.
+    ///
+    /// Everything is checked **before** anything is applied, so a refused name declares nothing.
+    /// The declaration and the replacement share the session's key: one undo entry, so undo can
+    /// never leave a brick naming a variable it just un-declared.
     @discardableResult
     func createVariable(named name: String, for slot: ParameterSlot) -> EditResult? {
-        nil
+        guard let session = parameterSession else { return nil }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if case let .failure(problem) = VariableName.validate(trimmed) {
+            return .rejected(.invalidVariableName(problem))
+        }
+        guard brick(at: session.address)?.replacing(slot, with: Self.value(naming: trimmed, for: slot)) != nil
+        else { return nil }
+        if variableMenu.scope(of: trimmed) == nil {
+            let declared = apply(.declareVariable(name: trimmed, script: session.address.script), coalescing: session.key)
+            if case .rejected = declared { return declared }
+        }
+        return reference(trimmed, for: slot)
     }
 
-    /// `writeEmbroideryToFile`'s name, trimmed. An empty name is never written: the brick keeps
-    /// the one it had, so the row never shows the `(empty)` placeholder because of this editor.
+    /// `writeEmbroideryToFile`'s name, **exactly as typed** — file names are not restricted
+    /// (ADR-040), and trimming would silently rewrite a loaded `" report "` at the first keystroke
+    /// (Codex round 2). Only an empty or blank name is never written: the brick keeps the one it
+    /// had, so the row never shows the `(empty)` placeholder because of this editor.
     func setFileName(_ text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        setParameter(.fileName, to: .fileName(trimmed))
+        guard text.contains(where: { !$0.isWhitespace }) else { return }
+        setParameter(.fileName, to: .fileName(text))
     }
 
     // MARK: Reading
+
+    private func reference(_ name: String, for slot: ParameterSlot) -> EditResult? {
+        setParameter(slot, to: Self.value(naming: name, for: slot))
+    }
+
+    private static func value(naming name: String, for slot: ParameterSlot) -> ParameterValue {
+        slot == .variableName ? .variableName(name) : .formula(.variable(name))
+    }
 
     private func brick(at address: BrickAddress) -> Brick? {
         let path = address.script

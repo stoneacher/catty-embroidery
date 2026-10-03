@@ -62,7 +62,7 @@ struct FormulaSlotEditor: View {
         } set: { toVariable in
             if toVariable {
                 if let first = editor.variableMenu.names.first {
-                    editor.useVariable(named: first, for: slot)
+                    editor.chooseVariable(named: first, for: slot)
                 } else {
                     isNaming = true
                 }
@@ -229,12 +229,12 @@ struct VariableChooser: View {
         Binding {
             current ?? ""
         } set: { name in
-            editor.useVariable(named: name, for: slot)
+            editor.chooseVariable(named: name, for: slot)
         }
     }
 
     private func create() {
-        switch editor.useVariable(named: newName, for: slot) {
+        switch editor.createVariable(named: newName, for: slot) {
         case let .rejected(.invalidVariableName(rejected)):
             problem = rejected
             AccessibilityNotification.Announcement(ParameterEditorText.message(for: rejected)).post()

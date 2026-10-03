@@ -328,5 +328,4 @@ struct ParameterEditingTests {
         #expect(editor.program == Self.seed)
         #expect(announcements.fired == 0)
     }
-
 }

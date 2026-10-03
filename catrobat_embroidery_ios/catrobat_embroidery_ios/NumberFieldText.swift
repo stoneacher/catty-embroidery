@@ -7,7 +7,9 @@
 nonisolated enum NumberFieldText {
     static func text(for value: Double, decimalSeparator: String) -> String {
         // Whole numbers below 2^53 are exact in `Int64` and spelled without "\.0".
-        if value == value.rounded(), abs(value) < 9_007_199_254_740_992 {
+        // Not negative zero: `Int64(-0.0)` is `0`, which would lose the sign (Codex round 2);
+        // `"\(-0.0)"` is `"-0.0"`, which parses back to it.
+        if value == value.rounded(), abs(value) < 9_007_199_254_740_992, value.sign == .plus || value != 0 {
             return String(Int64(value))
         }
         let spelled = "\(value)"

@@ -975,9 +975,12 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - **no opening punctuation first**, so `(no variable)` cannot be spelled.
 
   How the rules are enforced:
-  - The funnel validates exactly, without trimming. The field trims **only on the Create path**. A name the object already declares is chosen from the menu and used exactly as listed, whatever it contains (Codex round 1: trimming `" Side "` used to declare a new `"Side"`).
+  - The funnel validates exactly, without trimming.
+  - **Choosing and creating are two operations** (Codex rounds 1 and 2), because the text alone cannot say where it came from.
+    - `chooseVariable` takes a menu name verbatim, whatever it contains, and never declares. A loaded `" Side "` stays `" Side "`.
+    - `createVariable` always trims and validates. It then references the name if it is already declared, or declares it if not.
   - `AppStringsTests` pins, for every shipped localisation, that `formula.variable` delimits with a quotation mark and the placeholder starts with opening punctuation. A translator's choice cannot quietly reopen the collision.
-  - **File names are not restricted.** A file literally named `(empty)` stays a known look-alike, because forbidding parentheses in file names would be hostile. The editor never writes an empty file name.
+  - **File names are not restricted.** A file literally named `(empty)` stays a known look-alike, because forbidding parentheses in file names would be hostile. The editor writes a file name **exactly as typed**, untrimmed (Codex round 2). It never writes an empty or blank one.
 - **Live-apply inside one session** (decided). Every valid change applies at once under the session's key. The whole session is one undo entry, and each change voids the run and autosaves (ADR-038; a save is about 0.2 ms, per ADR-037). Nothing is buffered, so a container swap loses nothing.
   - **Variable names are the exception: they commit on Create or a menu choice, never per keystroke.** Under declare-on-use, typing "Side" live would declare "S", "Si" and "Sid".
   - **A rejected number entry returns its slot to where the typing run began** (found on the simulator). Live-apply commits every prefix that parses, so typing `1e400` commits `1e40` on the way, and the rejection used to leave it there. The field now records an anchor when it gains focus (`beginNumberEntry(for:)`). A rejection restores the anchor, which nets the run to nothing within the session. The anchor is per typing run, so a value committed by an earlier run, or by the stepper, is what a later rejection returns to.
