@@ -970,12 +970,12 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   The rules, checked in this order:
   - not empty;
   - no surrounding whitespace;
-  - no control characters;
+  - no control characters, and no invisible ones: Unicode format characters (category Cf) and every other `Default_Ignorable_Code_Point` scalar. The first group came from `swift-code-reviewer`, the second from Codex round 1 (U+034F and the variation selectors are category Mn, so a category check alone missed them). The accepted cost is that an emoji's U+FE0F presentation selector is refused too;
   - **no Unicode `Quotation_Mark` scalar anywhere**, which covers every locale's `formula.variable` delimiter (the apostrophe included);
   - **no opening punctuation first**, so `(no variable)` cannot be spelled.
 
   How the rules are enforced:
-  - The funnel validates exactly, without trimming. The field trims.
+  - The funnel validates exactly, without trimming. The field trims **only on the Create path**. A name the object already declares is chosen from the menu and used exactly as listed, whatever it contains (Codex round 1: trimming `" Side "` used to declare a new `"Side"`).
   - `AppStringsTests` pins, for every shipped localisation, that `formula.variable` delimits with a quotation mark and the placeholder starts with opening punctuation. A translator's choice cannot quietly reopen the collision.
   - **File names are not restricted.** A file literally named `(empty)` stays a known look-alike, because forbidding parentheses in file names would be hostile. The editor never writes an empty file name.
 - **Live-apply inside one session** (decided). Every valid change applies at once under the session's key. The whole session is one undo entry, and each change voids the run and autosaves (ADR-038; a save is about 0.2 ms, per ADR-037). Nothing is buffered, so a container swap loses nothing.

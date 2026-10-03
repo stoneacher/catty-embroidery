@@ -122,11 +122,12 @@ extension EditorViewModel {
     @discardableResult
     func useVariable(named name: String, for slot: ParameterSlot) -> EditResult? {
         guard let session = parameterSession else { return nil }
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        // The character rules govern names this editor *creates*. A name the object can
-        // already resolve — from a loaded file, say — is chosen, not created, so it is usable
-        // whatever it contains; refusing it would offer a menu item that silently does nothing.
-        let isDeclared = variableMenu.scope(of: trimmed) != nil
+        // The character rules — and the trim — govern names this editor *creates*. A name the
+        // object can already resolve, from a loaded file say, is chosen exactly as the menu
+        // lists it: trimming `" Side "` first would declare and reference a new `"Side"`
+        // (Codex round 1), and refusing it would offer a menu item that silently does nothing.
+        let isDeclared = variableMenu.scope(of: name) != nil
+        let trimmed = isDeclared ? name : name.trimmingCharacters(in: .whitespacesAndNewlines)
         if !isDeclared, case let .failure(problem) = VariableName.validate(trimmed) {
             return .rejected(.invalidVariableName(problem))
         }

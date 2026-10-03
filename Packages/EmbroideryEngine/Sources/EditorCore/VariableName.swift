@@ -32,7 +32,13 @@ public enum VariableName {
         // Format characters (Cf) as well as controls (Cc): a zero-width space hides a leading
         // bracket from the rule below, makes two names that look identical compare unequal, and
         // a bidi override can reverse what is displayed (`swift-code-reviewer`, US-410).
-        if scalars.contains(where: { [.control, .format].contains($0.properties.generalCategory) }) {
+        //
+        // And every default-ignorable scalar (Codex round 1): invisibility is a property, not a
+        // category — U+034F and the variation selectors are `Mn`, yet render as nothing.
+        if scalars.contains(where: {
+            [.control, .format].contains($0.properties.generalCategory)
+                || $0.properties.isDefaultIgnorableCodePoint
+        }) {
             return .failure(.controlCharacter)
         }
         if scalars.contains(where: \.properties.isQuotationMark) {
@@ -52,8 +58,9 @@ public enum VariableNameProblem: Error, Sendable, Equatable {
     case empty
     /// Leading or trailing whitespace.
     case surroundingWhitespace
-    /// A control character, such as a newline inside the name, or an invisible format
-    /// character — a zero-width space, a joiner, a byte-order mark, a bidi override.
+    /// A control character, such as a newline inside the name, or an invisible one — a
+    /// format character (zero-width space, byte-order mark, bidi override) or any other
+    /// default-ignorable scalar (a combining grapheme joiner, a variation selector).
     case controlCharacter
     /// A quotation mark of any script — the display delimiter.
     case quotationMark
