@@ -206,6 +206,9 @@ struct VariableChooser: View {
         .submitLabel(.done)
         .onSubmit(create)
         .frame(minHeight: RunControl.minimumTouchTarget)
+        // Stated outright: the simulator's snapshot showed this field announced by its
+        // placeholder alone, like the number field before it.
+        .accessibilityLabel(Text(.parameterVariableNew))
 
         Button(.parameterVariableCreate, action: create)
             .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
