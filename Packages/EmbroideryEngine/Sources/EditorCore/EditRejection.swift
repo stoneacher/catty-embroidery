@@ -67,6 +67,12 @@ public enum EditRejection: Equatable, Sendable {
     /// than restated. In practice this is always `.unbalancedPair` — see the
     /// type's documentation.
     case scriptMove(ScriptMoveError)
+
+    /// `declareVariable` with a name that breaks a `VariableName` rule (US-410).
+    case invalidVariableName(VariableNameProblem)
+
+    /// `declareVariable` with a name the object can already resolve (US-410).
+    case variableAlreadyDeclared(name: String)
 }
 
 /// The outcome of `EditorCore.apply(_:to:)`: a new program, or a reason.

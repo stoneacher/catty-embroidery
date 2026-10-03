@@ -58,6 +58,9 @@ public enum EditorCore {
             var renamed = program
             renamed.name = name
             return .applied(renamed)
+
+        case let .declareVariable(name, _):
+            return .rejected(.invalidVariableName(.empty))
         }
     }
 

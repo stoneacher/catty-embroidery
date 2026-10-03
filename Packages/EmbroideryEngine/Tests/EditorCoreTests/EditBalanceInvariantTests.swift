@@ -166,7 +166,8 @@ struct EditBalanceInvariantTests {
             .insert(.stitch, at: BrickAddress(brickIndex: 1, script: script)),
             .delete(at: BrickAddress(brickIndex: 0, script: script)),
             .move(from: BrickAddress(brickIndex: 1, script: script), to: 0),
-            .replaceBrick(at: BrickAddress(brickIndex: 0, script: script), with: .stitch)
+            .replaceBrick(at: BrickAddress(brickIndex: 0, script: script), with: .stitch),
+            .declareVariable(name: "Side", in: script)
         ]
         for action in actions {
             let result = EditorCore.apply(action, to: Fixtures.withStrayLoopEnd)

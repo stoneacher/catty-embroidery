@@ -59,4 +59,7 @@ public enum EditAction: Equatable, Sendable {
     /// not borrow it, so a program may carry a name that could not be written
     /// into a DST header and the export gate refuses it there instead.
     case renameProgram(String)
+
+    /// Declare a variable in the object that owns `script` (US-410).
+    case declareVariable(name: String, in: ScriptAddress)
 }
