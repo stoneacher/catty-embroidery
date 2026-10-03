@@ -195,6 +195,9 @@ final class EditorViewModel {
         parameterSession = session
     }
 
+    /// The file-name field gained focus (Codex round 3).
+    func beginFileNameEntry() {}
+
     /// Closes the session: one undo entry for everything it changed. Idempotent, and safe to call
     /// from every teardown path — `UndoStack.endEdit(_:)` ignores a key that is not open.
     func endParameterEdit() {

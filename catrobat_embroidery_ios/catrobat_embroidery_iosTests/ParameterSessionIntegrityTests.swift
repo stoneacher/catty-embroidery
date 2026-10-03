@@ -233,4 +233,55 @@ struct ParameterSessionIntegrityTests {
         editor.setFileName(" report ")
         #expect(editor.program == Self.program([.writeEmbroideryToFile(name: " report ")]))
     }
+
+    // MARK: Codex round 3
+
+    /// Live-apply commits every prefix, so clearing `"old"` by backspace commits `"ol"` and `"o"`
+    /// before the blank is refused. Like a rejected number, a blank entry returns the name to
+    /// where the typing run began, and the session nets to nothing.
+    @Test("clearing a file name returns it to where the typing began", arguments: ["", "   ", "\u{3000}"])
+    func clearingFileNameRestoresTheAnchor(blank: String) {
+        let editor = EditorViewModel(program: Self.program([.writeEmbroideryToFile(name: "old")]))
+        editor.beginParameterEdit(at: 0)
+        editor.beginFileNameEntry()
+
+        for prefix in ["ol", "o", blank] {
+            editor.setFileName(prefix)
+        }
+
+        #expect(editor.program == Self.program([.writeEmbroideryToFile(name: "old")]))
+        editor.endParameterEdit()
+        #expect(editor.undoStack.undoDepth == 0)
+    }
+
+    /// Undo of a Create returns exactly the original program, whether it declared or only
+    /// referenced — asserted on the whole value, not only the depth.
+    @Test("undoing a Create restores the exact original", arguments: [false, true])
+    func undoCreate(alreadyDeclared: Bool) {
+        let original = Self.program(variables: alreadyDeclared ? [Variable(name: "Side", value: 3)] : [])
+        let editor = EditorViewModel(program: original)
+        editor.beginParameterEdit(at: 0)
+        editor.createVariable(named: "Side", for: .steps)
+        editor.endParameterEdit()
+
+        #expect(editor.undoStack.undoDepth == 1)
+        editor.undo()
+        #expect(editor.program == original)
+    }
+
+    /// A name the project already declares is referenced, and no object declaration shadows it.
+    @Test("Create with a project-scoped name declares nothing in the object")
+    func createProjectScoped() {
+        var original = Self.program()
+        original.variables = [Variable(name: "Speed")]
+        let editor = EditorViewModel(program: original)
+        editor.beginParameterEdit(at: 0)
+
+        editor.createVariable(named: "Speed", for: .steps)
+
+        var expected = Self.program([.moveNSteps(.variable("Speed"))] + Self.bricks.dropFirst())
+        expected.variables = [Variable(name: "Speed")]
+        #expect(editor.program == expected)
+    }
 }
+
