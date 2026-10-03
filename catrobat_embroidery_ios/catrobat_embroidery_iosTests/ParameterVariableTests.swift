@@ -63,13 +63,13 @@ struct ParameterVariableTests {
         let (editor, _) = Self.editor(.blank)
         editor.insert(.setVariable)
         editor.beginParameterEdit(at: 0)
-        #expect(editor.useVariable(named: " Side ", for: .variableName) == .applied(editor.program))
+        #expect(editor.createVariable(named: " Side ", for: .variableName) == .applied(editor.program))
         editor.endParameterEdit()
 
         editor.insert(.moveNSteps)
         editor.beginParameterEdit(at: 1)
         #expect(editor.variableMenu.names == ["Side"])
-        editor.useVariable(named: "Side", for: .steps)
+        editor.chooseVariable(named: "Side", for: .steps)
         editor.endParameterEdit()
 
         var expected = Program.blank
@@ -90,7 +90,7 @@ struct ParameterVariableTests {
         let before = editor.program
         editor.beginParameterEdit(at: 0)
 
-        #expect(editor.useVariable(named: "(no variable)", for: .variableName)
+        #expect(editor.createVariable(named: "(no variable)", for: .variableName)
             == .rejected(.invalidVariableName(.leadingOpenPunctuation)))
         #expect(editor.program == before)
     }
@@ -113,7 +113,7 @@ struct ParameterVariableTests {
         let (editor, _) = Self.editor(program)
         editor.beginParameterEdit(at: 0)
 
-        editor.useVariable(named: "Side", for: .steps)
+        editor.chooseVariable(named: "Side", for: .steps)
         #expect(editor.program == Self.program(
             [.moveNSteps(.variable("Side"))] + Self.bricks.dropFirst(), variables: [Variable(name: "Side")]
         ))

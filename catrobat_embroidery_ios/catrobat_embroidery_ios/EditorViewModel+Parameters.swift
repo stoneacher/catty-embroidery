@@ -145,6 +145,18 @@ extension EditorViewModel {
         return setParameter(slot, to: value)
     }
 
+    /// A menu choice (Codex round 2).
+    @discardableResult
+    func chooseVariable(named name: String, for slot: ParameterSlot) -> EditResult? {
+        nil
+    }
+
+    /// The Create field (Codex round 2).
+    @discardableResult
+    func createVariable(named name: String, for slot: ParameterSlot) -> EditResult? {
+        nil
+    }
+
     /// `writeEmbroideryToFile`'s name, trimmed. An empty name is never written: the brick keeps
     /// the one it had, so the row never shows the `(empty)` placeholder because of this editor.
     func setFileName(_ text: String) {

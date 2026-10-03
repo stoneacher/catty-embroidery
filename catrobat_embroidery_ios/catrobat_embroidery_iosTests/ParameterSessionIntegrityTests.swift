@@ -57,7 +57,7 @@ struct ParameterSessionIntegrityTests {
         let editor = EditorViewModel(program: Self.program())
         editor.beginParameterEdit(at: 0)
 
-        editor.useVariable(named: "Side", for: .steps)
+        editor.createVariable(named: "Side", for: .steps)
 
         #expect(editor.parameterSession != nil)
         #expect(editor.selectedBrickIndex == 0)
@@ -69,7 +69,7 @@ struct ParameterSessionIntegrityTests {
     func switchBackRestoresTheOpeningNumber() {
         let editor = EditorViewModel(program: Self.program(variables: [Variable(name: "Side")]))
         editor.beginParameterEdit(at: 0)
-        editor.useVariable(named: "Side", for: .steps)
+        editor.chooseVariable(named: "Side", for: .steps)
 
         editor.switchToNumber(.steps)
 
@@ -82,7 +82,7 @@ struct ParameterSessionIntegrityTests {
         let editor = EditorViewModel(program: Self.program())
         editor.beginParameterEdit(at: 0)
 
-        #expect(editor.useVariable(named: "New", for: .hex) == nil)
+        #expect(editor.createVariable(named: "New", for: .hex) == nil)
 
         #expect(editor.program == Self.program())
     }
@@ -152,7 +152,7 @@ struct ParameterSessionIntegrityTests {
         let editor = EditorViewModel(program: loaded)
         editor.beginParameterEdit(at: 0)
 
-        editor.useVariable(named: "a\"b", for: .steps)
+        editor.chooseVariable(named: "a\"b", for: .steps)
 
         var bricks = Self.bricks
         bricks[0] = .moveNSteps(.variable("a\"b"))
@@ -168,10 +168,70 @@ struct ParameterSessionIntegrityTests {
         let editor = EditorViewModel(program: loaded)
         editor.beginParameterEdit(at: 0)
 
-        editor.useVariable(named: " Side ", for: .steps)
+        editor.chooseVariable(named: " Side ", for: .steps)
 
         var bricks = Self.bricks
         bricks[0] = .moveNSteps(.variable(" Side "))
         #expect(editor.program == Self.program(bricks, variables: [Variable(name: " Side ", value: 7)]))
     }
+
+    // MARK: Codex round 2 — the menu and the Create field are two operations
+
+    /// Typing a name into Create always means the trimmed name, even when the untrimmed text
+    /// happens to equal a declared variable: `" Side "` typed while `" Side "` is declared
+    /// creates `"Side"`.
+    @Test("Create trims even when the untrimmed text is declared")
+    func createTrimsAlways() {
+        let loaded = Self.program(variables: [Variable(name: " Side ")])
+        let editor = EditorViewModel(program: loaded)
+        editor.beginParameterEdit(at: 0)
+
+        editor.createVariable(named: " Side ", for: .steps)
+
+        var bricks = Self.bricks
+        bricks[0] = .moveNSteps(.variable("Side"))
+        #expect(editor.program == Self.program(bricks, variables: [Variable(name: " Side "), Variable(name: "Side")]))
+    }
+
+    /// Creating a name that is already declared references it rather than refusing it as a
+    /// duplicate: the user asked for that variable, and it exists.
+    @Test("Create with a name already declared references it, declaring nothing")
+    func createExistingReferences() {
+        let loaded = Self.program(variables: [Variable(name: "Side", value: 3)])
+        let editor = EditorViewModel(program: loaded)
+        editor.beginParameterEdit(at: 0)
+
+        editor.createVariable(named: " Side ", for: .steps)
+
+        var bricks = Self.bricks
+        bricks[0] = .moveNSteps(.variable("Side"))
+        #expect(editor.program == Self.program(bricks, variables: [Variable(name: "Side", value: 3)]))
+        #expect(editor.undoStack.undoDepth == 1)
+    }
+
+    /// The menu offers only what is declared, so choosing anything else is no edit at all — in
+    /// particular, never a declaration.
+    @Test("choosing an undeclared name changes nothing")
+    func chooseUndeclared() {
+        let editor = EditorViewModel(program: Self.program())
+        editor.beginParameterEdit(at: 0)
+
+        #expect(editor.chooseVariable(named: "Side", for: .steps) == nil)
+
+        #expect(editor.program == Self.program())
+    }
+
+    /// File names are not restricted (ADR-040): written exactly as typed, surrounding spaces and
+    /// all. Only an empty or blank name is refused, so the row never needs its placeholder.
+    @Test("a file name is written exactly as typed; a blank one not at all")
+    func fileNameIsExact() {
+        let editor = EditorViewModel(program: Self.program([.writeEmbroideryToFile(name: "old")]))
+        editor.beginParameterEdit(at: 0)
+
+        editor.setFileName("   ")
+        #expect(editor.program == Self.program([.writeEmbroideryToFile(name: "old")]))
+        editor.setFileName(" report ")
+        #expect(editor.program == Self.program([.writeEmbroideryToFile(name: " report ")]))
+    }
 }
+

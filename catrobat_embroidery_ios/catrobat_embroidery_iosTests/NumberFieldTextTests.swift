@@ -25,4 +25,18 @@ struct NumberFieldTextTests {
         #expect(NumberFieldText.text(for: -5, decimalSeparator: ".") == "-5")
         #expect(NumberFieldText.text(for: 2.5, decimalSeparator: ",") == "2,5")
     }
+
+    /// Codex round 2: `-0` is a valid literal, and `Double`'s `==` cannot see its sign — so the
+    /// round trip is asserted on the bit pattern.
+    @Test("negative zero round-trips with its sign")
+    func negativeZero() throws {
+        let text = NumberFieldText.text(for: -0.0, decimalSeparator: ".")
+        let parsed = try NumberEntry.parse(text, decimalSeparator: ".").get()
+        guard case let .number(value) = parsed else {
+            Issue.record("expected a number, got \(parsed)")
+            return
+        }
+        #expect(value.bitPattern == (-0.0).bitPattern, "\(text)")
+    }
 }
+

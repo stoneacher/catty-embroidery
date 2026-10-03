@@ -329,17 +329,4 @@ struct ParameterEditingTests {
         #expect(announcements.fired == 0)
     }
 
-    // MARK: File names
-
-    /// An empty file name is never written: the brick keeps the name it had.
-    @Test("a file name is written trimmed, and an empty one not at all")
-    func fileName() {
-        let (editor, _) = Self.editor(Self.program([.writeEmbroideryToFile(name: "a.dst")]))
-        editor.beginParameterEdit(at: 0)
-
-        editor.setFileName("   ")
-        #expect(editor.program == Self.program([.writeEmbroideryToFile(name: "a.dst")]))
-        editor.setFileName(" b.dst ")
-        #expect(editor.program == Self.program([.writeEmbroideryToFile(name: "b.dst")]))
-    }
 }
