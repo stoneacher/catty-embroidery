@@ -129,6 +129,41 @@ struct ParameterEditingTests {
         #expect(announcements.fired == 0)
     }
 
+    /// Found on the simulator: live-apply commits every keystroke that parses, so typing
+    /// `1e400` commits `1e40` on the way. A rejected entry must not leave that prefix behind —
+    /// the slot returns to what it held when typing began, and the session nets to nothing.
+    @Test("item 3: a rejected entry returns the slot to its value from before the typing began")
+    func rejectionRestoresTheAnchor() {
+        let (editor, _) = Self.editor()
+        editor.beginParameterEdit(at: 0)
+        editor.beginNumberEntry(for: .steps)
+
+        for prefix in ["1", "1e", "1e4", "1e40", "1e400"] {
+            _ = editor.enterNumber(prefix, for: .steps)
+        }
+
+        #expect(editor.program == Self.seed)
+        editor.endParameterEdit()
+        #expect(editor.undoStack.undoDepth == 0)
+    }
+
+    /// The anchor is per typing run: a value committed by an earlier run (or the stepper) is
+    /// what a later rejection returns to, not the value the session opened with.
+    @Test("item 3: the anchor follows the last typing run, not the session's opening")
+    func anchorIsPerRun() {
+        let (editor, _) = Self.editor()
+        editor.beginParameterEdit(at: 0)
+        editor.beginNumberEntry(for: .steps)
+        _ = editor.enterNumber("25", for: .steps)
+        editor.stepNumber(.steps, by: 1)
+
+        editor.beginNumberEntry(for: .steps)
+        _ = editor.enterNumber("2", for: .steps)
+        _ = editor.enterNumber("2e999", for: .steps)
+
+        #expect(editor.program == Self.replacing(0, with: .moveNSteps(.number(26))))
+    }
+
     @Test("every literal error has a readable reason", arguments: [
         FormulaLiteralError.empty, .malformed, .nonFinite
     ])

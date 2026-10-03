@@ -70,6 +70,10 @@ extension EditorViewModel {
         }
     }
 
+    /// The number field gained focus: remember the slot's value as the anchor a rejected entry
+    /// returns to.
+    func beginNumberEntry(for slot: ParameterSlot) {}
+
     /// The stepper. Only a literal steps, and only to a finite value — a value the document can
     /// save (ADR-037).
     func stepNumber(_ slot: ParameterSlot, by delta: Double) {
