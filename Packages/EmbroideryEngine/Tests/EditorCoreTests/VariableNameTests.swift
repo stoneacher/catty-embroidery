@@ -31,6 +31,19 @@ struct VariableNameTests {
         #expect(VariableName.validate(name) == .failure(.surroundingWhitespace))
     }
 
+    /// Review finding (US-410): an invisible format character defeats every other rule. A
+    /// zero-width space in front of `(no variable)` hides the bracket from the leading-punctuation
+    /// check, `a\u{200B}` looks identical to `a` while the uniqueness check sees two names, and a
+    /// right-to-left override can reverse what is displayed. Unicode category Cf is refused
+    /// outright, alongside the control characters.
+    @Test("an invisible format character is refused", arguments: [
+        "\u{200B}(no variable)", "\u{200B}", "a\u{200B}", "\u{2060}(empty)", "\u{FEFF}x",
+        "\u{202E}(elbairav on)", "x\u{2066}y\u{2069}"
+    ])
+    func formatCharacter(name: String) {
+        #expect(VariableName.validate(name) == .failure(.controlCharacter))
+    }
+
     @Test("a control character is refused", arguments: ["Si\u{0}de", "Si\u{7}de", "a\nb"])
     func controlCharacter(name: String) {
         #expect(VariableName.validate(name) == .failure(.controlCharacter))

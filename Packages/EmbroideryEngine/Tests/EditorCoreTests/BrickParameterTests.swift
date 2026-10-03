@@ -169,6 +169,24 @@ struct BrickParameterTests {
         }
     }
 
+    /// The string slots too: `replacing` ends in a `default: nil`, so a new kind with a string
+    /// slot would compile and refuse every write without this sweep (review finding 9).
+    @Test("every string slot of every template accepts a new value", arguments: BrickKind.allCases)
+    func everyStringSlotAcceptsAValue(kind: BrickKind) {
+        let head = kind.template()[0]
+        for parameter in head.parameters {
+            let value: ParameterValue
+            switch parameter.value {
+            case .formula: continue
+            case .variableName: value = .variableName("Fresh")
+            case .threadColor: value = .threadColor(hex: "#123456")
+            case .fileName: value = .fileName("fresh.dst")
+            }
+            let read = head.replacing(parameter.slot, with: value)?.parameters.first { $0.slot == parameter.slot }?.value
+            #expect(read == value, "\(kind).\(parameter.slot)")
+        }
+    }
+
     // MARK: 7c — number to variable and back
 
     @Test("a number parameter switches to a variable and back, each a whole brick")

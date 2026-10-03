@@ -63,14 +63,18 @@ struct EditDeclareVariableTests {
         )
     }
 
-    /// Resolution reports its hop, like every other addressed case. The brick
-    /// index is not part of the address and so can never be the failing one.
-    @Test("an unresolvable address names the hop that failed")
-    func outOfBounds() {
-        let address = ScriptAddress(sceneIndex: 1, objectIndex: 9)
+    /// Resolution reports its hop, like every other addressed case — each hop wrong on its own
+    /// (review mutant D2: the script hop's guard was untested). The fixture's real script is
+    /// scene 1 / object 2 / script 1, with 2 scenes, 3 objects and 2 scripts.
+    @Test("an unresolvable address names the hop that failed", arguments: [
+        (ScriptAddress(sceneIndex: 2, objectIndex: 2, scriptIndex: 1), AddressComponent.scene),
+        (ScriptAddress(sceneIndex: 1, objectIndex: 9, scriptIndex: 1), .object),
+        (ScriptAddress(sceneIndex: 1, objectIndex: 2, scriptIndex: 2), .script)
+    ])
+    func outOfBounds(address: ScriptAddress, component: AddressComponent) {
         #expect(
-            EditorCore.apply(.declareVariable(name: "Side", script: address), to: Fixtures.program)
-                == .rejected(.addressOutOfBounds(.object, at: BrickAddress(brickIndex: 0, script: address)))
+            EditorCore.apply(.declareVariable(name: "Count", script: address), to: Fixtures.program)
+                == .rejected(.addressOutOfBounds(component, at: BrickAddress(brickIndex: 0, script: address)))
         )
     }
 

@@ -48,11 +48,17 @@ struct VariableMenuTests {
         #expect(VariableMenu(program: Self.program, script: ScriptAddress()).objectVariables == ["Decoy"])
     }
 
-    /// Total, like `apply`: an address that does not resolve still offers the
-    /// project's variables rather than trapping.
-    @Test("an unresolvable address offers the project's variables only")
-    func unresolvable() {
-        let menu = VariableMenu(program: Self.program, script: ScriptAddress(sceneIndex: 5, objectIndex: -1))
+    /// Total, like `apply`: an address that does not resolve still offers the project's
+    /// variables rather than trapping. One hop wrong at a time — with both wrong, a clamp on
+    /// either hop survives because the other guard still answers (review mutants M1, M2).
+    @Test("an unresolvable address offers the project's variables only", arguments: [
+        ScriptAddress(sceneIndex: 5, objectIndex: 1),
+        ScriptAddress(sceneIndex: -1, objectIndex: 1),
+        ScriptAddress(sceneIndex: 0, objectIndex: 9),
+        ScriptAddress(sceneIndex: 0, objectIndex: -1)
+    ])
+    func unresolvable(address: ScriptAddress) {
+        let menu = VariableMenu(program: Self.program, script: address)
         #expect(menu.objectVariables == [])
         #expect(menu.projectVariables == ["Speed", "Side", "Angle"])
     }
