@@ -234,4 +234,3 @@ struct ParameterSessionIntegrityTests {
         #expect(editor.program == Self.program([.writeEmbroideryToFile(name: " report ")]))
     }
 }
-

@@ -147,7 +147,8 @@ extension EditorViewModel {
         guard brick(at: session.address)?.replacing(slot, with: Self.value(naming: trimmed, for: slot)) != nil
         else { return nil }
         if variableMenu.scope(of: trimmed) == nil {
-            let declared = apply(.declareVariable(name: trimmed, script: session.address.script), coalescing: session.key)
+            let declaration = EditAction.declareVariable(name: trimmed, script: session.address.script)
+            let declared = apply(declaration, coalescing: session.key)
             if case .rejected = declared { return declared }
         }
         return reference(trimmed, for: slot)

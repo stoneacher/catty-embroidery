@@ -39,4 +39,3 @@ struct NumberFieldTextTests {
         #expect(value.bitPattern == (-0.0).bitPattern, "\(text)")
     }
 }
-
