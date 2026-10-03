@@ -2,6 +2,30 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~5 h | **Depends on**: US-403, US-404, US-407
 
+**Status**: Implemented, in review — 2026-10-03, [PR #66](https://github.com/stoneacher/catty-embroidery/pull/66). Test-first in four `[red]` slices (package, app, number-field spelling, review round). Reviewed by `swift-code-reviewer`: 25 mutants, 10 survived. All 10 are now killed or covered by new tests, spot-checked by rerunning D2, M1, A8 and A15. Codex loop pending.
+
+## Decisions taken in this story (Sebastian, 2026-10-03, after `swift-architect` and `swift-ui-design` passes)
+
+- **One story, not split**, although the architect estimated it at 9–10 h.
+- **Declare on use, through a sixth `EditAction`**: `declareVariable(name:script:)`, at object scope. This is ADR-035's 2026-10-03 amendment. It amends US-402's five cases and US-411's totality fixtures; both stories carry a note.
+- **Names that imitate the display syntax: restrict the characters.** The rules are in `VariableName` and ADR-040:
+  - no quotation mark of any script;
+  - no opening punctuation first;
+  - no control or invisible format characters (the review round added format characters);
+  - nothing empty, and no surrounding whitespace.
+
+  **File names are not restricted.** A file named `(empty)` is a known, accepted look-alike, because forbidding parentheses in file names would be hostile. The editor never writes an empty file name.
+- **Live-apply inside one coalescing session.** The exceptions:
+  - Variable names commit on Create or a menu choice, never per keystroke.
+  - A rejected number entry returns the slot to where the typing run began. This was found on the simulator: typing `1e400` committed `1e40` on the way.
+- **Smaller defaults, recorded rather than asked:**
+  - The editor opens from the selected row: an Edit button in the bottom bar, and an "Edit Parameters" accessibility action (ADR-039's 2026-10-03 amendment).
+  - Every `.unaryMinus` is read-only, `.unaryMinus(.number(5))` included.
+  - A thread colour that is not a swatch shows as "Current Colour", untouched.
+  - The sheet is modal: background interaction is off.
+  - Number entry accepts both the locale's separator and `.`.
+  - The stepper moves by ±1.
+
 **Story**: As a user, I want to tap a brick and change its numbers and colours with a control that suits the value, so I do not need to learn a formula language to move ten steps.
 
 `swift-ui-design` pass before implementation.
@@ -24,18 +48,32 @@ Neither reference helps: Catroid routes **every** number through the full formul
 
 ## Acceptance criteria
 
-- [ ] Tapping a row presents a parameter editor for that brick: sheet on compact, popover on regular, one call site, presentation state hoisted above `RootView` (ADR-023's container swap).
-- [ ] **Number pad** for `.number` parameters, going through US-404's `FormulaLiteral.parse`, which **rejects non-finite input** with a readable reason. `1e400` and a 310-digit entry both produce `+∞` through `Double(String)` and would then break autosave — this is where that is stopped.
-- [ ] **Variable menu** listing `Object.variables + Program.variables`, honouring the documented scope rule (object shadows project, first match by name wins). **`Variable.swift:2-3` says name uniqueness within a scope "is enforced by the editor/interpreter, not the model"** — M4 is the first editor, so this story inherits that obligation and must not let the menu or a rename create a duplicate name within one scope.
-- [ ] **There must be a way for the menu to be non-empty**, and the plan did not have one. Concrete workflow that fails: start from the blank program, add `setVariable(name: "Side", to: 9)`, add `moveNSteps(10)`, and try to make it use `Side`. The menu reads `Object.variables + Program.variables`; **none of the five `EditAction` cases declares a variable there**, and running the program does not help — `setVariable` creates an independent *runtime* entry (`Interpreter+Step.swift:263`). From a blank program the menu is empty forever, so the new control/data palette cannot express a variable-driven design at all. Resolve it in one of two ways, and say which: **declare on use** (editing a `setVariable`/`changeVariableBy` name adds the declaration to `Object.variables`, which needs a sixth `EditAction` case or an extension of `replaceBrick`'s effect), or a small **manage-variables** affordance. Whichever is chosen is an ADR-035 amendment, because it changes what an `EditAction` may do.
-- [ ] **A `.number` parameter can be switched to a `.variable` one and back.** Otherwise a brick authored with a literal can never reference a variable, and the menu is unreachable even once it is populated. The editor for a numeric parameter offers both, and the switch is one `replaceBrick`.
-- [ ] **Text fields cover `changeVariableBy(name:)` as well as `setVariable(name:)`.**
-- [ ] **A curated thread palette** for `setThreadColor(hex:)` — a fixed set of spool-like hex values, not the system `ColorPicker`. Three reasons, recorded in ADR-040: colour stays a **discrete** edit so there is nothing to coalesce; `ColorPicker` yields a SwiftUI `Color` and the model needs a hex string, and the `Color`→display-P3→hex round-trip is lossy and would feed ADR-015's parser values it has never seen; and DST carries **no colour at all** (US-312), so a fixed palette is the honest UI for a display-only attribute. The ROADMAP already permits "color picker **/ curated thread palette**".
-- [ ] **Text fields** for `writeEmbroideryToFile(name:)`.
-- [ ] **A `.binary` or `.unaryMinus` parameter is shown rendered and is not editable**, with a visible, localised reason rather than a dead control. A disabled field with no explanation reads as a bug. Leaving the editor must leave the formula tree **byte-identical** — no round-trip through a displayed string.
-- [ ] Every **parameter** change goes through `EditAction.replaceBrick`, which is **guarded to the same `BrickKind`** (ADR-035) — so a parameter edit can never orphan a `loopEnd`. The qualifier matters: a declaration made through a manage-variables affordance has no brick to replace. A **variable declaration** is not a parameter change: it goes through whichever mechanism that criterion settles on, and it still goes through the `apply` funnel — no view writes `Object.variables` directly, which ADR-006 pattern 1 forbids. If the chosen mechanism is a sixth `EditAction` case, **US-402's five-case set and US-411's totality fixtures are amended by this story**, and the amendment is named in both.
-- [ ] **One undo entry per editing session**, not per keystroke or per stepper tap. `endEdit()` is idempotent, and it is also called from the view model's own reset path, because ADR-023's container swap can dismiss the sheet without it firing — a stale session key would swallow the next unrelated edit's undo entry.
-- [ ] **Story-specific definition of done**: screenshots of each editor type, the read-only `.binary` state, and the thread palette in dark mode — where the swatches must **not** adapt, being design data.
+- [x] Tapping a row presents a parameter editor for that brick: sheet on compact, popover on regular, one call site, presentation state hoisted above `RootView` (ADR-023's container swap).
+- [x] **Number pad** for `.number` parameters, going through US-404's `FormulaLiteral.parse`, which **rejects non-finite input** with a readable reason. `1e400` and a 310-digit entry both produce `+∞` through `Double(String)` and would then break autosave — this is where that is stopped.
+- [x] **Variable menu** listing `Object.variables + Program.variables`, honouring the documented scope rule (object shadows project, first match by name wins). **`Variable.swift:2-3` says name uniqueness within a scope "is enforced by the editor/interpreter, not the model"** — M4 is the first editor, so this story inherits that obligation and must not let the menu or a rename create a duplicate name within one scope.
+- [x] **There must be a way for the menu to be non-empty**, and the plan did not have one. Concrete workflow that fails: start from the blank program, add `setVariable(name: "Side", to: 9)`, add `moveNSteps(10)`, and try to make it use `Side`. The menu reads `Object.variables + Program.variables`; **none of the five `EditAction` cases declares a variable there**, and running the program does not help — `setVariable` creates an independent *runtime* entry (`Interpreter+Step.swift:263`). From a blank program the menu is empty forever, so the new control/data palette cannot express a variable-driven design at all. Resolve it in one of two ways, and say which: **declare on use** (editing a `setVariable`/`changeVariableBy` name adds the declaration to `Object.variables`, which needs a sixth `EditAction` case or an extension of `replaceBrick`'s effect), or a small **manage-variables** affordance. Whichever is chosen is an ADR-035 amendment, because it changes what an `EditAction` may do.
+- [x] **A `.number` parameter can be switched to a `.variable` one and back.** Otherwise a brick authored with a literal can never reference a variable, and the menu is unreachable even once it is populated. The editor for a numeric parameter offers both, and the switch is one `replaceBrick`.
+- [x] **Text fields cover `changeVariableBy(name:)` as well as `setVariable(name:)`.**
+- [x] **A curated thread palette** for `setThreadColor(hex:)` — a fixed set of spool-like hex values, not the system `ColorPicker`. Three reasons, recorded in ADR-040: colour stays a **discrete** edit so there is nothing to coalesce; `ColorPicker` yields a SwiftUI `Color` and the model needs a hex string, and the `Color`→display-P3→hex round-trip is lossy and would feed ADR-015's parser values it has never seen; and DST carries **no colour at all** (US-312), so a fixed palette is the honest UI for a display-only attribute. The ROADMAP already permits "color picker **/ curated thread palette**".
+- [x] **Text fields** for `writeEmbroideryToFile(name:)`.
+- [x] **A `.binary` or `.unaryMinus` parameter is shown rendered and is not editable**, with a visible, localised reason rather than a dead control. A disabled field with no explanation reads as a bug. Leaving the editor must leave the formula tree **byte-identical** — no round-trip through a displayed string.
+- [x] Every **parameter** change goes through `EditAction.replaceBrick`, which is **guarded to the same `BrickKind`** (ADR-035) — so a parameter edit can never orphan a `loopEnd`. The qualifier matters: a declaration made through a manage-variables affordance has no brick to replace. A **variable declaration** is not a parameter change: it goes through whichever mechanism that criterion settles on, and it still goes through the `apply` funnel — no view writes `Object.variables` directly, which ADR-006 pattern 1 forbids. If the chosen mechanism is a sixth `EditAction` case, **US-402's five-case set and US-411's totality fixtures are amended by this story**, and the amendment is named in both.
+- [x] **One undo entry per editing session**, not per keystroke or per stepper tap. `endEdit()` is idempotent, and it is also called from the view model's own reset path, because ADR-023's container swap can dismiss the sheet without it firing — a stale session key would swallow the next unrelated edit's undo entry.
+- [x] **Story-specific definition of done**: screenshots of each editor type, the read-only `.binary` state, and the thread palette in dark mode — where the swatches must **not** adapt, being design data.
+
+**Definition-of-done screenshots** (`docs/screenshots/us-410/`, iPhone 17, simulator locale with a decimal comma):
+- `01` the number slot;
+- `02` the `1e400` rejection (taken before the prefix fix, which is how the defect was found);
+- `03a` a variable reference;
+- `04` a `setVariable` target;
+- `05`/`06` the thread palette in light and dark mode, where the swatches do not adapt;
+- `07` Octagon Rosette's read-only `360 ÷ "Inner Loop"`.
+
+**Not captured, and left for the bundled M4 manual pass:**
+- the variable menu opened (the automation tap does not open SwiftUI menus);
+- the iPad popover;
+- VoiceOver reading the swatch names and the `.isSelected` trait;
+- whether the row action opens the editor while another presentation is dismissing (the action is withheld while the palette is up).
 
 ## Test-first plan
 
