@@ -37,7 +37,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 025 | DST | Header field overflow is a thrown serialization error; field emission order is a contract. | Active |
 | 026 | Export | Export gated on `exportModel.count > 1`; rejecting `DesignName`; eager preparation; exported `.dst` UTType. | Active, amended |
 | 027 | Preview | Run lifecycle: producer/consumer tasks, `stop()` cancels the producer only; non-optional export model; three budgets. | Active |
-| 028 | Stage | Zoom/pan, one commit per gesture, fit-aware floor, transition-only summary. | Superseded by 044 |
+| 028 | Stage | Zoom/pan (mechanism superseded), fit-aware floor, transition-only summary. | Superseded by 044 |
 | 029 | Stage | The 50 000-stitch measurement and the performance bar. | Superseded by 043 (measurement record) |
 | 030 | Stage | Mid-gesture coarsening. | Superseded by 043 (measurement record) |
 | 031 | Stage | UIKit recognisers over a pure tracker. | Superseded by 044 (reasoning stays here) |
@@ -1117,7 +1117,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 *Architecture*
 - **SwiftUI `Canvas`, never node-per-stitch.** The renderer sits behind `StagePreviewRenderer` (`display:transform:needle:viewport:`), which keeps a Metal renderer possible.
 - **The batching is a value.** `StitchDrawPlan`, computed in `StagePreview`, holds stitch **indices, never geometry**, so it is transform-free. A plan has at most two strokes plus one dot path per colour run.
-- **The settled prefix is baked into a raster and the live tail is stroked** by the *same* stroking function (`Image(size:renderer:)` and `Canvas` both hand it a `GraphicsContext`). The live pass starts one segment before the watermark, so the thread has no gap at the seam. The raster key includes the settled count, the display list's `resetCount`, the increased-contrast setting and the bake transform. It excludes the colour scheme, because nothing inside the canvas changes with it. **The raster is composited only when the `Canvas` size equals the viewport it was baked at**; otherwise the frame draws `.entire`, so the settled layer is never stretched under an unstretched live tail. `bakingThreshold = 2000` (app).
+- **The settled prefix is baked into a raster and the live tail is stroked** by the *same* stroking function (`Image(size:renderer:)` and `Canvas` both hand it a `GraphicsContext`). The live pass starts one segment before the watermark, so the thread has no gap at the seam. The raster key (`BakeKey`) is the settled count, the display list's `resetCount`, the bake transform, the viewport width and height, the increased-contrast setting, and `isLive`. `isLive` changes no pixels but is load-bearing: it makes the live→settled edge a key change, so a bake deferred during an interaction is not lost. The key excludes the colour scheme, because nothing inside the canvas changes with it. **The raster is composited only when the `Canvas` size equals the viewport it was baked at**; otherwise the frame draws `.entire`, so the settled layer is never stretched under an unstretched live tail. `bakingThreshold = 2000` (app).
 - **`settleChunk = 1000` is fixed.** A proportional chunk was measured to bake 176 times at 50 000 stitches. Do not reintroduce one without a device measurement that beats the fixed chunk.
 
 *Appearance (reasoning in ADR-024)*
@@ -1150,6 +1150,8 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 4. Then `Path` reuse keyed on the plan and its stride. A polyline must first be hardened against non-finite vertices.
 5. Then a `MetalStitchRenderer` behind the protocol.
 
+**Known gap — the raster is never composited in iPhone 17's default layout** (backlog US-322). The viewport measures 370 × 256.83 against a `Canvas` size of 370 × 257.0, so the exact-size guard above never passes, every frame draws `.entire`, and the bake work is wasted on top. The guard is correct; the mismatch is the defect.
+
 **Consequences**: A design that changes colour on every stitch is not helped by coarsening; it belongs to rungs 4 and 5. Still open: the A15-class capture (it waits for US-316, so it confirms a real fix), the Instruments attribution between path construction and dot scan-conversion, and the offscreen-pass hitches seen outside the measured run.
 
 ## ADR-044 — Stage manipulation: UIKit recognisers over a pure tracker, one commit per manipulation (2026-10-09)
@@ -1171,7 +1173,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - Its channels are three-state, so an ended pinch keeps contributing its magnification.
   - Liveness is read from recogniser state, never inferred from values.
   - The frozen start anchor is correct: `v(x₀) = m·(x₀ − c₀) + c₁`.
-- **One commit per manipulation.** `finish(in:touchesRemain:)` yields a value exactly once, when the last channel has ended and no touches remain. The preview and the commit come from the same function, so what the user sees mid-gesture is what they get.
+- **One commit per recogniser-driven manipulation.** `finish(in:touchesRemain:)` yields a value exactly once, when the last channel has ended and no touches remain. The preview and the commit come from the same function, so what the user sees mid-gesture is what they get.
 - **`StageInteraction` owns where the stage is and what is happening to it.**
   - Where: `settled`, with `nil` meaning "follow the fit".
   - What: `Phase` is `.idle` or `.settling(id:…)`. The settling id is ownership — a completion acts only for its own animation.
@@ -1204,7 +1206,8 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 **Known gaps**:
 - **The pan is unclamped, and a directional pan says nothing to VoiceOver.** These are one gap seen twice, and they belong to a future clamping story.
 - In compact width, a one-finger pan from the leading edge conflicts with the interactive pop.
-- The double tap inherits `UIPanGestureRecognizer`'s non-configurable movement slop.
+- The pan keeps `UIPanGestureRecognizer`'s non-configurable movement threshold. That preserves the double tap (SwiftUI's `minimumDistance: 0` broke it), and the trade is still to be judged on device.
+- **Programmatic transform actions are not excluded from an in-flight manipulation.** `adjust`, `panned`, `beginToggle` and `beginSettling` read the live fit and can write `settled` under the fingers. It is practically unreachable (a double tap fails once a pan begins or two touches land; VoiceOver actions do not coexist with raw pinches), but a double tap during a live pan animates from the live fit while frames draw at the frozen one, so the stage jumps.
 
 **Consequences**: The stage's interaction rules have one current statement. The arithmetic, lifecycle, bounds, pan directions and summary rules are under `swift test`. The UIKit and SwiftUI wiring is covered by app tests where a test can reach it. Rotor order, the one-element accessibility tree and transient pixel alignment are checked by Accessibility Inspector and device or continuous-capture sessions, not by tests.
 

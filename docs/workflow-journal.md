@@ -2848,3 +2848,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **The Medium was an error in Claude's own consolidation, carried over from the superseded text.** ADR-044 said "double-tap-to-fit", taken from ADR-028's original wording. The code toggles fit ↔ 2× about the tapped point (`StageInteraction.beginToggle`, `toggleStep`), a later change that ADR-028 never recorded. Consolidating from the ADRs alone inherits every change the ADRs missed.
 - **The Low:** ADR-045 kept the single-offset rule for list moves but not for list deletes (`deleteAction(atOffsets:in:)`).
 - **Loop state:** severity is flat (Medium → Medium) and the triage changed the branch, so the loop continues to round 3 (cap 5, ADR-041). The stop rule says doc-only changes end the loop, but that rule was written for code PRs. On a docs-only PR the docs *are* the deliverable, so their changes are treated as code here.
+
+## 2026-10-09 — ADR review, Codex round 3: a performance gap the consolidated ADR did not name
+
+- **History:** Medium (12) → Medium (2) → **Medium** (4: 2 Medium, 2 Low). All 4 were valid and fixed. Codex confirmed both round-2 fixes.
+- **The finding that matters beyond the docs:** ADR-043 described the baked raster as the settled-frame path. But in iPhone 17's default layout it is **never used**: the viewport is 370 × 256.83 against a 370 × 257.0 canvas, so the exact-size guard never passes (backlog US-322, found in US-315). This was documented only in a code comment and the backlog, never in an ADR. A consolidated "current rules" ADR that omits a known gap reads as a stronger claim than the code supports. ADR-043 now names it, and lists the full `BakeKey`, including the load-bearing `isLive`.
+- **The other three:**
+  - ADR-044 dropped ADR-028's US-314 known gap: programmatic actions can write `settled` mid-manipulation.
+  - ADR-044 said the double tap "inherits" the pan's slop; the pan keeps it, and that is what preserves the double tap.
+  - ADR-028's index row still said "per gesture".
+- **Pattern across three rounds:** every finding is a *known limitation or special case* that lived in a review paragraph, an amendment or a code comment, not in a decision bullet. Consolidating "the rules" naturally keeps the decisions and loses the caveats. Flat Medium for three rounds; the loop continues under the cap of 5.
