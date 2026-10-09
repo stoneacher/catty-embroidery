@@ -37,6 +37,12 @@ final class UndoManagerBridge {
     /// While a system-driven proxy runs, the stack's change must not trigger a rebuild (P6).
     private var isHandlingSystemAction = false
 
+    /// The depths the manager holds. Proxies are stateless, so equal depths **are** agreement,
+    /// and a stack change that keeps them — a fold, a no-op apply, a session opening or closing —
+    /// needs no rebuild. Without this, every stepper tap rebuilt the manager and posted hundreds
+    /// of undo notifications (`swift-code-reviewer`, Editor UI feature).
+    private var held = (undo: 0, redo: 0)
+
     /// `undo` and `redo` step the editor and report whether there was a step; `depths` reads the
     /// stack. Closures rather than the view model itself, so the bridge cannot reach anything else.
     init(
@@ -57,6 +63,8 @@ final class UndoManagerBridge {
     func sync() {
         guard !isHandlingSystemAction else { return }
         let (undoDepth, redoDepth) = depths()
+        guard (undoDepth, redoDepth) != held else { return }
+        held = (undoDepth, redoDepth)
         manager.removeAllActions()
         isPumping = true
         defer { isPumping = false }
@@ -87,9 +95,12 @@ final class UndoManagerBridge {
         let stepped = direction == .undo ? undo() : redo()
         isHandlingSystemAction = false
         register(inverse)
+        held = depths()
         if !stepped {
             // The manager offered a step the stack did not have — agreement was already lost.
-            // Rebuild once the handler has returned; rebuilding here would throw (P6).
+            // Rebuild once the handler has returned; rebuilding here would throw (P6). Not
+            // reachable through the editor's doors, so no test can drive it: defensive only.
+            held = (-1, -1)
             Task { @MainActor [weak self] in self?.sync() }
         }
     }

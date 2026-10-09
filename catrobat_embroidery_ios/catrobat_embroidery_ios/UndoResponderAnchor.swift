@@ -8,9 +8,11 @@ import UIKit
 /// responder for its manager, and a script list has no first responder (probe E2). With it, the
 /// system offers the bridge's undo *and* redo (O2, O3).
 ///
-/// **It never takes first responder from a text field.** It claims only when it enters a window
-/// and when the keyboard has gone — never on a view update, which on iPad would end typing in the
-/// stage's design-name field beside the list. While a parameter field is focused the field is
+/// **It never takes first responder from a text field.** It tries to claim when it enters a
+/// window, when a window becomes key and when the keyboard has gone, and succeeds only in the key
+/// window with no text input first responder (`shouldClaim`). Never on a view update, which on
+/// iPad would end typing in the stage's design-name field beside the list. While a parameter field is focused the field
+/// is
 /// first responder, so shake undoes the *typing*, on the window's manager, and the program
 /// history is not touched (O5). UIKit hands first responder back when the sheet closes (O6).
 ///
@@ -19,6 +21,14 @@ import UIKit
 /// the swap.
 struct UndoResponderAnchor: UIViewRepresentable {
     let manager: UndoManager?
+
+    /// Whether the anchor may take first responder: only in the key window, and never from a
+    /// text input. The keyboard notification is app-wide, so another window's keyboard hiding
+    /// reaches every anchor, and on iPad a background window keeps its own first responder — a
+    /// claim there would end typing in that window's design-name field (`swift-code-reviewer`).
+    nonisolated static func shouldClaim(isKeyWindow: Bool, textInputActive: Bool) -> Bool {
+        isKeyWindow && !textInputActive
+    }
 
     func makeUIView(context _: Context) -> AnchorView {
         AnchorView()
@@ -31,17 +41,21 @@ struct UndoResponderAnchor: UIViewRepresentable {
     final class AnchorView: UIView {
         var manager: UndoManager?
 
-        private var keyboardObserver: NSObjectProtocol?
+        private var observers: [NSObjectProtocol] = []
 
         override init(frame: CGRect) {
             super.init(frame: frame)
             isAccessibilityElement = false
             accessibilityElementsHidden = true
             isUserInteractionEnabled = false
-            keyboardObserver = NotificationCenter.default.addObserver(
-                forName: UIResponder.keyboardDidHideNotification, object: nil, queue: .main
-            ) { [weak self] _ in
-                MainActor.assumeIsolated { self?.claim() }
+            // The keyboard going, and this window becoming key — at launch it may not be key yet
+            // when the anchor arrives, and `claim()` declines in a window that is not.
+            for name in [UIResponder.keyboardDidHideNotification, UIWindow.didBecomeKeyNotification] {
+                observers.append(NotificationCenter.default.addObserver(
+                    forName: name, object: nil, queue: .main
+                ) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.claim() }
+                })
             }
         }
 
@@ -51,9 +65,7 @@ struct UndoResponderAnchor: UIViewRepresentable {
         }
 
         isolated deinit {
-            if let keyboardObserver {
-                NotificationCenter.default.removeObserver(keyboardObserver)
-            }
+            observers.forEach(NotificationCenter.default.removeObserver)
         }
 
         override var canBecomeFirstResponder: Bool {
@@ -71,8 +83,34 @@ struct UndoResponderAnchor: UIViewRepresentable {
         }
 
         private func claim() {
-            guard window != nil, !isFirstResponder else { return }
+            guard let window, !isFirstResponder else { return }
+            let textInputActive = FirstResponder.current() is UITextInput
+            guard UndoResponderAnchor.shouldClaim(isKeyWindow: window.isKeyWindow, textInputActive: textInputActive)
+            else { return }
             becomeFirstResponder()
         }
+    }
+}
+
+/// The key window's current first responder, found the documented way: an action sent to a `nil`
+/// target goes to the first responder, which records itself.
+@MainActor
+private enum FirstResponder {
+    private weak static var found: UIResponder?
+
+    static func current() -> UIResponder? {
+        found = nil
+        UIApplication.shared.sendAction(#selector(UIResponder.recordAsFirstResponder), to: nil, from: nil, for: nil)
+        return found
+    }
+
+    fileprivate static func record(_ responder: UIResponder) {
+        found = responder
+    }
+}
+
+private extension UIResponder {
+    @objc func recordAsFirstResponder() {
+        FirstResponder.record(self)
     }
 }

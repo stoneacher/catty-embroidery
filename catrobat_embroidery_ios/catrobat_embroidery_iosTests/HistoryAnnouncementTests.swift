@@ -53,6 +53,36 @@ struct HistoryAnnouncementTests {
         #expect(Self.text(.redo, from: Self.older, to: newer) == "Redid moving Sew up")
     }
 
+    /// `swift-code-reviewer` (Editor UI feature): a lone opener or `loopEnd` is half a pair, not a
+    /// block, and naming it is wrong in exactly the commonest drag — a leaf in or out of a loop.
+    @Test("a leaf moved out of a loop, upwards, is the brick named")
+    func leafOutOfLoop() {
+        let inside = Self.program([.repeatLoop(times: .number(31)), .sewUp, .loopEnd])
+        let outside = Self.program([.sewUp, .repeatLoop(times: .number(31)), .loopEnd])
+        #expect(Self.text(.undo, from: outside, to: inside) == "Undid moving Sew up")
+    }
+
+    @Test("a leaf moved into a loop at its end is the brick named")
+    func leafIntoLoopEnd() {
+        let outside = Self.program([.repeatLoop(times: .number(31)), .loopEnd, .sewUp])
+        let inside = Self.program([.repeatLoop(times: .number(31)), .sewUp, .loopEnd])
+        #expect(Self.text(.undo, from: inside, to: outside) == "Undid moving Sew up")
+    }
+
+    /// The moved block is at the window's back, not its front.
+    @Test("a loop moved up over two leaves is named by its opener")
+    func pairOverLeaves() {
+        let newer = Self.program(Self.loop + [.sewUp, .moveNSteps(.number(10))])
+        let older = Self.program([.sewUp, .moveNSteps(.number(10))] + Self.loop)
+        #expect(Self.text(.redo, from: older, to: newer) == "Redid moving Repeat 31 times")
+    }
+
+    @Test("an added loop is named by its opener, not its end")
+    func addedLoop() {
+        let newer = Self.program([.sewUp] + Self.loop + Self.loop + [.moveNSteps(.number(10))])
+        #expect(Self.text(.undo, from: newer, to: Self.older) == "Undid adding Repeat 31 times")
+    }
+
     /// A parameter edit — including the coalesced declare-and-use pair, whose rows differ in one
     /// brick only. The brick is named **as it reads now**, after the transition.
     @Test("undoing a parameter change names the brick as it now reads")

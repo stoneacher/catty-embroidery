@@ -2930,3 +2930,23 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - `play()` running the blank program → the chain.
 - **Force-quit, executed** (iPhone 17, iOS 26): add a running stitch, open its parameter sheet, step the length 10 → 13 with the sheet still open, so the session was never ended, then `kill -9` the app process. On relaunch the script reads "length 13" and the history is empty (ADR-006: never persisted). The save-per-change rule (ADR-037) is what makes a force-quit safe, and this is the first recorded run of it mid-session.
 - **Tooling note:** twice this session `build_run_sim` installed an app that then would not launch ("failed preflight checks"). `simctl uninstall` fixed it each time, as the memory note says. The uninstall also wipes Documents, which is worth remembering before any check that depends on saved state.
+
+## 2026-10-09 — Editor UI, `swift-code-reviewer` pass: three real defects, three surviving mutants
+
+- **Run once per feature**, before handover, in an isolated worktree on a separate simulator (iPhone 17 Pro). It ran mutants itself. All nine findings were taken; none conflicted with an ADR.
+- **Defects:**
+  1. **The announcement named the wrong brick in the commonest drag.** A leaf moved into or out of a loop was announced as "moving Repeat 31 times" or "moving End of loop". A lone opener or `loopEnd` had counted as a one-brick block. That is exactly the off-screen case US-411's announcements exist for.
+  2. **The anchor could steal first responder in another iPad window.** `keyboardDidHide` is app-wide, and the claim checked neither the key window nor an active text input. That broke ADR-036's own "never takes focus from a text field".
+  3. **The bridge rebuilt the manager on every stack mutation:** each stepper tap, each session open and close, each no-op apply. The reviewer measured 250–550 undo notifications per rebuild.
+- **Surviving mutants:**
+  - The move search's else branch was untested.
+  - An added *loop* was untested, so it could have been named by its `loopEnd`.
+  - The deferred re-sync after a stale system step is unreachable through any door. It is kept as defensive code and recorded as untestable.
+- **Fixes, test-first.** Six new tests were run red against the old code, with a stub for the claim rule; the two reproductions failed exactly as the reviewer reported. Then:
+  - The move search checks only the two possible blocks (front and back), which is linear where it was quadratic.
+  - The anchor claims only in the key window with no `UITextInput` first responder, and also when its window becomes key. Without that last trigger, the key-window rule would have stopped it claiming at launch; a fresh-launch shake was checked on the simulator.
+  - The bridge skips the pump when depths are unchanged.
+  - The `[unowned self]` closures are now `weak`.
+  - The soak now drives the system manager too and asserts agreement at every step.
+- **Mutation check of the fixes:** 5/5 killed. The stale-depth mutant, where a system step leaves the recorded depths stale, was caught **only** by the soak's new agreement assertion, not by any hand-written bridge test. Random sequences found a state the walks did not reach.
+- **Still owed to the handover pass:** whether a hidden first responder resets List arrow-key focus on iPad (Full Keyboard Access), and ⌘Z.

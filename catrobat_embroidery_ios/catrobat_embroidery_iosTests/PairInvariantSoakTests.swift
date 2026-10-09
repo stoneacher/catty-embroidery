@@ -1,5 +1,6 @@
 @testable import catrobat_embroidery_ios
 import EditorCore
+import Foundation
 import ProgramModel
 import Testing
 
@@ -43,7 +44,7 @@ struct PairInvariantSoakTests {
         var drags = 0, pairDrags = 0
         var deletes = 0, pairDeletes = 0
         var accessibilityMoves = 0
-        var undos = 0, redos = 0
+        var undos = 0, redos = 0, systemSteps = 0
     }
 
     private static let paletteKinds = PaletteGroup.allCases.flatMap(\.kinds)
@@ -96,13 +97,14 @@ struct PairInvariantSoakTests {
         #expect(tally.accessibilityMoves >= 100, "\(tally)")
         #expect(tally.undos >= 20, "\(tally)")
         #expect(tally.redos >= 10, "\(tally)")
+        #expect(tally.systemSteps >= 20, "\(tally)")
     }
 
     /// One seeded run: the editor, the generator and what the run has done so far.
     @MainActor
     private struct Run {
         let seed: UInt64
-        let editor = EditorViewModel(program: .blank, undoManager: nil)
+        let editor = EditorViewModel(program: .blank, undoManager: .makeEditorHistory())
         var generator: Generator
         var tally = Tally()
 
@@ -126,6 +128,33 @@ struct PairInvariantSoakTests {
             default: try history(step)
             }
             try PairInvariantSoakTests.expectBalanced(editor, seed: seed, step: step)
+            try expectAgreement(step)
+        }
+
+        /// The system manager offers undo and redo exactly when the toolbar does (US-411), after
+        /// every step of the random sequence — not only the hand-picked ones `UndoBridgeTests`
+        /// walks.
+        private func expectAgreement(_ step: Int) throws {
+            let manager = try #require(editor.systemUndoManager)
+            let system = (manager.canUndo, manager.canRedo)
+            let toolbar = (editor.canUndo, editor.canRedo)
+            try #require(system == toolbar, "seed \(seed), step \(step): system \(system), toolbar \(toolbar)")
+        }
+
+        /// Half the history steps go through the system manager, as a shake would.
+        private mutating func systemOrToolbar(_ direction: HistoryDirection) throws -> Bool {
+            guard random(below: 2) == 0 else {
+                return direction == .undo ? editor.undo() : editor.redo()
+            }
+            let manager = try #require(editor.systemUndoManager)
+            guard direction == .undo ? manager.canUndo : manager.canRedo else { return false }
+            if direction == .undo {
+                manager.undo()
+            } else {
+                manager.redo()
+            }
+            tally.systemSteps += 1
+            return true
         }
 
         private mutating func random(below bound: Int) -> Int {
@@ -181,13 +210,15 @@ struct PairInvariantSoakTests {
         /// burst: undo one to three steps, then redo up to as many — each step checked.
         private mutating func history(_ step: Int) throws {
             let undoCount = 1 + random(below: 3)
-            for _ in 0 ..< undoCount where editor.undo() {
+            for _ in 0 ..< undoCount where try systemOrToolbar(.undo) {
                 tally.undos += 1
                 try PairInvariantSoakTests.expectBalanced(editor, seed: seed, step: step)
+                try expectAgreement(step)
             }
-            for _ in 0 ..< random(below: undoCount + 1) where editor.redo() {
+            for _ in 0 ..< random(below: undoCount + 1) where try systemOrToolbar(.redo) {
                 tally.redos += 1
                 try PairInvariantSoakTests.expectBalanced(editor, seed: seed, step: step)
+                try expectAgreement(step)
             }
         }
     }

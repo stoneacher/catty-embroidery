@@ -101,21 +101,47 @@ nonisolated enum HistoryAnnouncement {
             }
         }
 
-        /// The head of the block a move carried, if `inserted` is `removed` rotated. Both halves
-        /// of a rotation "moved"; the one that is a single block — a leaf or exactly one pair —
-        /// is the one the user dragged.
+        /// The head of the block a move carried, if `inserted` is `removed` with one block taken
+        /// from one end of the window and put at the other.
+        ///
+        /// A move carries exactly one **block** — a leaf, or a whole pair (ADR-045) — so only two
+        /// splits can be right: the block at the window's front moved down past the rest, or the
+        /// block at its back moved up. Checking just those is linear, and it never mistakes a lone
+        /// opener or `loopEnd` for a block — the reviewer's leaf-into-a-loop case, where the
+        /// other half of the rotation is half a pair (`swift-code-reviewer`, Editor UI feature).
         private static func moved(from removed: [Brick], to inserted: [Brick]) -> Brick? {
-            guard removed.count == inserted.count else { return nil }
-            let rotations = (1 ..< removed.count).lazy
-            for split in rotations where Array(removed[split...] + removed[..<split]) == inserted {
-                let first = Array(removed[..<split])
-                return isSingleBlock(first) ? first[0] : removed[split]
+            guard removed.count == inserted.count, removed.count > 1 else { return nil }
+            if let front = blockLength(atFrontOf: removed), rotated(removed, at: front) == inserted {
+                return removed[0]
+            }
+            if let back = blockLength(atBackOf: removed), rotated(removed, at: removed.count - back) == inserted {
+                return removed[removed.count - back]
             }
             return nil
         }
 
-        private static func isSingleBlock(_ bricks: [Brick]) -> Bool {
-            bricks.count == 1 || Script(bricks: bricks).range(ofPairAt: 0)?.count == bricks.count
+        /// `bricks` with everything before `split` moved to the end.
+        private static func rotated(_ bricks: [Brick], at split: Int) -> [Brick] {
+            Array(bricks[split...] + bricks[..<split])
+        }
+
+        /// A leaf's length is 1; an opener's is its whole pair, if the pair closes in `bricks`.
+        private static func blockLength(atFrontOf bricks: [Brick]) -> Int? {
+            if bricks[0].isLoopEnd {
+                return nil
+            }
+            guard bricks[0].opensLoop else { return 1 }
+            return Script(bricks: bricks).range(ofPairAt: 0)?.count
+        }
+
+        /// A leaf's length is 1; a `loopEnd`'s is its whole pair, if the pair opens in `bricks`.
+        private static func blockLength(atBackOf bricks: [Brick]) -> Int? {
+            let last = bricks.count - 1
+            if bricks[last].opensLoop {
+                return nil
+            }
+            guard bricks[last].isLoopEnd else { return 1 }
+            return Script(bricks: bricks).matchingOpener(ofLoopEndAt: last).map { last - $0 + 1 }
         }
     }
 }

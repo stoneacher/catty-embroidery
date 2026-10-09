@@ -248,6 +248,59 @@ struct UndoBridgeTests {
         #expect(!manager.canUndo)
     }
 
+    /// A shake while the parameter sheet is still open (probe O4: the anchor stays first
+    /// responder over an unfocused sheet). The undo reverts the session's entry, ends the session,
+    /// and leaves the manager in agreement.
+    @Test("a system undo during an open parameter session reverts it and keeps agreement")
+    func systemUndoDuringOpenSession() throws {
+        let (editor, manager) = Self.editor()
+        editor.apply(.renameProgram("p1"))
+        try #require(editor.beginParameterEdit(at: 0))
+        editor.stepNumber(.steps, by: 1)
+        editor.stepNumber(.steps, by: 1)
+
+        manager.undo()
+
+        #expect(editor.program == Self.renamed("p1"))
+        #expect(editor.parameterSession == nil)
+        #expect(Self.systemUndoWalk(editor, manager) == ["p0"])
+        #expect(Self.systemRedoWalk(editor, manager) == ["p1", "p1"])
+    }
+
+    /// Proxies are stateless, so equal depths already mean agreement: a fold, a no-op apply or a
+    /// session opening must not rebuild the manager (`swift-code-reviewer`: each rebuild posted
+    /// hundreds of undo notifications, on every stepper tap).
+    @Test("a stack change that keeps the depths does not rebuild the manager")
+    func equalDepthsDoNotRebuild() throws {
+        let manager = CountingUndoManager()
+        manager.groupsByEvent = false
+        let editor = EditorViewModel(program: Self.seed, undoManager: manager)
+        try #require(editor.beginParameterEdit(at: 0))
+        editor.stepNumber(.steps, by: 1)
+        let afterFirstStep = manager.rebuilds
+
+        editor.stepNumber(.steps, by: 1)
+        editor.stepNumber(.steps, by: 1)
+        editor.apply(.renameProgram(Self.seed.name)) // applies, changes nothing
+
+        #expect(manager.rebuilds == afterFirstStep)
+        #expect(Self.systemUndoWalk(editor, manager) == ["p0"])
+    }
+
+    // MARK: The anchor's claim
+
+    /// The anchor must never take first responder from a text field, nor claim in a window that
+    /// is not key — the keyboard notification is app-wide, so another window's keyboard hiding
+    /// reaches it (`swift-code-reviewer`).
+    @Test("the anchor claims only in the key window, with no text input active",
+          arguments: [true, false], [true, false])
+    func anchorClaimRule(isKeyWindow: Bool, textInputActive: Bool) {
+        #expect(
+            UndoResponderAnchor.shouldClaim(isKeyWindow: isKeyWindow, textInputActive: textInputActive)
+                == (isKeyWindow && !textInputActive)
+        )
+    }
+
     // MARK: 4 — no manager
 
     @Test("with no UndoManager the toolbar doors still undo and redo")
@@ -260,5 +313,15 @@ struct UndoBridgeTests {
         #expect(editor.program == Self.seed)
         #expect(editor.redo())
         #expect(editor.program.name == "p1")
+    }
+}
+
+/// Counts the bridge's rebuilds: every rebuild starts by clearing the manager.
+final class CountingUndoManager: UndoManager {
+    private(set) var rebuilds = 0
+
+    override func removeAllActions() {
+        rebuilds += 1
+        super.removeAllActions()
     }
 }

@@ -93,9 +93,11 @@ final class EditorViewModel {
         undoBridge = undoManager.map { manager in
             UndoManagerBridge(
                 manager: manager,
-                undo: { [unowned self] in undo() },
-                redo: { [unowned self] in redo() },
-                depths: { [unowned self] in (undoStack.undoDepth, undoStack.redoDepth) }
+                // Weak: UIKit can keep the manager — and so these closures — alive after the
+                // window's model has gone (`swift-code-reviewer`).
+                undo: { [weak self] in self?.undo() ?? false },
+                redo: { [weak self] in self?.redo() ?? false },
+                depths: { [weak self] in (self?.undoStack.undoDepth ?? 0, self?.undoStack.redoDepth ?? 0) }
             )
         }
     }
