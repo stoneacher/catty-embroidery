@@ -30,7 +30,7 @@ Also check the PR's size: `git diff main...HEAD --stat -- . ':(exclude)*Tests*'`
 
 ## 2. docs/DECISIONS.md
 
-- Did this session make a decision an ADR should pin — architecture, semantics, process-with-consequences — that isn't derivable from the code, or that contradicts an existing ADR? If yes, append an ADR (context → decision → consequences, next free number). Tooling fixes and choices local to one slice do **not** get ADRs.
+- Did this session make a decision an ADR should pin — architecture, semantics, process-with-consequences — that isn't derivable from the code, or that contradicts an existing ADR? If yes, append an ADR (context → decision → consequences, next free number, roughly 20 lines; review history goes in the journal) **and add its row to the index at the top**. If it amends or supersedes an older ADR, update that ADR's `**Status**` line and its index row, and mark any sentence it overrules inline. Tooling fixes and choices local to one slice do **not** get ADRs.
 
 ## 3. docs/ROADMAP.md
 

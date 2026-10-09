@@ -2788,3 +2788,40 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - A Codex brief review for features with unpinned semantics.
   - `/codex-review` gained a step 0 distinguishing the handover, slice and brief reviews.
 - **Observation**: the first draft of a process simplification dropped an enforcement step silently. This is the same failure mode as ADR-032 invariant 3 (a claim living in several places), applied to a rule rather than a number. It was caught because Sebastian asked for a critique rather than an approval.
+
+## 2026-10-09 — ADR review: an index, four consolidations, drift fixed in place
+
+- **Task**: with 41 ADRs, Sebastian asked whether to merge some or go over them.
+- **Claude's recommendation**:
+  - **No merging or renumbering.** 285 Swift files cite ADRs by number (ADR-012 alone 80 times), and the ADRs are the thesis record.
+  - The real problems were size (ADR-021 onward run 30–117 lines), stacked amendments, and no index.
+  - Proposed instead: an index, consolidation by *supersession* (a new ADR states the current rule; the old ones stay with a status line), inline markers on overruled sentences, and a length norm for new ADRs.
+  - Recommended **against** a consolidated DST ADR: superseding the arbiter costs more than it clears.
+- **Delegation (retrieval/verification)**: four parallel read-only `Explore` agents, one per range (001–019, 020–028, 029–034, 035–040). Each returned a structured table:
+  - area and current rule;
+  - status;
+  - a spot-check of the most concrete claims against the code;
+  - overlaps;
+  - how much of the ADR is review narrative.
+
+  About 80 claims were checked in total. **No rule the code is meant to follow was contradicted by it.** The drift was entirely in the documents:
+  - ADR-028 describes SwiftUI gesture code that ADR-031 replaced.
+  - ADR-018 says two event kinds are produced; all five are.
+  - ADR-016 and ADR-022 give stale target counts, and ADR-022 calls an adapter "owed" that ADR-024 delivered.
+  - ADR-009's protocol signature is stale.
+  - ADR-032 cites four line numbers that now point at blank or unrelated lines. That is invariant 3 broken by the ADR that states it.
+  - ADR-030 contradicts itself on adjacent lines (1 000 vs 2 000), and ADR-029's ladder reads out of date order.
+  - ADR-037, 038 and 039 each still print a sentence a later amendment overruled.
+- **Decided by Sebastian**: all four proposed consolidations.
+- **Written by Claude** (generation was not delegated, because these texts become the arbiter):
+  - **ADR-042** package layout (supersedes 016 and 022).
+  - **ADR-043** stage rendering (supersedes 009, and 024/029/030 as rules).
+  - **ADR-044** stage manipulation (supersedes 028 and 031).
+  - **ADR-045** editor semantics and the change pipeline (supersedes 035; restates the pipeline shared by 036/037/038).
+  - An index table at the top of `DECISIONS.md`.
+  - `**Status**` lines on 22 ADRs.
+  - Inline markers on every overruled sentence; no old text deleted.
+  - ADR-032's line citations replaced with ADR anchors.
+  - Every constant and symbol in the new ADRs re-checked against the source before writing (`settleChunk`, the coarsening constants, `maximumScale`/`minimumScale`, `renameProgram`, `insertAction`, `forFrame`, the CI `dump-package` check, the CoreGraphics adapter file).
+- **Adjustment**: `CLAUDE.md`/`AGENTS.md` now point at the index instead of a hand-maintained ADR-001…028 list, which had gone stale at 028. `/finish` step 2 requires an index row and status updates for every new ADR, and sets the ~20-line norm with review history going to the journal.
+- **Observation**: the four agents agreed on every overlap they both saw (e.g. 016/022/033, 028/031) without coordination. The two drift classes they found — **an amendment not propagated back to the text it overrules**, and **line-number citations** — are both instances of ADR-032 invariant 3. Line-number citations into a living document are now avoided in favour of ADR anchors.
