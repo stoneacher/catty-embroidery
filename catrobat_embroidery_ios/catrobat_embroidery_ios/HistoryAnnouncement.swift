@@ -82,9 +82,8 @@ nonisolated enum HistoryAnnouncement {
                 prefix += 1
             }
             var suffix = 0
-            while suffix < min(old.count, new.count) - prefix,
-                  old[old.count - 1 - suffix] == new[new.count - 1 - suffix]
-            {
+            let shorter = min(old.count, new.count)
+            while suffix < shorter - prefix, old[old.count - 1 - suffix] == new[new.count - 1 - suffix] {
                 suffix += 1
             }
             let removed = Array(old[prefix ..< old.count - suffix])
@@ -107,9 +106,8 @@ nonisolated enum HistoryAnnouncement {
         /// is the one the user dragged.
         private static func moved(from removed: [Brick], to inserted: [Brick]) -> Brick? {
             guard removed.count == inserted.count else { return nil }
-            for split in 1 ..< removed.count
-                where Array(removed[split...] + removed[..<split]) == inserted
-            {
+            let rotations = (1 ..< removed.count).lazy
+            for split in rotations where Array(removed[split...] + removed[..<split]) == inserted {
                 let first = Array(removed[..<split])
                 return isSingleBlock(first) ? first[0] : removed[split]
             }
