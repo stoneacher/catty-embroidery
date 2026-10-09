@@ -673,6 +673,150 @@
         }
       }
     },
+    "history.redid.adding": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user redid adding a brick, which is back in the script. %@ is the brick as the script list reads it, for example “Repeat 31 times” or “Move 10 steps”; it is already translated.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redid adding %@"
+          }
+        }
+      }
+    },
+    "history.redid.changing": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user redid changing a brick's values; %@ is the brick as it reads now, after the redo. It reads like the script list, for example “Repeat 31 times” or “Move 10 steps”; it is already translated.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redid changing %@"
+          }
+        }
+      }
+    },
+    "history.redid.deleting": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user redid deleting a brick (or a whole loop), which has been removed again. %@ is the brick as the script list reads it, for example “Repeat 31 times” or “Move 10 steps”; it is already translated.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redid deleting %@"
+          }
+        }
+      }
+    },
+    "history.redid.edit": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user redid a change that does not affect any visible brick, such as creating a variable.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redid an edit"
+          }
+        }
+      }
+    },
+    "history.redid.moving": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user redid moving a brick (or a whole loop). %@ is the brick as the script list reads it, for example “Repeat 31 times” or “Move 10 steps”; it is already translated.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redid moving %@"
+          }
+        }
+      }
+    },
+    "history.redid.renaming": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user redid renaming the design.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redid renaming the design"
+          }
+        }
+      }
+    },
+    "history.undid.adding": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user undid adding a brick, which has now been removed. %@ is the brick as the script list reads it, for example “Repeat 31 times” or “Move 10 steps”; it is already translated.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid adding %@"
+          }
+        }
+      }
+    },
+    "history.undid.changing": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user undid changing a brick's values; %@ is the brick as it reads now, after the undo. It reads like the script list, for example “Repeat 31 times” or “Move 10 steps”; it is already translated.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid changing %@"
+          }
+        }
+      }
+    },
+    "history.undid.deleting": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user undid deleting a brick (or a whole loop), which is back in the script. %@ is the brick as the script list reads it, for example “Repeat 31 times” or “Move 10 steps”; it is already translated.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid deleting %@"
+          }
+        }
+      }
+    },
+    "history.undid.edit": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user undid a change that does not affect any visible brick, such as creating a variable.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid an edit"
+          }
+        }
+      }
+    },
+    "history.undid.moving": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user undid moving a brick (or a whole loop), which is back where it was. %@ is the brick as the script list reads it, for example “Repeat 31 times” or “Move 10 steps”; it is already translated.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid moving %@"
+          }
+        }
+      }
+    },
+    "history.undid.renaming": {
+      "comment": "VoiceOver announcement after the user undoes or redoes a change to the design's script, spoken because the change may be off-screen. The user undid renaming the design.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid renaming the design"
+          }
+        }
+      }
+    },
     "palette.close": {
       "comment": "Closes the list of bricks without adding one.",
       "extractionState": "manual",

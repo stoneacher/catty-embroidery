@@ -2883,3 +2883,70 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 
 - The round-5 entry gives the Medium counts as "4 → 2 → 2 → 2 → 2" and calls their weight "falling". The actual per-round Medium counts were **4 → 1 → 2 → 2 → 2**, which is flat after round 2, not falling. What did change is the kind of finding: rounds 1–2 were lost rules; rounds 3–5 were mostly missing caveats.
 - The caveat-inventory method that entry names is now a step in `/finish` (step 2), so it applies to the next consolidation rather than living only here.
+
+## 2026-10-09 — Editor UI, slice 1 (US-411): the `UndoManager` bridge was decided by probes, not by the plan
+
+- **What happened:** US-411 forbids specifying the bridge before executing it (ADR-032 invariant 4). Before any test was written, Claude ran three rounds of throwaway probes: a macOS `swiftc` script against Foundation's `NSUndoManager` (P1–P9), then two temporary probe views in the app on the iOS 26 simulator, driven by `notifyutil -p com.apple.UIKit.SimulatorShake` and the XcodeBuildMCP CLI (E1–E5, O1–O6). None were committed; the evidence is now in ADR-036's 2026-10-09 amendment.
+- **What the probes overturned:**
+  - The plan's default assumption was to bridge to `@Environment(\.undoManager)`. That manager turned out to be the **window's shared one**, which text fields also use, and it groups every registration in a run-loop turn into one step. No exact rebuild is possible on it.
+  - Shake did **nothing at all** in the editor, because a script list has no first responder. Every candidate policy was moot until that was fixed.
+  - Calling `undo()` from inside an undo handler **crashes** the process. A naive "re-sync after every transition" would have hit exactly that on the first shake.
+- **Delegation:** `swift-architect` received the executed evidence and proposed policy (c): an owned manager plus a first-responder anchor. It asked for one more probe of that premise before committing to it ("step 0"). That probe passed: the system alert offered the owned manager's Undo *and* Redo, a focused text field kept its own undo, and UIKit returned first responder after the sheet closed. **Sebastian chose (c) and the anchor** from a two-question prompt.
+- **Red → green:**
+  - The package totality proof (`UndoEnumerationTests`) was green on first run, as it should be: it verifies behaviour `UndoStack` already had. Its discrimination therefore rests entirely on mutation. Four mutants, four killed: a swapped fixture, a rejected fixture, a no-op fixture, and a new `EditAction` case. The new case fails to compile in the *test's* switch once the source handles it (`UndoEnumerationTests.swift:93`).
+  - The app suites ran against signature-only stubs: 24 red, 6 green. The green six were two pre-existing toolbar variants, the catalog check, `noManager`, and two negative assertions (`launchBlank`, `emptyHistoryIsSilent`). The two negatives were named as mutation targets.
+- **Mutation check:** 12 app mutants, 12 killed. Each ran a full `xcodebuild test` on a separate simulator (iPhone 17 Pro) while the main tree was left alone. Both stub-green negatives were proved by mutants A7 and A8. Removing the reentrancy guard (A3) took down even unrelated suites in the run, consistent with the probe's crash.
+- **Test-premise bug, caught by the first green run:** the restore test built history through the window. Autosave then wrote it, so `restoreSavedProgram()` read the edits back instead of the saved sample. The fix was a test change: history is built on an injected editor before it joins the window. The code was correct.
+- **Simulator definition of done:** with an empty history, both buttons are disabled and a shake does nothing. After two palette adds, a shake offers "Undo"; the system Undo removed the brick through the package stack and enabled toolbar Redo. A second shake offered Undo *and* Redo, and system Redo restored the brick. **Not executed:** ⌘Z (the automation cannot send a chord), the three-finger gestures, iPad, and typing undo inside a focused field (the automation could not type into it). All four are owed to the handover pass.
+- **Observation:** the story's own plan text warned that "the obvious recipe does not work". The probes found two further ways the obvious design would fail, neither written down anywhere: the shared, event-grouped environment manager, and the absent first responder. Both were cheaper to find with a 40-line probe than with a review round.
+
+## 2026-10-09 — Editor UI, slice 2: the pair soak's floors caught its own generator first
+
+- **What:** `PairInvariantSoakTests` drives 1 500 steps per seed (3 seeds) through the doors the UI actually uses: palette insert at a random selection, the list's `.onMove` offsets, `.onDelete`, the rows' VoiceOver move actions, and undo/redo bursts. It checks `Script.validate()` after every step and every history step. It complements `EditBalanceInvariantTests`, which proves the same property one layer down, on `EditorCore.apply`.
+- **First run: red on every non-vacuity floor, and no balance failure.**
+  - The generator was degenerate. Above 40 bricks it forced the drag door, so the script never shrank, and about 80 % of all steps were drags.
+  - Loop kinds are 2 of the palette's ~20, so pair deletes reached as few as 1 in 1 500 steps.
+  - Redo was nearly unreachable, because the next edit cleared it.
+  - Without the floors, the run would have passed while barely touching pairs. The floors are the US-402 lesson (Codex round 1 found zero applied replacements behind green floors there), applied here before any review.
+  - The fix was in the generator, not the floors: a size cap that deletes, a one-in-three loop bias, and undo-then-redo bursts.
+- **Mutation check:** three mutants in the pair paths every door reaches, all killed by `validate()` itself, each failure naming its step (seeds 1 and 7, steps 6–72). The mutants were:
+  - an opener moved as a single brick;
+  - a `loopEnd` allowed to move;
+  - an opener deleted without its body and end.
+- **Not a new risk class:** the soak was green against the real code from the first non-degenerate run. Like slice 1's enumeration proof, its value rests on the mutants, which are recorded here.
+
+## 2026-10-09 — Editor UI, slice 3: the exit criteria had every link tested and no chain
+
+- **Retrieval delegated:** `swift-search` mapped M4 exit criteria 1 and 3 to existing tests, sub-claim by sub-claim. Every link was covered on its own, but nothing chained them:
+  - No test built a program from blank, ran it to `.finished` and exported it.
+  - The relaunch tests used an in-memory store only.
+  - A **mid-edit force-quit had never been executed.** US-406 recorded it as owed, ADR-037 passed it on to US-408 or the M4 final verification, and neither ran it.
+- **Added in `ExitCriteriaTests`:**
+  - *Built from nothing*: launch blank → four palette adds (the loop's opener is selected, so the next two land inside it) → five stepper taps in one session → a drag → whole-`Program` equality with a literal → play to `.finished` → the prepared file is byte-equal to an independent run of that literal.
+  - *Relaunch without a lifecycle save*: on the real `DocumentsProgramStore` in a disposable directory, with no `sceneDidLeaveActive()`, then a fresh coordinator and window over the same directory.
+- **Both tests were green on first run.** That was expected: they verify, they do not specify. Three mutants, each killed by the test meant to catch it:
+  - the save at the change removed → the relaunch test;
+  - the palette insert ignoring the selection → the chain;
+  - `play()` running the blank program → the chain.
+- **Force-quit, executed** (iPhone 17, iOS 26): add a running stitch, open its parameter sheet, step the length 10 → 13 with the sheet still open, so the session was never ended, then `kill -9` the app process. On relaunch the script reads "length 13" and the history is empty (ADR-006: never persisted). The save-per-change rule (ADR-037) is what makes a force-quit safe, and this is the first recorded run of it mid-session.
+- **Tooling note:** twice this session `build_run_sim` installed an app that then would not launch ("failed preflight checks"). `simctl uninstall` fixed it each time, as the memory note says. The uninstall also wipes Documents, which is worth remembering before any check that depends on saved state.
+
+## 2026-10-09 — Editor UI, `swift-code-reviewer` pass: three real defects, three surviving mutants
+
+- **Run once per feature**, before handover, in an isolated worktree on a separate simulator (iPhone 17 Pro). It ran mutants itself. All nine findings were taken; none conflicted with an ADR.
+- **Defects:**
+  1. **The announcement named the wrong brick in the commonest drag.** A leaf moved into or out of a loop was announced as "moving Repeat 31 times" or "moving End of loop". A lone opener or `loopEnd` had counted as a one-brick block. That is exactly the off-screen case US-411's announcements exist for.
+  2. **The anchor could steal first responder in another iPad window.** `keyboardDidHide` is app-wide, and the claim checked neither the key window nor an active text input. That broke ADR-036's own "never takes focus from a text field".
+  3. **The bridge rebuilt the manager on every stack mutation:** each stepper tap, each session open and close, each no-op apply. The reviewer measured 250–550 undo notifications per rebuild.
+- **Surviving mutants:**
+  - The move search's else branch was untested.
+  - An added *loop* was untested, so it could have been named by its `loopEnd`.
+  - The deferred re-sync after a stale system step is unreachable through any door. It is kept as defensive code and recorded as untestable.
+- **Fixes, test-first.** Six new tests were run red against the old code, with a stub for the claim rule; the two reproductions failed exactly as the reviewer reported. Then:
+  - The move search checks only the two possible blocks (front and back), which is linear where it was quadratic.
+  - The anchor claims only in the key window with no `UITextInput` first responder, and also when its window becomes key. Without that last trigger, the key-window rule would have stopped it claiming at launch; a fresh-launch shake was checked on the simulator.
+  - The bridge skips the pump when depths are unchanged.
+  - The `[unowned self]` closures are now `weak`.
+  - The soak now drives the system manager too and asserts agreement at every step.
+- **Mutation check of the fixes:** 5/5 killed. The stale-depth mutant, where a system step leaves the recorded depths stale, was caught **only** by the soak's new agreement assertion, not by any hand-written bridge test. Random sequences found a state the walks did not reach.
+- **Still owed to the handover pass:** whether a hidden first responder resets List arrow-key focus on iPad (Full Keyboard Access), and ⌘Z.

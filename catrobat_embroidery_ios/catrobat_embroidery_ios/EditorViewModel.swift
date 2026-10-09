@@ -16,13 +16,24 @@ import ProgramModel
 ///
 /// Three doors change the program, and all three announce through `onProgramChanged`: `apply`,
 /// and since US-408 the toolbar's `undo()` and `redo()`. US-410's parameter sessions pass a
-/// coalescing key through `apply`, and US-411 adds the `UndoManager` bridge on the same doors.
+/// coalescing key through `apply`, and US-411 adds the `UndoManager` bridge: the system's undo
+/// and redo (shake, ⌘Z, the edit menu) reach `undo()` and `redo()` through it, so they are the
+/// same doors with the same consequences.
 @MainActor
 @Observable
 final class EditorViewModel {
     /// The history, and through `current` the working program. `private(set)`: a caller that
     /// could assign it could replace the program without the announcement firing.
-    private(set) var undoStack: UndoStack
+    ///
+    /// **Every change re-synchronises the `UndoManager` bridge** (US-411), here rather than at
+    /// each call site: an apply, a fold, a net-zero drop, an eviction at the 50-entry bound, an
+    /// undo, a redo, a reset and a session closing all mutate the stack, so none can be missed
+    /// and a future door cannot forget it.
+    private(set) var undoStack: UndoStack {
+        didSet {
+            undoBridge?.sync()
+        }
+    }
 
     /// The working program — what `AppModel.play()` runs and what every later editor view
     /// reads.
@@ -58,9 +69,37 @@ final class EditorViewModel {
     /// The locale's decimal separator, which the number field accepts beside `.` (US-410).
     let decimalSeparator: String
 
-    init(program: Program = .blank, decimalSeparator: String = Locale.current.decimalSeparator ?? ".") {
+    /// Keeps the system's `UndoManager` in agreement with `undoStack` (US-411). `nil` when the
+    /// editor was made without a manager, and then the toolbar alone drives the history — which
+    /// works, because the stack is the truth and the manager only a trigger surface (ADR-036).
+    @ObservationIgnored private var undoBridge: UndoManagerBridge?
+
+    /// The manager shake, ⌘Z and the edit menu reach, through `UndoResponderAnchor`.
+    var systemUndoManager: UndoManager? {
+        undoBridge?.manager
+    }
+
+    /// Speaks what an undo or redo did (US-411). Injectable so tests can record it; the default
+    /// posts a VoiceOver announcement.
+    @ObservationIgnored var announce: (String) -> Void = { HistoryAnnouncement.post($0) }
+
+    init(
+        program: Program = .blank,
+        decimalSeparator: String = Locale.current.decimalSeparator ?? ".",
+        undoManager: UndoManager? = .makeEditorHistory()
+    ) {
         undoStack = UndoStack(program: program)
         self.decimalSeparator = decimalSeparator
+        undoBridge = undoManager.map { manager in
+            UndoManagerBridge(
+                manager: manager,
+                // Weak: UIKit can keep the manager — and so these closures — alive after the
+                // window's model has gone (`swift-code-reviewer`).
+                undo: { [weak self] in self?.undo() ?? false },
+                redo: { [weak self] in self?.redo() ?? false },
+                depths: { [weak self] in (self?.undoStack.undoDepth ?? 0, self?.undoStack.redoDepth ?? 0) }
+            )
+        }
     }
 
     /// Applies `action` to the working program, recording it for undo.
@@ -108,14 +147,16 @@ final class EditorViewModel {
     /// `.dst` offered beside P's script. The announcement records nothing: the stack moved
     /// itself, and the listener only saves and voids.
     ///
-    /// US-411 puts the `UndoManager` bridge, the spoken announcements and the totality proof
-    /// on top of this; the consequences live here so that every path reaches them.
+    /// The system's undo arrives here too, through `UndoManagerBridge` (US-411), so the
+    /// consequences and the spoken announcement are the same whichever surface asked.
     @discardableResult
     func undo() -> Bool {
+        let before = program
         guard undoStack.undo() != nil else { return false }
         endParameterEdit()
         selectedBrickIndex = nil
         onProgramChanged?()
+        announce(HistoryAnnouncement.text(.undo, from: before, to: program))
         return true
     }
 
@@ -123,10 +164,12 @@ final class EditorViewModel {
     /// to redo. Announces for `undo()`'s reason.
     @discardableResult
     func redo() -> Bool {
+        let before = program
         guard undoStack.redo() != nil else { return false }
         endParameterEdit()
         selectedBrickIndex = nil
         onProgramChanged?()
+        announce(HistoryAnnouncement.text(.redo, from: before, to: program))
         return true
     }
 
