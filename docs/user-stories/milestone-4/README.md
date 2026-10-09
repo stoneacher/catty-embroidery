@@ -1,5 +1,7 @@
 # Milestone 4 — Block editor
 
+**Folded into the [Editor UI](../../features/editor-ui.md) feature — 2026-10-09** ([ADR-041](../../DECISIONS.md)). Thirteen of fourteen stories are done. US-411, the exit criteria and the *Final verification* list below are carried by that feature's brief, and this file is no longer updated.
+
 **Status**: Planned — 2026-09-19. Fourteen stories, **~58 h**: eleven new (US-401…US-411) plus three carried in from the backlog (US-312, US-314, US-315). Planned with `swift-architect`, a read-only reference sweep of Catroid and Catty, and a package/app inventory, in the session that closed M3.
 
 Goal: **create and edit programs in the app.** M3 proved the thread from a bundled sample to a `.dst` file; M4 makes the program on the near end of that thread the user's own. A brick palette adds bricks, a flat list reorders and deletes them, type-specific editors change their parameters, every mutation is undoable, and the working program survives a relaunch. See [ROADMAP.md](../../ROADMAP.md).

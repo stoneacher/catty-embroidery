@@ -5,7 +5,15 @@ allowed-tools: Read, Edit, Bash, Grep, Glob
 
 # /codex-review — independent cross-vendor review
 
-Run OpenAI Codex as the second, independent reviewer of the current story branch. This deliberately does **not** repeat the swift-code-reviewer checklist (idiom, concurrency, HIG) — Codex's value is a different model with different blind spots, pointed at what matters most here: the byte-level semantics. Do not skip this because the in-loop review was clean; the two reviews look in different places.
+Run OpenAI Codex as the second, independent reviewer of the current feature branch. This deliberately does **not** repeat the swift-code-reviewer checklist (idiom, concurrency, HIG) — Codex's value is a different model with different blind spots, pointed at what matters most here: the byte-level semantics. Do not skip this because the in-loop review was clean; the two reviews look in different places.
+
+## 0. Which review this is
+
+Three occasions (ADR-041), same mechanics:
+
+- **Handover review** of the whole feature PR: the loop below, cap 5.
+- **Slice review** of a risky slice (DST bytes, engine, interpreter, program format) as soon as it is green: **one round**, scoped in the prompt to that slice's commits (`git diff <slice-base>..HEAD`). Valid findings are fixed test-first right away; the handover review later re-checks them as part of the whole diff. Record it in the PR description as "Codex slice review: <slice>".
+- **Brief review** of a feature whose semantics are not pinned by ADRs or a reference: **one round** on `docs/features/<slug>.md` before any test is written. Rubric: contradictions with ADRs, criteria that a test which cannot fail would satisfy, missing edge cases, behaviour the references disagree on. Findings change the brief; journal the round.
 
 ## 1. Check the binary
 
@@ -33,7 +41,7 @@ codex exec -s read-only -C "$PWD" -o /tmp/codex-review-verdict.md \
 
 With `SCRATCH` unset this silently reads `/codex-prompt.txt` and the review dies before Codex starts (Codex US-209 round 2 found exactly that hole in this file).
 
-The prompt file's content (adapt the rubric per story):
+The prompt file's content (adapt the rubric per feature — a feature diff is larger than a story's was, so name the areas it touches and point Codex at the riskiest first):
 
 ```
   "Review the changes shown by \`git diff main...HEAD\` (run it yourself; also read the touched files for context). You are the independent cross-vendor reviewer for a Swift 6 embroidery engine that emits Tajima DST files. Byte-level semantics are pinned in docs/DECISIONS.md (ADR-012 and ADR-013) — read them first; they are the arbiter, not your priors. Focus adversarially on semantics and correctness: try to construct concrete inputs (stage coordinates, color changes, jumps, boundary values) where the changed code produces wrong DST bytes, diverges from the pinned Catroid semantics, or violates an ADR. Also name test blind spots: real failure modes the suite cannot catch. Do NOT comment on style, formatting, naming, or architecture taste — a separate reviewer covers those. For each finding: severity, file:line, a concrete reproducing input, and why the ADRs say it is wrong."
@@ -66,13 +74,15 @@ Triage per step 3, then append a **Codex round N** section to the PR verdict (pr
 **Stop condition** — the loop ends when **either** holds:
 
 1. **This round's triage produced no *code* changes.** Rejected findings and doc/comment-only corrections end the loop.
-2. **Severity has fallen for two consecutive rounds.** Take the highest severity in each round: two successive strict decreases (e.g. High → Medium → Low, or High → Medium → clean) means the loop is converging and the remaining findings are not the kind that ship defects. A flat run — High → High, or Medium → Medium — is **not** convergence and does not stop the loop, however many rounds have passed.
+2. **Severity has fallen for two consecutive rounds.** Take the highest severity in each round: two successive strict decreases (e.g. High → Medium → Low, or High → Medium → clean) means the loop is converging and the remaining findings are not the kind that ship defects. A flat run — High → High, or Medium → Medium — is **not** convergence and does not stop the loop early; only the cap does.
 
-**Hard cap: 10 rounds.** At 10, stop and escalate to Sebastian rather than continuing. Also escalate *early*, without waiting for the cap, if severity has been flat or rising for three rounds — that pattern means the loop is not converging and more rounds are unlikely to fix it on their own.
+**Hard cap: 5 rounds** (ADR-041, 2026-10-09). At 5 the loop stops — no escalation and no sixth round. Valid findings from round 5 are still fixed, test-first, but their fixes are not re-reviewed by Codex; say so in the PR verdict. Findings that are not fixed are tracked (PR note + journal, or a backlog entry if they outlive the feature). A flat severity run no longer triggers an early escalation: with a cap of 5 the cap itself is the bound. Sebastian can still ask for more rounds on a specific PR.
 
 **Record, every round**: the round's highest severity and whether it produced code changes. The stop condition is now a function of that history rather than a count, so the history has to be written down — the PR verdict section and the journal entry are where it goes.
 
-### Why this replaced a fixed count (2026-08-09, US-302)
+### History: why the stop condition is convergence-first (2026-08-09, US-302)
+
+*Kept as the record of how the stop condition came to be. The 10-round cap it describes was lowered to 5 on 2026-10-09 (ADR-041) once work moved to feature-sized PRs: one loop per feature instead of one per ≤ 5 h story. The convergence conditions above still decide when a loop ends early.*
 
 The cap was 3, then 5, and both were wrong in the same way: a fixed count is a proxy for convergence, and it stops the loop on the wrong axis.
 
@@ -88,6 +98,6 @@ That is the cleanest available evidence for the change. Under the old fixed cap 
 
 Final shape: **8 rounds, 21 findings, none rejected**, severity Medium → High → High → High → High/Medium → High → Medium → **none**.
 
-The 10-round ceiling exists so a genuinely pathological branch escalates to a human instead of looping indefinitely; it is not a target.
+The ceiling (10 then, 5 now) exists to bound the loop; it is not a target.
 
 The PR is ready for handover only after the final round's verdict is recorded and its CI is green.

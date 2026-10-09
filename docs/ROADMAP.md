@@ -4,7 +4,7 @@ Standalone native iOS app bringing Catrobat's embroidery functionality (Android 
 
 **Stack**: Swift 6, SwiftUI, min iOS 17. The engine (stitch domain, patterns, DST export, interpreter) lives in a platform-independent Swift Package (`EmbroideryEngine`) developed strictly test-first with `swift test`. License: AGPL-3.0 (Catrobat standard).
 
-**Process**: TDD (failing tests first), user stories ≤ ~5 h, many small commits, one story per PR-sized unit of work. Stories for the *next* milestone are refined in detail; later milestones stay coarse until we get there.
+**Process** (from 2026-10-09, [ADR-041](DECISIONS.md)): TDD (failing tests first, red → green per slice), **one feature per branch and PR** — e.g. the brick backend, the editor UI, variables — with a short brief in [`features/`](features/) and no hour estimates. The next feature is briefed when it starts; later ones stay a line in the table below. *Until 2026-10-09 (M1–M4) the unit was a user story of ≤ ~5 h with one PR each; [`user-stories/`](user-stories/) is that record.*
 
 **Engineering standards** (per the `swift-engineering` plugin skills — consult them while coding):
 - **Swift Testing, not XCTest**: `@Test` / `#expect` / `#require`, parameterized tests via `@Test(arguments: zip(...))`. Tests run in parallel by default — they must not share mutable state or fixed file paths; serialize (`.serialized`) only as a last resort.
@@ -28,6 +28,19 @@ Standalone native iOS app bringing Catrobat's embroidery functionality (Android 
 | E7 | Export & sharing | DST export via share sheet / Files app (custom UTType), design naming (15-char DST limit), preview-as-image sharing via `ImageRenderer` |
 | E8 | Release readiness | Polish, accessibility, localization scaffolding, app icon, App Store prep |
 | S* | Stretch (optional) | Freehand path → stitches; `.catrobat` (code.xml) import; SVG plotting |
+
+## Features (from 2026-10-09)
+
+Work after M4 is organised by feature (ADR-041). The milestone sections below remain the scope source for M5/M6 and the record for M1–M4; a feature draws its scope from them.
+
+| Feature | Draws scope from | Status |
+|---|---|---|
+| [Editor UI](features/editor-ui.md) | Rest of M4: US-411, M4 exit criteria and final verification | In progress — 2026-10-09 |
+| Brick backend | M6 brick parity set | Not briefed |
+| Variables | M6 control/data subset, beyond US-410's variable menu | Not briefed |
+| Project management | M5 | Not briefed |
+
+Order after Editor UI is open; the next feature is chosen when Editor UI is handed over. Backlog items ([`user-stories/backlog.md`](user-stories/backlog.md)) are pulled into whichever feature touches the same code, or become a feature of their own.
 
 ## Milestones
 
@@ -69,6 +82,8 @@ How stitches reach the preview is pinned as **ADR-021** (colour-resolved events 
 Detailed stories: [`user-stories/milestone-3/`](user-stories/milestone-3/)
 
 ### M4 — Block editor (E5)
+**Folded into the [Editor UI](features/editor-ui.md) feature — 2026-10-09** (ADR-041). US-401…US-410 and US-312/314/315 done; US-411, the exit criteria below and the deferred final verification are now that feature's scope. The status paragraph below is the record up to that point.
+
 **Status**: Planned — 2026-09-19. Fourteen stories, **~58 h**: eleven new (US-401…US-411) plus three carried in from the backlog (US-312, US-314, US-315). Nine ADRs: **ADR-032** (the four cross-cutting process invariants M3's drift check found homeless — discharged at planning rather than carried again), **ADR-033/034/035** pinned at planning because US-401's and US-402's tests are written against them, and **ADR-036…040** reserved for the stories that discover them. **No human Xcode session is required**, which was measured rather than assumed: a SwiftPM product may vend several targets, so `EditorCore` is added to the existing `ProgramModel` product and `import EditorCore` resolves in the app with `project.pbxproj` provably untouched (probe built, app compiled, `git status` empty, probe reverted). **US-401 done 2026-09-20** (PR #51): `EditorCore` is the package's **sixth target and its fifth product's second**, which is where ADR-022's "five products, five targets" bookkeeping stops holding — `BrickKind` (23 cases, exhaustive no-`default:` mapping), `template()` seeded from `BrickDefaults`, index-based `ScriptAddress`/`BrickAddress`, and `Script.indentDepths` as an extension declared in the editor target so `ProgramModel`'s serialized format is untouched. Eight new `BrickDefaults` constants with Catroid provenance, two of which Catroid has no `BrickValues` entry for and whose comments say so instead of inventing a default. AC3 was **executed first** rather than assumed: the app compiles with `import EditorCore` and `git status --porcelain -- '*.pbxproj'` is empty. **334 engine tests**, up from 257. Three mutation passes — 13 after green, 5 after each review round — and **every prediction held, including the two predicted green**. The review loop's finding is that *text was the wrong oracle for the manifest*: two rounds broke two successive textual pins, and the evaluated check (`swift package dump-package`) moved into **CI**, because spawning it inside `swift test` deadlocks on SwiftPM's build lock for 608 s. **Three Codex rounds produced 12 findings, all valid, none rejected, and none in the shipped vocabulary** — all six Mediums sat in the two *guards*, the import scan and the dependency check. Severity was flat at Medium for three rounds, which is the early-escalation threshold, so the loop stopped at round 3: the dependency check converged onto an evaluated oracle, while the import scan is a text classifier asked to be exhaustive over Swift's grammar (ADR-023's documented failure shape) and is filed for a structural replacement as **US-317**, a Linux engine-test job. Sebastian resolved the escalation the same day: merge as-is, US-317 stays in the backlog.
 
 Detailed stories: [`user-stories/milestone-4/`](user-stories/milestone-4/)
