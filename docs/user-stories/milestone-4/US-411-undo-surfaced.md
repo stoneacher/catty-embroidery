@@ -2,6 +2,8 @@
 
 **Epic**: E5 Block editor | **Estimate**: ~4 h | **Depends on**: US-403, US-408, US-409, US-410
 
+**Status**: Absorbed into the [Editor UI](../../features/editor-ui.md) feature — 2026-10-09 (ADR-041). This file remains the spec for that feature's first slice; its criteria are ticked in the feature brief, not here.
+
 **Story**: As a user, I want undo and redo where I can reach them — a button, a shake, a keyboard shortcut — and I want them to cover *everything* I can do, not most of it.
 
 Last by construction: it is the only story that can prove coverage, because it is the only one that comes after every mutation site exists.

@@ -1,5 +1,5 @@
 ---
-description: Session-end checklist — sync DECISIONS/ROADMAP/workflow-journal with this session and close out the current user story
+description: Session-end checklist — sync DECISIONS/ROADMAP/workflow-journal with this session and close out the current feature (or the session's slice of it)
 allowed-tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 
@@ -7,44 +7,52 @@ allowed-tools: Read, Edit, Write, Bash, Grep, Glob
 
 Work through this checklist against what actually happened in this session and the branch's diff (`git log --oneline main..HEAD`, `git diff main...HEAD --stat`). Update files only where reality requires it — never invent content to satisfy the checklist, and never tick a box you haven't verified.
 
-## 1. Current user story
+A feature usually spans several sessions (ADR-041). Run this at the end of every session; steps 1, 5 and 6 only apply in full at the session that hands the feature over.
 
-- Identify the story from the branch name (`US-<id>-<slug>` → `docs/user-stories/*/US-<id>-*.md`).
-- For every acceptance criterion, verify it is actually met (tests, code, CI evidence) before ticking `[x]`. Leave unmet criteria unchecked and call them out in the report.
-- If all criteria are met, mark the story done with a status line directly under the metadata line at the top:
-  `**Status**: Done — YYYY-MM-DD, PR #<n>`
-- **Prove it**: after editing, run both checks and include their output in the step-8 report:
-  - `grep -n '^\*\*Status\*\*: Done' <story file>` — must print the Status line; quote it verbatim.
-  - `grep -n '^- \[ \]' <story file>` — must print **nothing**; any hit is an unmet criterion and the story is not done.
-  A report without the quoted Status line and the clean unchecked-criteria check is an incomplete /finish (US-110 was handed over unclosed on 2026-07-16 because this step left no visible trace — see the journal entry of that date).
+## 1. Feature brief
+
+- Identify the feature from the branch name (`feature/<slug>` → `docs/features/<slug>.md`).
+- Tick each acceptance criterion that is **verified** met (tests, code, CI or simulator evidence). Leave the rest unchecked.
+- **At handover only**: if every criterion is met, set the brief's status line to `**Status**: Done — YYYY-MM-DD, PR #<n>` and prove it in the report:
+  - `grep -n '^\*\*Status\*\*: Done' <brief>` — quote the output verbatim.
+  - `grep -n '^- \[ \]' <brief>` — must print nothing.
+  A brief that is closed without this proof is not closed (precedent: US-110, 2026-07-16).
+- Mid-feature: report which criteria were ticked this session and what is next.
+
+## 1b. Slice quality gates
+
+For every slice finished this session, verify — and list in the report — that:
+- its tests were seen red before the implementation;
+- it was **mutation-checked** (ADR-032 invariant 2): name the mutations tried and confirm each turned a test red; a surviving mutant is either killed by a new test or recorded with a reason;
+- if it was a **risky slice** (DST bytes, engine, interpreter, program format), its `swift-code-reviewer` pass and Codex slice round ran and are recorded in the PR.
+
+Also check the PR's size: `git diff main...HEAD --stat -- . ':(exclude)*Tests*'`. Past roughly 1,500 lines of non-test code, say so and propose where to split.
 
 ## 2. docs/DECISIONS.md
 
-- Did this session make a decision an ADR should pin — architecture, semantics, process-with-consequences — that isn't derivable from the code, or that contradicts an existing ADR? If yes, append an ADR in the established format (context → decision → consequences, newest at the bottom, next free number). Tooling fixes and story-scoped choices do **not** get ADRs.
+- Did this session make a decision an ADR should pin — architecture, semantics, process-with-consequences — that isn't derivable from the code, or that contradicts an existing ADR? If yes, append an ADR (context → decision → consequences, next free number). Tooling fixes and choices local to one slice do **not** get ADRs.
 
 ## 3. docs/ROADMAP.md
 
-- Any change to scope, milestones, epics, or engineering standards agreed this session? Reflect it. Otherwise leave the file untouched.
+- Update the feature's row in the feature table (status, PR). Scope or standards changes agreed this session go in too; otherwise leave the file alone.
 
 ## 4. docs/workflow-journal.md
 
-- Every notable workflow event of this session (delegation win/failure, new hook or rule, tool comparison, agent failure worth noting) has a dated entry in the template format. Add what's missing; keep entries short and factual — they are thesis data.
+- The journal is exhaustive thesis data: every notable workflow event of this session (delegation win/failure, review round, new hook or rule, tool comparison, defect found by a surprising route, agent failure) is recorded. Group events into as many dated entries as make sense — one for a quiet session, several when distinct things happened — and write each so it reads on its own. Append-only.
 
 ## 5. Manual Ink/Stitch verification callout
 
-- Decide whether this story's changes affect anything a machine-readable check cannot fully vouch for: DST bytes (header, records, terminator), stitch geometry/interpolation, jump/color-change semantics, or export behavior.
-- If yes, tell Sebastian **explicitly and prominently** that a manual check with the Inkscape embroidery plugin (Ink/Stitch) is needed: name the exact file or design to generate/open, and what to look for (e.g. stitch count, colors, physical size in mm, visual shape). Precedent: US-101's "empty" fixture renders — automated tests were green while only a viewer could confirm what a machine would actually sew.
-- If no manual check is warranted, state that explicitly too ("no Ink/Stitch verification needed for this story — no DST/geometry output changed"). Never leave it unaddressed.
+- Did the feature change anything a machine check cannot fully vouch for: DST bytes, stitch geometry/interpolation, jump/color-change semantics, export behavior, or a new path by which a design reaches the writer? If yes, tell Sebastian **explicitly** that an Ink/Stitch check is needed: which design to build or export, and what to look for (stitch count, colors, size in mm, shape). If no, say so explicitly. Never leave it unaddressed.
 
-## 6. Cross-vendor Codex review
+## 6. Cross-vendor Codex review (handover only)
 
-- Verify `/codex-review` ran for this branch and its verdict is recorded in the PR description (a "Codex review" section). If it hasn't run, run it now — the PR is not ready for handover without it. (The gh-pr-create hook reminds at creation time; this step catches branches whose PR predates the rule or where the reminder was missed.)
+- Verify `/codex-review` ran and its verdict, with each round's highest severity, is in the PR description. If not, run it now. Cap: 5 rounds (ADR-041).
 
 ## 7. Ship it
 
-- Engine tests green: `swift test` in `Packages/EmbroideryEngine`.
-- Working tree clean: commit any doc updates (concise imperative message, no trailers), push, and watch CI to green (`gh pr checks <pr> --watch`).
+- Engine tests green (`swift test` in `Packages/EmbroideryEngine`); app builds if app code changed.
+- Commit doc updates (stage explicit paths), push, and watch CI to green (`gh pr checks <pr> --watch`).
 
 ## 8. Report
 
-End with a short summary: per file — updated / already correct / nothing to record; step 1's proof — the story's Status line **quoted verbatim from the file** plus the clean unchecked-criteria check output (not paraphrased); CI state; the Ink/Stitch verdict from step 5; the Codex review verdict from step 6; anything left open for the next session.
+Short summary: per file — updated / already correct / nothing to record; step 1's state (or proof at handover); CI state; Ink/Stitch verdict; Codex verdict (at handover); what the next session picks up.

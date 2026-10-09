@@ -2758,3 +2758,33 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Sebastian chose to run round 4** after the three-flat-Medium escalation. The deciding argument was that round 3 had confirmed every round-2 fix and the remaining fix was small. Round 4 returned **no correctness findings**, so the loop ended on condition 1.
 - **Final history:** Medium → Medium → Medium → none. 6 findings, all valid, all fixed test-first. This is the first escalated branch where one more round closed the loop cleanly. US-315 stopped at the escalation instead. The difference is where the findings were: US-410's were in shipped app behaviour, and each round's set was smaller than the last (2, 3, 1, 0), even though the highest severity stayed flat. **A flat maximum severity hid a shrinking set of findings.** That supports the rule's choice to escalate rather than stop automatically: the person deciding can see that trend.
 - **Close-out:** story Status set to Done (pending merge). No Ink/Stitch check is needed, because nothing changes DST output. The manual items go to the bundled M4 pass: the opened variable menu, the iPad popover, VoiceOver on the swatches, and the row action while another sheet dismisses.
+
+## 2026-10-09 — From ≤ 5 h stories to feature-sized units (ADR-041)
+
+- **Task**: change the process after M4's thirteenth story. Discussed in Claude Code, decided by Sebastian. Sebastian's assessment was that working in small story iterations costs a lot of time, and that features like the brick backend, the editor UI and variables are better built out in larger pieces.
+- **Where the time had been going** (Claude's per-story inventory, agreed as the starting point): story file plus estimate plus architect pass; branch, `[red]` commit and draft PR; `swift-code-reviewer`; a Codex loop capped at 10 (US-302 ran 8 rounds, and US-315 and US-410 each escalated at three flat Mediums); `/finish` with a ROADMAP status paragraph per story. The ROADMAP's milestone status paragraphs had grown into per-story narratives several hundred words long.
+- **Decided**:
+  - One feature per branch and PR, with a brief in `docs/features/` and no estimates.
+  - TDD stays per slice. A `[red]` commit is optional.
+  - Reviews run once per feature. Codex keeps the convergence stop conditions and gets a **hard cap of 5**. Claude proposed 3; Sebastian chose 5 because Codex "did always find valuable infos". The three-flat-rounds early escalation is dropped.
+  - Manual checks are bundled at feature handover.
+  - **The journal stays exhaustive**. Claude proposed making it optional and per-feature; Sebastian kept it exhaustive with granularity "depending on the circumstance".
+  - M4's remainder (US-411, exit criteria, final verification) is folded into the **Editor UI** feature.
+- **Changed**: `CLAUDE.md` and `AGENTS.md` (rules 1–2, agent phases, Codex cap, `[red]`, journal granularity), `.claude/commands/finish.md` (rewritten around feature briefs; it runs every session but closes a brief only at handover), `.claude/commands/codex-review.md` (cap 5, history section kept as the record), `ROADMAP.md` (process line, feature table, M4 marked folded), M4 README and US-411 (status notes), new `docs/features/README.md` and `docs/features/editor-ui.md`, ADR-041.
+- **Kept deliberately**: ADR-012/013 authority, ADR-032 invariants, the CI ruleset and commit gate, the delegation boundary, human-only merges.
+- **What to watch** (thesis data for later entries): whether 5-round loops on feature-sized diffs converge or hit the cap, and whether skipping per-story planning review lets design errors through that M4's planning rounds used to catch.
+
+## 2026-10-09 — Quality safeguards added to ADR-041 after an honest-assessment question
+
+- **Task**: before committing the feature-unit change, Sebastian asked for Claude's honest opinion and stated the constraint: "I don't want to loose code quality".
+- **Claude's assessment**:
+  - The quality in this repo came from tests-first, ADRs, CI gates and two reviewers with different blind spots. All of these were kept. What was cut was ceremony that never caught a defect.
+  - The real risk is **review effectiveness on larger diffs**. Codex attention spreads thin, defects are found later and cost more rework, and a cap of 5 on a feature-sized diff is much less review per line than per-story loops. US-302's round-6 finding is the precedent for late, valuable findings.
+  - **A gap in Claude's own first draft**: ADR-032 invariant 2 (mutation checking) had been enforced per story by the M4 README, and the rewrite mentioned it nowhere. The rule still stood, but no step prompted it.
+- **Adjustment** (accepted by Sebastian, recorded as ADR-041 decision 6):
+  - A PR size limit of ~1,500 non-test lines.
+  - Per-slice `swift-code-reviewer` plus one Codex round for risky slices (DST bytes, engine, interpreter, program format).
+  - An explicit mutation check per slice in `CLAUDE.md`/`AGENTS.md`, `/finish` (new step 1b) and the brief template.
+  - A Codex brief review for features with unpinned semantics.
+  - `/codex-review` gained a step 0 distinguishing the handover, slice and brief reviews.
+- **Observation**: the first draft of a process simplification dropped an enforcement step silently. This is the same failure mode as ADR-032 invariant 3 (a claim living in several places), applied to a rule rather than a number. It was caught because Sebastian asked for a critique rather than an approval.
