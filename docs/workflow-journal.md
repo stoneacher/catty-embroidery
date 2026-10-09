@@ -2788,3 +2788,98 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - A Codex brief review for features with unpinned semantics.
   - `/codex-review` gained a step 0 distinguishing the handover, slice and brief reviews.
 - **Observation**: the first draft of a process simplification dropped an enforcement step silently. This is the same failure mode as ADR-032 invariant 3 (a claim living in several places), applied to a rule rather than a number. It was caught because Sebastian asked for a critique rather than an approval.
+
+## 2026-10-09 — ADR review: an index, four consolidations, drift fixed in place
+
+- **Task**: with 41 ADRs, Sebastian asked whether to merge some or go over them.
+- **Claude's recommendation**:
+  - **No merging or renumbering.** 285 Swift files cite ADRs by number (ADR-012 alone 80 times), and the ADRs are the thesis record.
+  - The real problems were size (ADR-021 onward run 30–117 lines), stacked amendments, and no index.
+  - Proposed instead: an index, consolidation by *supersession* (a new ADR states the current rule; the old ones stay with a status line), inline markers on overruled sentences, and a length norm for new ADRs.
+  - Recommended **against** a consolidated DST ADR: superseding the arbiter costs more than it clears.
+- **Delegation (retrieval/verification)**: four parallel read-only `Explore` agents, one per range (001–019, 020–028, 029–034, 035–040). Each returned a structured table:
+  - area and current rule;
+  - status;
+  - a spot-check of the most concrete claims against the code;
+  - overlaps;
+  - how much of the ADR is review narrative.
+
+  About 80 claims were checked in total. **No rule the code is meant to follow was contradicted by it.** The drift was entirely in the documents:
+  - ADR-028 describes SwiftUI gesture code that ADR-031 replaced.
+  - ADR-018 says two event kinds are produced; all five are.
+  - ADR-016 and ADR-022 give stale target counts, and ADR-022 calls an adapter "owed" that ADR-024 delivered.
+  - ADR-009's protocol signature is stale.
+  - ADR-032 cites four line numbers that now point at blank or unrelated lines. That is invariant 3 broken by the ADR that states it.
+  - ADR-030 contradicts itself on adjacent lines (1 000 vs 2 000), and ADR-029's ladder reads out of date order.
+  - ADR-037, 038 and 039 each still print a sentence a later amendment overruled.
+- **Decided by Sebastian**: all four proposed consolidations.
+- **Written by Claude** (generation was not delegated, because these texts become the arbiter):
+  - **ADR-042** package layout (supersedes 016 and 022).
+  - **ADR-043** stage rendering (supersedes 009, and 024/029/030 as rules).
+  - **ADR-044** stage manipulation (supersedes 028 and 031).
+  - **ADR-045** editor semantics and the change pipeline (supersedes 035; restates the pipeline shared by 036/037/038).
+  - An index table at the top of `DECISIONS.md`.
+  - `**Status**` lines on 22 ADRs.
+  - Inline markers on every overruled sentence; no old text deleted.
+  - ADR-032's line citations replaced with ADR anchors.
+  - Every constant and symbol in the new ADRs re-checked against the source before writing (`settleChunk`, the coarsening constants, `maximumScale`/`minimumScale`, `renameProgram`, `insertAction`, `forFrame`, the CI `dump-package` check, the CoreGraphics adapter file).
+- **Adjustment**: `CLAUDE.md`/`AGENTS.md` now point at the index instead of a hand-maintained ADR-001…028 list, which had gone stale at 028. `/finish` step 2 requires an index row and status updates for every new ADR, and sets the ~20-line norm with review history going to the journal.
+- **Observation**: the four agents agreed on every overlap they both saw (e.g. 016/022/033, 028/031) without coordination. The two drift classes they found — **an amendment not propagated back to the text it overrules**, and **line-number citations** — are both instances of ADR-032 invariant 3. Line-number citations into a living document are now avoided in favour of ADR anchors.
+
+## 2026-10-09 — ADR review, Codex round 1: 12 findings, all valid, all about lost or overstated rules
+
+- **History:** round 1, highest severity **Medium** (4 Medium, 8 Low). All 12 were valid and none was rejected; every one was fixed in the docs.
+- **The Mediums were all rules the consolidation dropped, and each is still load-bearing in code:**
+  - ADR-043 lost ADR-024's viewport-size guard on the raster (`CanvasStitchRenderer`).
+  - ADR-044 lost the identity-gesture rule (`StageInteraction`'s `guard !(gesture.isIdentity && isFollowingFit)`) and the catcher-placement rule from ADR-031.
+  - ADR-044 claimed every rule was under `swift test`, but rotor order and the one-element accessibility tree are Inspector checks.
+- **The Lows:**
+  - Planner access control dropped from ADR-043.
+  - Three of ADR-035's list rules dropped from ADR-045: exactly one source offset, no `EditMode`, no `withAnimation`.
+  - ADR-045 said starting blank goes through `load`; it does not.
+  - Three index rows overstated or omitted something: ADR-017 parity, ADR-023 gate conditionality, redo in ADR-045.
+  - One inline marker covered a clause that still holds (ADR-039).
+  - One reservation clause was left unmarked (ADR-036).
+- **Observation:** the four survey agents checked whether old rules match the *code*; none was asked whether the *new* text kept every old rule. That is the gap Codex filled. A consolidation needs a fidelity check old → new, not only a drift check docs → code. The Mediums are exactly the rules a summary drops first: guards and special cases, each one sentence inside a long review section.
+
+## 2026-10-09 — ADR review, Codex round 2: round-1 fixes confirmed, two more rules out of date
+
+- **History:** round 1 Medium (12 findings), round 2 **Medium** (1 Medium, 1 Low). Both were valid and both were fixed. Codex confirmed all 12 round-1 fixes as correct and complete.
+- **The Medium was an error in Claude's own consolidation, carried over from the superseded text.** ADR-044 said "double-tap-to-fit", taken from ADR-028's original wording. The code toggles fit ↔ 2× about the tapped point (`StageInteraction.beginToggle`, `toggleStep`), a later change that ADR-028 never recorded. Consolidating from the ADRs alone inherits every change the ADRs missed.
+- **The Low:** ADR-045 kept the single-offset rule for list moves but not for list deletes (`deleteAction(atOffsets:in:)`).
+- **Loop state:** severity is flat (Medium → Medium) and the triage changed the branch, so the loop continues to round 3 (cap 5, ADR-041). The stop rule says doc-only changes end the loop, but that rule was written for code PRs. On a docs-only PR the docs *are* the deliverable, so their changes are treated as code here.
+
+## 2026-10-09 — ADR review, Codex round 3: a performance gap the consolidated ADR did not name
+
+- **History:** Medium (12) → Medium (2) → **Medium** (4: 2 Medium, 2 Low). All 4 were valid and fixed. Codex confirmed both round-2 fixes.
+- **The finding that matters beyond the docs:** ADR-043 described the baked raster as the settled-frame path. But in iPhone 17's default layout it is **never used**: the viewport is 370 × 256.83 against a 370 × 257.0 canvas, so the exact-size guard never passes (backlog US-322, found in US-315). This was documented only in a code comment and the backlog, never in an ADR. A consolidated "current rules" ADR that omits a known gap reads as a stronger claim than the code supports. ADR-043 now names it, and lists the full `BakeKey`, including the load-bearing `isLive`.
+- **The other three:**
+  - ADR-044 dropped ADR-028's US-314 known gap: programmatic actions can write `settled` mid-manipulation.
+  - ADR-044 said the double tap "inherits" the pan's slop; the pan keeps it, and that is what preserves the double tap.
+  - ADR-028's index row still said "per gesture".
+- **Pattern across three rounds:** every finding is a *known limitation or special case* that lived in a review paragraph, an amendment or a code comment, not in a decision bullet. Consolidating "the rules" naturally keeps the decisions and loses the caveats. Flat Medium for three rounds; the loop continues under the cap of 5.
+
+## 2026-10-09 — ADR review, Codex round 4: three more caveats left behind
+
+- **History:** Medium → Medium → Medium → **Medium** (2 Medium, 1 Low). All valid and fixed. Codex confirmed all four round-3 fixes.
+- **Found:**
+  - ADR-042 said isolation is "pinned by tests". `EditorCoreTargetIsolationTests` calls its own source scan "not a proof" (US-317 is the structural fix), and `StagePreviewTargetIsolationTests` pins API types, not imports.
+  - ADR-043 dropped ADR-024's deferred thread-contrast casing, which was never built.
+  - ADR-043 omitted the needle's legibility limit past about 3× zoom (`NeedleGlyph`).
+- **Same pattern, fourth time:** every finding was a caveat recorded in a doc comment or a review paragraph. Round 5 is the cap (ADR-041); whatever it finds is fixed without a further Codex round, and the PR says so.
+
+## 2026-10-09 — ADR review, Codex round 5 (cap): six more caveats, fixed without re-review
+
+- **History:** Medium (12) → Medium (2) → Medium (4) → Medium (3) → **Medium** (6: 2 Medium, 4 Low). Every finding over five rounds was valid: **27 in total, none rejected**. Codex confirmed all three round-4 fixes.
+- **Round 5 found:**
+  - ADR-043 omitted the display-list copy-on-write cost (~1.2 MB per frame at 50k), and three of ADR-030's accepted fidelity costs. One of those sentences in ADR-030 was itself stale: stride 5 at the original target, 3 today.
+  - ADR-044 omitted the useless top of the zoom range.
+  - ADR-045 omitted the lost picker highlight after an undo back to a sample, and that "drag needs no `EditMode`" was run on iOS 26 only.
+  - The ADR-023 index row ignored `[red]`.
+- **The loop stopped at the cap (ADR-041).** Round 5's fixes are not re-reviewed by Codex; the PR says so. Severity never fell. Under the old rule (cap 10, early escalation at three flat rounds) this would have escalated after round 3.
+- **Assessment:** this is the first loop run under the new cap, and it stopped while still finding valid issues, with **falling weight** (Mediums 4 → 2 → 2 → 2 → 2, and the later ones were caveats rather than lost rules). That is the risk ADR-041 accepted. It is acceptable here because the residual class is "a documented caveat missing from a summary", not a wrong rule. But it is evidence that a consolidation needs an explicit **caveat inventory** (every "known gap", "not fixed", "recorded rather than" in the sources) built *before* writing, not found by review afterwards. Recorded as the method for any future ADR consolidation.
+
+## 2026-10-09 — Correction to the round-5 entry above
+
+- The round-5 entry gives the Medium counts as "4 → 2 → 2 → 2 → 2" and calls their weight "falling". The actual per-round Medium counts were **4 → 1 → 2 → 2 → 2**, which is flat after round 2, not falling. What did change is the kind of finding: rounds 1–2 were lost rules; rounds 3–5 were mostly missing caveats.
+- The caveat-inventory method that entry names is now a step in `/finish` (step 2), so it applies to the next consolidation rather than living only here.
