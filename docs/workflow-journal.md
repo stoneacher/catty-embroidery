@@ -2841,3 +2841,10 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - One inline marker covered a clause that still holds (ADR-039).
   - One reservation clause was left unmarked (ADR-036).
 - **Observation:** the four survey agents checked whether old rules match the *code*; none was asked whether the *new* text kept every old rule. That is the gap Codex filled. A consolidation needs a fidelity check old → new, not only a drift check docs → code. The Mediums are exactly the rules a summary drops first: guards and special cases, each one sentence inside a long review section.
+
+## 2026-10-09 — ADR review, Codex round 2: round-1 fixes confirmed, two more rules out of date
+
+- **History:** round 1 Medium (12 findings), round 2 **Medium** (1 Medium, 1 Low). Both were valid and both were fixed. Codex confirmed all 12 round-1 fixes as correct and complete.
+- **The Medium was an error in Claude's own consolidation, carried over from the superseded text.** ADR-044 said "double-tap-to-fit", taken from ADR-028's original wording. The code toggles fit ↔ 2× about the tapped point (`StageInteraction.beginToggle`, `toggleStep`), a later change that ADR-028 never recorded. Consolidating from the ADRs alone inherits every change the ADRs missed.
+- **The Low:** ADR-045 kept the single-offset rule for list moves but not for list deletes (`deleteAction(atOffsets:in:)`).
+- **Loop state:** severity is flat (Medium → Medium) and the triage changed the branch, so the loop continues to round 3 (cap 5, ADR-041). The stop rule says doc-only changes end the loop, but that rule was written for code PRs. On a docs-only PR the docs *are* the deliverable, so their changes are treated as code here.

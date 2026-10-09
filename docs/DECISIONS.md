@@ -1158,7 +1158,8 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 **Decision** (Sebastian, 2026-10-09, ADR review):
 
 *Input*
-- **A `UIViewRepresentable` installs a `UIPinchGestureRecognizer` and a `UIPanGestureRecognizer` that recognise simultaneously, plus a `UITapGestureRecognizer` for double-tap-to-fit.**
+- **A `UIViewRepresentable` installs a `UIPinchGestureRecognizer` and a `UIPanGestureRecognizer` that recognise simultaneously, plus a `UITapGestureRecognizer` for the double tap.**
+- **The double tap toggles fit ↔ 2× (`toggleStep`) about the tapped point**: from the fit it zooms in where the user tapped, from anything else it returns to the fit (`beginToggle`). "Fit to Hoop" is a separate, unconditional accessibility action.
   - `shouldRecognizeSimultaneouslyWith` is true only between our own recognisers.
   - `cancelsTouchesInView` and `delaysTouchesEnded` are both `false`. Both are load-bearing.
 - **A `StageTouchTrackingView` counts touches.** Reaching zero is a terminal signal, because a pinch can end with the pan never begun and no recogniser left to report.
@@ -1235,7 +1236,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - There is no rename or delete of a declaration yet.
 
 *Building actions from the UI.* Pure builders in `EditorCore` build an action and never apply one, so `apply` stays the one authority on refusals.
-- **List moves**: `destination = toOffset − count(removed indices < toOffset)`. A drop onto the block's own extent is no edit. **Exactly one source offset is required**: an empty or multiple offset set builds nothing, rather than acting on the first.
+- **List moves**: `destination = toOffset − count(removed indices < toOffset)`. A drop onto the block's own extent is no edit. **Exactly one source offset is required**: an empty or multiple offset set builds nothing, rather than acting on the first. **List deletes likewise need exactly one offset** (`deleteAction(atOffsets:in:)`): deleting a loop removes more rows than were named, so further offsets would be stale.
 - **Drag needs no `EditMode`** (a long press lifts the row in a plain `List` + `onMove`). The drag preview shows one row while the model moves a block, and **nothing is `withAnimation`-ed**: rows are identified by index (ADR-034), so an explicit animation would show the wrong rows leaving.
 - **Rows that cannot move are `.moveDisabled`**: `loopEnd` rows and unclosed openers.
 - **The accessibility moves reach exactly the arrangements a drag reaches** (tested in `AccessibilityMoveTests`): Move Up/Down (siblings only), Move Above/Below Loop, and Move Into Loop Above/Below.
