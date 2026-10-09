@@ -2899,3 +2899,18 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Test-premise bug, caught by the first green run:** the restore test built history through the window. Autosave then wrote it, so `restoreSavedProgram()` read the edits back instead of the saved sample. The fix was a test change: history is built on an injected editor before it joins the window. The code was correct.
 - **Simulator definition of done:** with an empty history, both buttons are disabled and a shake does nothing. After two palette adds, a shake offers "Undo"; the system Undo removed the brick through the package stack and enabled toolbar Redo. A second shake offered Undo *and* Redo, and system Redo restored the brick. **Not executed:** ⌘Z (the automation cannot send a chord), the three-finger gestures, iPad, and typing undo inside a focused field (the automation could not type into it). All four are owed to the handover pass.
 - **Observation:** the story's own plan text warned that "the obvious recipe does not work". The probes found two further ways the obvious design would fail, neither written down anywhere: the shared, event-grouped environment manager, and the absent first responder. Both were cheaper to find with a 40-line probe than with a review round.
+
+## 2026-10-09 — Editor UI, slice 2: the pair soak's floors caught its own generator first
+
+- **What:** `PairInvariantSoakTests` drives 1 500 steps per seed (3 seeds) through the doors the UI actually uses: palette insert at a random selection, the list's `.onMove` offsets, `.onDelete`, the rows' VoiceOver move actions, and undo/redo bursts. It checks `Script.validate()` after every step and every history step. It complements `EditBalanceInvariantTests`, which proves the same property one layer down, on `EditorCore.apply`.
+- **First run: red on every non-vacuity floor, and no balance failure.**
+  - The generator was degenerate. Above 40 bricks it forced the drag door, so the script never shrank, and about 80 % of all steps were drags.
+  - Loop kinds are 2 of the palette's ~20, so pair deletes reached as few as 1 in 1 500 steps.
+  - Redo was nearly unreachable, because the next edit cleared it.
+  - Without the floors, the run would have passed while barely touching pairs. The floors are the US-402 lesson (Codex round 1 found zero applied replacements behind green floors there), applied here before any review.
+  - The fix was in the generator, not the floors: a size cap that deletes, a one-in-three loop bias, and undo-then-redo bursts.
+- **Mutation check:** three mutants in the pair paths every door reaches, all killed by `validate()` itself, each failure naming its step (seeds 1 and 7, steps 6–72). The mutants were:
+  - an opener moved as a single brick;
+  - a `loopEnd` allowed to move;
+  - an opener deleted without its body and end.
+- **Not a new risk class:** the soak was green against the real code from the first non-degenerate run. Like slice 1's enumeration proof, its value rests on the mutants, which are recorded here.

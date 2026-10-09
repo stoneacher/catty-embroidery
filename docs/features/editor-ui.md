@@ -17,14 +17,14 @@ M4's exit criteria, carried verbatim in substance:
 - [ ] A program can be built from nothing — palette, parameters, reorder — then run and exported as `.dst`, with no bundled sample involved.
 - [x] **Every** editor mutation is undoable, proved by a test that *enumerates* `EditAction`'s cases rather than listing them by hand. — `UndoEnumerationTests`: adding a case fails to compile (slice 1).
 - [ ] The working program survives a relaunch including a force-quit, and a file the app cannot understand is refused and preserved rather than clobbered.
-- [ ] No sequence of adds, reorders and deletes can produce a script that fails `Script.validate()`, asserted as a property over generated sequences.
+- [x] No sequence of adds, reorders and deletes can produce a script that fails `Script.validate()`, asserted as a property over generated sequences. — `EditBalanceInvariantTests` (package, `apply`) and `PairInvariantSoakTests` (app, through every UI door; slice 2).
 
 Plus every acceptance criterion in [US-411](../user-stories/milestone-4/US-411-undo-surfaced.md) (the `UndoManager` bridge, executed before it is specified; the whole-program-replacement funnel; VoiceOver announcements; the totality proof; undo/redo consequences).
 
 ## Slices and test-first outline
 
 1. **Undo surfaced (US-411)** — *green 2026-10-09; policy and evidence in ADR-036's 2026-10-09 amendment; 4 + 12 mutants killed (journal). Of the "three callers" of `load`, two exist (`select`, `restoreSavedProgram`); launch-blank is the editor's initial state (ADR-045) and is asserted as a fresh window with empty history (`LoadFunnelTests`).* (risky: no — app and editor layer, no DST/engine/format change) — tests: US-411's test-first plan, items 1–8 (enumeration over all six `EditAction` cases incl. `declareVariable`, redo, disabled states, `nil` `UndoManager`, `loadProgram` from all three callers, announcements, run/export/autosave consequences, bridge state, coalesced sessions). ADR-036, ADR-038, ADR-032 invariants 2 and 4. Mutations: drop one `EditAction` case's fixture, skip the bridge sync after a toolbar undo, skip the autosave or run-void on undo — each must turn a test red.
-2. **Pair-invariant soak** (risky: no) — a long randomised sequence of palette adds, reorders and deletes driven through the view models, asserting `Script.validate()` after every step. Mutation: break pair-awareness in one reorder path; the soak must find it.
+2. **Pair-invariant soak** — *green 2026-10-09; 3 pair-path mutants killed by `validate()` within 72 steps (journal).* (risky: no) — a long randomised sequence of palette adds, reorders and deletes driven through the view models, asserting `Script.validate()` after every step. Mutation: break pair-awareness in one reorder path; the soak must find it.
 3. **Exit-criteria sweep** (risky: only if a gap touches the program format) — check criteria 1 and 3 against what US-405…US-410 shipped; any gap becomes a slice here rather than a new story.
 
 ## Verification at handover
