@@ -32,7 +32,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 020 | DST | Interpolation decides on the encodable delta; unconvertible coordinates and oversized moves are guarded no-ops. | Active |
 | 021 | Preview | The preview draws colour-resolved `.stitch` events into an append-only display list; export uses the assembled stream. | Active |
 | 022 | Package layout | `Samples` and `StagePreview` as app-support targets. | Superseded by 042 |
-| 023 | Process | The local gate always runs engine tests and compiles the app when the app tree changed; CI is the real gate, including a Release compile. | Active, amended twice |
+| 023 | Process | For commits not marked `[red]`, the local gate runs engine tests and compiles the app when the app tree changed; CI is the real gate, including a Release compile. | Active, amended twice |
 | 024 | Stage | Batching hoisted into `StitchDrawPlan`; deviations from both references. | Superseded by 043 (reasoning stays here) |
 | 025 | DST | Header field overflow is a thrown serialization error; field emission order is a contract. | Active |
 | 026 | Export | Export gated on `exportModel.count > 1`; rejecting `DesignName`; eager preparation; exported `.dst` UTType. | Active, amended |
@@ -666,7 +666,7 @@ Note the sharp edge that survives the correction: finding (1) above concluded th
 - **Dots are strided per colour run, anchored at each run's own `lowerBound`.** A global `index % stride == 0` rule drops every dot of a run shorter than the stride, so a thread colour vanishes the instant a finger lands; per-run anchoring makes "every colour run keeps at least one dot" true by construction, including at run length 1. `DotRun` stays a `Range` plus a stride rather than an array of selected indices: an array would allocate up to 50 000 `Int`s per plan in the **un-coarsened** paths — every settled bake — turning a live-path fix into a settled-path regression. A stored `StrideTo<Int>` is not `Equatable` and would break `StitchDrawPlan: Equatable`.
 - **Suppressing the dots mid-gesture is rejected.** Dot radius equals thread width, so the dots are the beading that makes penetration points read as points; suppressing them makes the design visibly *thinner* the moment a gesture starts, which is a larger visual delta than sparser beading for one further constant factor.
 - **Two constants, not one, and the measurement is what forced it.** A single "budget" had to be simultaneously the floor that keeps the 3 194-stitch rosette untouched (so ≥ 3 194) and the segment count a large design aims for (which the sweep puts near 1 000). No single number satisfies both. So **`liveCoarseningThreshold = 4_000`** decides *whether* to coarsen and **`liveSegmentTarget`** decides *how much* (1 000 as shipped by this story; **raised to 2 000 by US-313a on 2026-09-14** — see the correction below), with `coarseningStride(forStitchCount:target:)` as a **public pure function** — US-309's survivor lesson applied on day one, where a test that restated the settle rule instead of observing it passed the mutant.
-- **The stride is discontinuous at the threshold**, and that is recorded rather than hidden: a 4 000-stitch design draws every stitch, a 4 001-stitch one strides by 5. It lasts only while a finger is down, and the alternative was a default that provably does not reach one frame period at 50 000 stitches.
+- **The stride is discontinuous at the threshold**, and that is recorded rather than hidden: a 4 000-stitch design draws every stitch, a 4 001-stitch one strides by 5 *[at the original target of 1 000; at today's 2 000 it is 3]*. It lasts only while a finger is down, and the alternative was a default that provably does not reach one frame period at 50 000 stitches.
 - **The window choice is one package function on `canUseRaster == false`**, `forFrame(of:at:compositingRaster:threshold:target:)`, and the liveness guard comes **first** so a caller passing `compositingRaster: true` with a live transform still gets the coarse plan. The renderer's previous branch asked "did we get a usable raster?", which is a *different question*: that branch is also taken when the settled prefix is too short to bake, or the bake key is stale, or the `Canvas` is not the size the raster was rendered at — none of which is an interaction, and none of which should cost fidelity. Putting the choice in the package also puts it on the fast gate (ADR-023) instead of in a `private` SwiftUI view where only a hosted, drawn `Canvas` could observe it.
 - **`canUseRaster == false` is a gesture *or* the fit animation.** `StageInteraction.rendering` reports `.live` while a gesture is in flight *or* while the fit spring is settling; both are per-frame full re-strokes, so both get the coarse window. The settle is also the only deterministic way to put the coarse plan on screen for a screenshot. Nothing in this ADR may be described as "gesture-only".
 - **There is no spatial seam**, because the coarse plan is selected only when no raster may be composited, so it is always drawn alone and covers the whole list. The seam is **temporal** — a fidelity pop at interaction start and again at commit — and it is the same class of trade ADR-028 already took when it accepted that off-screen content is revealed only as frames re-stroke. `StitchDrawPlan+Planning.swift`'s "one planner parameterised by two windows rather than three implementations" argument survives intact: `coarse` is that planner at a stride above 1, and the identity `coarse(target: .max) == entire` is what keeps it true under refactoring — **that spelling and not `threshold: .max`**, which never enters the stride path at all and so pins only the gate (`swift-code-reviewer`; both cases are now asserted).
@@ -1139,6 +1139,10 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - `coarse(target: .max) == entire` keeps the planner single.
   - The planner itself (`planning`, `lastSegment(before:)`) stays **internal**, with explicit access keywords. Making it public would expose a constructor for arbitrary plans and make invalid strides reachable.
   - The bound on segments is `ceil(count/stride) + colorRuns + traversals + unreachableIntervals + corners`.
+  - **Accepted fidelity costs**, each lasting only while live:
+    - The stride is discontinuous at the threshold: 4 000 stitches draw every stitch, 4 001 stride by 3.
+    - The image pops in fidelity when an interaction starts and again at its commit. The seam is temporal, never spatial, because the coarse plan is always drawn alone.
+    - While coarsening, an interval touching a finite but unconvertible coordinate is dropped, although the fine plan draws it (some 10^17 view points off-screen).
 
 *The performance bar and how to read it*
 - **Over a capture of at least 10 s: p99 ≤ 16.67 ms and no frame > 33.3 ms, over drawn frames only.** The bar is never reworded (ADR-032 invariant 1).
@@ -1152,6 +1156,8 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 3. **Next: overdraw and fill rate.** The discriminating experiment is a 50 000-stitch design covering a small area (backlog US-316).
 4. Then `Path` reuse keyed on the plan and its stride. A polyline must first be hardened against non-finite vertices.
 5. Then a `MetalStitchRenderer` behind the protocol.
+
+**Known cost — one display-list copy per render pass.** The display list is handed into the view tree by value, so its buffer is no longer unique and the next append copies it: about 1.2 MB per frame at 50 000 stitches. It is inherent to the renderer protocol taking `display:` by value, and is documented rather than fixed (ADR-024, `PreviewRunState`).
 
 **Known gap — low-contrast threads are uncased.** The fixed field makes contrast *invariant* across appearances, not *sufficient*: a thread within 3:1 of the field (the shipping amber is about 1.5:1) stays hard to see. The casing ADR-024 deferred to US-307 was never built.
 
@@ -1193,7 +1199,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - **An identity manipulation while following the fit commits nothing**: the stage keeps following the fit (`guard !(gesture.isIdentity && isFollowingFit)`). The frozen fit is never written to `settled`, and pinning `settled` at gesture start is rejected for the same reason.
 
 *Bounds*
-- **Zoom runs from `min(fit.scale, 0.05)` to 50.** `StageZoomBounds` only widens the gesture range and never narrows it. There is one anchoring implementation (`pinched(by:about:within:)`).
+- **Zoom runs from `min(fit.scale, 0.05)` to 50.** The top of that range is practically useless (at 50× a thread is 157.5 view points wide and a dot 315), which is arithmetically correct and left as is. `StageZoomBounds` only widens the gesture range and never narrows it. There is one anchoring implementation (`pinched(by:about:within:)`).
 
 *Accessibility and motion*
 - **The adjustable action steps by 1.5× about the viewport centre, within the gesture bounds.**
@@ -1247,7 +1253,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 
 *Building actions from the UI.* Pure builders in `EditorCore` build an action and never apply one, so `apply` stays the one authority on refusals.
 - **List moves**: `destination = toOffset − count(removed indices < toOffset)`. A drop onto the block's own extent is no edit. **Exactly one source offset is required**: an empty or multiple offset set builds nothing, rather than acting on the first. **List deletes likewise need exactly one offset** (`deleteAction(atOffsets:in:)`): deleting a loop removes more rows than were named, so further offsets would be stale.
-- **Drag needs no `EditMode`** (a long press lifts the row in a plain `List` + `onMove`). The drag preview shows one row while the model moves a block, and **nothing is `withAnimation`-ed**: rows are identified by index (ADR-034), so an explicit animation would show the wrong rows leaving.
+- **Drag needs no `EditMode`** (a long press lifts the row in a plain `List` + `onMove`). This was executed on iOS 26 only; the iOS 17 floor rests on the documented API, not on a run. The drag preview shows one row while the model moves a block, and **nothing is `withAnimation`-ed**: rows are identified by index (ADR-034), so an explicit animation would show the wrong rows leaving.
 - **Rows that cannot move are `.moveDisabled`**: `loopEnd` rows and unclosed openers.
 - **The accessibility moves reach exactly the arrangements a drag reaches** (tested in `AccessibilityMoveTests`): Move Up/Down (siblings only), Move Above/Below Loop, and Move Into Loop Above/Below.
 - **The insertion point is directly after the selected row**, or the end of the script when nothing is selected (`Script.insertAction(of:after:in:)`).
@@ -1260,7 +1266,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 2. **`onProgramChanged` fires** for an applied, changing edit and for every successful undo or redo. It never fires for a rejected edit, an unchanging one, an empty undo or redo, or a `load`.
 3. **`AppModel.programChanged()`** does three things:
    - voids the run with `runner.reset()`, which discards the prepared `.dst` through `onRunDiscarded`;
-   - clears `provenance`;
+   - clears `provenance` (so undoing back to an untouched sample does not restore its picker highlight — a known limitation);
    - mints a `SaveRevision` on the main actor and autosaves.
 
    It does not refit, bump the selection generation or re-seed the export name.

@@ -2867,3 +2867,14 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - ADR-043 dropped ADR-024's deferred thread-contrast casing, which was never built.
   - ADR-043 omitted the needle's legibility limit past about 3× zoom (`NeedleGlyph`).
 - **Same pattern, fourth time:** every finding was a caveat recorded in a doc comment or a review paragraph. Round 5 is the cap (ADR-041); whatever it finds is fixed without a further Codex round, and the PR says so.
+
+## 2026-10-09 — ADR review, Codex round 5 (cap): six more caveats, fixed without re-review
+
+- **History:** Medium (12) → Medium (2) → Medium (4) → Medium (3) → **Medium** (6: 2 Medium, 4 Low). Every finding over five rounds was valid: **27 in total, none rejected**. Codex confirmed all three round-4 fixes.
+- **Round 5 found:**
+  - ADR-043 omitted the display-list copy-on-write cost (~1.2 MB per frame at 50k), and three of ADR-030's accepted fidelity costs. One of those sentences in ADR-030 was itself stale: stride 5 at the original target, 3 today.
+  - ADR-044 omitted the useless top of the zoom range.
+  - ADR-045 omitted the lost picker highlight after an undo back to a sample, and that "drag needs no `EditMode`" was run on iOS 26 only.
+  - The ADR-023 index row ignored `[red]`.
+- **The loop stopped at the cap (ADR-041).** Round 5's fixes are not re-reviewed by Codex; the PR says so. Severity never fell. Under the old rule (cap 10, early escalation at three flat rounds) this would have escalated after round 3.
+- **Assessment:** this is the first loop run under the new cap, and it stopped while still finding valid issues, with **falling weight** (Mediums 4 → 2 → 2 → 2 → 2, and the later ones were caveats rather than lost rules). That is the risk ADR-041 accepted. It is acceptable here because the residual class is "a documented caveat missing from a summary", not a wrong rule. But it is evidence that a consolidation needs an explicit **caveat inventory** (every "known gap", "not fixed", "recorded rather than" in the sources) built *before* writing, not found by review afterwards. Recorded as the method for any future ADR consolidation.
