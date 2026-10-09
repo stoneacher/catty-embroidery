@@ -132,13 +132,18 @@ struct ScriptListView: View {
                 pendingFocus = insertion.index
             }
         }
+        // Behind both the list and its empty state: the first responder that hands shake, ⌘Z
+        // and the edit menu the editor's own history (US-411). Undo matters most right after the
+        // last brick is deleted.
+        .background(UndoResponderAnchor(manager: model.editor.systemUndoManager))
         .navigationTitle(Text(title))
         // Outside the empty-state branch: after deleting the last brick, the empty state is
         // exactly where Undo must still be — and where Add is the only way forward.
         .toolbar {
             // The bottom bar in both placements (decided 2026-09-29): the top bar holds the
-            // stage link on compact and Add in both. No ⌘Z here — US-411's `UndoManager`
-            // bridge owns the keyboard, and two registrations would undo twice.
+            // stage link on compact and Add in both. No ⌘Z shortcut on these buttons: the system's
+            // ⌘Z reaches the same history through `UndoResponderAnchor` (US-411), and two
+            // registrations would undo twice.
             ToolbarItemGroup(placement: .bottomBar) {
                 Button {
                     model.editor.undo()
