@@ -2878,3 +2878,8 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The ADR-023 index row ignored `[red]`.
 - **The loop stopped at the cap (ADR-041).** Round 5's fixes are not re-reviewed by Codex; the PR says so. Severity never fell. Under the old rule (cap 10, early escalation at three flat rounds) this would have escalated after round 3.
 - **Assessment:** this is the first loop run under the new cap, and it stopped while still finding valid issues, with **falling weight** (Mediums 4 → 2 → 2 → 2 → 2, and the later ones were caveats rather than lost rules). That is the risk ADR-041 accepted. It is acceptable here because the residual class is "a documented caveat missing from a summary", not a wrong rule. But it is evidence that a consolidation needs an explicit **caveat inventory** (every "known gap", "not fixed", "recorded rather than" in the sources) built *before* writing, not found by review afterwards. Recorded as the method for any future ADR consolidation.
+
+## 2026-10-09 — Correction to the round-5 entry above
+
+- The round-5 entry gives the Medium counts as "4 → 2 → 2 → 2 → 2" and calls their weight "falling". The actual per-round Medium counts were **4 → 1 → 2 → 2 → 2**, which is flat after round 2, not falling. What did change is the kind of finding: rounds 1–2 were lost rules; rounds 3–5 were mostly missing caveats.
+- The caveat-inventory method that entry names is now a step in `/finish` (step 2), so it applies to the next consolidation rather than living only here.
