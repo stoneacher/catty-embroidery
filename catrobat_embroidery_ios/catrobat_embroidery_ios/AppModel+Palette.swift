@@ -45,6 +45,9 @@ extension AppModel {
     func layoutChanged(isCompact: Bool) {
         if isCompact, path.last != .script {
             palette.isPresented = false
+            // The parameter editor too (US-410): a sheet torn down here may never run its
+            // `onDisappear`, and an open session would fold the next edit into this one.
+            editor.endParameterEdit()
         }
     }
 }

@@ -2,8 +2,9 @@ import ProgramModel
 
 /// Every way the editor can change a program — ADR-006 pattern 1 made concrete.
 ///
-/// Five cases, and that is the whole vocabulary: palette add, drag reorder,
-/// swipe delete, parameter change and rename are each one of them. Views never
+/// Six cases, and that is the whole vocabulary: palette add, drag reorder,
+/// swipe delete, parameter change, rename and — since US-410 — declaring a
+/// variable are each one of them. Views never
 /// mutate the program tree; they build one of these and hand it to
 /// `EditorCore.apply(_:to:)`, which is the single place undo (US-403), autosave
 /// (US-406) and run-invalidation (ADR-038) hook into.
@@ -59,4 +60,20 @@ public enum EditAction: Equatable, Sendable {
     /// not borrow it, so a program may carry a name that could not be written
     /// into a DST header and the export gate refuses it there instead.
     case renameProgram(String)
+
+    /// Declare a zero-valued variable in the object that owns `script`
+    /// (US-410, ADR-035 amendment) — the only way a variable comes into
+    /// existence in the editor, and so what makes the variable menu reachable
+    /// from the blank program at all.
+    ///
+    /// Refused for a name that breaks a `VariableName` rule, or one the object
+    /// can already resolve in its own scope or the project's. It touches no
+    /// script, so balance holds by construction. M4 has no rename or delete of
+    /// a declaration; an unused one persists.
+    ///
+    /// The parameter editor applies it together with the `replaceBrick` that
+    /// uses the name, under one coalescing key, so the pair is one undo entry
+    /// and undo can never leave a brick naming an undeclared variable it had
+    /// just declared.
+    case declareVariable(name: String, script: ScriptAddress)
 }

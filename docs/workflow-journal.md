@@ -2729,3 +2729,32 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 
 - **Device:** Sebastian reported "looking good on the device". The three conditions (fresh fit, zoomed and panned, run still stitching) were not itemised in the report, so the story records a pass without per-condition coverage. The zoomed and stitching conditions had no simulator evidence, so this report is all that covers them.
 - **Codex loop:** stopped after round 3 at the three-flat-Medium escalation. Sebastian's reply was taken as agreement with the recommendation to stop. The recommendation rested on the round-2 and round-3 findings being in the docs capture tooling rather than the app. Final history: Medium → Medium → Medium, 9 findings, all valid, all fixed.
+
+## 2026-10-03 (US-410) — parameter editing, off-row
+
+- **Planning: two agents in parallel, and the decisions went to Sebastian in one batch.** `swift-architect` and `swift-ui-design` agreed on the shape: the package holds slots, mapping, parsing and validation, and the app holds the session and the views. The architect estimated 9–10 h and recommended a split; Sebastian kept one story. Four questions were asked: split, the declaration mechanism, the name rule, and the commit semantics. Eight smaller defaults were chosen and recorded rather than asked.
+- **The delegation boundary held.** All story tests were written in this session, in four `[red]` slices, each failing on behaviour against compiling stubs: 30 package, 22 app, 2 number-field, 10 review-round. No implementation was delegated.
+- **The simulator found a defect no planned test asked about.** The `1e400` screenshot showed the brick holding **`1,51E40`**. Live-apply commits every prefix that parses, so a rejected entry left its last valid prefix behind. The plan said "the last valid value stays", and this was that rule working as written: the last valid value was the prefix. The fix, an anchor per typing run, was written red first. **The screenshot DoD earned its place:** the defect was visible in the picture before it was visible in any test.
+- **The snapshot output doubled as an accessibility check again.** It showed the number field and the new-variable field with empty labels. A `TextField` in a `Form` row does not use its label view as its accessibility label. `swift-code-reviewer` then found the third field with the same shape.
+- **`swift-code-reviewer` (worktree, iPhone 17 Pro): 25 mutants, 10 survived. Its best finding was outside the tests entirely.** A zero-width space in front of `(no variable)` hides the bracket from the leading-punctuation rule, so the US-407 collision fix was defeatable by paste. Unicode format characters are now refused. Its other important finding was that a row-moving edit left the session addressing a different brick; undo and redo had already handled the same case. Every surviving mutant got a killing test, and four were re-run to confirm (D2, M1, A8, A15). Two of its points were already addressed in commits it had not seen: the docs, and the `(empty)` file-name decision.
+- **Adding an enum case reshuffles a seeded property test.** Adding `declareVariable` to the balance property's random generator changed the seeded sequences, and one seed then missed an existing coverage floor. The generator was reverted rather than re-tuned, so US-402's evidence stands as recorded. The new case is covered by deterministic lists instead. Worth knowing before adding a case to any generator.
+- **Tooling:**
+  - `simctl` "failed preflight checks" again; uninstall and rebuild fixed it, as the memory note says.
+  - The automation `tap` and `touch` do not open a SwiftUI `Picker(.menu)`. That screenshot is left to the manual pass.
+
+## 2026-10-03 (US-410, review and Codex rounds 1–3) — flat Medium, one family, escalated
+
+- **History:** round 1 Medium (2 findings), round 2 Medium (3), round 3 Medium (1). All 6 were valid and none was rejected; every round changed code, and each fix was written red first. Each verification round confirmed the previous fixes.
+- **The findings share one family: free-text entry under live-apply.**
+  - Round 1: the menu path trimmed a declared name, and a property-based invisibility rule had been written as a category check.
+  - Round 2: one method served both the menu and Create, so it inferred the origin from the text. File names were trimmed although ADR-040 calls them unrestricted.
+  - Round 3: backspacing a file name to blank left a committed prefix. That is the `1e400` defect again, on the other free-text slot.
+  - The pattern is US-207's: each fix to the text-entry surface exposes the next edge of the same surface. **The number-field anchor should have been generalised to every live free-text slot when it was first written**, not one slot at a time.
+- **The two reviewers again divided the work by kind.** `swift-code-reviewer` found the state and lifecycle defects: the session surviving a row-moving edit, stale `@State`, the stepper anchor, and the mutants. Codex found every Unicode and text-normalisation edge. Neither found the other's.
+- **Escalated to Sebastian at three flat rounds, as the rule says**, rather than running round 4 automatically. The round-3 fix is unverified by Codex.
+
+## 2026-10-03 (US-410, Codex round 4, close-out) — clean after the escalation
+
+- **Sebastian chose to run round 4** after the three-flat-Medium escalation. The deciding argument was that round 3 had confirmed every round-2 fix and the remaining fix was small. Round 4 returned **no correctness findings**, so the loop ended on condition 1.
+- **Final history:** Medium → Medium → Medium → none. 6 findings, all valid, all fixed test-first. This is the first escalated branch where one more round closed the loop cleanly. US-315 stopped at the escalation instead. The difference is where the findings were: US-410's were in shipped app behaviour, and each round's set was smaller than the last (2, 3, 1, 0), even though the highest severity stayed flat. **A flat maximum severity hid a shrinking set of findings.** That supports the rule's choice to escalate rather than stop automatically: the person deciding can see that trend.
+- **Close-out:** story Status set to Done (pending merge). No Ink/Stitch check is needed, because nothing changes DST output. The manual items go to the bundled M4 pass: the opened variable menu, the iPad popover, VoiceOver on the swatches, and the row action while another sheet dismisses.

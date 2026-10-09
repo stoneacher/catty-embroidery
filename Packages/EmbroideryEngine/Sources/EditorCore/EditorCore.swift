@@ -58,6 +58,9 @@ public enum EditorCore {
             var renamed = program
             renamed.name = name
             return .applied(renamed)
+
+        case let .declareVariable(name, script):
+            return declaring(name, in: script, of: program)
         }
     }
 
@@ -124,7 +127,7 @@ public enum EditorCore {
         }
     }
 
-    // MARK: The four verbs
+    // MARK: The four brick verbs
 
     /// `brickIndex` is an **insertion** index here — `0 ... count`, so `count`
     /// appends and an empty script accepts `0`. Milestone exit criterion 1
@@ -265,6 +268,48 @@ public enum EditorCore {
         var edited = script
         edited.bricks[index] = brick
         return .edited(edited)
+    }
+
+    // MARK: The sixth verb (US-410)
+
+    /// Append `Variable(name:)` to the object that owns `script`.
+    ///
+    /// The name rules run **before** the address resolves, the way
+    /// `insert(.loopEnd, …)`'s kind guard does: an invalid name is invalid
+    /// wherever it is aimed. Uniqueness needs the object, so it runs after. A
+    /// name the object can already resolve — its own or the project's — is
+    /// refused: a second declaration in one scope is the duplicate
+    /// `Variable.swift` makes the editor responsible for, and an object
+    /// variable over a project one would silently re-point every existing
+    /// reference in that object.
+    ///
+    /// All three script hops resolve, though only two are needed to find the
+    /// object, so a declaration aimed at a script that does not exist is
+    /// refused like every other addressed action rather than half-accepted.
+    /// The rejection carries a `BrickAddress` with index 0, since
+    /// `addressOutOfBounds` names a brick position and the hop, not the index,
+    /// is what it reports here.
+    private static func declaring(_ name: String, in script: ScriptAddress, of program: Program) -> EditResult {
+        if case let .failure(problem) = VariableName.validate(name) {
+            return .rejected(.invalidVariableName(problem))
+        }
+        let address = BrickAddress(brickIndex: 0, script: script)
+        guard program.scenes.indices.contains(script.sceneIndex) else {
+            return .rejected(.addressOutOfBounds(.scene, at: address))
+        }
+        let objects = program.scenes[script.sceneIndex].objects
+        guard objects.indices.contains(script.objectIndex) else {
+            return .rejected(.addressOutOfBounds(.object, at: address))
+        }
+        guard objects[script.objectIndex].scripts.indices.contains(script.scriptIndex) else {
+            return .rejected(.addressOutOfBounds(.script, at: address))
+        }
+        guard VariableMenu(program: program, script: script).scope(of: name) == nil else {
+            return .rejected(.variableAlreadyDeclared(name: name))
+        }
+        var declared = program
+        declared.scenes[script.sceneIndex].objects[script.objectIndex].variables.append(Variable(name: name))
+        return .applied(declared)
     }
 
     /// Map `movingPair`'s error into this target's vocabulary, so each failure has

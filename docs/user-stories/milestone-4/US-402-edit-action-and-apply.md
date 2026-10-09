@@ -14,6 +14,8 @@
 
 This is ADR-006's pattern 1 made concrete, and the milestone's load-bearing story. Every later mutation — palette add, drag reorder, swipe delete, parameter change, rename — is one of five cases here.
 
+**Amended by US-410 (2026-10-03): six cases.** US-410 added `declareVariable(name:script:)`, because otherwise no case can make the variable menu non-empty from the blank program (ADR-035's 2026-10-03 amendment). The five-case text below is this story's historical record and is left as written.
+
 ## What this story creates
 
 ```swift

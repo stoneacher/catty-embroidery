@@ -67,6 +67,15 @@ public enum EditRejection: Equatable, Sendable {
     /// than restated. In practice this is always `.unbalancedPair` — see the
     /// type's documentation.
     case scriptMove(ScriptMoveError)
+
+    /// `declareVariable` with a name that breaks a `VariableName` rule (US-410).
+    /// Checked before the address resolves, like `cannotInsertLoopEnd`.
+    case invalidVariableName(VariableNameProblem)
+
+    /// `declareVariable` with a name the object can already resolve — declared
+    /// in its own scope or the project's (US-410). `Variable.swift` leaves name
+    /// uniqueness to the editor; this is where the editor enforces it.
+    case variableAlreadyDeclared(name: String)
 }
 
 /// The outcome of `EditorCore.apply(_:to:)`: a new program, or a reason.

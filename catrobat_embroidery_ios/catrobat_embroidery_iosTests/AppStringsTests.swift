@@ -1,4 +1,5 @@
 @testable import catrobat_embroidery_ios
+import EditorCore
 import Foundation
 import StagePreview
 import Testing
@@ -261,5 +262,29 @@ struct AppStringsTests {
 
         #expect(Set(names).count == names.count, "two stage actions share a spoken name")
         #expect(names.allSatisfy { $0.contains { $0.isLetter } })
+    }
+
+    /// US-410's name rule depends on the catalog: a variable name may hold no quotation mark and
+    /// may not begin with opening punctuation (`VariableName`), which only prevents look-alikes
+    /// while `formula.variable` **delimits** with a quotation mark and the placeholder **begins**
+    /// with opening punctuation. A translator who chose other delimiters would quietly reopen
+    /// US-407's collision, so the property is pinned for every localization the app ships.
+    @Test(arguments: Bundle.main.localizations)
+    func theDisplayDelimitersAreCharactersNoVariableNameCanHold(localization: String) {
+        let locale = Locale(identifier: localization)
+        var variable = LocalizedStringResource.formulaVariable("x")
+        variable.locale = locale
+        var placeholder = LocalizedStringResource.scriptVariablePlaceholder
+        placeholder.locale = locale
+
+        let rendered = String(localized: variable)
+        let delimiters = rendered.replacing("x", with: "").unicodeScalars
+        let delimited = delimiters.contains { $0.properties.isQuotationMark }
+        #expect(delimited, "\(localization): \(rendered)")
+        #expect(VariableName.validate(rendered) == .failure(.quotationMark))
+
+        let empty = String(localized: placeholder)
+        #expect(empty.unicodeScalars.first?.properties.generalCategory == .openPunctuation, "\(localization): \(empty)")
+        #expect(VariableName.validate(empty) != .success(empty))
     }
 }

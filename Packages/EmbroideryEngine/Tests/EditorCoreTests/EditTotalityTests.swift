@@ -126,6 +126,7 @@ struct EditTotalityTests {
             .delete(at: address),
             .move(from: address, to: index),
             .replaceBrick(at: address, with: .stitch),
+            .declareVariable(name: "still fine", script: address.script),
             .renameProgram("still fine")
         ]
         for action in actions {
