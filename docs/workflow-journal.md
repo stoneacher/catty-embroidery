@@ -2825,3 +2825,19 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Every constant and symbol in the new ADRs re-checked against the source before writing (`settleChunk`, the coarsening constants, `maximumScale`/`minimumScale`, `renameProgram`, `insertAction`, `forFrame`, the CI `dump-package` check, the CoreGraphics adapter file).
 - **Adjustment**: `CLAUDE.md`/`AGENTS.md` now point at the index instead of a hand-maintained ADR-001…028 list, which had gone stale at 028. `/finish` step 2 requires an index row and status updates for every new ADR, and sets the ~20-line norm with review history going to the journal.
 - **Observation**: the four agents agreed on every overlap they both saw (e.g. 016/022/033, 028/031) without coordination. The two drift classes they found — **an amendment not propagated back to the text it overrules**, and **line-number citations** — are both instances of ADR-032 invariant 3. Line-number citations into a living document are now avoided in favour of ADR anchors.
+
+## 2026-10-09 — ADR review, Codex round 1: 12 findings, all valid, all about lost or overstated rules
+
+- **History:** round 1, highest severity **Medium** (4 Medium, 8 Low). All 12 were valid and none was rejected; every one was fixed in the docs.
+- **The Mediums were all rules the consolidation dropped, and each is still load-bearing in code:**
+  - ADR-043 lost ADR-024's viewport-size guard on the raster (`CanvasStitchRenderer`).
+  - ADR-044 lost the identity-gesture rule (`StageInteraction`'s `guard !(gesture.isIdentity && isFollowingFit)`) and the catcher-placement rule from ADR-031.
+  - ADR-044 claimed every rule was under `swift test`, but rotor order and the one-element accessibility tree are Inspector checks.
+- **The Lows:**
+  - Planner access control dropped from ADR-043.
+  - Three of ADR-035's list rules dropped from ADR-045: exactly one source offset, no `EditMode`, no `withAnimation`.
+  - ADR-045 said starting blank goes through `load`; it does not.
+  - Three index rows overstated or omitted something: ADR-017 parity, ADR-023 gate conditionality, redo in ADR-045.
+  - One inline marker covered a clause that still holds (ADR-039).
+  - One reservation clause was left unmarked (ADR-036).
+- **Observation:** the four survey agents checked whether old rules match the *code*; none was asked whether the *new* text kept every old rule. That is the gap Codex filled. A consolidation needs a fidelity check old → new, not only a drift check docs → code. The Mediums are exactly the rules a summary drops first: guards and special cases, each one sentence inside a long review section.

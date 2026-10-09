@@ -26,13 +26,13 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 014 | Patterns | Pattern geometry is `Double`; 1e-9 tolerance; degenerate inputs and >1M-stitch updates are guarded no-ops. | Active |
 | 015 | DST | Set Thread Color: silent before the first stitch, Java-style hex parsing, clause-B black, ±121 tie-off. | Active |
 | 016 | Package layout | `ProgramModel` and `Interpreter` as sibling targets. | Superseded by 042 |
-| 017 | Formula | Formula arithmetic is native `Double`; Catroid's edge cases mirrored; `notANumber` is the only error. | Active |
+| 017 | Formula | Formula arithmetic is native `Double`; selected Catroid edge cases mirrored, with pinned non-finite and signed-zero divergences; `notANumber` is the only error. | Active |
 | 018 | Interpreter | One action per thread per tick, round-robin; zero-tick loop bookkeeping; accumulating logical clock. | Active (Events bullet historical) |
 | 019 | Testing | A golden sitting on a `floor(d/len)` threshold must say so and guard it with a direct assertion. | Active |
 | 020 | DST | Interpolation decides on the encodable delta; unconvertible coordinates and oversized moves are guarded no-ops. | Active |
 | 021 | Preview | The preview draws colour-resolved `.stitch` events into an append-only display list; export uses the assembled stream. | Active |
 | 022 | Package layout | `Samples` and `StagePreview` as app-support targets. | Superseded by 042 |
-| 023 | Process | The local gate runs engine tests plus an app compile; CI is the real gate, including a Release compile. | Active, amended twice |
+| 023 | Process | The local gate always runs engine tests and compiles the app when the app tree changed; CI is the real gate, including a Release compile. | Active, amended twice |
 | 024 | Stage | Batching hoisted into `StitchDrawPlan`; deviations from both references. | Superseded by 043 (reasoning stays here) |
 | 025 | DST | Header field overflow is a thrown serialization error; field emission order is a contract. | Active |
 | 026 | Export | Export gated on `exportModel.count > 1`; rejecting `DesignName`; eager preparation; exported `.dst` UTType. | Active, amended |
@@ -54,7 +54,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 042 | Package layout | Six targets, five products, dependencies pointing inward. | Active |
 | 043 | Stage | Rendering rules, coarsening while live, the performance bar and the current fallback ladder. | Active |
 | 044 | Stage | Manipulation: UIKit recognisers, pure tracker, one commit per manipulation, bounds and accessibility. | Active |
-| 045 | Editor | Six verbs, the insertion rule, and the change pipeline (edit or undo → void run → autosave). | Active |
+| 045 | Editor | Six verbs, the insertion rule, and the change pipeline (edit, undo or redo → void run → autosave). | Active |
 
 ## ADR-001 — App scope: embroidery-focused block app (2026-07-06)
 **Context**: On Android, "Embroidery Designer" is the full Pocket Code app (complete Catrobat language + interpreter + stage) shipped as a Gradle flavor. A full port exceeds bachelor-project scope; a blocks-free drawing tool would lose the "learn coding" essence of Catrobat.
@@ -871,7 +871,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 
 **Consequences**: `Script.validate()` becomes a **test oracle rather than a runtime repair** — no `EditAction` can produce an unbalanced script, so the app never calls it to fix anything. Exit criterion 4 asserts this as a property over generated action sequences. The one verb M4 deliberately does not have is **unwrap a loop, keeping its body**; it is a different action with a different undo story, no reference precedent, and no user asking for it yet.
 
-*[Historical: all five numbers are taken.]* **ADR-036 … ADR-040 are reserved by the M4 plan** for the stories that discover them, listed here so the numbers are not taken by something else and so a story knows an ADR is expected of it: **ADR-036** undo (the package stack is the truth, `UndoManager` is a trigger surface re-synchronised after *every* history transition rather than only on load, and coalescing is a session and never a timer) — US-403, completed by US-411's bridge; **ADR-037** autosave (one version, refuse what you do not understand; the non-finite `Double` policy, which moves from M5 to M4 — *US-404's half written 2026-09-25*; and the **multi-window write policy**, since `WindowRootView` owns an `AppModel` per scene and a single fixed path therefore loses data — Codex round 1) — US-404/US-406; **ADR-038** an applied edit voids the run — US-405; **ADR-039** the editor's presentation (popover on regular, detented sheet on compact, parameters off-row) — US-407/US-409, after a `swift-ui-design` pass; **ADR-040** the curated thread palette — US-410.
+*[Historical: all five numbers are taken.]* **ADR-036 … ADR-040 are reserved by the M4 plan** for the stories that discover them, listed here so the numbers are not taken by something else and so a story knows an ADR is expected of it: **ADR-036** undo (the package stack is the truth, `UndoManager` is a trigger surface re-synchronised after *every* history transition rather than only on load, and coalescing is a session and never a timer) — US-403, completed by US-411's bridge *[still outstanding as of 2026-10-09]*; **ADR-037** autosave (one version, refuse what you do not understand; the non-finite `Double` policy, which moves from M5 to M4 — *US-404's half written 2026-09-25*; and the **multi-window write policy**, since `WindowRootView` owns an `AppModel` per scene and a single fixed path therefore loses data — Codex round 1) — US-404/US-406; **ADR-038** an applied edit voids the run — US-405; **ADR-039** the editor's presentation (popover on regular, detented sheet on compact, parameters off-row) — US-407/US-409, after a `swift-ui-design` pass; **ADR-040** the curated thread palette — US-410.
 
 ## ADR-036 — Undo: the package stack is the truth, owns the working program, and coalesces by explicit session (2026-09-25)
 **Status**: Active. Its `UndoManager` bridge is **not yet implemented** (US-411, Editor UI feature). The "owes" lists in Consequences are paid except US-411's. The change pipeline it feeds is restated in ADR-045.
@@ -970,7 +970,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - **Numbers after the review round:** `-0` reads `0`. Values outside `[1e-6, 1e15)` are scientific (`1E-7`, `1E20`), because six fixed decimals printed a non-zero `1e-7` as "0". An empty file name or colour reads "(empty)" rather than leaving a sentence cut off.
 - **iPad titles:** the middle column is titled "Script" (`ScriptListView.Placement.column`), because the stage beside it carries the design's name.
 - **Known cost:** the launch flip puts the stage's empty-name validation message ("Enter a name so the file has one.") on screen at first launch, which US-406 had shown only for a restored untitled program. It is visible immediately on regular, one push away on compact. Sebastian accepted it for US-407 (2026-09-28), and it is backlog US-320.
-- **Rows hold no control** (ADR-034's named symptom). US-410 making a row a single `Button` stays within that. *[Overruled by this ADR's US-409 amendment: tap selects.]*
+- **Rows hold no control** (ADR-034's named symptom). US-410 making a row a single `Button` stays within that. *[The single-`Button` half is overruled by this ADR's US-409 amendment (tap selects); "rows hold no control" still holds.]*
 
 **Amended 2026-10-01 (US-409), by Sebastian: the presentation half.** The palette, and how a tap decides where a brick goes.
 - **One `.popover` on the script toolbar's Add button, in both placements.** It adapts with the **two-argument** `presentationCompactAdaptation(horizontal: .sheet, vertical: .popover)`. The single-argument form adapts whenever *either* size class is compact. A compact-height sheet ignores detents and would cover the whole script.
@@ -1117,7 +1117,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 *Architecture*
 - **SwiftUI `Canvas`, never node-per-stitch.** The renderer sits behind `StagePreviewRenderer` (`display:transform:needle:viewport:`), which keeps a Metal renderer possible.
 - **The batching is a value.** `StitchDrawPlan`, computed in `StagePreview`, holds stitch **indices, never geometry**, so it is transform-free. A plan has at most two strokes plus one dot path per colour run.
-- **The settled prefix is baked into a raster and the live tail is stroked** by the *same* stroking function (`Image(size:renderer:)` and `Canvas` both hand it a `GraphicsContext`). The live pass starts one segment before the watermark, so the thread has no gap at the seam. The raster key includes the settled count, the display list's `resetCount`, the increased-contrast setting and the bake transform. It excludes the colour scheme, because nothing inside the canvas changes with it. `bakingThreshold = 2000` (app).
+- **The settled prefix is baked into a raster and the live tail is stroked** by the *same* stroking function (`Image(size:renderer:)` and `Canvas` both hand it a `GraphicsContext`). The live pass starts one segment before the watermark, so the thread has no gap at the seam. The raster key includes the settled count, the display list's `resetCount`, the increased-contrast setting and the bake transform. It excludes the colour scheme, because nothing inside the canvas changes with it. **The raster is composited only when the `Canvas` size equals the viewport it was baked at**; otherwise the frame draws `.entire`, so the settled layer is never stretched under an unstretched live tail. `bakingThreshold = 2000` (app).
 - **`settleChunk = 1000` is fixed.** A proportional chunk was measured to bake 176 times at 50 000 stitches. Do not reintroduce one without a device measurement that beats the fixed chunk.
 
 *Appearance (reasoning in ADR-024)*
@@ -1134,6 +1134,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - Traversals are never merged.
   - Dots are strided per colour run, anchored at each run's start, so every run keeps at least one dot.
   - `coarse(target: .max) == entire` keeps the planner single.
+  - The planner itself (`planning`, `lastSegment(before:)`) stays **internal**, with explicit access keywords. Making it public would expose a constructor for arbitrary plans and make invalid strides reachable.
   - The bound on segments is `ceil(count/stride) + colorRuns + traversals + unreachableIntervals + corners`.
 
 *The performance bar and how to read it*
@@ -1162,6 +1163,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - `cancelsTouchesInView` and `delaysTouchesEnded` are both `false`. Both are load-bearing.
 - **A `StageTouchTrackingView` counts touches.** Reaching zero is a terminal signal, because a pinch can end with the pan never begun and no recogniser left to report.
 - **A cancel suppresses every action until the glass is clear.**
+- **The gesture catcher is built *inside* the `SettlingProgress` shim and *above* `.accessibilityElement(children: .ignore)`.** Inside, because only that closure holds the animation's interpolated progress. Above, because an overlay attached after that modifier becomes a sibling of the merged element and the stage turns into two accessibility elements.
 
 *Arithmetic and lifecycle (in `StagePreview`)*
 - **`StageManipulation` does the arithmetic and the coordinator does none.**
@@ -1178,6 +1180,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - It is captured when the first channel begins, asked of liveness.
   - It is honoured only while a gesture is present, and cleared at commit, at cancel and by `followFit()`.
   - The spoken magnification still divides by the live fit.
+- **An identity manipulation while following the fit commits nothing**: the stage keeps following the fit (`guard !(gesture.isIdentity && isFollowingFit)`). The frozen fit is never written to `settled`, and pinning `settled` at gesture start is rejected for the same reason.
 
 *Bounds*
 - **Zoom runs from `min(fit.scale, 0.05)` to 50.** `StageZoomBounds` only widens the gesture range and never narrows it. There is one anchoring implementation (`pinched(by:about:within:)`).
@@ -1202,7 +1205,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - In compact width, a one-finger pan from the leading edge conflicts with the interactive pop.
 - The double tap inherits `UIPanGestureRecognizer`'s non-configurable movement slop.
 
-**Consequences**: The stage's interaction rules have one current statement, and every rule above is under `swift test` except the UIKit wiring, which the device session covers.
+**Consequences**: The stage's interaction rules have one current statement. The arithmetic, lifecycle, bounds, pan directions and summary rules are under `swift test`. The UIKit and SwiftUI wiring is covered by app tests where a test can reach it. Rotor order, the one-element accessibility tree and transient pixel alignment are checked by Accessibility Inspector and device or continuous-capture sessions, not by tests.
 
 ## ADR-045 — Editor semantics: six verbs, one insertion rule, and one change pipeline (2026-10-09)
 **Context**: ADR-035 pinned four editor verbs and was amended three times (malformed scripts, list and accessibility moves, a sixth verb). What happens after an edit is spread over ADR-036 (the undo stack), ADR-037 (autosave minting) and ADR-038 (voiding the run), with one sentence in ADR-037 overruled by a later amendment. This ADR supersedes ADR-035 and restates the change pipeline in one place. ADR-036, ADR-037 and ADR-038 stay active for everything else they decide.
@@ -1232,7 +1235,8 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - There is no rename or delete of a declaration yet.
 
 *Building actions from the UI.* Pure builders in `EditorCore` build an action and never apply one, so `apply` stays the one authority on refusals.
-- **List moves**: `destination = toOffset − count(removed indices < toOffset)`. A drop onto the block's own extent is no edit.
+- **List moves**: `destination = toOffset − count(removed indices < toOffset)`. A drop onto the block's own extent is no edit. **Exactly one source offset is required**: an empty or multiple offset set builds nothing, rather than acting on the first.
+- **Drag needs no `EditMode`** (a long press lifts the row in a plain `List` + `onMove`). The drag preview shows one row while the model moves a block, and **nothing is `withAnimation`-ed**: rows are identified by index (ADR-034), so an explicit animation would show the wrong rows leaving.
 - **Rows that cannot move are `.moveDisabled`**: `loopEnd` rows and unclosed openers.
 - **The accessibility moves reach exactly the arrangements a drag reaches** (tested in `AccessibilityMoveTests`): Move Up/Down (siblings only), Move Above/Below Loop, and Move Into Loop Above/Below.
 - **The insertion point is directly after the selected row**, or the end of the script when nothing is selected (`Script.insertAction(of:after:in:)`).
@@ -1249,7 +1253,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
    - mints a `SaveRevision` on the main actor and autosaves.
 
    It does not refit, bump the selection generation or re-seed the export name.
-4. **A whole-program replacement** (picking a sample, restoring at launch, starting blank) goes through `load`, which calls `reset(to:)` on the existing stack, never a new one. A restore mints no revision.
+4. **A whole-program replacement** (picking a sample, restoring at launch) goes through `load`, which calls `reset(to:)` on the existing stack, never a new one. A restore mints no revision. The launch blank program is the view model's initial state, not a replacement. A future user-initiated "new blank program" must go through `load` and mint a revision (ADR-037).
 5. **The `UndoManager` bridge** (US-411) is a trigger surface into steps 1–2. It adds no path of its own.
 
 **Consequences**: `Script.validate()` is a test oracle, never a runtime repair. The one verb deliberately missing is *unwrap a loop, keeping its body*.
