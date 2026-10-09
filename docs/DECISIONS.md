@@ -1103,7 +1103,10 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 | `StagePreview` | `Interpreter`, `EmbroideryEngine` | `StagePreview` | Display list, draw plan, transform and interaction math. **Foundation-only**: no SwiftUI, no CoreGraphics. The app adapts it to CoreGraphics in exactly one file (`affine`). |
 
 - **Dependencies point inward only.** The engine never depends on the model, and the model never on the engine.
-- **The isolation rules are pinned by tests, not review**: `StagePreviewTargetIsolationTests`, `EditorCoreTargetIsolationTests`, and the evaluated manifest check in CI (`swift package dump-package`, US-401).
+- **The isolation rules are guarded by checks, and the guards are not all total**:
+  - The CI manifest check (`swift package dump-package`, US-401) evaluates the declared `EditorCore` dependency and product shape structurally.
+  - `EditorCoreTargetIsolationTests` scans sources for imports above Foundation. Its own doc comment says this is a good guard, not a proof; the structural replacement is a Linux engine-test job (backlog US-317).
+  - `StagePreviewTargetIsolationTests` pins the target's public API to explicit function types (so a `CGFloat` on the boundary is a compile error). It does not enforce imports.
 - **A new target is vended through an existing product where possible.** A new *product* needs a human Xcode session (`project.pbxproj` is human-only), while a target added to an already-linked product does not. ADR-033 executed this rather than assumed it.
 - **Test targets may depend more widely** than the targets they test. SwiftPM forbids test-to-test dependencies, so a fixture that more than one test target needs lives in a library target (`Samples`).
 
@@ -1149,6 +1152,10 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 3. **Next: overdraw and fill rate.** The discriminating experiment is a 50 000-stitch design covering a small area (backlog US-316).
 4. Then `Path` reuse keyed on the plan and its stride. A polyline must first be hardened against non-finite vertices.
 5. Then a `MetalStitchRenderer` behind the protocol.
+
+**Known gap — low-contrast threads are uncased.** The fixed field makes contrast *invariant* across appearances, not *sufficient*: a thread within 3:1 of the field (the shipping amber is about 1.5:1) stays hard to see. The casing ADR-024 deferred to US-307 was never built.
+
+**Known gap — the needle is dwarfed past about 3×.** It is fixed in view points, so the thread stroke reaches its width at scale ≈ 2.86 and its length at ≈ 3.49 (`NeedleGlyph`). It is never occluded, only dwarfed. If it matters, the remedy is a size floor, not scaling with the design.
 
 **Known gap — the raster is never composited in iPhone 17's default layout** (backlog US-322). The viewport measures 370 × 256.83 against a `Canvas` size of 370 × 257.0, so the exact-size guard above never passes, every frame draws `.entire`, and the bake work is wasted on top. The guard is correct; the mismatch is the defect.
 

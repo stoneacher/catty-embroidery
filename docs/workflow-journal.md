@@ -2858,3 +2858,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - ADR-044 said the double tap "inherits" the pan's slop; the pan keeps it, and that is what preserves the double tap.
   - ADR-028's index row still said "per gesture".
 - **Pattern across three rounds:** every finding is a *known limitation or special case* that lived in a review paragraph, an amendment or a code comment, not in a decision bullet. Consolidating "the rules" naturally keeps the decisions and loses the caveats. Flat Medium for three rounds; the loop continues under the cap of 5.
+
+## 2026-10-09 — ADR review, Codex round 4: three more caveats left behind
+
+- **History:** Medium → Medium → Medium → **Medium** (2 Medium, 1 Low). All valid and fixed. Codex confirmed all four round-3 fixes.
+- **Found:**
+  - ADR-042 said isolation is "pinned by tests". `EditorCoreTargetIsolationTests` calls its own source scan "not a proof" (US-317 is the structural fix), and `StagePreviewTargetIsolationTests` pins API types, not imports.
+  - ADR-043 dropped ADR-024's deferred thread-contrast casing, which was never built.
+  - ADR-043 omitted the needle's legibility limit past about 3× zoom (`NeedleGlyph`).
+- **Same pattern, fourth time:** every finding was a caveat recorded in a doc comment or a review paragraph. Round 5 is the cap (ADR-041); whatever it finds is fixed without a further Codex round, and the PR says so.
