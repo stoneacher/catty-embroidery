@@ -2914,3 +2914,19 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - a `loopEnd` allowed to move;
   - an opener deleted without its body and end.
 - **Not a new risk class:** the soak was green against the real code from the first non-degenerate run. Like slice 1's enumeration proof, its value rests on the mutants, which are recorded here.
+
+## 2026-10-09 — Editor UI, slice 3: the exit criteria had every link tested and no chain
+
+- **Retrieval delegated:** `swift-search` mapped M4 exit criteria 1 and 3 to existing tests, sub-claim by sub-claim. Every link was covered on its own, but nothing chained them:
+  - No test built a program from blank, ran it to `.finished` and exported it.
+  - The relaunch tests used an in-memory store only.
+  - A **mid-edit force-quit had never been executed.** US-406 recorded it as owed, ADR-037 passed it on to US-408 or the M4 final verification, and neither ran it.
+- **Added in `ExitCriteriaTests`:**
+  - *Built from nothing*: launch blank → four palette adds (the loop's opener is selected, so the next two land inside it) → five stepper taps in one session → a drag → whole-`Program` equality with a literal → play to `.finished` → the prepared file is byte-equal to an independent run of that literal.
+  - *Relaunch without a lifecycle save*: on the real `DocumentsProgramStore` in a disposable directory, with no `sceneDidLeaveActive()`, then a fresh coordinator and window over the same directory.
+- **Both tests were green on first run.** That was expected: they verify, they do not specify. Three mutants, each killed by the test meant to catch it:
+  - the save at the change removed → the relaunch test;
+  - the palette insert ignoring the selection → the chain;
+  - `play()` running the blank program → the chain.
+- **Force-quit, executed** (iPhone 17, iOS 26): add a running stitch, open its parameter sheet, step the length 10 → 13 with the sheet still open, so the session was never ended, then `kill -9` the app process. On relaunch the script reads "length 13" and the history is empty (ADR-006: never persisted). The save-per-change rule (ADR-037) is what makes a force-quit safe, and this is the first recorded run of it mid-session.
+- **Tooling note:** twice this session `build_run_sim` installed an app that then would not launch ("failed preflight checks"). `simctl uninstall` fixed it each time, as the memory note says. The uninstall also wipes Documents, which is worth remembering before any check that depends on saved state.
