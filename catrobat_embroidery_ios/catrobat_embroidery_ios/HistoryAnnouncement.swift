@@ -76,72 +76,17 @@ nonisolated enum HistoryAnnouncement {
                 self = older.name == newer.name ? .other : .renaming
                 return
             }
-            // The differing window: everything between the common prefix and suffix.
-            var prefix = 0
-            while prefix < min(old.count, new.count), old[prefix] == new[prefix] {
-                prefix += 1
-            }
-            var suffix = 0
-            let shorter = min(old.count, new.count)
-            while suffix < shorter - prefix, old[old.count - 1 - suffix] == new[new.count - 1 - suffix] {
-                suffix += 1
-            }
-            let removed = Array(old[prefix ..< old.count - suffix])
-            let inserted = Array(new[prefix ..< new.count - suffix])
-
-            switch (removed.isEmpty, inserted.isEmpty) {
-            case (true, false): self = .adding(inserted[0])
-            case (false, true): self = .deleting(removed[0])
-            case (false, false) where removed.count == 1 && inserted.count == 1:
-                self = .changing(older: removed[0], newer: inserted[0])
+            let diff = BrickListDiff(from: old, to: new)
+            switch (diff.removed.isEmpty, diff.inserted.isEmpty) {
+            case (true, false): self = .adding(diff.inserted[0])
+            case (false, true): self = .deleting(diff.removed[0])
+            case (false, false) where diff.removed.count == 1 && diff.inserted.count == 1:
+                self = .changing(older: diff.removed[0], newer: diff.inserted[0])
             case (false, false):
-                self = Self.moved(from: removed, to: inserted).map(Edit.moving) ?? .other
+                self = diff.movedBlockHead.map(Edit.moving) ?? .other
             case (true, true):
                 self = .other // Unreachable: equal arrays returned above.
             }
-        }
-
-        /// The head of the block a move carried, if `inserted` is `removed` with one block taken
-        /// from one end of the window and put at the other.
-        ///
-        /// A move carries exactly one **block** — a leaf, or a whole pair (ADR-045) — so only two
-        /// splits can be right: the block at the window's front moved down past the rest, or the
-        /// block at its back moved up. Checking just those is linear, and it never mistakes a lone
-        /// opener or `loopEnd` for a block — the reviewer's leaf-into-a-loop case, where the
-        /// other half of the rotation is half a pair (`swift-code-reviewer`, Editor UI feature).
-        private static func moved(from removed: [Brick], to inserted: [Brick]) -> Brick? {
-            guard removed.count == inserted.count, removed.count > 1 else { return nil }
-            if let front = blockLength(atFrontOf: removed), rotated(removed, at: front) == inserted {
-                return removed[0]
-            }
-            if let back = blockLength(atBackOf: removed), rotated(removed, at: removed.count - back) == inserted {
-                return removed[removed.count - back]
-            }
-            return nil
-        }
-
-        /// `bricks` with everything before `split` moved to the end.
-        private static func rotated(_ bricks: [Brick], at split: Int) -> [Brick] {
-            Array(bricks[split...] + bricks[..<split])
-        }
-
-        /// A leaf's length is 1; an opener's is its whole pair, if the pair closes in `bricks`.
-        private static func blockLength(atFrontOf bricks: [Brick]) -> Int? {
-            if bricks[0].isLoopEnd {
-                return nil
-            }
-            guard bricks[0].opensLoop else { return 1 }
-            return Script(bricks: bricks).range(ofPairAt: 0)?.count
-        }
-
-        /// A leaf's length is 1; a `loopEnd`'s is its whole pair, if the pair opens in `bricks`.
-        private static func blockLength(atBackOf bricks: [Brick]) -> Int? {
-            let last = bricks.count - 1
-            if bricks[last].opensLoop {
-                return nil
-            }
-            guard bricks[last].isLoopEnd else { return 1 }
-            return Script(bricks: bricks).matchingOpener(ofLoopEndAt: last).map { last - $0 + 1 }
         }
     }
 }

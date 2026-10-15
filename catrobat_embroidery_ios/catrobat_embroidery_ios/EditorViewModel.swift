@@ -32,6 +32,13 @@ final class EditorViewModel {
     private(set) var undoStack: UndoStack {
         didSet {
             undoBridge?.sync()
+            // Here for the bridge's reason: every door — apply, undo, redo, load — changes the
+            // stack, so the rows' identity follows all of them (Editor UI slice 4).
+            let old = Self.listedBricks(of: oldValue.current)
+            let new = Self.listedBricks(of: program)
+            if old != new {
+                rowIdentities.follow(from: old, to: new)
+            }
         }
     }
 
@@ -39,6 +46,23 @@ final class EditorViewModel {
     /// reads.
     var program: Program {
         undoStack.current
+    }
+
+    /// The script list's row identity, one ID per brick of the first script (ADR-034's
+    /// 2026-10-15 amendment). Followed after every change, below.
+    var rowIDs: [Int] {
+        rowIdentities.ids
+    }
+
+    private var rowIdentities: RowIdentities
+
+    /// The selection as the list sees it: by row ID. `List(selection:)` selects by `ForEach`
+    /// identity, and an explicit `.tag` did not override it (iOS 26, found on the simulator), so the
+    /// list binds here and the index stays the truth (`selectedBrickIndex`). An ID with no row
+    /// clears the selection.
+    var selectedRowID: Int? {
+        get { selectedBrickIndex.flatMap { rowIDs.indices.contains($0) ? rowIDs[$0] : nil } }
+        set { selectedBrickIndex = newValue.flatMap { rowIDs.firstIndex(of: $0) } }
     }
 
     /// Called once for every edit that **applied and changed the program**, and for every
@@ -89,6 +113,7 @@ final class EditorViewModel {
         undoManager: UndoManager? = .makeEditorHistory()
     ) {
         undoStack = UndoStack(program: program)
+        rowIdentities = RowIdentities(count: Self.listedBricks(of: program).count)
         self.decimalSeparator = decimalSeparator
         undoBridge = undoManager.map { manager in
             UndoManagerBridge(
@@ -305,5 +330,12 @@ private extension EditAction {
         case .insert, .delete, .move: true
         case .replaceBrick, .renameProgram, .declareVariable: false
         }
+    }
+}
+
+private extension EditorViewModel {
+    /// The bricks the script list shows: the first script, the only one M4 edits.
+    static func listedBricks(of program: Program) -> [Brick] {
+        program.scenes.first?.objects.first?.scripts.first?.bricks ?? []
     }
 }

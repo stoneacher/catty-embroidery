@@ -2950,3 +2950,39 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The soak now drives the system manager too and asserts agreement at every step.
 - **Mutation check of the fixes:** 5/5 killed. The stale-depth mutant, where a system step leaves the recorded depths stale, was caught **only** by the soak's new agreement assertion, not by any hand-written bridge test. Random sequences found a state the walks did not reach.
 - **Still owed to the handover pass:** whether a hidden first responder resets List arrow-key focus on iPad (Full Keyboard Access), and ⌘Z.
+
+## 2026-10-09 — Editor UI, feature-close documentation check: no README change needed
+
+- `swift-documenter` read the root README and `Packages/EmbroideryEngine/README.md`. No package public API changed in this feature; the only package change is a test file. Neither README held a statement the feature made stale.
+- **Gap that predates this branch, not fixed here:** the engine README's product table omits the `EditorCore` target that `ProgramModel` vends (ADR-033). Left for a docs pass outside this feature.
+
+## 2026-10-15 — Editor UI, slice 4: a drop stutter reversed ADR-034's view-identity half, and the probe caught a selection bug the tests could not
+
+- **Report (Sebastian):** after dragging a block, the other rows "shift and stutter" between the old and new state on release.
+- **Reproduced, not assumed.** The XcodeBuildMCP drag cannot hold a long press (its `--pre-delay` waits before touching down). AXe's `batch` in one HID session can: touch down, sleep 0.9 s, then repeated touch-downs at new points, which register as moves. Video came from `simctl io recordVideo`, because `record_sim_video` failed to save. Frames came from a 60-line AVFoundation grid tool, because there is no ffmpeg on the machine. Frame by frame (the clip runs slower than real time because `simctl` writes frames lazily), the list showed **the wrong brick at the drop target and an empty gap** for several frames, then snapped.
+- **Cause:** index row identity (ADR-034). UIKit animates the drop; the new data then arrives as "row 4 changed contents".
+- **A probe settled it before any decision:** stable, diff-followed IDs in an uncommitted build. Leaf drop clean; loop drop reflowed in one step with no wrong content.
+- **Decided by Sebastian** from a two-question prompt: diff-derived IDs in `EditorViewModel` (over a per-action sidecar or keeping index identity), as slice 4 of this feature. ADR-034 amended.
+- **Red → green:**
+  - `RowIdentitiesTests`: each verb's ID permutation, asserted as whole-array equality.
+  - A view-model test through drag, undo and redo.
+  - The soak asserting one distinct ID per brick at every step.
+  - Against signature-only stubs: 7 red, 4 green. The four green were `initialIDs`, `parameterChange`, `moveThenUndo` and the soak invariant, since index IDs trivially satisfy all four. They were named as mutation targets.
+  - The announcement's block-aware diff was extracted into `BrickListDiff`, so "what moved" is decided once for both consumers.
+- **The finding the unit tests could not reach.** The first green build passed all 517 app tests. On the simulator, after a drag, tapping "Set Side to 9" selected the *next* row, and the palette inserted inside a loop.
+  - Cause: `List(selection:)` selects by `ForEach` identity, and the explicit `.tag(Optional(index))` did not override it.
+  - Fix, test-first: `EditorViewModel.selectedRowID` translates ID ↔ index, and the list binds to it. The test was red with exactly the simulator's wrong index (2 for 1).
+  - The probe never exercised selection, so this surfaced only in the definition-of-done check on the simulator. That check is the step that earned its place here.
+- Mutation results follow in the next entry.
+
+## 2026-10-15 — Editor UI, slice 4 mutation check: 7/7 killed, and a harness hang
+
+- **Killed:**
+  - a move that keeps IDs in place;
+  - a reused ID (caught only by the soak's per-step invariant);
+  - a reorder that skips re-deriving;
+  - an in-place change that gets fresh IDs (`parameterChange`, a stub-green target);
+  - a move that rotates the wrong way;
+  - IDs starting at 1 (`initialIDs`, stub-green);
+  - the list's selection bound to the index (`selectionByRowID`).
+- **Harness defect:** the sixth mutant's `xcodebuild` ran for 47 minutes under a 20-minute `subprocess.run(timeout=…, capture_output=True)`. A plausible cause, not verified: the timeout kills the direct child, but `communicate()` then waits on pipes that `xcodebuild`'s own children keep open. It was noticed only when Sebastian asked why a shell had been running for over an hour; Claude should have caught it. The rerun used `Popen` in a new session, output to a file and `killpg` on a 10-minute limit, and both remaining mutants finished in normal time. **Any future mutation script in this repo uses that shape.**

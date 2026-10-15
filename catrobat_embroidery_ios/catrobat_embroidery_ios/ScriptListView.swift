@@ -14,10 +14,10 @@ import SwiftUI
 /// `EditAction` handed to `model.editor`, never a mutation (ADR-006 pattern 1). Parameter
 /// editing is US-410.
 ///
-/// **Selection is `List`'s own** (US-409), bound to `editor.selectedBrickIndex`, which is where
-/// a palette tap inserts. It is still no control inside a row: the cell is what selects, and
-/// the index it writes is cleared by the editor on every change that can move rows, so index
-/// identity never leaves it pointing at a different brick.
+/// **Selection is `List`'s own** (US-409), bound by row ID to `editor.selectedRowID`, which
+/// translates to `editor.selectedBrickIndex` — where a palette tap inserts. It is still no control
+/// inside a row: the cell is what selects, and the index is cleared by the editor on every change
+/// that can move rows, so it never points at a different brick.
 ///
 /// **The palette presents from here, once**: the top bar's Add button in both placements owns
 /// the one `.popover`, which adapts to a detented sheet on compact (ADR-039). The empty
@@ -115,7 +115,7 @@ struct ScriptListView: View {
                         .buttonStyle(.borderedProminent)
                     }
                 } else {
-                    list(rows: rows, selection: $editor.selectedBrickIndex)
+                    list(rows: rows, selection: $editor.selectedRowID)
                 }
             }
             .onChange(of: model.paletteInsertion) { _, insertion in
@@ -123,7 +123,11 @@ struct ScriptListView: View {
                 // On the next turn, once the list holds the inserted rows — `perform(_:)`'s
                 // reason. Not animated: the palette's dismissal is already moving the screen.
                 Task { @MainActor in
-                    proxy.scrollTo(insertion.index, anchor: nil)
+                    // Rows are identified by the editor's row IDs, not their index (slice 4).
+                    let ids = model.editor.rowIDs
+                    if ids.indices.contains(insertion.index) {
+                        proxy.scrollTo(ids[insertion.index], anchor: nil)
+                    }
                 }
                 // VoiceOver focus waits for the palette to finish leaving. When a presentation
                 // finishes dismissing, UIKit hands focus back to the button that presented it,
@@ -214,8 +218,13 @@ struct ScriptListView: View {
 private extension ScriptListView {
     func list(rows: [BrickRowPresentation], selection: Binding<Int?>) -> some View {
         List(selection: selection) {
-            ForEach(rows) { row in
-                ScriptRowView(row: row, isSelected: row.id == selection.wrappedValue)
+            // Identified by the editor's row IDs, which follow the bricks through every change
+            // (ADR-034's 2026-10-15 amendment). With index identity a drop that UIKit had already
+            // animated arrived as "this row changed its contents", and the list showed the wrong
+            // brick and a gap before snapping. The selection is bound by row ID for the same
+            // reason (`EditorViewModel.selectedRowID`); the index stays the model's truth.
+            ForEach(Array(zip(rows, model.editor.rowIDs)), id: \.1) { row, _ in
+                ScriptRowView(row: row, isSelected: row.id == model.editor.selectedBrickIndex)
                     // On the row's one accessibility element — `ScriptRowView` collapses
                     // itself into one — so VoiceOver reaches them behind the rotor
                     // (ADR-031): "rotate to Actions, then swipe".

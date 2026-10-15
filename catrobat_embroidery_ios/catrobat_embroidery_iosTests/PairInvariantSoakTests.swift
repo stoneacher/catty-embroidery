@@ -129,6 +129,19 @@ struct PairInvariantSoakTests {
             }
             try PairInvariantSoakTests.expectBalanced(editor, seed: seed, step: step)
             try expectAgreement(step)
+            try expectRowIdentity(step)
+        }
+
+        /// One distinct row ID per brick after every step (ADR-034's 2026-10-15 amendment): a
+        /// duplicate would make SwiftUI merge two rows, a missing one would leave a row without
+        /// identity.
+        private func expectRowIdentity(_ step: Int) throws {
+            let count = PairInvariantSoakTests.bricks(editor).count
+            let ids = editor.rowIDs
+            try #require(
+                ids.count == count && Set(ids).count == count,
+                "seed \(seed), step \(step): \(ids.count) IDs, \(Set(ids).count) distinct, \(count) bricks"
+            )
         }
 
         /// The system manager offers undo and redo exactly when the toolbar does (US-411), after
