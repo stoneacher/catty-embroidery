@@ -3128,3 +3128,18 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Probed, not assumed:** it ran the math premises in Swift and `jshell` and found two things no reading would have: Java 7+ `Math.round` differs from ADR-012's `floor(x + 0.5)` at 0.49999999999999994 and near 2^52, and Swift's `max`/`min` disagree with Java's on NaN in *both* spellings. Caveat recorded: desktop JDK 17, not Android ART.
 - **Decided by Sebastian (2026-10-17):** mirror Catroid's chord heading after Arc/GoThrough; keep format v1 and amend ADR-037 with a freeze-at-first-distribution rule; defer `rand`; ship a bundled sample so the read-only function formulas are visible.
 - **Brief:** `docs/features/brick-backend.md`, eight slices in two PRs (formula language, then path bricks). The feed rule and the function divergences are pinned by no ADR, so the brief gets one Codex round before slice 1's tests.
+
+## 2026-10-17 — Brick backend: Codex brief review, one round, 7 findings, all valid
+
+- **Why a brief round:** the Arc/GoThrough feed rule and the formula-function divergences are pinned by no ADR or reference test (ADR-041).
+- **Invocation trap:** the first run failed in seconds because Codex's default model (`gpt-6.1-sol`) is not available on a ChatGPT account. The run with `-m gpt-5.6-sol` worked, as already noted in memory.
+- **Highest severity: High.** The brief's feed gate compared `Double` sample positions, but Catroid feeds the running stitch only when the `Float` it stores in `Look` changes. Codex built a legal input that shows it: start (2^30, 2^30), arc r = 20, 90°, running stitch 10. Catroid stitches nothing; we would stitch. This was resolved as a pinned divergence, extending ADR-014's accepted float-vs-Double divergence to the motion layer, where our needle has always been `Double`. A named test pins it. Codex also confirmed that Catroid's *heading* gate compares theoretical `Double` samples, so the chord-heading mirror (D6) is exact.
+- **Mediums (5):**
+  - Skipping i = 0 does not make a 0° arc a no-op. The binary64 residual of reconstructing the start reaches every sample, so an explicit degenerate guard was added, with an adversarial test case.
+  - The v1 freeze rule must pin encode-from-content, decode-all-supported and refuse-stamp-below-content.
+  - The NaN round-trip test was impossible under ADR-037, so its persistence now expects refusal.
+  - `arctan2(0,0) == 0` and "`tan(90)` finite" pass wrong implementations. Added `arctan2(+0,−0)`, a relative tolerance for large values, and the `sin(180)` residual.
+  - Slice 0's compile probe cannot discriminate a single restored `default:`. Its diagnostics are now asserted by location.
+- **Low (1):** slices 6 and 7 lacked killing tests and mutations (GoThrough slot routing, the sample-builder guard).
+- **What it says about the planning pass:** `swift-architect` had *probed* the math and still missed the Float feed gate, because it compared samples the way the brief describes rather than the way `Look` stores them. Four of the seven findings are of one class: a test that a wrong implementation passes. That is ADR-032 invariant 2 found at brief time, before any test exists, which is the cheapest moment to find it.
+- **Disposition:** a brief review is one round (skill §0), so there is no verification round. The changes are in the brief, and slice reviews will check them against code.
