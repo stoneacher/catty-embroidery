@@ -3082,3 +3082,16 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
     - Codex reviewing docs against code, which caught three doc drifts in this feature's five rounds.
   - **Where it plausibly still pays:** once per milestone or release, or alongside an ADR consolidation. That is where cross-ADR overlap actually arises. Excluding or sharding the journal would cut most of the cost.
 - **Proposed, not adopted:** move the drift check in `CLAUDE.md`/`AGENTS.md` from "every major feature close" to "milestone/release or ADR consolidation". This awaits Sebastian's decision.
+
+## 2026-10-17 — ADR-041 amended: the accessibility pass and the graph drift check leave the feature boundary
+
+- **Adopted by Sebastian:** this is the proposal recorded two entries above. ADR-041's point 4 had bundled three manual steps at feature handover. Two of them move:
+  - **The manual accessibility pass** goes to one full app review before the beta release, as decided earlier today.
+  - **The knowledge-graph drift check** goes to a milestone or release close, or an ADR consolidation.
+  - Ink/Stitch stays at the feature boundary where DST output or its provenance changes.
+- **Changed together:**
+  - ADR-041: point 4 marked inline (no text deleted), a dated amendment, and the index row;
+  - `CLAUDE.md` and its mirror `AGENTS.md`, edited in step;
+  - the feature-brief template's verification line.
+- **Open for the next drift run:** whether graphify can exclude or shard the journal. The cost argument rests on whole-file `--update` re-reading the append-only journal, so this is the first thing to check, not assume.
+- **Why this lands on PR #69 and not its own branch:** both decisions came from this feature's handover, and a second PR appending to the same journal would conflict at the end of the file.

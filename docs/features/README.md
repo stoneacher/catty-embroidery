@@ -30,7 +30,7 @@ If the slices add up to more than ~1,500 lines of non-test code, group them into
 ## Verification at handover
 
 - Every slice mutation-checked and recorded; risky slices reviewed when green.
-- Simulator screenshots (UI), manual accessibility pass, Ink/Stitch check if DST output or its provenance changed, Codex loop (cap 5).
+- Simulator screenshots (UI), Ink/Stitch check if DST output or its provenance changed, Codex loop (cap 5). List any manual accessibility questions the feature raises for the pre-beta accessibility review (ADR-041, 2026-10-17 amendment); the graph drift check runs at milestone/release, not here.
 
 ## References
 
