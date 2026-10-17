@@ -3069,3 +3069,16 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
     - round 4: focus by index;
     - round 5: scroll by index.
 - **Lesson:** rounds 4 and 5 found the same class twice, a position surviving where identity was meant, first in focus and then in scroll. When a reviewer finds one instance of a class, sweep for the class rather than fix the instance.
+
+## 2026-10-17 — Editor UI: knowledge-graph drift check deferred, and whether it still earns a per-feature slot
+
+- **Decided by Sebastian:** the feature-close `/graphify --update` drift check is deferred for this feature. It was due because ADR-034 and ADR-036 were amended.
+- **Assessment given when he asked whether it is still useful:**
+  - **It has not yet answered its question "yes".** The only full drift check (M3 close, 2026-09-18) triaged 40 cross-community edges and found no reinvented invariant, only rules with no ADR yet.
+  - **Its cost grows monotonically.** `--update` is file-granular, the append-only journal and `DECISIONS.md` change every time, and the last run cost 568k input tokens, two-thirds of a full rebuild.
+  - **Cheaper instruments now cover most of the ground:**
+    - the ADR index with one-line current rules (2026-10-09);
+    - `/finish`'s caveat inventory and status-line rules;
+    - Codex reviewing docs against code, which caught three doc drifts in this feature's five rounds.
+  - **Where it plausibly still pays:** once per milestone or release, or alongside an ADR consolidation. That is where cross-ADR overlap actually arises. Excluding or sharding the journal would cut most of the cost.
+- **Proposed, not adopted:** move the drift check in `CLAUDE.md`/`AGENTS.md` from "every major feature close" to "milestone/release or ADR consolidation". This awaits Sebastian's decision.
