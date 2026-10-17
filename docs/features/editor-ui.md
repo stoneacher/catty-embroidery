@@ -1,6 +1,6 @@
 # Editor UI
 
-**Status**: Ready for review — 2026-10-17 (PR #69; Codex loop closed at the cap) | **Epic**: E5 (+ E6 thin) | **Branch**: `feature/editor-ui`
+**Status**: Done — 2026-10-17, PR #69 | **Epic**: E5 (+ E6 thin) | **Branch**: `feature/editor-ui`
 
 **Goal**: finish the block editor. A user builds a program from nothing in the app (palette, parameters, reorder, delete), can undo and redo *everything* from every surface the platform offers, and runs and exports it as `.dst`.
 
@@ -38,7 +38,7 @@ Plus every acceptance criterion in [US-411](../user-stories/milestone-4/US-411-u
 
 ## Human-owned
 
-- [ ] Apple Developer Program enrolment for the TestFlight usability checkpoint (open since 2026-09-19, owner Sebastian). Blocks the checkpoint, not this feature.
+- Apple Developer Program enrolment for the TestFlight usability checkpoint (open since 2026-09-19, owner Sebastian). Blocks the checkpoint, not this feature; carried as the dated, human-owned prerequisite in [ROADMAP M4](../ROADMAP.md#m4--block-editor-e5).
 
 ## References
 
