@@ -32,13 +32,50 @@ nonisolated struct BrickListDiff {
         while suffix < shorter - prefix, old[old.count - 1 - suffix] == new[new.count - 1 - suffix] {
             suffix += 1
         }
+        var removed = Array(old[prefix ..< old.count - suffix])
+        var inserted = Array(new[prefix ..< new.count - suffix])
+        var move = Self.move(from: removed, to: inserted)
+
+        // Equal bricks at the window's edges — every `loopEnd` is the same value — can be taken
+        // into the prefix or suffix when the move actually carried them: a nested loop moved below
+        // its parent's end pairs the parent's end with its own and hides the move (Codex round 1).
+        // So when the window holds the same bricks reordered and no block move explains it, widen
+        // it back into the prefix and suffix, the smallest widening first. A change in place never
+        // qualifies: it changes which bricks the window holds, and widening adds the same bricks
+        // to both sides.
+        if move == nil, Self.isReordering(removed, of: inserted) {
+            widening: for extra in 1 ... max(1, prefix + suffix) where extra <= prefix + suffix {
+                for back in max(0, extra - prefix) ... min(extra, suffix) {
+                    let front = extra - back
+                    let wideRemoved = Array(old[prefix - front ..< old.count - suffix + back])
+                    let wideInserted = Array(new[prefix - front ..< new.count - suffix + back])
+                    if let found = Self.move(from: wideRemoved, to: wideInserted) {
+                        (prefix, suffix, removed, inserted, move) =
+                            (prefix - front, suffix - back, wideRemoved, wideInserted, found)
+                        break widening
+                    }
+                }
+            }
+        }
+
         self.prefix = prefix
         self.suffix = suffix
-        removed = Array(old[prefix ..< old.count - suffix])
-        inserted = Array(new[prefix ..< new.count - suffix])
-        let move = Self.move(from: removed, to: inserted)
+        self.removed = removed
+        self.inserted = inserted
         moveSplit = move?.split
         movedBlockHead = move?.head
+    }
+
+    /// Whether `lhs` holds exactly the bricks of `rhs`, in another order. Quadratic, and run only
+    /// on a window no block move explains.
+    private static func isReordering(_ lhs: [Brick], of rhs: [Brick]) -> Bool {
+        guard lhs.count == rhs.count, lhs != rhs else { return false }
+        var unmatched = rhs
+        for brick in lhs {
+            guard let index = unmatched.firstIndex(of: brick) else { return false }
+            unmatched.remove(at: index)
+        }
+        return true
     }
 
     /// A move carries exactly one **block** — a leaf, or a whole pair (ADR-045) — so only two

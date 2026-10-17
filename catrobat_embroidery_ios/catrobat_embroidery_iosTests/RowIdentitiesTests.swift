@@ -46,6 +46,31 @@ struct RowIdentitiesTests {
         #expect(identities.ids == [0, 4, 1, 2, 3, 5])
     }
 
+    /// Codex round 1 (Editor UI): every `loopEnd` is the same value, so a greedy suffix scan
+    /// paired the *outer* loop's end with the *inner* one and the move went unrecognised —
+    /// leaving all five IDs in place, attached to the wrong bricks.
+    @Test("a nested loop moved below its parent's end carries its three IDs past it")
+    func nestedPairOutOfParent() {
+        let outer = Brick.repeatLoop(times: .number(2)), inner = Brick.repeatLoop(times: .number(3))
+        var identities = RowIdentities(count: 5)
+        identities.follow(
+            from: [outer, inner, Self.body, Self.end, Self.end],
+            to: [outer, Self.end, inner, Self.body, Self.end]
+        )
+        #expect(identities.ids == [0, 4, 1, 2, 3])
+    }
+
+    @Test("a loop moved into the loop above, across its end, carries its three IDs")
+    func pairIntoLoopAcrossItsEnd() {
+        let outer = Brick.repeatLoop(times: .number(2)), inner = Brick.repeatLoop(times: .number(3))
+        var identities = RowIdentities(count: 5)
+        identities.follow(
+            from: [outer, Self.end, inner, Self.body, Self.end],
+            to: [outer, inner, Self.body, Self.end, Self.end]
+        )
+        #expect(identities.ids == [0, 2, 3, 4, 1])
+    }
+
     @Test("an insert keeps every existing ID and gives the new row a fresh one")
     func insert() {
         let identities = Self.followed(

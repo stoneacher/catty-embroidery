@@ -122,9 +122,9 @@ struct PairInvariantSoakTests {
             let door: UInt64 = before.count < 6 ? 0 : (before.count > 40 ? 60 : roll)
             switch door {
             case 0 ..< 30: try insert(before)
-            case 30 ..< 55: drag(before)
+            case 30 ..< 55: try drag(before, step)
             case 55 ..< 75: delete(before)
-            case 75 ..< 90: accessibilityMove(before)
+            case 75 ..< 90: try accessibilityMove(before, step)
             default: try history(step)
             }
             try PairInvariantSoakTests.expectBalanced(editor, seed: seed, step: step)
@@ -191,12 +191,17 @@ struct PairInvariantSoakTests {
             tally.loopInserts += loops.contains(kind) ? 1 : 0
         }
 
-        private mutating func drag(_ before: [Brick]) {
+        private mutating func drag(_ before: [Brick], _ step: Int) throws {
             let from = random(below: before.count)
-            editor.moveRows(fromOffsets: [from], toOffset: random(below: before.count + 1))
+            let toOffset = random(below: before.count + 1)
+            // The same conversion `moveRows` makes, so the move's destination is known.
+            let action = Script(bricks: before).moveAction(fromOffsets: [from], toOffset: toOffset, in: ScriptAddress())
+            let idsBefore = editor.rowIDs
+            editor.moveRows(fromOffsets: [from], toOffset: toOffset)
             guard changed(from: before) else { return }
             tally.drags += 1
             tally.pairDrags += PairInvariantSoakTests.isLoopBrick(before[from]) ? 1 : 0
+            try expectMovedIDs(action, before: before, idsBefore: idsBefore, step)
         }
 
         private mutating func delete(_ before: [Brick]) {
@@ -207,7 +212,7 @@ struct PairInvariantSoakTests {
             tally.pairDeletes += PairInvariantSoakTests.isLoopBrick(before[index]) ? 1 : 0
         }
 
-        private mutating func accessibilityMove(_ before: [Brick]) {
+        private mutating func accessibilityMove(_ before: [Brick], _ step: Int) throws {
             let rows = BrickRowPresentation.rows(for: editor.program)
             let row = rows[random(below: rows.count)]
             let actions = [
@@ -215,8 +220,30 @@ struct PairInvariantSoakTests {
                 row.moveBelowLoop, row.moveIntoLoopAbove, row.moveIntoLoopBelow
             ].compactMap(\.self)
             guard let action = actions.randomElement(using: &generator) else { return }
+            let idsBefore = editor.rowIDs
             editor.apply(action)
-            tally.accessibilityMoves += changed(from: before) ? 1 : 0
+            guard changed(from: before) else { return }
+            tally.accessibilityMoves += 1
+            try expectMovedIDs(action, before: before, idsBefore: idsBefore, step)
+        }
+
+        /// Where the IDs went, not only that they stay unique (Codex round 1): a move never
+        /// changes which bricks exist, so **every ID must still label a brick equal to the one it
+        /// labelled before**. Equal bricks may trade IDs (`RowIdentities`), so this is the exact
+        /// promise — a nested loop moved across its parent's end, left unrecognised, puts the inner
+        /// opener's ID on a `loopEnd` and fails it.
+        private func expectMovedIDs(_ action: EditAction?, before: [Brick], idsBefore: [Int], _ step: Int) throws {
+            guard case .move = action else { return }
+            let after = PairInvariantSoakTests.bricks(editor)
+            let ids = editor.rowIDs
+            let oldIndex = Dictionary(uniqueKeysWithValues: idsBefore.enumerated().map { ($1, $0) })
+            for (newIndex, id) in ids.enumerated() {
+                let old = try #require(oldIndex[id], "seed \(seed), step \(step): a move minted ID \(id)")
+                try #require(
+                    before[old] == after[newIndex],
+                    "seed \(seed), step \(step): ID \(id) moved from \(before[old]) to \(after[newIndex])"
+                )
+            }
         }
 
         /// Redo is reachable only straight after an undo (any edit clears it), so this door is a

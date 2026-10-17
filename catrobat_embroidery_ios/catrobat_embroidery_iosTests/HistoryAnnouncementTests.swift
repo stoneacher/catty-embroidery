@@ -77,6 +77,16 @@ struct HistoryAnnouncementTests {
         #expect(Self.text(.redo, from: older, to: newer) == "Redid moving Repeat 31 times")
     }
 
+    /// Codex round 1: the two `loopEnd`s are equal values, and the move went unrecognised.
+    @Test("a nested loop moved out of its parent is named by its opener")
+    func nestedPairMove() {
+        let outer = Brick.repeatLoop(times: .number(2)), inner = Brick.repeatLoop(times: .number(3))
+        let older = Self.program([outer, inner, .stitch, .loopEnd, .loopEnd])
+        let newer = Self.program([outer, .loopEnd, inner, .stitch, .loopEnd])
+        #expect(Self.text(.undo, from: newer, to: older) == "Undid moving Repeat 3 times")
+        #expect(Self.text(.redo, from: older, to: newer) == "Redid moving Repeat 3 times")
+    }
+
     @Test("an added loop is named by its opener, not its end")
     func addedLoop() {
         let newer = Self.program([.sewUp] + Self.loop + Self.loop + [.moveNSteps(.number(10))])

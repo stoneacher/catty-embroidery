@@ -2996,3 +2996,25 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - the hardware-keyboard and focus questions this feature opened: ⌘Z, the three-finger gestures, iPad, and whether the hidden first responder disturbs Full Keyboard Access.
 - **What still ships with every feature:** the automatable accessibility work. Catalog strings, labels asserted in unit tests, and VoiceOver announcements tested by exact sentence, as US-411's were.
 - **Why it is recorded:** since 2026-08-17 the manual pass had been carried forward story by story, then milestone by milestone, then to "feature handover". This entry is where it leaves the per-feature definition of done.
+
+## 2026-10-17 — Editor UI handover, Codex round 1: one Medium the in-loop review and the soak both missed
+
+- **Tooling, before the review could start:**
+  - Codex's configured default model (`gpt-6.1-sol`) is rejected for a ChatGPT-account login. This month's sessions ran on `gpt-5.6-sol`, so the run passes `-m gpt-5.6-sol` and the user's config is left alone.
+  - Separately, a pending Xcode first-launch install blocked every simulator call. XcodeBuildMCP's background `simctl list` calls each spawned an `xcodebuild -runFirstLaunch` that could not ask for a password. The `!` shell prefix cannot read a sudo password either. A pending MDM-enforced macOS update held the system install lock, and a restart was needed before Xcode could install its components.
+- **History:** round 1, highest severity **Medium**: 1 Medium and 2 Low, plus blind spots.
+- **Medium, valid:** a nested loop moved across its parent's end was not recognised as a move.
+  - Every `loopEnd` is the same value, so the greedy suffix scan paired the parent's end with the inner one.
+  - Consequences: row IDs stayed on the wrong bricks, and VoiceOver said "an edit".
+  - Fix, test-first: `BrickListDiff` widens the window back into the prefix and suffix, smallest first, when the window holds the same bricks reordered and no block move explains it. A change in place can never qualify.
+  - The four new tests were red against the old code.
+- **The soak had the same blind spot, and the first fix of it was wrong.**
+  - It checked only that IDs were unique and their count matched.
+  - Its first strengthening asserted "the dragged block's own IDs land at the target". That failed on three seeds where **equal bricks traded IDs**: two identical leaves, or two identical empty loops. The design explicitly permits that.
+  - The right oracle is "after a move, every ID still labels a brick equal to the one it labelled". Reverting the widening fix (W1) is now killed by the soak on its own, besides the three targeted tests. W2 did not compile and is discarded, not counted.
+- **Low, valid:** the brief overstated coverage ("each verb", "every door"). Reworded, with what is not covered listed.
+- **Low, rejected:** the checked accessibility item that "was not run". That is Sebastian's recorded 2026-10-17 decision, an owner waiver with its destination named, not a defect.
+- **Blind spots tracked, not fixed:**
+  - The anchor's claim rule is tested only as a pure function.
+  - No automated test of responder-chain routing (shake, ⌘Z, three-finger) or of `List`'s ID-based selection premise. The simulator checks recorded earlier are the evidence. The rest belongs to the pre-beta accessibility review.
+- **What Codex found that the in-loop review did not:** `swift-code-reviewer` had fixed the lone-opener case. Neither it nor the random soak constructed a pair crossing an *equal* end marker: the generator's loops are adjacent far more often than nested across an end.
