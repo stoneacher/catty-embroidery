@@ -10,7 +10,7 @@ import Testing
 /// slice 0): a case whose same-case arm is forgotten falls into the default,
 /// and the reflexivity property below goes red.
 enum FormulaCase: CaseIterable {
-    case number, variable, binary, unaryMinus
+    case number, variable, binary, unaryMinus, unaryFunction, binaryFunction, constant, sensor
 
     init(of formula: Formula) {
         switch formula {
@@ -18,6 +18,10 @@ enum FormulaCase: CaseIterable {
         case .variable: self = .variable
         case .binary: self = .binary
         case .unaryMinus: self = .unaryMinus
+        case .unaryFunction: self = .unaryFunction
+        case .binaryFunction: self = .binaryFunction
+        case .constant: self = .constant
+        case .sensor: self = .sensor
         }
     }
 }
@@ -26,8 +30,14 @@ enum FormulaCensus {
     /// Finite examples of every case: these must survive the document codec.
     static let finite: [Formula] = ProgramDocumentRoundTripTests.everyFormula + [
         .unaryMinus(.unaryMinus(.number(1))),
-        .binary(.divide, .unaryMinus(.variable("x")), .binary(.pow, .number(2), .number(0.5)))
-    ]
+        .binary(.divide, .unaryMinus(.variable("x")), .binary(.pow, .number(2), .number(0.5))),
+        .constant(.pi),
+        .sensor(.objectX),
+        .sensor(.objectY),
+        .sensor(.motionDirection)
+    ] + UnaryFunction.allCases.map { .unaryFunction($0, .variable("x")) }
+        + BinaryFunction.allCases.map { .binaryFunction($0, .number(7), .sensor(.objectY)) }
+        + [.unaryFunction(.round, .binaryFunction(.max, .constant(.pi), .unaryMinus(.number(2))))]
 
     /// Non-finite payloads nested inside every composite case. They must be
     /// reflexive (ADR-006) but never reach disk (ADR-037).
@@ -36,7 +46,9 @@ enum FormulaCensus {
         .number(.infinity),
         .unaryMinus(.number(.nan)),
         .binary(.plus, .variable("x"), .number(.nan)),
-        .binary(.mult, .number(-.infinity), .unaryMinus(.number(.nan)))
+        .binary(.mult, .number(-.infinity), .unaryMinus(.number(.nan))),
+        .unaryFunction(.sqrt, .number(.nan)),
+        .binaryFunction(.min, .number(1), .unaryFunction(.abs, .number(-.infinity)))
     ]
 
     static let examples: [Formula] = finite + nonFinite
@@ -51,7 +63,14 @@ enum FormulaCensus {
         (.binary(.plus, .number(1), .number(2)), .binary(.minus, .number(1), .number(2))),
         (.binary(.plus, .number(1), .number(2)), .binary(.plus, .number(3), .number(2))),
         (.binary(.plus, .number(1), .number(2)), .binary(.plus, .number(1), .number(3))),
-        (.unaryMinus(.number(1)), .unaryMinus(.number(2)))
+        (.unaryMinus(.number(1)), .unaryMinus(.number(2))),
+        (.unaryFunction(.sin, .number(1)), .unaryFunction(.cos, .number(1))),
+        (.unaryFunction(.sin, .number(1)), .unaryFunction(.sin, .number(2))),
+        (.binaryFunction(.min, .number(1), .number(2)), .binaryFunction(.max, .number(1), .number(2))),
+        (.binaryFunction(.min, .number(1), .number(2)), .binaryFunction(.min, .number(3), .number(2))),
+        (.binaryFunction(.min, .number(1), .number(2)), .binaryFunction(.min, .number(1), .number(3))),
+        (.constant(.pi), .number(.pi)),
+        (.sensor(.objectX), .sensor(.objectY))
     ]
 }
 

@@ -51,6 +51,10 @@ extension Formula {
             )
         case let .unaryMinus(operand):
             Self.normalize(-operand.evaluate(scope: scope))
+        case .unaryFunction, .binaryFunction, .constant, .sensor:
+            // Brick backend slices 2 and 3 give these their semantics; until
+            // then they fail like any other uninterpretable node.
+            .nan
         }
     }
 

@@ -33,6 +33,8 @@ nonisolated enum ParameterEditorText {
         let resource: LocalizedStringResource = switch reason {
         case .binary: .parameterReadonlyBinary
         case .unaryMinus: .parameterReadonlyNegation
+        case .function: .parameterReadonlyFunction
+        case .sensor: .parameterReadonlySensor
         }
         return resolve(resource, locale: locale)
     }

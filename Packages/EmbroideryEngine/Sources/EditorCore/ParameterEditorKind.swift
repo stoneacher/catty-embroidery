@@ -41,6 +41,11 @@ public enum ParameterEditorKind: Sendable, Equatable {
                 // anything the pad cannot write back byte-identically is
                 // read-only.
                 self = .readOnlyFormula(formula, reason: .unaryMinus)
+            case .unaryFunction, .binaryFunction, .constant:
+                // No UI path writes a call yet (brief D9).
+                self = .readOnlyFormula(formula, reason: .function)
+            case .sensor:
+                self = .readOnlyFormula(formula, reason: .sensor)
             }
         case let .variableName(name):
             self = .variableName(name)
@@ -57,4 +62,8 @@ public enum ParameterEditorKind: Sendable, Equatable {
 public enum ReadOnlyFormulaReason: Sendable, Equatable {
     case binary
     case unaryMinus
+    /// A math function call or `pi` (Brick backend, ADR-040 amendment).
+    case function
+    /// A value read from the object, such as its x position.
+    case sensor
 }
