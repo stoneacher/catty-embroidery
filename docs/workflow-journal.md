@@ -2986,3 +2986,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - IDs starting at 1 (`initialIDs`, stub-green);
   - the list's selection bound to the index (`selectionByRowID`).
 - **Harness defect:** the sixth mutant's `xcodebuild` ran for 47 minutes under a 20-minute `subprocess.run(timeout=…, capture_output=True)`. A plausible cause, not verified: the timeout kills the direct child, but `communicate()` then waits on pipes that `xcodebuild`'s own children keep open. It was noticed only when Sebastian asked why a shell had been running for over an hour; Claude should have caught it. The rerun used `Popen` in a new session, output to a file and `killpg` on a 10-minute limit, and both remaining mutants finished in normal time. **Any future mutation script in this repo uses that shape.**
+
+## 2026-10-17 — Editor UI: the bundled manual accessibility pass is waived as a feature gate
+
+- **Decided by Sebastian:** the manual accessibility pass in the Editor UI brief's handover list is marked passed without being run. A **full accessibility review of the whole app happens before the beta release** and takes over everything that pass carried:
+  - VoiceOver over the editor, including US-408's written procedure;
+  - Dynamic Type and Reduce Motion;
+  - US-410's deferred items;
+  - the hardware-keyboard and focus questions this feature opened: ⌘Z, the three-finger gestures, iPad, and whether the hidden first responder disturbs Full Keyboard Access.
+- **What still ships with every feature:** the automatable accessibility work. Catalog strings, labels asserted in unit tests, and VoiceOver announcements tested by exact sentence, as US-411's were.
+- **Why it is recorded:** since 2026-08-17 the manual pass had been carried forward story by story, then milestone by milestone, then to "feature handover". This entry is where it leaves the per-feature definition of done.
