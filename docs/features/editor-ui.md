@@ -32,7 +32,7 @@ Plus every acceptance criterion in [US-411](../user-stories/milestone-4/US-411-u
 
 - [ ] Simulator screenshots: undo/redo enabled and disabled, plus a shake-to-undo check (or a recorded finding that it does not reach the bridge).
 - [x] **The bundled manual accessibility pass** over the whole editor — VoiceOver (custom actions behind the rotor: "rotate to Actions, then swipe"), Dynamic Type, Reduce Motion — plus the items US-410 deferred to it (opened variable menu, iPad popover, swatches, row action during sheet dismissal). Record what was not run. — **Marked passed by Sebastian (2026-10-17)**: not run as a feature gate; the whole app gets a full accessibility review before the beta release, which takes over these items, US-408's VoiceOver procedure and the open hardware-keyboard questions (⌘Z, iPad, Full Keyboard Access with the hidden first responder).
-- [ ] **Ink/Stitch check of a hand-built design** — the first time the editor is in the provenance chain of an exported file.
+- [x] **Ink/Stitch check of a hand-built design** — the first time the editor is in the provenance chain of an exported file. — **Verified by Sebastian (2026-10-17).**
 - [ ] `swift-documenter` pass and the knowledge-graph drift check (read the 2026-09-18 journal entry on `--update` cost first).
 - [ ] Codex loop, cap 5.
 
