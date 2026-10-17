@@ -1,6 +1,6 @@
 # Editor UI
 
-**Status**: In progress — 2026-10-09 | **Epic**: E5 (+ E6 thin) | **Branch**: `feature/editor-ui`
+**Status**: Ready for review — 2026-10-17 (PR #69; Codex loop closed at the cap) | **Epic**: E5 (+ E6 thin) | **Branch**: `feature/editor-ui`
 
 **Goal**: finish the block editor. A user builds a program from nothing in the app (palette, parameters, reorder, delete), can undo and redo *everything* from every surface the platform offers, and runs and exports it as `.dst`.
 
@@ -30,11 +30,11 @@ Plus every acceptance criterion in [US-411](../user-stories/milestone-4/US-411-u
 
 ## Verification at handover
 
-- [ ] Simulator screenshots: undo/redo enabled and disabled, plus a shake-to-undo check (or a recorded finding that it does not reach the bridge).
+- [x] Simulator screenshots: undo/redo enabled and disabled, plus a shake-to-undo check (or a recorded finding that it does not reach the bridge). — 2026-10-09: both states captured; shake offers Undo, then Undo and Redo, through the bridge (journal).
 - [x] **The bundled manual accessibility pass** over the whole editor — VoiceOver (custom actions behind the rotor: "rotate to Actions, then swipe"), Dynamic Type, Reduce Motion — plus the items US-410 deferred to it (opened variable menu, iPad popover, swatches, row action during sheet dismissal). Record what was not run. — **Marked passed by Sebastian (2026-10-17)**: not run as a feature gate; the whole app gets a full accessibility review before the beta release, which takes over these items, US-408's VoiceOver procedure and the open hardware-keyboard questions (⌘Z, iPad, Full Keyboard Access with the hidden first responder).
 - [x] **Ink/Stitch check of a hand-built design** — the first time the editor is in the provenance chain of an exported file. — **Verified by Sebastian (2026-10-17).**
 - [x] `swift-documenter` pass (2026-10-09: no README change needed). **Knowledge-graph drift check deferred by Sebastian (2026-10-17)**; see the journal for why its per-feature value is in question.
-- [ ] Codex loop, cap 5.
+- [x] Codex loop, cap 5. — 2026-10-17: five rounds, Medium → Low → Low → Low → Low, 8 findings (7 fixed, 1 rejected); round 5's fix not re-reviewed (ADR-041). Verdict in PR #69.
 
 ## Human-owned
 
