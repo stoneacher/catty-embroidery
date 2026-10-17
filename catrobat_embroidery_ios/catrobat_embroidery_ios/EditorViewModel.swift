@@ -36,7 +36,9 @@ final class EditorViewModel {
             // stack, so the rows' identity follows all of them (Editor UI slice 4).
             let old = Self.listedBricks(of: oldValue.current)
             let new = Self.listedBricks(of: program)
-            if old != new {
+            // A `load` renews every ID itself: a diff cannot tell a replacement that differs in one
+            // row from a parameter edit (Codex round 3).
+            if old != new, !isReplacingProgram {
                 rowIdentities.follow(from: old, to: new)
             }
         }
@@ -55,6 +57,9 @@ final class EditorViewModel {
     }
 
     private var rowIdentities: RowIdentities
+
+    /// Set while `load` replaces the program, so the stack's `didSet` leaves the IDs to it.
+    @ObservationIgnored private var isReplacingProgram = false
 
     /// The selection as the list sees it: by row ID. `List(selection:)` selects by `ForEach`
     /// identity, and an explicit `.tag` did not override it (iOS 26, found on the simulator), so the
@@ -316,7 +321,10 @@ final class EditorViewModel {
     func load(_ program: Program) {
         // `reset(to:)` already closes the stack's session; the view model's copy goes too, so a
         // late write from the torn-down editor finds no session to write through (US-410).
+        isReplacingProgram = true
         undoStack.reset(to: program)
+        isReplacingProgram = false
+        rowIdentities.renew(count: Self.listedBricks(of: program).count)
         parameterSession = nil
         selectedBrickIndex = nil
     }

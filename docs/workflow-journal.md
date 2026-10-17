@@ -3026,3 +3026,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Low, valid: an equal-length replacement kept the old IDs.** The "same length means changed in place" branch kept IDs for an unrelated program of the same length, such as a `load`, and for a reorder that is not one move. ADR-034 meant a parameter edit, which changes exactly one brick. Fixed test-first: IDs are kept only for a one-brick window. Two tests went red first.
 - **Low, valid: the widening was cubic in the worst case.** It ran synchronously in `undoStack`'s `didSet`. **Measured with a temporary probe** on Codex's worst case, 400 identical leaves on each side of a non-move reorder (808 bricks, Debug build, simulator): **2.3 s uncapped, about 1 ms with a cap of 32.** Past the cap a move gets fresh IDs and announces "an edit", which is harmless. The cap is verified by that measurement rather than by a timing test, and the probe was not committed.
 - **Observation:** both Lows sit in round 1's own fix. That is the US-108 pattern the verification round exists for: a fix is new surface.
+
+## 2026-10-17 — Editor UI handover, Codex round 3: a diff cannot tell a load from an edit
+
+- **History:** Medium → Low → **Low**. Flat, and code changed, so the loop continues to round 4 of 5.
+- **Round-2 fixes confirmed.** No single editor step leaves an equal-length window larger than one brick. The widening arithmetic is safe: `reach > 0` guards the range, and each slice stays in bounds.
+- **Low, valid: a `load` differing in one row kept that row's ID.** Examples: `[Sew up] → [Stitch]`, or `[Sew up, Stitch] → [Sew up, Turn right]`. Diffing the two programs cannot tell this from a parameter edit, but the editor can: only `load` replaces the whole program.
+  - Fix, test-first: `load` renews every ID through `RowIdentities.renew(count:)`, and a flag keeps the stack's `didSet` from also diffing, so IDs are not minted twice.
+  - The test went red on both expectations. Two mutants were killed: diffing during a load (double-minting) and not renewing.
+- **Accepted limitation, recorded in ADR-034:** a move needing more than 32 bricks of widening, a loop holding over 32 nested loops moved across an equal parent end, falls back to fresh IDs and "an edit".
+- **Pattern across three rounds:** each round's finding sat in the previous round's fix, at a narrower edge each time. Round 1: nested pair across an end. Round 2: equal-length replacement, and cost. Round 3: a one-row replacement. Severity is flat at Low.

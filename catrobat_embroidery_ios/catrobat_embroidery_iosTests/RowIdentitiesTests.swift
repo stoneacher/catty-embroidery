@@ -185,4 +185,22 @@ struct RowIdentitiesTests {
         editor.selectedRowID = 99 // no such row
         #expect(editor.selectedBrickIndex == nil)
     }
+
+    /// Codex round 3: a diff cannot tell a parameter edit from a replacement that differs in one
+    /// row, but the editor can — only `load` replaces the whole program — so `load` renews every ID.
+    @MainActor
+    @Test("loading a program gives every row a fresh ID, even where a row is unchanged")
+    func loadRenewsEveryID() {
+        func program(_ bricks: [Brick]) -> Program {
+            Program(name: "p", scenes: [Scene(objects: [Object(scripts: [Script(bricks: bricks)])])])
+        }
+        let editor = EditorViewModel(program: program([Self.sewUp, Self.body]), undoManager: nil)
+        #expect(editor.rowIDs == [0, 1])
+
+        editor.load(program([Self.sewUp, Self.turn])) // one row differs, one is unchanged
+        #expect(editor.rowIDs == [2, 3])
+
+        editor.load(program([Self.move])) // a one-row program replaced by another
+        #expect(editor.rowIDs == [4])
+    }
 }

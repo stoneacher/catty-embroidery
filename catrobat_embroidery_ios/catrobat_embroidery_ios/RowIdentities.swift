@@ -41,6 +41,12 @@ nonisolated struct RowIdentities: Equatable {
         ids = Array(ids[..<diff.prefix]) + middle + Array(ids[(ids.count - diff.suffix)...])
     }
 
+    /// Every row gets a fresh ID — for a whole-program replacement (`EditorViewModel.load`), which a
+    /// diff cannot tell from an edit when the two programs differ in one row (Codex round 3).
+    mutating func renew(count: Int) {
+        ids = fresh(count)
+    }
+
     private mutating func fresh(_ count: Int) -> [Int] {
         defer { next += count }
         return Array(next ..< next + count)
