@@ -3036,3 +3036,17 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The test went red on both expectations. Two mutants were killed: diffing during a load (double-minting) and not renewing.
 - **Accepted limitation, recorded in ADR-034:** a move needing more than 32 bricks of widening, a loop holding over 32 nested loops moved across an equal parent end, falls back to fresh IDs and "an edit".
 - **Pattern across three rounds:** each round's finding sat in the previous round's fix, at a narrower edge each time. Round 1: nested pair across an end. Round 2: equal-length replacement, and cost. Round 3: a one-row replacement. Severity is flat at Low.
+
+## 2026-10-17 — Editor UI handover, Codex round 4: VoiceOver focus still followed an index
+
+- **History:** Medium → Low → Low → **Low**. Flat, and code changed, so the loop goes to round 5, the cap (ADR-041).
+- **Round-3 fix confirmed:**
+  - every replacement path goes through `load`;
+  - the flag cannot leak, since it is synchronous and nothing throws;
+  - the bridge still clears both histories;
+  - selection is cleared after the IDs renew.
+- **Low, valid: VoiceOver focus was keyed by index.** `focusedRow` and the palette's `pendingFocus` held positions. After a system undo or redo that moves rows, or a `load` during the palette's dismissal, focus went to whatever brick then occupied that index. This is code that contradicted the amendment, not the waived manual pass.
+  - Fix: focus is keyed by row ID, resolved once from the index at the moment focus is decided (an insertion, a VoiceOver move's destination), through a new, tested `EditorViewModel.rowID(at:)`.
+  - The test was red by compilation only, so a mutant proves it: `rowID(at:)` returning the index, the old behaviour, was killed by two tests.
+  - The VoiceOver behaviour itself is not unit-testable here and goes to the pre-beta accessibility review. A simulator check confirmed that selection and insertion still behave after a drag.
+- **Low, valid:** `ScriptListView`'s header still described index identity and the reasoning built on it. Rewritten.

@@ -203,4 +203,20 @@ struct RowIdentitiesTests {
         editor.load(program([Self.move])) // a one-row program replaced by another
         #expect(editor.rowIDs == [4])
     }
+
+    /// Codex round 4: VoiceOver focus is keyed by row ID, decided once — after a move or an
+    /// insert — from the row's index, so a later undo, redo or load cannot leave it on whatever
+    /// brick then occupies that index.
+    @MainActor
+    @Test("a row's ID is looked up by index, and an index with no row has none")
+    func rowIDAtIndex() {
+        let program = Program(name: "p", scenes: [Scene(objects: [Object(scripts: [Script(bricks: Self.bricks)])])])
+        let editor = EditorViewModel(program: program, undoManager: nil)
+        editor.moveRows(fromOffsets: [0], toOffset: 4) // IDs now [1, 2, 3, 0, 4, 5]
+
+        #expect(editor.rowID(at: 3) == 0, "the moved sew-up keeps its ID at its new index")
+        #expect(editor.rowID(at: 0) == 1)
+        #expect(editor.rowID(at: 6) == nil)
+        #expect(editor.rowID(at: -1) == nil)
+    }
 }

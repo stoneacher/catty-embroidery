@@ -58,6 +58,13 @@ final class EditorViewModel {
 
     private var rowIdentities: RowIdentities
 
+    /// The ID of the row at `index`, or `nil` with no row there. How the list turns a position it
+    /// has just decided on — an insertion, a VoiceOver move's destination — into the identity
+    /// VoiceOver focus then follows (Codex round 4).
+    func rowID(at index: Int) -> Int? {
+        rowIDs.indices.contains(index) ? rowIDs[index] : nil
+    }
+
     /// Set while `load` replaces the program, so the stack's `didSet` leaves the IDs to it.
     @ObservationIgnored private var isReplacingProgram = false
 
@@ -66,7 +73,7 @@ final class EditorViewModel {
     /// list binds here and the index stays the truth (`selectedBrickIndex`). An ID with no row
     /// clears the selection.
     var selectedRowID: Int? {
-        get { selectedBrickIndex.flatMap { rowIDs.indices.contains($0) ? rowIDs[$0] : nil } }
+        get { selectedBrickIndex.flatMap(rowID(at:)) }
         set { selectedBrickIndex = newValue.flatMap { rowIDs.firstIndex(of: $0) } }
     }
 
