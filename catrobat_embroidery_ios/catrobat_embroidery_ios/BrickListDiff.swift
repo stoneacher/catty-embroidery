@@ -42,9 +42,11 @@ nonisolated struct BrickListDiff {
         // So when the window holds the same bricks reordered and no block move explains it, widen
         // it back into the prefix and suffix, the smallest widening first. A change in place never
         // qualifies: it changes which bricks the window holds, and widening adds the same bricks
-        // to both sides.
-        if move == nil, Self.isReordering(removed, of: inserted) {
-            widening: for extra in 1 ... max(1, prefix + suffix) where extra <= prefix + suffix {
+        // to both sides. Bounded (`maximumWidening`): a move reclaims an end marker or two, and an
+        // unbounded search was cubic on a long script whose middle is not one move (Codex round 2).
+        let reach = min(prefix + suffix, Self.maximumWidening)
+        if move == nil, reach > 0, Self.isReordering(removed, of: inserted) {
+            widening: for extra in 1 ... reach {
                 for back in max(0, extra - prefix) ... min(extra, suffix) {
                     let front = extra - back
                     let wideRemoved = Array(old[prefix - front ..< old.count - suffix + back])
@@ -65,6 +67,11 @@ nonisolated struct BrickListDiff {
         moveSplit = move?.split
         movedBlockHead = move?.head
     }
+
+    /// How many bricks the window may reclaim from its prefix and suffix together. Past it a move
+    /// is not recognised — its rows get fresh IDs and the announcement says "an edit" — which is
+    /// harmless, and keeps the search linear in the script's length.
+    static let maximumWidening = 32
 
     /// Whether `lhs` holds exactly the bricks of `rhs`, in another order. Quadratic, and run only
     /// on a window no block move explains.

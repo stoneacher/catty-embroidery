@@ -11,8 +11,9 @@ import ProgramModel
 ///
 /// - rows equal at the front and back keep their IDs;
 /// - a window that is one block moved rotates its IDs with the block;
-/// - a window changed in place (a parameter edit) keeps its IDs, so the row is not re-created
-///   under the user's finger;
+/// - a single brick changed in place (a parameter edit) keeps its ID, so the row is not
+///   re-created under the user's finger — only one brick: an unrelated program of the same length
+///   is a replacement (Codex round 2);
 /// - anything else gets **fresh** IDs. An ID is never reused: SwiftUI would take it for the old
 ///   row coming back.
 ///
@@ -32,7 +33,7 @@ nonisolated struct RowIdentities: Equatable {
         let window = Array(ids[diff.prefix ..< ids.count - diff.suffix])
         let middle: [Int] = if let split = diff.moveSplit {
             BrickListDiff.rotated(window, at: split)
-        } else if diff.removed.count == diff.inserted.count {
+        } else if diff.removed.count == 1, diff.inserted.count == 1 {
             window
         } else {
             fresh(diff.inserted.count)

@@ -115,6 +115,26 @@ struct RowIdentitiesTests {
         #expect(identities.ids == [0, 1, 2, 3, 5, 6])
     }
 
+    /// Codex round 2: only a **one-brick** window is a change in place (a parameter edit). An
+    /// unrelated program of the same length — a `load` — is a replacement, and gets fresh IDs.
+    @Test("an unrelated program of the same length gets fresh IDs")
+    func equalLengthReplacement() {
+        var identities = RowIdentities(count: 2)
+        identities.follow(from: [Self.sewUp, Self.body], to: [Self.turn, Self.move])
+        #expect(identities.ids == [2, 3])
+    }
+
+    /// The same bricks reordered in a way no single move explains is not a move either.
+    @Test("a reorder that is not one move gets fresh IDs")
+    func nonMoveReorder() {
+        var identities = RowIdentities(count: 4)
+        identities.follow(
+            from: [Self.sewUp, Self.body, Self.move, Self.turn],
+            to: [Self.body, Self.sewUp, Self.turn, Self.move]
+        )
+        #expect(identities.ids == [4, 5, 6, 7])
+    }
+
     /// A whole-program replacement — a different sample — shares nothing but a matching tail.
     @Test("an unrelated program gets fresh IDs except where rows still match")
     func replacement() {

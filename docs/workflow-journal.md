@@ -3018,3 +3018,11 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The anchor's claim rule is tested only as a pure function.
   - No automated test of responder-chain routing (shake, ⌘Z, three-finger) or of `List`'s ID-based selection premise. The simulator checks recorded earlier are the evidence. The rest belongs to the pre-beta accessibility review.
 - **What Codex found that the in-loop review did not:** `swift-code-reviewer` had fixed the lone-opener case. Neither it nor the random soak constructed a pair crossing an *equal* end marker: the generator's loops are adjacent far more often than nested across an end.
+
+## 2026-10-17 — Editor UI handover, Codex round 2: round-1 fixes confirmed, two Lows in the new widening
+
+- **History:** Medium → **Low**. This round's triage changed code, so the loop continues to round 3. Stop condition 2 needs a second consecutive fall in severity.
+- **Round-1 fixes confirmed.** Codex modelled every legal leaf and pair move in balanced scripts up to length 8 (724,944 moves) and found no ID landing on an unequal brick. It judged the soak's "every ID still labels an equal brick" oracle sound for ADR-034's contract. The Swift suites could not run in its read-only sandbox; the model of the moves ran instead.
+- **Low, valid: an equal-length replacement kept the old IDs.** The "same length means changed in place" branch kept IDs for an unrelated program of the same length, such as a `load`, and for a reorder that is not one move. ADR-034 meant a parameter edit, which changes exactly one brick. Fixed test-first: IDs are kept only for a one-brick window. Two tests went red first.
+- **Low, valid: the widening was cubic in the worst case.** It ran synchronously in `undoStack`'s `didSet`. **Measured with a temporary probe** on Codex's worst case, 400 identical leaves on each side of a non-move reorder (808 bricks, Debug build, simulator): **2.3 s uncapped, about 1 ms with a cap of 32.** Past the cap a move gets fresh IDs and announces "an edit", which is harmless. The cap is verified by that measurement rather than by a timing test, and the probe was not committed.
+- **Observation:** both Lows sit in round 1's own fix. That is the US-108 pattern the verification round exists for: a fix is new surface.
