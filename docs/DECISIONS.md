@@ -1303,16 +1303,19 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - The synthesized Codable shape follows `binary`'s. The case names are coding keys, so they are never renamed. They mirror Catroid's `Functions`/`Sensors` names so a code.xml importer maps 1:1.
   - Function arguments count toward the depth cap of 128 (ADR-037).
 - **Semantics: Catroid's, on arguments that are already normalized, with every result normalized (ADR-017).**
-  - Trigonometry takes degrees (`x · 0.017453292519943295`, the constant Java's `toRadians` multiplies by), and inverse trigonometry returns degrees.
+  - Trigonometry takes degrees (`x · 0.017453292519943295`, the constant desktop JDK 9+'s `toRadians` multiplies by), and inverse trigonometry returns degrees. Older Android libcore (OpenJDK 8) divides by 180 and multiplies by π instead; the two differ by at most 1 ulp in the argument, which falls under (c).
   - A NaN at the root throws (`sqrt(−1)`, `arcsin(2)`).
   - Mirrored quirks:
     - `x mod 0 = x`;
     - `round` is Java 7+ `Math.round`: ties toward +∞, NaN → 0, saturation to the `long` bounds, no negative zero;
     - `min`/`max` return NaN if either argument is NaN and order −0 below +0.
   - Pinned divergences, each with a named test:
-    - **(a) `mod` is the floored modulo.** Catroid returns the divisor for a zero remainder with a positive dividend and a negative divisor (`6 mod −3 = −3`), and its `while (dividend < 0)` loop never ends once `dividend + |divisor|` stops changing the dividend (`mod(−1e300, 1)` hangs Android).
+    - **(a) `mod` is the floored modulo.** Where the result is exact it equals Catroid's bit for bit, including the sign of a zero result (the divisor's) and a tiny negative dividend that would round to the divisor (0, as in Catroid). It was compared with Catroid's verbatim `interpretFunctionMod` over every pair of halves in [−50, 50] × [−10, 10]: 8,253 pairs, all bitwise equal except the first case below. Catroid diverges in three ways:
+      - it returns the divisor for a zero remainder with a positive dividend and a negative divisor (`6 mod −3 = −3`);
+      - its `while (dividend < 0)` loop accumulates rounding for a negative dividend and a non-integral positive divisor (`mod(−1, 0.1)` is 0.09999999999999987 there, 5.551115123125783e−17 here);
+      - the same loop never ends once `dividend + |divisor|` stops changing the dividend (`mod(−1e300, 1)` hangs Android).
     - **(b) `arctan2` of two zeros is 0**, where Catroid returns `Math.random()·360 − 180`. This also hides IEEE `atan2(+0, −0) = 180°`.
-    - **(c) libm differences of a few ulps** are accepted, as in ADR-014. Values are compared within 4 ulps, against a table generated from Catroid's own expressions under Java 17. Residuals are pinned rather than snapped: `sin(180) = 1.2246467991473532e−16`.
+    - **(c) libm differences of a few ulps** are accepted, as in ADR-014. Values are compared within 4 ulps, against a table generated from Catroid's own expressions under Java 17. Darwin was measured within 2 ulps of every row; `asin(0.5)` and `acos(0.5)` are the 2-ulp cases. Residuals are pinned rather than snapped: `sin(180) = 1.2246467991473532e−16`.
     - **(d) `round` follows Java 7+**, not the engine's `javaRound` (`floor(x + 0.5)`, ADR-012's wording). The two differ at 0.49999999999999994 and near 2⁵². The engine edge is sub-resolution and goes to the backlog.
 - **`rand` is deferred.** Evaluation is pure. Catroid's integer-or-decimal rule depends on how a literal is *spelled*, which `Formula.number(Double)` does not keep. Randomness would also cost the byte-exact tests. The recorded design for later is a seeded generator stored inside `Interpreter` (keeping ADR-018's copy-to-replay property), seeded per run. `power` and `true`/`false` are left out (`^` exists; logic belongs to the Variables feature).
 - **Sensors read the acting object's own needle.**
@@ -1322,5 +1325,8 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 
 **Consequences**:
 - No UI path can author these nodes until a formula editor exists. They are shown locked, with reasons `.function` and `.sensor` (ADR-040). They reach a program through files, samples and the planned code.xml importer.
-- A program that uses `mod` or `arctan2(0, 0)` can stitch differently from Android only at the inputs named above.
+- A program can stitch differently from Android through these functions at three kinds of input:
+  - `mod` with a zero remainder and opposite signs, or with a negative dividend and a non-integral positive divisor;
+  - `arctan2(0, 0)`;
+  - any value a few ulps away from an ADR-019 threshold.
 

@@ -28,7 +28,11 @@ struct FormulaFunctionTests {
         within ulps: Double = 4,
         sourceLocation: SourceLocation = #_sourceLocation
     ) {
-        let close = expected == 0 ? actual == 0 : abs(actual - expected) <= ulps * expected.ulp
+        // A zero expectation is exact *including its sign*: `−0` is observable through
+        // `arctan2` (both reviews of slice 2).
+        let close = expected == 0
+            ? actual == 0 && actual.sign == expected.sign
+            : abs(actual - expected) <= ulps * expected.ulp
         #expect(close, "\(actual) is not within \(ulps) ulps of \(expected)", sourceLocation: sourceLocation)
     }
 
@@ -136,6 +140,14 @@ struct FormulaFunctionTests {
         #expect(try value(.unaryFunction(.round, .number(-0.0))).sign == .plus)
     }
 
+    /// `Math.round` saturates at the `long` bounds; 2⁶³ itself is the first value
+    /// that would trap `Int64(_:)` (`swift-code-reviewer`, slice 2).
+    @Test("round saturates at the long bounds")
+    func roundSaturates() throws {
+        #expect(try value(.unaryFunction(.round, .number(9_223_372_036_854_775_808))) == 9.223372036854776e18)
+        #expect(try value(.unaryFunction(.round, .number(-9_223_372_036_854_775_808))) == -9.223372036854776e18)
+    }
+
     /// Divergence (d): the engine's `javaRound` is `floor(x + 0.5)`, which
     /// rounds both of these up; Java 7+ does not.
     @Test("round follows Java 7+, not floor(x + 0.5)")
@@ -160,6 +172,38 @@ struct FormulaFunctionTests {
     func modTerminates() throws {
         #expect(try value(.binaryFunction(.mod, .number(-.greatestFiniteMagnitude), .number(1))) == 0)
         #expect(try value(.binaryFunction(.mod, .number(-1e300), .number(7))) >= 0)
+    }
+
+    /// Catroid reaches a zero remainder by repeated addition (`−6 + 3 + 3 = +0`)
+    /// or by Java `%` (`−6 % −3 = −0`), so a zero result carries the divisor's
+    /// sign. Observable: `arctan2(−0, −1)` is −180° where `arctan2(+0, −1)` is
+    /// 180° (both reviews of slice 2).
+    @Test("a zero remainder carries the divisor's sign, as in Catroid")
+    func modZeroSign() throws {
+        #expect(try value(.binaryFunction(.mod, .number(-6), .number(3))).sign == .plus)
+        #expect(try value(.binaryFunction(.mod, .number(-6), .number(-3))).sign == .minus)
+        #expect(try value(.binaryFunction(.mod, .number(6), .number(3))).sign == .plus)
+        let angle = Formula.binaryFunction(.arctan2, .binaryFunction(.mod, .number(-6), .number(3)), .number(-1))
+        #expect(try value(angle) == 180)
+    }
+
+    /// A tiny negative dividend: `−1e−14 + 360` rounds to 360 in Catroid's loop,
+    /// and `360 % 360` is 0. A single `fmod` plus one correction returns 360, which
+    /// is outside a modulo's range (`swift-code-reviewer`, slice 2).
+    @Test("a result never equals the divisor")
+    func modNeverReturnsTheDivisor() throws {
+        #expect(try value(.binaryFunction(.mod, .number(-1e-14), .number(360))) == 0)
+        #expect(try value(.binaryFunction(.mod, .number(-1e-17), .number(1))) == 0)
+        #expect(try value(.binaryFunction(.mod, .unaryFunction(.sin, .number(360)), .number(360))) == 0)
+    }
+
+    /// Divergence (a), the rounding half: Catroid's repeated addition accumulates
+    /// error for a negative dividend and a non-integral positive divisor, so
+    /// `mod(−1, 0.1)` is 0.09999999999999987 there. The exact floored modulo is
+    /// pinned here instead (Codex slice review of slice 2).
+    @Test("mod is exact where Catroid's loop accumulates rounding")
+    func modDoesNotAccumulate() throws {
+        #expect(try value(.binaryFunction(.mod, .number(-1), .number(0.1))) == 5.551115123125783e-17)
     }
 
     /// Mirrored, not a divergence: `x mod 0` is `x` in Catroid.

@@ -174,7 +174,7 @@ extension UnaryFunction {
     /// computed without `floor(x + 0.5)`'s addition error (which rounds
     /// 0.49999999999999994 up). NaN is 0; out-of-range values saturate to the
     /// `long` bounds; the `long` result has no negative zero.
-    static func javaMathRound(_ x: Double) -> Double {
+    private static func javaMathRound(_ x: Double) -> Double {
         if x.isNaN {
             return 0
         }
@@ -221,12 +221,15 @@ extension BinaryFunction {
         return lhs < rhs ? lhs : rhs
     }
 
-    /// The result takes the divisor's sign. This is what Catroid's
-    /// `interpretFunctionMod` implements, except that it returns the divisor
-    /// for a zero remainder with a positive dividend and negative divisor
-    /// (`6 mod −3` is −3 there) and loops forever once `dividend + |divisor|`
-    /// stops changing the dividend. A zero dividend or divisor returns the
-    /// dividend, as in Catroid.
+    /// The floored modulo: a result in `[0, divisor)` or `(divisor, 0]`. Where it
+    /// lands exactly, it agrees with Catroid's `interpretFunctionMod` bit for bit,
+    /// including the sign of a zero result. Catroid diverges (ADR-046 (a)) in three
+    /// ways: it returns the divisor for a zero remainder with a positive dividend
+    /// and negative divisor (`6 mod −3 = −3` there); its `while (dividend < 0)`
+    /// loop accumulates rounding for a non-integral divisor (`mod(−1, 0.1)` is
+    /// 0.09999999999999987 there); and the loop never ends once
+    /// `dividend + |divisor|` stops changing the dividend. A zero dividend or
+    /// divisor returns the dividend, as in Catroid.
     private static func flooredMod(_ dividend: Double, _ divisor: Double) -> Double {
         if dividend == 0 || divisor == 0 {
             return dividend
@@ -234,6 +237,12 @@ extension BinaryFunction {
         var remainder = dividend.truncatingRemainder(dividingBy: divisor)
         if remainder != 0, (remainder < 0) != (divisor < 0) {
             remainder += divisor
+        }
+        // A zero takes the divisor's sign (Catroid's loop reaches `+0`, Java `%` of
+        // two negatives gives `−0`), and a tiny negative remainder plus the divisor
+        // can round to the divisor itself, which Catroid's `%` then makes 0.
+        if remainder == 0 || remainder == divisor {
+            return Double(signOf: divisor, magnitudeOf: 0)
         }
         return remainder
     }

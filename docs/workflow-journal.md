@@ -3177,3 +3177,20 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
     - The sensor pairs were not all compared. Fixed with an all-pairs test over every vocabulary.
   - **`swift-code-reviewer`:** a real user-visible defect neither the brief nor Codex saw. With an English UI and an Austrian region, the number formatter prints `1,5`, so `minimum of(1,5, 2)` reads as three arguments. The separator now follows the decimal separator (a semicolon where numbers use a comma), pinned with `en_AT`.
 - **What it says about delegation:** the two reviewers overlapped on one finding and each found one the other missed. The reviewer's was the more consequential one, and it came from knowing the deployment context (TU Graz: English UI, Austrian region), not from the adversarial rubric.
+
+## 2026-10-17 — Brick backend slice 2: function semantics; a test helper's tolerance hid the reviewers' finding
+
+- **What landed:** Catroid's math functions, with ADR-046. The expected values were *generated* by running Catroid's own expressions (and its `interpretFunctionMod`, verbatim) under Java 17 rather than typed in, and are compared within 4 ulps. 16 mutants were killed at green.
+- **Highest severity: High (Codex)**, with the same finding from both reviewers, independently:
+  - `mod` claimed "floored modulo, which Catroid implements except at the pinned cases", but it returned `−0` for `mod(−6, 3)` where Catroid's loop gives `+0`. That is observable: `arctan2(mod(−6, 3), −1)` is −180 against 180.
+  - It also returned the divisor itself for a tiny negative dividend: `mod(−1e−14, 360) = 360`, out of range, where Catroid gives 0.
+  - Catroid's loop also accumulates rounding for non-integral divisors (`mod(−1, 0.1)`), a divergence the ADR had not named.
+- **Why the suite missed it:** the comparison helper treated an expected zero as `actual == 0`, and `−0 == 0`. The table row `(−6, 3, 0)` was there and could not fail. The `swift-code-reviewer` also noticed that the totality property reaches the divisor-returned case 92 times in its 5,000 trees but only asserts finiteness. That is ADR-032 invariant 2 inside the oracle rather than the code.
+- **Decision (mine, within the brief's D2):**
+  - Keep the floored modulo, and make its exact results bitwise Catroid's: a zero carries the divisor's sign, and a result equal to the divisor becomes 0.
+  - Name the accumulated-rounding difference in ADR-046 (a), rather than mirroring Catroid's loop up to a cap. That loop's cost and error both grow with the dividend.
+  - Verified rather than argued: a grid of 8,253 operand pairs compared bitwise with Catroid's verbatim code differs only at the 354 pinned `6 mod −3`-style cases.
+- **Other review results:**
+  - The reviewer: Darwin's libm is within 2 ulps of every row, so the ADR now says so. The `toRadians` constant wording is now "desktop JDK 9+", since older Android libcore divides. A named round-saturation test was added; that mutant was killed only by a trap.
+  - Codex's second finding (Medium) was the same rounding divergence.
+- **Delegation note:** this is the third slice in a row where the in-loop reviewer and Codex overlapped on one finding. Here the overlap *was* the finding.
