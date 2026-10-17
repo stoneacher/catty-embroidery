@@ -75,7 +75,7 @@ public enum BinaryOperator: Sendable, Equatable, CaseIterable, Codable {
 
 /// Catroid's one-argument math functions. Trigonometry is in degrees, as in
 /// Catroid (`MathFunctionProvider`). `rand` is deferred (brief D3).
-public enum UnaryFunction: Sendable, Equatable, Hashable, CaseIterable, Codable {
+public enum UnaryFunction: Sendable, Hashable, CaseIterable, Codable {
     // `ln` is Catroid's name and a coding key, so it is kept below the length rule.
     // swiftlint:disable:next identifier_name
     case sin, cos, tan, arcsin, arccos, arctan, sqrt, abs, round, floor, ceil, ln, log, exp
@@ -83,20 +83,20 @@ public enum UnaryFunction: Sendable, Equatable, Hashable, CaseIterable, Codable 
 
 /// Catroid's two-argument math functions. `power` is left out: the `^`
 /// operator already exists with ADR-017's pinned semantics.
-public enum BinaryFunction: Sendable, Equatable, Hashable, CaseIterable, Codable {
+public enum BinaryFunction: Sendable, Hashable, CaseIterable, Codable {
     case arctan2, min, max, mod
 }
 
 /// Catroid's zero-argument functions that are constants. `true`/`false` join
 /// with the Variables feature's logic.
-public enum FormulaConstant: Sendable, Equatable, Hashable, CaseIterable, Codable {
+public enum FormulaConstant: Sendable, Hashable, CaseIterable, Codable {
     // Catroid's name and a coding key, so it is kept below the length rule.
     // swiftlint:disable:next identifier_name
     case pi
 }
 
 /// The object sensors a formula may read: the acting object's own needle.
-public enum Sensor: Sendable, Equatable, Hashable, CaseIterable, Codable {
+public enum Sensor: Sendable, Hashable, CaseIterable, Codable {
     /// Catroid `OBJECT_X`: the position's x in stage units.
     case objectX
     /// Catroid `OBJECT_Y`: the position's y in stage units.

@@ -3162,3 +3162,18 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
     4. Matching by file and count let a new exhaustive switch in the same file mask a regressed one. Fixed: diagnostics are now matched by file plus enclosing declaration, and a decoy-switch mutant is killed.
 - **Mutants:** 2 restored defaults, 1 same-file decoy, 2 `Formula.==` arms. All killed.
 - **Lesson:** both reviewers checked the evidence, not the refactor, and the refactor was fine. Codex's findings were all of one class, "the proof is weaker than its claim". That is ADR-032 invariant 2 applied to tooling.
+
+## 2026-10-17 — Brick backend slice 1: formula vocabulary; the reviewer, not Codex, found the user-visible defect
+
+- **What landed:** the four `Formula` cases `unaryFunction`, `binaryFunction`, `constant` and `sensor`, with Catroid-named vocabularies. The JSON shape is pinned as exact text, since it is the file format, and the predicted shapes matched first time. The depth walk and census were extended, the new nodes are locked in the editor with their own reasons, and they render under Catroid's formula-editor names. Evaluation is a NaN placeholder until slices 2–3.
+- **Red:** 14 compile errors in the package, then 2 exhaustive-switch errors in the app. The app's variable picker had a switch nobody had listed at planning.
+- **Mutants:** 7 killed at green. A further one was killed after review.
+  - **One test exists because of a mutant.** A min ↔ max name swap passed the "distinct and resolved" test, so an exact-name table was added for it.
+  - **SwiftLint caught what the local run did not show as failure.** CI runs `--strict`, so six warnings would have failed the PR. `ln` and `pi` are coding keys and cannot be renamed, so they got targeted disables that say why.
+- **Reviews, one round each:**
+  - **Both reviewers, independently:** a binary function's *first* argument was unproved in the depth walk. Fixed with a parameterised test, and the mutant is now killed.
+  - **Codex** (highest Medium):
+    - The NaN placeholder makes a hand-edited file run with the new nodes silently skipped. That is valid and was known; it is tracked as "PR 1 must contain slices 2–3".
+    - The sensor pairs were not all compared. Fixed with an all-pairs test over every vocabulary.
+  - **`swift-code-reviewer`:** a real user-visible defect neither the brief nor Codex saw. With an English UI and an Austrian region, the number formatter prints `1,5`, so `minimum of(1,5, 2)` reads as three arguments. The separator now follows the decimal separator (a semicolon where numbers use a comma), pinned with `en_AT`.
+- **What it says about delegation:** the two reviewers overlapped on one finding and each found one the other missed. The reviewer's was the more consequential one, and it came from knowing the deployment context (TU Graz: English UI, Austrian region), not from the adversarial rubric.

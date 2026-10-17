@@ -87,7 +87,12 @@ nonisolated private struct Renderer {
             // A call's own parentheses group its arguments, so they are never bracketed again.
             return resolve(.formulaCall(resolve(name(of: function)), render(argument)))
         case let .binaryFunction(function, first, second):
-            return resolve(.formulaCallPair(resolve(name(of: function)), render(first), render(second)))
+            // The separator follows the *number* locale, not the language: where `1.5` prints
+            // `1,5`, a comma between arguments would read as three of them.
+            let name = resolve(name(of: function))
+            return locale.decimalSeparator == ","
+                ? resolve(.formulaCallPairDecimalComma(name, render(first), render(second)))
+                : resolve(.formulaCallPair(name, render(first), render(second)))
         case .constant(.pi):
             return resolve(.formulaConstantPi)
         case let .sensor(sensor):

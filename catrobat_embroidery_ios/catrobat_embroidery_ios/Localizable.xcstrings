@@ -590,13 +590,25 @@
       }
     },
     "formula.call.pair": {
-      "comment": "A two-argument math function inside a block's value, e.g. \"modulo(7, 3)\". %1$@ is the function's name, %2$@ and %3$@ its arguments in order, already formatted. Use your language's argument separator.",
+      "comment": "A two-argument math function inside a block's value, used where numbers are written with a decimal point, e.g. \"modulo(7, 3)\". %1$@ is the function's name, %2$@ and %3$@ its arguments in order, already formatted. Use your language's argument separator; formula.call.pair.decimal.comma is used instead where numbers have a decimal comma.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "%1$@(%2$@, %3$@)"
+          }
+        }
+      }
+    },
+    "formula.call.pair.decimal.comma": {
+      "comment": "A two-argument math function inside a block's value, used where numbers are written with a decimal comma, e.g. \"modulo(7,5; 3)\". %1$@ is the function's name, %2$@ and %3$@ its arguments in order, already formatted. The separator must not be a comma, which would read as part of a number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@(%2$@; %3$@)"
           }
         }
       }

@@ -96,6 +96,22 @@ struct FormulaCensusTests {
         }
     }
 
+    /// Every pair of distinct vocabulary values, not one sample pair: an arm that
+    /// conflated `.objectY` with `.motionDirection` passes a single `x`/`y`
+    /// sibling (Codex slice review of slice 1).
+    @Test("Distinct functions, constants and sensors never compare equal")
+    func vocabulariesAreCompared() {
+        let leaves = UnaryFunction.allCases.map { Formula.unaryFunction($0, .number(1)) }
+            + BinaryFunction.allCases.map { Formula.binaryFunction($0, .number(1), .number(2)) }
+            + FormulaConstant.allCases.map(Formula.constant)
+            + Sensor.allCases.map(Formula.sensor)
+        for (index, lhs) in leaves.enumerated() {
+            for rhs in leaves[(index + 1)...] {
+                #expect(lhs != rhs, "\(lhs) vs \(rhs)")
+            }
+        }
+    }
+
     @Test("Formulas of different cases never compare equal")
     func differentCasesAreUnequal() {
         for lhs in FormulaCensus.examples {

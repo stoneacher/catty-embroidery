@@ -31,6 +31,17 @@ struct FormulaFunctionTextTests {
         #expect(Self.text(.binaryFunction(.arctan2, .number(1), .number(-2))) == "arctangent2(1, \u{2212}2)")
     }
 
+    /// Numbers follow the region, the separator the language: with an English UI
+    /// and an Austrian region `1.5` prints `1,5`, so a comma between arguments
+    /// would read as three of them (`swift-code-reviewer`, slice 1). A decimal
+    /// comma switches the separator to a semicolon, as spreadsheets do.
+    @Test("the argument separator never collides with a decimal comma")
+    func separatorFollowsDecimalSeparator() {
+        let call = Formula.binaryFunction(.min, .number(1.5), .number(2))
+        #expect(FormulaText.text(for: call, locale: Locale(identifier: "en_AT")) == "minimum of(1,5; 2)")
+        #expect(FormulaText.text(for: call, locale: Locale(identifier: "en_US")) == "minimum of(1.5, 2)")
+    }
+
     @Test("pi and the sensors render as Catroid names them")
     func constantAndSensors() {
         #expect(Self.text(.constant(.pi)) == "pi")

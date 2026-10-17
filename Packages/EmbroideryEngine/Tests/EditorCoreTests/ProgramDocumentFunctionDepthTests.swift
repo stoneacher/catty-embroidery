@@ -8,9 +8,15 @@ import Testing
 /// (Beside `ProgramDocumentAdmissionTests`, whose depth tests these extend.)
 @Suite("Program document admission: function depth")
 struct ProgramDocumentFunctionDepthTests {
-    static func functionChain(depth: Int, second: Bool = false) -> Formula {
+    enum Nesting { case unary, firstArgument, secondArgument }
+
+    static func functionChain(depth: Int, nesting: Nesting = .unary) -> Formula {
         (1 ..< depth).reduce(Formula.number(0)) { tree, _ in
-            second ? .binaryFunction(.max, .number(1), tree) : .unaryFunction(.sqrt, tree)
+            switch nesting {
+            case .unary: .unaryFunction(.sqrt, tree)
+            case .firstArgument: .binaryFunction(.max, tree, .number(1))
+            case .secondArgument: .binaryFunction(.max, .number(1), tree)
+            }
         }
     }
 
@@ -28,10 +34,14 @@ struct ProgramDocumentFunctionDepthTests {
         }
     }
 
-    @Test("the depth limit counts a binary function's second argument")
-    func depthLimitCountsBinaryFunctions() {
+    /// Both arguments, each on its own: a walk skipping either one passes a test
+    /// that only nests in the other (both reviews of slice 1).
+    @Test("the depth limit counts each binary function argument", arguments: [
+        Nesting.firstArgument, .secondArgument
+    ])
+    func depthLimitCountsBinaryFunctions(_ nesting: Nesting) {
         let past = Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: [
-            .setVariable(name: "v", to: Self.functionChain(depth: 129, second: true))
+            .setVariable(name: "v", to: Self.functionChain(depth: 129, nesting: nesting))
         ])])])])
         #expect(throws: ProgramDocumentError.formulaTooDeep(limit: 128)) {
             _ = try ProgramDocument.encode(past)
