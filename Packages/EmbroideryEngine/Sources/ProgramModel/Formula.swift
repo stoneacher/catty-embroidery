@@ -33,7 +33,8 @@ public indirect enum Formula: Sendable, Equatable, Codable {
             left == right
         default:
             // Mismatched cases only. When adding a Formula case, add its
-            // same-case comparison above — falling in here breaks reflexivity.
+            // same-case comparison above — falling in here breaks reflexivity,
+            // which `FormulaCensusTests` (EditorCoreTests) catches.
             false
         }
     }

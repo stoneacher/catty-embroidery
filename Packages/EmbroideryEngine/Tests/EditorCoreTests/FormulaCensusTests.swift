@@ -40,6 +40,19 @@ enum FormulaCensus {
     ]
 
     static let examples: [Formula] = finite + nonFinite
+
+    /// Pairs that differ only in one payload, at least one per case. Reflexivity
+    /// compares a value with itself, so it cannot see an arm that ignores its
+    /// payload (`case (.variable, .variable): true`); these can (Codex slice
+    /// review of slice 0).
+    static let payloadSiblings: [(Formula, Formula)] = [
+        (.number(1), .number(2)),
+        (.variable("x"), .variable("y")),
+        (.binary(.plus, .number(1), .number(2)), .binary(.minus, .number(1), .number(2))),
+        (.binary(.plus, .number(1), .number(2)), .binary(.plus, .number(3), .number(2))),
+        (.binary(.plus, .number(1), .number(2)), .binary(.plus, .number(1), .number(3))),
+        (.unaryMinus(.number(1)), .unaryMinus(.number(2)))
+    ]
 }
 
 @Suite("Formula census")
@@ -53,6 +66,15 @@ struct FormulaCensusTests {
     @Test("Every census formula equals itself, NaN payloads included", arguments: FormulaCensus.examples)
     func isReflexive(_ formula: Formula) {
         #expect(formula == formula)
+    }
+
+    @Test("Formulas differing in one payload never compare equal, for every case")
+    func payloadsAreCompared() {
+        let covered = Set(FormulaCensus.payloadSiblings.map { FormulaCase(of: $0.0) })
+        #expect(covered == Set(FormulaCase.allCases))
+        for (lhs, rhs) in FormulaCensus.payloadSiblings {
+            #expect(lhs != rhs, "\(lhs) vs \(rhs)")
+        }
     }
 
     @Test("Formulas of different cases never compare equal")

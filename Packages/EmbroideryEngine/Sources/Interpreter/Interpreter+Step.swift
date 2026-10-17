@@ -231,7 +231,8 @@ extension Interpreter {
         _ brick: Brick, objectIndex: Int, scope: VariableStoreScope, into events: inout [InterpreterEvent]
     ) {
         guard let update = objects[objectIndex].needle.apply(brick, scope: scope) else {
-            return // unreachable: `perform` routes motion bricks only
+            assertionFailure("perform routes motion bricks only")
+            return
         }
         events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
         let stitches = objects[objectIndex].runningStitch.update(update)

@@ -3143,3 +3143,22 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Low (1):** slices 6 and 7 lacked killing tests and mutations (GoThrough slot routing, the sample-builder guard).
 - **What it says about the planning pass:** `swift-architect` had *probed* the math and still missed the Float feed gate, because it compared samples the way the brief describes rather than the way `Look` stores them. Four of the seven findings are of one class: a test that a wrong implementation passes. That is ADR-032 invariant 2 found at brief time, before any test exists, which is the cheapest moment to find it.
 - **Disposition:** a brief review is one round (skill §0), so there is no verification round. The changes are in the brief, and slice reviews will check them against code.
+
+## 2026-10-17 — Brick backend slice 0: exhaustive dispatch, and a probe that had to learn to name sites
+
+- **What the slice did:** removed the swallowing `default:` over `Brick` from `ScriptCompiler.compile`, `VirtualNeedle.apply`, `Interpreter.perform` and `Brick.opensLoop`. `perform` and `performEmbroidery` were folded into one exhaustive switch. Behaviour is preserved, confirmed independently by both reviewers.
+- **Red evidence for a refactor:** `scripts/brick-dispatch-probe.sh` adds a temporary `Brick` case to a copy of the package, builds module by module, and asserts the "switch must be exhaustive" diagnostics. Red baseline: ProgramModel and Interpreter compiled with the probe case, i.e. they swallowed it. EditorCore was already exhaustive.
+- **Three tooling traps, all found by running the probe:**
+  1. The diagnostics carry ANSI colour codes, so a plain grep matched nothing.
+  2. Debug builds stop scheduling frontend jobs after the first failing file, so `ProgramDocument.swift`'s site was never compiled.
+  3. `-Xswiftc -wmo` is refused by SwiftPM's build system ("index output filenames do not match"). A release build is whole-module and works.
+  Under `set -e`, a grep that finds nothing killed the script silently, so the first "red" was not a red at all.
+- **Reviews:**
+  - **`swift-code-reviewer`:** no defect. It ran its own mutants (three `Formula.==` mutations, two restored defaults), all killed.
+  - **Codex slice round:** highest severity Medium, 4 findings, all valid:
+    1. The census proved only reflexivity, so `case (.variable, .variable): true` survived. Fixed with payload-sibling pairs per case.
+    2. `BrickParameter.replacing` keeps its `default:` by design. Documented in the probe header together with its existing runtime guard over `BrickKind.allCases`.
+    3. Samples and StagePreview are outside the probe. That is a limit, not a fix: a swallowing default where no site is expected compiles cleanly and is indistinguishable, so it is documented.
+    4. Matching by file and count let a new exhaustive switch in the same file mask a regressed one. Fixed: diagnostics are now matched by file plus enclosing declaration, and a decoy-switch mutant is killed.
+- **Mutants:** 2 restored defaults, 1 same-file decoy, 2 `Formula.==` arms. All killed.
+- **Lesson:** both reviewers checked the evidence, not the refactor, and the refactor was fine. Codex's findings were all of one class, "the proof is weaker than its claim". That is ADR-032 invariant 2 applied to tooling.

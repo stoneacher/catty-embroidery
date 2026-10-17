@@ -8,9 +8,9 @@ public extension VirtualNeedle {
     /// motion brick — including the catch-and-skip cases below, where it carries
     /// the *unchanged* state.
     ///
-    /// Returns `nil` **iff** `brick` is not a motion brick — a classification
-    /// signal (US-205's stepper dispatches control/data/embroidery bricks
-    /// elsewhere), never "no update needed" and never a crash.
+    /// Returns `nil` **iff** `brick` is not a motion brick — never "no update
+    /// needed" and never a crash. The stepper routes bricks with its own
+    /// exhaustive switch (`Interpreter.perform`) and calls this for motion only.
     ///
     /// Bad-formula fallback is **per-brick**, mirroring the corresponding Catroid
     /// action — there is no universal "needle unchanged" rule:
