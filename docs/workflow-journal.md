@@ -3095,3 +3095,22 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - the feature-brief template's verification line.
 - **Open for the next drift run:** whether graphify can exclude or shard the journal. The cost argument rests on whole-file `--update` re-reading the append-only journal, so this is the first thing to check, not assume.
 - **Why this lands on PR #69 and not its own branch:** both decisions came from this feature's handover, and a second PR appending to the same journal would conflict at the end of the file.
+
+## 2026-10-17 — Editor UI closed, and with it M4
+
+- **Merged** by Sebastian as PR #69 (`3a6c481`). The brief is `Done`, with no open boxes. The human-owned Apple enrolment moved from a checkbox to a pointer at the ROADMAP's existing M4 prerequisite, since it blocks the TestFlight checkpoint and not the feature.
+- **M4 closes with it.** All four exit criteria are met, each by a test, and a mid-edit force-quit was executed on the simulator.
+  - **Still open:** the TestFlight usability checkpoint, blocked on enrolment, and M3's 60 fps tail (US-316, not inherited).
+  - **Moved by ADR-041's 2026-10-17 amendment:** the manual accessibility pass, now a pre-beta review.
+- **Feature totals:**
+  - four slices: undo surfaced, pair soak, exit criteria, stable row identity;
+  - one `swift-code-reviewer` pass with three defects;
+  - a five-round Codex loop at the cap, with 8 findings: 7 fixed, 1 rejected;
+  - 4 + 12 + 3 + 3 + 5 + 7 + 1 + 1 + 2 + 1 mutants, all killed except one discarded non-compiling mutant;
+  - about 780 lines of non-test app code against the ~1,500-line PR limit.
+- **What the feature taught, in one place (details in the entries above):**
+  1. **Executed probes beat plan text.** The environment `UndoManager` was the window's shared, event-grouped one; shake needed a first responder; re-syncing inside a handler crashed. None of the three was written down anywhere beforehand.
+  2. **The user's eye found the defect no test could.** The drop stutter was invisible to 517 green tests, and a scripted long-press drag recorded on video was what turned it into evidence.
+  3. **A fix is new surface.** Every Codex finding from round 2 on sat in the previous round's fix. Rounds 4 and 5 found the same class twice ("a position where identity was meant"), so one class sweep would have saved a round.
+  4. **Check gates by exit code, every time.** A `;` instead of `&&` let a failing lint through to a commit once and to a `git add` once. The rule already exists (memory, 2026-07-31); the slips came from long one-line chains, not from not knowing it.
+- **Close-out PR:** docs only. `/codex-review` was not run, with the same disposition as PRs #38, #48 and #49: the adversarial rubric has no subject in status prose.
