@@ -2883,3 +2883,215 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 
 - The round-5 entry gives the Medium counts as "4 → 2 → 2 → 2 → 2" and calls their weight "falling". The actual per-round Medium counts were **4 → 1 → 2 → 2 → 2**, which is flat after round 2, not falling. What did change is the kind of finding: rounds 1–2 were lost rules; rounds 3–5 were mostly missing caveats.
 - The caveat-inventory method that entry names is now a step in `/finish` (step 2), so it applies to the next consolidation rather than living only here.
+
+## 2026-10-09 — Editor UI, slice 1 (US-411): the `UndoManager` bridge was decided by probes, not by the plan
+
+- **What happened:** US-411 forbids specifying the bridge before executing it (ADR-032 invariant 4). Before any test was written, Claude ran three rounds of throwaway probes: a macOS `swiftc` script against Foundation's `NSUndoManager` (P1–P9), then two temporary probe views in the app on the iOS 26 simulator, driven by `notifyutil -p com.apple.UIKit.SimulatorShake` and the XcodeBuildMCP CLI (E1–E5, O1–O6). None were committed; the evidence is now in ADR-036's 2026-10-09 amendment.
+- **What the probes overturned:**
+  - The plan's default assumption was to bridge to `@Environment(\.undoManager)`. That manager turned out to be the **window's shared one**, which text fields also use, and it groups every registration in a run-loop turn into one step. No exact rebuild is possible on it.
+  - Shake did **nothing at all** in the editor, because a script list has no first responder. Every candidate policy was moot until that was fixed.
+  - Calling `undo()` from inside an undo handler **crashes** the process. A naive "re-sync after every transition" would have hit exactly that on the first shake.
+- **Delegation:** `swift-architect` received the executed evidence and proposed policy (c): an owned manager plus a first-responder anchor. It asked for one more probe of that premise before committing to it ("step 0"). That probe passed: the system alert offered the owned manager's Undo *and* Redo, a focused text field kept its own undo, and UIKit returned first responder after the sheet closed. **Sebastian chose (c) and the anchor** from a two-question prompt.
+- **Red → green:**
+  - The package totality proof (`UndoEnumerationTests`) was green on first run, as it should be: it verifies behaviour `UndoStack` already had. Its discrimination therefore rests entirely on mutation. Four mutants, four killed: a swapped fixture, a rejected fixture, a no-op fixture, and a new `EditAction` case. The new case fails to compile in the *test's* switch once the source handles it (`UndoEnumerationTests.swift:93`).
+  - The app suites ran against signature-only stubs: 24 red, 6 green. The green six were two pre-existing toolbar variants, the catalog check, `noManager`, and two negative assertions (`launchBlank`, `emptyHistoryIsSilent`). The two negatives were named as mutation targets.
+- **Mutation check:** 12 app mutants, 12 killed. Each ran a full `xcodebuild test` on a separate simulator (iPhone 17 Pro) while the main tree was left alone. Both stub-green negatives were proved by mutants A7 and A8. Removing the reentrancy guard (A3) took down even unrelated suites in the run, consistent with the probe's crash.
+- **Test-premise bug, caught by the first green run:** the restore test built history through the window. Autosave then wrote it, so `restoreSavedProgram()` read the edits back instead of the saved sample. The fix was a test change: history is built on an injected editor before it joins the window. The code was correct.
+- **Simulator definition of done:** with an empty history, both buttons are disabled and a shake does nothing. After two palette adds, a shake offers "Undo"; the system Undo removed the brick through the package stack and enabled toolbar Redo. A second shake offered Undo *and* Redo, and system Redo restored the brick. **Not executed:** ⌘Z (the automation cannot send a chord), the three-finger gestures, iPad, and typing undo inside a focused field (the automation could not type into it). All four are owed to the handover pass.
+- **Observation:** the story's own plan text warned that "the obvious recipe does not work". The probes found two further ways the obvious design would fail, neither written down anywhere: the shared, event-grouped environment manager, and the absent first responder. Both were cheaper to find with a 40-line probe than with a review round.
+
+## 2026-10-09 — Editor UI, slice 2: the pair soak's floors caught its own generator first
+
+- **What:** `PairInvariantSoakTests` drives 1 500 steps per seed (3 seeds) through the doors the UI actually uses: palette insert at a random selection, the list's `.onMove` offsets, `.onDelete`, the rows' VoiceOver move actions, and undo/redo bursts. It checks `Script.validate()` after every step and every history step. It complements `EditBalanceInvariantTests`, which proves the same property one layer down, on `EditorCore.apply`.
+- **First run: red on every non-vacuity floor, and no balance failure.**
+  - The generator was degenerate. Above 40 bricks it forced the drag door, so the script never shrank, and about 80 % of all steps were drags.
+  - Loop kinds are 2 of the palette's ~20, so pair deletes reached as few as 1 in 1 500 steps.
+  - Redo was nearly unreachable, because the next edit cleared it.
+  - Without the floors, the run would have passed while barely touching pairs. The floors are the US-402 lesson (Codex round 1 found zero applied replacements behind green floors there), applied here before any review.
+  - The fix was in the generator, not the floors: a size cap that deletes, a one-in-three loop bias, and undo-then-redo bursts.
+- **Mutation check:** three mutants in the pair paths every door reaches, all killed by `validate()` itself, each failure naming its step (seeds 1 and 7, steps 6–72). The mutants were:
+  - an opener moved as a single brick;
+  - a `loopEnd` allowed to move;
+  - an opener deleted without its body and end.
+- **Not a new risk class:** the soak was green against the real code from the first non-degenerate run. Like slice 1's enumeration proof, its value rests on the mutants, which are recorded here.
+
+## 2026-10-09 — Editor UI, slice 3: the exit criteria had every link tested and no chain
+
+- **Retrieval delegated:** `swift-search` mapped M4 exit criteria 1 and 3 to existing tests, sub-claim by sub-claim. Every link was covered on its own, but nothing chained them:
+  - No test built a program from blank, ran it to `.finished` and exported it.
+  - The relaunch tests used an in-memory store only.
+  - A **mid-edit force-quit had never been executed.** US-406 recorded it as owed, ADR-037 passed it on to US-408 or the M4 final verification, and neither ran it.
+- **Added in `ExitCriteriaTests`:**
+  - *Built from nothing*: launch blank → four palette adds (the loop's opener is selected, so the next two land inside it) → five stepper taps in one session → a drag → whole-`Program` equality with a literal → play to `.finished` → the prepared file is byte-equal to an independent run of that literal.
+  - *Relaunch without a lifecycle save*: on the real `DocumentsProgramStore` in a disposable directory, with no `sceneDidLeaveActive()`, then a fresh coordinator and window over the same directory.
+- **Both tests were green on first run.** That was expected: they verify, they do not specify. Three mutants, each killed by the test meant to catch it:
+  - the save at the change removed → the relaunch test;
+  - the palette insert ignoring the selection → the chain;
+  - `play()` running the blank program → the chain.
+- **Force-quit, executed** (iPhone 17, iOS 26): add a running stitch, open its parameter sheet, step the length 10 → 13 with the sheet still open, so the session was never ended, then `kill -9` the app process. On relaunch the script reads "length 13" and the history is empty (ADR-006: never persisted). The save-per-change rule (ADR-037) is what makes a force-quit safe, and this is the first recorded run of it mid-session.
+- **Tooling note:** twice this session `build_run_sim` installed an app that then would not launch ("failed preflight checks"). `simctl uninstall` fixed it each time, as the memory note says. The uninstall also wipes Documents, which is worth remembering before any check that depends on saved state.
+
+## 2026-10-09 — Editor UI, `swift-code-reviewer` pass: three real defects, three surviving mutants
+
+- **Run once per feature**, before handover, in an isolated worktree on a separate simulator (iPhone 17 Pro). It ran mutants itself. All nine findings were taken; none conflicted with an ADR.
+- **Defects:**
+  1. **The announcement named the wrong brick in the commonest drag.** A leaf moved into or out of a loop was announced as "moving Repeat 31 times" or "moving End of loop". A lone opener or `loopEnd` had counted as a one-brick block. That is exactly the off-screen case US-411's announcements exist for.
+  2. **The anchor could steal first responder in another iPad window.** `keyboardDidHide` is app-wide, and the claim checked neither the key window nor an active text input. That broke ADR-036's own "never takes focus from a text field".
+  3. **The bridge rebuilt the manager on every stack mutation:** each stepper tap, each session open and close, each no-op apply. The reviewer measured 250–550 undo notifications per rebuild.
+- **Surviving mutants:**
+  - The move search's else branch was untested.
+  - An added *loop* was untested, so it could have been named by its `loopEnd`.
+  - The deferred re-sync after a stale system step is unreachable through any door. It is kept as defensive code and recorded as untestable.
+- **Fixes, test-first.** Six new tests were run red against the old code, with a stub for the claim rule; the two reproductions failed exactly as the reviewer reported. Then:
+  - The move search checks only the two possible blocks (front and back), which is linear where it was quadratic.
+  - The anchor claims only in the key window with no `UITextInput` first responder, and also when its window becomes key. Without that last trigger, the key-window rule would have stopped it claiming at launch; a fresh-launch shake was checked on the simulator.
+  - The bridge skips the pump when depths are unchanged.
+  - The `[unowned self]` closures are now `weak`.
+  - The soak now drives the system manager too and asserts agreement at every step.
+- **Mutation check of the fixes:** 5/5 killed. The stale-depth mutant, where a system step leaves the recorded depths stale, was caught **only** by the soak's new agreement assertion, not by any hand-written bridge test. Random sequences found a state the walks did not reach.
+- **Still owed to the handover pass:** whether a hidden first responder resets List arrow-key focus on iPad (Full Keyboard Access), and ⌘Z.
+
+## 2026-10-09 — Editor UI, feature-close documentation check: no README change needed
+
+- `swift-documenter` read the root README and `Packages/EmbroideryEngine/README.md`. No package public API changed in this feature; the only package change is a test file. Neither README held a statement the feature made stale.
+- **Gap that predates this branch, not fixed here:** the engine README's product table omits the `EditorCore` target that `ProgramModel` vends (ADR-033). Left for a docs pass outside this feature.
+
+## 2026-10-15 — Editor UI, slice 4: a drop stutter reversed ADR-034's view-identity half, and the probe caught a selection bug the tests could not
+
+- **Report (Sebastian):** after dragging a block, the other rows "shift and stutter" between the old and new state on release.
+- **Reproduced, not assumed.** The XcodeBuildMCP drag cannot hold a long press (its `--pre-delay` waits before touching down). AXe's `batch` in one HID session can: touch down, sleep 0.9 s, then repeated touch-downs at new points, which register as moves. Video came from `simctl io recordVideo`, because `record_sim_video` failed to save. Frames came from a 60-line AVFoundation grid tool, because there is no ffmpeg on the machine. Frame by frame (the clip runs slower than real time because `simctl` writes frames lazily), the list showed **the wrong brick at the drop target and an empty gap** for several frames, then snapped.
+- **Cause:** index row identity (ADR-034). UIKit animates the drop; the new data then arrives as "row 4 changed contents".
+- **A probe settled it before any decision:** stable, diff-followed IDs in an uncommitted build. Leaf drop clean; loop drop reflowed in one step with no wrong content.
+- **Decided by Sebastian** from a two-question prompt: diff-derived IDs in `EditorViewModel` (over a per-action sidecar or keeping index identity), as slice 4 of this feature. ADR-034 amended.
+- **Red → green:**
+  - `RowIdentitiesTests`: each verb's ID permutation, asserted as whole-array equality.
+  - A view-model test through drag, undo and redo.
+  - The soak asserting one distinct ID per brick at every step.
+  - Against signature-only stubs: 7 red, 4 green. The four green were `initialIDs`, `parameterChange`, `moveThenUndo` and the soak invariant, since index IDs trivially satisfy all four. They were named as mutation targets.
+  - The announcement's block-aware diff was extracted into `BrickListDiff`, so "what moved" is decided once for both consumers.
+- **The finding the unit tests could not reach.** The first green build passed all 517 app tests. On the simulator, after a drag, tapping "Set Side to 9" selected the *next* row, and the palette inserted inside a loop.
+  - Cause: `List(selection:)` selects by `ForEach` identity, and the explicit `.tag(Optional(index))` did not override it.
+  - Fix, test-first: `EditorViewModel.selectedRowID` translates ID ↔ index, and the list binds to it. The test was red with exactly the simulator's wrong index (2 for 1).
+  - The probe never exercised selection, so this surfaced only in the definition-of-done check on the simulator. That check is the step that earned its place here.
+- Mutation results follow in the next entry.
+
+## 2026-10-15 — Editor UI, slice 4 mutation check: 7/7 killed, and a harness hang
+
+- **Killed:**
+  - a move that keeps IDs in place;
+  - a reused ID (caught only by the soak's per-step invariant);
+  - a reorder that skips re-deriving;
+  - an in-place change that gets fresh IDs (`parameterChange`, a stub-green target);
+  - a move that rotates the wrong way;
+  - IDs starting at 1 (`initialIDs`, stub-green);
+  - the list's selection bound to the index (`selectionByRowID`).
+- **Harness defect:** the sixth mutant's `xcodebuild` ran for 47 minutes under a 20-minute `subprocess.run(timeout=…, capture_output=True)`. A plausible cause, not verified: the timeout kills the direct child, but `communicate()` then waits on pipes that `xcodebuild`'s own children keep open. It was noticed only when Sebastian asked why a shell had been running for over an hour; Claude should have caught it. The rerun used `Popen` in a new session, output to a file and `killpg` on a 10-minute limit, and both remaining mutants finished in normal time. **Any future mutation script in this repo uses that shape.**
+
+## 2026-10-17 — Editor UI: the bundled manual accessibility pass is waived as a feature gate
+
+- **Decided by Sebastian:** the manual accessibility pass in the Editor UI brief's handover list is marked passed without being run. A **full accessibility review of the whole app happens before the beta release** and takes over everything that pass carried:
+  - VoiceOver over the editor, including US-408's written procedure;
+  - Dynamic Type and Reduce Motion;
+  - US-410's deferred items;
+  - the hardware-keyboard and focus questions this feature opened: ⌘Z, the three-finger gestures, iPad, and whether the hidden first responder disturbs Full Keyboard Access.
+- **What still ships with every feature:** the automatable accessibility work. Catalog strings, labels asserted in unit tests, and VoiceOver announcements tested by exact sentence, as US-411's were.
+- **Why it is recorded:** since 2026-08-17 the manual pass had been carried forward story by story, then milestone by milestone, then to "feature handover". This entry is where it leaves the per-feature definition of done.
+
+## 2026-10-17 — Editor UI handover, Codex round 1: one Medium the in-loop review and the soak both missed
+
+- **Tooling, before the review could start:**
+  - Codex's configured default model (`gpt-6.1-sol`) is rejected for a ChatGPT-account login. This month's sessions ran on `gpt-5.6-sol`, so the run passes `-m gpt-5.6-sol` and the user's config is left alone.
+  - Separately, a pending Xcode first-launch install blocked every simulator call. XcodeBuildMCP's background `simctl list` calls each spawned an `xcodebuild -runFirstLaunch` that could not ask for a password. The `!` shell prefix cannot read a sudo password either. A pending MDM-enforced macOS update held the system install lock, and a restart was needed before Xcode could install its components.
+- **History:** round 1, highest severity **Medium**: 1 Medium and 2 Low, plus blind spots.
+- **Medium, valid:** a nested loop moved across its parent's end was not recognised as a move.
+  - Every `loopEnd` is the same value, so the greedy suffix scan paired the parent's end with the inner one.
+  - Consequences: row IDs stayed on the wrong bricks, and VoiceOver said "an edit".
+  - Fix, test-first: `BrickListDiff` widens the window back into the prefix and suffix, smallest first, when the window holds the same bricks reordered and no block move explains it. A change in place can never qualify.
+  - The four new tests were red against the old code.
+- **The soak had the same blind spot, and the first fix of it was wrong.**
+  - It checked only that IDs were unique and their count matched.
+  - Its first strengthening asserted "the dragged block's own IDs land at the target". That failed on three seeds where **equal bricks traded IDs**: two identical leaves, or two identical empty loops. The design explicitly permits that.
+  - The right oracle is "after a move, every ID still labels a brick equal to the one it labelled". Reverting the widening fix (W1) is now killed by the soak on its own, besides the three targeted tests. W2 did not compile and is discarded, not counted.
+- **Low, valid:** the brief overstated coverage ("each verb", "every door"). Reworded, with what is not covered listed.
+- **Low, rejected:** the checked accessibility item that "was not run". That is Sebastian's recorded 2026-10-17 decision, an owner waiver with its destination named, not a defect.
+- **Blind spots tracked, not fixed:**
+  - The anchor's claim rule is tested only as a pure function.
+  - No automated test of responder-chain routing (shake, ⌘Z, three-finger) or of `List`'s ID-based selection premise. The simulator checks recorded earlier are the evidence. The rest belongs to the pre-beta accessibility review.
+- **What Codex found that the in-loop review did not:** `swift-code-reviewer` had fixed the lone-opener case. Neither it nor the random soak constructed a pair crossing an *equal* end marker: the generator's loops are adjacent far more often than nested across an end.
+
+## 2026-10-17 — Editor UI handover, Codex round 2: round-1 fixes confirmed, two Lows in the new widening
+
+- **History:** Medium → **Low**. This round's triage changed code, so the loop continues to round 3. Stop condition 2 needs a second consecutive fall in severity.
+- **Round-1 fixes confirmed.** Codex modelled every legal leaf and pair move in balanced scripts up to length 8 (724,944 moves) and found no ID landing on an unequal brick. It judged the soak's "every ID still labels an equal brick" oracle sound for ADR-034's contract. The Swift suites could not run in its read-only sandbox; the model of the moves ran instead.
+- **Low, valid: an equal-length replacement kept the old IDs.** The "same length means changed in place" branch kept IDs for an unrelated program of the same length, such as a `load`, and for a reorder that is not one move. ADR-034 meant a parameter edit, which changes exactly one brick. Fixed test-first: IDs are kept only for a one-brick window. Two tests went red first.
+- **Low, valid: the widening was cubic in the worst case.** It ran synchronously in `undoStack`'s `didSet`. **Measured with a temporary probe** on Codex's worst case, 400 identical leaves on each side of a non-move reorder (808 bricks, Debug build, simulator): **2.3 s uncapped, about 1 ms with a cap of 32.** Past the cap a move gets fresh IDs and announces "an edit", which is harmless. The cap is verified by that measurement rather than by a timing test, and the probe was not committed.
+- **Observation:** both Lows sit in round 1's own fix. That is the US-108 pattern the verification round exists for: a fix is new surface.
+
+## 2026-10-17 — Editor UI handover, Codex round 3: a diff cannot tell a load from an edit
+
+- **History:** Medium → Low → **Low**. Flat, and code changed, so the loop continues to round 4 of 5.
+- **Round-2 fixes confirmed.** No single editor step leaves an equal-length window larger than one brick. The widening arithmetic is safe: `reach > 0` guards the range, and each slice stays in bounds.
+- **Low, valid: a `load` differing in one row kept that row's ID.** Examples: `[Sew up] → [Stitch]`, or `[Sew up, Stitch] → [Sew up, Turn right]`. Diffing the two programs cannot tell this from a parameter edit, but the editor can: only `load` replaces the whole program.
+  - Fix, test-first: `load` renews every ID through `RowIdentities.renew(count:)`, and a flag keeps the stack's `didSet` from also diffing, so IDs are not minted twice.
+  - The test went red on both expectations. Two mutants were killed: diffing during a load (double-minting) and not renewing.
+- **Accepted limitation, recorded in ADR-034:** a move needing more than 32 bricks of widening, a loop holding over 32 nested loops moved across an equal parent end, falls back to fresh IDs and "an edit".
+- **Pattern across three rounds:** each round's finding sat in the previous round's fix, at a narrower edge each time. Round 1: nested pair across an end. Round 2: equal-length replacement, and cost. Round 3: a one-row replacement. Severity is flat at Low.
+
+## 2026-10-17 — Editor UI handover, Codex round 4: VoiceOver focus still followed an index
+
+- **History:** Medium → Low → Low → **Low**. Flat, and code changed, so the loop goes to round 5, the cap (ADR-041).
+- **Round-3 fix confirmed:**
+  - every replacement path goes through `load`;
+  - the flag cannot leak, since it is synchronous and nothing throws;
+  - the bridge still clears both histories;
+  - selection is cleared after the IDs renew.
+- **Low, valid: VoiceOver focus was keyed by index.** `focusedRow` and the palette's `pendingFocus` held positions. After a system undo or redo that moves rows, or a `load` during the palette's dismissal, focus went to whatever brick then occupied that index. This is code that contradicted the amendment, not the waived manual pass.
+  - Fix: focus is keyed by row ID, resolved once from the index at the moment focus is decided (an insertion, a VoiceOver move's destination), through a new, tested `EditorViewModel.rowID(at:)`.
+  - The test was red by compilation only, so a mutant proves it: `rowID(at:)` returning the index, the old behaviour, was killed by two tests.
+  - The VoiceOver behaviour itself is not unit-testable here and goes to the pre-beta accessibility review. A simulator check confirmed that selection and insertion still behave after a drag.
+- **Low, valid:** `ScriptListView`'s header still described index identity and the reasoning built on it. Rewritten.
+
+## 2026-10-17 — Editor UI handover, Codex round 5 (cap): loop ends, one Low fixed without re-review
+
+- **History:** Medium → Low → Low → Low → **Low**. Five rounds, **8 findings: 7 valid and fixed, 1 rejected** (the owner's accessibility waiver). Plus one accepted limitation, the 32-brick widening cap.
+- **Round-4 fixes confirmed:**
+  - `perform(_:)` reads the move's destination after the move has applied;
+  - `pendingFocus` becomes a row ID before the palette's dismissal;
+  - no focus state remains keyed by index;
+  - the rewritten header comments are accurate.
+- **Low, valid, fixed:** the palette's deferred scroll looked up `rowIDs[index]` when the task ran, so an intervening undo or load could scroll to another brick. The inserted row's ID is now captured before scheduling and shared with the pending focus. Per ADR-041, this round-5 fix is **not re-reviewed by Codex**. It is view code with no unit seam beyond the already-tested `rowID(at:)`. All app tests pass (525/526; the one failure is the local bundle-ID override).
+- **The loop stopped at the cap, not on convergence:**
+  - Severity fell once (Medium → Low), then stayed flat.
+  - From round 2 on, every finding sat in the previous round's own fix, and each was narrower and lower-impact than the last:
+    - round 1: nested-move identity;
+    - round 2: equal-length replacement, and cost;
+    - round 3: a one-row `load`;
+    - round 4: focus by index;
+    - round 5: scroll by index.
+- **Lesson:** rounds 4 and 5 found the same class twice, a position surviving where identity was meant, first in focus and then in scroll. When a reviewer finds one instance of a class, sweep for the class rather than fix the instance.
+
+## 2026-10-17 — Editor UI: knowledge-graph drift check deferred, and whether it still earns a per-feature slot
+
+- **Decided by Sebastian:** the feature-close `/graphify --update` drift check is deferred for this feature. It was due because ADR-034 and ADR-036 were amended.
+- **Assessment given when he asked whether it is still useful:**
+  - **It has not yet answered its question "yes".** The only full drift check (M3 close, 2026-09-18) triaged 40 cross-community edges and found no reinvented invariant, only rules with no ADR yet.
+  - **Its cost grows monotonically.** `--update` is file-granular, the append-only journal and `DECISIONS.md` change every time, and the last run cost 568k input tokens, two-thirds of a full rebuild.
+  - **Cheaper instruments now cover most of the ground:**
+    - the ADR index with one-line current rules (2026-10-09);
+    - `/finish`'s caveat inventory and status-line rules;
+    - Codex reviewing docs against code, which caught three doc drifts in this feature's five rounds.
+  - **Where it plausibly still pays:** once per milestone or release, or alongside an ADR consolidation. That is where cross-ADR overlap actually arises. Excluding or sharding the journal would cut most of the cost.
+- **Proposed, not adopted:** move the drift check in `CLAUDE.md`/`AGENTS.md` from "every major feature close" to "milestone/release or ADR consolidation". This awaits Sebastian's decision.
+
+## 2026-10-17 — ADR-041 amended: the accessibility pass and the graph drift check leave the feature boundary
+
+- **Adopted by Sebastian:** this is the proposal recorded two entries above. ADR-041's point 4 had bundled three manual steps at feature handover. Two of them move:
+  - **The manual accessibility pass** goes to one full app review before the beta release, as decided earlier today.
+  - **The knowledge-graph drift check** goes to a milestone or release close, or an ADR consolidation.
+  - Ink/Stitch stays at the feature boundary where DST output or its provenance changes.
+- **Changed together:**
+  - ADR-041: point 4 marked inline (no text deleted), a dated amendment, and the index row;
+  - `CLAUDE.md` and its mirror `AGENTS.md`, edited in step;
+  - the feature-brief template's verification line.
+- **Open for the next drift run:** whether graphify can exclude or shard the journal. The cost argument rests on whole-file `--update` re-reading the append-only journal, so this is the first thing to check, not assume.
+- **Why this lands on PR #69 and not its own branch:** both decisions came from this feature's handover, and a second PR appending to the same journal would conflict at the end of the file.

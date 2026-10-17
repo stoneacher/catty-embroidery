@@ -8,16 +8,17 @@ import SwiftUI
 /// toolbar. That gives US-409's palette a defined place to present from — this view's toolbar,
 /// in both layouts.
 ///
-/// **Rows hold no control** (ADR-034): they are identified by index, which is safe only while
-/// nothing inside a row has state of its own. Since US-408 the list reorders and deletes —
+/// **Rows hold no control**, and are identified by the editor's row IDs, which follow the bricks
+/// through every change (ADR-034's 2026-10-15 amendment); positions stay the model's addressing.
+/// Since US-408 the list reorders and deletes —
 /// `.onMove`, `.onDelete` and each row's accessibility actions — and every one of them is an
 /// `EditAction` handed to `model.editor`, never a mutation (ADR-006 pattern 1). Parameter
 /// editing is US-410.
 ///
-/// **Selection is `List`'s own** (US-409), bound to `editor.selectedBrickIndex`, which is where
-/// a palette tap inserts. It is still no control inside a row: the cell is what selects, and
-/// the index it writes is cleared by the editor on every change that can move rows, so index
-/// identity never leaves it pointing at a different brick.
+/// **Selection is `List`'s own** (US-409), bound by row ID to `editor.selectedRowID`, which
+/// translates to `editor.selectedBrickIndex` — where a palette tap inserts. It is still no control
+/// inside a row: the cell is what selects, and the index is cleared by the editor on every change
+/// that can move rows, so it never points at a different brick.
 ///
 /// **The palette presents from here, once**: the top bar's Add button in both placements owns
 /// the one `.popover`, which adapts to a detented sheet on compact (ADR-039). The empty
@@ -30,10 +31,10 @@ import SwiftUI
 /// build at planning, 2026-09-29 — **not** on iOS 17, for want of a runtime), so there is no
 /// Edit button and no mode. The drag preview is
 /// one row even when a loop moves as a block — the iOS 17 `List` path has no multi-row preview
-/// — and the body snaps in under its opener on the drop. **Nothing is `withAnimation`-ed**:
-/// rows are identified by index, so after a move every id is still present and only contents
-/// change, and after a delete the ids that vanish are the *last* ones — an animation would
-/// show the bottom rows leaving while a loop in the middle was the one deleted.
+/// — and the body reflows under its opener on the drop. **Nothing is `withAnimation`-ed**: the
+/// list animates its own diff of the row IDs, which now name the moved, inserted and deleted
+/// rows correctly. (Under the index identity this replaced, a drop showed the wrong brick and a
+/// gap before snapping — Editor UI slice 4.)
 ///
 /// It takes the model rather than the program, so that the body depends on `editor.program`
 /// and the selection's title alone. `RootView`'s own body reads the run — once per batch while
@@ -56,9 +57,9 @@ struct ScriptListView: View {
 
     @Environment(\.locale) private var locale
 
-    /// The row VoiceOver is on, by index. Set after an accessibility move so focus follows the
-    /// moved brick: with index identity it would otherwise stay on the old index, which now
-    /// holds a different brick, and a second "Move Up" would move that one.
+    /// The row VoiceOver is on, **by row ID** (Codex round 4): set after an accessibility move so
+    /// focus follows the moved brick, and keyed by identity so a later undo, redo or load cannot
+    /// leave it on whatever brick then occupies the same index.
     @AccessibilityFocusState private var focusedRow: Int?
 
     /// The list's frame in window coordinates, for the sheet overlap.
@@ -69,7 +70,8 @@ struct ScriptListView: View {
     /// palette after ADR-023's container swap, not something that must survive one.
     @State private var paletteFrame: CGRect?
 
-    /// The inserted row VoiceOver moves to once the palette has gone (see the `onChange`).
+    /// The inserted row VoiceOver moves to once the palette has gone (see the `onChange`), by
+    /// row ID: a load landing during the dismissal must not redirect it to another brick.
     @State private var pendingFocus: Int?
 
     static var emptyStateTitle: String {
@@ -115,30 +117,41 @@ struct ScriptListView: View {
                         .buttonStyle(.borderedProminent)
                     }
                 } else {
-                    list(rows: rows, selection: $editor.selectedBrickIndex)
+                    list(rows: rows, selection: $editor.selectedRowID)
                 }
             }
             .onChange(of: model.paletteInsertion) { _, insertion in
                 guard let insertion else { return }
+                // The inserted brick's row ID, resolved now while the index still names it: an
+                // undo or load before the deferred scroll or focus must not redirect either to
+                // whatever brick then sits at that index (Codex rounds 4 and 5).
+                let insertedRow = model.editor.rowID(at: insertion.index)
                 // On the next turn, once the list holds the inserted rows — `perform(_:)`'s
                 // reason. Not animated: the palette's dismissal is already moving the screen.
                 Task { @MainActor in
-                    proxy.scrollTo(insertion.index, anchor: nil)
+                    if let insertedRow {
+                        proxy.scrollTo(insertedRow, anchor: nil)
+                    }
                 }
                 // VoiceOver focus waits for the palette to finish leaving. When a presentation
                 // finishes dismissing, UIKit hands focus back to the button that presented it,
                 // which would overwrite a focus set now (`swift-code-reviewer`, US-409). The
                 // user would land on Add with no idea where the brick went.
-                pendingFocus = insertion.index
+                pendingFocus = insertedRow
             }
         }
+        // Behind both the list and its empty state: the first responder that hands shake, ⌘Z
+        // and the edit menu the editor's own history (US-411). Undo matters most right after the
+        // last brick is deleted.
+        .background(UndoResponderAnchor(manager: model.editor.systemUndoManager))
         .navigationTitle(Text(title))
         // Outside the empty-state branch: after deleting the last brick, the empty state is
         // exactly where Undo must still be — and where Add is the only way forward.
         .toolbar {
             // The bottom bar in both placements (decided 2026-09-29): the top bar holds the
-            // stage link on compact and Add in both. No ⌘Z here — US-411's `UndoManager`
-            // bridge owns the keyboard, and two registrations would undo twice.
+            // stage link on compact and Add in both. No ⌘Z shortcut on these buttons: the system's
+            // ⌘Z reaches the same history through `UndoResponderAnchor` (US-411), and two
+            // registrations would undo twice.
             ToolbarItemGroup(placement: .bottomBar) {
                 Button {
                     model.editor.undo()
@@ -209,13 +222,18 @@ struct ScriptListView: View {
 private extension ScriptListView {
     func list(rows: [BrickRowPresentation], selection: Binding<Int?>) -> some View {
         List(selection: selection) {
-            ForEach(rows) { row in
-                ScriptRowView(row: row, isSelected: row.id == selection.wrappedValue)
+            // Identified by the editor's row IDs, which follow the bricks through every change
+            // (ADR-034's 2026-10-15 amendment). With index identity a drop that UIKit had already
+            // animated arrived as "this row changed its contents", and the list showed the wrong
+            // brick and a gap before snapping. The selection is bound by row ID for the same
+            // reason (`EditorViewModel.selectedRowID`); the index stays the model's truth.
+            ForEach(Array(zip(rows, model.editor.rowIDs)), id: \.1) { row, rowID in
+                ScriptRowView(row: row, isSelected: row.id == model.editor.selectedBrickIndex)
                     // On the row's one accessibility element — `ScriptRowView` collapses
                     // itself into one — so VoiceOver reaches them behind the rotor
                     // (ADR-031): "rotate to Actions, then swipe".
                     .accessibilityActions { actions(for: row) }
-                    .accessibilityFocused($focusedRow, equals: row.id)
+                    .accessibilityFocused($focusedRow, equals: rowID)
                     // `.onMove` has no reject hook, so refuse up front the drags `apply`
                     // always rejects rather than spring the row back unexplained.
                     .moveDisabled(row.isMoveDisabled)
@@ -355,8 +373,10 @@ private extension ScriptListView {
     func perform(_ action: EditAction) {
         guard case .applied = model.editor.apply(action) else { return }
         if case let .move(_, destination) = action {
+            // Resolved now, while `destination` still names the moved brick.
+            let movedRow = model.editor.rowID(at: destination)
             Task { @MainActor in
-                focusedRow = destination
+                focusedRow = movedRow
             }
         }
     }

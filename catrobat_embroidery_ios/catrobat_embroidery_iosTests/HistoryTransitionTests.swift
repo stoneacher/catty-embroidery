@@ -1,11 +1,13 @@
 @testable import catrobat_embroidery_ios
 import EditorCore
+import Foundation
 import ProgramModel
 import Samples
 import StagePreview
 import Testing
 
-/// US-408: what a toolbar undo or redo does to the rest of the window.
+/// US-408: what a toolbar undo or redo does to the rest of the window — and since US-411, a
+/// system-driven one through the `UndoManager` bridge, which must carry the same consequences.
 ///
 /// Undo restores a snapshot from **outside** the `EditAction` vocabulary, so nothing that
 /// hangs off an applied edit follows it automatically — `RunViewModel.reset()` and
@@ -67,9 +69,40 @@ struct HistoryTransitionTests {
         #expect(window.store.saves.last == program)
     }
 
+    /// The two doors a history transition comes through (US-411): the toolbar drives the package
+    /// stack directly, and the system — shake, ⌘Z, the edit menu — drives it through the bridge's
+    /// `UndoManager`. The consequences must not depend on which.
+    enum HistorySurface: CaseIterable {
+        case toolbar, system
+    }
+
+    private static func undo(_ window: Window, via surface: HistorySurface) throws -> Bool {
+        switch surface {
+        case .toolbar:
+            return window.model.editor.undo()
+        case .system:
+            let manager = try #require(window.model.editor.systemUndoManager)
+            guard manager.canUndo else { return false }
+            manager.undo()
+            return true
+        }
+    }
+
+    private static func redo(_ window: Window, via surface: HistorySurface) throws -> Bool {
+        switch surface {
+        case .toolbar:
+            return window.model.editor.redo()
+        case .system:
+            let manager = try #require(window.model.editor.systemUndoManager)
+            guard manager.canRedo else { return false }
+            manager.redo()
+            return true
+        }
+    }
+
     @Test("undo after running an edit voids the run, discards its file and saves the restored program",
-          .timeLimit(.minutes(1)))
-    func undoVoidsTheRunAndSaves() async throws {
+          .timeLimit(.minutes(1)), arguments: HistorySurface.allCases)
+    func undoVoidsTheRunAndSaves(via surface: HistorySurface) async throws {
         let window = Self.window()
         let sample = SampleLibrary[.squareCoil]
         window.model.select(sample)
@@ -78,7 +111,7 @@ struct HistoryTransitionTests {
         let savesBefore = window.store.saves.count
         let removalsBefore = window.writer.removeAllCount
 
-        #expect(window.model.editor.undo())
+        #expect(try Self.undo(window, via: surface))
 
         #expect(window.model.editor.program == sample.program)
         Self.expectVoidedAndSaved(
@@ -90,8 +123,8 @@ struct HistoryTransitionTests {
     }
 
     @Test("redo after running the undone program voids the run, discards its file and saves",
-          .timeLimit(.minutes(1)))
-    func redoVoidsTheRunAndSaves() async throws {
+          .timeLimit(.minutes(1)), arguments: HistorySurface.allCases)
+    func redoVoidsTheRunAndSaves(via surface: HistorySurface) async throws {
         let window = Self.window()
         window.model.select(SampleLibrary[.squareCoil])
         window.model.editor.apply(Self.deleteTheFirstLoop)
@@ -101,7 +134,7 @@ struct HistoryTransitionTests {
         let savesBefore = window.store.saves.count
         let removalsBefore = window.writer.removeAllCount
 
-        #expect(window.model.editor.redo())
+        #expect(try Self.redo(window, via: surface))
 
         #expect(window.model.editor.program == edited)
         Self.expectVoidedAndSaved(

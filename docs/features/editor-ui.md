@@ -1,6 +1,6 @@
 # Editor UI
 
-**Status**: In progress — 2026-10-09 | **Epic**: E5 (+ E6 thin) | **Branch**: `feature/editor-ui`
+**Status**: Ready for review — 2026-10-17 (PR #69; Codex loop closed at the cap) | **Epic**: E5 (+ E6 thin) | **Branch**: `feature/editor-ui`
 
 **Goal**: finish the block editor. A user builds a program from nothing in the app (palette, parameters, reorder, delete), can undo and redo *everything* from every surface the platform offers, and runs and exports it as `.dst`.
 
@@ -14,26 +14,27 @@ This feature **absorbs the rest of Milestone 4** (ADR-041). US-401…US-410 and 
 
 M4's exit criteria, carried verbatim in substance:
 
-- [ ] A program can be built from nothing — palette, parameters, reorder — then run and exported as `.dst`, with no bundled sample involved.
-- [ ] **Every** editor mutation is undoable, proved by a test that *enumerates* `EditAction`'s cases rather than listing them by hand.
-- [ ] The working program survives a relaunch including a force-quit, and a file the app cannot understand is refused and preserved rather than clobbered.
-- [ ] No sequence of adds, reorders and deletes can produce a script that fails `Script.validate()`, asserted as a property over generated sequences.
+- [x] A program can be built from nothing — palette, parameters, reorder — then run and exported as `.dst`, with no bundled sample involved. — `ExitCriteriaTests.builtFromNothingRunsAndExports`: one chained test, whole-program and byte-equal assertions (slice 3).
+- [x] **Every** editor mutation is undoable, proved by a test that *enumerates* `EditAction`'s cases rather than listing them by hand. — `UndoEnumerationTests`: adding a case fails to compile (slice 1).
+- [x] The working program survives a relaunch including a force-quit, and a file the app cannot understand is refused and preserved rather than clobbered. — `ExitCriteriaTests.editSurvivesRelaunchWithoutLifecycleSave` (real disk, no lifecycle save); refusal and preservation by US-406's `DocumentsProgramStoreTests`/`AutosaveWiringTests`; mid-edit `kill -9` executed on the simulator 2026-10-09 (journal), the check US-406 left owed.
+- [x] No sequence of adds, reorders and deletes can produce a script that fails `Script.validate()`, asserted as a property over generated sequences. — `EditBalanceInvariantTests` (package, `apply`) and `PairInvariantSoakTests` (app, through every UI door; slice 2).
 
 Plus every acceptance criterion in [US-411](../user-stories/milestone-4/US-411-undo-surfaced.md) (the `UndoManager` bridge, executed before it is specified; the whole-program-replacement funnel; VoiceOver announcements; the totality proof; undo/redo consequences).
 
 ## Slices and test-first outline
 
-1. **Undo surfaced (US-411)** (risky: no — app and editor layer, no DST/engine/format change) — tests: US-411's test-first plan, items 1–8 (enumeration over all six `EditAction` cases incl. `declareVariable`, redo, disabled states, `nil` `UndoManager`, `loadProgram` from all three callers, announcements, run/export/autosave consequences, bridge state, coalesced sessions). ADR-036, ADR-038, ADR-032 invariants 2 and 4. Mutations: drop one `EditAction` case's fixture, skip the bridge sync after a toolbar undo, skip the autosave or run-void on undo — each must turn a test red.
-2. **Pair-invariant soak** (risky: no) — a long randomised sequence of palette adds, reorders and deletes driven through the view models, asserting `Script.validate()` after every step. Mutation: break pair-awareness in one reorder path; the soak must find it.
-3. **Exit-criteria sweep** (risky: only if a gap touches the program format) — check criteria 1 and 3 against what US-405…US-410 shipped; any gap becomes a slice here rather than a new story.
+1. **Undo surfaced (US-411)** — *green 2026-10-09; policy and evidence in ADR-036's 2026-10-09 amendment; 4 + 12 mutants killed (journal). Of the "three callers" of `load`, two exist (`select`, `restoreSavedProgram`); launch-blank is the editor's initial state (ADR-045) and is asserted as a fresh window with empty history (`LoadFunnelTests`).* (risky: no — app and editor layer, no DST/engine/format change) — tests: US-411's test-first plan, items 1–8 (enumeration over all six `EditAction` cases incl. `declareVariable`, redo, disabled states, `nil` `UndoManager`, `loadProgram` from all three callers, announcements, run/export/autosave consequences, bridge state, coalesced sessions). ADR-036, ADR-038, ADR-032 invariants 2 and 4. Mutations: drop one `EditAction` case's fixture, skip the bridge sync after a toolbar undo, skip the autosave or run-void on undo — each must turn a test red.
+2. **Pair-invariant soak** — *green 2026-10-09; 3 pair-path mutants killed by `validate()` within 72 steps (journal).* (risky: no) — a long randomised sequence of palette adds, reorders and deletes driven through the view models, asserting `Script.validate()` after every step. Mutation: break pair-awareness in one reorder path; the soak must find it.
+3. **Exit-criteria sweep** — *done 2026-10-09: no gap touched the program format; two chained tests added, 3 mutants killed, mid-edit force-quit executed (journal).* (risky: only if a gap touches the program format) — check criteria 1 and 3 against what US-405…US-410 shipped; any gap becomes a slice here rather than a new story.
+4. **Stable row identity** (risky: no — app layer; the model and format stay identity-free) — found 2026-10-15 by Sebastian: after a drag-and-drop the other rows "shift and stutter". Recorded on the simulator: for ~⅓ s after a drop the list shows the wrong brick at the drop target and an empty gap, then snaps — index identity (ADR-034) makes SwiftUI see changed contents rather than a move, against the move UIKit has already animated. A stable-identity probe removed it. Decided (Sebastian, 2026-10-15): **diff-derived row IDs in `EditorViewModel`**, re-derived after every stack change — unchanged rows keep their ID, a moved block carries its IDs, new rows get fresh ones. Amends ADR-034. Tests: `RowIdentitiesTests` — whole-array ID permutations for a top-level leaf move, a top-level pair move, a nested pair moved across its parent's end in both directions, insert, pair delete, an in-place parameter change, never-reused IDs and an unrelated replacement; move-then-undo restoring the original IDs; the editor through drag, undo and redo; selection by row ID. The soak asserts per step that IDs stay unique and count-matched and, after every applied move, that **every ID still labels a brick equal to the one it labelled** (equal bricks may trade IDs). Also: an unrelated program of the same length and a reorder that is not one move both get fresh IDs (Codex round 2). *Not covered by a dedicated test: declaration, rename, the coalesced declare-plus-replace and net-zero folds (each leaves the first script's bricks unchanged or changes one brick), while `load` renews every ID itself and is tested through the editor (`loadRenewsEveryID`, Codex round 3). The widening cap is verified by measurement, not by a test: Codex round 2's worst case took 2.3 s uncapped and about 1 ms capped.* Mutations: no rotation for a move, an ID reused, the update skipped on undo.
 
 ## Verification at handover
 
-- [ ] Simulator screenshots: undo/redo enabled and disabled, plus a shake-to-undo check (or a recorded finding that it does not reach the bridge).
-- [ ] **The bundled manual accessibility pass** over the whole editor — VoiceOver (custom actions behind the rotor: "rotate to Actions, then swipe"), Dynamic Type, Reduce Motion — plus the items US-410 deferred to it (opened variable menu, iPad popover, swatches, row action during sheet dismissal). Record what was not run.
-- [ ] **Ink/Stitch check of a hand-built design** — the first time the editor is in the provenance chain of an exported file.
-- [ ] `swift-documenter` pass and the knowledge-graph drift check (read the 2026-09-18 journal entry on `--update` cost first).
-- [ ] Codex loop, cap 5.
+- [x] Simulator screenshots: undo/redo enabled and disabled, plus a shake-to-undo check (or a recorded finding that it does not reach the bridge). — 2026-10-09: both states captured; shake offers Undo, then Undo and Redo, through the bridge (journal).
+- [x] **The bundled manual accessibility pass** over the whole editor — VoiceOver (custom actions behind the rotor: "rotate to Actions, then swipe"), Dynamic Type, Reduce Motion — plus the items US-410 deferred to it (opened variable menu, iPad popover, swatches, row action during sheet dismissal). Record what was not run. — **Marked passed by Sebastian (2026-10-17)**: not run as a feature gate; the whole app gets a full accessibility review before the beta release, which takes over these items, US-408's VoiceOver procedure and the open hardware-keyboard questions (⌘Z, iPad, Full Keyboard Access with the hidden first responder).
+- [x] **Ink/Stitch check of a hand-built design** — the first time the editor is in the provenance chain of an exported file. — **Verified by Sebastian (2026-10-17).**
+- [x] `swift-documenter` pass (2026-10-09: no README change needed). **Knowledge-graph drift check deferred by Sebastian (2026-10-17)**; see the journal for why its per-feature value is in question.
+- [x] Codex loop, cap 5. — 2026-10-17: five rounds, Medium → Low → Low → Low → Low, 8 findings (7 fixed, 1 rejected); round 5's fix not re-reviewed (ADR-041). Verdict in PR #69.
 
 ## Human-owned
 
