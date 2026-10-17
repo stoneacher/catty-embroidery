@@ -122,20 +122,22 @@ struct ScriptListView: View {
             }
             .onChange(of: model.paletteInsertion) { _, insertion in
                 guard let insertion else { return }
+                // The inserted brick's row ID, resolved now while the index still names it: an
+                // undo or load before the deferred scroll or focus must not redirect either to
+                // whatever brick then sits at that index (Codex rounds 4 and 5).
+                let insertedRow = model.editor.rowID(at: insertion.index)
                 // On the next turn, once the list holds the inserted rows — `perform(_:)`'s
                 // reason. Not animated: the palette's dismissal is already moving the screen.
                 Task { @MainActor in
-                    // Rows are identified by the editor's row IDs, not their index (slice 4).
-                    let ids = model.editor.rowIDs
-                    if ids.indices.contains(insertion.index) {
-                        proxy.scrollTo(ids[insertion.index], anchor: nil)
+                    if let insertedRow {
+                        proxy.scrollTo(insertedRow, anchor: nil)
                     }
                 }
                 // VoiceOver focus waits for the palette to finish leaving. When a presentation
                 // finishes dismissing, UIKit hands focus back to the button that presented it,
                 // which would overwrite a focus set now (`swift-code-reviewer`, US-409). The
                 // user would land on Add with no idea where the brick went.
-                pendingFocus = model.editor.rowID(at: insertion.index)
+                pendingFocus = insertedRow
             }
         }
         // Behind both the list and its empty state: the first responder that hands shake, ⌘Z

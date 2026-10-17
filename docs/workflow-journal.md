@@ -3050,3 +3050,22 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The test was red by compilation only, so a mutant proves it: `rowID(at:)` returning the index, the old behaviour, was killed by two tests.
   - The VoiceOver behaviour itself is not unit-testable here and goes to the pre-beta accessibility review. A simulator check confirmed that selection and insertion still behave after a drag.
 - **Low, valid:** `ScriptListView`'s header still described index identity and the reasoning built on it. Rewritten.
+
+## 2026-10-17 — Editor UI handover, Codex round 5 (cap): loop ends, one Low fixed without re-review
+
+- **History:** Medium → Low → Low → Low → **Low**. Five rounds, **8 findings: 7 valid and fixed, 1 rejected** (the owner's accessibility waiver). Plus one accepted limitation, the 32-brick widening cap.
+- **Round-4 fixes confirmed:**
+  - `perform(_:)` reads the move's destination after the move has applied;
+  - `pendingFocus` becomes a row ID before the palette's dismissal;
+  - no focus state remains keyed by index;
+  - the rewritten header comments are accurate.
+- **Low, valid, fixed:** the palette's deferred scroll looked up `rowIDs[index]` when the task ran, so an intervening undo or load could scroll to another brick. The inserted row's ID is now captured before scheduling and shared with the pending focus. Per ADR-041, this round-5 fix is **not re-reviewed by Codex**. It is view code with no unit seam beyond the already-tested `rowID(at:)`. All app tests pass (525/526; the one failure is the local bundle-ID override).
+- **The loop stopped at the cap, not on convergence:**
+  - Severity fell once (Medium → Low), then stayed flat.
+  - From round 2 on, every finding sat in the previous round's own fix, and each was narrower and lower-impact than the last:
+    - round 1: nested-move identity;
+    - round 2: equal-length replacement, and cost;
+    - round 3: a one-row `load`;
+    - round 4: focus by index;
+    - round 5: scroll by index.
+- **Lesson:** rounds 4 and 5 found the same class twice, a position surviving where identity was meant, first in focus and then in scroll. When a reviewer finds one instance of a class, sweep for the class rather than fix the instance.
