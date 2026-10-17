@@ -39,8 +39,25 @@ Work after M4 is organised by feature (ADR-041). The milestone sections below re
 | Brick backend | M6 brick parity set | Not briefed |
 | Variables | M6 control/data subset, beyond US-410's variable menu | Not briefed |
 | Project management | M5 | Not briefed |
+| Language-test runner | Catrobat Language Tests (supervisor's suggestion, 2026-10-17); pulls a partial `.catrobat` (code.xml) import forward from S* | Not briefed |
 
 Order after Editor UI is open; the next feature is chosen when Editor UI is handed over. Backlog items ([`user-stories/backlog.md`](user-stories/backlog.md)) are pulled into whichever feature touches the same code, or become a feature of their own.
+
+**Language-test runner (noted 2026-10-17, not started).** Catroid ships the Catrobat Language Tests: 215 small `.catrobat` programs in `catroid/src/androidTest/assets/catrobatTests/`, which check themselves with `AssertEqualsBrick` and signal success with `FinishStageBrick`. Catroid runs them through `CatrobatTestRunner.kt`, which starts a full stage per program with 5 retries. The suite is written to be independent of any implementation, and the supervisor suggested running a first subset of it here. Because our interpreter is headless and synchronous, the tests can run inside `swift test` with no simulator and no retries. Scope when briefed:
+- a `code.xml` → `Program` importer limited to the supported bricks. It flattens nested loop bodies into ADR-008 paired lists and handles language versions 0.99995–1.13. The `code.xml` files are extracted into fixtures with their provenance noted, so the engine needs no zip.
+- `AssertEquals` and `FinishStage` in the interpreter, kept out of the user's palette. The equality rule needs an ADR: compare as strings, or numerically when both values parse as numbers.
+- a parameterised runner that reports N/215 as a progress metric, with an explicit expected-failure list so CI stays green.
+
+Feasibility on 2026-10-17 (static analysis of the bricks, scripts and functions each test uses, against a local Catroid checkout that may be stale):
+
+| Supported set | Runnable tests |
+|---|---|
+| Current bricks + assert/finish | 4 |
+| + math functions | 27 |
+| + If/Else, RepeatUntil, WaitUntil, ForVariableFromTo | 31 |
+| + object X/Y and direction sensors | ~37 |
+
+The remaining tests need lists, broadcasts, clones, looks, physics, or touch and colour sensors, which ADR-001 leaves out of scope. Open question put to the supervisor: is the Catroid directory the canonical source, and is there a list of the tests considered implementation-independent?
 
 ## Milestones
 
