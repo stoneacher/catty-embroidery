@@ -55,6 +55,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 043 | Stage | Rendering rules, coarsening while live, the performance bar and the current fallback ladder. | Active |
 | 044 | Stage | Manipulation: UIKit recognisers, pure tracker, one commit per manipulation, bounds and accessibility. | Active |
 | 045 | Editor | Six verbs, the insertion rule, and the change pipeline (edit, undo or redo → void run → autosave). | Active |
+| 046 | Formula | Math functions, `pi` and object sensors as per-arity `Formula` cases; Catroid semantics with four pinned divergences; `rand` deferred; sensors read the acting object's needle before the brick moves it. | Active |
 
 ## ADR-001 — App scope: embroidery-focused block app (2026-07-06)
 **Context**: On Android, "Embroidery Designer" is the full Pocket Code app (complete Catrobat language + interpreter + stage) shipped as a Gradle flavor. A full port exceeds bachelor-project scope; a blocks-free drawing tool would lose the "learn coding" essence of Catrobat.
@@ -1292,3 +1293,34 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 5. **The `UndoManager` bridge** (US-411) is a trigger surface into steps 1–2. It adds no path of its own.
 
 **Consequences**: `Script.validate()` is a test oracle, never a runtime repair. The one verb deliberately missing is *unwrap a loop, keeping its body*.
+
+## ADR-046 — Formula functions, constants and sensors (2026-10-17)
+**Context**: The Brick backend feature brings Catroid's math functions and the object's own x, y and direction into formulas. Until now a formula had four nodes (ADR-017). The new nodes are part of the saved file (ADR-037), and their numeric semantics have a reference, Catroid's `MathFunctionProvider`, that is unsound in two places. Planning probed the premises in Swift and Java 17, and the brief got one Codex round (journal, 2026-10-17).
+
+**Decision** (Sebastian, 2026-10-17, brief decisions D1–D4):
+- **Representation: per-arity cases.** `Formula` gains `unaryFunction(UnaryFunction, Formula)`, `binaryFunction(BinaryFunction, Formula, Formula)`, `constant(FormulaConstant)` and `sensor(Sensor)`.
+  - Arity is enforced by the type, so no runtime arity check and no new `ProgramDocumentError` is needed.
+  - The synthesized Codable shape follows `binary`'s. The case names are coding keys, so they are never renamed. They mirror Catroid's `Functions`/`Sensors` names so a code.xml importer maps 1:1.
+  - Function arguments count toward the depth cap of 128 (ADR-037).
+- **Semantics: Catroid's, on arguments that are already normalized, with every result normalized (ADR-017).**
+  - Trigonometry takes degrees (`x · 0.017453292519943295`, the constant Java's `toRadians` multiplies by), and inverse trigonometry returns degrees.
+  - A NaN at the root throws (`sqrt(−1)`, `arcsin(2)`).
+  - Mirrored quirks:
+    - `x mod 0 = x`;
+    - `round` is Java 7+ `Math.round`: ties toward +∞, NaN → 0, saturation to the `long` bounds, no negative zero;
+    - `min`/`max` return NaN if either argument is NaN and order −0 below +0.
+  - Pinned divergences, each with a named test:
+    - **(a) `mod` is the floored modulo.** Catroid returns the divisor for a zero remainder with a positive dividend and a negative divisor (`6 mod −3 = −3`), and its `while (dividend < 0)` loop never ends once `dividend + |divisor|` stops changing the dividend (`mod(−1e300, 1)` hangs Android).
+    - **(b) `arctan2` of two zeros is 0**, where Catroid returns `Math.random()·360 − 180`. This also hides IEEE `atan2(+0, −0) = 180°`.
+    - **(c) libm differences of a few ulps** are accepted, as in ADR-014. Values are compared within 4 ulps, against a table generated from Catroid's own expressions under Java 17. Residuals are pinned rather than snapped: `sin(180) = 1.2246467991473532e−16`.
+    - **(d) `round` follows Java 7+**, not the engine's `javaRound` (`floor(x + 0.5)`, ADR-012's wording). The two differ at 0.49999999999999994 and near 2⁵². The engine edge is sub-resolution and goes to the backlog.
+- **`rand` is deferred.** Evaluation is pure. Catroid's integer-or-decimal rule depends on how a literal is *spelled*, which `Formula.number(Double)` does not keep. Randomness would also cost the byte-exact tests. The recorded design for later is a seeded generator stored inside `Interpreter` (keeping ADR-018's copy-to-replay property), seeded per run. `power` and `true`/`false` are left out (`^` exists; logic belongs to the Variables feature).
+- **Sensors read the acting object's own needle.**
+  - `Scope` gains an explicit `value(of: Sensor)`. `VariableScope` returns 0, and the interpreter's scope carries a needle snapshot.
+  - The snapshot is taken before the brick applies, so a brick reads the needle as it was *before* it moved.
+  - `motionDirection` is folded into (−180, 180] at the read (Catroid `Look.breakDownCatroidAngle`). The needle keeps its own (−360, 360) representation.
+
+**Consequences**:
+- No UI path can author these nodes until a formula editor exists. They are shown locked, with reasons `.function` and `.sensor` (ADR-040). They reach a program through files, samples and the planned code.xml importer.
+- A program that uses `mod` or `arctan2(0, 0)` can stitch differently from Android only at the inputs named above.
+
