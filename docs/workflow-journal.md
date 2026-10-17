@@ -3114,3 +3114,17 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   3. **A fix is new surface.** Every Codex finding from round 2 on sat in the previous round's fix. Rounds 4 and 5 found the same class twice ("a position where identity was meant"), so one class sweep would have saved a round.
   4. **Check gates by exit code, every time.** A `;` instead of `&&` let a failing lint through to a commit once and to a `git add` once. The rule already exists (memory, 2026-07-31); the slips came from long one-line chains, not from not knowing it.
 - **Close-out PR:** docs only. `/codex-review` was not run, with the same disposition as PRs #38, #48 and #49: the adversarial rubric has no subject in status prose.
+
+## 2026-10-17 — Brick backend planned: two retrieval agents, then the architect corrected them
+
+- **Scope came from Sebastian** in two choices: Arc and GoThrough (the only bricks of Catroid's Embroidery category still missing) plus formula math functions and object sensors, with thin app wiring. Control bricks and comparison/logic operators stay with the Variables feature.
+- **Delegation shape:** an `Explore` agent surveyed Catroid's brick set and a `swift-search` agent mapped our end-to-end brick support, in parallel; both reports went to `swift-architect` as stated facts to verify.
+- **The architect's verification paid for itself.** Of the retrieved facts, it found:
+  - the Catroid action paths wrong (`content/actions/`, not `actions/`);
+  - two more MOD quirks than reported — `x mod 0 = x`, and a `while` loop that never terminates for `mod(-1e300, 1)`, a hang in Android;
+  - the RAND integer rule depending on the literal's *spelling*, which our model cannot represent — the deciding reason to defer `rand`;
+  - Catroid's Arc/GoThrough on a bad formula teleporting to the origin through unassigned action fields — an accident, not a semantics;
+  - Arc's i = 0 sample being a 1-ulp float/double artefact that can turn a 0° arc's heading.
+- **Probed, not assumed:** it ran the math premises in Swift and `jshell` and found two things no reading would have: Java 7+ `Math.round` differs from ADR-012's `floor(x + 0.5)` at 0.49999999999999994 and near 2^52, and Swift's `max`/`min` disagree with Java's on NaN in *both* spellings. Caveat recorded: desktop JDK 17, not Android ART.
+- **Decided by Sebastian (2026-10-17):** mirror Catroid's chord heading after Arc/GoThrough; keep format v1 and amend ADR-037 with a freeze-at-first-distribution rule; defer `rand`; ship a bundled sample so the read-only function formulas are visible.
+- **Brief:** `docs/features/brick-backend.md`, eight slices in two PRs (formula language, then path bricks). The feed rule and the function divergences are pinned by no ADR, so the brief gets one Codex round before slice 1's tests.
