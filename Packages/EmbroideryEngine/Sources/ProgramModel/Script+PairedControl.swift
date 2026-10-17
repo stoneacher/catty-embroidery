@@ -9,7 +9,12 @@ public extension Brick {
     var opensLoop: Bool {
         switch self {
         case .repeatLoop, .forever: true
-        default: false
+        // Listed, not defaulted: a new brick must say whether it opens a pair.
+        case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
+             .changeXBy, .changeYBy, .loopEnd, .wait, .setVariable, .changeVariableBy, .stitch,
+             .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
+             .stopRunningStitch, .writeEmbroideryToFile:
+            false
         }
     }
 

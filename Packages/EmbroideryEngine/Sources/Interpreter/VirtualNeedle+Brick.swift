@@ -44,7 +44,10 @@ public extension VirtualNeedle {
             eval(dx, scope).map { changeXBy($0) }
         case let .changeYBy(dy):
             eval(dy, scope).map { changeYBy($0) }
-        default:
+        // Listed, not defaulted: a new brick must say whether it moves the needle.
+        case .repeatLoop, .forever, .loopEnd, .wait, .setVariable, .changeVariableBy, .stitch,
+             .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
+             .stopRunningStitch, .writeEmbroideryToFile:
             return nil
         }
         return NeedleUpdate(position: position, heading: heading)
