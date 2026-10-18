@@ -57,10 +57,8 @@ extension Formula {
             Self.normalize(function.apply(first.evaluate(scope: scope), second.evaluate(scope: scope)))
         case .constant(.pi):
             Double.pi
-        case .sensor:
-            // Brick backend slice 3 reads the needle; until then a sensor fails
-            // like any other uninterpretable node.
-            .nan
+        case let .sensor(sensor):
+            Self.normalize(scope.value(of: sensor))
         }
     }
 

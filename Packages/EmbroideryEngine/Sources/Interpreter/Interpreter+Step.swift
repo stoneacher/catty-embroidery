@@ -279,7 +279,8 @@ extension Interpreter {
     func scope(forObjectAt index: Int) -> VariableStoreScope {
         VariableStoreScope(
             objectVariables: objects[index].variables,
-            projectVariables: projectVariables
+            projectVariables: projectVariables,
+            needle: objects[index].needle
         )
     }
 }

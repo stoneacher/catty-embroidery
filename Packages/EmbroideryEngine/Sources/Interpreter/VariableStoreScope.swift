@@ -10,8 +10,35 @@ import ProgramModel
 struct VariableStoreScope: Scope {
     let objectVariables: [String: Double]
     let projectVariables: [String: Double]
+    /// The acting object's needle when the scope was built, i.e. before the brick
+    /// that evaluates through it applies (ADR-046).
+    let needle: VirtualNeedle
 
     func value(of variableName: String) -> Double {
         objectVariables[variableName] ?? projectVariables[variableName] ?? 0
+    }
+
+    func value(of sensor: Sensor) -> Double {
+        switch sensor {
+        case .objectX: needle.position.x
+        case .objectY: needle.position.y
+        case .motionDirection: needle.catroidDirection
+        }
+    }
+}
+
+extension VirtualNeedle {
+    /// The heading as Catroid's `MOTION_DIRECTION` reports it, folded into
+    /// (−180, 180] (`Look.breakDownCatroidAngle`). The needle itself keeps its
+    /// exact mod-360 representation (ADR-014); the fold happens only at the read.
+    var catroidDirection: Double {
+        let reduced = heading.truncatingRemainder(dividingBy: 360)
+        if reduced > 180 {
+            return reduced - 360
+        }
+        if reduced <= -180 {
+            return reduced + 360
+        }
+        return reduced
     }
 }

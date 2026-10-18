@@ -4,6 +4,10 @@
 public protocol Scope {
     /// The current value of the named variable; unknown names resolve to 0.
     func value(of variableName: String) -> Double
+
+    /// The acting object's value for `sensor` (ADR-046). Required, with no
+    /// default: a scope that silently answered 0 would hide a missing needle.
+    func value(of sensor: Sensor) -> Double
 }
 
 /// Immutable two-level scope over `Variable` collections (Catroid
@@ -28,5 +32,12 @@ public struct VariableScope: Scope, Sendable {
             return match.value
         }
         return 0
+    }
+
+    /// The model has no needle, so every sensor reads 0 (Catroid's value for
+    /// unknown data, `Conversions.FALSE`). The interpreter's scope reads the
+    /// real needle.
+    public func value(of _: Sensor) -> Double {
+        0
     }
 }
