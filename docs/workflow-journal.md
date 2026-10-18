@@ -3302,3 +3302,10 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Codex slice round (Low):** the test-side DST decoder masked the kind with `0xF3`, which keeps the ±81 displacement bits, so a jump of (0, −81) decoded as a stitch. It is latent, since today's goldens hold no such records. Fixed test-first.
 - **Anchoring the decoder to Android's headers, at the reviewer's suggestion, found an exporter quirk:** Android's `arc_zigzag` header extents (`+Y:10`, `−Y:212`) are not the extents of the records it writes (0 to −222), while `arc_run`'s and `go_through`'s are. My first fix assumed the cause was the one unwritten first zigzag point. The second mismatch disproved that, so I stopped modelling the exporter and anchor only what its header demonstrably describes: stitch count and final position everywhere, and extents for the two faithful files.
 - **The goldens are pinned exactly, not just within ±1.** ±1 stays ADR-014's accepted bound, and ADR-047 says so, but a drift inside it now fails and has to be accepted deliberately.
+
+## 2026-10-18 — CI moves to Xcode 27.1 (`xcode-27` runner)
+
+- **Decision (Sebastian, 2026-10-18):** CI is pinned to Xcode 27.1 after the Swift 6.3.3 Release crash. The `macos-26` image has no Xcode 27. GitHub's separate `xcode-27` image (a public preview) ships 27.1 build 27A9275, the exact local build, so all three macOS jobs move there. Recorded as an ADR-023 amendment.
+- **What it buys:** a toolchain fault on CI now reproduces locally. With the 6.3.3 pin, the Release crash could only be checked by pushing.
+- **What it costs:** a preview image. Job names are unchanged, so the required status checks still match.
+- **The direction picker keeps its closure-literal setter.** It is harmless on 27.1, and it is the app's existing pattern anyway.

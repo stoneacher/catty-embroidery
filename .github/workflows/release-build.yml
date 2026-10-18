@@ -33,14 +33,15 @@ concurrency:
 jobs:
   app-release-build:
     name: App Release build (xcodebuild)
-    runs-on: macos-26
+    runs-on: xcode-27
     # A compile only, so well under the app-test job's 20; a wedged runner fails in a
     # useful time rather than burning the 360-minute default.
     timeout-minutes: 15
     env:
-      # Same pin and the same reason as ci.yml: the runner-default Xcode drifts and breaks
-      # Swift 6.x builds. Xcode 26.6 (Swift 6.3.3) matches the local development toolchain.
-      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      # Same pin, image and reason as ci.yml: the runner-default Xcode drifts and breaks
+      # Swift 6.x builds. Xcode 27.1 matches the local development toolchain (checked
+      # 2026-10-18), so a Release-only compiler fault reproduces locally too.
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
       - name: Show toolchain
