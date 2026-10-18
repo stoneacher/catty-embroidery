@@ -134,7 +134,8 @@ extension Interpreter {
     /// Executes one brick against its object's runtime, in one exhaustive switch
     /// so a new brick cannot compile without being dispatched here. Motion bricks
     /// go through the US-204 bridge (`VirtualNeedle.apply`), which applies the
-    /// per-brick bad-formula fallback and always emits exactly one update. Data
+    /// per-brick bad-formula fallback and emits at least one update: exactly
+    /// one for most motions, one per fed sample for Arc and GoThrough (ADR-047). Data
     /// bricks write the variable store; embroidery bricks (US-206) drive the
     /// engine — the interpreter only calls it, never re-implementing stream
     /// semantics (ADR-012/013/015).

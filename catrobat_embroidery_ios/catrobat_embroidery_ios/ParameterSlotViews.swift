@@ -349,16 +349,18 @@ struct ArcDirectionPicker: View {
     let editor: EditorViewModel
     let selection: ArcDirection
 
+    @Environment(\.locale) private var locale
+
     var body: some View {
         Picker(selection: direction) {
             ForEach(ArcDirection.allCases, id: \.self) { direction in
-                Text(ParameterEditorText.name(of: direction)).tag(direction)
+                Text(ParameterEditorText.name(of: direction, locale: locale)).tag(direction)
             }
         } label: {
             EmptyView()
         }
         .pickerStyle(.segmented)
-        .accessibilityLabel(Text(ParameterEditorText.title(of: .direction)))
+        .accessibilityLabel(Text(ParameterEditorText.title(of: .direction, in: .arc, locale: locale)))
     }
 
     private var direction: Binding<ArcDirection> {

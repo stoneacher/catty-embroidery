@@ -51,8 +51,8 @@ struct ArcBrickPresentationTests {
 
     @Test("the direction and radius slots have titles, and the directions names")
     func slotTitles() {
-        #expect(ParameterEditorText.title(of: .direction, locale: Self.english) == "Direction")
-        #expect(ParameterEditorText.title(of: .radius, locale: Self.english) == "Radius")
+        #expect(ParameterEditorText.title(of: .direction, in: .arc, locale: Self.english) == "Direction")
+        #expect(ParameterEditorText.title(of: .radius, in: .arc, locale: Self.english) == "Radius")
         #expect(ParameterEditorText.name(of: ArcDirection.left, locale: Self.english) == "Left")
         #expect(ParameterEditorText.name(of: ArcDirection.right, locale: Self.english) == "Right")
     }

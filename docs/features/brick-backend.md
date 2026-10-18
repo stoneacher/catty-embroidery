@@ -1,6 +1,6 @@
 # Brick backend
 
-**Status**: Planned — 2026-10-17 | **Epic**: E8 (+ E3 formulas, E5 thin) | **Branch**: `feature/brick-backend`
+**Status**: In review — PR 1 (slices 0–3) merged as #71; PR 2 (slices 4–7) is #72, awaiting the Codex loop and Sebastian's Ink/Stitch check | **Epic**: E8 (+ E3 formulas, E5 thin) | **Branches**: `feature/brick-backend` (PR 1), `feature/brick-backend-paths` (PR 2)
 
 **Goal**: a program can draw arcs and quadratic curves (Catroid's **Arc** and **GoThrough**), and its formulas can use Catroid's math functions and the object's own x, y and direction. Preview and `.dst` export behave as the Android Embroidery Designer does wherever Catroid is sound, and every divergence is pinned by a named test.
 
@@ -45,16 +45,16 @@ Planned with `swift-architect`; the math premises were probed in Swift and `jshe
 
 ## Acceptance criteria
 
-- [ ] Every `Brick` and `Formula` case round-trips through `ProgramDocument` and is reflexively `==` — a property over a case census that fails to compile when a case is added.
-- [ ] Every function matches a characterization table derived from Catroid: within 1e-9 absolute for near-unity results, within a few ulps *relative* for large-magnitude ones (ADR-017: a fixed absolute tolerance is only valid near unity — `tan(90)` ≈ 1.633e16 has an ulp of 2), and exact where the value is exact or on an ADR-019 threshold (`log(1000) == 3`, `round(-2.5) == -2`, `round(0.49999999999999994) == 0`). Residuals Catroid produces are pinned, not snapped (`sin(180)` ≈ 1.2246467991473532e-16, not 0). Every divergence (D2 a–d) has a named test.
-- [ ] No formula built from these functions traps or hangs for any finite inputs — a property over generated trees, including `mod(-MAX, 1)`.
-- [ ] Every executed Arc or GoThrough costs exactly one tick, feeds the pattern once per sample whose position changed (at most 100), emits one `.needleMoved` per feed followed by that feed's stitches, and emits exactly one unchanged update when no sample changed position.
-- [ ] `arc(left, r, −d)` is event-for-event identical to `arc(right, r, d)`; `arc(_, −r, d)` to `arc(_, r, d)`.
-- [ ] Every Arc sample lies on its circle; every GoThrough ends exactly on its destination and passes through its through-point at sample 50 (1e-9).
-- [ ] No Arc or GoThrough leaves the needle non-finite; a bad formula or a non-finite sample leaves needle and heading unchanged and emits one update.
-- [ ] Sensors read the acting object's own needle at the moment the brick evaluates; `motionDirection` lies in (−180, 180].
-- [ ] Every palette kind, row sentence and new formula node has String Catalog entries; Arc's direction is editable as one undoable `replaceBrick`; function and sensor formulas are shown locked with a reason.
-- [ ] The new sample runs and exports, and its `.dst` opens correctly in Ink/Stitch (manual check).
+- [x] Every `Brick` and `Formula` case round-trips through `ProgramDocument` and is reflexively `==` — a property over a case census that fails to compile when a case is added.
+- [x] Every function matches a characterization table derived from Catroid: within 1e-9 absolute for near-unity results, within a few ulps *relative* for large-magnitude ones (ADR-017: a fixed absolute tolerance is only valid near unity — `tan(90)` ≈ 1.633e16 has an ulp of 2), and exact where the value is exact or on an ADR-019 threshold (`log(1000) == 3`, `round(-2.5) == -2`, `round(0.49999999999999994) == 0`). Residuals Catroid produces are pinned, not snapped (`sin(180)` ≈ 1.2246467991473532e-16, not 0). Every divergence (D2 a–d) has a named test.
+- [x] No formula built from these functions traps or hangs for any finite inputs — a property over generated trees, including `mod(-MAX, 1)`.
+- [x] Every executed Arc or GoThrough costs exactly one tick, feeds the pattern once per sample whose position changed (at most 100), emits one `.needleMoved` per feed followed by that feed's stitches, and emits exactly one unchanged update when no sample changed position.
+- [x] `arc(left, r, −d)` is event-for-event identical to `arc(right, r, d)`; `arc(_, −r, d)` to `arc(_, r, d)`.
+- [x] Every Arc sample lies on its circle; every GoThrough ends exactly on its destination and passes through its through-point at sample 50 (1e-9).
+- [x] No Arc or GoThrough leaves the needle non-finite; a bad formula or a non-finite sample leaves needle and heading unchanged and emits one update.
+- [x] Sensors read the acting object's own needle at the moment the brick evaluates; `motionDirection` lies in (−180, 180].
+- [x] Every palette kind, row sentence and new formula node has String Catalog entries; Arc's direction is editable as one undoable `replaceBrick`; function and sensor formulas are shown locked with a reason.
+- [ ] The new sample runs and exports, and its `.dst` opens correctly in Ink/Stitch (manual check). *Runs and exports (`ArcFlowerTests`, `SampleDSTTests`); the Ink/Stitch check is pending.*
 
 ## Slices and test-first outline
 
@@ -74,7 +74,7 @@ Every slice touching the format, engine or interpreter is **risky** → `swift-c
    - **Done end to end in this slice:** the new `Brick` case's exhaustive app switches forced the app arms (the sentences per side, the segmented direction picker, the catalog) into this slice, so slice 6 shrinks to GoThrough's fields, screenshots and UI review.
    - **Red:** 14 compile errors.
    - **Android exports:** `arc_run` and `arc_zigzag` match record for record within ±1 unit on the first green run.
-   - **Mutants:** 10 killed.
+   - **Mutants:** 10 killed: nine engine mutants (the Android goldens alone kill six, per ADR-047) and one app mutant.
      - `i = 0` included is killed only by an off-origin exact-count guard, added for it; from the origin the i = 0 sample reconstructs the start exactly.
      - The Android goldens alone kill six.
      - The view-level picker mutant (writing the opposite side) has no unit test. It is checked in the simulator in slice 6.
@@ -140,7 +140,18 @@ Every slice touching the format, engine or interpreter is **risky** → `swift-c
 - **Ink/Stitch**: the sample's `.dst` and a full-circle Arc in running and zigzag stitch.
 - **External golden, if available**: an arc and curve `.dst` exported from the Android Embroidery Designer — the only external check of the D5 feed rule (compare at ±1 unit, float vs Double).
 - Pre-beta accessibility questions: VoiceOver reading of a locked function formula; the segmented direction control's label and value.
-- Follow-ups to file: the `javaRound` backlog entry and the ADR-012 wording note (ADR-032 invariant 3: every copy of "floor(x + 0.5) = Math.round").
+- **PR 2 feature review (`swift-code-reviewer`, 2026-10-18): no critical findings.** Taken:
+  - GoThrough's two one-sided guard mutants survived. Two curves now kill them: out-and-back, and through its own start.
+  - A near-zero sweep keeps Catroid's residual steering, pinned and added to ADR-047. A tolerance guard kills that test.
+  - Four comments still said "one update per motion": `VirtualNeedle`, `InterpreterEvent`, `perform` and the README.
+  - Tidying:
+    - this brief's status line and criteria;
+    - the direction picker now threads the view's locale;
+    - slot titles require the brick kind;
+    - the palette tests assert adjacency, not suffixes;
+    - the path-slot helpers are renamed off the case names.
+  - **Deferred:** extracting Arc's and GoThrough's shared sampling loop into one helper. It is a refactor of reviewed engine code pinned by goldens, better done with the next path brick.
+- Follow-ups filed 2026-10-18: backlog US-325 and the ADR-012 correction. Originally listed as: the `javaRound` backlog entry and the ADR-012 wording note (ADR-032 invariant 3: every copy of "floor(x + 0.5) = Math.round").
 
 ## References
 

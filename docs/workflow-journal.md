@@ -3372,3 +3372,26 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Also taken:** the stem must be green (CO 2 alone passes a late change); the hoop check covers every needle update; 821 stitches, no jumps and the extents are pinned. The sensor is now described as the token use it is: it is read right after `placeAt(0, 0)`, so it reads 0 and the stem would be identical with a literal 45.
 - **Mutations, all red:** dropping a sample from the budget table; `isScreenable` counting objects; skipping the sub-length probes; a minimum that ignores them; dropping the stem's colour. One mutation first failed to compile, and a failing build reports "0 failing tests", so it was redone before counting.
 - **Declined:** Codex's notes that the vocabulary and heading tests prove presence rather than behaviour. The engine and Android-golden tests pin that behaviour, and the reviewer showed the heading test kills both relative-turn mutations.
+
+## 2026-10-18 — Brick backend PR 2: the feature-level review finds what the per-slice ones could not
+
+- **The feature-level `swift-code-reviewer` (no critical findings)** saw three things that no slice review had seen:
+  - **Half of GoThrough's degenerate guard was untested.** Every test put both points at the start or neither. Two one-sided mutants (`destination != position` and `through != position`) left the whole suite green, and either would silently drop a real curve (an out-and-back loop, or a curve through its own start).
+    - Two tests now kill one mutant each, shown red before keeping them.
+    - Slice 5's own review had added the self-loop test that made the guard *needed*, but nobody asked whether the guard was too *wide*.
+  - **Four comments repeated the pre-ADR-047 rule** "one update per motion" (`VirtualNeedle`, `InterpreterEvent`, `perform`, README). Slice 7 had just shown what that rule does to a consumer (the screening mirror), but the comments it came from were never swept. ADR-032 invariant 3 asks for that sweep.
+  - **Near-zero sweeps:** the structural guard is exact, so `sin(180)`'s 1.2e-16 or a 1e-13 sweep still steers the heading by residual chords, as Catroid does.
+    - **Kept, not guarded:** any tolerance would be an invented threshold.
+    - Pinned by a test that a tolerance-guard mutant turns red, and amended into ADR-047.
+- **Also taken:**
+  - the brief's status line still read "Planned";
+  - the direction picker ignored the view's locale;
+  - `title(of:in:)` made its brick kind required, so a caller cannot reintroduce slice 6's bare "X";
+  - two palette tests pinned suffixes against slice 5's own lesson;
+  - two helpers shared the enum cases' names;
+  - one mutant count in the brief read as a conflict with ADR-047.
+- **Deferred:** extracting the two sampling loops into one helper. They are reviewed, golden-pinned engine code, and a refactor at handover is a fresh risk for a readability gain.
+- **Documenter pass:** the package README was stale far beyond this feature. Its StagePreview section described a pre-M3 API, and its Quick Start used an initializer and an enum case that do not exist.
+  - The `swift-documenter` verified every snippet by grepping declarations. I then compiled both Quick Starts in a throwaway test file, and they build.
+  - Its last change was M3's final verification (2026-09-18). That left M4's editor work and PR 1 undocumented, and the M3 pass evidently did not re-check the older StagePreview snippets.
+- **Close-out filed:** backlog US-325 (`javaRound` is not exactly Java 7+ `Math.round`), with an inline correction on ADR-012's rounding line and on `javaRound`'s comment.

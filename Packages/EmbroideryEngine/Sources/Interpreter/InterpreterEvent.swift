@@ -10,8 +10,9 @@ import EmbroideryEngine
 /// payload against M3's preview, the first real consumer.
 public enum InterpreterEvent: Equatable, Sendable {
     /// A motion brick moved the needle (US-205). Carries the acting object and
-    /// the single `NeedleUpdate` the motion produced (one per executed motion
-    /// brick, including catch-and-skip, per US-204's bridge).
+    /// one `NeedleUpdate`: one event per executed single-update motion brick,
+    /// including catch-and-skip (US-204's bridge). Arc and GoThrough emit one
+    /// per fed sample, up to 100 in one tick, or one unchanged update (ADR-047).
     case needleMoved(actor: ActorID, update: NeedleUpdate)
 
     /// A `wait` brick completed its logical duration on this tick (US-205).

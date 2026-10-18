@@ -64,8 +64,9 @@ nonisolated enum ParameterEditorText {
     /// The label of a slot's control.
     /// `kind` is the brick being edited, where a slot's name depends on it: GoThrough's
     /// destination is "To x"/"To y" (Catroid's "then to"), so it does not read as a bare "X"
-    /// beside "Through x".
-    static func title(of slot: ParameterSlot, in kind: BrickKind? = nil, locale: Locale = .current) -> String {
+    /// beside "Through x". Required, not defaulted: a caller that left it out would
+    /// label GoThrough's destination "X" again (`swift-code-reviewer`, PR 2).
+    static func title(of slot: ParameterSlot, in kind: BrickKind?, locale: Locale = .current) -> String {
         let resource: LocalizedStringResource = switch (kind, slot) {
         case (.goThrough, .x): .parameterSlotToX
         case (.goThrough, .y): .parameterSlotToY

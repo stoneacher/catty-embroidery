@@ -127,7 +127,7 @@ let stitch = Stitch(
 )
 ```
 
-**NeedleUpdate** — Needle state (position and heading) passed to patterns once per movement tick.
+**NeedleUpdate** — Needle state (position and heading) passed to patterns once per update: one per single-update motion brick, one per fed sample for Arc and GoThrough (ADR-047).
 ```swift
 let update = NeedleUpdate(position: StagePoint(x: 10, y: 20), heading: 45)
 ```

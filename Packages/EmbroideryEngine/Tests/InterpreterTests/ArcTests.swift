@@ -116,6 +116,20 @@ struct ArcTests {
         #expect(needle == VirtualNeedle(position: start, heading: heading))
     }
 
+    /// The guard is structural: exactly 0°. A *near*-zero sweep, such as
+    /// `sin(180)` = 1.2e-16 that ADR-046 deliberately keeps, samples points a
+    /// rounding residual away from the start, feeds them, and turns the needle
+    /// along those residual chords, as Catroid does. Pinned so the choice is
+    /// visible (ADR-047; `swift-code-reviewer`, PR 2 feature review).
+    @Test("a near-zero sweep keeps Catroid's residual steering", arguments: [1.2246467991473532e-16, 1e-13])
+    func nearZeroSweepSteers(_ degrees: Double) throws {
+        let start = StagePoint(x: 0.1, y: 0.2)
+        let (updates, needle) = try updates(Self.arc(.left, 10, degrees), from: start, heading: 33)
+        #expect(!updates.isEmpty)
+        #expect(close(needle.position.x, start.x, 1e-12) && close(needle.position.y, start.y, 1e-12))
+        #expect(needle.heading != 33)
+    }
+
     /// `r = MAX` makes `centre + r·cos` overflow to ±∞ partway round; nothing
     /// is committed, so the needle never holds a non-finite coordinate.
     @Test("an arc whose samples overflow leaves the needle unchanged")

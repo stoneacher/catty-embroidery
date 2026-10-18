@@ -166,23 +166,24 @@ public extension Brick {
 }
 
 private extension Brick {
-    /// Arc's and GoThrough's slots, apart from `replacing(_:with:)` so its switch
-    /// stays one screen. Every other brick refuses here, as `replacing` would.
+    /// Arc's and GoThrough's slots, kept apart from `replacing(_:with:)`. Every
+    /// other brick refuses here, as `replacing` would.
     func replacingPathSlot(_ slot: ParameterSlot, with value: ParameterValue) -> Brick? {
         switch (self, value) {
         case let (.arc(direction, radius, degrees), _):
-            Self.arc(direction: direction, radius: radius, degrees: degrees, replacing: slot, with: value)
+            Self.arcReplacing(slot, with: value, direction: direction, radius: radius, degrees: degrees)
         case let (.goThrough(throughX, throughY, x, y), .formula(formula)):
-            Self.goThrough([throughX, throughY, x, y], replacing: slot, with: formula)
+            Self.goThroughReplacing(slot, with: formula, in: [throughX, throughY, x, y])
         default:
+            // Not a path brick, or GoThrough given a non-formula value.
             nil
         }
     }
 
     /// Arc's slots.
-    static func arc(
-        direction: ArcDirection, radius: Formula, degrees: Formula,
-        replacing slot: ParameterSlot, with value: ParameterValue
+    static func arcReplacing(
+        _ slot: ParameterSlot, with value: ParameterValue,
+        direction: ArcDirection, radius: Formula, degrees: Formula
     ) -> Brick? {
         switch (slot, value) {
         case let (.direction, .arcDirection(direction)):
@@ -198,7 +199,7 @@ private extension Brick {
     }
 
     /// GoThrough's four formula slots, in field order.
-    static func goThrough(_ fields: [Formula], replacing slot: ParameterSlot, with formula: Formula) -> Brick? {
+    static func goThroughReplacing(_ slot: ParameterSlot, with formula: Formula, in fields: [Formula]) -> Brick? {
         let order: [ParameterSlot] = [.throughX, .throughY, .x, .y]
         guard let index = order.firstIndex(of: slot) else {
             return nil

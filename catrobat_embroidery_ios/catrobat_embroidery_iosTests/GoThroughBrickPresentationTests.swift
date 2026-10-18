@@ -24,13 +24,15 @@ struct GoThroughBrickPresentationTests {
         let row = PaletteRowPresentation(kind: .goThrough, locale: Self.english)
         #expect(row.text == "Go through x: 0 y: 0 then to x: 0 y: 0")
         #expect(row.description == "Moves the needle along a curve through one point to another.")
-        #expect(PaletteGroup.motion.kinds.suffix(2) == [.arc, .goThrough])
+        // Adjacency, not position, as in `ArcBrickPresentationTests`.
+        let kinds = PaletteGroup.motion.kinds
+        #expect(kinds.firstIndex(of: .goThrough).map { kinds[kinds.index(before: $0)] } == .arc)
     }
 
     @Test("the through-point slots have their own titles")
     func slotTitles() {
-        #expect(ParameterEditorText.title(of: .throughX, locale: Self.english) == "Through x")
-        #expect(ParameterEditorText.title(of: .throughY, locale: Self.english) == "Through y")
+        #expect(ParameterEditorText.title(of: .throughX, in: .goThrough, locale: Self.english) == "Through x")
+        #expect(ParameterEditorText.title(of: .throughY, in: .goThrough, locale: Self.english) == "Through y")
     }
 
     /// Bare "X" and "Y" under "Through x" and "Through y" did not say they are

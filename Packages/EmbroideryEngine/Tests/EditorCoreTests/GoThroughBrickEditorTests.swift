@@ -10,7 +10,10 @@ struct GoThroughBrickEditorTests {
     @Test("a GoThrough has its own kind and follows Arc in the palette")
     func kindAndPalette() {
         #expect(BrickKind(of: curve) == .goThrough)
-        #expect(PaletteGroup.motion.kinds.suffix(3) == [.pointInDirection, .arc, .goThrough])
+        // Adjacency, not position: the next motion brick would break a suffix check,
+        // as GoThrough broke "Arc is last" (slice 5).
+        let kinds = PaletteGroup.motion.kinds
+        #expect(kinds.firstIndex(of: .goThrough).map { kinds[kinds.index(before: $0)] } == .arc)
     }
 
     /// `GoThroughBrick(0, 0, 0, 0)` (`CategoryBricksFactory.kt:1092`); Catroid

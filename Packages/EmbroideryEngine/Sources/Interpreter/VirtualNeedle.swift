@@ -6,8 +6,9 @@ import Foundation
 /// Catroid has no separate needle — embroidery reads the sprite's position — so
 /// here the needle *is* the object's motion state. This type is pure geometry:
 /// the `apply(_:scope:)` bridge (in `VirtualNeedle+Brick`) is the only place it
-/// meets `ProgramModel` formulas. Emitting one `NeedleUpdate` per motion is the
-/// bridge's job; these methods only mutate.
+/// meets `ProgramModel` formulas. Emitting the `NeedleUpdate`s is the bridge's
+/// job: one per single-update motion, and for Arc and GoThrough the samples
+/// their methods return (ADR-047). The other methods only mutate.
 public struct VirtualNeedle: Hashable, Sendable {
     /// Current position in ADR-007 stage space.
     public var position: StagePoint
