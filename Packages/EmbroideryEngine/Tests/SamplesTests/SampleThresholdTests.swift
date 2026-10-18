@@ -66,6 +66,18 @@ struct SampleThresholdTests {
     /// screened too. Arc Flower's ~0.3-point chords are nine in ten of its
     /// updates, and the first screen skipped them all (`swift-code-reviewer`,
     /// slice 7). Every update is probed, on one side of the boundary or the other.
+    /// A probe names its update by position in execution order, so a future
+    /// at-risk update can be found. The sub-length probes reused the emitting
+    /// updates' counter, so thousands shared stale indices (Codex, PR 2
+    /// handover round 2).
+    @Test("every probe names its own update, in execution order")
+    func probesIndexEveryUpdate() {
+        let sample = SampleLibrary[.arcFlower]
+        let screening = screen(sample, patternLength: 4, pointsPerInterval: 1)
+        let indices = (screening.probes + screening.subLengthProbes).map(\.moveIndex).sorted()
+        #expect(indices == Array(0 ..< emissionCountsPerMove(run(sample)).count))
+    }
+
     @Test("updates shorter than one stitch are screened against the first boundary")
     func subLengthUpdatesAreScreened() {
         let sample = SampleLibrary[.arcFlower]

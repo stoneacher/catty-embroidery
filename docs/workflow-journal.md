@@ -3406,3 +3406,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
     - Recorded as an ADR-047 amendment.
 - **Why every earlier review missed it:** each one checked the arc's *geometry* and the per-tick *event count*. The brief's "budget check" used a program with no stitch pattern, which looks like the case but cannot fail on it. Codex named that test as the blind spot. Two slice rounds and two Claude reviews had seen the per-update bound and the 100-sample loop separately, and none composed them.
 - **Also corrected:** the brief described that test as a check of "RunBudget/driver allocation", which it never was.
+
+## 2026-10-19 — Brick backend PR 2, Codex handover round 2: the fix holds, two Low leftovers
+
+- **Round 2 (highest severity Low, down from Medium; code changed):**
+  - **Verified:** Codex confirmed the round 1 fix is correct and complete. It worked through all three patterns, a stale anchor, re-anchoring by `stitch`/`sewUp`, a paused pattern, and non-positive lengths. It also derived the amendment's "about two million whole lengths" bound independently: the first update is capped by ADR-014, and the rest telescope against the path.
+  - **Low, docs:** the brief's D5 and its acceptance criterion still said every changed sample is fed. Both now note the exception.
+  - **Low, test harness:** the sub-length probes added in slice 7's review reused the counter that only emitting updates advance. So thousands of probes carried stale indices, and a future at-risk update would be reported at the wrong place. A test that every probe names its own update was red against the old counter; probes now take their execution-order index.
+- **The pattern again:** both leftovers sit in text and code written to fix an earlier finding (slice 7's sub-length probes, round 1's bound). Each fix is new surface, as US-302 recorded.
+- **Loop state:** Medium → Low is one decrease. A round 3 runs because this round changed code; it ends the loop if it is clean or produces no code change.

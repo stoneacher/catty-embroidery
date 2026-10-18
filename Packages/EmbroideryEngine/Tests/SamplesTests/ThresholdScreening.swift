@@ -18,7 +18,8 @@ import Samples
 
 /// One pattern update, as the engine actually performed it.
 struct BoundaryProbe {
-    /// Index of the move that produced this update, in execution order.
+    /// The update's position among all needle updates, in execution order,
+    /// counting the sub-length ones (Codex, PR 2 handover round 2).
     var moveIndex: Int
     /// The distance the pattern measured — computed the way the pattern computes
     /// it, with libm's `hypot`.
@@ -224,7 +225,6 @@ func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: I
     var probes: [BoundaryProbe] = []
     var subLengthProbes: [BoundaryProbe] = []
     var predicted: [Int] = []
-    var moveIndex = 0
     var isFirstEmission = true
 
     // Seed the anchor where the *engine* seeded it. Both samples activate their
@@ -243,7 +243,7 @@ func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: I
     // 100 updates in its one tick (ADR-047), and screening only the first saw 96
     // of Arc Flower's moves and disagreed with the engine (Brick backend slice 7).
     // For one-update-per-tick programs the two readings are the same sequence.
-    for move in measured.batches.flatMap({ $0.compactMap(needleMove(in:)) }) {
+    for (updateIndex, move) in measured.batches.flatMap({ $0.compactMap(needleMove(in:)) }).enumerated() {
         let target = move.position
         let current = anchor
         let dx = target.x - current.x
@@ -256,7 +256,7 @@ func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: I
             // probed against the first boundary from below.
             predicted.append(0)
             subLengthProbes.append(boundaryProbe(
-                moveIndex: moveIndex,
+                moveIndex: updateIndex,
                 from: current,
                 to: target,
                 heading: move.heading,
@@ -267,7 +267,7 @@ func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: I
 
         let remainder = distance.truncatingRemainder(dividingBy: patternLength)
         probes.append(boundaryProbe(
-            moveIndex: moveIndex,
+            moveIndex: updateIndex,
             from: current,
             to: target,
             heading: move.heading,
@@ -278,7 +278,6 @@ func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: I
         let intervals = probes[probes.count - 1].intervals
         predicted.append(pointsPerInterval * intervals + (isFirstEmission ? 1 : 0))
         isFirstEmission = false
-        moveIndex += 1
 
         // The pattern's own clamp: the anchor advances to the surplus-stripped
         // point, not to the needle (ZigzagStitchPattern / TripleStitchPattern).
