@@ -1,7 +1,8 @@
 import ProgramModel
 
-/// The read side of a thread's variable resolution, backed by the interpreter's
-/// mutable stores. Object variables shadow same-named project variables; an
+/// The read side of a thread's formula evaluation: variables backed by the
+/// interpreter's mutable stores, and sensors backed by the acting object's needle
+/// (ADR-046). Object variables shadow same-named project variables; an
 /// unknown name resolves to 0 — the same rule as `ProgramModel.VariableScope`,
 /// but over the live `[String: Double]` dictionaries the stepper writes to
 /// (`setVariable` / `changeVariableBy`). Transient and synchronous: built per
@@ -24,21 +25,5 @@ struct VariableStoreScope: Scope {
         case .objectY: needle.position.y
         case .motionDirection: needle.catroidDirection
         }
-    }
-}
-
-extension VirtualNeedle {
-    /// The heading as Catroid's `MOTION_DIRECTION` reports it, folded into
-    /// (−180, 180] (`Look.breakDownCatroidAngle`). The needle itself keeps its
-    /// exact mod-360 representation (ADR-014); the fold happens only at the read.
-    var catroidDirection: Double {
-        let reduced = heading.truncatingRemainder(dividingBy: 360)
-        if reduced > 180 {
-            return reduced - 360
-        }
-        if reduced <= -180 {
-            return reduced + 360
-        }
-        return reduced
     }
 }

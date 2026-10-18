@@ -1321,7 +1321,9 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - **Sensors read the acting object's own needle.**
   - `Scope` gains an explicit `value(of: Sensor)`. `VariableScope` returns 0, and the interpreter's scope carries a needle snapshot.
   - The snapshot is taken before the brick applies, so a brick reads the needle as it was *before* it moved.
-  - `motionDirection` is folded into (−180, 180] at the read (Catroid `Look.breakDownCatroidAngle`). The needle keeps its own (−360, 360) representation.
+  - `motionDirection` is reduced mod 360, folded into (−180, 180] at the read (Catroid `Look.breakDownCatroidAngle`), and never `−0`, which Catroid's fold cannot produce and `arctan2` would expose. The needle keeps its own exact mod-360 representation (ADR-014); a start heading reaches it unreduced, which is why the read reduces first.
+  - Catroid stores the direction as a `float` after `(−d + 90) % 360`. The needle is `Double` (ADR-014), so the sensor follows the needle and not that round trip: `pointInDirection(180.000001)` reads −179.999999 here and 180 in Catroid; integer headings agree up to |d| < 2²⁴ − 89 (brute-forced; `pointInDirection(16777217)` reads 137 here and 136 there). The needle's own motion diverges the same way, so emulating `float` at the sensor alone would make the two disagree with each other.
+  - A `repeat` reached after another action in the same tick reads its count a tick earlier than Catroid. This is pre-existing; sensors are a new route into it; tracked as US-323.
 
 **Consequences**:
 - No UI path can author these nodes until a formula editor exists. They are shown locked, with reasons `.function` and `.sensor` (ADR-040). They reach a program through files, samples and the planned code.xml importer.

@@ -248,6 +248,25 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 
 ---
 
+## US-323 — A repeat reached mid-tick reads its count a tick before Catroid does
+
+**Found**: 2026-10-18, by `swift-code-reviewer` on Brick backend slice 3 (sensors), confirmed with a probe.
+- **The mechanism:** `enterRepeat` runs with `deferEntry` when an action already ran this tick. If the loop has no counter yet, it still evaluates `times` this tick.
+  - A count ≤ 0 exits immediately on tick t's state.
+  - A positive count is discarded and re-read at t + 1.
+- **What Catroid does:** `RepeatAction` reads its count on its own first `act`, at t + 1 (libgdx `SequenceAction` advances one child per tick).
+- **The probe:** object scripts A = `[setY(1), repeat(objectX) { changeYBy(1) }]` and B = `[setX(2)]`.
+  - Here, A reads objectX = 0 in tick 1, before B runs, skips the loop and ends at (2, 1).
+  - Catroid reads 2 in tick 2 and ends at (2, 3).
+- **Not new with sensors:** a project variable written by a later script took the same route before. Sensors add the shared needle. ADR-018 does not mention it.
+
+**What taking it would involve.**
+- When `deferEntry` and no counter exists, yield before evaluating.
+- The only other shift is that a script ending in such a loop is marked finished one tick later. That touches ADR-018's same-tick-finish rule, so it needs an ADR-018 amendment and a check that no golden's event timing moves.
+- Kept out of the Brick backend feature because it changes interpreter scheduling, not the brick vocabulary.
+
+---
+
 ## Scheduled out of this file — the record, because the mechanism is the point
 
 Entries keep their ID when they are scheduled, so existing ADR and journal references keep

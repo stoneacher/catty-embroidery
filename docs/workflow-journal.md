@@ -3194,3 +3194,24 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The reviewer: Darwin's libm is within 2 ulps of every row, so the ADR now says so. The `toRadians` constant wording is now "desktop JDK 9+", since older Android libcore divides. A named round-saturation test was added; that mutant was killed only by a trap.
   - Codex's second finding (Medium) was the same rounding divergence.
 - **Delegation note:** this is the third slice in a row where the in-loop reviewer and Codex overlapped on one finding. Here the overlap *was* the finding.
+
+## 2026-10-18 — Brick backend slice 3: sensors; PR 1's scope is complete
+
+- **What landed:**
+  - `Scope.value(of: Sensor)` is a required member with no default.
+  - The interpreter's scope carries the acting object's needle as it was before the brick applies.
+  - `motionDirection` is folded into (−180, 180] at the read.
+- **Red and mutants:**
+  - Behavioural red: 16 issues.
+  - **The survivor at green:** a "no reduction before the fold" mutant. Every turn already reduces mod 360, but an object's start heading reaches the needle raw. Start headings of ±900° and −1000° now kill it.
+- **Reviews, one round each:**
+  - **`swift-code-reviewer`** brute-forced the fold against Catroid's `float` round trip over every integer in ±17M. Its findings:
+    - The direction can be `−0`: 47,222 integer headings give `−0` here and none in Catroid. Fixed.
+    - The normalize on sensor reads was unproven. A needle at +∞ now kills that mutant.
+    - A pre-existing divergence: a `repeat` reached mid-tick evaluates its count a tick before Catroid, which sensors now reach through the shared needle. Filed as **US-323** instead of fixed here, because it changes ADR-018's tick accounting.
+  - **Codex** (highest Medium):
+    - Catroid's `float` direction round trip (`180.000001` reads 180 there). It is pinned in ADR-046 with the measured bound (|d| < 2²⁴ − 89 for integers) and not emulated: the needle's own motion is `Double` (ADR-014), and emulating `float` only at the sensor would make the sensor disagree with the needle it reports.
+    - Three discrimination gaps, all covered: the shared needle tick by tick, cross-object creation order, and a sensor in `wait`.
+- **A fixture error caught by its own red:** the creation-order test first failed because an undeclared variable lands in the writer's object store. The red was a wrong fixture, not a bug, and reading the failure rather than the test name showed it.
+- **CI:** one app test, `ExportWiringTests.committingANameRewritesTheFile`, hit its 1-minute time limit on a loaded runner, where neighbouring tests took about 45 s each. It does not touch formulas. The failed job was re-run rather than the limit changed.
+- **Slices 0–3 are done:** that is PR 1's planned scope (formula language). The `−0` class has now appeared in two consecutive slices (`mod` in slice 2, the direction here). A sign-exact zero comparison belongs in every numeric test helper from the start.
