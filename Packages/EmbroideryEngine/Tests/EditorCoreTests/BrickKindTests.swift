@@ -32,11 +32,11 @@ struct BrickKindTests {
 
     /// The `Brick → BrickKind` direction is compile-enforced by the exhaustive
     /// no-`default:` switch, so adding a `Brick` case is already a build error.
-    /// The reverse direction is not, which is what this count pins: 24 is
-    /// `Brick`'s case count (23 until Arc, Brick backend slice 4).
+    /// The reverse direction is not, which is what this count pins: 25 is
+    /// `Brick`'s case count (23 until Arc and GoThrough, Brick backend slices 4–5).
     @Test("there is exactly one kind per Brick case")
     func kindCountMatchesBrickCaseCount() {
-        #expect(BrickKind.allCases.count == 24)
+        #expect(BrickKind.allCases.count == 25)
     }
 
     /// Test plan 3. Whole-array equality, so the *order* is asserted and not

@@ -1,5 +1,7 @@
 import EmbroideryEngine
 import Foundation
+import Interpreter
+import ProgramModel
 import Testing
 
 /// Reading the Android reference exports (`Resources/AndroidReference`) and our
@@ -120,4 +122,32 @@ struct DSTHeaderSummary: Equatable {
         endX = records.last?.x ?? 0
         endY = records.last?.y ?? 0
     }
+}
+
+/// Our DST records for `bricks`, run the way the Android exports were made: one object
+/// starting at (0, 0), facing 90°.
+func interpretedRecords(_ bricks: [Brick]) throws -> [DSTRecordPosition] {
+    var interpreter = Interpreter(
+        program: Program(scenes: [Scene(objects: [Object(startHeading: 90, scripts: [Script(bricks: bricks)])])]),
+        clock: InterpreterClock(tickDelta: 0.05)
+    )
+    _ = interpreter.run(maxTicks: 1000)
+    return try decodeRecordPositions(DSTFile(stream: interpreter.assembledStream(), name: "reference").data)
+}
+
+func expectMatchesAndroid(
+    _ ours: [DSTRecordPosition], _ android: [DSTRecordPosition],
+    sourceLocation: SourceLocation = #_sourceLocation
+) {
+    #expect(ours.count == android.count, "\(ours.count) records against Android's \(android.count)",
+            sourceLocation: sourceLocation)
+    for (index, (mine, theirs)) in zip(ours, android).enumerated() {
+        #expect(mine.kind == theirs.kind && abs(mine.x - theirs.x) <= 1 && abs(mine.y - theirs.y) <= 1,
+                "record \(index): \(mine) against Android's \(theirs)", sourceLocation: sourceLocation)
+    }
+    // ±1 is ADR-014's accepted bound, but the exports match exactly today.
+    // Pinning that keeps a drift inside the bound visible: it fails here and
+    // has to be accepted deliberately (`swift-code-reviewer`, slice 4).
+    let offByOne = zip(ours, android).filter { $0.0 != $0.1 }.count
+    #expect(offByOne == 0, "\(offByOne) records differ by one unit", sourceLocation: sourceLocation)
 }

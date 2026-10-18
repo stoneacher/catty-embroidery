@@ -297,6 +297,14 @@ enum EditorCoreFixtures {
                 radius: bumped(radius),
                 degrees: bumped(degrees, salt: 7)
             )
+        // Four slots, four different salts, so a swapped pair is a different brick.
+        case let .goThrough(throughX, throughY, x, y):
+            .goThrough(
+                throughX: bumped(throughX),
+                throughY: bumped(throughY, salt: 5),
+                x: bumped(x, salt: 7),
+                y: bumped(y, salt: 11)
+            )
         case let .repeatLoop(times): .repeatLoop(times: bumped(times))
         case .forever: .forever
         case .loopEnd: .loopEnd

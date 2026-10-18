@@ -181,6 +181,18 @@
         }
       }
     },
+    "brick.go.through": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle along a curve that passes through one point and ends at another. %1$@ and %2$@ are the x and y of the point it passes through, %3$@ and %4$@ the x and y of where it ends; each is a value that may be a number, a variable name or a small formula, already formatted. Catroid's wording (go_through, go_through_target). Keep x and y as the axis names. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go through x: %1$@ y: %2$@ then to x: %3$@ y: %4$@"
+          }
+        }
+      }
+    },
     "brick.loop.end.forever": {
       "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a Forever loop. Must read as the end of that specific kind of loop.",
       "extractionState": "manual",
@@ -1213,6 +1225,18 @@
         }
       }
     },
+    "palette.description.go.through": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the needle along a curve through one point to another."
+          }
+        }
+      }
+    },
     "palette.description.move": {
       "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
       "extractionState": "manual",
@@ -1809,6 +1833,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Thread Colour"
+          }
+        }
+      }
+    },
+    "parameter.slot.through.x": {
+      "comment": "Label of the number field for the x coordinate of the point a curve passes through, as opposed to where it ends.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Through x"
+          }
+        }
+      }
+    },
+    "parameter.slot.through.y": {
+      "comment": "Label of the number field for the y coordinate of the point a curve passes through, as opposed to where it ends.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Through y"
           }
         }
       }

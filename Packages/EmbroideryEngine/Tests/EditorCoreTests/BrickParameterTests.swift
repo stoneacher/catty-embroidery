@@ -24,6 +24,7 @@ struct BrickParameterTests {
         case .turnLeft, .turnRight, .pointInDirection: [.degrees]
         case .placeAt: [.x, .y]
         case .arc: [.direction, .radius, .degrees]
+        case .goThrough: [.throughX, .throughY, .x, .y]
         case .setX, .changeXBy: [.x]
         case .setY, .changeYBy: [.y]
         case .repeatLoop: [.times]

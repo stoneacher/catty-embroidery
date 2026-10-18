@@ -50,7 +50,7 @@ struct BrickLeadingView: View {
     private static func symbol(for kind: BrickKind) -> String {
         switch kind {
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy, .arc:
+             .changeXBy, .changeYBy, .arc, .goThrough:
             "arrow.up.and.down.and.arrow.left.and.right"
         case .repeatLoop: "repeat"
         case .forever: "infinity"
@@ -67,7 +67,7 @@ struct BrickLeadingView: View {
     private static func tint(for kind: BrickKind) -> Color {
         switch kind {
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy, .arc:
+             .changeXBy, .changeYBy, .arc, .goThrough:
             .blue
         case .repeatLoop, .forever, .loopEnd, .wait: .orange
         case .setVariable, .changeVariableBy: .red

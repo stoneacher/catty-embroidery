@@ -142,7 +142,7 @@ extension Interpreter {
         let scope = scope(forObjectAt: objectIndex)
         switch brick {
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy, .arc:
+             .changeXBy, .changeYBy, .arc, .goThrough:
             performMotion(brick, objectIndex: objectIndex, scope: scope, into: &events)
         case let .setVariable(name, valueFormula):
             // Throwing data formula substitutes 0 (Catroid data actions read

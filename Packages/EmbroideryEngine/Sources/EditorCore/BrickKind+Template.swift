@@ -43,6 +43,12 @@ public extension BrickKind {
                 radius: .number(BrickDefaults.arcRadius),
                 degrees: .number(BrickDefaults.arcDegrees)
             )]
+        case .goThrough: [.goThrough(
+                throughX: .number(BrickDefaults.goThroughThroughX),
+                throughY: .number(BrickDefaults.goThroughThroughY),
+                x: .number(BrickDefaults.goThroughX),
+                y: .number(BrickDefaults.goThroughY)
+            )]
         case .repeatLoop: [.repeatLoop(times: .number(BrickDefaults.repeatTimes)), .loopEnd]
         case .forever: [.forever, .loopEnd]
         case .loopEnd: [.loopEnd]

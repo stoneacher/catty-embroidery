@@ -148,6 +148,8 @@ nonisolated private struct Sentence {
         // One whole sentence per side, so a language can inflect or reorder it.
         case let .arc(.left, radius, degrees): resolve(.brickArcLeft(formula(radius), formula(degrees)))
         case let .arc(.right, radius, degrees): resolve(.brickArcRight(formula(radius), formula(degrees)))
+        case let .goThrough(throughX, throughY, x, y):
+            resolve(.brickGoThrough(formula(throughX), formula(throughY), formula(x), formula(y)))
         case let .repeatLoop(times):
             unit(times, counted: LocalizedStringResource.brickRepeatCount, formula: LocalizedStringResource.brickRepeat)
         case .forever: resolve(.brickForever)
@@ -184,7 +186,7 @@ nonisolated private struct Sentence {
         case .forever:
             return resolve(.brickLoopEndForever)
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy, .arc, .loopEnd, .wait, .setVariable, .changeVariableBy, .stitch,
+             .changeXBy, .changeYBy, .arc, .goThrough, .loopEnd, .wait, .setVariable, .changeVariableBy, .stitch,
              .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
              .stopRunningStitch, .writeEmbroideryToFile:
             return resolve(.brickLoopEndUnmatched)

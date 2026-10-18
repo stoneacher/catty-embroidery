@@ -4,10 +4,10 @@ import ProgramModel
 public extension VirtualNeedle {
     /// Applies one motion brick, evaluating its formulas against `scope`, and
     /// returns the `NeedleUpdate`s the motion produces, in order. Every motion
-    /// brick but Arc emits exactly one (US-204 AC 4) — including the
-    /// catch-and-skip cases below, where it carries the *unchanged* state. Arc
-    /// emits one per sample it feeds, and one unchanged update when it feeds none
-    /// (ADR-047).
+    /// brick but Arc and GoThrough emits exactly one (US-204 AC 4) — including
+    /// the catch-and-skip cases below, where it carries the *unchanged* state.
+    /// Arc and GoThrough emit one per sample they feed, and one unchanged update
+    /// when they feed none (ADR-047).
     ///
     /// Returns `nil` **iff** `brick` is not a motion brick — never "no update
     /// needed" and never a crash. The stepper routes bricks with its own
@@ -52,6 +52,13 @@ public extension VirtualNeedle {
                 return [NeedleUpdate(position: position, heading: heading)]
             }
             return arc(radius: radius, sweepDegrees: direction == .left ? degrees : -degrees)
+        case let .goThrough(throughX, throughY, x, y):
+            guard let throughX = eval(throughX, scope), let throughY = eval(throughY, scope),
+                  let x = eval(x, scope), let y = eval(y, scope)
+            else {
+                return [NeedleUpdate(position: position, heading: heading)]
+            }
+            return goThrough(through: StagePoint(x: throughX, y: throughY), destination: StagePoint(x: x, y: y))
         // Listed, not defaulted: a new brick must say whether it moves the needle.
         case .repeatLoop, .forever, .loopEnd, .wait, .setVariable, .changeVariableBy, .stitch,
              .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,

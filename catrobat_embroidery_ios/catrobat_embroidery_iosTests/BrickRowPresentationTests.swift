@@ -137,6 +137,7 @@ struct BrickRowPresentationTests {
         // The side is a parameter too, and VoiceOver must say it.
         case let .arc(direction, radius, degrees):
             [direction == .left ? "left" : "right", formula(radius), formula(degrees)]
+        case let .goThrough(throughX, throughY, x, y): [formula(throughX), formula(throughY), formula(x), formula(y)]
         case let .repeatLoop(times): [formula(times)]
         case let .wait(seconds): [formula(seconds)]
         // The brick names its variable bare, as Catroid's spinner does; only a formula quotes it.
@@ -294,6 +295,7 @@ struct BrickRowPresentationTests {
         case .changeXBy: ["Change x by 10"]
         case .changeYBy: ["Change y by 10"]
         case .arc: ["Go in arc left with radius 10 for 360°"]
+        case .goThrough: ["Go through x: 0 y: 0 then to x: 0 y: 0"]
         case .repeatLoop: ["Repeat 10 times", "End of repeat 10 times"]
         case .forever: ["Forever", "End of forever"]
         case .loopEnd: ["End of loop"]

@@ -43,7 +43,10 @@ struct ArcBrickPresentationTests {
         let row = PaletteRowPresentation(kind: .arc, locale: Self.english)
         #expect(row.text == "Go in arc left with radius 10 for 360°")
         #expect(row.description == "Moves the needle along a circle, turning left or right.")
-        #expect(PaletteGroup.motion.kinds.suffix(2) == [.pointInDirection, .arc])
+        // Adjacency, not position: GoThrough follows Arc (slice 5), so "last" would not hold.
+        let kinds = PaletteGroup.motion.kinds
+        let arc = kinds.firstIndex(of: .arc)
+        #expect(arc.map { kinds[kinds.index(before: $0)] } == .pointInDirection)
     }
 
     @Test("the direction and radius slots have titles, and the directions names")

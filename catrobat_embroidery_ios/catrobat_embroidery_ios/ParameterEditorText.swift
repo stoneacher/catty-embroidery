@@ -78,6 +78,8 @@ nonisolated enum ParameterEditorText {
         case .fileName: .parameterSlotFile
         case .direction: .parameterSlotDirection
         case .radius: .parameterSlotRadius
+        case .throughX: .parameterSlotThroughX
+        case .throughY: .parameterSlotThroughY
         }
         return resolve(resource, locale: locale)
     }

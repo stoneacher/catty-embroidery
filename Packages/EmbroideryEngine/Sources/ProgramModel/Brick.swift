@@ -22,6 +22,9 @@ public indirect enum Brick: Sendable, Equatable, Codable {
     /// Catroid `ArcBrick`: travel `degrees` around a circle of `radius` whose
     /// centre sits to the `direction` side of the heading (ADR-047).
     case arc(direction: ArcDirection, radius: Formula, degrees: Formula)
+    /// Catroid `GoThroughBrick`: a curve from the needle through `(throughX,
+    /// throughY)` to `(x, y)` (ADR-047).
+    case goThrough(throughX: Formula, throughY: Formula, x: Formula, y: Formula)
 
     // MARK: Control (Catroid control category)
 
@@ -107,6 +110,12 @@ public enum BrickDefaults {
     public static let arcDirection = ArcDirection.left
     public static let arcRadius: Double = 10
     public static let arcDegrees: Double = 360
+    /// **No `BrickValues` counterpart**: `GoThroughBrick(0, 0, 0, 0)`
+    /// (`CategoryBricksFactory.kt:1092`).
+    public static let goThroughThroughX: Double = 0
+    public static let goThroughThroughY: Double = 0
+    public static let goThroughX: Double = 0
+    public static let goThroughY: Double = 0
 }
 
 /// Which side of the heading an Arc's centre lies on (Catroid

@@ -3309,3 +3309,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **What it buys:** a toolchain fault on CI now reproduces locally. With the 6.3.3 pin, the Release crash could only be checked by pushing.
 - **What it costs:** a preview image. Job names are unchanged, so the required status checks still match.
 - **The direction picker keeps its closure-literal setter.** It is harmless on 27.1, and it is the app's existing pattern anyway.
+
+## 2026-10-18 — Brick backend slice 5: GoThrough; a wrong guess about the reference, corrected by the reference
+
+- **What landed:** Catroid's GoThrough end to end, following the same rules as Arc (ADR-047). It is a quadratic Bézier with control point `2T − (S + E)/2`, sampled in Catroid's own `(1−t)²S + 2(1−t)tA + t²E` form, so t = 1 lands exactly on the destination.
+- **The Android export matched exactly on the first green run**, including the final stitch I had predicted we would *not* match. On 2026-10-17 I had told Sebastian, and written into the references README, that Android's missing stitch at −100 was "most likely" `float` arithmetic and might need an ADR-014 note. The `Double` implementation reproduces it. The cause is geometry: the first curve's last stitch sits at (100, 1), above the axis, so the running stitch measures the straight run from there, and its last full step lands short of −100. The README now says the guess was wrong and why, as a correction rather than a silent rewrite of the observation.
+- **Mutants:** 6 of 7 killed. The survivor, partial commit on overflow, is **equivalent for every finite input**:
+  - Each sample is a convex combination of S, A and E, so a finite control point bounds every sample.
+  - When `2T` overflows, every sample is infinite from the first.
+  - A search over extreme values found no input with a finite sample followed by an infinite one. The guard stays for symmetry; Arc's r = MAX case is where it is reachable and killed.
+- **The pattern repeated from slice 4:** a pinned list-position test ("Arc is the last motion kind") broke the moment GoThrough was added. It now pins adjacency ("Arc follows Point in direction"), which is what it meant.

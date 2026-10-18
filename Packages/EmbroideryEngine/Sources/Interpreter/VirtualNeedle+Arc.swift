@@ -61,3 +61,45 @@ public extension VirtualNeedle {
         return updates
     }
 }
+
+public extension VirtualNeedle {
+    /// Travels a quadratic Bézier from the needle to `destination` that passes
+    /// through `through` at t = ½ (Catroid `GoThroughAction`): its control point is
+    /// `A = 2T − (S + E)/2`. Samples t = i/100 for i = 1…100, in Catroid's form
+    /// `(1−t)²·S + 2(1−t)t·A + t²·E`, so t = 1 lands exactly on E. Feeding, the
+    /// chord heading, compute-then-commit and the unchanged update follow `arc`
+    /// (ADR-047); a curve whose samples never leave the needle feeds nothing.
+    mutating func goThrough(through: StagePoint, destination: StagePoint) -> [NeedleUpdate] {
+        let unchanged = [NeedleUpdate(position: position, heading: heading)]
+        let start = position
+        let control = StagePoint(
+            x: 2 * through.x - (start.x + destination.x) / 2,
+            y: 2 * through.y - (start.y + destination.y) / 2
+        )
+        var updates: [NeedleUpdate] = []
+        updates.reserveCapacity(100)
+        var previous = start
+        for step in 1 ... 100 {
+            let time = Double(step) / 100
+            let inverse = 1 - time
+            let point = StagePoint(
+                x: pow(inverse, 2) * start.x + 2 * inverse * time * control.x + pow(time, 2) * destination.x,
+                y: pow(inverse, 2) * start.y + 2 * inverse * time * control.y + pow(time, 2) * destination.y
+            )
+            guard point.x.isFinite, point.y.isFinite else {
+                return unchanged
+            }
+            if point != previous {
+                let bearing = atan2(point.x - previous.x, point.y - previous.y) * radiansToDegrees
+                updates.append(NeedleUpdate(position: point, heading: bearing))
+                previous = point
+            }
+        }
+        guard let last = updates.last else {
+            return unchanged
+        }
+        position = last.position
+        heading = last.heading
+        return updates
+    }
+}

@@ -143,32 +143,6 @@ struct ArcInterpreterTests {
 
     // MARK: - Android golden exports (D5's only external check)
 
-    private static func ourRecords(_ bricks: [Brick]) throws -> [DSTRecordPosition] {
-        var interpreter = Interpreter(
-            program: program(bricks, startHeading: 90),
-            clock: InterpreterClock(tickDelta: 0.05)
-        )
-        _ = interpreter.run(maxTicks: 1000)
-        return try decodeRecordPositions(DSTFile(stream: interpreter.assembledStream(), name: "arc").data)
-    }
-
-    private static func expectWithinOneUnit(
-        _ ours: [DSTRecordPosition], _ android: [DSTRecordPosition],
-        sourceLocation: SourceLocation = #_sourceLocation
-    ) {
-        #expect(ours.count == android.count, "\(ours.count) records against Android's \(android.count)",
-                sourceLocation: sourceLocation)
-        for (index, (mine, theirs)) in zip(ours, android).enumerated() {
-            #expect(mine.kind == theirs.kind && abs(mine.x - theirs.x) <= 1 && abs(mine.y - theirs.y) <= 1,
-                    "record \(index): \(mine) against Android's \(theirs)", sourceLocation: sourceLocation)
-        }
-        // ±1 is ADR-014's accepted bound, but both exports match exactly today.
-        // Pinning that keeps a drift inside the bound visible: it fails here and
-        // has to be accepted deliberately (`swift-code-reviewer`, slice 4).
-        let offByOne = zip(ours, android).filter { $0.0 != $0.1 }.count
-        #expect(offByOne == 0, "\(offByOne) records differ by one unit", sourceLocation: sourceLocation)
-    }
-
     /// The kind lives in the third byte's high and low bits only; its middle
     /// bits are ±81 displacement. Masking with `0xF3` kept those, so a jump of
     /// (0, −81) read as a stitch (Codex slice review of slice 4).
@@ -219,22 +193,22 @@ struct ArcInterpreterTests {
 
     @Test("running stitch along two arcs matches the Android export")
     func androidArcRun() throws {
-        let ours = try Self.ourRecords([
+        let ours = try interpretedRecords([
             .runningStitch(length: .number(10)),
             Self.arc(.left, 50, 360),
             Self.arc(.right, 30, 90),
             .moveNSteps(.number(40))
         ])
-        try Self.expectWithinOneUnit(ours, decodeRecordPositions(AndroidReference.data("arc_run")))
+        try expectMatchesAndroid(ours, decodeRecordPositions(AndroidReference.data("arc_run")))
     }
 
     @Test("zigzag along an arc matches the Android export")
     func androidArcZigzag() throws {
-        let ours = try Self.ourRecords([
+        let ours = try interpretedRecords([
             .zigZagStitch(length: .number(2), width: .number(10)),
             Self.arc(.right, 50, 180),
             .moveNSteps(.number(50))
         ])
-        try Self.expectWithinOneUnit(ours, decodeRecordPositions(AndroidReference.data("arc_zigzag")))
+        try expectMatchesAndroid(ours, decodeRecordPositions(AndroidReference.data("arc_zigzag")))
     }
 }

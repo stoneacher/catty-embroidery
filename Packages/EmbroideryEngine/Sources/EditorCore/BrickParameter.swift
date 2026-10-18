@@ -24,6 +24,9 @@ public enum ParameterSlot: Sendable, Hashable, CaseIterable {
     case direction
     /// Arc's radius.
     case radius
+    /// GoThrough's through-point; its destination reuses `.x` and `.y`.
+    case throughX
+    case throughY
 }
 
 /// What a slot holds. The case is the shape of the value, which decides the
@@ -86,6 +89,13 @@ public extension Brick {
                 .init(slot: .radius, value: .formula(radius)),
                 .init(slot: .degrees, value: .formula(degrees))
             ]
+        case let .goThrough(throughX, throughY, x, y):
+            [
+                .init(slot: .throughX, value: .formula(throughX)),
+                .init(slot: .throughY, value: .formula(throughY)),
+                .init(slot: .x, value: .formula(x)),
+                .init(slot: .y, value: .formula(y))
+            ]
         case .forever, .loopEnd, .stitch, .sewUp, .stopRunningStitch:
             []
         }
@@ -145,8 +155,8 @@ public extension Brick {
             .setThreadColor(hex: hex)
         case let (.writeEmbroideryToFile, .fileName, .fileName(name)):
             .writeEmbroideryToFile(name: name)
-        case let (.arc(direction, radius, degrees), _, _):
-            Self.arc(direction: direction, radius: radius, degrees: degrees, replacing: slot, with: value)
+        case (.arc, _, _), (.goThrough, _, _):
+            replacingPathSlot(slot, with: value)
         default:
             // A triple space, so `default:` is the only total answer; the
             // refusal direction is the safe one (ADR-035).
@@ -156,7 +166,20 @@ public extension Brick {
 }
 
 private extension Brick {
-    /// Arc's slots, apart from `replacing(_:with:)` so its switch stays one screen.
+    /// Arc's and GoThrough's slots, apart from `replacing(_:with:)` so its switch
+    /// stays one screen. Every other brick refuses here, as `replacing` would.
+    func replacingPathSlot(_ slot: ParameterSlot, with value: ParameterValue) -> Brick? {
+        switch (self, value) {
+        case let (.arc(direction, radius, degrees), _):
+            Self.arc(direction: direction, radius: radius, degrees: degrees, replacing: slot, with: value)
+        case let (.goThrough(throughX, throughY, x, y), .formula(formula)):
+            Self.goThrough([throughX, throughY, x, y], replacing: slot, with: formula)
+        default:
+            nil
+        }
+    }
+
+    /// Arc's slots.
     static func arc(
         direction: ArcDirection, radius: Formula, degrees: Formula,
         replacing slot: ParameterSlot, with value: ParameterValue
@@ -172,5 +195,16 @@ private extension Brick {
             // A slot Arc does not have, or a value of the wrong shape.
             nil
         }
+    }
+
+    /// GoThrough's four formula slots, in field order.
+    static func goThrough(_ fields: [Formula], replacing slot: ParameterSlot, with formula: Formula) -> Brick? {
+        let order: [ParameterSlot] = [.throughX, .throughY, .x, .y]
+        guard let index = order.firstIndex(of: slot) else {
+            return nil
+        }
+        var fields = fields
+        fields[index] = formula
+        return .goThrough(throughX: fields[0], throughY: fields[1], x: fields[2], y: fields[3])
     }
 }

@@ -34,6 +34,12 @@ struct BrickTemplateDefaultsTests {
             radius: .number(BrickDefaults.arcRadius),
             degrees: .number(BrickDefaults.arcDegrees)
         )]),
+        .init(kind: .goThrough, bricks: [.goThrough(
+            throughX: .number(BrickDefaults.goThroughThroughX),
+            throughY: .number(BrickDefaults.goThroughThroughY),
+            x: .number(BrickDefaults.goThroughX),
+            y: .number(BrickDefaults.goThroughY)
+        )]),
         // Catroid's POINT_IN_DIRECTION is 90, *not* TURN_DEGREES' 15 — reusing
         // the existing angle constant would ship a different default direction.
         .init(
