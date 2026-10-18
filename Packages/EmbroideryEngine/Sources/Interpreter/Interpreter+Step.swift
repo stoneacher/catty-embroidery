@@ -142,7 +142,7 @@ extension Interpreter {
         let scope = scope(forObjectAt: objectIndex)
         switch brick {
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy:
+             .changeXBy, .changeYBy, .arc:
             performMotion(brick, objectIndex: objectIndex, scope: scope, into: &events)
         case let .setVariable(name, valueFormula):
             // Throwing data formula substitutes 0 (Catroid data actions read
@@ -223,20 +223,24 @@ extension Interpreter {
         objects[objectIndex].runningStitch.resume()
     }
 
-    /// Moves the needle through the US-204 bridge and feeds the update to the
+    /// Moves the needle through the US-204 bridge and feeds each update to the
     /// running stitch — Catroid `Look.positionChanged → runningStitch.update`: an
     /// active pattern consumes the motion; an idle wrapper returns [] (no-op), so
-    /// this is the documented once-per-motion feed, not once-per-tick.
+    /// this is the documented once-per-update feed, not once-per-tick. An Arc's
+    /// updates are fed one by one, each followed by its own stitches, all within
+    /// the brick's single tick (ADR-047).
     private mutating func performMotion(
         _ brick: Brick, objectIndex: Int, scope: VariableStoreScope, into events: inout [InterpreterEvent]
     ) {
-        guard let update = objects[objectIndex].needle.apply(brick, scope: scope) else {
+        guard let updates = objects[objectIndex].needle.apply(brick, scope: scope) else {
             assertionFailure("perform routes motion bricks only")
             return
         }
-        events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
-        let stitches = objects[objectIndex].runningStitch.update(update)
-        emitStitches(stitches, objectIndex: objectIndex, into: &events)
+        for update in updates {
+            events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
+            let stitches = objects[objectIndex].runningStitch.update(update)
+            emitStitches(stitches, objectIndex: objectIndex, into: &events)
+        }
     }
 
     /// Sends each stage point to the shared manager (at the object's layer and

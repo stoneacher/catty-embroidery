@@ -168,7 +168,8 @@ struct VariableChooser: View {
         switch value {
         case let .formula(.variable(name)), let .variableName(name): return name
         case .formula(.number), .formula(.binary), .formula(.unaryMinus), .formula(.unaryFunction),
-             .formula(.binaryFunction), .formula(.constant), .formula(.sensor), .threadColor, .fileName:
+             .formula(.binaryFunction), .formula(.constant), .formula(.sensor), .threadColor, .fileName,
+             .arcDirection:
             return nil
         }
     }
@@ -330,5 +331,23 @@ struct ProblemLine: View {
         .font(.footnote)
         .foregroundStyle(.red)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// Arc's side, as a segmented choice: one discrete edit, like a thread swatch, so there is
+/// nothing to coalesce and nothing to type.
+struct ArcDirectionPicker: View {
+    let selection: ArcDirection
+    let choose: @MainActor @Sendable (ArcDirection) -> Void
+
+    var body: some View {
+        Picker(selection: Binding(get: { selection }, set: choose)) {
+            ForEach(ArcDirection.allCases, id: \.self) { direction in
+                Text(ParameterEditorText.name(of: direction)).tag(direction)
+            }
+        } label: {
+            Text(ParameterEditorText.title(of: .direction))
+        }
+        .pickerStyle(.segmented)
     }
 }

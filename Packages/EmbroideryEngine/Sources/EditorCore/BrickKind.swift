@@ -26,6 +26,7 @@ public enum BrickKind: Sendable, Hashable, CaseIterable {
     case setY
     case changeXBy
     case changeYBy
+    case arc
 
     // MARK: Control
 
@@ -66,6 +67,7 @@ public enum BrickKind: Sendable, Hashable, CaseIterable {
         case .setY: self = .setY
         case .changeXBy: self = .changeXBy
         case .changeYBy: self = .changeYBy
+        case .arc: self = .arc
         case .repeatLoop: self = .repeatLoop
         case .forever: self = .forever
         case .loopEnd: self = .loopEnd

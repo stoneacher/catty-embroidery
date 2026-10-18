@@ -1,0 +1,76 @@
+import EmbroideryEngine
+import Foundation
+import Testing
+
+/// Reading the Android reference exports (`Resources/AndroidReference`) and our
+/// own DST output back into absolute stitch positions, so the two can be
+/// compared per stitch (Brick backend, slices 4–5).
+enum AndroidReference {
+    static func data(_ name: String) throws -> Data {
+        let url = try #require(Bundle.module.url(
+            forResource: name,
+            withExtension: "dst",
+            subdirectory: "Resources/AndroidReference"
+        ))
+        return try Data(contentsOf: url)
+    }
+}
+
+/// One decoded DST record: its kind and the absolute position it moves to, in
+/// DST units (0.1 mm).
+struct DSTRecordPosition: Equatable, CustomStringConvertible {
+    enum Kind: Equatable { case stitch, jump, colorChange, end }
+
+    let kind: Kind
+    let x: Int
+    let y: Int
+
+    var description: String {
+        "\(kind)(\(x), \(y))"
+    }
+}
+
+/// Decodes the 3-byte Tajima records after the 512-byte header (ADR-012's
+/// layout), accumulating the deltas into absolute positions. Stops at the end
+/// record. Written independently of the engine's encoder, so a shared mistake
+/// cannot make the comparison agree with itself.
+func decodeRecordPositions(_ data: Data) -> [DSTRecordPosition] {
+    let bytes = [UInt8](data.dropFirst(512))
+    var positions: [DSTRecordPosition] = []
+    var x = 0
+    var y = 0
+    var index = 0
+    while index + 2 < bytes.count {
+        let (first, second, third) = (bytes[index], bytes[index + 1], bytes[index + 2])
+        index += 3
+        x += deltaX(first, second, third)
+        y += deltaY(first, second, third)
+        let kind: DSTRecordPosition.Kind = switch third & 0xF3 {
+        case 0x83: .jump
+        case 0xC3: .colorChange
+        case 0xF3: .end
+        default: .stitch
+        }
+        positions.append(DSTRecordPosition(kind: kind, x: x, y: y))
+        if kind == .end {
+            break
+        }
+    }
+    return positions
+}
+
+private func bit(_ byte: UInt8, _ mask: UInt8, _ value: Int) -> Int {
+    byte & mask == 0 ? 0 : value
+}
+
+private func deltaX(_ first: UInt8, _ second: UInt8, _ third: UInt8) -> Int {
+    bit(first, 0x01, 1) - bit(first, 0x02, 1) + bit(first, 0x04, 9) - bit(first, 0x08, 9)
+        + bit(second, 0x01, 3) - bit(second, 0x02, 3) + bit(second, 0x04, 27) - bit(second, 0x08, 27)
+        + bit(third, 0x04, 81) - bit(third, 0x08, 81)
+}
+
+private func deltaY(_ first: UInt8, _ second: UInt8, _ third: UInt8) -> Int {
+    bit(first, 0x80, 1) - bit(first, 0x40, 1) + bit(first, 0x20, 9) - bit(first, 0x10, 9)
+        + bit(second, 0x80, 3) - bit(second, 0x40, 3) + bit(second, 0x20, 27) - bit(second, 0x10, 27)
+        + bit(third, 0x20, 81) - bit(third, 0x10, 81)
+}

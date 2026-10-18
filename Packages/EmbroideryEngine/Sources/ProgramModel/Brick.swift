@@ -19,6 +19,9 @@ public indirect enum Brick: Sendable, Equatable, Codable {
     case setY(Formula)
     case changeXBy(Formula)
     case changeYBy(Formula)
+    /// Catroid `ArcBrick`: travel `degrees` around a circle of `radius` whose
+    /// centre sits to the `direction` side of the heading (ADR-047).
+    case arc(direction: ArcDirection, radius: Formula, degrees: Formula)
 
     // MARK: Control (Catroid control category)
 
@@ -96,4 +99,19 @@ public enum BrickDefaults {
     /// brick. Kept a plain Swift constant here — it is a filename, and
     /// `ProgramModel` ships no localized resources.
     public static let embroideryFileName = "embroidery.dst"
+
+    // MARK: Brick backend additions
+
+    /// **No `BrickValues` counterpart**: the palette hard-codes
+    /// `ArcBrick(LEFT, 10f, 360f)` (`CategoryBricksFactory.kt:1091`).
+    public static let arcDirection = ArcDirection.left
+    public static let arcRadius: Double = 10
+    public static let arcDegrees: Double = 360
+}
+
+/// Which side of the heading an Arc's centre lies on (Catroid
+/// `ArcBrick.Directions`). Left turns counter-clockwise, right clockwise. Its
+/// case names are coding keys, so they are never renamed.
+public enum ArcDirection: Sendable, Hashable, CaseIterable, Codable {
+    case left, right
 }

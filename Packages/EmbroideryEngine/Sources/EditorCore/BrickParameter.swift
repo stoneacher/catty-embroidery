@@ -20,6 +20,10 @@ public enum ParameterSlot: Sendable, Hashable, CaseIterable {
     case variableName
     case hex
     case fileName
+    /// Arc's side: left or right of the heading.
+    case direction
+    /// Arc's radius.
+    case radius
 }
 
 /// What a slot holds. The case is the shape of the value, which decides the
@@ -29,6 +33,7 @@ public enum ParameterValue: Sendable, Equatable {
     case variableName(String)
     case threadColor(hex: String)
     case fileName(String)
+    case arcDirection(ArcDirection)
 }
 
 /// A slot and its current value.
@@ -75,6 +80,12 @@ public extension Brick {
             [.init(slot: .hex, value: .threadColor(hex: hex))]
         case let .writeEmbroideryToFile(name):
             [.init(slot: .fileName, value: .fileName(name))]
+        case let .arc(direction, radius, degrees):
+            [
+                .init(slot: .direction, value: .arcDirection(direction)),
+                .init(slot: .radius, value: .formula(radius)),
+                .init(slot: .degrees, value: .formula(degrees))
+            ]
         case .forever, .loopEnd, .stitch, .sewUp, .stopRunningStitch:
             []
         }
@@ -134,9 +145,31 @@ public extension Brick {
             .setThreadColor(hex: hex)
         case let (.writeEmbroideryToFile, .fileName, .fileName(name)):
             .writeEmbroideryToFile(name: name)
+        case let (.arc(direction, radius, degrees), _, _):
+            Self.arc(direction: direction, radius: radius, degrees: degrees, replacing: slot, with: value)
         default:
             // A triple space, so `default:` is the only total answer; the
             // refusal direction is the safe one (ADR-035).
+            nil
+        }
+    }
+}
+
+private extension Brick {
+    /// Arc's slots, apart from `replacing(_:with:)` so its switch stays one screen.
+    static func arc(
+        direction: ArcDirection, radius: Formula, degrees: Formula,
+        replacing slot: ParameterSlot, with value: ParameterValue
+    ) -> Brick? {
+        switch (slot, value) {
+        case let (.direction, .arcDirection(direction)):
+            .arc(direction: direction, radius: radius, degrees: degrees)
+        case let (.radius, .formula(radius)):
+            .arc(direction: direction, radius: radius, degrees: degrees)
+        case let (.degrees, .formula(degrees)):
+            .arc(direction: direction, radius: radius, degrees: degrees)
+        default:
+            // A slot Arc does not have, or a value of the wrong shape.
             nil
         }
     }

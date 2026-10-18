@@ -3267,3 +3267,16 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Severity history: **none → Medium → Low → Low**, 4 rounds against a cap of 5.
   - Rounds 2–4 found nothing in production code; every finding was in a test fixture's guard or in documentation.
 - **What the loop says about the slice reviews:** after four slice rounds and four reviewer passes, the handover loop found no production defect. Its value was in the oracles: a fixture testing the wrong node, a prefix claim, and a promised ADR text that did not exist. ADR-032 invariant 3 ("remove every copy of a corrected claim") has a dual, *write the one copy you cite*. The brief had cited an amendment that existed nowhere.
+
+## 2026-10-18 — Brick backend slice 4: Arc, and the Android exports agree
+
+- **What landed:** Catroid's Arc, end to end, on PR 2's branch (`feature/brick-backend-paths`, stacked on PR 1). This covers the model, the needle geometry (`VirtualNeedle.arc`), the bridge (which now returns `[NeedleUpdate]?`), the per-update feed in one tick, and the editor vocabulary. The app gained a sentence per side, the segmented direction picker and the catalog entries. ADR-047 is written.
+- **The headline:** on the first green run, the interpreter's DST output for both Android exports matched the phone's record for record within ±1 unit, with the same counts. The exports were a running stitch along two arcs and a zigzag along an arc. That is the D5 feed rule, chord heading included, checked against the real reference rather than reasoned about.
+  - It was not luck that Codex's brief round had pinned: the mirrored chord heading and the per-sample zigzag offset are exactly what `arc_zigzag` exercises.
+- **Mutants:** 10 were tried, all killed.
+  - The Android goldens alone kill six of the nine engine mutants.
+  - **The one prediction:** "include Catroid's i = 0 sample" survived the planned tests, because from the origin that sample reconstructs the start exactly. An off-origin exact-count guard was added for it and kills it. The brief had predicted this ("killed by the cancellation case, not by the origin quarter arc").
+  - The view-level picker mutant has no unit test. It is the simulator's job in slice 6.
+- **What adding a brick exposed in an unrelated test:** `EditBalanceInvariantTests`' structural floors (pair relocations, rejected `loopEnd` inserts) silently depended on how many kinds exist, because the generator drew insert kinds uniformly. Adding one kind left one seed with no pair relocation, and after that was fixed, another with no rejected `loopEnd`. The floors did their job, ADR-032 invariant 2 working as designed.
+  - **The fix:** openers and `loopEnd` get fixed shares of inserts, so the floors no longer shrink with each kind GoThrough and later features add. A luckier seed would have hidden the dilution and let it recur.
+- **Slice plan change:** a new `Brick` case breaks the app's exhaustive switches, so the app arms had to land with the engine. Slice 6 is now GoThrough's fields, screenshots and the UI review.

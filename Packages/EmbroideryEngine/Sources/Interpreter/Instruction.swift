@@ -63,7 +63,7 @@ enum ScriptCompiler {
                 }
             // Listed, not defaulted: a new brick must be compiled deliberately.
             case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-                 .changeXBy, .changeYBy, .wait, .setVariable, .changeVariableBy, .stitch,
+                 .changeXBy, .changeYBy, .arc, .wait, .setVariable, .changeVariableBy, .stitch,
                  .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
                  .stopRunningStitch, .writeEmbroideryToFile:
                 instructions.append(.brick(brick))

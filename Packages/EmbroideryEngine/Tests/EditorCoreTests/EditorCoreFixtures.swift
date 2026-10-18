@@ -220,7 +220,22 @@ enum EditorCoreFixtures {
 
         switch generator.next() % 5 {
         case 0:
-            return .insert(BrickKind.allCases.randomElement(using: &generator)!, at: address)
+            // Fixed shares for the structural kinds: a quarter of inserts open a
+            // loop, an eighth try a bare `loopEnd` (always rejected), and the
+            // rest draw uniformly over every kind. A uniform draw alone made each
+            // structural floor in `EditBalanceInvariantTests` shrink with every
+            // kind the vocabulary gained: adding Arc (Brick backend slice 4) left
+            // one seed with no pair relocation and another with no rejected
+            // `loopEnd` insert in 400 steps.
+            switch generator.next() % 8 {
+            case 0, 1:
+                let openers: [BrickKind] = [.repeatLoop, .forever]
+                return .insert(openers[Int(generator.next() % 2)], at: address)
+            case 2:
+                return .insert(.loopEnd, at: address)
+            default:
+                return .insert(BrickKind.allCases.randomElement(using: &generator)!, at: address)
+            }
         case 1:
             return .delete(at: address)
         case 2:
@@ -274,6 +289,14 @@ enum EditorCoreFixtures {
         case let .setY(value): .setY(bumped(value))
         case let .changeXBy(value): .changeXBy(bumped(value))
         case let .changeYBy(value): .changeYBy(bumped(value))
+        // All three slots change, the direction flipped and the two formulas
+        // bumped by different salts.
+        case let .arc(direction, radius, degrees):
+            .arc(
+                direction: direction == .left ? .right : .left,
+                radius: bumped(radius),
+                degrees: bumped(degrees, salt: 7)
+            )
         case let .repeatLoop(times): .repeatLoop(times: bumped(times))
         case .forever: .forever
         case .loopEnd: .loopEnd

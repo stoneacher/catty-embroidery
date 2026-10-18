@@ -68,6 +68,10 @@ struct ParameterEditorView: View {
             }
         case let .fileName(name):
             FileNameField(editor: model.editor, initialName: name)
+        case let .arcDirection(direction):
+            ArcDirectionPicker(selection: direction) { chosen in
+                model.editor.setParameter(.direction, to: .arcDirection(chosen))
+            }
         }
     }
 }

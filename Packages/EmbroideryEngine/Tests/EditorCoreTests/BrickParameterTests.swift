@@ -23,6 +23,7 @@ struct BrickParameterTests {
         case .moveNSteps: [.steps]
         case .turnLeft, .turnRight, .pointInDirection: [.degrees]
         case .placeAt: [.x, .y]
+        case .arc: [.direction, .radius, .degrees]
         case .setX, .changeXBy: [.x]
         case .setY, .changeYBy: [.y]
         case .repeatLoop: [.times]
@@ -185,7 +186,8 @@ struct BrickParameterTests {
     }
 
     /// The string slots too: `replacing` ends in a `default: nil`, so a new kind with a string
-    /// slot would compile and refuse every write without this sweep (review finding 9).
+    /// slot would compile and refuse every write without this sweep (review finding 9). Arc's
+    /// direction is swept here as well, as the one non-string, non-formula value.
     @Test("every string slot of every template accepts a new value", arguments: BrickKind.allCases)
     func everyStringSlotAcceptsAValue(kind: BrickKind) {
         let head = kind.template()[0]
@@ -196,6 +198,7 @@ struct BrickParameterTests {
             case .variableName: value = .variableName("Fresh")
             case .threadColor: value = .threadColor(hex: "#123456")
             case .fileName: value = .fileName("fresh.dst")
+            case let .arcDirection(direction): value = .arcDirection(direction == .left ? .right : .left)
             }
             let replaced = head.replacing(parameter.slot, with: value)
             let read = replaced?.parameters.first { $0.slot == parameter.slot }?.value

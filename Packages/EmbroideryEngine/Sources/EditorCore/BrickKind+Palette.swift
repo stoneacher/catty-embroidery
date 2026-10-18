@@ -27,7 +27,7 @@ public enum PaletteGroup: Sendable, Hashable, CaseIterable {
              .stopRunningStitch, .writeEmbroideryToFile]
         case .motion:
             [.placeAt, .setX, .setY, .changeXBy, .changeYBy, .moveNSteps, .turnLeft, .turnRight,
-             .pointInDirection]
+             .pointInDirection, .arc]
         case .controlAndData:
             [.wait, .forever, .repeatLoop, .setVariable, .changeVariableBy]
         }

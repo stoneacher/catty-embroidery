@@ -1,5 +1,6 @@
 import EditorCore
 import Foundation
+import ProgramModel
 
 /// The parameter editor's localized copy (US-410): one mapping per package reason, since
 /// `EditorCore` ships no resources (ADR-025's `Field` pattern, ADR-039).
@@ -75,6 +76,17 @@ nonisolated enum ParameterEditorText {
         case .variableName: .parameterSlotVariable
         case .hex: .parameterSlotThread
         case .fileName: .parameterSlotFile
+        case .direction: .parameterSlotDirection
+        case .radius: .parameterSlotRadius
+        }
+        return resolve(resource, locale: locale)
+    }
+
+    /// An Arc side's name in the direction picker.
+    static func name(of direction: ArcDirection, locale: Locale = .current) -> String {
+        let resource: LocalizedStringResource = switch direction {
+        case .left: .parameterArcLeft
+        case .right: .parameterArcRight
         }
         return resolve(resource, locale: locale)
     }

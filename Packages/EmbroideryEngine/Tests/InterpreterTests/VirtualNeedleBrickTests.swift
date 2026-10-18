@@ -4,8 +4,9 @@ import ProgramModel
 import Testing
 
 /// US-204 test-plan item 5 (emission + per-brick bad-formula fallback): the
-/// model↔engine bridge `VirtualNeedle.apply(_:scope:)`. Every executed motion
-/// brick returns exactly one `NeedleUpdate`; the fallback is per-brick, mirroring
+/// model↔engine bridge `VirtualNeedle.apply(_:scope:)`. Every executed
+/// single-update motion brick returns exactly one `NeedleUpdate` (Arc's many
+/// are in `ArcTests`); the fallback is per-brick, mirroring
 /// the corresponding Catroid action — catch-and-skip for most motion bricks,
 /// per-coordinate zero-substitution for `placeAt` (its Catroid `GlideToAction`
 /// coerces a failed coordinate to 0). A non-motion brick returns nil.
@@ -19,13 +20,21 @@ struct VirtualNeedleBrickTests {
         abs(lhs - rhs) < 1e-9
     }
 
+    /// The one update a single-update motion brick emits, or nil when there is
+    /// not exactly one. `apply` returns a list since Arc and GoThrough feed many
+    /// samples (Brick backend D5); every brick here must still emit exactly one.
+    private func single(_ emitted: [NeedleUpdate]?) -> NeedleUpdate? {
+        guard let emitted, emitted.count == 1 else { return nil }
+        return emitted[0]
+    }
+
     // MARK: A motion brick emits exactly one update matching the new state (AC 4)
 
     @Test("a valid motion brick returns one NeedleUpdate carrying the new needle state")
     func motionBrickEmitsMatchingUpdate() throws {
         var needle = VirtualNeedle(heading: 0)
         let emitted = needle.apply(.moveNSteps(.number(10)), scope: scope)
-        let update = try #require(emitted)
+        let update = try #require(single(emitted))
         #expect(isClose(needle.position.y, 10))
         #expect(update.position == needle.position)
         #expect(update.heading == needle.heading)
@@ -38,7 +47,7 @@ struct VirtualNeedleBrickTests {
         var needle = VirtualNeedle(position: .init(x: 7, y: -3), heading: 42)
         let before = needle
         let emitted = needle.apply(.moveNSteps(throwing), scope: scope)
-        let update = try #require(emitted)
+        let update = try #require(single(emitted))
         #expect(needle == before) // position AND heading untouched
         #expect(update.position == before.position)
         #expect(update.heading == before.heading)
@@ -49,7 +58,7 @@ struct VirtualNeedleBrickTests {
         var needle = VirtualNeedle(heading: 42)
         let before = needle
         let emitted = needle.apply(.turnRight(throwing), scope: scope)
-        let update = try #require(emitted)
+        let update = try #require(single(emitted))
         #expect(needle == before) // fallback is uniform across motion bricks, not move-specific
         #expect(update.heading == before.heading)
     }
@@ -99,7 +108,7 @@ struct VirtualNeedleBrickTests {
     func placeAtZeroSubstitutesFailedCoordinate() throws {
         var needle = VirtualNeedle(position: .init(x: 99, y: 99))
         let emitted = needle.apply(.placeAt(x: throwing, y: .number(200)), scope: scope)
-        let update = try #require(emitted)
+        let update = try #require(single(emitted))
         #expect(isClose(needle.position.x, 0)) // bad x → 0, not left at 99
         #expect(isClose(needle.position.y, 200))
         #expect(update.position == needle.position)
@@ -109,13 +118,13 @@ struct VirtualNeedleBrickTests {
     func placeAtSubstitutesPerCoordinate() throws {
         var goodXBadY = VirtualNeedle(position: .init(x: 9, y: 9))
         let goodXBadYUpdate = goodXBadY.apply(.placeAt(x: .number(50), y: throwing), scope: scope)
-        _ = try #require(goodXBadYUpdate)
+        _ = try #require(single(goodXBadYUpdate))
         #expect(isClose(goodXBadY.position.x, 50)) // good x kept
         #expect(isClose(goodXBadY.position.y, 0)) // bad y → 0
 
         var bothBad = VirtualNeedle(position: .init(x: 9, y: 9))
         let bothBadUpdate = bothBad.apply(.placeAt(x: throwing, y: throwing), scope: scope)
-        _ = try #require(bothBadUpdate)
+        _ = try #require(single(bothBadUpdate))
         #expect(isClose(bothBad.position.x, 0))
         #expect(isClose(bothBad.position.y, 0))
     }
@@ -142,7 +151,7 @@ struct VirtualNeedleBrickTests {
         for brick in bricks {
             var needle = start
             let emitted = needle.apply(brick, scope: scope)
-            #expect(emitted != nil) // still exactly one update
+            #expect(emitted?.count == 1) // still exactly one update
             #expect(needle == start) // untouched — NOT zeroed
         }
     }

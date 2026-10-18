@@ -56,6 +56,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 044 | Stage | Manipulation: UIKit recognisers, pure tracker, one commit per manipulation, bounds and accessibility. | Active |
 | 045 | Editor | Six verbs, the insertion rule, and the change pipeline (edit, undo or redo → void run → autosave). | Active |
 | 046 | Formula | Math functions, `pi` and object sensors as per-arity `Formula` cases; Catroid semantics with four pinned divergences; `rand` deferred; sensors read the acting object's needle before the brick moves it. | Active |
+| 047 | Motion | Arc and GoThrough feed up to 100 samples in one tick: degenerate guard, compute-then-commit, catch-and-skip, chord heading mirrored; a `Double` feed gate pinned against Catroid's `float` one. | Active |
 
 ## ADR-001 — App scope: embroidery-focused block app (2026-07-06)
 **Context**: On Android, "Embroidery Designer" is the full Pocket Code app (complete Catrobat language + interpreter + stage) shipped as a Gradle flavor. A full port exceeds bachelor-project scope; a blocks-free drawing tool would lose the "learn coding" essence of Catrobat.
@@ -1349,4 +1350,30 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - `mod` with a zero remainder and opposite signs, or with a negative dividend and a non-integral positive divisor;
   - `arctan2(0, 0)`;
   - any value a few ulps away from an ADR-019 threshold.
+
+## ADR-047 — Arc and GoThrough: many samples, one tick (2026-10-18)
+**Context**: Catroid's `ArcAction` and `GoThroughAction` have duration 0. In one `update` they place the sprite at 101 points (i = 0…100) along a circle or a quadratic Bézier. Each changed position feeds the running stitch, and each chord sets the heading. Ported literally, that semantics carries four accidents:
+- the i = 0 sample only reconstructs the start, with a float-vs-double residual that can turn a 0° arc's heading;
+- on a bad formula the unassigned action fields send the sprite to the stage origin;
+- an overflowing sample would poison the position;
+- the feed is gated on the look's `float` position.
+
+The brief got one Codex round on these rules (journal, 2026-10-17).
+
+**Decision** (Sebastian, 2026-10-17, brief decisions D5–D7):
+- **One `.brick` instruction, one tick** (ADR-018). Its updates are fed in order, each followed by that update's stitches.
+- **Samples i = 1…100.** A degenerate brick feeds nothing, checked *first*: Arc with radius 0 or sweep 0, GoThrough with all samples equal to the start.
+- **The feed and heading rule:** a sample whose `Double` position differs from the previous sample's (the needle's, for i = 1) turns the needle to that chord, `atan2(dx, dy)` in compass degrees, and is fed. The final heading is therefore the last chord's, mirrored from Catroid: a quarter arc ends at ∓89.55°, not ∓90°. Feeding nothing emits one unchanged update (US-204's rule for turns).
+- **Compute, then commit:** a non-finite sample anywhere leaves needle and heading untouched, with one unchanged update.
+- **Catch-and-skip:** a bad formula leaves needle and heading untouched, with one unchanged update. This deliberately does not port Catroid's origin teleport.
+- **Arc geometry:**
+  - The sweep is signed: Left is positive, and a negative angle flips the side, which is Catroid's rule. The radius is taken as `abs`.
+  - The centre lies on the heading's normal, `(−cos h, sin h)` to the left and `(cos h, −sin h)` to the right.
+  - Headings are compass angles (ADR-007), while the angle *around the centre* is a math angle, `atan2(y − cy, x − cx)`, exactly as in Catroid.
+- **Pinned divergence:** Catroid feeds only when the `float` it stores in `Look` changes. Here the needle is `Double` (ADR-014), so the feed follows the `Double` sample. They differ only where `float` spacing exceeds the chord. For example, an arc of r = 20 from (2³⁰, 2³⁰) stitches here and not on Android. A named test pins it.
+
+**Consequences**:
+- **Checked against Android exports:** two exports from Sebastian's phone (`Tests/InterpreterTests/Resources/AndroidReference`) match record for record within ±1 DST unit. They are a running stitch along two arcs and a zigzag along an arc. They are the only external check of the feed rule, and they kill six of slice 4's nine mutants on their own.
+- **The bridge returns a list:** `VirtualNeedle.apply(_:scope:)` returns `[NeedleUpdate]?`, with `nil` still meaning "not motion". Every other motion brick returns exactly one update, and the US-204 tests assert exactly one.
+- **The event count grows:** a `repeat 1000 { arc }` emits 100 000 `.needleMoved` events. The preview budget counts stitches, not events (ADR-043).
 
