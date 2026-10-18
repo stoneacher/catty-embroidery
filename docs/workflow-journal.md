@@ -3242,3 +3242,15 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Loop state:**
   - Severity history: round 1 none, round 2 Medium. That is not convergence.
   - Round 2 changed code (tests), so round 3 runs.
+
+## 2026-10-18 — Brick backend PR 1, Codex round 3: a prefix claim, and a format property nobody had probed
+
+- **Verification:** the round 2 fix was confirmed for all four fixtures, with no new production findings.
+- **Finding (Low), valid:** the unknown-function fixture claimed a *prefix* of its node, so a broader edit (`"rand":{},"sin":{}`) would still satisfy the guard. Fixed: the claim is now the whole node, asserted exactly once. Codex's reproducer was run against the new guard and caught.
+- **What running the reproducer found beyond the review:**
+  - The broader edit also *decoded* without error, where I had expected `.corrupt`.
+  - A direct probe confirmed that Swift's synthesized `Codable` drops an unknown key sitting beside a known one, in enums and structs alike. That is true of the whole v1 format since US-404, despite ADR-037's title "refuse what you do not understand".
+  - Only a hand-edited file reaches it, because a future build's new vocabulary is refused by the version probe under the freeze rule. Filed as **US-324** rather than widened into this PR.
+- **Loop state:**
+  - Severity history: none → Medium → Low. One decrease so far.
+  - Round 3 changed test code, so round 4 runs.

@@ -95,7 +95,7 @@ struct FormulaVocabularyDocumentTests {
         Malformed(
             "an unknown function",
             replacing: #""sin":{}"#, with: #""rand":{}"#,
-            producing: #"{"unaryFunction":{"_0":{"rand":{}}"#
+            producing: #"{"unaryFunction":{"_0":{"rand":{}},"_1":{"number":{"_0":30}}}}"#
         ),
         Malformed(
             "two formula cases in one node",
@@ -117,7 +117,10 @@ struct FormulaVocabularyDocumentTests {
         _ = try ProgramDocument.decode(Data(Self.validText.utf8))
         let fixture = try #require(Self.malformed.first { $0.label == label })
         #expect(!Self.validText.contains(fixture.node), "the valid document already holds it")
-        #expect(fixture.text.contains(fixture.node), "\(label) does not hold \(fixture.node)")
+        // Exactly once, and a whole node: a prefix would let a broader edit pass
+        // (Codex handover round 3).
+        #expect(fixture.text.components(separatedBy: fixture.node).count == 2,
+                "\(label) does not hold \(fixture.node) exactly once")
     }
 
     @Test("a malformed new formula shape is corrupt", arguments: malformed.map(\.label))
