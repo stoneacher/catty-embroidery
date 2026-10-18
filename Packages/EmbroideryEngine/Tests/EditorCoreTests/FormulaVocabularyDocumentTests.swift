@@ -58,7 +58,8 @@ struct FormulaVocabularyDocumentTests {
     private static let valid = program([
         .setVariable(name: "a", to: .unaryFunction(.sin, .number(30))),
         .setVariable(name: "b", to: .binaryFunction(.mod, .number(7), .number(3))),
-        .setVariable(name: "c", to: .constant(.pi))
+        .setVariable(name: "c", to: .constant(.pi)),
+        .setVariable(name: "d", to: .sensor(.objectY))
     ])
 
     private static var validText: String {
@@ -68,25 +69,55 @@ struct FormulaVocabularyDocumentTests {
         return String(bytes: data, encoding: .utf8) ?? ""
     }
 
-    static let malformed: [(label: String, text: String)] = [
-        ("a binary function without its second argument",
-         validText.replacingOccurrences(of: #","_2":{"number":{"_0":3}}"#, with: "")),
-        ("an unknown function", validText.replacingOccurrences(of: #""sin":{}"#, with: #""rand":{}"#)),
-        ("two formula cases in one node", validText.replacingOccurrences(
-            of: #"{"constant":{"_0":{"pi":{}}}}"#,
-            with: #"{"constant":{"_0":{"pi":{}}},"sensor":{"_0":{"objectX":{}}}}"#
-        )),
-        ("an unknown sensor", validText.replacingOccurrences(of: #""pi":{}"#, with: #""objectZ":{}"#))
+    /// A string edit of the valid document, and the malformed node the edit must
+    /// produce. "The text changed" is not enough: an earlier version of the
+    /// unknown-sensor fixture edited `pi` and so tested an unknown *constant*
+    /// (Codex handover round 2).
+    struct Malformed: Sendable {
+        let label: String
+        let text: String
+        let node: String
+
+        init(_ label: String, replacing target: String, with replacement: String, producing node: String) {
+            self.label = label
+            text = FormulaVocabularyDocumentTests.validText.replacingOccurrences(of: target, with: replacement)
+            self.node = node
+        }
+    }
+
+    static let malformed: [Malformed] = [
+        Malformed(
+            "a binary function without its second argument",
+            replacing: #"{"binaryFunction":{"_0":{"mod":{}},"_1":{"number":{"_0":7}},"_2":{"number":{"_0":3}}}}"#,
+            with: #"{"binaryFunction":{"_0":{"mod":{}},"_1":{"number":{"_0":7}}}}"#,
+            producing: #"{"binaryFunction":{"_0":{"mod":{}},"_1":{"number":{"_0":7}}}}"#
+        ),
+        Malformed(
+            "an unknown function",
+            replacing: #""sin":{}"#, with: #""rand":{}"#,
+            producing: #"{"unaryFunction":{"_0":{"rand":{}}"#
+        ),
+        Malformed(
+            "two formula cases in one node",
+            replacing: #"{"constant":{"_0":{"pi":{}}}}"#,
+            with: #"{"constant":{"_0":{"pi":{}}},"sensor":{"_0":{"objectX":{}}}}"#,
+            producing: #"{"constant":{"_0":{"pi":{}}},"sensor":{"_0":{"objectX":{}}}}"#
+        ),
+        Malformed(
+            "an unknown sensor",
+            replacing: #""objectY":{}"#, with: #""objectZ":{}"#,
+            producing: #"{"sensor":{"_0":{"objectZ":{}}}}"#
+        )
     ]
 
-    /// Each fixture must really be edited, or its case degrades into "a valid
-    /// file decodes" and proves nothing.
-    @Test("the malformed fixtures are edits of a valid document")
-    func fixturesAreEdited() throws {
+    /// Each fixture must hold the malformed node it claims, or its case tests
+    /// something else (or degrades into "a valid file decodes").
+    @Test("each malformed fixture holds the node it claims", arguments: malformed.map(\.label))
+    func fixturesHoldTheirNode(_ label: String) throws {
         _ = try ProgramDocument.decode(Data(Self.validText.utf8))
-        for (label, text) in Self.malformed {
-            #expect(text != Self.validText, "\(label) was not edited")
-        }
+        let fixture = try #require(Self.malformed.first { $0.label == label })
+        #expect(!Self.validText.contains(fixture.node), "the valid document already holds it")
+        #expect(fixture.text.contains(fixture.node), "\(label) does not hold \(fixture.node)")
     }
 
     @Test("a malformed new formula shape is corrupt", arguments: malformed.map(\.label))

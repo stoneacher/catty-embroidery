@@ -3228,3 +3228,17 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - (3) is tracked, not tested. The catalog is English-only, so there is no translation to get wrong yet. It belongs with the M6 pseudo-localization and RTL audit.
 - **Loop state:** round 1 produced test-code changes, so round 2 runs as the verification round (ADR-041 stop rule).
 - **Why the slice reviews paid off:** four slice rounds and four reviewer passes had already taken the correctness findings, so the handover round reviewed a branch with nothing left to find in the code, only in the coverage. That is the ADR-041 design (risky slices reviewed when green) behaving as intended.
+
+## 2026-10-18 — Brick backend PR 1, Codex round 2: the fixture that tested the wrong thing
+
+- **Verification of round 1's additions:**
+  - The end-to-end test was confirmed valid and discriminating for its claimed mutants. Codex noted it is a smoke test: `max` returning its first operand would pass its selected inputs. The function tables cover that.
+  - Three of the four malformed-shape fixtures were confirmed correctly shaped.
+  - Deferring the RTL check was judged sound.
+- **Finding (Medium), valid:** the "unknown sensor" fixture replaced `pi` with `objectZ`, because the valid document held no sensor. It therefore tested an unknown *constant*, and a sensor decoder that silently mapped unknown names would have passed. The edit guard only proved that *some* text had changed.
+- **Fix:** the valid document gains a sensor. Each fixture now names the exact malformed node it must produce, and a test asserts that the node is present in the edited text and absent from the valid one.
+  - The strengthened guard immediately caught a second broken edit: my own rewrite of the missing-argument fixture, whose target string did not match the sorted encoding. That fixture now replaces the whole node.
+- **Lesson:** this is the third oracle-weakness finding on this branch, after the test helper that accepted any zero and the totality test that only asserted finiteness. Each time, a guard checked the weaker property: "changed", "zero", "finite". The pattern is to state the exact property the fixture exists for, and assert *that*.
+- **Loop state:**
+  - Severity history: round 1 none, round 2 Medium. That is not convergence.
+  - Round 2 changed code (tests), so round 3 runs.
