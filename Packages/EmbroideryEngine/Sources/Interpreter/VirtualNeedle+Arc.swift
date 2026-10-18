@@ -69,8 +69,17 @@ public extension VirtualNeedle {
     /// `(1−t)²·S + 2(1−t)t·A + t²·E`, so t = 1 lands exactly on E. Feeding, the
     /// chord heading, compute-then-commit and the unchanged update follow `arc`
     /// (ADR-047); a curve whose samples never leave the needle feeds nothing.
+    ///
+    /// **Degenerate first**, structurally: through itself back to itself feeds
+    /// nothing. Sample equality alone would not catch it, because the Bézier's
+    /// binary64 residuals wobble by ulps around the start and their tiny chords
+    /// turn the heading (Catroid ends facing −116.6° from (100, 50)), the same
+    /// hazard as Arc's 0° sweep.
     mutating func goThrough(through: StagePoint, destination: StagePoint) -> [NeedleUpdate] {
         let unchanged = [NeedleUpdate(position: position, heading: heading)]
+        guard through != position || destination != position else {
+            return unchanged
+        }
         let start = position
         let control = StagePoint(
             x: 2 * through.x - (start.x + destination.x) / 2,

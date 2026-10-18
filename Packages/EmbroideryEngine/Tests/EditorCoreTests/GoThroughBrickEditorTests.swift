@@ -42,4 +42,14 @@ struct GoThroughBrickEditorTests {
     func replacingRoutesEachSlot(_ slot: ParameterSlot, _ expected: Brick) {
         #expect(curve.replacing(slot, with: .formula(.number(9))) == expected)
     }
+
+    /// Refusal, not a silent no-op: a slot GoThrough lacks, or a value of the
+    /// wrong shape, returns nil (`swift-code-reviewer`, slice 5).
+    @Test("a foreign slot or a wrong-shaped value is refused")
+    func refusals() {
+        #expect(curve.replacing(.radius, with: .formula(.number(9))) == nil)
+        #expect(curve.replacing(.steps, with: .formula(.number(9))) == nil)
+        #expect(curve.replacing(.x, with: .arcDirection(.left)) == nil)
+        #expect(curve.replacing(.throughX, with: .fileName("a.dst")) == nil)
+    }
 }

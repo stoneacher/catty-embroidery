@@ -1356,7 +1356,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 ## ADR-047 — Arc and GoThrough: many samples, one tick (2026-10-18)
 **Context**: Catroid's `ArcAction` and `GoThroughAction` have duration 0. In one `update` they place the sprite at 101 points (i = 0…100) along a circle or a quadratic Bézier. Each changed position feeds the running stitch, and each chord sets the heading. Ported literally, that semantics carries four accidents:
 - the i = 0 sample only reconstructs the start, with a float-vs-double residual that can turn a 0° arc's heading;
-- on a bad formula the unassigned action fields send the sprite to the stage origin;
+- on a bad formula the action keeps fields that were never assigned. They are zeros for a fresh action, or stale values for a pooled one (`Actions.action`, and neither action overrides `reset()`), so the sprite heads for the origin or for a previous run's target;
 - an overflowing sample would poison the position;
 - the feed is gated on the look's `float` position.
 
@@ -1364,7 +1364,7 @@ The brief got one Codex round on these rules (journal, 2026-10-17).
 
 **Decision** (Sebastian, 2026-10-17, brief decisions D5–D7):
 - **One `.brick` instruction, one tick** (ADR-018). Its updates are fed in order, each followed by that update's stitches.
-- **Samples i = 1…100.** A degenerate brick feeds nothing, checked *first*: Arc with radius 0 or sweep 0, GoThrough with all samples equal to the start.
+- **Samples i = 1…100.** A degenerate brick feeds nothing, checked *first* and *structurally*: Arc with radius 0 or sweep 0, and GoThrough whose through-point and destination both equal the needle. Sample equality is not enough for either. The reconstructed points wobble by binary64 ulps around the start, and their tiny chords would turn the heading: Catroid's GoThrough from (100, 50) back to itself ends facing −116.6°. This deliberately diverges from Catroid, and named tests pin it for both bricks.
 - **The feed and heading rule:** a sample whose `Double` position differs from the previous sample's (the needle's, for i = 1) turns the needle to that chord, `atan2(dx, dy)` in compass degrees, and is fed. The final heading is therefore the last chord's, mirrored from Catroid: a quarter arc ends at ∓89.55°, not ∓90°. Feeding nothing emits one unchanged update (US-204's rule for turns).
 - **Compute, then commit:** a non-finite sample anywhere leaves needle and heading untouched, with one unchanged update.
 - **Catch-and-skip:** a bad formula leaves needle and heading untouched, with one unchanged update. This deliberately does not port Catroid's origin teleport.
