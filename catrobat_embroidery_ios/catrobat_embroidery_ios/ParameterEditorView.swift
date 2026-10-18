@@ -30,7 +30,9 @@ struct ParameterEditorView: View {
                         Section {
                             editor(for: parameter)
                         } header: {
-                            Text(ParameterEditorText.title(of: parameter.slot, locale: locale))
+                            Text(ParameterEditorText.title(
+                                of: parameter.slot, in: BrickKind(of: brick), locale: locale
+                            ))
                         }
                     }
                 }

@@ -17,6 +17,11 @@ struct FormulaSlotEditor: View {
 
     @Environment(\.locale) private var locale
 
+    /// The slot's name for the brick being edited (GoThrough's destination is "To x").
+    private var slotTitle: String {
+        ParameterEditorText.title(of: slot, in: editor.editedBrick.map(BrickKind.init(of:)), locale: locale)
+    }
+
     private var value: ParameterValue? {
         editor.editedBrick?.parameters.first { $0.slot == slot }?.value
     }
@@ -45,7 +50,7 @@ struct FormulaSlotEditor: View {
             EmptyView()
         }
         .pickerStyle(.segmented)
-        .accessibilityLabel(Text(ParameterEditorText.title(of: slot, locale: locale)))
+        .accessibilityLabel(Text(slotTitle))
 
         if variable != nil || isNaming {
             VariableChooser(editor: editor, slot: slot, isNaming: $isNaming)
@@ -78,7 +83,7 @@ struct FormulaSlotEditor: View {
     private var numberField: some View {
         HStack {
             TextField(text: $text) {
-                Text(ParameterEditorText.title(of: slot, locale: locale))
+                Text(slotTitle)
             }
             // Not `.decimalPad`: it has no minus key on iPhone, and the templates use negatives.
             .keyboardType(.numbersAndPunctuation)
@@ -87,7 +92,7 @@ struct FormulaSlotEditor: View {
             .frame(minHeight: RunControl.minimumTouchTarget)
             // A `Form` row's `TextField` label is not used as its accessibility label — the
             // simulator's snapshot showed the field unlabelled — so it is stated outright.
-            .accessibilityLabel(Text(ParameterEditorText.title(of: slot, locale: locale)))
+            .accessibilityLabel(Text(slotTitle))
             .focused($isFocused)
             .onChange(of: isFocused) { _, focused in
                 if focused {
@@ -115,7 +120,7 @@ struct FormulaSlotEditor: View {
             // last valid value and silently discard what is in the field.
             if problem == nil {
                 Stepper {
-                    Text(ParameterEditorText.title(of: slot, locale: locale))
+                    Text(slotTitle)
                 } onIncrement: {
                     editor.stepNumber(slot, by: 1)
                     syncText()

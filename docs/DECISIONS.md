@@ -1104,6 +1104,10 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - The app renders calls under Catroid's formula-editor names (`sine(30)`, `modulo(7, 3)`, `position x`). A two-argument call uses `;` instead of `,` wherever the number locale's decimal separator is a comma, because `minimum of(1,5, 2)` reads as three arguments.
 - Arc's left/right control is added by PR 2 of the same feature and amends this ADR again there.
 
+**Amendment (2026-10-18, Brick backend PR 2) — Arc's direction and GoThrough's fields.**
+- **Arc's side** is a two-segment picker under a "Direction" header. It is one discrete edit through the parameter session, like a thread swatch, so it is one undo entry. In the simulator one tap rewrites the row and Undo restores it. Its `Binding` setter is a closure literal: a stored function value crashed Swift 6.3.3 in Release (journal, 2026-10-18).
+- **GoThrough's four fields** are number or variable fields. Their titles depend on the brick: "Through x" and "Through y", then "To x" and "To y" (Catroid's "then to"). In the simulator, bare "X"/"Y" under "Through x" did not read as the end point, while Place at keeps "X"/"Y". `ParameterEditorText.title(of:in:)` takes the edited brick's kind, and the section header and every accessibility label use it.
+
 ## ADR-041 — The unit of work is a feature, not a ≤ 5 h story; the Codex loop is capped at 5 (2026-10-09)
 **Context**: M1–M4 ran on user stories of ≤ ~5 h, each with its own story file, estimate, branch, draft PR, `[red]` commit, `swift-code-reviewer` pass, Codex loop (cap 10), journal entries, ROADMAP status paragraph and `/finish` close-out. That granularity bought a lot: thirteen M4 stories show where the per-story review rounds caught real defects. It also made the fixed cost per story larger than the work in many stories. Planning M4 alone took five review rounds before any code existed, and late-M4 stories were spending more session time on close-out and review loops than on implementation. Where a feature has an obvious shape (the brick backend, the editor UI, variables), cutting it into 5 h pieces adds hand-offs without adding feedback.
 

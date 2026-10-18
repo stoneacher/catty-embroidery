@@ -33,6 +33,17 @@ struct GoThroughBrickPresentationTests {
         #expect(ParameterEditorText.title(of: .throughY, locale: Self.english) == "Through y")
     }
 
+    /// Bare "X" and "Y" under "Through x" and "Through y" did not say they are
+    /// the end point (found in the simulator, slice 6). GoThrough's destination
+    /// reads "To x"/"To y", after Catroid's "then to"; Place at keeps "X"/"Y".
+    @Test("GoThrough's destination fields say they are the end point")
+    func destinationTitles() {
+        #expect(ParameterEditorText.title(of: .x, in: .goThrough, locale: Self.english) == "To x")
+        #expect(ParameterEditorText.title(of: .y, in: .goThrough, locale: Self.english) == "To y")
+        #expect(ParameterEditorText.title(of: .x, in: .placeAt, locale: Self.english) == "X")
+        #expect(ParameterEditorText.title(of: .throughX, in: .goThrough, locale: Self.english) == "Through x")
+    }
+
     /// Each field through the parameter session, then undone: the through-point
     /// fields must not write the destination's `.x`/`.y` or each other.
     @Test("each field is one undoable edit of its own value", arguments: [

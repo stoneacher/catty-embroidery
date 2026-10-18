@@ -1873,6 +1873,30 @@
         }
       }
     },
+    "parameter.slot.to.x": {
+      "comment": "Label of the number field for the x coordinate where a curve (Go through) ends, as opposed to the point it passes through. Catroid's wording: \"then to\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To x"
+          }
+        }
+      }
+    },
+    "parameter.slot.to.y": {
+      "comment": "Label of the number field for the y coordinate where a curve (Go through) ends, as opposed to the point it passes through. Catroid's wording: \"then to\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To y"
+          }
+        }
+      }
+    },
     "parameter.slot.value": {
       "comment": "Label of the number field for the value a variable is set to or changed by.",
       "extractionState": "manual",
