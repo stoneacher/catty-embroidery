@@ -96,8 +96,10 @@ jobs:
     name: App build & test (xcodebuild)
     runs-on: xcode-27
     # A wedged simulator would otherwise burn the 360-minute default. The healthy
-    # job is ~4m30s, so this is generous while still failing in a useful time.
-    timeout-minutes: 20
+    # job was ~4m30s on macos-26; on the xcode-27 preview image it is ~15m30s
+    # (about 5m build, 10m tests; checked 2026-10-19), which left 20 too little
+    # margin for a slow runner. 30 still fails a wedged simulator in useful time.
+    timeout-minutes: 30
     env:
       # Same pin, image and reason as the engine job: the runner-default Xcode
       # drifts and breaks Swift 6.x builds.

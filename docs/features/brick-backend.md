@@ -1,6 +1,6 @@
 # Brick backend
 
-**Status**: In review — PR 1 (slices 0–3) merged as #71; PR 2 (slices 4–7) is #72, awaiting the Codex loop and Sebastian's Ink/Stitch check | **Epic**: E8 (+ E3 formulas, E5 thin) | **Branches**: `feature/brick-backend` (PR 1), `feature/brick-backend-paths` (PR 2)
+**Status**: In review — PR 1 (slices 0–3) merged as #71; PR 2 (slices 4–7) is #72, reviewed (Codex loop closed after 3 rounds, Medium → Low → Low), awaiting Sebastian's Ink/Stitch check and merge | **Epic**: E8 (+ E3 formulas, E5 thin) | **Branches**: `feature/brick-backend` (PR 1), `feature/brick-backend-paths` (PR 2)
 
 **Goal**: a program can draw arcs and quadratic curves (Catroid's **Arc** and **GoThrough**), and its formulas can use Catroid's math functions and the object's own x, y and direction. Preview and `.dst` export behave as the Android Embroidery Designer does wherever Catroid is sound, and every divergence is pinned by a named test.
 

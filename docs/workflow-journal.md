@@ -3426,3 +3426,10 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Severity history: Medium (code) → Low (code: test harness) → Low (docs only).
   - Three rounds against the cap of 5.
 - **Thesis note:** the whole-PR rounds found one defect the per-slice reviews had all missed, the per-action stitch bound. It arose only from *composing* two pinned rules (ADR-014's per-update bound and ADR-047's many-updates tick), which is exactly the view a slice review cannot take. The two later rounds found only residue of that fix and of slice 7's.
+
+## 2026-10-19 — CI: the Xcode 27 pin tripled the app job, and a docs commit found the margin
+
+- **What happened:** after the Codex loop closed, the final head `b5aec20` (docs only) failed the app job. One test (`WorkingProgramTests.aRejectedEditKeepsTheRunAndTheFile`) hit its 60-second limit, with neighbours taking 55 s instead of ~5 s and the log showing the simulator service hub disconnecting. A rerun of the failed job was cancelled at the 20-minute timeout after 635 tests.
+- **What the run history shows:** this was not a one-off. Before the pin (`a6daa28`) the app job took 6–8 minutes, and after it 15½–16¾ minutes on healthy runs. The pin was made earlier in this same PR. Every app-job "cancelled" before this was a superseding push, so none of those runs had been long enough to show the trend.
+- **Decision:** the timeout goes from 20 to 30 minutes, as an ADR-023 amendment with the measurements. The cause of the ~3× slowdown on the `xcode-27` preview image is tracked, not guessed.
+- **Lesson:** the pin's review checked that the jobs went green on the new image, and did not compare their durations with the old one. A timeout comment that states the healthy duration ("~4m30s") is a claim about the runner, exactly like the toolchain claim ADR-023 already learned to date.
