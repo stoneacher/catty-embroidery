@@ -142,6 +142,7 @@ let actor = ActorID(42)
 **StitchPattern** protocol — A pure state machine for stitch generation. Patterns return stage-space positions; the stream owns unit conversion, interpolation, and flags.
 ```swift
 public protocol StitchPattern: Sendable {
+    var length: Double { get }  // one whole length, for the action-wide bound (ADR-047)
     mutating func setStartPosition(_ position: StagePoint)
     mutating func update(_ needle: NeedleUpdate) -> [StagePoint]
 }
@@ -167,6 +168,9 @@ let pattern = TripleStitchPattern(length: 10.0, start: StagePoint(x: 0, y: 0))
 var stitcher = RunningStitch()
 stitcher.activate(RunningStitchPattern(length: 10.0, start: start))
 let points = stitcher.update(needleUpdate)
+// One action's updates (Arc, GoThrough): all fed, or none when the path holds
+// more than a million whole lengths (ADR-014, extended by ADR-047)
+let perUpdate = stitcher.update(path: arcUpdates, from: needleBeforeArc)
 stitcher.setStartPosition(newAnchor)
 ```
 

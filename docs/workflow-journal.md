@@ -3415,3 +3415,14 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **Low, test harness:** the sub-length probes added in slice 7's review reused the counter that only emitting updates advance. So thousands of probes carried stale indices, and a future at-risk update would be reported at the wrong place. A test that every probe names its own update was red against the old counter; probes now take their execution-order index.
 - **The pattern again:** both leftovers sit in text and code written to fix an earlier finding (slice 7's sub-length probes, round 1's bound). Each fix is new surface, as US-302 recorded.
 - **Loop state:** Medium → Low is one decrease. A round 3 runs because this round changed code; it ends the loop if it is clean or produces no code change.
+
+## 2026-10-19 — Brick backend PR 2, Codex handover round 3: loop closed
+
+- **Round 3 (highest severity Low, no code change):**
+  - **Verified:** both round 2 fixes are correct. The index change touches only diagnostics: predicted emissions, histograms, at-risk counts and margins are unchanged.
+  - **The one finding was a third instance of "each fix is new surface":** the README's `StitchPattern` protocol lacked the `length` requirement that round 1's fix added. Someone conforming to the documented protocol would not compile. The README now shows it, plus `RunningStitch.update(path:from:)`.
+  - **No new engine, interpreter, needle-state or DST-byte defect** in the full diff.
+- **The loop ended on condition 1:** the triage changed no code.
+  - Severity history: Medium (code) → Low (code: test harness) → Low (docs only).
+  - Three rounds against the cap of 5.
+- **Thesis note:** the whole-PR rounds found one defect the per-slice reviews had all missed, the per-action stitch bound. It arose only from *composing* two pinned rules (ADR-014's per-update bound and ADR-047's many-updates tick), which is exactly the view a slice review cannot take. The two later rounds found only residue of that fix and of slice 7's.
