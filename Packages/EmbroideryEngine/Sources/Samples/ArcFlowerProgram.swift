@@ -11,7 +11,12 @@ import ProgramModel
 //   chord, a little behind the tangent (ADR-047, mirrored from Catroid), and
 //   turning *relative* to that would let the error pile up into a lopsided fan.
 // - **GoThrough** draws the stem, curving down from the centre in a second
-//   colour, its bend measured from the needle's own x position (a **sensor**).
+//   colour. Its bend is written relative to the needle's x position (a
+//   **sensor**). That is a token use: the sensor is read once, right after
+//   `placeAt(0, 0)`, so it reads 0 and `.number(45)` would stitch the same
+//   file. It shows the vocabulary in a real program; a sensor only changes
+//   a design when it is read where the position varies (`swift-code-reviewer`,
+//   slice 7).
 
 /// Which petal is being drawn, 0 to 11.
 private let petalVariable = "Petal"
@@ -54,8 +59,8 @@ func makeArcFlowerProgram() -> Program {
         .loopEnd,
         .setThreadColor(hex: stemThread),
         .placeAt(x: .number(0), y: .number(0)),
-        // Through a point 45 to the right of wherever the needle is, down to the
-        // bottom of the hoop.
+        // Through a point 45 to the right of the needle (here the centre, so
+        // x = 45), down to the bottom of the hoop.
         .goThrough(
             throughX: .binary(.plus, .sensor(.objectX), .number(45)),
             throughY: .number(-120),

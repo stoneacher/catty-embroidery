@@ -7,8 +7,8 @@ import Testing
 /// Twelve circles fanned around the centre (Arc), their radius a wave
 /// (`sin`), each started from an absolute heading so the chord heading's
 /// per-circle drift (ADR-047) cannot unbalance the fan, and a green stem curving
-/// down (GoThrough) whose bend is measured from the needle's own position (a
-/// sensor).
+/// down (GoThrough) whose bend is written against a sensor, a token use that
+/// reads 0 (see `ArcFlowerProgram.swift`).
 @Suite("Arc flower")
 struct ArcFlowerTests {
     private var sample: SampleProgram {
@@ -67,21 +67,57 @@ struct ArcFlowerTests {
         #expect(coField(of: header) == 2)
     }
 
-    /// Inside ADR-007's 500 × 500 stage, with margin: a sample that runs off the
-    /// hoop would greet a first-time user with the "outside the hoop" notice.
-    @Test("every stitch stays inside the hoop")
-    func staysInsideTheHoop() {
-        let stitches = measured.events.compactMap { event -> StagePoint? in
-            if case let .stitch(_, position, _, _) = event {
-                position
+    /// The petals rose, the stem green. CO 2 alone would pass a change that
+    /// came too late and stitched the stem rose (Codex, slice 7). The petals
+    /// reach at most 106 points from the centre, so everything below −110 is stem.
+    @Test("the stem is stitched in the second colour")
+    func stemIsGreen() throws {
+        let rose = try #require(ThreadColor(hexString: "#db2777"))
+        let green = try #require(ThreadColor(hexString: "#16a34a"))
+        let stitches = measured.events.compactMap { event -> (StagePoint, ThreadColor)? in
+            if case let .stitch(_, position, _, color) = event {
+                (position, color)
             } else {
                 nil
             }
         }
-        #expect(stitches.count > 500)
-        for point in stitches {
+        let stem = stitches.filter { $0.0.y < -110 }
+        #expect(stem.count > 20)
+        #expect(stem.allSatisfy { $0.1 == green })
+        #expect(stitches.first?.1 == rose)
+    }
+
+    /// Inside ADR-007's 500 × 500 stage, with margin: a sample that runs off the
+    /// hoop would greet a first-time user with the "outside the hoop" notice.
+    /// Every needle update, not only the stitches: a pattern that skipped a
+    /// segment would hide where the needle went (Codex, slice 7).
+    @Test("every stitch and every needle update stays inside the hoop")
+    func staysInsideTheHoop() {
+        let points = measured.events.compactMap { event -> StagePoint? in
+            switch event {
+            case let .stitch(_, position, _, _): position
+            case let .needleMoved(_, update): update.position
+            default: nil
+            }
+        }
+        #expect(points.count > 9000)
+        for point in points {
             #expect(abs(point.x) < 240 && abs(point.y) < 240, "\(point)")
         }
+    }
+
+    /// The figures PROVENANCE states and the Ink/Stitch check reads, pinned so
+    /// they cannot drift undefended (`swift-code-reviewer`, slice 7): 821
+    /// stitches, all of them records (no interpolation, no jumps), and
+    /// x [−99, 99] by y [−212, 99] stage points, 39.6 × 62.2 mm.
+    @Test("821 stitches, no jumps, 39.6 by 62.2 millimetres")
+    func pinnedFigures() throws {
+        #expect(measured.stitchEventCount == 821)
+        #expect(measured.stream.count == 821)
+        #expect(measured.stream.stitches.allSatisfy { !$0.isJump })
+        let bounds = try #require(stageBounds(of: measured.stream))
+        #expect(bounds.minX == -99 && bounds.maxX == 99, "\(bounds)")
+        #expect(bounds.minY == -212 && bounds.maxY == 99, "\(bounds)")
     }
 
     /// Absolute headings per circle: each petal returns to the centre and

@@ -1,4 +1,5 @@
 import EmbroideryEngine
+import ProgramModel
 import Samples
 import Testing
 
@@ -26,6 +27,30 @@ struct SampleThresholdTests {
         #expect(Set(Self.screenedSamples.map(\.0)) == Set(SampleID.shipping))
     }
 
+    /// The mirror follows one anchor through one stream of updates, and
+    /// `emissionCountsPerMove` credits each stitch to the update before it.
+    /// Both hold only for a program with a single script: a second object's
+    /// stitch, or a second script's, would land on whichever update came last
+    /// (Codex, slice 7). So the harness states its precondition and every
+    /// screened sample is checked against it.
+    @Test("the screening applies only to single-script programs")
+    func screeningIsSingleScript() {
+        for (id, _, _) in Self.screenedSamples {
+            #expect(isScreenable(SampleLibrary[id].program), "\(id) has more than one script")
+        }
+        let arcThenStitch = Script(bricks: [
+            .runningStitch(length: .number(4)),
+            .arc(direction: .left, radius: .number(20), degrees: .number(90))
+        ])
+        let stitchOnly = Script(bricks: [.stitch])
+        let twoObjects = Program(scenes: [Scene(objects: [
+            Object(scripts: [arcThenStitch]), Object(scripts: [stitchOnly])
+        ])])
+        let twoScripts = Program(scenes: [Scene(objects: [Object(scripts: [arcThenStitch, stitchOnly])])])
+        #expect(!isScreenable(twoObjects))
+        #expect(!isScreenable(twoScripts))
+    }
+
     /// Sample 3 runs on Arcs and a GoThrough, so it is screened per needle
     /// update, not per tick (`screen`): 815 probes, none near a boundary.
     @Test("the arc flower is far from any floor boundary")
@@ -34,6 +59,25 @@ struct SampleThresholdTests {
         #expect(screening.probes.count > 800)
         #expect(screening.atRisk.isEmpty, "at risk: \(screening.atRisk.map(\.moveIndex))")
         #expect(screening.minimumUlpsFromBoundary > 1e9, "closest approach \(screening.minimumUlpsFromBoundary) ulps")
+    }
+
+    /// An update one ulp short of a stitch length emits nothing here and one
+    /// stitch under another libm, so updates below the first boundary are
+    /// screened too. Arc Flower's ~0.3-point chords are nine in ten of its
+    /// updates, and the first screen skipped them all (`swift-code-reviewer`,
+    /// slice 7). Every update is probed, on one side of the boundary or the other.
+    @Test("updates shorter than one stitch are screened against the first boundary")
+    func subLengthUpdatesAreScreened() {
+        let sample = SampleLibrary[.arcFlower]
+        let screening = screen(sample, patternLength: 4, pointsPerInterval: 1)
+        let updates = emissionCountsPerMove(run(sample)).count
+        #expect(screening.subLengthProbes.count > 8000)
+        #expect(screening.probes.count + screening.subLengthProbes.count == updates)
+        #expect(screening.atRisk.isEmpty)
+        let closest = screening.subLengthProbes.map { abs($0.ulpsFromBoundary) }.min() ?? .infinity
+        #expect(screening.minimumUlpsFromBoundary == min(closest, screening.probes.map {
+            abs($0.ulpsFromBoundary)
+        }.min() ?? .infinity))
     }
 
     /// The screening is only evidence if the mirrored anchor is the engine's
@@ -53,7 +97,7 @@ struct SampleThresholdTests {
 
         #expect(!screening.probes.isEmpty)
 
-        // Element-by-element over every needle-move tick, zeros included. A
+        // Element-by-element over every needle update, zeros included. A
         // weaker form of this test — comparing totals, or counts, or asserting an
         // inequality — would pass against a mirror whose anchor drifted and whose
         // errors happened to cancel, which is exactly the failure mode that makes
