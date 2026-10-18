@@ -7,9 +7,9 @@ A platform-independent Swift package architecture for embroidery-focused block p
 | Product | Role | Dependencies |
 |---------|------|--------------|
 | **EmbroideryEngine** | Stitch generation, pattern management, DST serialization. No I/O, no dependencies, strict concurrency. | — |
-| **ProgramModel** | Pure value graph (Program/Scene/Object/Script/Brick/Formula). No engine types. | Foundation |
+| **ProgramModel** | Pure value graph (Program/Scene/Object/Script/Brick/Formula), plus the `EditorCore` editing vocabulary (ADR-033). No engine types. | Foundation |
 | **Interpreter** | Maps `Program` onto engine; executes bricks tick-by-tick; collects stitches. | ProgramModel, EmbroideryEngine |
-| **Samples** | Bundled example programs for learning (octagon rosette, square coil). | ProgramModel |
+| **Samples** | Bundled example programs for learning (octagon rosette, square coil, arc flower). | ProgramModel |
 | **StagePreview** | Display lists, zoom/pan math, run driver for live preview. Foundation-only. | Interpreter, EmbroideryEngine |
 
 The dependency DAG is a straight line inward (ADR-016): `ProgramModel` is platform-independent and editor-safe; `Interpreter` is the only place model and engine meet; `Samples` depends on `ProgramModel` only; `StagePreview` depends on `Interpreter`.
@@ -69,22 +69,22 @@ var program = Program(name: "My Embroidery Design")
 // ... add scenes, objects, scripts, bricks ...
 
 // Create an interpreter
-var interpreter = Interpreter(program: program, clock: InterpreterClock(tickDelta: 1.0 / 60.0))
+let interpreter = Interpreter(program: program, clock: InterpreterClock(tickDelta: 1.0 / 60.0))
 
-// Run the interpreter with display updates
-let driver = InterpreterDriver(pacing: DisplayRunPacing(), budget: .display)
+// Run the interpreter with display updates (~60 fps pacing)
+let driver = InterpreterDriver(pacing: DisplayRunPacing(frameDuration: .milliseconds(16)), budget: .display)
 let session = driver.start(interpreter)
 
 // Consume updates in a task
 Task {
     for await update in session.updates {
         // Update the UI with the preview state
-        print("Stitches: \(update.batch.stitches.count), Needle: \(update.batch.needle)")
+        print("Stitches: \(update.batch.stitches.count), Needle: \(String(describing: update.batch.needle))")
         
         // When terminal, export if complete
         if let termination = update.termination {
-            if case .finished = termination.reason {
-                let file = try DSTFile(stream: termination.exportModel.assembled(), name: "MyDesign")
+            if case .programFinished = termination.reason {
+                let file = try? DSTFile(stream: termination.exportModel, name: "MyDesign")
                 // Export file to disk or share...
             }
         }
@@ -298,6 +298,8 @@ EmbroideryEngine ports concepts from two AGPL-3.0 references:
 
 The DST conversion table (`DSTStitchRecord.conversionTable`) is ported verbatim from Catroid's `DSTFileConstants.CONVERSION_TABLE` and is attributed in the source code.
 
+The brick backend (ADR-046, ADR-047) ports Catroid's `MathFunctionProvider`, `ArcAction` and `GoThroughAction`, and the `ArcBrick`/`GoThroughBrick` defaults. Its golden fixtures are Android exports kept under `Tests/InterpreterTests/Resources/AndroidReference/` (see the PROVENANCE note there).
+
 # ProgramModel
 
 A pure value graph for embroidery programs, holding no engine types or dependencies. Models the Catrobat program structure (scene, object, script, brick) in a format suitable for editing, serialization, and interpretation.
@@ -308,6 +310,7 @@ A pure value graph for embroidery programs, holding no engine types or dependenc
 
 ```swift
 public struct Program: Sendable, Equatable, Codable {
+    public static let currentFormatVersion: Int = 1
     public var formatVersion: Int
     public var name: String
     public var scenes: [Scene]
@@ -345,14 +348,14 @@ public struct Script: Sendable, Equatable, Codable {
     public var header: ScriptHeader
     public var bricks: [Brick]
     
-    public func validate() throws  // Throws ScriptValidationError
+    public func validate() throws(ScriptValidationError)
     public func matchingEnd(ofBrickAt index: Int) -> Int?
     public func range(ofPairAt index: Int) -> ClosedRange<Int>?
-    public mutating func movePair(from source: Int, to destination: Int) throws
+    public func movingPair(at sourceIndex: Int, to destination: Int) throws -> Script
 }
 ```
 
-Scripts are flat, not nested — loops are represented as `.repeatLoop` / `.forever` opener / `.loopEnd` pairs in the same list (ADR-008). The script validates its brick structure via `validate()`, which throws `ScriptValidationError` if control bricks do not balance. Pair operations (moving a loop as one unit) throw `ScriptMoveError` if the indices are invalid or the pair is unbalanced.
+Scripts are flat, not nested — loops are represented as `.repeatLoop` / `.forever` opener / `.loopEnd` pairs in the same list (ADR-008). The script validates its brick structure via `validate()`, which throws `ScriptValidationError` if control bricks do not balance. `movingPair(at:to:)` returns a copy with the pair relocated as one unit (it does not mutate the script). Pair operations throw `ScriptMoveError` if the indices are invalid or the pair is unbalanced.
 
 **ScriptHeader** — What triggers a script.
 
@@ -367,6 +370,7 @@ public enum ScriptHeader: Sendable, Equatable, Codable {
 ```swift
 public protocol Scope {
     func value(of variableName: String) -> Double  // Unknown → 0
+    func value(of sensor: Sensor) -> Double        // The acting object's value (ADR-046)
 }
 
 public struct VariableScope: Scope, Sendable {
@@ -374,7 +378,7 @@ public struct VariableScope: Scope, Sendable {
 }
 ```
 
-`VariableScope` implements two-level resolution: object scope is consulted first, then project scope. Within each collection, the first match by name wins. Unknown names yield 0.
+`VariableScope` implements two-level resolution: object scope is consulted first, then project scope. Within each collection, the first match by name wins. Unknown names yield 0. It has no needle, so every sensor reads 0; the interpreter supplies a scope whose sensors read the acting object's needle.
 
 **Brick** — An instruction (motion, control, data, or embroidery).
 
@@ -388,6 +392,8 @@ public indirect enum Brick: Sendable, Equatable, Codable {
     case placeAt(x: Formula, y: Formula)
     case setX(Formula), setY(Formula)
     case changeXBy(Formula), changeYBy(Formula)
+    case arc(direction: ArcDirection, radius: Formula, degrees: Formula)  // ADR-047
+    case goThrough(throughX: Formula, throughY: Formula, x: Formula, y: Formula)  // ADR-047
     
     // Control
     case repeatLoop(times: Formula)
@@ -420,24 +426,58 @@ public enum BrickDefaults {
     public static let zigZagWidth: Double = 10
     public static let threadColorHex: String = "#ff0000"
     public static let waitSeconds: Double = 1.0
+    public static let arcDirection = ArcDirection.left
+    public static let arcRadius: Double = 10
+    public static let arcDegrees: Double = 360
+    public static let goThroughThroughX: Double = 0
+    public static let goThroughThroughY: Double = 0
+    public static let goThroughX: Double = 0
+    public static let goThroughY: Double = 0
+}
+
+public enum ArcDirection: Sendable, Hashable, CaseIterable, Codable {
+    case left, right
 }
 ```
 
-`BrickDefaults` provides Catroid-compatible default values that the M4 editor seeds new bricks with.
+`BrickDefaults` provides Catroid-compatible default values that the M4 editor seeds new bricks with (the US-401 defaults are omitted above). `Arc` turns counter-clockwise for `.left` and clockwise for `.right`; a negative `degrees` flips the sweep, as in Catroid. `GoThrough` curves from the needle through `(throughX, throughY)` to `(x, y)`. Both are motion bricks that the interpreter executes in one tick (ADR-047).
 
-**Formula** — Expressions composed of numbers, variables, and binary operators.
+**Formula** — Expressions composed of numbers, variables, operators, Catroid's math functions, `pi`, and the object's own position and direction sensors (ADR-046).
 
 ```swift
 public indirect enum Formula: Sendable, Equatable, Codable {
     case number(Double)
     case variable(String)
     case binary(BinaryOperator, Formula, Formula)
+    case unaryMinus(Formula)
+    case unaryFunction(UnaryFunction, Formula)            // sin(30)
+    case binaryFunction(BinaryFunction, Formula, Formula)  // mod(7, 3)
+    case constant(FormulaConstant)                         // pi
+    case sensor(Sensor)                                    // objectX, objectY, motionDirection
     
-    public func evaluate(in scope: Scope) throws -> Double
+    public func interpretDouble(scope: some Scope) throws -> Double
+    public func interpretInteger(scope: some Scope) throws -> Int
+    public func interpretFloat(scope: some Scope) throws -> Float
 }
 
 public enum BinaryOperator: Sendable, Equatable, CaseIterable, Codable {
-    case plus, minus, mult, divide, mod, pow
+    case plus, minus, mult, divide, pow
+}
+
+public enum UnaryFunction: Sendable, Hashable, CaseIterable, Codable {
+    case sin, cos, tan, arcsin, arccos, arctan, sqrt, abs, round, floor, ceil, ln, log, exp
+}
+
+public enum BinaryFunction: Sendable, Hashable, CaseIterable, Codable {
+    case arctan2, min, max, mod
+}
+
+public enum FormulaConstant: Sendable, Hashable, CaseIterable, Codable {
+    case pi
+}
+
+public enum Sensor: Sendable, Hashable, CaseIterable, Codable {
+    case objectX, objectY, motionDirection
 }
 
 public enum FormulaError: Error, Equatable, Sendable {
@@ -445,7 +485,7 @@ public enum FormulaError: Error, Equatable, Sendable {
 }
 ```
 
-Formulas evaluate to `Double` via `evaluate(in:)`, which takes a `Scope` for variable resolution. Throws `FormulaError.notANumber` on division by zero, modulo by zero, non-finite intermediate values, or non-integer truncation. ADR-017 covers arithmetic precision (native `Double`, not decimal128), fallback semantics, and caveats about bit parity with Android.
+Formulas evaluate via `interpretDouble(scope:)`, which resolves variables and sensors through the `Scope`. Every node's result is normalized: ±∞ is capped at ±`Double.greatestFiniteMagnitude` (Catroid's per-node rule), so only a NaN at the root throws `FormulaError.notANumber`. Division by a zero divisor yields NaN, so `1 / 0` throws. `interpretInteger(scope:)` truncates toward zero and saturates to the Int32 range (Java's `(int)` cast), and `interpretFloat(scope:)` narrows to `Float` for the zig-zag brick. Trigonometry takes and returns degrees. `mod` is a floored modulo, and `arctan2` of two zeros is 0 (ADR-046). The case names of `Formula` and the four vocabularies are coding keys in the file format, so they are never renamed; the four formula cases were added additively (ADR-037, ADR-046). ADR-017 covers arithmetic precision (native `Double`, not decimal128), fallback semantics, and caveats about bit parity with Android.
 
 **Variable** — A named numeric value.
 
@@ -457,6 +497,35 @@ public struct Variable: Sendable, Equatable, Codable {
 ```
 
 Variables are scoped: project-scoped variables live on `Program`, object-scoped ones on `Object`. Resolution is first-declaration-wins (ADR-018).
+
+## EditorCore
+
+The M4 editor's vocabulary, vended through the same `ProgramModel` product (ADR-033) and depending on `ProgramModel` only. `BrickKind` is a payload-free mirror of `Brick`; `brick.parameters` lists a brick's parameter values in sentence order, each named by a `ParameterSlot`.
+
+```swift
+import EditorCore
+
+public enum ParameterSlot: Sendable, Hashable, CaseIterable {
+    // … steps, degrees, x, y, times, seconds, value, length, width, variableName, hex, fileName
+    case direction   // Arc's side: left or right
+    case radius      // Arc's radius
+    case throughX    // GoThrough's through-point; its destination reuses .x and .y
+    case throughY
+}
+
+public enum ParameterValue: Sendable, Equatable {
+    case formula(Formula)
+    case variableName(String)
+    case threadColor(hex: String)
+    case fileName(String)
+    case arcDirection(ArcDirection)
+}
+
+// Arc: direction, radius, degrees. GoThrough: throughX, throughY, x, y.
+let parameters = Brick.arc(direction: .left, radius: .number(10), degrees: .number(360)).parameters
+```
+
+`ParameterEditorKind` decides which editor a value gets. Function calls, `pi` and sensors are shown read-only (`ReadOnlyFormulaReason.function` and `.sensor`), because no editor path writes them yet (ADR-046, ADR-040).
 
 ## Design Constraints
 
@@ -487,8 +556,8 @@ public struct Interpreter: Sendable {
     // Is execution finished?
     public var isFinished: Bool
     
-    // Access to the assembled stitch stream
-    public var manager: EmbroideryPatternManager
+    // The stitch stream assembled from every stitch produced so far
+    public func assembledStream() -> EmbroideryStream
 }
 ```
 
@@ -516,30 +585,39 @@ public enum StepOutcome: Equatable, Sendable {
 
 ```swift
 public enum InterpreterEvent: Equatable, Sendable {
-    case needleMoved(position: StagePoint, heading: Double)
-    case stitch(position: StagePoint, color: ThreadColor, isJump: Bool)
-    case colorArmed
-    case waited(duration: Double)
+    case needleMoved(actor: ActorID, update: NeedleUpdate)
+    case waited(actor: ActorID)
+    case stitch(actor: ActorID, position: StagePoint, layer: Int, color: ThreadColor)
+    case colorArmed(actor: ActorID, hex: String)
     case finalizeRequested(name: String)
 }
 ```
 
-**VirtualNeedle** — The per-object needle state (position and heading).
+`needleMoved` is emitted once per `NeedleUpdate`, so an Arc or GoThrough can emit many within one tick (ADR-047).
+
+**VirtualNeedle** — The per-object needle state (position and heading). Motion bricks apply to it through `apply(_:scope:)`, which returns the updates the brick produced, or `nil` for a non-motion brick.
 
 ```swift
 public struct VirtualNeedle: Hashable, Sendable {
     public var position: StagePoint
     public var heading: Double  // Degrees
+
+    public mutating func apply(_ brick: Brick, scope: some Scope) -> [NeedleUpdate]?
+    public mutating func arc(radius: Double, sweepDegrees: Double) -> [NeedleUpdate]
+    public mutating func goThrough(through: StagePoint, destination: StagePoint) -> [NeedleUpdate]
 }
 ```
+
+`arc` samples a circle at 100 points and `goThrough` a quadratic Bézier through `through` at t = ½ (ADR-047). Each sample that moves the needle yields a `NeedleUpdate` whose heading is the chord it travelled. A degenerate curve, or one whose samples are not finite, feeds nothing and returns one unchanged update.
 
 ## Tick Semantics
 
 - **One tick = one round-robin pass** over all runnable threads (one per `whenStarted` script), in creation order.
 - **One action per thread per tick**: motion, data, `wait`, or embroidery bricks cost exactly one tick; loop bookkeeping is zero-tick (ADR-018).
+- **Arc and GoThrough are one action**: they feed many needle updates, and the stitches they produce, within their single tick (ADR-047).
 - **`wait` uses accumulating logical time**, not wall-clock, so frame rate does not affect duration.
 - **Variable resolution** is first-declaration-wins; object variables shadow project variables.
-- **Formula errors are non-fatal**: motion falls back to zero movement per axis, data operations fall back to zero, loops fall back to zero iterations.
+- **Formula errors are non-fatal**: a motion brick with a bad formula leaves the needle unchanged and still emits one unchanged update (`placeAt` substitutes 0 for the failed coordinate); data operations fall back to zero, loops to zero iterations.
 
 See [ADR-018](../../docs/DECISIONS.md) for the complete tick accounting and loop nesting semantics.
 
@@ -584,6 +662,8 @@ public struct SampleProgram: Sendable, Hashable, Identifiable {
 public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     case octagonRosette
     case squareCoil
+    case arcFlower
+    // A DEBUG-only measurement case (us309Synthetic) is not in SampleLibrary.all.
 }
 ```
 
@@ -593,13 +673,14 @@ Each sample is built by a Swift function (e.g. `makeOctagonRosetteProgram()`) an
 
 - **Octagon Rosette** — Demonstrates nested loops, variables, and zigzag stitching. Transcribed brick-for-brick from Catroid's default example project with verified libm-dependent behaviour (ADR-019).
 - **Square Coil** — A spiral of increasing sides, demonstrating motion from variables and thread-color changes. Carefully parameterized off the DST threshold boundaries (ADR-020).
+- **Arc Flower** — Twelve circles drawn with Arc in a wave of sizes set by `sin`, with a curved GoThrough stem and an absolute heading for each petal. Shows the brick-backend vocabulary (ADR-046, ADR-047).
 
 See `Sources/Samples/Resources/PROVENANCE.md` for detailed transcription notes, measured figures, and cross-platform comparison caveats.
 
 ## Design Constraints
 
 - **Model-only**: Samples depend on `ProgramModel` only, not the engine or interpreter (ADR-022).
-- **Deterministic**: Both samples produce identical output across runs.
+- **Deterministic**: Every shipped sample produces identical output across runs.
 - **Threshold-aware**: Parameters are chosen to exercise (or avoid) boundary conditions relevant to the interpreter and engine.
 
 ---
@@ -636,14 +717,20 @@ public struct StageBox: Hashable, Sendable {
 
 ### Rendering & Interaction
 
-**PreviewRunState** — Display state during a preview run.
+**PreviewRunState** — Everything a running preview knows, as one pure value. The app's view model holds one and feeds it each `RunUpdate`.
 
 ```swift
 public struct PreviewRunState: Equatable, Sendable {
-    public var runState: RunState
-    public var manipulation: StageManipulation
-    public var summary: StageSummary
-    public var exportEligibility: ExportEligibility
+    public var state: RunState { get }                  // Derived from the run phase
+    public var summary: StageSummary { get }            // Rebuilt on state transitions only
+    public private(set) var display: StitchDisplayList
+    public private(set) var needle: PreviewNeedle?
+    public private(set) var exportModel: EmbroideryStream?
+    public var exportEligibility: ExportEligibility { get }
+
+    public mutating func begin()
+    public mutating func apply(_ update: RunUpdate)
+    public mutating func reset()
 }
 ```
 
@@ -651,9 +738,9 @@ public struct PreviewRunState: Equatable, Sendable {
 
 ```swift
 public enum RunState: Hashable, Sendable {
-    case paused
-    case running(RunPhase)
-    case complete(RunCompletion)
+    case idle
+    case running
+    case finished(RunCompletion)
 }
 ```
 
@@ -661,52 +748,75 @@ public enum RunState: Hashable, Sendable {
 
 ```swift
 public enum RunCompletion: Hashable, Sendable {
-    case finished           // Program ran to completion
-    case stitchLimitReached // Hit RunBudget.maxStitches
-    case stoppedByUser      // User called stop()
+    case programFinished    // Every runnable thread finished on its own
+    case stoppedByUser      // The user stopped the run
+    case stitchLimitReached // Hit RunBudget.maxStitchesPerRun
 }
 ```
 
-**ExportEligibility** — Whether a finished run can be exported.
+**ExportEligibility** — Whether the run's design can be exported. It is derived from `exportModel`, which is set only by the terminal update (ADR-027), so mid-run the status is always `.notRun` even though stitches are visible.
 
 ```swift
 public enum ExportEligibility: Hashable, Sendable {
-    case notRun             // No run has completed yet
-    case ready(exportModel: EmbroideryPatternManager)  // Terminal update produced this
+    case notRun, nothingStitched, nothingEmbroiderable, singleStitch, ready
 }
 ```
 
-Export eligibility is written only from the terminal update (ADR-027), so mid-run the status is always `.notRun` even though stitches are visible.
-
-**StageManipulation** — Zoom and pan state.
+**StageManipulation** — Two touch channels (pinch and pan) reduced into one `StageGesture`, which is absolute since its gesture began.
 
 ```swift
 public struct StageManipulation: Equatable, Sendable {
-    public var zoom: Double      // Fit-aware with a floor per ADR-028
-    public var panX, panY: Double
+    public var isLive: Bool { get }
+    public func gesture(in viewport: ViewSize) -> StageGesture?
+    public mutating func pinchBegan(scale: Double, centroid: ViewPoint, within limits: ClosedRange<Double>)
+    public mutating func pinchChanged(to scale: Double)
+    public mutating func pinchEnded()
+    public mutating func panBegan(at translation: ViewPoint)
+    public mutating func panChanged(to translation: ViewPoint)
+    public mutating func panEnded()
+    public mutating func finish(in viewport: ViewSize, touchesRemain: Bool) -> StageGesture?
+    public mutating func cancelled()
 }
 ```
 
-**StageInteraction** — Gesture reduction (pinch/pan) into discrete zoom/pan deltas (ADR-028).
+**StageInteraction** — Where the stage is and what is happening to it: the settled transform, the phase of any settle animation, and the transform to draw (ADR-028). Each call takes the current fit, so the stage can follow a design that grows.
 
 ```swift
 public struct StageInteraction: Equatable, Sendable {
-    public mutating func applyMagnification(_ scale: Double)
-    public mutating func applyTranslation(_ delta: CGSize)
-    public var zoom: StageZoomAdjustment
-    public var pan: StagePanDirection
+    public private(set) var settled: StageTransform?
+    public private(set) var phase: Phase
+    public var isFollowingFit: Bool { get }
+    public var isSettling: Bool { get }
+
+    public func transform(with gesture: StageGesture?, fitting fit: StageTransform,
+                          in viewport: ViewSize, settlingAt progress: Double = 1) -> StageTransform
+    public mutating func commit(_ gesture: StageGesture, fitting fit: StageTransform,
+                                in viewport: ViewSize, settlingAt progress: Double = 1)
+    public mutating func beginManipulating(joining manipulation: StageManipulation,
+                                           fitting fit: StageTransform, settlingAt progress: Double = 1)
+    public mutating func cancelManipulating()
+    public mutating func panned(by delta: ViewPoint, fitting fit: StageTransform,
+                                settlingAt progress: Double = 1)
+    public mutating func adjust(_ direction: StageZoomAdjustment, fitting fit: StageTransform,
+                                in viewport: ViewSize, settlingAt progress: Double = 1)
+    public mutating func beginToggle(about point: ViewPoint, fitting fit: StageTransform,
+                                     settlingAt progress: Double = 1) -> Int?
+    public mutating func beginSettling(fitting fit: StageTransform, settlingAt progress: Double = 1) -> Int?
+    public mutating func finishSettling(_ id: Int)
+    public mutating func followFit()
 }
 ```
 
-**StageSummary** — Accessibility summary of the stage state (ADR-028).
+**StageSummary** — Accessibility summary of the stage state (ADR-028). It is rebuilt when the run changes state, never per batch.
 
 ```swift
 public struct StageSummary: Equatable, Sendable {
-    public var designName: String
-    public var stageWidth: Double   // Millimetres
-    public var stageHeight: Double
-    public var totalStitches: Int
-    public var totalColors: Int
+    public let stitchCount: Int
+    public let colorCount: Int
+    public let widthInMillimetres: Double
+    public let heightInMillimetres: Double
+
+    public init(display: StitchDisplayList, exportModel: EmbroideryStream?)
 }
 ```
 
@@ -719,57 +829,58 @@ public struct PreviewStitch: Hashable, Sendable {
 }
 ```
 
-**StitchDisplayList** — Stitches partitioned by color for efficient rendering.
+**StitchDisplayList** — Stitches partitioned by color for efficient rendering. It is append-only, so a settled prefix never changes (ADR-021).
 
 ```swift
 public struct StitchDisplayList: Equatable, Sendable {
     public struct ColorRun: Hashable, Sendable {
         public let color: ThreadColor
-        public let range: Range<Int>  // Into stitches array
+        public fileprivate(set) var range: Range<Int>  // Into stitches array
     }
-    public var stitches: [PreviewStitch]
-    public var colorRuns: [ColorRun]  // Gapless partition of stitches.indices
+    public private(set) var stitches: [PreviewStitch]
+    public private(set) var colorRuns: [ColorRun]  // Gapless partition of stitches.indices
+    public var bounds: StageBox? { get }
+
+    public mutating func append(_ stitch: PreviewStitch)
 }
 ```
 
 Color runs enable the app to draw one `Path` per color without scanning the stitch array (ADR-024).
 
-**PreviewNeedle** — Needle position and heading for rendering.
+**PreviewNeedle** — The acting object's needle: which actor moved it, and the update it produced.
 
 ```swift
 public struct PreviewNeedle: Hashable, Sendable {
-    public var position: StagePoint
-    public var heading: Double
+    public var actor: ActorID
+    public var update: NeedleUpdate  // position and heading
 }
 ```
 
-**RunBatch** — Stitches and needle state produced in one frame.
+**RunBatch** — Stitches and needle state produced in one frame, plus a design name if the program requested one.
 
 ```swift
 public struct RunBatch: Hashable, Sendable {
     public var stitches: [PreviewStitch]
     public var needle: PreviewNeedle?
+    public var requestedDesignName: String?
+
+    public static func reducing(_ events: [InterpreterEvent], from carriedNeedle: PreviewNeedle? = nil) -> RunBatch
+    public mutating func absorb(_ tick: RunBatch)
 }
 ```
 
-**RunPhase** — Tick progress within the current frame.
+**RunPhase** — Everything that changes only when the run changes state: `state` and the `summary` of what the stage holds. `enter(_:summarising:exportModel:)` is its only transition.
 
-```swift
-public struct RunPhase: Equatable, Sendable {
-    public var ticksThisFrame: Int
-    public var ticksTotal: Int
-    public var stitchesThisFrame: Int
-    public var stitchesTotal: Int
-}
-```
-
-**NeedleGlyph** — Needle rendering options.
+**NeedleGlyph** — The needle indicator's geometry, in view points (not a function of the zoom, so the marker does not grow with it).
 
 ```swift
 public enum NeedleGlyph {
-    public static let width: Double
-    public static let length: Double
-    // Produces CGPath for rendering
+    public static let length: Double = 11
+    public static let halfWidth: Double = 4.5
+    public static let notchLength: Double = 8.5
+    public static let haloWidth: Double = 3
+    public static let increasedContrastHaloWidth: Double = 4
+    public static func outline(at tip: ViewPoint, heading: Double) -> [ViewPoint]?
 }
 ```
 
@@ -794,17 +905,18 @@ The driver runs the interpreter in a detached task, yielding one frame per updat
 
 ```swift
 public protocol RunPacing: Sendable {
-    /// Suspend until the next frame, or until the task is cancelled.
-    /// Must respect cancellation to allow stop() to work (ADR-027).
-    mutating func waitForNextFrame() async throws
+    /// Suspend until the next frame. Must return promptly when the task is
+    /// cancelled, so stop() works (ADR-027).
+    func waitForNextFrame() async
 }
 
 public struct DisplayRunPacing: RunPacing {
-    // Targets ~60 fps
+    public let frameDuration: Duration
+    public init(frameDuration: Duration)
 }
 
 public struct ImmediateRunPacing: RunPacing {
-    // No delay; for tests and fast iteration
+    public init()  // No delay; for tests and fast iteration
 }
 ```
 
@@ -826,7 +938,6 @@ Consume updates via `for await update in session.updates`. Call `stop()` to canc
 
 ```swift
 public struct RunUpdate: Equatable, Sendable {
-    public var state: PreviewRunState
     public var batch: RunBatch
     public var termination: RunTermination?
 }
@@ -836,37 +947,55 @@ public struct RunUpdate: Equatable, Sendable {
 
 ```swift
 public struct RunTermination: Equatable, Sendable {
-    public var reason: RunCompletion
-    public var exportModel: EmbroideryPatternManager
+    public let reason: RunCompletion
+    public let exportModel: EmbroideryStream
 }
 ```
 
 Terminal updates carry the final `exportModel` so a caller can export the design immediately after stop or completion.
 
-**RunBudget** — Tick and stitch allocation per frame (ADR-027).
+**RunBudget** — Tick and stitch allocation per frame, and a per-run stitch cap (ADR-027).
 
 ```swift
 public struct RunBudget: Hashable, Sendable {
-    public let maxTicks: Int
-    public let maxStitches: Int
-    
-    public static let display: RunBudget    // ~60 fps target
-    public static let immediate: RunBudget  // Fast iteration for tests
+    public let ticksPerFrame: Int
+    public let maxStitchesPerFrame: Int
+    public let maxStitchesPerRun: Int
+
+    public static let display: RunBudget    // Defaults: 1 tick and 2,000 stitches per frame, 200,000 per run
 }
 ```
 
 ## Coordinate Transforms
 
-**StageRenderTransform** — Converts between stage space and screen coordinates (ADR-007, ADR-024).
+**StageTransform** — A uniform scale plus a translation between stage space and view space (ADR-007). Uniform, never per-axis, so a design is not stretched.
 
 ```swift
-public enum StageRenderTransform: Hashable, Sendable {
-    /// Apply to a stage point to get screen coordinates
-    public static func apply(_ transform: CGAffineTransform, to point: StagePoint) -> CGPoint
+public struct StageTransform: Hashable, Sendable {
+    public private(set) var scale: Double
+    public private(set) var translation: ViewPoint
+
+    public init(scale: Double = 1, translation: ViewPoint = .zero)
+    public func viewPoint(of stagePoint: StagePoint) -> ViewPoint
+    public func stagePoint(of viewPoint: ViewPoint) -> StagePoint
+    public static func fitting(_ content: StageBox, in viewport: ViewSize, padding: Double = 16) -> StageTransform
 }
 ```
 
-The transform is computed from the `StageManipulation` zoom/pan and the display bounds. Zoom is fit-aware with a floor per ADR-028.
+**StageRenderTransform** — The transform the stage draws with, paired with the transform its cached raster is keyed on (ADR-024). During a gesture the two differ, so the cache can stay valid while the view moves.
+
+```swift
+public enum StageRenderTransform: Hashable, Sendable {
+    case settled(StageTransform)
+    case live(bake: StageTransform, current: StageTransform)
+
+    public var bake: StageTransform { get }
+    public var current: StageTransform { get }
+    public var canUseRaster: Bool { get }
+}
+```
+
+The transform is computed each frame by `StageInteraction.transform(with:fitting:in:settlingAt:)` from the settled transform, the live gesture and the fit. Zoom is fit-aware with a floor per ADR-028. `ViewPoint` and `ViewSize` are the platform-free geometry types; the app layer adapts `StageTransform` to `CGAffineTransform`.
 
 ## Design Constraints
 
@@ -897,5 +1026,8 @@ The following Architecture Decision Records document the design rationale and ar
 - **[ADR-025](../../docs/DECISIONS.md#adr-025)** — DST serialization field widths as throwing errors.
 - **[ADR-027](../../docs/DECISIONS.md#adr-027)** — Run lifecycle and interpreter driver.
 - **[ADR-028](../../docs/DECISIONS.md#adr-028)** — Zoom/pan and stage VoiceOver summary.
+- **[ADR-033](../../docs/DECISIONS.md#adr-033)** — `EditorCore` as a target vended through the `ProgramModel` product.
+- **[ADR-046](../../docs/DECISIONS.md#adr-046)** — Formula functions, constants and sensors (ProgramModel, Interpreter).
+- **[ADR-047](../../docs/DECISIONS.md#adr-047)** — Arc and GoThrough: many needle updates per tick (Interpreter).
 
 When implementing features across products, consult the relevant ADRs before modifying code.

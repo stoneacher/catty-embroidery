@@ -282,6 +282,21 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 
 ---
 
+## US-325 — The engine's `javaRound` is not quite Java's `Math.round`
+
+**Found**: 2026-10-17, by `swift-architect` probing the brick backend's math premises under `jshell` (Java 17). Filed at the feature's close, as its brief lists.
+- **The behaviour:** the engine rounds every stage coordinate with `javaRound`, `floor(x + 0.5)` (`Geometry.swift`, ADR-012). Java 7+ `Math.round` is not that expression. It gives 0 for 0.49999999999999994, where `0.49999999999999994 + 0.5` rounds up to 1.0 before the floor. It also differs near 2⁵², where `x + 0.5` is not representable.
+- **Already handled for formulas:** the `round` function follows Java 7+ (ADR-046 divergence (d)), so a program's `round(…)` matches Catroid.
+- **Why it is not urgent:** for coordinates the gap is sub-resolution, ADR-019's class. A stage value one ulp below a half unit is not a design anyone draws, and 2⁵² stage points is far outside ADR-007's 500 × 500 stage.
+- **Why it is recorded:** ADR-012 and the `javaRound` doc comment both state "Java `Math.round` = `floor(x + 0.5)`" as an identity, which a future port could rely on.
+
+**What taking it would involve.**
+- Decide whether coordinates should follow Java 7+ exactly. Catroid converts float coordinates, so the exact Java edge is itself only approximately Android's.
+- If so: replace `javaRound` with the Java 7+ algorithm already written for the formula function, pin 0.49999999999999994 and a 2⁵²-adjacent value, and re-run every golden. They should stay byte-identical, since no golden input sits on these edges.
+- Either way, keep the corrected wording: ADR-012's rounding line and the `javaRound` comment now note the two edges and point here.
+
+---
+
 ## Scheduled out of this file — the record, because the mechanism is the point
 
 Entries keep their ID when they are scheduled, so existing ADR and journal references keep
