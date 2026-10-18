@@ -577,6 +577,54 @@
         }
       }
     },
+    "formula.call": {
+      "comment": "A one-argument math function inside a block's value, e.g. \"sine(30)\". %1$@ is the function's name, %2$@ its argument, both already formatted.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@(%2$@)"
+          }
+        }
+      }
+    },
+    "formula.call.pair": {
+      "comment": "A two-argument math function inside a block's value, used where numbers are written with a decimal point, e.g. \"modulo(7, 3)\". %1$@ is the function's name, %2$@ and %3$@ its arguments in order, already formatted. Use your language's argument separator; formula.call.pair.decimal.comma is used instead where numbers have a decimal comma.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@(%2$@, %3$@)"
+          }
+        }
+      }
+    },
+    "formula.call.pair.decimal.comma": {
+      "comment": "A two-argument math function inside a block's value, used where numbers are written with a decimal comma, e.g. \"modulo(7,5; 3)\". %1$@ is the function's name, %2$@ and %3$@ its arguments in order, already formatted. The separator must not be a comma, which would read as part of a number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@(%2$@; %3$@)"
+          }
+        }
+      }
+    },
+    "formula.constant.pi": {
+      "comment": "The constant pi inside a block's value. Catroid's formula-editor name (formula_editor_function_pi).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pi"
+          }
+        }
+      }
+    },
     "formula.divide": {
       "comment": "An arithmetic operator inside a block's value, e.g. in \"360 ÷ Inner Loop\". %1$@ and %2$@ are its two operands, already formatted. Use the symbol a pupil in your language would write; keep the spaces unless your language does not use them. Division. Some languages write a colon instead.",
       "extractionState": "manual",
@@ -585,6 +633,222 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ ÷ %2$@"
+          }
+        }
+      }
+    },
+    "formula.function.abs": {
+      "comment": "A math function's name inside a block's value, e.g. the \"absolute value\" in \"absolute value(−3)\". Catroid's own formula-editor name for it (formula_editor_function_abs); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "absolute value"
+          }
+        }
+      }
+    },
+    "formula.function.arccos": {
+      "comment": "A math function's name inside a block's value, e.g. the \"arccosine\" in \"arccosine(0.5)\". Catroid's own formula-editor name for it (formula_editor_function_arccos); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arccosine"
+          }
+        }
+      }
+    },
+    "formula.function.arcsin": {
+      "comment": "A math function's name inside a block's value, e.g. the \"arcsine\" in \"arcsine(0.5)\". Catroid's own formula-editor name for it (formula_editor_function_arcsin); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arcsine"
+          }
+        }
+      }
+    },
+    "formula.function.arctan": {
+      "comment": "A math function's name inside a block's value, e.g. the \"arctangent\" in \"arctangent(1)\". Catroid's own formula-editor name for it (formula_editor_function_arctan); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arctangent"
+          }
+        }
+      }
+    },
+    "formula.function.arctan2": {
+      "comment": "A math function's name inside a block's value, e.g. the \"arctangent2\" in \"arctangent2(1, 2)\". Catroid's own formula-editor name for it (formula_editor_function_arctan2); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arctangent2"
+          }
+        }
+      }
+    },
+    "formula.function.ceil": {
+      "comment": "A math function's name inside a block's value, e.g. the \"ceiling\" in \"ceiling(2.5)\". Catroid's own formula-editor name for it (formula_editor_function_ceil); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ceiling"
+          }
+        }
+      }
+    },
+    "formula.function.cos": {
+      "comment": "A math function's name inside a block's value, e.g. the \"cosine\" in \"cosine(60)\". Catroid's own formula-editor name for it (formula_editor_function_cos); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "cosine"
+          }
+        }
+      }
+    },
+    "formula.function.exp": {
+      "comment": "A math function's name inside a block's value, e.g. the \"exponent\" in \"exponent(1)\". Catroid's own formula-editor name for it (formula_editor_function_exp); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "exponent"
+          }
+        }
+      }
+    },
+    "formula.function.floor": {
+      "comment": "A math function's name inside a block's value, e.g. the \"floor\" in \"floor(2.5)\". Catroid's own formula-editor name for it (formula_editor_function_floor); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "floor"
+          }
+        }
+      }
+    },
+    "formula.function.ln": {
+      "comment": "A math function's name inside a block's value, e.g. the \"natural logarithm\" in \"natural logarithm(10)\". Catroid's own formula-editor name for it (formula_editor_function_ln); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "natural logarithm"
+          }
+        }
+      }
+    },
+    "formula.function.log": {
+      "comment": "A math function's name inside a block's value, e.g. the \"decimal logarithm\" in \"decimal logarithm(100)\". Catroid's own formula-editor name for it (formula_editor_function_log); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "decimal logarithm"
+          }
+        }
+      }
+    },
+    "formula.function.max": {
+      "comment": "A math function's name inside a block's value, e.g. the \"maximum of\" in \"maximum of(1, 2)\". Catroid's own formula-editor name for it (formula_editor_function_max); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "maximum of"
+          }
+        }
+      }
+    },
+    "formula.function.min": {
+      "comment": "A math function's name inside a block's value, e.g. the \"minimum of\" in \"minimum of(1, 2)\". Catroid's own formula-editor name for it (formula_editor_function_min); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "minimum of"
+          }
+        }
+      }
+    },
+    "formula.function.mod": {
+      "comment": "A math function's name inside a block's value, e.g. the \"modulo\" in \"modulo(7, 3)\". Catroid's own formula-editor name for it (formula_editor_function_mod); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "modulo"
+          }
+        }
+      }
+    },
+    "formula.function.round": {
+      "comment": "A math function's name inside a block's value, e.g. the \"round\" in \"round(2.5)\". Catroid's own formula-editor name for it (formula_editor_function_round); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "round"
+          }
+        }
+      }
+    },
+    "formula.function.sin": {
+      "comment": "A math function's name inside a block's value, e.g. the \"sine\" in \"sine(30)\". Catroid's own formula-editor name for it (formula_editor_function_sin); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sine"
+          }
+        }
+      }
+    },
+    "formula.function.sqrt": {
+      "comment": "A math function's name inside a block's value, e.g. the \"square root\" in \"square root(2)\". Catroid's own formula-editor name for it (formula_editor_function_sqrt); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "square root"
+          }
+        }
+      }
+    },
+    "formula.function.tan": {
+      "comment": "A math function's name inside a block's value, e.g. the \"tangent\" in \"tangent(45)\". Catroid's own formula-editor name for it (formula_editor_function_tan); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tangent"
           }
         }
       }
@@ -657,6 +921,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ ^ %2$@"
+          }
+        }
+      }
+    },
+    "formula.sensor.motion.direction": {
+      "comment": "A value read from the object while the program runs: the direction it faces, in degrees. Catroid's formula-editor name (formula_editor_object_rotation).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "motion direction"
+          }
+        }
+      }
+    },
+    "formula.sensor.object.x": {
+      "comment": "A value read from the object while the program runs: its x position. Catroid's formula-editor name (formula_editor_object_x).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "position x"
+          }
+        }
+      }
+    },
+    "formula.sensor.object.y": {
+      "comment": "A value read from the object while the program runs: its y position. Catroid's formula-editor name (formula_editor_object_y).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "position y"
           }
         }
       }
@@ -1321,6 +1621,18 @@
         }
       }
     },
+    "parameter.readonly.function": {
+      "comment": "Explains why a value cannot be edited: it contains a math function such as sine or modulo, and the app has no formula editor yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This value uses a math function. Functions can't be edited yet, so it is kept exactly as it is."
+          }
+        }
+      }
+    },
     "parameter.readonly.negation": {
       "comment": "Explains why a value cannot be edited: it is a formula with a minus sign in front, which a later version of the app will be able to edit.",
       "extractionState": "manual",
@@ -1329,6 +1641,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "This value is a negated formula. It can't be edited yet, so it is kept exactly as it is."
+          }
+        }
+      }
+    },
+    "parameter.readonly.sensor": {
+      "comment": "Explains why a value cannot be edited: it reads the object's x or y position or its direction, and the app has no formula editor yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This value reads the object's position or direction while the program runs. It can't be edited yet, so it is kept exactly as it is."
           }
         }
       }

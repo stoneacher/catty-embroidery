@@ -144,10 +144,13 @@ private extension Formula {
                 return true
             }
             switch formula {
-            case .number, .variable:
+            case .number, .variable, .constant, .sensor:
                 break
-            case let .unaryMinus(operand):
+            case let .unaryMinus(operand), let .unaryFunction(_, operand):
                 pending.append((operand, depth + 1))
+            case let .binaryFunction(_, left, right):
+                pending.append((left, depth + 1))
+                pending.append((right, depth + 1))
             case let .binary(_, left, right):
                 pending.append((left, depth + 1))
                 pending.append((right, depth + 1))

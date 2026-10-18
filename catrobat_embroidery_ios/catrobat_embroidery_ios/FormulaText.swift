@@ -3,7 +3,7 @@ import ProgramModel
 
 /// A `Formula` as the text a brick row shows (US-407).
 ///
-/// **Every case renders**, through an exhaustive switch with no `default:`, so a fifth
+/// **Every case renders**, through an exhaustive switch with no `default:`, so a new
 /// `Formula` case is a compile error here rather than a placeholder on screen. Which of them are
 /// *editable* is US-410's question; this type only reads.
 ///
@@ -83,6 +83,20 @@ nonisolated private struct Renderer {
             return resolve(format(operation, leftText, rightText))
         case let .unaryMinus(operand):
             return resolve(.formulaNegate(self.operand(operand, bracketed: level(of: operand) < .leaf)))
+        case let .unaryFunction(function, argument):
+            // A call's own parentheses group its arguments, so they are never bracketed again.
+            return resolve(.formulaCall(resolve(name(of: function)), render(argument)))
+        case let .binaryFunction(function, first, second):
+            // The separator follows the *number* locale, not the language: where `1.5` prints
+            // `1,5`, a comma between arguments would read as three of them.
+            let name = resolve(name(of: function))
+            return locale.decimalSeparator == ","
+                ? resolve(.formulaCallPairDecimalComma(name, render(first), render(second)))
+                : resolve(.formulaCallPair(name, render(first), render(second)))
+        case .constant(.pi):
+            return resolve(.formulaConstantPi)
+        case let .sensor(sensor):
+            return resolve(name(of: sensor))
         }
     }
 
@@ -95,6 +109,7 @@ nonisolated private struct Renderer {
         case let .number(value): value < 0 ? .negation : .leaf
         case .variable: .leaf
         case .unaryMinus: .negation
+        case .unaryFunction, .binaryFunction, .constant, .sensor: .leaf
         case let .binary(operation, _, _):
             switch operation {
             case .plus, .minus: .additive
@@ -111,6 +126,44 @@ nonisolated private struct Renderer {
         case .mult: .formulaMult(left, right)
         case .divide: .formulaDivide(left, right)
         case .pow: .formulaPow(left, right)
+        }
+    }
+
+    /// Catroid's formula-editor names (`formula_editor_function_*`), so a program reads the
+    /// same on both platforms.
+    private func name(of function: UnaryFunction) -> LocalizedStringResource {
+        switch function {
+        case .sin: .formulaFunctionSin
+        case .cos: .formulaFunctionCos
+        case .tan: .formulaFunctionTan
+        case .arcsin: .formulaFunctionArcsin
+        case .arccos: .formulaFunctionArccos
+        case .arctan: .formulaFunctionArctan
+        case .sqrt: .formulaFunctionSqrt
+        case .abs: .formulaFunctionAbs
+        case .round: .formulaFunctionRound
+        case .floor: .formulaFunctionFloor
+        case .ceil: .formulaFunctionCeil
+        case .ln: .formulaFunctionLn
+        case .log: .formulaFunctionLog
+        case .exp: .formulaFunctionExp
+        }
+    }
+
+    private func name(of function: BinaryFunction) -> LocalizedStringResource {
+        switch function {
+        case .arctan2: .formulaFunctionArctan2
+        case .min: .formulaFunctionMin
+        case .max: .formulaFunctionMax
+        case .mod: .formulaFunctionMod
+        }
+    }
+
+    private func name(of sensor: Sensor) -> LocalizedStringResource {
+        switch sensor {
+        case .objectX: .formulaSensorObjectX
+        case .objectY: .formulaSensorObjectY
+        case .motionDirection: .formulaSensorMotionDirection
         }
     }
 

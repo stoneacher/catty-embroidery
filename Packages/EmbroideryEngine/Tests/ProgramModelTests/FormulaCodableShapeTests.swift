@@ -1,0 +1,88 @@
+import Foundation
+import ProgramModel
+import Testing
+
+/// Brick backend slice 1: the JSON shape of the formula vocabulary is the file
+/// format (ADR-037), so it is pinned as exact text. The synthesized coding keys
+/// are the case names, which is why the names themselves are part of the
+/// contract and are pinned below too — renaming a case would orphan every file
+/// that used it.
+@Suite("Formula codable shape")
+struct FormulaCodableShapeTests {
+    private static func json(_ formula: Formula) throws -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return try String(bytes: encoder.encode(formula), encoding: .utf8) ?? "<not UTF-8>"
+    }
+
+    /// The existing shape the new cases follow, so the expectations below are
+    /// checked against how this encoder really spells an enum.
+    @Test("an existing binary node keeps its shape")
+    func binaryAnchor() throws {
+        #expect(try Self.json(.binary(.divide, .number(1), .number(2)))
+            == #"{"binary":{"_0":{"divide":{}},"_1":{"number":{"_0":1}},"_2":{"number":{"_0":2}}}}"#)
+    }
+
+    @Test("a unary function call")
+    func unaryFunction() throws {
+        #expect(try Self.json(.unaryFunction(.sin, .number(30)))
+            == #"{"unaryFunction":{"_0":{"sin":{}},"_1":{"number":{"_0":30}}}}"#)
+    }
+
+    @Test("a binary function call")
+    func binaryFunction() throws {
+        #expect(try Self.json(.binaryFunction(.mod, .number(7), .variable("n")))
+            == #"{"binaryFunction":{"_0":{"mod":{}},"_1":{"number":{"_0":7}},"_2":{"variable":{"_0":"n"}}}}"#)
+    }
+
+    @Test("a constant")
+    func constant() throws {
+        #expect(try Self.json(.constant(.pi)) == #"{"constant":{"_0":{"pi":{}}}}"#)
+    }
+
+    @Test("a sensor")
+    func sensor() throws {
+        #expect(try Self.json(.sensor(.objectX)) == #"{"sensor":{"_0":{"objectX":{}}}}"#)
+    }
+
+    /// Catroid's `Functions` names, lower-cased as its formula strings spell them,
+    /// so the planned code.xml importer maps 1:1. `rand` and `power` are out of
+    /// scope (brief D3, out-of-scope list).
+    @Test("the unary function vocabulary")
+    func unaryVocabulary() throws {
+        let names = try UnaryFunction.allCases.map { try Self.json(.unaryFunction($0, .number(0))) }
+        #expect(names == [
+            "sin", "cos", "tan", "arcsin", "arccos", "arctan", "sqrt", "abs", "round", "floor",
+            "ceil", "ln", "log", "exp"
+        ].map { #"{"unaryFunction":{"_0":{"\#($0)":{}},"_1":{"number":{"_0":0}}}}"# })
+    }
+
+    @Test("the binary function vocabulary")
+    func binaryVocabulary() throws {
+        let names = try BinaryFunction.allCases.map { try Self.json(.binaryFunction($0, .number(0), .number(0))) }
+        #expect(names == ["arctan2", "min", "max", "mod"].map {
+            #"{"binaryFunction":{"_0":{"\#($0)":{}},"_1":{"number":{"_0":0}},"_2":{"number":{"_0":0}}}}"#
+        })
+    }
+
+    @Test("the constant and sensor vocabulary")
+    func constantAndSensorVocabulary() throws {
+        #expect(try FormulaConstant.allCases.map { try Self.json(.constant($0)) }
+            == [#"{"constant":{"_0":{"pi":{}}}}"#])
+        #expect(try Sensor.allCases.map { try Self.json(.sensor($0)) } == ["objectX", "objectY", "motionDirection"]
+            .map {
+                #"{"sensor":{"_0":{"\#($0)":{}}}}"#
+            })
+    }
+
+    @Test("every new node decodes back to itself", arguments: [
+        Formula.unaryFunction(.sqrt, .binary(.plus, .number(1), .variable("x"))),
+        .binaryFunction(.arctan2, .sensor(.objectY), .unaryMinus(.constant(.pi))),
+        .constant(.pi),
+        .sensor(.motionDirection)
+    ])
+    func decodes(_ formula: Formula) throws {
+        let data = try JSONEncoder().encode(formula)
+        #expect(try JSONDecoder().decode(Formula.self, from: data) == formula)
+    }
+}

@@ -131,24 +131,19 @@ extension Interpreter {
         return false
     }
 
-    /// Executes one brick against its object's runtime. Motion bricks go through
-    /// the US-204 bridge (`VirtualNeedle.apply`), which applies the per-brick
-    /// bad-formula fallback and always emits exactly one update; a non-motion
-    /// brick returns `nil` and is dispatched here. Data bricks write the variable
-    /// store; embroidery bricks (US-206) drive the engine — the interpreter only
-    /// calls it, never re-implementing stream semantics (ADR-012/013/015).
+    /// Executes one brick against its object's runtime, in one exhaustive switch
+    /// so a new brick cannot compile without being dispatched here. Motion bricks
+    /// go through the US-204 bridge (`VirtualNeedle.apply`), which applies the
+    /// per-brick bad-formula fallback and always emits exactly one update. Data
+    /// bricks write the variable store; embroidery bricks (US-206) drive the
+    /// engine — the interpreter only calls it, never re-implementing stream
+    /// semantics (ADR-012/013/015).
     mutating func perform(_ brick: Brick, objectIndex: Int, into events: inout [InterpreterEvent]) {
         let scope = scope(forObjectAt: objectIndex)
-        if let update = objects[objectIndex].needle.apply(brick, scope: scope) {
-            events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
-            // Catroid `Look.positionChanged → runningStitch.update`: an active
-            // pattern consumes the motion; an idle wrapper returns [] (no-op),
-            // so this is the documented once-per-motion feed, not once-per-tick.
-            let stitches = objects[objectIndex].runningStitch.update(update)
-            emitStitches(stitches, objectIndex: objectIndex, into: &events)
-            return
-        }
         switch brick {
+        case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
+             .changeXBy, .changeYBy:
+            performMotion(brick, objectIndex: objectIndex, scope: scope, into: &events)
         case let .setVariable(name, valueFormula):
             // Throwing data formula substitutes 0 (Catroid data actions read
             // through interpretDouble, which returns 0 on failure) — distinct
@@ -160,23 +155,10 @@ extension Interpreter {
             let delta = (try? valueFormula.interpretDouble(scope: scope)) ?? 0
             let current = scope.value(of: name)
             setVariable(name, to: current + delta, objectIndex: objectIndex)
-        default:
-            performEmbroidery(brick, objectIndex: objectIndex, scope: scope, into: &events)
-        }
-    }
-
-    /// Dispatches the eight embroidery bricks (US-206) to the engine. Pattern
-    /// activators read the current needle position as their start (Catroid
-    /// actions construct the stitch reading `sprite.look`); zero / negative /
-    /// non-finite params are engine no-ops (ADR-014). The interpreter only calls
-    /// the engine — it never re-implements dedup / interpolation / color-change /
-    /// layer logic (ADR-012/013/015). Any non-embroidery brick reaching here
-    /// (control bricks are compiled to instructions, never dispatched) no-ops.
-    private mutating func performEmbroidery(
-        _ brick: Brick, objectIndex: Int, scope: VariableStoreScope, into events: inout [InterpreterEvent]
-    ) {
-        switch brick {
         case let .runningStitch(length):
+            // Pattern activators read the current needle position as their start
+            // (Catroid actions construct the stitch reading `sprite.look`); zero /
+            // negative / non-finite params are engine no-ops (ADR-014).
             // Length via interpretInteger (US-202 contract; Int32-saturating).
             let stitchLength = (try? length.interpretInteger(scope: scope)) ?? 0
             objects[objectIndex].runningStitch.activate(RunningStitchPattern(
@@ -196,13 +178,7 @@ extension Interpreter {
                 length: Double(stitchLength), start: objects[objectIndex].needle.position
             ))
         case .stitch:
-            // Catroid `StitchAction`: pause, place one point at the needle,
-            // re-anchor the running stitch there, resume.
-            let point = objects[objectIndex].needle.position
-            objects[objectIndex].runningStitch.pause()
-            emitStitches([point], objectIndex: objectIndex, into: &events)
-            objects[objectIndex].runningStitch.setStartPosition(point)
-            objects[objectIndex].runningStitch.resume()
+            performStitch(objectIndex: objectIndex, into: &events)
         case .sewUp:
             // Catroid `SewUpAction`: 5-point bar tack around the needle. The
             // engine pauses, re-anchors, and resumes the running stitch itself.
@@ -230,9 +206,37 @@ extension Interpreter {
             // (milestone deviation table). The assembled stream is always
             // available via `assembledStream()`; the brick stays for M4/M5.
             events.append(.finalizeRequested(name: name))
-        default:
+        case .repeatLoop, .forever, .loopEnd, .wait:
+            // Never dispatched here: loops compile to instructions
+            // (`ScriptCompiler`) and `wait` blocks in `performActionBrick`.
             break
         }
+    }
+
+    /// Catroid `StitchAction`: pause, place one point at the needle, re-anchor
+    /// the running stitch there, resume.
+    private mutating func performStitch(objectIndex: Int, into events: inout [InterpreterEvent]) {
+        let point = objects[objectIndex].needle.position
+        objects[objectIndex].runningStitch.pause()
+        emitStitches([point], objectIndex: objectIndex, into: &events)
+        objects[objectIndex].runningStitch.setStartPosition(point)
+        objects[objectIndex].runningStitch.resume()
+    }
+
+    /// Moves the needle through the US-204 bridge and feeds the update to the
+    /// running stitch — Catroid `Look.positionChanged → runningStitch.update`: an
+    /// active pattern consumes the motion; an idle wrapper returns [] (no-op), so
+    /// this is the documented once-per-motion feed, not once-per-tick.
+    private mutating func performMotion(
+        _ brick: Brick, objectIndex: Int, scope: VariableStoreScope, into events: inout [InterpreterEvent]
+    ) {
+        guard let update = objects[objectIndex].needle.apply(brick, scope: scope) else {
+            assertionFailure("perform routes motion bricks only")
+            return
+        }
+        events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
+        let stitches = objects[objectIndex].runningStitch.update(update)
+        emitStitches(stitches, objectIndex: objectIndex, into: &events)
     }
 
     /// Sends each stage point to the shared manager (at the object's layer and
@@ -275,7 +279,8 @@ extension Interpreter {
     func scope(forObjectAt index: Int) -> VariableStoreScope {
         VariableStoreScope(
             objectVariables: objects[index].variables,
-            projectVariables: projectVariables
+            projectVariables: projectVariables,
+            needle: objects[index].needle
         )
     }
 }

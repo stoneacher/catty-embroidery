@@ -84,6 +84,21 @@ struct BrickParameterTests {
         #expect(ParameterEditorKind(.fileName("a.dst")) == .fileName("a.dst"))
     }
 
+    /// Brick backend slice 1: no UI path can author a function or a sensor yet
+    /// (brief D9), so each is shown locked with its own reason — a sensor reads
+    /// as "a live value", a call or `pi` as "a calculation function".
+    @Test("function, constant and sensor formulas are locked with their reason")
+    func functionsAndSensorsAreLocked() {
+        let call = Formula.unaryFunction(.sin, .number(30))
+        let pair = Formula.binaryFunction(.mod, .variable("i"), .number(4))
+        let constant = Formula.constant(.pi)
+        let sensor = Formula.sensor(.objectX)
+        #expect(ParameterEditorKind(.formula(call)) == .readOnlyFormula(call, reason: .function))
+        #expect(ParameterEditorKind(.formula(pair)) == .readOnlyFormula(pair, reason: .function))
+        #expect(ParameterEditorKind(.formula(constant)) == .readOnlyFormula(constant, reason: .function))
+        #expect(ParameterEditorKind(.formula(sensor)) == .readOnlyFormula(sensor, reason: .sensor))
+    }
+
     /// `-5` typed on the pad is `.number(-5)` (US-404), but a persisted
     /// `.unaryMinus(.number(5))` is still a tree the pad cannot write back
     /// byte-identically. One rule: every `.unaryMinus` is read-only.

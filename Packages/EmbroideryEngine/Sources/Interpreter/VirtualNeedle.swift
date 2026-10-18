@@ -91,8 +91,26 @@ public extension VirtualNeedle {
     /// Deliberately *not* Catroid's `Look.breakDownCatroidAngle` fold to
     /// (−180, 180]: Catroid's sprite layer pre-normalizes there, but this engine
     /// pins exact mod-360 periodicity. Same sin/cos geometry, different stored
-    /// representation.
+    /// representation; the fold happens only where it is observable, in
+    /// `catroidDirection`.
     private func normalized(_ degrees: Double) -> Double {
         degrees.truncatingRemainder(dividingBy: 360)
+    }
+}
+
+extension VirtualNeedle {
+    /// The heading as Catroid's `MOTION_DIRECTION` reports it (ADR-046): reduced
+    /// mod 360 (a start heading reaches the needle unreduced), folded into
+    /// (−180, 180] (`Look.breakDownCatroidAngle`), and never `−0`, which Catroid's
+    /// fold cannot produce and `arctan2` would expose.
+    var catroidDirection: Double {
+        let reduced = heading.truncatingRemainder(dividingBy: 360)
+        if reduced > 180 {
+            return reduced - 360
+        }
+        if reduced <= -180 {
+            return reduced + 360
+        }
+        return reduced == 0 ? 0 : reduced
     }
 }

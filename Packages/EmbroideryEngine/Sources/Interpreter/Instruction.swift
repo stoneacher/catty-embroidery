@@ -61,7 +61,11 @@ enum ScriptCompiler {
                 if case let .repeatBegin(times, _) = instructions[beginIndex] {
                     instructions[beginIndex] = .repeatBegin(times: times, endIndex: endIndex)
                 }
-            default:
+            // Listed, not defaulted: a new brick must be compiled deliberately.
+            case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
+                 .changeXBy, .changeYBy, .wait, .setVariable, .changeVariableBy, .stitch,
+                 .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
+                 .stopRunningStitch, .writeEmbroideryToFile:
                 instructions.append(.brick(brick))
             }
         }

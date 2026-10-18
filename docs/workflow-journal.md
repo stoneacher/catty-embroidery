@@ -3114,3 +3114,156 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   3. **A fix is new surface.** Every Codex finding from round 2 on sat in the previous round's fix. Rounds 4 and 5 found the same class twice ("a position where identity was meant"), so one class sweep would have saved a round.
   4. **Check gates by exit code, every time.** A `;` instead of `&&` let a failing lint through to a commit once and to a `git add` once. The rule already exists (memory, 2026-07-31); the slips came from long one-line chains, not from not knowing it.
 - **Close-out PR:** docs only. `/codex-review` was not run, with the same disposition as PRs #38, #48 and #49: the adversarial rubric has no subject in status prose.
+
+## 2026-10-17 — Brick backend planned: two retrieval agents, then the architect corrected them
+
+- **Scope came from Sebastian** in two choices: Arc and GoThrough (the only bricks of Catroid's Embroidery category still missing) plus formula math functions and object sensors, with thin app wiring. Control bricks and comparison/logic operators stay with the Variables feature.
+- **Delegation shape:** an `Explore` agent surveyed Catroid's brick set and a `swift-search` agent mapped our end-to-end brick support, in parallel; both reports went to `swift-architect` as stated facts to verify.
+- **The architect's verification paid for itself.** Of the retrieved facts, it found:
+  - the Catroid action paths wrong (`content/actions/`, not `actions/`);
+  - two more MOD quirks than reported — `x mod 0 = x`, and a `while` loop that never terminates for `mod(-1e300, 1)`, a hang in Android;
+  - the RAND integer rule depending on the literal's *spelling*, which our model cannot represent — the deciding reason to defer `rand`;
+  - Catroid's Arc/GoThrough on a bad formula teleporting to the origin through unassigned action fields — an accident, not a semantics;
+  - Arc's i = 0 sample being a 1-ulp float/double artefact that can turn a 0° arc's heading.
+- **Probed, not assumed:** it ran the math premises in Swift and `jshell` and found two things no reading would have: Java 7+ `Math.round` differs from ADR-012's `floor(x + 0.5)` at 0.49999999999999994 and near 2^52, and Swift's `max`/`min` disagree with Java's on NaN in *both* spellings. Caveat recorded: desktop JDK 17, not Android ART.
+- **Decided by Sebastian (2026-10-17):** mirror Catroid's chord heading after Arc/GoThrough; keep format v1 and amend ADR-037 with a freeze-at-first-distribution rule; defer `rand`; ship a bundled sample so the read-only function formulas are visible.
+- **Brief:** `docs/features/brick-backend.md`, eight slices in two PRs (formula language, then path bricks). The feed rule and the function divergences are pinned by no ADR, so the brief gets one Codex round before slice 1's tests.
+
+## 2026-10-17 — Brick backend: Codex brief review, one round, 7 findings, all valid
+
+- **Why a brief round:** the Arc/GoThrough feed rule and the formula-function divergences are pinned by no ADR or reference test (ADR-041).
+- **Invocation trap:** the first run failed in seconds because Codex's default model (`gpt-6.1-sol`) is not available on a ChatGPT account. The run with `-m gpt-5.6-sol` worked, as already noted in memory.
+- **Highest severity: High.** The brief's feed gate compared `Double` sample positions, but Catroid feeds the running stitch only when the `Float` it stores in `Look` changes. Codex built a legal input that shows it: start (2^30, 2^30), arc r = 20, 90°, running stitch 10. Catroid stitches nothing; we would stitch. This was resolved as a pinned divergence, extending ADR-014's accepted float-vs-Double divergence to the motion layer, where our needle has always been `Double`. A named test pins it. Codex also confirmed that Catroid's *heading* gate compares theoretical `Double` samples, so the chord-heading mirror (D6) is exact.
+- **Mediums (5):**
+  - Skipping i = 0 does not make a 0° arc a no-op. The binary64 residual of reconstructing the start reaches every sample, so an explicit degenerate guard was added, with an adversarial test case.
+  - The v1 freeze rule must pin encode-from-content, decode-all-supported and refuse-stamp-below-content.
+  - The NaN round-trip test was impossible under ADR-037, so its persistence now expects refusal.
+  - `arctan2(0,0) == 0` and "`tan(90)` finite" pass wrong implementations. Added `arctan2(+0,−0)`, a relative tolerance for large values, and the `sin(180)` residual.
+  - Slice 0's compile probe cannot discriminate a single restored `default:`. Its diagnostics are now asserted by location.
+- **Low (1):** slices 6 and 7 lacked killing tests and mutations (GoThrough slot routing, the sample-builder guard).
+- **What it says about the planning pass:** `swift-architect` had *probed* the math and still missed the Float feed gate, because it compared samples the way the brief describes rather than the way `Look` stores them. Four of the seven findings are of one class: a test that a wrong implementation passes. That is ADR-032 invariant 2 found at brief time, before any test exists, which is the cheapest moment to find it.
+- **Disposition:** a brief review is one round (skill §0), so there is no verification round. The changes are in the brief, and slice reviews will check them against code.
+
+## 2026-10-17 — Brick backend slice 0: exhaustive dispatch, and a probe that had to learn to name sites
+
+- **What the slice did:** removed the swallowing `default:` over `Brick` from `ScriptCompiler.compile`, `VirtualNeedle.apply`, `Interpreter.perform` and `Brick.opensLoop`. `perform` and `performEmbroidery` were folded into one exhaustive switch. Behaviour is preserved, confirmed independently by both reviewers.
+- **Red evidence for a refactor:** `scripts/brick-dispatch-probe.sh` adds a temporary `Brick` case to a copy of the package, builds module by module, and asserts the "switch must be exhaustive" diagnostics. Red baseline: ProgramModel and Interpreter compiled with the probe case, i.e. they swallowed it. EditorCore was already exhaustive.
+- **Three tooling traps, all found by running the probe:**
+  1. The diagnostics carry ANSI colour codes, so a plain grep matched nothing.
+  2. Debug builds stop scheduling frontend jobs after the first failing file, so `ProgramDocument.swift`'s site was never compiled.
+  3. `-Xswiftc -wmo` is refused by SwiftPM's build system ("index output filenames do not match"). A release build is whole-module and works.
+  Under `set -e`, a grep that finds nothing killed the script silently, so the first "red" was not a red at all.
+- **Reviews:**
+  - **`swift-code-reviewer`:** no defect. It ran its own mutants (three `Formula.==` mutations, two restored defaults), all killed.
+  - **Codex slice round:** highest severity Medium, 4 findings, all valid:
+    1. The census proved only reflexivity, so `case (.variable, .variable): true` survived. Fixed with payload-sibling pairs per case.
+    2. `BrickParameter.replacing` keeps its `default:` by design. Documented in the probe header together with its existing runtime guard over `BrickKind.allCases`.
+    3. Samples and StagePreview are outside the probe. That is a limit, not a fix: a swallowing default where no site is expected compiles cleanly and is indistinguishable, so it is documented.
+    4. Matching by file and count let a new exhaustive switch in the same file mask a regressed one. Fixed: diagnostics are now matched by file plus enclosing declaration, and a decoy-switch mutant is killed.
+- **Mutants:** 2 restored defaults, 1 same-file decoy, 2 `Formula.==` arms. All killed.
+- **Lesson:** both reviewers checked the evidence, not the refactor, and the refactor was fine. Codex's findings were all of one class, "the proof is weaker than its claim". That is ADR-032 invariant 2 applied to tooling.
+
+## 2026-10-17 — Brick backend slice 1: formula vocabulary; the reviewer, not Codex, found the user-visible defect
+
+- **What landed:** the four `Formula` cases `unaryFunction`, `binaryFunction`, `constant` and `sensor`, with Catroid-named vocabularies. The JSON shape is pinned as exact text, since it is the file format, and the predicted shapes matched first time. The depth walk and census were extended, the new nodes are locked in the editor with their own reasons, and they render under Catroid's formula-editor names. Evaluation is a NaN placeholder until slices 2–3.
+- **Red:** 14 compile errors in the package, then 2 exhaustive-switch errors in the app. The app's variable picker had a switch nobody had listed at planning.
+- **Mutants:** 7 killed at green. A further one was killed after review.
+  - **One test exists because of a mutant.** A min ↔ max name swap passed the "distinct and resolved" test, so an exact-name table was added for it.
+  - **SwiftLint caught what the local run did not show as failure.** CI runs `--strict`, so six warnings would have failed the PR. `ln` and `pi` are coding keys and cannot be renamed, so they got targeted disables that say why.
+- **Reviews, one round each:**
+  - **Both reviewers, independently:** a binary function's *first* argument was unproved in the depth walk. Fixed with a parameterised test, and the mutant is now killed.
+  - **Codex** (highest Medium):
+    - The NaN placeholder makes a hand-edited file run with the new nodes silently skipped. That is valid and was known; it is tracked as "PR 1 must contain slices 2–3".
+    - The sensor pairs were not all compared. Fixed with an all-pairs test over every vocabulary.
+  - **`swift-code-reviewer`:** a real user-visible defect neither the brief nor Codex saw. With an English UI and an Austrian region, the number formatter prints `1,5`, so `minimum of(1,5, 2)` reads as three arguments. The separator now follows the decimal separator (a semicolon where numbers use a comma), pinned with `en_AT`.
+- **What it says about delegation:** the two reviewers overlapped on one finding and each found one the other missed. The reviewer's was the more consequential one, and it came from knowing the deployment context (TU Graz: English UI, Austrian region), not from the adversarial rubric.
+
+## 2026-10-17 — Brick backend slice 2: function semantics; a test helper's tolerance hid the reviewers' finding
+
+- **What landed:** Catroid's math functions, with ADR-046. The expected values were *generated* by running Catroid's own expressions (and its `interpretFunctionMod`, verbatim) under Java 17 rather than typed in, and are compared within 4 ulps. 16 mutants were killed at green.
+- **Highest severity: High (Codex)**, with the same finding from both reviewers, independently:
+  - `mod` claimed "floored modulo, which Catroid implements except at the pinned cases", but it returned `−0` for `mod(−6, 3)` where Catroid's loop gives `+0`. That is observable: `arctan2(mod(−6, 3), −1)` is −180 against 180.
+  - It also returned the divisor itself for a tiny negative dividend: `mod(−1e−14, 360) = 360`, out of range, where Catroid gives 0.
+  - Catroid's loop also accumulates rounding for non-integral divisors (`mod(−1, 0.1)`), a divergence the ADR had not named.
+- **Why the suite missed it:** the comparison helper treated an expected zero as `actual == 0`, and `−0 == 0`. The table row `(−6, 3, 0)` was there and could not fail. The `swift-code-reviewer` also noticed that the totality property reaches the divisor-returned case 92 times in its 5,000 trees but only asserts finiteness. That is ADR-032 invariant 2 inside the oracle rather than the code.
+- **Decision (mine, within the brief's D2):**
+  - Keep the floored modulo, and make its exact results bitwise Catroid's: a zero carries the divisor's sign, and a result equal to the divisor becomes 0.
+  - Name the accumulated-rounding difference in ADR-046 (a), rather than mirroring Catroid's loop up to a cap. That loop's cost and error both grow with the dividend.
+  - Verified rather than argued: a grid of 8,253 operand pairs compared bitwise with Catroid's verbatim code differs only at the 354 pinned `6 mod −3`-style cases.
+- **Other review results:**
+  - The reviewer: Darwin's libm is within 2 ulps of every row, so the ADR now says so. The `toRadians` constant wording is now "desktop JDK 9+", since older Android libcore divides. A named round-saturation test was added; that mutant was killed only by a trap.
+  - Codex's second finding (Medium) was the same rounding divergence.
+- **Delegation note:** this is the third slice in a row where the in-loop reviewer and Codex overlapped on one finding. Here the overlap *was* the finding.
+
+## 2026-10-18 — Brick backend slice 3: sensors; PR 1's scope is complete
+
+- **What landed:**
+  - `Scope.value(of: Sensor)` is a required member with no default.
+  - The interpreter's scope carries the acting object's needle as it was before the brick applies.
+  - `motionDirection` is folded into (−180, 180] at the read.
+- **Red and mutants:**
+  - Behavioural red: 16 issues.
+  - **The survivor at green:** a "no reduction before the fold" mutant. Every turn already reduces mod 360, but an object's start heading reaches the needle raw. Start headings of ±900° and −1000° now kill it.
+- **Reviews, one round each:**
+  - **`swift-code-reviewer`** brute-forced the fold against Catroid's `float` round trip over every integer in ±17M. Its findings:
+    - The direction can be `−0`: 47,222 integer headings give `−0` here and none in Catroid. Fixed.
+    - The normalize on sensor reads was unproven. A needle at +∞ now kills that mutant.
+    - A pre-existing divergence: a `repeat` reached mid-tick evaluates its count a tick before Catroid, which sensors now reach through the shared needle. Filed as **US-323** instead of fixed here, because it changes ADR-018's tick accounting.
+  - **Codex** (highest Medium):
+    - Catroid's `float` direction round trip (`180.000001` reads 180 there). It is pinned in ADR-046 with the measured bound (|d| < 2²⁴ − 89 for integers) and not emulated: the needle's own motion is `Double` (ADR-014), and emulating `float` only at the sensor would make the sensor disagree with the needle it reports.
+    - Three discrimination gaps, all covered: the shared needle tick by tick, cross-object creation order, and a sensor in `wait`.
+- **A fixture error caught by its own red:** the creation-order test first failed because an undeclared variable lands in the writer's object store. The red was a wrong fixture, not a bug, and reading the failure rather than the test name showed it.
+- **CI:** one app test, `ExportWiringTests.committingANameRewritesTheFile`, hit its 1-minute time limit on a loaded runner, where neighbouring tests took about 45 s each. It does not touch formulas. The failed job was re-run rather than the limit changed.
+- **Slices 0–3 are done:** that is PR 1's planned scope (formula language). The `−0` class has now appeared in two consecutive slices (`mod` in slice 2, the direction here). A sign-exact zero comparison belongs in every numeric test helper from the start.
+
+## 2026-10-18 — Brick backend PR 1 handover, Codex round 1: no findings, three blind spots
+
+- **Verdict:** the first handover round had **no correctness findings**, with highest severity none. Codex confirmed format symmetry, the function semantics and their four pinned divergences, the sensor snapshots, unchanged DST behaviour through the dispatch refactor, and the decimal-comma rendering.
+- **Blind spots it named:**
+  1. There was no end-to-end test from a saved document through the interpreter to DST bytes using a function or a sensor.
+  2. Malformed JSON for the new shapes was not pinned as `.corrupt`.
+  3. Nothing would catch an RTL or reordered translation of the call formats.
+- **Disposition:**
+  - (1) and (2) are added in `FormulaVocabularyDocumentTests`. A saved program using `round`, `max`, `sqrt`, `objectX`, `arctan2` and `mod` must stitch **byte for byte** like its literal twin, and four malformed shapes must decode as `.corrupt`. Both tests passed on first run, so their discrimination was proved by mutation instead: a sensor reading y for x, and a non-floored `mod`, each turn the end-to-end test red.
+  - (3) is tracked, not tested. The catalog is English-only, so there is no translation to get wrong yet. It belongs with the M6 pseudo-localization and RTL audit.
+- **Loop state:** round 1 produced test-code changes, so round 2 runs as the verification round (ADR-041 stop rule).
+- **Why the slice reviews paid off:** four slice rounds and four reviewer passes had already taken the correctness findings, so the handover round reviewed a branch with nothing left to find in the code, only in the coverage. That is the ADR-041 design (risky slices reviewed when green) behaving as intended.
+
+## 2026-10-18 — Brick backend PR 1, Codex round 2: the fixture that tested the wrong thing
+
+- **Verification of round 1's additions:**
+  - The end-to-end test was confirmed valid and discriminating for its claimed mutants. Codex noted it is a smoke test: `max` returning its first operand would pass its selected inputs. The function tables cover that.
+  - Three of the four malformed-shape fixtures were confirmed correctly shaped.
+  - Deferring the RTL check was judged sound.
+- **Finding (Medium), valid:** the "unknown sensor" fixture replaced `pi` with `objectZ`, because the valid document held no sensor. It therefore tested an unknown *constant*, and a sensor decoder that silently mapped unknown names would have passed. The edit guard only proved that *some* text had changed.
+- **Fix:** the valid document gains a sensor. Each fixture now names the exact malformed node it must produce, and a test asserts that the node is present in the edited text and absent from the valid one.
+  - The strengthened guard immediately caught a second broken edit: my own rewrite of the missing-argument fixture, whose target string did not match the sorted encoding. That fixture now replaces the whole node.
+- **Lesson:** this is the third oracle-weakness finding on this branch, after the test helper that accepted any zero and the totality test that only asserted finiteness. Each time, a guard checked the weaker property: "changed", "zero", "finite". The pattern is to state the exact property the fixture exists for, and assert *that*.
+- **Loop state:**
+  - Severity history: round 1 none, round 2 Medium. That is not convergence.
+  - Round 2 changed code (tests), so round 3 runs.
+
+## 2026-10-18 — Brick backend PR 1, Codex round 3: a prefix claim, and a format property nobody had probed
+
+- **Verification:** the round 2 fix was confirmed for all four fixtures, with no new production findings.
+- **Finding (Low), valid:** the unknown-function fixture claimed a *prefix* of its node, so a broader edit (`"rand":{},"sin":{}`) would still satisfy the guard. Fixed: the claim is now the whole node, asserted exactly once. Codex's reproducer was run against the new guard and caught.
+- **What running the reproducer found beyond the review:**
+  - The broader edit also *decoded* without error, where I had expected `.corrupt`.
+  - A direct probe confirmed that Swift's synthesized `Codable` drops an unknown key sitting beside a known one, in enums and structs alike. That is true of the whole v1 format since US-404, despite ADR-037's title "refuse what you do not understand".
+  - Only a hand-edited file reaches it, because a future build's new vocabulary is refused by the version probe under the freeze rule. Filed as **US-324** rather than widened into this PR.
+- **Loop state:**
+  - Severity history: none → Medium → Low. One decrease so far.
+  - Round 3 changed test code, so round 4 runs.
+
+## 2026-10-18 — Brick backend PR 1, Codex round 4: the loop ends on a doc-only finding
+
+- **Verification:**
+  - The round 3 fix was confirmed: every fixture claims a complete node exactly once, and Codex found no wrong decoder that passes.
+  - US-324's analysis was confirmed: the leniency is pre-existing and format-wide, deferring it is sound before distribution, and no test in the PR depends on it. Codex widened "only hand-edited" to "hand-edited, corrupted or externally produced", and the entry now says so.
+- **Finding (Low), valid and doc-only:** the brief and US-324 cited "the ADR-037 amendment" for the format-freeze rule (D8), and it had never been written into `DECISIONS.md`. That left the rule's only home in a brief, which is not the arbiter. Written now:
+  - ADR-037's 2026-10-18 amendment, covering additive v1 growth until the first distributed build and the three pinned admission operations after it.
+  - ADR-040's amendment for the two new lock reasons, which PR 1 ships but which had also been left for "later".
+- **Loop end:** round 4's triage produced no code change, so stop condition 1 applies.
+  - Severity history: **none → Medium → Low → Low**, 4 rounds against a cap of 5.
+  - Rounds 2–4 found nothing in production code; every finding was in a test fixture's guard or in documentation.
+- **What the loop says about the slice reviews:** after four slice rounds and four reviewer passes, the handover loop found no production defect. Its value was in the oracles: a fixture testing the wrong node, a prefix claim, and a promised ADR text that did not exist. ADR-032 invariant 3 ("remove every copy of a corrected claim") has a dual, *write the one copy you cite*. The brief had cited an amendment that existed nowhere.
