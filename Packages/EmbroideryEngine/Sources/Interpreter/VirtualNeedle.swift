@@ -93,7 +93,7 @@ public extension VirtualNeedle {
     /// pins exact mod-360 periodicity. Same sin/cos geometry, different stored
     /// representation; the fold happens only where it is observable, in
     /// `catroidDirection`.
-    func normalized(_ degrees: Double) -> Double {
+    internal func normalized(_ degrees: Double) -> Double {
         degrees.truncatingRemainder(dividingBy: 360)
     }
 }

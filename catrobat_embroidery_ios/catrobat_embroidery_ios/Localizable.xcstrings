@@ -110,7 +110,7 @@
       }
     },
     "brick.arc.left": {
-      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle along a circle, turning left (anticlockwise). %1$@ is the radius, %2$@ the angle in degrees; each is a value that may be a number, a variable name or a small formula, already formatted. Catroid's wording (arc_direction, arc_with_radius, arc_for_degrees). Arguments are positional and may be reordered.",
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle along a circle, turning left (anticlockwise). %1$@ is the radius, %2$@ the angle in degrees; each is a value that may be a number, a variable name or a small formula, already formatted. Catroid's wording (arc_direction, arc_with_radius, arc_for_degrees). Arguments are positional and may be reordered. The degree sign follows the angle even when it is a formula (\"for \\\"r\\\" × 2°\" means the whole formula, in degrees); if your language would read it as applying to the last number only, use the word for degrees instead.",
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -122,7 +122,7 @@
       }
     },
     "brick.arc.right": {
-      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle along a circle, turning right (clockwise). %1$@ is the radius, %2$@ the angle in degrees; each is a value that may be a number, a variable name or a small formula, already formatted. Catroid's wording (arc_direction, arc_with_radius, arc_for_degrees). Arguments are positional and may be reordered.",
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle along a circle, turning right (clockwise). %1$@ is the radius, %2$@ the angle in degrees; each is a value that may be a number, a variable name or a small formula, already formatted. Catroid's wording (arc_direction, arc_with_radius, arc_for_degrees). Arguments are positional and may be reordered. The degree sign follows the angle even when it is a formula (\"for \\\"r\\\" × 2°\" means the whole formula, in degrees); if your language would read it as applying to the last number only, use the word for degrees instead.",
       "extractionState": "manual",
       "localizations": {
         "en": {

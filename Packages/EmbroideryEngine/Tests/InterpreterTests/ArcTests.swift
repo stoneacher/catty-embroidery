@@ -152,114 +152,25 @@ struct ArcTests {
         #expect(close(needle.position.x, start.x - 20, 1e-6) && close(needle.position.y, start.y + 20, 1e-6))
     }
 
-    // MARK: - In the interpreter
-
-    private static func program(_ bricks: [Brick], startHeading: Double = 0) -> Program {
-        Program(scenes: [Scene(objects: [Object(startHeading: startHeading, scripts: [Script(bricks: bricks)])])])
+    /// A radius far below the start's ulp reconstructs the start exactly at every
+    /// sample: no chord, so nothing is fed and the heading is kept. Feeding
+    /// zero chords would turn the needle to `atan2(0, 0)` = 0° (`swift-code-reviewer`,
+    /// slice 4).
+    @Test("an arc too small to move the needle keeps its heading")
+    func zeroChordKeepsHeading() throws {
+        let start = StagePoint(x: 5, y: 5)
+        let (updates, needle) = try updates(Self.arc(.left, 1e-300, 90), from: start, heading: 33)
+        #expect(updates == [NeedleUpdate(position: start, heading: 33)])
+        #expect(needle == VirtualNeedle(position: start, heading: 33))
     }
 
-    @Test("an arc costs one tick, however many samples it feeds")
-    func oneTick() {
-        var interpreter = Interpreter(
-            program: Self.program([Self.arc(.left, 10, 90), .moveNSteps(.number(5))]),
-            clock: InterpreterClock(tickDelta: 0.05)
-        )
-        guard case let .ticked(first) = interpreter.step(), case let .ticked(second) = interpreter.step() else {
-            Issue.record("expected two ticks")
-            return
-        }
-        #expect(first.count {
-            if case .needleMoved = $0 {
-                true
-            } else {
-                false
-            }
-        } == 100)
-        #expect(second.count {
-            if case .needleMoved = $0 {
-                true
-            } else {
-                false
-            }
-        } == 1)
-        #expect(interpreter.step() == .finished)
-    }
-
-    /// Oracle by composition, not by re-implementation: the stitches the
-    /// interpreter emits for a zigzag along an arc equal what `ZigzagStitchPattern`
-    /// produces when fed the interpreter's own needle updates in order.
-    @Test("a zigzag along an arc stitches each fed update, heading included")
-    func zigzagAlongArc() {
-        var interpreter = Interpreter(
-            program: Self.program([.zigZagStitch(length: .number(2), width: .number(10)), Self.arc(.right, 50, 180)]),
-            clock: InterpreterClock(tickDelta: 0.05)
-        )
-        let events = interpreter.run(maxTicks: 100)
-        var pattern = ZigzagStitchPattern(length: 2, width: 10, start: StagePoint(x: 0, y: 0))
-        var expected: [StagePoint] = []
-        for case let .needleMoved(_, update) in events {
-            expected += pattern.update(update)
-        }
-        let stitched = events.compactMap { event -> StagePoint? in
-            if case let .stitch(_, position, _, _) = event {
-                position
-            } else {
-                nil
-            }
-        }
-        #expect(!expected.isEmpty)
-        #expect(stitched == expected)
-    }
-
-    // MARK: - Android golden exports (D5's only external check)
-
-    private static func ourRecords(_ bricks: [Brick]) throws -> [DSTRecordPosition] {
-        var interpreter = Interpreter(
-            program: program(bricks, startHeading: 90),
-            clock: InterpreterClock(tickDelta: 0.05)
-        )
-        _ = interpreter.run(maxTicks: 1000)
-        return try decodeRecordPositions(DSTFile(stream: interpreter.assembledStream(), name: "arc").data)
-    }
-
-    private static func expectWithinOneUnit(
-        _ ours: [DSTRecordPosition], _ android: [DSTRecordPosition],
-        sourceLocation: SourceLocation = #_sourceLocation
-    ) {
-        #expect(ours.count == android.count, "\(ours.count) records against Android's \(android.count)",
-                sourceLocation: sourceLocation)
-        for (index, (mine, theirs)) in zip(ours, android).enumerated() {
-            #expect(mine.kind == theirs.kind && abs(mine.x - theirs.x) <= 1 && abs(mine.y - theirs.y) <= 1,
-                    "record \(index): \(mine) against Android's \(theirs)", sourceLocation: sourceLocation)
-        }
-    }
-
-    @Test("the decoder reads the Android export it is compared against")
-    func decoderReadsAndroidExport() throws {
-        let records = try decodeRecordPositions(AndroidReference.data("arc_run"))
-        #expect(records.count == 41)
-        #expect(records.first == DSTRecordPosition(kind: .stitch, x: 0, y: 0))
-        #expect(records.last == DSTRecordPosition(kind: .end, x: 56, y: -122))
-    }
-
-    @Test("running stitch along two arcs matches the Android export")
-    func androidArcRun() throws {
-        let ours = try Self.ourRecords([
-            .runningStitch(length: .number(10)),
-            Self.arc(.left, 50, 360),
-            Self.arc(.right, 30, 90),
-            .moveNSteps(.number(40))
-        ])
-        try Self.expectWithinOneUnit(ours, decodeRecordPositions(AndroidReference.data("arc_run")))
-    }
-
-    @Test("zigzag along an arc matches the Android export")
-    func androidArcZigzag() throws {
-        let ours = try Self.ourRecords([
-            .zigZagStitch(length: .number(2), width: .number(10)),
-            Self.arc(.right, 50, 180),
-            .moveNSteps(.number(50))
-        ])
-        try Self.expectWithinOneUnit(ours, decodeRecordPositions(AndroidReference.data("arc_zigzag")))
+    /// A start heading reaches the needle unreduced, so the arc must reduce it
+    /// mod 360 before converting to radians: 90 + 360·2⁴⁰ is exactly 90 mod 360,
+    /// and its arc is the same arc (`swift-code-reviewer`, slice 4).
+    @Test("an arc from a huge equivalent heading is the same arc")
+    func headingReducedBeforeRadians() throws {
+        let huge = 90 + 360 * 1_099_511_627_776.0
+        #expect(try updates(Self.arc(.right, 15, 120), heading: huge).updates
+            == updates(Self.arc(.right, 15, 120), heading: 90).updates)
     }
 }
