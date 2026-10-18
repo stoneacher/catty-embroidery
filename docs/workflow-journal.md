@@ -3254,3 +3254,16 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Loop state:**
   - Severity history: none → Medium → Low. One decrease so far.
   - Round 3 changed test code, so round 4 runs.
+
+## 2026-10-18 — Brick backend PR 1, Codex round 4: the loop ends on a doc-only finding
+
+- **Verification:**
+  - The round 3 fix was confirmed: every fixture claims a complete node exactly once, and Codex found no wrong decoder that passes.
+  - US-324's analysis was confirmed: the leniency is pre-existing and format-wide, deferring it is sound before distribution, and no test in the PR depends on it. Codex widened "only hand-edited" to "hand-edited, corrupted or externally produced", and the entry now says so.
+- **Finding (Low), valid and doc-only:** the brief and US-324 cited "the ADR-037 amendment" for the format-freeze rule (D8), and it had never been written into `DECISIONS.md`. That left the rule's only home in a brief, which is not the arbiter. Written now:
+  - ADR-037's 2026-10-18 amendment, covering additive v1 growth until the first distributed build and the three pinned admission operations after it.
+  - ADR-040's amendment for the two new lock reasons, which PR 1 ships but which had also been left for "later".
+- **Loop end:** round 4's triage produced no code change, so stop condition 1 applies.
+  - Severity history: **none → Medium → Low → Low**, 4 rounds against a cap of 5.
+  - Rounds 2–4 found nothing in production code; every finding was in a test fixture's guard or in documentation.
+- **What the loop says about the slice reviews:** after four slice rounds and four reviewer passes, the handover loop found no production defect. Its value was in the oracles: a fixture testing the wrong node, a prefix claim, and a promised ADR text that did not exist. ADR-032 invariant 3 ("remove every copy of a corrected claim") has a dual, *write the one copy you cite*. The brief had cited an amendment that existed nowhere.

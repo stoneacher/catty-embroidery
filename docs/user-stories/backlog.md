@@ -273,7 +273,7 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 - **The behaviour:** Swift's synthesized `Codable` builds an enum's keyed container from the keys it *knows*, and a struct ignores fields it does not declare. So `{"rand":{},"sin":{}}` decodes as `sin`, `{"leaf":{"_0":1},"bogus":{}}` as `leaf(1)`, and `{"a":1,"extra":2}` as `Box(a: 1)`. An unknown key on its own is refused, as ADR-037 intends.
 - **Scope:** this holds for the whole v1 format since US-404, for every enum and struct, and is not specific to the new formula vocabulary.
 - **Why it matters:** ADR-037 is titled "refuse what you do not understand", and a hand-edited file loses the unknown part silently, so the next autosave writes the file without it.
-- **Why it is not urgent:** a future build adding vocabulary bumps the format version under the freeze rule (brief D8, ADR-037 amendment), and the old reader refuses it on the version probe before it reaches the shape. Only hand-edited files reach this path.
+- **Why it is not urgent:** a future build adding vocabulary bumps the format version under the freeze rule (ADR-037's 2026-10-18 amendment), and the old reader refuses it on the version probe before it reaches the shape. App-authored files never contain such keys; only hand-edited, corrupted or externally produced files reach this path.
 
 **What taking it would involve.**
 - Strict-key decoding, either through a decoding pass that compares each container's `allKeys` against the raw JSON object's keys, or through a pre-decode walk of `JSONSerialization` output against the schema.

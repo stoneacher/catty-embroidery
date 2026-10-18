@@ -46,10 +46,10 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 034 | Editor | `Brick` has no identity; addressing is index-based; the script list's row identity is derived by the editor (diff-followed IDs), never stored. | Active, amended |
 | 035 | Editor | Pair semantics for the editor verbs. | Superseded by 045 |
 | 036 | Editor | `UndoStack` in `EditorCore` is the truth and owns the program; bounded at 50; explicit coalescing sessions; an app-owned `UndoManager`, vended by a first-responder anchor, kept at the stack's exact depths (US-411). | Active, amended |
-| 037 | Persistence | Program document: version 1 only, refuse rather than trap, non-finite rejected at input, depth cap 128; multi-window last-writer-wins by revision. | Active, amended |
+| 037 | Persistence | Program document: version 1 only (growing additively until the first distributed build, then a pinned freeze rule), refuse rather than trap, non-finite rejected at input, depth cap 128; multi-window last-writer-wins by revision. | Active, amended |
 | 038 | Editor | `EditorViewModel` is the only writer; a changing edit voids the run; the selection carries no program. | Active, amended |
 | 039 | Editor UI | Three-column split on regular, push chain on compact; launch is a selection; palette popover/sheet; parameters off-row. | Active, amended twice |
-| 040 | Editor UI | Parameters editable where M4 has a control; 14-colour thread palette; `VariableName` rules; live-apply that keeps no rejected prefix. | Active |
+| 040 | Editor UI | Parameters editable where M4 has a control (function and sensor formulas locked with their own reasons); 14-colour thread palette; `VariableName` rules; live-apply that keeps no rejected prefix. | Active, amended |
 | 041 | Process | The unit of work is a feature; Codex cap 5; risky slices reviewed when green; every slice mutation-checked; manual accessibility at a pre-beta review and the graph drift check at milestone/release or ADR consolidation, not per feature. | Active, amended |
 | 042 | Package layout | Six targets, five products, dependencies pointing inward. | Active |
 | 043 | Stage | Rendering rules, coarsening while live, the performance bar and the current fallback ladder. | Active |
@@ -939,6 +939,18 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 
 **Amended 2026-09-29 (US-408).** The clause above — undo/redo must mint "**not** through ADR-038's announcement" — was written when that announcement fired only for `apply`. US-408 widened it instead (ADR-038's 2026-09-29 amendment): `onProgramChanged` fires for every successful undo and redo, so both mint and persist through the same `programChanged()` path as an edit. The rule this ADR cares about holds unchanged: a history transition is user-initiated, mints a fresh revision on the main actor, and saves exactly once (`HistoryTransitionTests`); an empty undo or redo mints nothing.
 
+**Amendment (2026-10-18, Brick backend) — v1 grows additively until the first distributed build; the freeze rule is written now.** ADR-046 adds four `Formula` cases. They are additive: every existing document decodes unchanged. The only reader that would misreport a file using them is an *older* build, which would say `.corrupt` rather than `.unsupportedVersion`, and no build has left the developer's devices (TestFlight is blocked on enrolment).
+
+**Decision** (Sebastian, 2026-10-17, Brick backend brief D8):
+- **Until the first build is distributed to anyone else, `formatVersion` 1 may grow additively.** New cases and new vocabulary may join it; nothing may change meaning. The checked-in sample JSONs stay byte-identical.
+- **From the first distributed build on, any vocabulary growth bumps the version**, and admission works in three pinned operations:
+  - **Encode** derives the stamp from content: the *lowest* version that can represent the program, through an exhaustive `requiredFormatVersion` walk. It never trusts the stored `Program.formatVersion`, so a program that avoids new bricks stays readable by older builds.
+  - **Decode** admits every supported version ≤ the current one, replacing today's `== currentFormatVersion`.
+  - **Decode refuses** a document whose content needs a newer version than its stamp (`formatVersion < requiredFormatVersion(program)`), as `.unsupportedVersion`. A file stamped v1 but holding v2 vocabulary is therefore not admitted.
+- None of the three is built yet; v1 is still the only version. The rule is recorded so the freeze cannot happen without it.
+
+**Consequences**: Encode/decode symmetry (this ADR's contract) holds across versions, because both sides compute the same `requiredFormatVersion`. US-324 (an unknown key beside a known one is dropped rather than refused) is independent of the freeze: it concerns hand-edited, corrupted or externally produced v1 files, never one a newer build wrote.
+
 ## ADR-038 — The working program: an applied edit voids the run, and the selection stops carrying the program (2026-09-27)
 **Status**: Active, amended 2026-09-29; one bullet overruled by ADR-039 (see marker). The change pipeline is restated in ADR-045.
 **Context**: Until US-405, `AppModel.selection` wrapped a `SampleProgram`, so "the program on the stage" and "a bundled sample" were the same value. An edited program has no `SampleID`, and ADR-026's eager export preparation means a finished run leaves a `.dst` on disk that `ShareLink` will offer. The running interpreter is safe — `Interpreter(program:clock:)` takes the program by value and builds its own compiled threads and runtime stores — but the **prepared file** is not: without a rule, a user could edit a program and share a file describing the one they no longer have. ADR-027 closed "export after stop must still work"; this closes "export after edit must not silently work".
@@ -1082,6 +1094,12 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - A variable-driven design can be built from the blank program. Rename and delete of a declaration are known M4 gaps (ADR-035's 2026-10-03 amendment).
 - The palette is 14 colours, and anything else is reachable only from a file. That matches what DST can carry.
 
+**Amendment (2026-10-18, Brick backend) — two more lock reasons.** ADR-046's formula vocabulary has no UI to author it until a formula editor exists, so its nodes are shown locked, like `.binary` and `.unaryMinus`:
+- `.unaryFunction`, `.binaryFunction` and `.constant` lock with reason `.function` ("This value uses a math function…").
+- `.sensor` locks with reason `.sensor` ("This value reads the object's position or direction while the program runs…").
+- The reason is chosen by the formula's **root** node, as before. So `−position x` reads as a negation, not a sensor. A "most restrictive reason in the tree" rule is left for the formula editor.
+- The app renders calls under Catroid's formula-editor names (`sine(30)`, `modulo(7, 3)`, `position x`). A two-argument call uses `;` instead of `,` wherever the number locale's decimal separator is a comma, because `minimum of(1,5, 2)` reads as three arguments.
+- Arc's left/right control is added by PR 2 of the same feature and amends this ADR again there.
 
 ## ADR-041 — The unit of work is a feature, not a ≤ 5 h story; the Codex loop is capped at 5 (2026-10-09)
 **Context**: M1–M4 ran on user stories of ≤ ~5 h, each with its own story file, estimate, branch, draft PR, `[red]` commit, `swift-code-reviewer` pass, Codex loop (cap 10), journal entries, ROADMAP status paragraph and `/finish` close-out. That granularity bought a lot: thirteen M4 stories show where the per-story review rounds caught real defects. It also made the fixed cost per story larger than the work in many stories. Planning M4 alone took five review rounds before any code existed, and late-M4 stories were spending more session time on close-out and review loops than on implementation. Where a feature has an obvious shape (the brick backend, the editor UI, variables), cutting it into 5 h pieces adds hand-offs without adding feedback.
