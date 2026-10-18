@@ -336,18 +336,31 @@ struct ProblemLine: View {
 
 /// Arc's side, as a segmented choice: one discrete edit, like a thread swatch, so there is
 /// nothing to coalesce and nothing to type.
+///
+/// The setter is a closure *literal*, as in `VariableChooser`: passing a stored function value
+/// to `Binding(get:set:)` made Swift 6.3.3 crash in IR generation under Release (its
+/// `@isolated(any)` reabstraction thunk; CI's Release build, PR #72), while Xcode 27.1 compiled it.
 struct ArcDirectionPicker: View {
+    let editor: EditorViewModel
     let selection: ArcDirection
-    let choose: @MainActor @Sendable (ArcDirection) -> Void
 
     var body: some View {
-        Picker(selection: Binding(get: { selection }, set: choose)) {
+        Picker(selection: direction) {
             ForEach(ArcDirection.allCases, id: \.self) { direction in
                 Text(ParameterEditorText.name(of: direction)).tag(direction)
             }
         } label: {
-            Text(ParameterEditorText.title(of: .direction))
+            EmptyView()
         }
         .pickerStyle(.segmented)
+        .accessibilityLabel(Text(ParameterEditorText.title(of: .direction)))
+    }
+
+    private var direction: Binding<ArcDirection> {
+        Binding {
+            selection
+        } set: { chosen in
+            editor.setParameter(.direction, to: .arcDirection(chosen))
+        }
     }
 }
