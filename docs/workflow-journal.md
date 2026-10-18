@@ -3215,3 +3215,16 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **A fixture error caught by its own red:** the creation-order test first failed because an undeclared variable lands in the writer's object store. The red was a wrong fixture, not a bug, and reading the failure rather than the test name showed it.
 - **CI:** one app test, `ExportWiringTests.committingANameRewritesTheFile`, hit its 1-minute time limit on a loaded runner, where neighbouring tests took about 45 s each. It does not touch formulas. The failed job was re-run rather than the limit changed.
 - **Slices 0–3 are done:** that is PR 1's planned scope (formula language). The `−0` class has now appeared in two consecutive slices (`mod` in slice 2, the direction here). A sign-exact zero comparison belongs in every numeric test helper from the start.
+
+## 2026-10-18 — Brick backend PR 1 handover, Codex round 1: no findings, three blind spots
+
+- **Verdict:** the first handover round had **no correctness findings**, with highest severity none. Codex confirmed format symmetry, the function semantics and their four pinned divergences, the sensor snapshots, unchanged DST behaviour through the dispatch refactor, and the decimal-comma rendering.
+- **Blind spots it named:**
+  1. There was no end-to-end test from a saved document through the interpreter to DST bytes using a function or a sensor.
+  2. Malformed JSON for the new shapes was not pinned as `.corrupt`.
+  3. Nothing would catch an RTL or reordered translation of the call formats.
+- **Disposition:**
+  - (1) and (2) are added in `FormulaVocabularyDocumentTests`. A saved program using `round`, `max`, `sqrt`, `objectX`, `arctan2` and `mod` must stitch **byte for byte** like its literal twin, and four malformed shapes must decode as `.corrupt`. Both tests passed on first run, so their discrimination was proved by mutation instead: a sensor reading y for x, and a non-floored `mod`, each turn the end-to-end test red.
+  - (3) is tracked, not tested. The catalog is English-only, so there is no translation to get wrong yet. It belongs with the M6 pseudo-localization and RTL audit.
+- **Loop state:** round 1 produced test-code changes, so round 2 runs as the verification round (ADR-041 stop rule).
+- **Why the slice reviews paid off:** four slice rounds and four reviewer passes had already taken the correctness findings, so the handover round reviewed a branch with nothing left to find in the code, only in the coverage. That is the ADR-041 design (risky slices reviewed when green) behaving as intended.
