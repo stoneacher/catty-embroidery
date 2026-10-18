@@ -25,6 +25,16 @@
    segment three times. */
 "sample.squareCoil.description" = "A square spiral in triple stitch, winding outward in two colours.";
 
+/* Display name of the third bundled design: twelve circles fanned around the
+   centre like the petals of a flower, with a curved stem. Shown in the sample
+   picker. */
+"sample.arcFlower.name" = "Arc Flower";
+
+/* One-line description of the arc flower design, shown under its name in the
+   sample picker. The petals are circles of different sizes; the stem is a
+   curve in a second thread colour. */
+"sample.arcFlower.description" = "Twelve circles in a wave of sizes, with a curved stem in a second colour.";
+
 /* DNT — do not translate. Display name of US-309's measurement fixture, shown
    in the sample picker in debug builds only, so no user in any locale ever sees
    it. The key cannot be #if DEBUG'd out of this catalog, so it reaches Crowdin

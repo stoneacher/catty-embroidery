@@ -17,6 +17,10 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     /// length grown by a variable each turn.
     case squareCoil
 
+    /// Our own content (Brick backend): twelve circles fanned around the centre
+    /// in a wave of sizes, with a curved stem — Arc, GoThrough, `sin` and a sensor.
+    case arcFlower
+
     #if DEBUG
     /// US-309's measurement fixture: a 50 000-stitch hatch, reachable in the
     /// picker so the exit criterion can be captured and screenshotted in the
@@ -77,6 +81,7 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
         switch self {
         case .octagonRosette: "OctagonRosette"
         case .squareCoil: "SquareCoil"
+        case .arcFlower: "ArcFlower"
         #if DEBUG
         // 14 ASCII characters, inside the DST `LA` field's 15 (ADR-012), so the
         // seeded export name is valid and the export gate opens in the

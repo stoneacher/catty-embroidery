@@ -48,7 +48,8 @@ struct SampleBudgetTests {
     @Test("per-tick stitch maximum is the number US-306's budget is sized against",
           arguments: [
               (SampleID.octagonRosette, 51),
-              (SampleID.squareCoil, 132)
+              (SampleID.squareCoil, 132),
+              (SampleID.arcFlower, 58)
           ])
     func perTickStitchMaximum(_ id: SampleID, _ expected: Int) {
         let measured = run(SampleLibrary[id])

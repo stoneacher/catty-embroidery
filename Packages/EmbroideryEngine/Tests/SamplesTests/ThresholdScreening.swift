@@ -228,9 +228,11 @@ func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: I
     }
     var anchor = StagePoint(x: origin.startX, y: origin.startY)
 
-    for batch in measured.batches {
-        guard let move = batch.compactMap(needleMove(in:)).first else { continue }
-
+    // Every update, not the first of each tick: an Arc or GoThrough feeds up to
+    // 100 updates in its one tick (ADR-047), and screening only the first saw 96
+    // of Arc Flower's moves and disagreed with the engine (Brick backend slice 7).
+    // For one-update-per-tick programs the two readings are the same sequence.
+    for move in measured.batches.flatMap({ $0.compactMap(needleMove(in:)) }) {
         let target = move.position
         let current = anchor
         let dx = target.x - current.x
@@ -277,17 +279,29 @@ func needleMove(in event: InterpreterEvent) -> NeedleUpdate? {
     }
 }
 
-/// The per-tick emitted-stitch counts, restricted to the ticks that actually
-/// moved the needle — the sequence `mirrorIsFaithful` compares against.
+/// The stitches each needle update emitted, in order: the sequence
+/// `mirrorIsFaithful` compares against. A stitch counts towards the update before
+/// it **in the same tick**. Counting is per *update* because an Arc's tick carries
+/// up to 100 updates, each followed by its own stitches (ADR-047). It stays inside
+/// the tick because a tick with no update, such as `sewUp`'s tack, belongs to no
+/// move, as it did when this counted whole ticks.
 func emissionCountsPerMove(_ measured: SampleRun) -> [Int] {
-    measured.batches.compactMap { batch in
-        guard batch.contains(where: { needleMove(in: $0) != nil }) else { return nil }
-        return batch.count {
-            if case .stitch = $0 {
-                true
-            } else {
-                false
+    var counts: [Int] = []
+    for batch in measured.batches {
+        var current: Int?
+        for event in batch {
+            switch event {
+            case .needleMoved:
+                counts.append(0)
+                current = counts.count - 1
+            case .stitch:
+                if let current {
+                    counts[current] += 1
+                }
+            default:
+                break
             }
         }
     }
+    return counts
 }

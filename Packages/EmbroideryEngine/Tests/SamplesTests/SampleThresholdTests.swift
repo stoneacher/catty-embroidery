@@ -10,6 +10,32 @@ import Testing
 /// is not a guard.
 @Suite("ADR-019 threshold screening")
 struct SampleThresholdTests {
+    /// Each shipping sample's pattern length and points per interval: the
+    /// zigzag emits one offset point per interval, the triple stitch three, the
+    /// running stitch one.
+    static let screenedSamples = [
+        (SampleID.octagonRosette, 2.0, 1),
+        (SampleID.squareCoil, 6.0, 3),
+        (SampleID.arcFlower, 4.0, 1)
+    ]
+
+    /// A sample missing from the table is never screened, and nothing would
+    /// say so: Arc Flower was, until this guard (Brick backend slice 7).
+    @Test("every shipping sample is screened")
+    func everySampleIsScreened() {
+        #expect(Set(Self.screenedSamples.map(\.0)) == Set(SampleID.shipping))
+    }
+
+    /// Sample 3 runs on Arcs and a GoThrough, so it is screened per needle
+    /// update, not per tick (`screen`): 815 probes, none near a boundary.
+    @Test("the arc flower is far from any floor boundary")
+    func arcFlowerIsFarOffBoundary() {
+        let screening = screen(SampleLibrary[.arcFlower], patternLength: 4, pointsPerInterval: 1)
+        #expect(screening.probes.count > 800)
+        #expect(screening.atRisk.isEmpty, "at risk: \(screening.atRisk.map(\.moveIndex))")
+        #expect(screening.minimumUlpsFromBoundary > 1e9, "closest approach \(screening.minimumUlpsFromBoundary) ulps")
+    }
+
     /// The screening is only evidence if the mirrored anchor is the engine's
     /// anchor. This checks it the only way that proves anything: the counts the
     /// mirror derives must equal the `.stitch` counts the engine actually emitted,
@@ -19,10 +45,7 @@ struct SampleThresholdTests {
     /// screen would be measuring a model of the engine, which is precisely the
     /// mistake ADR-019 exists to stop.
     @Test("the screening mirror reproduces the engine's own emission counts",
-          arguments: [
-              (SampleID.octagonRosette, 2.0, 1),
-              (SampleID.squareCoil, 6.0, 3)
-          ])
+          arguments: SampleThresholdTests.screenedSamples)
     func mirrorIsFaithful(_ id: SampleID, _ length: Double, _ pointsPerInterval: Int) {
         let sample = SampleLibrary[id]
         let screening = screen(sample, patternLength: length, pointsPerInterval: pointsPerInterval)
@@ -133,10 +156,7 @@ struct SampleThresholdTests {
     /// than a value: an update whose residue is dominated by the perpendicular
     /// term is safe for US-207's reason, whatever its ulp figure says.
     @Test("the residue decomposition is reported for every screened update",
-          arguments: [
-              (SampleID.octagonRosette, 2.0, 1),
-              (SampleID.squareCoil, 6.0, 3)
-          ])
+          arguments: SampleThresholdTests.screenedSamples)
     func residueDecompositionIsFinite(_ id: SampleID, _ length: Double, _ pointsPerInterval: Int) {
         let screening = screen(SampleLibrary[id], patternLength: length, pointsPerInterval: pointsPerInterval)
         for probe in screening.probes {

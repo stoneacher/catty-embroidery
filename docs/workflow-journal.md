@@ -3339,3 +3339,22 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **A real UI finding, only visible on screen:** GoThrough's editor listed "Through x", "Through y", then a bare "X", "Y". Nothing said the last two were the destination, though the row's own sentence does. The `swift-code-reviewer` had flagged it from the catalog as "worth a look"; the screenshot settled it.
   - **The fix:** slot titles take the edited brick's kind, so GoThrough's destination reads "To x"/"To y" after Catroid's "then to", and Place at keeps "X"/"Y". It was tested first, and the section headers and accessibility labels share one title property. Recorded as an ADR-040 amendment, together with the direction picker that PR 1's amendment had deferred to PR 2.
 - **Tooling, again:** after an XcodeBuildMCP test run reinstalled the app, launching failed twice with "Application failed preflight checks". `simctl uninstall` plus a rebuild fixed it each time, as memory records. It also clears the autosave, so the bricks had to be re-added through the palette. Scrolling the palette sheet needed the right scroll container. The snapshot carries no frames, so finding it meant trying candidates until new rows appeared.
+
+## 2026-10-18 — Brick backend slice 7: a sample that found three gaps in the sample infrastructure
+
+- **What landed:** Arc Flower, the third bundled sample and the first to use the new vocabulary.
+  - Twelve circles are drawn as eight 45° Arcs each, with radius `40 + 15·sin(petal·120°)`.
+  - Each petal starts from an absolute `pointInDirection(petal·30)`, so the chord heading's drift cannot skew the fan.
+  - A green GoThrough stem bends from the `position x` sensor.
+- **What the sample exposed, in order:**
+  1. **The library's two-second animation floor failed.** An Arc costs one tick however far it goes (ADR-047), so twelve 360° Arcs finished in about 50 ticks and each circle appeared in one frame. Drawing each petal in eighths makes it grow visibly. That is a genuine product property of Arc worth knowing for anyone writing programs: a long Arc is instantaneous on the stage, as on Android.
+  2. **The ADR-019 screening mirror was unfaithful for any program with an Arc.** It took only the *first* needle update per tick, an assumption true of every motion brick until slice 4. Its own faithfulness test is what surfaced it (`faithful=false`, 96 probes for hundreds of updates).
+     - **The fix:** mirror per update, with stitches attributed within their tick.
+     - **The first rewrite was itself wrong:** attributing across ticks put `sewUp`'s five tack stitches onto the last move. The element-by-element comparison caught it on exactly that last element.
+     - The two existing samples' sequences are unchanged.
+  3. **The screening and per-tick budget tables had no totality check.** A new sample silently skipped both, and Arc Flower did until a guard over `SampleID.shipping` was added.
+- **Also found:** the regeneration suite's documented `--filter "Sample resource regeneration"` matches nothing and writes no file. It now names the type.
+  - Regenerating rewrote both existing resources **byte-identical**, which is direct evidence for the ADR-037 amendment's "v1 grows additively".
+- **A design decision made on the stage, not in the code:** the first wave, `sin(petal·60°)`, completes two cycles over twelve petals and drew a two-lobed propeller. The fan was even, as the heading test proved, but it did not read as a flower. `sin(petal·120°)` gives four-fold symmetry with the same radius multiset, so the stitch count and the screening margin are unchanged.
+- **Locked-formula screenshot:** the reason reads "calculation", not "function", because the radius's root node is `+` (ADR-040's root rule). That rule is documented, and its refinement is left for the formula editor.
+- **CI:** `fc3070a` completed every job on the Xcode 27.1 runner, the first full app-test run there.

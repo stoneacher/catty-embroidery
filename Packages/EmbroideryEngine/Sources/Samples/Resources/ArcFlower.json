@@ -1,0 +1,273 @@
+{
+  "formatVersion" : 1,
+  "name" : "Arc Flower",
+  "scenes" : [
+    {
+      "name" : "Scene 1",
+      "objects" : [
+        {
+          "name" : "Needle",
+          "scripts" : [
+            {
+              "bricks" : [
+                {
+                  "setThreadColor" : {
+                    "hex" : "#db2777"
+                  }
+                },
+                {
+                  "runningStitch" : {
+                    "length" : {
+                      "number" : {
+                        "_0" : 4
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "Petal",
+                    "to" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "repeatLoop" : {
+                    "times" : {
+                      "number" : {
+                        "_0" : 12
+                      }
+                    }
+                  }
+                },
+                {
+                  "placeAt" : {
+                    "x" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    },
+                    "y" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "pointInDirection" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "mult" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "variable" : {
+                            "_0" : "Petal"
+                          }
+                        },
+                        "_2" : {
+                          "number" : {
+                            "_0" : 30
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "repeatLoop" : {
+                    "times" : {
+                      "number" : {
+                        "_0" : 8
+                      }
+                    }
+                  }
+                },
+                {
+                  "arc" : {
+                    "degrees" : {
+                      "number" : {
+                        "_0" : 45
+                      }
+                    },
+                    "direction" : {
+                      "left" : {
+
+                      }
+                    },
+                    "radius" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 40
+                          }
+                        },
+                        "_2" : {
+                          "binary" : {
+                            "_0" : {
+                              "mult" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "number" : {
+                                "_0" : 15
+                              }
+                            },
+                            "_2" : {
+                              "unaryFunction" : {
+                                "_0" : {
+                                  "sin" : {
+
+                                  }
+                                },
+                                "_1" : {
+                                  "binary" : {
+                                    "_0" : {
+                                      "mult" : {
+
+                                      }
+                                    },
+                                    "_1" : {
+                                      "variable" : {
+                                        "_0" : "Petal"
+                                      }
+                                    },
+                                    "_2" : {
+                                      "number" : {
+                                        "_0" : 120
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "changeVariableBy" : {
+                    "name" : "Petal",
+                    "value" : {
+                      "number" : {
+                        "_0" : 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "setThreadColor" : {
+                    "hex" : "#16a34a"
+                  }
+                },
+                {
+                  "placeAt" : {
+                    "x" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    },
+                    "y" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "goThrough" : {
+                    "throughX" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "sensor" : {
+                            "_0" : {
+                              "objectX" : {
+
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "number" : {
+                            "_0" : 45
+                          }
+                        }
+                      }
+                    },
+                    "throughY" : {
+                      "number" : {
+                        "_0" : -120
+                      }
+                    },
+                    "x" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    },
+                    "y" : {
+                      "number" : {
+                        "_0" : -210
+                      }
+                    }
+                  }
+                },
+                {
+                  "sewUp" : {
+
+                  }
+                }
+              ],
+              "header" : {
+                "whenStarted" : {
+
+                }
+              }
+            }
+          ],
+          "startHeading" : 0,
+          "startX" : 0,
+          "startY" : 0,
+          "variables" : [
+            {
+              "name" : "Petal",
+              "value" : 0
+            }
+          ],
+          "zIndex" : 0
+        }
+      ]
+    }
+  ],
+  "variables" : [
+
+  ]
+}
