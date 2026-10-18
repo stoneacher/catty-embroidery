@@ -3395,3 +3395,14 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The `swift-documenter` verified every snippet by grepping declarations. I then compiled both Quick Starts in a throwaway test file, and they build.
   - Its last change was M3's final verification (2026-09-18). That left M4's editor work and PR 1 undocumented, and the M3 pass evidently did not re-check the older StagePreview snippets.
 - **Close-out filed:** backlog US-325 (`javaRound` is not exactly Java 7+ `Math.round`), with an inline correction on ADR-012's rounding line and on `javaRound`'s comment.
+
+## 2026-10-18 — Brick backend PR 2, Codex handover round 1: a bound that a new composition outgrew
+
+- **Round 1 (highest severity Medium, code changed):** one finding, and it is a real one.
+  - **The problem:** ADR-014 bounds one needle update at a million whole stitch lengths. ADR-047 lets one action emit 100 updates, each of which passes that bound. `tripleStitch(1)` with `arc(left, 5 000 000, 360)` would therefore materialise ~94 million stitch events in one tick. ADR-027's run cap is checked between ticks, too late.
+  - **The fix extends ADR-014 to the whole action:** a path whose chords hold more than a million lengths feeds the pattern nothing, all or nothing, with the anchor untouched. The needle still moves.
+    - Single-update motions keep the old feed, so no existing behaviour or golden moved. The full suite, including the Android exports, is unchanged.
+    - Five tests first (red as a compile failure), then four mutations, all red: the interpreter never using the path feed; the first chord dropped; a bound ten times looser; feeding the pattern but discarding the results, which moves the anchor.
+    - Recorded as an ADR-047 amendment.
+- **Why every earlier review missed it:** each one checked the arc's *geometry* and the per-tick *event count*. The brief's "budget check" used a program with no stitch pattern, which looks like the case but cannot fail on it. Codex named that test as the blind spot. Two slice rounds and two Claude reviews had seen the per-update bound and the 100-sample loop separately, and none composed them.
+- **Also corrected:** the brief described that test as a check of "RunBudget/driver allocation", which it never was.

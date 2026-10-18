@@ -229,17 +229,22 @@ extension Interpreter {
     /// active pattern consumes the motion; an idle wrapper returns [] (no-op), so
     /// this is the documented once-per-update feed, not once-per-tick. An Arc's
     /// updates are fed one by one, each followed by its own stitches, all within
-    /// the brick's single tick (ADR-047).
+    /// the brick's single tick (ADR-047). A many-update action is fed as one
+    /// path, so ADR-014's million-length bound covers the whole action
+    /// (`RunningStitch.update(path:from:)`); a single update is fed as before.
     private mutating func performMotion(
         _ brick: Brick, objectIndex: Int, scope: VariableStoreScope, into events: inout [InterpreterEvent]
     ) {
+        let start = objects[objectIndex].needle.position
         guard let updates = objects[objectIndex].needle.apply(brick, scope: scope) else {
             assertionFailure("perform routes motion bricks only")
             return
         }
-        for update in updates {
+        let stitchesPerUpdate = updates.count > 1
+            ? objects[objectIndex].runningStitch.update(path: updates, from: start)
+            : updates.map { objects[objectIndex].runningStitch.update($0) }
+        for (update, stitches) in zip(updates, stitchesPerUpdate) {
             events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
-            let stitches = objects[objectIndex].runningStitch.update(update)
             emitStitches(stitches, objectIndex: objectIndex, into: &events)
         }
     }

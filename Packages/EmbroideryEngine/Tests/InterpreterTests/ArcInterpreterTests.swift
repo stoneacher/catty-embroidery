@@ -92,6 +92,43 @@ struct ArcInterpreterTests {
         #expect(ticks == 1000)
     }
 
+    /// Each of these 100 chords is ~126 000 lengths, inside ADR-014's per-update
+    /// bound; the whole circle is ~1.26 million, over it. One tick must not
+    /// materialise them all, so the action feeds nothing and the needle still
+    /// moves (Codex, PR 2 handover round 1).
+    @Test("an arc over the action's stitch bound moves the needle and stitches nothing")
+    func hugeArcStitchesNothing() {
+        var interpreter = Interpreter(
+            program: Self.program([.runningStitch(length: .number(10)), Self.arc(.left, 2_000_000, 360)]),
+            clock: InterpreterClock(tickDelta: 0.05)
+        )
+        _ = interpreter.step()
+        guard case let .ticked(events) = interpreter.step() else {
+            Issue.record("expected the arc's tick")
+            return
+        }
+        #expect(events.count { if case .needleMoved = $0 { true } else { false } } == 100)
+        #expect(!events.contains { if case .stitch = $0 { true } else { false } })
+    }
+
+    @Test("a GoThrough over the action's stitch bound stitches nothing")
+    func hugeGoThroughStitchesNothing() {
+        let curve = Brick.goThrough(
+            throughX: .number(6_000_000), throughY: .number(0), x: .number(0), y: .number(0)
+        )
+        var interpreter = Interpreter(
+            program: Self.program([.runningStitch(length: .number(10)), curve]),
+            clock: InterpreterClock(tickDelta: 0.05)
+        )
+        _ = interpreter.step()
+        guard case let .ticked(events) = interpreter.step() else {
+            Issue.record("expected the curve's tick")
+            return
+        }
+        #expect(events.count { if case .needleMoved = $0 { true } else { false } } == 100)
+        #expect(!events.contains { if case .stitch = $0 { true } else { false } })
+    }
+
     /// The brief's full-circle round trip: a large circle exported and decoded
     /// lands back where it started, with no record moving more than the 121-unit
     /// DST limit (ADR-020's interpolation).
