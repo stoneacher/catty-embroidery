@@ -3442,3 +3442,14 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **Shape:** twelve circles fanned evenly around the centre with the four large ones on the diagonals, and the stem bending right to the bottom of the hoop.
 - **The one number that looked off:** Ink/Stitch's counter reads 823, against the 821 in the brief. Decoding the file settled it: the header says `ST:821` and `CO:2`, and the body holds 820 plain stitch records, one colour-change record and one end record. So the file carries 821 stitch records as ADR-012 counts them, and Ink/Stitch's counter counts its own commands differently. Checked against the file, not assumed.
 - **The brief is closed:** Done, with all ten acceptance criteria ticked. The ROADMAP row reads Done.
+
+## 2026-10-19 — Variables: planned with `swift-architect`, four decisions taken
+
+- **Delegation:** one `swift-architect` pass (read-only, ~12 minutes, 54 tool calls) produced the plan behind `docs/features/variables.md`: 16 decisions with Catroid file:line provenance, eight slices and a three-PR split. It also statically scanned all 215 Catrobat language tests to measure how many need strings as values.
+- **Sebastian decided, all four as recommended:** Double-only values (strings go to the Language-test runner; five string-dependent tests become expected failures there); the decimal128-vs-Double divergence accepted and pinned now that `=` lets it decide branches; a minimal condition editor (one `leaf op leaf` comparison) in this feature; backlog US-323 pulled in, because every new condition brick would otherwise inherit it.
+- **What planning found that no earlier document said:**
+  - Catroid's truthiness differs by brick: If and WaitUntil truncate to Int32 (`if 0.5` is false), RepeatUntil tests `≠ 0` (0.5 exits). NaN skips an If, exits a RepeatUntil, and keeps a WaitUntil waiting.
+  - Java `compareTo` ordering puts −0 below +0, which contradicts ADR-017's "zero-sign residue is invisible to comparisons". The proposed fix canonicalizes zero results of the four arithmetic operators to +0, as Catroid's BigDecimal does.
+  - The Brick backend brief's reason for leaving `power()` out ("`^` exists") was wrong: they differ at NaN and −0.
+  - ADR-018's description of `setVariable`'s failure value is stale against current Catroid (`interpretObject` stores NaN, not 0). Filed for the backlog, not changed here.
+- **Next:** one Codex round on the brief before any test (ADR-041: the semantics are not pinned by an ADR). The brief lists what it should attack.
