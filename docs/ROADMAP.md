@@ -41,10 +41,10 @@ Work after M4 is organised by feature (ADR-041). The milestone sections below re
 | Project management | M5 | Not briefed |
 | Language-test runner | Catrobat Language Tests (supervisor's suggestion, 2026-10-17); pulls a partial `.catrobat` (code.xml) import forward from S* | Not briefed |
 
-Editor UI is done (2026-10-17); Brick backend is done (2026-10-19, PRs #71 and #72). Backlog items ([`user-stories/backlog.md`](user-stories/backlog.md)) are pulled into whichever feature touches the same code, or become a feature of their own.
+Editor UI is done (2026-10-17); Brick backend is done (2026-10-19, PRs #71 and #72). Next come Variables and Project management, then the Language-test runner (order told to the supervisor on 2026-10-19). Backlog items ([`user-stories/backlog.md`](user-stories/backlog.md)) are pulled into whichever feature touches the same code, or become a feature of their own.
 
 **Language-test runner (noted 2026-10-17, not started).** Catroid ships the Catrobat Language Tests: 215 small `.catrobat` programs in `catroid/src/androidTest/assets/catrobatTests/`, which check themselves with `AssertEqualsBrick` and signal success with `FinishStageBrick`. Catroid runs them through `CatrobatTestRunner.kt`, which starts a full stage per program with 5 retries. The suite is written to be independent of any implementation, and the supervisor suggested running a first subset of it here. Because our interpreter is headless and synchronous, the tests can run inside `swift test` with no simulator and no retries. Scope when briefed:
-- a `code.xml` → `Program` importer limited to the supported bricks. It flattens nested loop bodies into ADR-008 paired lists and handles language versions 0.99995–1.13. The `code.xml` files are extracted into fixtures with their provenance noted, so the engine needs no zip.
+- a `code.xml` → `Program` importer limited to the supported bricks. It targets the **latest** Catrobat language version only (1.14 on Catroid `develop`, 2026-10-19), flattening nested `<loopBricks>` bodies into ADR-008 paired lists and resolving XStream `reference=` attributes. Older tests are brought up to the latest version rather than the importer reaching back: Catroid converts on load, so re-saving them through Catroid should do it. This was decided against the supervisor's suggestion to store tests in an old, simple version. The 37 runnable tests span 19 versions (0.99995–1.12), and one target the whole suite moves towards beats a frozen old format. The `code.xml` files are extracted into fixtures with their provenance noted, so the engine needs no zip.
 - `AssertEquals` and `FinishStage` in the interpreter, kept out of the user's palette. The equality rule needs an ADR: compare as strings, or numerically when both values parse as numbers.
 - a parameterised runner that reports N/215 as a progress metric, with an explicit expected-failure list so CI stays green.
 
@@ -58,6 +58,8 @@ Feasibility on 2026-10-17 (static analysis of the bricks, scripts and functions 
 | + object X/Y and direction sensors | ~37 |
 
 The remaining tests need lists, broadcasts, clones, looks, physics, or touch and colour sensors, which ADR-001 leaves out of scope. Open question put to the supervisor: is the Catroid directory the canonical source, and is there a list of the tests considered implementation-independent?
+
+*Update 2026-10-19:* the supervisor backs the feature and its priority: importer and first tests first. The Catroid directory is the canonical source for now. A separate Catrobat language-specification repository is planned, with Catroid's CI integration kept. Moving the suite there, writing missing language tests (formula and control edge cases already pinned in ADR-017/018 are candidates) and triaging the 22 open Catroid PRs that touch `catrobatTests` are **outside this feature's scope**. They're collected as they come up and done step by step, possibly by other contributors. The latest-version decision was sent to the supervisor the same day, inviting objections. Backlog items from US-320 on were offered as starter tasks for a newcomer contributor, who has been told to contact Sebastian directly.
 
 ## Milestones
 
