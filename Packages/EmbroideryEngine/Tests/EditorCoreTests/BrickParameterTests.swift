@@ -117,6 +117,11 @@ struct BrickParameterTests {
         }
         let power = Formula.binaryFunction(.power, .number(2), .number(3))
         #expect(ParameterEditorKind(.formula(power)) == .readOnlyFormula(power, reason: .function))
+        // Every arithmetic root keeps `.binary`, not only `+` (swift-code-reviewer, slice 1).
+        for operation in [BinaryOperator.plus, .minus, .mult, .divide, .pow] {
+            let root = Formula.binary(operation, .number(2), .number(3))
+            #expect(ParameterEditorKind(.formula(root)) == .readOnlyFormula(root, reason: .binary), "\(operation)")
+        }
         // The root decides: a sum of comparisons is a calculation.
         let sum = Formula.binary(.plus, .binary(.smallerThan, .number(1), .number(2)), .number(1))
         #expect(ParameterEditorKind(.formula(sum)) == .readOnlyFormula(sum, reason: .binary))

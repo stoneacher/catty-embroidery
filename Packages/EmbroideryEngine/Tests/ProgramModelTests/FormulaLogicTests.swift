@@ -145,6 +145,16 @@ struct FormulaLogicTests {
         #expect(try value(.binary(.equal, negatedNaN, .unaryFunction(.sqrt, .number(-1)))) == 1)
     }
 
+    /// The zero sign was already visible before comparisons: `arctan2(−0, −1)` is −180°
+    /// where `arctan2(+0, −1)` is 180°. Catroid's `0 × −1` is an unsigned zero, so it gives
+    /// 180 there, and before the amendment it gave −180 here (swift-code-reviewer, slice 1).
+    @Test("arctan2 of a zero product agrees with Catroid's unsigned zero")
+    func zeroProductThroughArctan2() throws {
+        let zeroProduct = Formula.binary(.mult, .number(0), .number(-1))
+        #expect(try value(.binaryFunction(.arctan2, zeroProduct, .number(-1))) == 180)
+        #expect(try value(.binaryFunction(.power, zeroProduct, .number(-3))) == .greatestFiniteMagnitude)
+    }
+
     // MARK: - D3: logic never yields NaN
 
     @Test("and/or test x ≠ 0, so a NaN operand is true")
@@ -182,6 +192,13 @@ struct FormulaLogicTests {
     @Test("0.1 + 0.2 = 0.3 is false here, true in Catroid (pinned divergence)")
     func decimalEqualityDiverges() throws {
         #expect(try value(.binary(.equal, .binary(.plus, .number(0.1), .number(0.2)), .number(0.3))) == 0)
+    }
+
+    /// The same divergence decides every comparison, not only `=` (swift-code-reviewer,
+    /// slice 1): `0.1 + 0.2 > 0.3` is 0 in Catroid.
+    @Test("0.1 + 0.2 > 0.3 is true here, false in Catroid (pinned divergence)")
+    func decimalOrderDiverges() throws {
+        #expect(try value(.binary(.greaterThan, .binary(.plus, .number(0.1), .number(0.2)), .number(0.3))) == 1)
     }
 
     // MARK: - Totality

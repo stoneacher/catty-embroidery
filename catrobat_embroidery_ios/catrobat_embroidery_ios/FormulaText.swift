@@ -20,11 +20,13 @@ import ProgramModel
 ///   bare as a left operand of the four (`−5 × 2`), bracketed as the base of a power
 ///   (`(−5) ^ 2`) and under another negation (`−(−a)`) — and **always** bracketed as a right
 ///   operand, `1 − (−5)`, because `1 − −5` reads as a typo to a child.
-/// - comparisons and logic follow Catroid's precedence (`Operators.java`): `or` binds loosest,
-///   then `and`, then the comparisons and `not`, then arithmetic. `and`/`or` associate left
-///   like `+`, and **a comparison's operand is bracketed whenever it is itself a comparison,
-///   `not`, `and` or `or`**, so `(a < b) = 1` never reads as a chained `a < b = 1` (Variables
-///   brief D16).
+/// - comparisons and logic follow Catroid's precedence (`Operators.java:28-30`): `or` binds
+///   loosest, then `and`, then `=`, then the other comparisons and `not`, then arithmetic.
+///   `and`/`or` associate left like `+`. **A comparison's operand is bracketed whenever it is
+///   itself a comparison, `not`, `and` or `or`**, so the text never depends on `=` binding looser
+///   than `<`: `(a < b) = 1` never reads as a chained `a < b = 1` (Variables brief D16). One
+///   level serves all six comparisons for that reason. A negative right operand of a comparison
+///   stays bare (`"a" < −5`): the "reads as a typo" reason above is about `− −5` only.
 ///
 /// **A variable is quoted** (`"Inner Loop"`), Catroid's own convention, so a name that looks
 /// like a formula still reads as one variable. The quote marks are a catalog format too.
