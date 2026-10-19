@@ -3433,3 +3433,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **What the run history shows:** this was not a one-off. Before the pin (`a6daa28`) the app job took 6–8 minutes, and after it 15½–16¾ minutes on healthy runs. The pin was made earlier in this same PR. Every app-job "cancelled" before this was a superseding push, so none of those runs had been long enough to show the trend.
 - **Decision:** the timeout goes from 20 to 30 minutes, as an ADR-023 amendment with the measurements. The cause of the ~3× slowdown on the `xcode-27` preview image is tracked, not guessed.
 - **Lesson:** the pin's review checked that the jobs went green on the new image, and did not compare their durations with the old one. A timeout comment that states the healthy duration ("~4m30s") is a claim about the runner, exactly like the toolchain claim ADR-023 already learned to date.
+
+## 2026-10-19 — Brick backend: Ink/Stitch check passed, feature done
+
+- **Sebastian opened `ArcFlower.dst` in Ink/Stitch's embroidery simulation:**
+  - **Size:** 39.60 × 62.20 mm, exactly the figure the tests pin.
+  - **Colours:** two colour blocks (Ink/Stitch's own palette, since DST carries no colours).
+  - **Shape:** twelve circles fanned evenly around the centre with the four large ones on the diagonals, and the stem bending right to the bottom of the hoop.
+- **The one number that looked off:** Ink/Stitch's counter reads 823, against the 821 in the brief. Decoding the file settled it: the header says `ST:821` and `CO:2`, and the body holds 820 plain stitch records, one colour-change record and one end record. So the file carries 821 stitch records as ADR-012 counts them, and Ink/Stitch's counter counts its own commands differently. Checked against the file, not assumed.
+- **The brief is closed:** Done, with all ten acceptance criteria ticked. The ROADMAP row reads Done.

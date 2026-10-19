@@ -1,6 +1,6 @@
 # Brick backend
 
-**Status**: In review — PR 1 (slices 0–3) merged as #71; PR 2 (slices 4–7) is #72, reviewed (Codex loop closed after 3 rounds, Medium → Low → Low), awaiting Sebastian's Ink/Stitch check and merge | **Epic**: E8 (+ E3 formulas, E5 thin) | **Branches**: `feature/brick-backend` (PR 1), `feature/brick-backend-paths` (PR 2)
+**Status**: Done — 2026-10-19, PR #72 (PR 1: #71) | **Epic**: E8 (+ E3 formulas, E5 thin) | **Branches**: `feature/brick-backend` (PR 1), `feature/brick-backend-paths` (PR 2)
 
 **Goal**: a program can draw arcs and quadratic curves (Catroid's **Arc** and **GoThrough**), and its formulas can use Catroid's math functions and the object's own x, y and direction. Preview and `.dst` export behave as the Android Embroidery Designer does wherever Catroid is sound, and every divergence is pinned by a named test.
 
@@ -54,7 +54,7 @@ Planned with `swift-architect`; the math premises were probed in Swift and `jshe
 - [x] No Arc or GoThrough leaves the needle non-finite; a bad formula or a non-finite sample leaves needle and heading unchanged and emits one update.
 - [x] Sensors read the acting object's own needle at the moment the brick evaluates; `motionDirection` lies in (−180, 180].
 - [x] Every palette kind, row sentence and new formula node has String Catalog entries; Arc's direction is editable as one undoable `replaceBrick`; function and sensor formulas are shown locked with a reason.
-- [ ] The new sample runs and exports, and its `.dst` opens correctly in Ink/Stitch (manual check). *Runs and exports (`ArcFlowerTests`, `SampleDSTTests`); the Ink/Stitch check is pending.*
+- [x] The new sample runs and exports, and its `.dst` opens correctly in Ink/Stitch (manual check). *Runs and exports (`ArcFlowerTests`, `SampleDSTTests`); Ink/Stitch verified by Sebastian on 2026-10-19: 39.60 × 62.20 mm, two colour blocks, the fan and stem as designed.*
 
 ## Slices and test-first outline
 
@@ -128,7 +128,7 @@ Every slice touching the format, engine or interpreter is **risky** → `swift-c
      - **Wording:** the screening comments now say "per update" not "per tick", and the sensor is described as the token use it is.
      - **Mutations, all red:** dropping Arc Flower from the budget table; `isScreenable` counting objects; skipping the sub-length probes; a minimum that ignores them; dropping the stem's colour.
      - **Declined:** Codex's notes that the vocabulary and heading tests prove presence, not behaviour. Arc and GoThrough behaviour is pinned by the engine and Android-golden tests, and the reviewer showed the heading test kills both relative-turn mutations.
-   - **Ink/Stitch check pending (Sebastian).***
+   - **Ink/Stitch verified by Sebastian (2026-10-19).***
    (risky: yes — checked-in program JSON; ADR-037, ADR-019) — a new `SampleID` using Arc, GoThrough and functions, guarded by a JSON round-trip resource like US-301's, plus an ADR-019 threshold screen. Exported and checked in Ink/Stitch. Mutation: change one function, Arc or GoThrough node in the sample builder while keeping the checked-in resource — the builder/resource equality guard must go red.
 
 **PR split** (~1,100–1,300 lines of non-test Swift, so split; an engine-only PR is impossible because new cases break the app's exhaustive switches): **PR 1 — formula language**, slices 0–3 with their app arms (~650). **PR 2 — path bricks**, slices 4–7 (~650).
