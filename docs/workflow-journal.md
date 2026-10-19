@@ -3453,3 +3453,17 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The Brick backend brief's reason for leaving `power()` out ("`^` exists") was wrong: they differ at NaN and −0.
   - ADR-018's description of `setVariable`'s failure value is stale against current Catroid (`interpretObject` stores NaN, not 0). Filed for the backlog, not changed here.
 - **Next:** one Codex round on the brief before any test (ADR-041: the semantics are not pinned by an ADR). The brief lists what it should attack.
+
+## 2026-10-19 — Variables: Codex brief review, one round, 8 findings, all valid
+
+- **Why a brief round:** no ADR pins comparison, logic or control-brick semantics (ADR-041). One round on `docs/features/variables.md`, `codex exec -m gpt-5.6-sol`, read-only, with `../Catroid` added as a readable directory; Codex ran JDK 17 probes itself.
+- **Highest severity: High.** D2 proposed turning every zero result of `+ − × ÷` into +0, to match Catroid's BigDecimal arithmetic. But Catroid's DECIMAL128 product of two nonzero doubles is nonzero, and `doubleValue()` rounds a tiny negative to −0, so `(−MIN/2) < 0` is 1 there and would be 0 here. Re-probed in this session under JDK 17 before accepting: `−MIN/2` and `−1e-300 × 1e-300` give −0, `−0 × 5` and `−0 + −0` give +0. The rule is now "+0 exactly where the decimal result is an exact zero": any zero sum, a product with a zero operand, a zero dividend. The planned operand table (NaN, ±0, ±MAX) could not have found this; it now includes ±`leastNonzeroMagnitude` and ±smallest normal.
+- **Mediums (5):**
+  - ForVariableFromTo with an empty name: Catroid's dummy variable is unreachable by formulas, but our format round-trips `.variable("")`, so a store key `""` would be visible. The counter now lives in per-thread loop state.
+  - D10's "`−∞` loops until the budget" was wrong for a descending loop (it exits at once). Replaced by a direction table including non-progress at ±MAX and 2^53.
+  - D13 broke ADR-045's malformed-script rule: delete at a stray else/end has no opener to redirect to, so it falls back to a leaf delete.
+  - D13 named no actual accessibility action for crossing an else. Two move-out actions are generalized from loops to blocks and a new pair, Move Into Else Branch / Move Into Then Branch, is specified, with a reachability property that must observe the crossing.
+  - The optional PR 2a/2b split would have merged RepeatUntil, WaitUntil and For cases with no execution. Each case now lands in the slice that executes it.
+- **Lows (2):** the IfThen truthiness claim lacked the citation that it builds `IfLogicAction` too; D2 cited `floor(−0.5)` as producing −0 (it is −1; `ceil(−0.5)` is −0), and the matching criterion contradicted the brief's own retained −0s.
+- **What held:** Codex checked D7 (If ticks against libgdx's one-child-per-frame `SequenceAction`), D8 (RepeatUntil's two checks across scripts) and D11 (no golden tick profile moves under US-323) and found no fault, and confirmed the `Double.toString` round trip behind `=` preserves NaN, ±0, subnormals and ±MAX.
+- **Thesis note:** the planning agent had flagged D2 as the riskiest decision and named its fallback. The flaw was in neither the decision nor the fallback but in the test oracle: an operand table of "special values" that left out the one class (subnormal products) where the rule fails.
