@@ -332,12 +332,14 @@ private extension ScriptListView {
 
 private extension ScriptListView {
     /// The row's accessibility actions, each present only where it can succeed — the row
-    /// computes them (`BrickRowPresentation`), so a loop end offers Delete alone.
+    /// computes them (`BrickRowPresentation`), so an end or an else offers Delete alone.
     @ViewBuilder
     func actions(for row: BrickRowPresentation) -> some View {
         // Named by the row (`BrickRowPresentation.moveActions`), so a move out of an If is not
         // read as a move out of a loop.
-        ForEach(row.moveActions, id: \.title) { move in
+        // By position, not by title: two moves sharing a translated title must stay two actions
+        // (`swift-code-reviewer`, slice 2).
+        ForEach(Array(row.moveActions.enumerated()), id: \.offset) { _, move in
             Button(move.title) { perform(move.action) }
         }
         // US-410: the same editor the toolbar opens, reachable without first selecting the row.

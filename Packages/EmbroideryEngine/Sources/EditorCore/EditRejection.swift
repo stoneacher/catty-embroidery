@@ -27,10 +27,10 @@ public enum AddressComponent: Sendable, Equatable, CaseIterable {
 /// failure has exactly one spelling:
 ///
 /// - `sourceOutOfBounds` — unreachable. `apply` must bounds-check the source
-///   before it can read the brick that decides opener/`loopEnd`/leaf, so
+///   before it can read the brick that decides its block role, so
 ///   `.addressOutOfBounds(.brick, …)` always wins the race.
 /// - `sourceIsNotLoopOpener` — unreachable. `movingPair` is only called once
-///   `opensLoop` is already true.
+///   `opensBlock` is already true.
 /// - `destinationOutOfBounds` — **normalised** to this type's own case. The pair
 ///   path learns the bound from `movingPair` and the leaf path computes it in
 ///   `EditorCore`; without normalisation the same user-visible failure would

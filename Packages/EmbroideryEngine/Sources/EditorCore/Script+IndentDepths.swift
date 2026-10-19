@@ -18,15 +18,15 @@ public extension Script {
     /// *before* appending is the whole trick, and the mistake worth guarding is
     /// doing it the other way round.
     ///
-    /// It uses `opensLoop`/`isLoopEnd` — the pair vocabulary ADR-008 owns — but
+    /// It uses `blockRole` — the block vocabulary ADR-008 owns — but
     /// deliberately **not** `matchingEnd(ofBrickAt:)`/`range(ofPairAt:)`, which
     /// the story's reference note suggests. Two reasons, the first decisive:
     /// `matchingEnd` returns `nil` for an opener that is never closed, so a
     /// pair-resolving implementation needs a fallback for exactly the unbalanced
     /// case this function must survive — and that fallback is this depth counter
     /// anyway. Second, `matchingEnd` is itself an O(n) scan, so resolving per
-    /// opener would re-walk the list once per loop. Nothing about pairing is
-    /// re-derived that `opensLoop`/`isLoopEnd` do not already express; this is
+    /// opener would re-walk the list once per block. Nothing about blocks is
+    /// re-derived that `blockRole` does not already express; this is
     /// the same single scan `matchingEnd` performs internally, run once for the
     /// whole list.
     ///

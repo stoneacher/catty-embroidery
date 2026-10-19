@@ -31,7 +31,8 @@ public extension Script {
             case let .opener(opening):
                 depth -= 1
                 if depth == 0 {
-                    return opening == family ? cursor : nil
+                    // Both directions agree: the opener must resolve forward to this end.
+                    return opening == family && matchingEnd(ofBrickAt: cursor) == index ? cursor : nil
                 }
             case .leaf, .divider:
                 break

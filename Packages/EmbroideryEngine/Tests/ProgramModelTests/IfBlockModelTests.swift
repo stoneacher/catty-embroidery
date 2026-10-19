@@ -93,6 +93,31 @@ struct IfBlockModelTests {
         #expect(Script(bricks: [.ifThen(condition: Self.condition), .loopEnd]).matchingEnd(ofBrickAt: 0) == nil)
     }
 
+    /// A block resolves only when its own else count is right — one for an If/Else, none for
+    /// anything else — so a malformed If never reads as a whole block to delete or move
+    /// (Codex slice review of slice 2).
+    @Test("a block with a missing, duplicate or misplaced else does not resolve", arguments: [
+        [.ifElse(condition: condition), .stitch, .ifEnd],
+        [.ifElse(condition: condition), .elseBranch, .elseBranch, .ifEnd],
+        [.ifThen(condition: condition), .elseBranch, .ifEnd],
+        [.forever, .elseBranch, .loopEnd]
+    ] as [[Brick]])
+    func malformedBlockDoesNotResolve(_ bricks: [Brick]) {
+        let script = Script(bricks: bricks)
+        #expect(script.matchingEnd(ofBrickAt: 0) == nil)
+        #expect(script.range(ofPairAt: 0) == nil)
+        #expect(script.matchingElse(ofBrickAt: 0) == nil)
+    }
+
+    @Test("an else nested deeper does not count against its outer block")
+    func nestedElseDoesNotCount() {
+        let script = Script(bricks: [
+            .forever, .ifElse(condition: Self.condition), .elseBranch, .ifEnd, .loopEnd
+        ])
+        #expect(script.matchingEnd(ofBrickAt: 0) == 4)
+        #expect(script.matchingEnd(ofBrickAt: 1) == 3)
+    }
+
     @Test("an If/Else's else is the divider directly inside it")
     func matchingElse() {
         let nested = Script(bricks: [

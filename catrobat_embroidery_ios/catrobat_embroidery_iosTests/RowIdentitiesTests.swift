@@ -71,6 +71,24 @@ struct RowIdentitiesTests {
         #expect(identities.ids == [0, 2, 3, 4, 1])
     }
 
+    /// Variables slice 2 (Codex slice review: covered only by the soak until now). Equal
+    /// conditions and equal markers on both Ifs make every rotation look plausible; only the
+    /// block-shaped one may be taken.
+    @Test("an If/Else crossing its parent's else carries its three IDs, in both directions")
+    func nestedIfAcrossTheElse() {
+        let outer = Brick.ifElse(condition: .constant(.true)), inner = outer
+        let inThen: [Brick] = [outer, inner, .elseBranch, .ifEnd, .elseBranch, .ifEnd]
+        let inElse: [Brick] = [outer, .elseBranch, inner, .elseBranch, .ifEnd, .ifEnd]
+
+        var down = RowIdentities(count: 6)
+        down.follow(from: inThen, to: inElse)
+        #expect(down.ids == [0, 4, 1, 2, 3, 5])
+
+        var up = RowIdentities(count: 6)
+        up.follow(from: inElse, to: inThen)
+        #expect(up.ids == [0, 2, 3, 4, 1, 5])
+    }
+
     @Test("an insert keeps every existing ID and gives the new row a fresh one")
     func insert() {
         let identities = Self.followed(

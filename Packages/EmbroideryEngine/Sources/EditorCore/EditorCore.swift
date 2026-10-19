@@ -15,11 +15,12 @@ import ProgramModel
 /// ## Balance is preserved, not enforced
 ///
 /// For a program whose scripts all pass `Script.validate()`, every `.applied`
-/// result does too — that is milestone exit criterion 4, and `.loopEnd` being
-/// unmintable (ADR-035) is what makes it provable rather than merely tested. For
+/// result does too — that is milestone exit criterion 4, and the block markers
+/// (`.loopEnd`, `.elseBranch`, `.ifEnd`) being unmintable (ADR-035, ADR-045) is what
+/// makes it provable rather than merely tested. For
 /// a program that is **already** unbalanced, `apply` does not repair it and does
 /// not reject solely because of an unrelated imbalance. It may still refuse for
-/// its own reasons: moving an opener whose `loopEnd` is missing stays
+/// its own reasons: moving an opener whose block does not resolve stays
 /// `.unbalancedPair`, because `movingPair` throws it and ADR-008 owns that rule.
 public enum EditorCore {
     /// Apply one action, yielding a new program or the reason it was refused.
@@ -159,7 +160,7 @@ public enum EditorCore {
     ///
     /// **On a malformed script an unresolvable control brick is deleted as a
     /// leaf** *(decision, Sebastian 2026-09-23, extending ADR-035, which pins
-    /// only the balanced case)*. A stray `loopEnd` resolves to no opener and an
+    /// only the balanced case)*. A stray end or else resolves to no block and an
     /// unclosed opener resolves to no pair; rejecting either would leave a
     /// hand-edited file with a row the user cannot remove, which is the exact
     /// failure ADR-035 cited when it chose the redirect over a rejection. This is
@@ -259,8 +260,8 @@ public enum EditorCore {
     /// The same-kind guard runs **after** bounds resolution, which is forced
     /// rather than chosen: `from` cannot be computed without a brick to read it
     /// from. It is what makes this a *parameter* edit and keeps the pair
-    /// invariant without re-validating, since `BrickKind` decides `opensLoop` and
-    /// `isLoopEnd` outright (ADR-035).
+    /// invariant without re-validating, since `BrickKind` decides `blockRole`
+    /// outright (ADR-035).
     private static func replacing(
         at index: Int,
         with brick: Brick,
@@ -336,7 +337,7 @@ public enum EditorCore {
             // the brick that decides which kind of move this is.
             .addressOutOfBounds(.brick, at: address)
         case .sourceIsNotLoopOpener:
-            // Unreachable: delegated to only once `opensLoop` is already true.
+            // Unreachable: delegated to only once `opensBlock` is already true.
             .scriptMove(error)
         case let .destinationOutOfBounds(index):
             // Normalised, so the pair path and the leaf path answer alike.

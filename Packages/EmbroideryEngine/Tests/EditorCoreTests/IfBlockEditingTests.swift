@@ -93,7 +93,16 @@ struct IfBlockEditingTests {
         StrayDelete([.stitch, .ifEnd, .sewUp], 1, [.stitch, .sewUp]),
         StrayDelete([.forever, .elseBranch, .loopEnd], 1, [.forever, .loopEnd]),
         StrayDelete([.ifThen(condition: condition), .elseBranch, .ifEnd], 1, [.ifThen(condition: condition), .ifEnd]),
-        StrayDelete([.forever, .stitch, .ifEnd], 2, [.forever, .stitch])
+        StrayDelete([.forever, .stitch, .ifEnd], 2, [.forever, .stitch]),
+        // Codex slice review of slice 2: an If/Else that closes but is malformed inside is no
+        // block either, so its opener, end or else goes alone.
+        StrayDelete([.ifElse(condition: condition), .stitch, .ifEnd, .sewUp], 2,
+                    [.ifElse(condition: condition), .stitch, .sewUp]),
+        StrayDelete([.ifElse(condition: condition), .stitch, .ifEnd, .sewUp], 0, [.stitch, .ifEnd, .sewUp]),
+        StrayDelete([.ifElse(condition: condition), .elseBranch, .elseBranch, .ifEnd], 1,
+                    [.ifElse(condition: condition), .elseBranch, .ifEnd]),
+        StrayDelete([.ifElse(condition: condition), .elseBranch, .elseBranch, .ifEnd], 2,
+                    [.ifElse(condition: condition), .elseBranch, .ifEnd])
     ])
     func strayMarkerIsALeaf(_ row: StrayDelete) {
         #expect(Self.apply(.delete(at: Self.at(row.index)), to: row.bricks) == .applied(Self.program(row.expected)))
@@ -213,5 +222,7 @@ struct IfBlockEditingTests {
         // mutation: the leaf-delete fallback hid the difference).
         #expect(Script(bricks: [.forever, .stitch, .ifEnd]).matchingOpener(ofEndAt: 2) == nil)
         #expect(Script(bricks: [.ifThen(condition: Self.condition), .loopEnd]).matchingOpener(ofEndAt: 1) == nil)
+        // …and an end whose opener does not resolve back to it, as `matchingEnd` sees it.
+        #expect(Script(bricks: [.ifElse(condition: Self.condition), .ifEnd]).matchingOpener(ofEndAt: 1) == nil)
     }
 }

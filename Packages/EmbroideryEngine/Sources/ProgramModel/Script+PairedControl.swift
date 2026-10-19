@@ -121,7 +121,8 @@ public enum ScriptMoveError: Error, Equatable {
     /// The brick at `index` opens no block — loop or If — so there is no block to
     /// move. The name predates the Ifs and is kept, as a public error case.
     case sourceIsNotLoopOpener(index: Int)
-    /// The opener at `index` has no matching `loopEnd` (unbalanced script).
+    /// The block opened at `index` does not resolve: no end of its family, or a
+    /// missing, duplicate or misplaced else (unbalanced script).
     case unbalancedPair(index: Int)
     /// The destination lies outside the valid insertion range.
     case destinationOutOfBounds(index: Int)
@@ -131,13 +132,17 @@ public extension Script {
     /// The index of the closer that ends the block opened at `index`, resolved
     /// by a depth-tracking forward scan so nested blocks match their correct
     /// partners. The closer must be of the opener's family: a `loopEnd` does not
-    /// end an If, nor an `ifEnd` a loop. `nil` if the brick does not open a
-    /// block, or the block never closes with its own kind of end.
+    /// end an If, nor an `ifEnd` a loop. And the block must be well formed in
+    /// itself — exactly one `elseBranch` directly inside an If/Else, none directly
+    /// inside any other block — or it does not resolve, so a malformed If is never
+    /// deleted or moved as a whole (Codex slice review of slice 2). `nil` if the
+    /// brick does not open a block, or the block does not close as its own kind.
     func matchingEnd(ofBrickAt index: Int) -> Int? {
         guard bricks.indices.contains(index), case let .opener(family) = bricks[index].blockRole else {
             return nil
         }
         var depth = 0
+        var directElses = 0
         for cursor in index ..< bricks.count {
             switch bricks[cursor].blockRole {
             case .opener:
@@ -145,8 +150,11 @@ public extension Script {
             case let .closer(closing):
                 depth -= 1
                 if depth == 0 {
-                    return closing == family ? cursor : nil
+                    let expected = bricks[index].expectsElse ? 1 : 0
+                    return closing == family && directElses == expected ? cursor : nil
                 }
+            case .divider where depth == 1:
+                directElses += 1
             case .leaf, .divider:
                 break
             }
@@ -225,7 +233,7 @@ public extension Script {
     }
 
     /// Returns a copy of the script with the pair opened at `sourceIndex` — its
-    /// opener, matched `loopEnd`, and everything between — relocated as one
+    /// opener, matched end, and everything between — relocated as one
     /// contiguous block. `destination` is an insertion index into the list with
     /// the block already removed (`0 ... remaining.count`).
     ///
@@ -240,7 +248,7 @@ public extension Script {
     /// balance is the caller's responsibility (`validate()`), not this move's.
     ///
     /// A move is rejected only when it is ill-formed: source out of bounds,
-    /// source not a loop opener, the *selected* opener has no matching `loopEnd`
+    /// source not a block opener, the *selected* opener's block does not resolve
     /// (`unbalancedPair`), or destination out of bounds.
     func movingPair(at sourceIndex: Int, to destination: Int) throws -> Script {
         guard bricks.indices.contains(sourceIndex) else {

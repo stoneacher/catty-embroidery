@@ -26,8 +26,8 @@ extension AppModel {
     /// and ask the list to show the new brick.
     ///
     /// A refused insert leaves the palette open and asks for no scroll. Only a program with no
-    /// script can refuse a palette kind, since `.loopEnd` is not in the palette, and closing on
-    /// it would read as if something had been added.
+    /// script can refuse a palette kind, since no block marker (`.loopEnd`, `.elseBranch`,
+    /// `.ifEnd`) is in the palette, and closing on it would read as if something had been added.
     func addFromPalette(_ kind: BrickKind) {
         guard let index = editor.insert(kind) else { return }
         palette.inserted(at: index)
