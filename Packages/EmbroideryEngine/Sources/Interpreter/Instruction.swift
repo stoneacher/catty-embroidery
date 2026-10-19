@@ -23,10 +23,25 @@ enum Instruction: Sendable {
     /// Loop tail (`loopEnd`): back-jumps to its matching begin at `beginIndex`.
     /// Zero-tick bookkeeping.
     case loopEnd(beginIndex: Int)
+
+    /// `ifThen`/`ifElse` head (Variables slice 3, ADR-049): reads the condition once
+    /// and enters the then-branch, jumps to `falseTarget` (the else-branch's first
+    /// instruction, or `endIndex` without one), or — when the condition does not
+    /// interpret — jumps to `endIndex`, running neither branch. Zero-tick, but it
+    /// waits for the next tick when an action already ran in this one.
+    case ifBegin(condition: Formula, falseTarget: Int, endIndex: Int)
+
+    /// The end of an If/Else's then-branch (its `elseBranch`): jumps over the
+    /// else-branch to `endIndex`. Zero-tick.
+    case jump(to: Int)
+
+    /// `ifEnd`: zero-tick, except that an If which ran no action in the tick it was
+    /// read in takes that tick (ADR-049).
+    case ifEnd
 }
 
 /// Compiles a `Script` once into its linear instruction array with a single-pass
-/// backpatch over a stack of open loops. An unbalanced script (which
+/// backpatch over a stack of open blocks. An unbalanced script (which
 /// `Script.validate()` rejects) compiles to an inert `[]` — no thread, never a
 /// crash, consistent with the interpreter's never-halt contract (ADR-018).
 enum ScriptCompiler {
@@ -36,33 +51,33 @@ enum ScriptCompiler {
         } catch {
             return []
         }
-        // Variables slice 2: the If bricks exist before their execution does
-        // (slice 3), so a script holding one compiles to the same inert `[]` as an
-        // unbalanced one. The two slices ship in one PR.
-        guard !script.bricks.contains(where: { $0.blockFamily == .conditional }) else {
-            return []
-        }
 
         var instructions: [Instruction] = []
         instructions.reserveCapacity(script.bricks.count)
-        // Stack of open-loop indices into `instructions`, for backpatching the
-        // begin's endIndex once its loopEnd position is known.
-        var openLoops: [Int] = []
+        // Stack of open blocks, indices into `instructions`, for backpatching each
+        // begin once its end position is known. `validate()` above guarantees every
+        // pop finds the kind it expects.
+        var open: [OpenBlock] = []
 
         for brick in script.bricks {
             switch brick {
             case let .repeatLoop(times):
-                openLoops.append(instructions.count)
+                open.append(.loop(begin: instructions.count))
                 // endIndex is backpatched at the matching loopEnd.
                 instructions.append(.repeatBegin(times: times, endIndex: 0))
             case .forever:
-                openLoops.append(instructions.count)
+                open.append(.loop(begin: instructions.count))
                 instructions.append(.foreverBegin)
-            case .ifThen, .ifElse, .elseBranch, .ifEnd:
-                // Unreachable: screened out above until slice 3 lowers them.
-                break
+            case let .ifThen(condition), let .ifElse(condition):
+                open.append(.conditional(begin: instructions.count, elseJump: nil))
+                // Both targets are backpatched at the matching ifEnd.
+                instructions.append(.ifBegin(condition: condition, falseTarget: 0, endIndex: 0))
+            case .elseBranch:
+                guard lowerElse(into: &instructions, open: &open) else { return [] }
+            case .ifEnd:
+                guard lowerIfEnd(into: &instructions, open: &open) else { return [] }
             case .loopEnd:
-                let beginIndex = openLoops.removeLast()
+                guard case let .loop(beginIndex) = open.popLast() else { return [] }
                 let endIndex = instructions.count
                 instructions.append(.loopEnd(beginIndex: beginIndex))
                 // Backpatch a repeatBegin so it can skip forward past this loopEnd
@@ -80,4 +95,40 @@ enum ScriptCompiler {
         }
         return instructions
     }
+}
+
+extension ScriptCompiler {
+    /// An If/Else's `elseBranch`: the then-branch ends in a `jump`, backpatched at the
+    /// end. `false` only on a structure `validate()` has already refused.
+    private static func lowerElse(into instructions: inout [Instruction], open: inout [OpenBlock]) -> Bool {
+        guard case let .conditional(begin, _) = open.popLast() else { return false }
+        open.append(.conditional(begin: begin, elseJump: instructions.count))
+        instructions.append(.jump(to: 0))
+        return true
+    }
+
+    /// An `ifEnd`: backpatches the head's two targets and the else's jump.
+    private static func lowerIfEnd(into instructions: inout [Instruction], open: inout [OpenBlock]) -> Bool {
+        guard case let .conditional(begin, elseJump) = open.popLast(),
+              case let .ifBegin(condition, _, _) = instructions[begin]
+        else { return false }
+        let endIndex = instructions.count
+        instructions.append(.ifEnd)
+        instructions[begin] = .ifBegin(
+            condition: condition,
+            falseTarget: elseJump.map { $0 + 1 } ?? endIndex,
+            endIndex: endIndex
+        )
+        if let elseJump {
+            instructions[elseJump] = .jump(to: endIndex)
+        }
+        return true
+    }
+}
+
+/// A block the compiler has opened and not yet closed.
+private enum OpenBlock {
+    case loop(begin: Int)
+    /// An If, and the `jump` its `elseBranch` compiled to, once seen.
+    case conditional(begin: Int, elseJump: Int?)
 }
