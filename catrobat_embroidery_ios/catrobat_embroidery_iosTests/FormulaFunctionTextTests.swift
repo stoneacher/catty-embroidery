@@ -73,7 +73,7 @@ struct FormulaFunctionTextTests {
             #expect(Self.text(.unaryFunction(function, .number(1))) == "\(name)(1)")
         }
         let binary: [BinaryFunction: String] = [
-            .arctan2: "arctangent2", .min: "minimum of", .max: "maximum of", .mod: "modulo"
+            .arctan2: "arctangent2", .min: "minimum of", .max: "maximum of", .mod: "modulo", .power: "power"
         ]
         #expect(Set(binary.keys) == Set(BinaryFunction.allCases))
         for (function, name) in binary {
@@ -97,7 +97,7 @@ struct FormulaFunctionTextTests {
 
     @Test("function and sensor lock reasons resolve and differ from the others")
     func lockReasons() {
-        let reasons: [ReadOnlyFormulaReason] = [.binary, .unaryMinus, .function, .sensor]
+        let reasons: [ReadOnlyFormulaReason] = [.binary, .unaryMinus, .function, .sensor, .logic]
         let messages = reasons.map { ParameterEditorText.message(for: $0, locale: Self.english) }
         #expect(Set(messages).count == reasons.count)
         for message in messages {

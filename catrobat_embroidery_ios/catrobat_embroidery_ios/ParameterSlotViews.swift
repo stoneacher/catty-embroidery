@@ -172,8 +172,9 @@ struct VariableChooser: View {
         // Exhaustive, so a new value shape is a decision here (the repo's no-`default:` rule).
         switch value {
         case let .formula(.variable(name)), let .variableName(name): return name
-        case .formula(.number), .formula(.binary), .formula(.unaryMinus), .formula(.unaryFunction),
-             .formula(.binaryFunction), .formula(.constant), .formula(.sensor), .threadColor, .fileName,
+        case .formula(.number), .formula(.binary), .formula(.unaryMinus), .formula(.logicalNot),
+             .formula(.unaryFunction), .formula(.binaryFunction), .formula(.constant), .formula(.sensor),
+             .threadColor, .fileName,
              .arcDirection:
             return nil
         }

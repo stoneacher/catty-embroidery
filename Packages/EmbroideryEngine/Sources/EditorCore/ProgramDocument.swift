@@ -150,7 +150,7 @@ private extension Formula {
             switch formula {
             case .number, .variable, .constant, .sensor:
                 break
-            case let .unaryMinus(operand), let .unaryFunction(_, operand):
+            case let .unaryMinus(operand), let .logicalNot(operand), let .unaryFunction(_, operand):
                 pending.append((operand, depth + 1))
             case let .binaryFunction(_, left, right):
                 pending.append((left, depth + 1))

@@ -20,6 +20,11 @@ import ProgramModel
 ///   bare as a left operand of the four (`−5 × 2`), bracketed as the base of a power
 ///   (`(−5) ^ 2`) and under another negation (`−(−a)`) — and **always** bracketed as a right
 ///   operand, `1 − (−5)`, because `1 − −5` reads as a typo to a child.
+/// - comparisons and logic follow Catroid's precedence (`Operators.java`): `or` binds loosest,
+///   then `and`, then the comparisons and `not`, then arithmetic. `and`/`or` associate left
+///   like `+`, and **a comparison's operand is bracketed whenever it is itself a comparison,
+///   `not`, `and` or `or`**, so `(a < b) = 1` never reads as a chained `a < b = 1` (Variables
+///   brief D16).
 ///
 /// **A variable is quoted** (`"Inner Loop"`), Catroid's own convention, so a name that looks
 /// like a formula still reads as one variable. The quote marks are a catalog format too.
@@ -51,7 +56,7 @@ nonisolated private struct Renderer {
 
     /// How tightly a node binds. Higher binds tighter.
     private enum Level: Int, Comparable {
-        case additive = 1, multiplicative, negation, power, leaf
+        case logicalOr = 1, logicalAnd, comparison, additive, multiplicative, negation, power, leaf
 
         static func < (lhs: Level, rhs: Level) -> Bool {
             lhs.rawValue < rhs.rawValue
@@ -72,6 +77,12 @@ nonisolated private struct Renderer {
             // is free text, and bare it could read as a different tree — `a + b` times `c`
             // would read as a sum, and a variable named `1` as the number (Codex round 1).
             return name.isEmpty ? resolve(.scriptVariablePlaceholder) : resolve(.formulaVariable(name))
+        case let .binary(operation, left, right) where level(of: formula) == .comparison:
+            return resolve(format(
+                operation,
+                operand(left, bracketed: level(of: left) <= .comparison),
+                operand(right, bracketed: level(of: right) <= .comparison)
+            ))
         case let .binary(operation, left, right):
             let parent = level(of: formula)
             let rightAssociative = operation == .pow
@@ -83,6 +94,8 @@ nonisolated private struct Renderer {
             return resolve(format(operation, leftText, rightText))
         case let .unaryMinus(operand):
             return resolve(.formulaNegate(self.operand(operand, bracketed: level(of: operand) < .leaf)))
+        case let .logicalNot(operand):
+            return resolve(.formulaNot(self.operand(operand, bracketed: level(of: operand) < .leaf)))
         case let .unaryFunction(function, argument):
             // A call's own parentheses group its arguments, so they are never bracketed again.
             return resolve(.formulaCall(resolve(name(of: function)), render(argument)))
@@ -95,6 +108,10 @@ nonisolated private struct Renderer {
                 : resolve(.formulaCallPair(name, render(first), render(second)))
         case .constant(.pi):
             return resolve(.formulaConstantPi)
+        case .constant(.true):
+            return resolve(.formulaConstantTrue)
+        case .constant(.false):
+            return resolve(.formulaConstantFalse)
         case let .sensor(sensor):
             return resolve(name(of: sensor))
         }
@@ -109,12 +126,16 @@ nonisolated private struct Renderer {
         case let .number(value): value < 0 ? .negation : .leaf
         case .variable: .leaf
         case .unaryMinus: .negation
+        case .logicalNot: .comparison
         case .unaryFunction, .binaryFunction, .constant, .sensor: .leaf
         case let .binary(operation, _, _):
             switch operation {
             case .plus, .minus: .additive
             case .mult, .divide: .multiplicative
             case .pow: .power
+            case .equal, .notEqual, .smallerThan, .smallerOrEqual, .greaterThan, .greaterOrEqual: .comparison
+            case .logicalAnd: .logicalAnd
+            case .logicalOr: .logicalOr
             }
         }
     }
@@ -126,6 +147,14 @@ nonisolated private struct Renderer {
         case .mult: .formulaMult(left, right)
         case .divide: .formulaDivide(left, right)
         case .pow: .formulaPow(left, right)
+        case .equal: .formulaEqual(left, right)
+        case .notEqual: .formulaNotEqual(left, right)
+        case .smallerThan: .formulaSmallerThan(left, right)
+        case .smallerOrEqual: .formulaSmallerOrEqual(left, right)
+        case .greaterThan: .formulaGreaterThan(left, right)
+        case .greaterOrEqual: .formulaGreaterOrEqual(left, right)
+        case .logicalAnd: .formulaAnd(left, right)
+        case .logicalOr: .formulaOr(left, right)
         }
     }
 
@@ -156,6 +185,7 @@ nonisolated private struct Renderer {
         case .min: .formulaFunctionMin
         case .max: .formulaFunctionMax
         case .mod: .formulaFunctionMod
+        case .power: .formulaFunctionPower
         }
     }
 

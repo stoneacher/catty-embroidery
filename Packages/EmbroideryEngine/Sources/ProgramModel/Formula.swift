@@ -1,7 +1,9 @@
 /// A formula expression tree (Catroid `FormulaElement.java` / `Formula.java`),
 /// restricted to a numeric subset: literals, variable references, the five
-/// binary operators, unary minus (M2), and Catroid's math functions, `pi` and
-/// the object's own position and direction sensors (Brick backend, ADR-046). Precedence is structural — the editor/
+/// arithmetic operators, unary minus (M2), Catroid's math functions, `pi` and
+/// the object's own position and direction sensors (Brick backend, ADR-046), and
+/// comparisons, `and`/`or`/`not`, `true`/`false` and `power` (Variables, ADR-048).
+/// Every value is a `Double`; logic yields 1 or 0. Precedence is structural — the editor/
 /// parser builds the tree; evaluation never re-parses. `Codable` (synthesized:
 /// every associated value is itself `Codable`) lands in US-203, where formulas
 /// ship embedded under `Program`. Like `Variable.value`, a non-finite `.number`
@@ -14,6 +16,8 @@ public indirect enum Formula: Sendable, Equatable, Codable {
     case variable(String)
     case binary(BinaryOperator, Formula, Formula)
     case unaryMinus(Formula)
+    /// Catroid's `LOGICAL_NOT`: 1 for a zero operand, else 0.
+    case logicalNot(Formula)
     /// A one-argument math function (Catroid `Functions`), e.g. `sin(30)`.
     case unaryFunction(UnaryFunction, Formula)
     /// A two-argument math function, e.g. `mod(7, 3)`.
@@ -40,6 +44,8 @@ public indirect enum Formula: Sendable, Equatable, Codable {
                 && leftSecond == rightSecond
         case let (.unaryMinus(left), .unaryMinus(right)):
             left == right
+        case let (.logicalNot(left), .logicalNot(right)):
+            left == right
         case let (.unaryFunction(leftFunction, left), .unaryFunction(rightFunction, right)):
             leftFunction == rightFunction && left == right
         case let (.binaryFunction(leftFunction, leftFirst, leftSecond),
@@ -60,12 +66,16 @@ public indirect enum Formula: Sendable, Equatable, Codable {
     }
 }
 
-/// The M2 binary operator subset of Catroid `Operators.java`. No `mod`:
+/// Catroid's binary `Operators.java`: the five arithmetic ones (M2), then the six
+/// comparisons and `and`/`or` (Variables, ADR-048), named after Catroid's cases so a
+/// code.xml importer maps them 1:1. The case names are coding keys. No `mod`:
 /// Catroid's `Operators.MOD` is dead code — the operator switch in
 /// `FormulaElementOperations.kt` has no case for it and falls through to the
-/// default 0; the working modulo is `Functions.MOD`, out of M2 scope.
+/// default 0; the working modulo is `Functions.MOD`.
 public enum BinaryOperator: Sendable, Equatable, CaseIterable, Codable {
     case plus, minus, mult, divide, pow
+    case equal, notEqual, smallerThan, smallerOrEqual, greaterThan, greaterOrEqual
+    case logicalAnd, logicalOr
 }
 
 // The four vocabularies below are part of the file format: their case names are
@@ -81,18 +91,20 @@ public enum UnaryFunction: Sendable, Hashable, CaseIterable, Codable {
     case sin, cos, tan, arcsin, arccos, arctan, sqrt, abs, round, floor, ceil, ln, log, exp
 }
 
-/// Catroid's two-argument math functions. `power` is left out: the `^`
-/// operator already exists with ADR-017's pinned semantics.
+/// Catroid's two-argument math functions. `power` is raw `Math.pow`, which is not
+/// the `^` operator: `^` guards NaN and canonicalizes zeros (ADR-017), `power` does
+/// neither (Variables brief D4, ADR-048).
 public enum BinaryFunction: Sendable, Hashable, CaseIterable, Codable {
-    case arctan2, min, max, mod
+    case arctan2, min, max, mod, power
 }
 
-/// Catroid's zero-argument functions that are constants. `true`/`false` join
-/// with the Variables feature's logic.
+/// Catroid's zero-argument functions that are constants: `pi`, and `true`/`false`,
+/// which are 1 and 0 (`Conversions.kt:31-32`). The names are Catroid's and coding keys.
 public enum FormulaConstant: Sendable, Hashable, CaseIterable, Codable {
     // Catroid's name and a coding key, so it is kept below the length rule.
     // swiftlint:disable:next identifier_name
     case pi
+    case `true`, `false`
 }
 
 /// The object sensors a formula may read: the acting object's own needle.
