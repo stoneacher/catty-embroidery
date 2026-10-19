@@ -335,23 +335,10 @@ private extension ScriptListView {
     /// computes them (`BrickRowPresentation`), so a loop end offers Delete alone.
     @ViewBuilder
     func actions(for row: BrickRowPresentation) -> some View {
-        if let action = row.moveUp {
-            Button(.scriptActionMoveUp) { perform(action) }
-        }
-        if let action = row.moveDown {
-            Button(.scriptActionMoveDown) { perform(action) }
-        }
-        if let action = row.moveAboveLoop {
-            Button(.scriptActionMoveAboveLoop) { perform(action) }
-        }
-        if let action = row.moveBelowLoop {
-            Button(.scriptActionMoveBelowLoop) { perform(action) }
-        }
-        if let action = row.moveIntoLoopAbove {
-            Button(.scriptActionMoveIntoLoopAbove) { perform(action) }
-        }
-        if let action = row.moveIntoLoopBelow {
-            Button(.scriptActionMoveIntoLoopBelow) { perform(action) }
+        // Named by the row (`BrickRowPresentation.moveActions`), so a move out of an If is not
+        // read as a move out of a loop.
+        ForEach(row.moveActions, id: \.title) { move in
+            Button(move.title) { perform(move.action) }
         }
         // US-410: the same editor the toolbar opens, reachable without first selecting the row.
         // Not while the palette is up: opening would dismiss one sheet and present another in

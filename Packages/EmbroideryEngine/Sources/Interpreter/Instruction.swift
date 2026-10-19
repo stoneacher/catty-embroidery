@@ -36,6 +36,12 @@ enum ScriptCompiler {
         } catch {
             return []
         }
+        // Variables slice 2: the If bricks exist before their execution does
+        // (slice 3), so a script holding one compiles to the same inert `[]` as an
+        // unbalanced one. The two slices ship in one PR.
+        guard !script.bricks.contains(where: { $0.blockFamily == .conditional }) else {
+            return []
+        }
 
         var instructions: [Instruction] = []
         instructions.reserveCapacity(script.bricks.count)
@@ -52,6 +58,9 @@ enum ScriptCompiler {
             case .forever:
                 openLoops.append(instructions.count)
                 instructions.append(.foreverBegin)
+            case .ifThen, .ifElse, .elseBranch, .ifEnd:
+                // Unreachable: screened out above until slice 3 lowers them.
+                break
             case .loopEnd:
                 let beginIndex = openLoops.removeLast()
                 let endIndex = instructions.count

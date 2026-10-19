@@ -27,6 +27,8 @@ public enum ParameterSlot: Sendable, Hashable, CaseIterable {
     /// GoThrough's through-point; its destination reuses `.x` and `.y`.
     case throughX
     case throughY
+    /// An If's condition (Variables slice 2).
+    case condition
 }
 
 /// What a slot holds. The case is the shape of the value, which decides the
@@ -71,6 +73,8 @@ public extension Brick {
             [.init(slot: .y, value: .formula(y))]
         case let .repeatLoop(times):
             [.init(slot: .times, value: .formula(times))]
+        case let .ifThen(condition), let .ifElse(condition):
+            [.init(slot: .condition, value: .formula(condition))]
         case let .wait(seconds):
             [.init(slot: .seconds, value: .formula(seconds))]
         case let .setVariable(name, value), let .changeVariableBy(name, value):
@@ -96,7 +100,7 @@ public extension Brick {
                 .init(slot: .x, value: .formula(x)),
                 .init(slot: .y, value: .formula(y))
             ]
-        case .forever, .loopEnd, .stitch, .sewUp, .stopRunningStitch:
+        case .forever, .loopEnd, .elseBranch, .ifEnd, .stitch, .sewUp, .stopRunningStitch:
             []
         }
     }
@@ -131,6 +135,7 @@ public extension Brick {
             .changeXBy(formula)
         case let (.changeYBy, .y, .formula(formula)):
             .changeYBy(formula)
+        case (.ifThen, _, _), (.ifElse, _, _): replacingCondition(slot, with: value)
         case let (.repeatLoop, .times, .formula(formula)):
             .repeatLoop(times: formula)
         case let (.wait, .seconds, .formula(formula)):
@@ -153,8 +158,7 @@ public extension Brick {
             .zigZagStitch(length: length, width: formula)
         case let (.setThreadColor, .hex, .threadColor(hex)):
             .setThreadColor(hex: hex)
-        case let (.writeEmbroideryToFile, .fileName, .fileName(name)):
-            .writeEmbroideryToFile(name: name)
+        case let (.writeEmbroideryToFile, .fileName, .fileName(name)): .writeEmbroideryToFile(name: name)
         case (.arc, _, _), (.goThrough, _, _):
             replacingPathSlot(slot, with: value)
         default:
@@ -166,6 +170,16 @@ public extension Brick {
 }
 
 private extension Brick {
+    /// An If's one slot, its condition (Variables slice 2). Every other brick, slot or
+    /// value shape refuses.
+    func replacingCondition(_ slot: ParameterSlot, with value: ParameterValue) -> Brick? {
+        switch (self, slot, value) {
+        case let (.ifThen, .condition, .formula(formula)): .ifThen(condition: formula)
+        case let (.ifElse, .condition, .formula(formula)): .ifElse(condition: formula)
+        default: nil
+        }
+    }
+
     /// Arc's and GoThrough's slots, kept apart from `replacing(_:with:)`. Every
     /// other brick refuses here, as `replacing` would.
     func replacingPathSlot(_ slot: ParameterSlot, with value: ParameterValue) -> Brick? {

@@ -72,6 +72,10 @@ struct EditBalanceInvariantTests {
             "seed \(String(seed, radix: 16)) applied only \(tally.appliedStructuralEdits)"
         )
         #expect(tally.appliedLoopOpenerInserts > 0)
+        #expect(tally.appliedIfOpenerInserts > 0)
+        #expect(tally.appliedIfBlockDeletes > 0)
+        #expect(tally.appliedIfBlockRelocations > 0)
+        #expect(tally.rejectedIfMarkerInserts > 0)
         #expect(tally.appliedPairDeletes > 0)
         #expect(tally.appliedPairRelocations > 0)
         #expect(tally.appliedLeafRelocations > 0)
@@ -225,6 +229,12 @@ private struct Tally {
     /// flips rather than the funnel's coverage.
     var appliedStructuralEdits = 0
     var appliedLoopOpenerInserts = 0
+    var appliedIfOpenerInserts = 0
+    /// Of `appliedPairDeletes`, those aimed at an If's opener, else or end.
+    var appliedIfBlockDeletes = 0
+    /// Of `appliedPairRelocations`, those of an If block.
+    var appliedIfBlockRelocations = 0
+    var rejectedIfMarkerInserts = 0
     var appliedPairDeletes = 0
     var appliedPairRelocations = 0
     var appliedLeafRelocations = 0
@@ -239,6 +249,7 @@ private struct Tally {
         guard case let .applied(next) = result else {
             switch result {
             case .rejected(.cannotInsertLoopEnd): rejectedLoopEndInserts += 1
+            case .rejected(.cannotInsertIfMarker): rejectedIfMarkerInserts += 1
             case .rejected(.addressOutOfBounds), .rejected(.destinationOutOfBounds):
                 rejectedOutOfBounds += 1
             default: break
@@ -256,16 +267,24 @@ private struct Tally {
         switch action {
         case let .insert(kind, _) where kind == .repeatLoop || kind == .forever:
             appliedLoopOpenerInserts += 1
+        case let .insert(kind, _) where kind == .ifThen || kind == .ifElse:
+            appliedIfOpenerInserts += 1
         case let .delete(address)
             where before.indices.contains(address.brickIndex)
-            && (before[address.brickIndex].opensLoop || before[address.brickIndex].isLoopEnd):
+            && before[address.brickIndex].blockRole != .leaf:
             appliedPairDeletes += 1
+            if case .conditional = before[address.brickIndex].blockFamily {
+                appliedIfBlockDeletes += 1
+            }
         case let .move(address, _):
             // A pair move and a leaf move take different code paths — the first
             // delegates to `movingPair`, the second is `EditorCore`'s own — so
             // they are counted apart rather than lumped together.
-            if before.indices.contains(address.brickIndex), before[address.brickIndex].opensLoop {
+            if before.indices.contains(address.brickIndex), before[address.brickIndex].opensBlock {
                 appliedPairRelocations += 1
+                if case .conditional = before[address.brickIndex].blockFamily {
+                    appliedIfBlockRelocations += 1
+                }
             } else {
                 appliedLeafRelocations += 1
             }

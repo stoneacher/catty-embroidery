@@ -63,6 +63,25 @@ struct BrickTemplateDefaultsTests {
         ]),
         .init(kind: .forever, bricks: [.forever, .loopEnd]),
         .init(kind: .loopEnd, bricks: [.loopEnd]),
+        // Catroid seeds both Ifs with `1 < 2` (`CategoryBricksFactory.kt:361-380`).
+        .init(kind: .ifElse, bricks: [
+            .ifElse(condition: .binary(
+                .smallerThan,
+                .number(BrickDefaults.conditionLeft),
+                .number(BrickDefaults.conditionRight)
+            )),
+            .elseBranch, .ifEnd
+        ]),
+        .init(kind: .ifThen, bricks: [
+            .ifThen(condition: .binary(
+                .smallerThan,
+                .number(BrickDefaults.conditionLeft),
+                .number(BrickDefaults.conditionRight)
+            )),
+            .ifEnd
+        ]),
+        .init(kind: .elseBranch, bricks: [.elseBranch]),
+        .init(kind: .ifEnd, bricks: [.ifEnd]),
         .init(kind: .wait, bricks: [.wait(seconds: .number(BrickDefaults.waitSeconds))]),
         .init(kind: .setVariable, bricks: [
             .setVariable(

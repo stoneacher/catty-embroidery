@@ -226,13 +226,15 @@ enum EditorCoreFixtures {
             // structural floor in `EditBalanceInvariantTests` shrink with every
             // kind the vocabulary gained: adding Arc (Brick backend slice 4) left
             // one seed with no pair relocation and another with no rejected
-            // `loopEnd` insert in 400 steps.
+            // `loopEnd` insert in 400 steps. The Ifs and their markers joined
+            // these shares in Variables slice 2.
             switch generator.next() % 8 {
             case 0, 1:
-                let openers: [BrickKind] = [.repeatLoop, .forever]
-                return .insert(openers[Int(generator.next() % 2)], at: address)
+                let openers: [BrickKind] = [.repeatLoop, .forever, .ifThen, .ifElse]
+                return .insert(openers[Int(generator.next() % 4)], at: address)
             case 2:
-                return .insert(.loopEnd, at: address)
+                let markers: [BrickKind] = [.loopEnd, .elseBranch, .ifEnd]
+                return .insert(markers[Int(generator.next() % 3)], at: address)
             default:
                 return .insert(BrickKind.allCases.randomElement(using: &generator)!, at: address)
             }
@@ -309,6 +311,10 @@ enum EditorCoreFixtures {
         case .forever: .forever
         case .loopEnd: .loopEnd
         case let .wait(seconds): .wait(seconds: bumped(seconds))
+        case let .ifThen(condition): .ifThen(condition: bumped(condition))
+        case let .ifElse(condition): .ifElse(condition: bumped(condition))
+        case .elseBranch: .elseBranch
+        case .ifEnd: .ifEnd
         case let .setVariable(name, to): .setVariable(name: toggled(name), to: bumped(to))
         case let .changeVariableBy(name, value):
             .changeVariableBy(name: toggled(name), value: bumped(value))

@@ -59,6 +59,14 @@ public enum EditRejection: Equatable, Sendable {
     /// `move(from:)` a `loopEnd` — the one move that can split a pair.
     case cannotMoveLoopEnd(at: BrickAddress)
 
+    /// `insert(.elseBranch, …)` or `insert(.ifEnd, …)`: the If markers, which an
+    /// If's template already brings (Variables slice 2). Checked before the
+    /// address resolves, like `cannotInsertLoopEnd`.
+    case cannotInsertIfMarker(BrickKind)
+
+    /// `move(from:)` an `elseBranch` or an `ifEnd`, which would split an If.
+    case cannotMoveIfMarker(at: BrickAddress)
+
     /// `replaceBrick` with a different kind. `from` is the brick that is there,
     /// `to` the replacement that was offered.
     case cannotChangeBrickKind(from: BrickKind, to: BrickKind)

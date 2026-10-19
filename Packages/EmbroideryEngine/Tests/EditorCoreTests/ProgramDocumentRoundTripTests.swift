@@ -16,7 +16,9 @@ struct ProgramDocumentRoundTripTests {
     /// already ship their `loopEnd`s, so the case is still covered and the
     /// program passes the admission check; a round trip that tripped over its
     /// own fixture would prove nothing about the codec.
-    static let everyBrick: [Brick] = BrickKind.allCases.filter { $0 != .loopEnd }.flatMap { $0.template() }
+    static let everyBrick: [Brick] = BrickKind.allCases
+        .filter { ![.loopEnd, .elseBranch, .ifEnd].contains($0) }
+        .flatMap { $0.template() }
 
     /// Every `Formula` case, and every `BinaryOperator`, with the finite extremes
     /// a `Double` can hold. The shape is deliberately wider than the templates'

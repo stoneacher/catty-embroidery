@@ -200,7 +200,7 @@ struct ScriptSiblingJumpTests {
 
     // MARK: The backward pair primitive
 
-    /// `matchingOpener(ofLoopEndAt:)` is the mirror of `ProgramModel`'s
+    /// `matchingOpener(ofEndAt:)` is the mirror of `ProgramModel`'s
     /// `matchingEnd(ofBrickAt:)` and this story needs it twice — here, and for
     /// ADR-035's "delete at a `loopEnd` redirects to its opener". Pinned as a
     /// **round trip** against the existing forward scan rather than against
@@ -208,20 +208,20 @@ struct ScriptSiblingJumpTests {
     @Test("matchingOpener round-trips with matchingEnd on a balanced script")
     func matchingOpenerRoundTrips() throws {
         for (index, brick) in Self.script.bricks.enumerated() where brick.isLoopEnd {
-            let opener = try #require(Self.script.matchingOpener(ofLoopEndAt: index))
+            let opener = try #require(Self.script.matchingOpener(ofEndAt: index))
             #expect(Self.script.matchingEnd(ofBrickAt: opener) == index)
         }
         // Nested, so the depth tracking is exercised rather than the trivial case.
         let nested = Script(bricks: [
             .forever, .repeatLoop(times: .number(2)), .stitch, .loopEnd, .sewUp, .loopEnd
         ])
-        #expect(nested.matchingOpener(ofLoopEndAt: 3) == 1)
-        #expect(nested.matchingOpener(ofLoopEndAt: 5) == 0)
+        #expect(nested.matchingOpener(ofEndAt: 3) == 1)
+        #expect(nested.matchingOpener(ofEndAt: 5) == 0)
     }
 
     @Test("matchingOpener is nil where there is nothing to match",
           arguments: [-1, 0, 1, 10, Int.min, Int.max])
     func matchingOpenerIsNilWhereUnresolvable(index: Int) {
-        #expect(Script(bricks: [.loopEnd, .stitch]).matchingOpener(ofLoopEndAt: index) == nil)
+        #expect(Script(bricks: [.loopEnd, .stitch]).matchingOpener(ofEndAt: index) == nil)
     }
 }

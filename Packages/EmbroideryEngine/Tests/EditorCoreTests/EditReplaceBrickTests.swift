@@ -117,7 +117,7 @@ struct EditReplaceBrickTests {
     /// `default:`, so a new kind that forgets a payload is a compile error there
     /// rather than a silent exemption here.
     ///
-    /// The five payload-free kinds perturb to themselves and are asserted
+    /// The seven payload-free kinds perturb to themselves and are asserted
     /// separately as no-ops, which is the honest claim for them rather than a
     /// coverage number that overstates itself.
     @Test("a same-kind replacement preserves the payload for every kind",
@@ -143,7 +143,7 @@ struct EditReplaceBrickTests {
         // only discriminating if the replacement actually differs. Named rather
         // than assumed — `perturbed` returning its input for a payload-bearing
         // kind would quietly turn this row into a tautology.
-        let payloadFree: Set<BrickKind> = [.stitch, .sewUp, .stopRunningStitch, .forever, .loopEnd]
+        let payloadFree: Set<BrickKind> = [.stitch, .sewUp, .stopRunningStitch, .forever, .loopEnd, .elseBranch, .ifEnd]
         #expect((replacement != original) == !payloadFree.contains(kind))
     }
 

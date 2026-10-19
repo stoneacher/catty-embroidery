@@ -207,7 +207,7 @@ extension Interpreter {
             // (milestone deviation table). The assembled stream is always
             // available via `assembledStream()`; the brick stays for M4/M5.
             events.append(.finalizeRequested(name: name))
-        case .repeatLoop, .forever, .loopEnd, .wait:
+        case .repeatLoop, .forever, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd:
             // Never dispatched here: loops compile to instructions
             // (`ScriptCompiler`) and `wait` blocks in `performActionBrick`.
             break

@@ -193,6 +193,42 @@
         }
       }
     },
+    "brick.if": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens an If block: the bricks below it run only when the condition is true. %@ is the condition, already formatted, e.g. \"Counter < 10\". Catroid's own words (brick_if_begin \"If\", brick_if_begin_second_part \"is true then\"); keep them one sentence so your language can reorder it. Used by both the If and the If/Else brick.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If %@ is true then"
+          }
+        }
+      }
+    },
+    "brick.if.else": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Divides an If/Else block: the bricks below it run when the If's condition is false. Catroid's own word (brick_if_else).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Else"
+          }
+        }
+      }
+    },
+    "brick.if.end": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes an If block. Catroid's own words (brick_if_end).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End if"
+          }
+        }
+      }
+    },
     "brick.loop.end.forever": {
       "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a Forever loop. Must read as the end of that specific kind of loop.",
       "extractionState": "manual",
@@ -1381,6 +1417,30 @@
         }
       }
     },
+    "palette.description.if.else": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver. The If/Else brick, which comes with an Else row and an End if row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runs the bricks after it if the condition is true, and the bricks after Else if not."
+          }
+        }
+      }
+    },
+    "palette.description.if.then": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver. The If brick without an Else.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runs the bricks inside it only if the condition is true."
+          }
+        }
+      }
+    },
     "palette.description.move": {
       "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
       "extractionState": "manual",
@@ -1897,6 +1957,18 @@
         }
       }
     },
+    "parameter.slot.condition": {
+      "comment": "The title of an If brick's condition in the editor for a brick's values, e.g. \"Counter < 10\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condition"
+          }
+        }
+      }
+    },
     "parameter.slot.degrees": {
       "comment": "Label of the number field for an angle in degrees.",
       "extractionState": "manual",
@@ -2281,6 +2353,30 @@
         }
       }
     },
+    "script.action.move.above.else": {
+      "comment": "VoiceOver action on a brick in a design's program. 'If' means an If or If/Else block, the bricks between its If row and its End if row. On the first brick after an Else row: moves the brick to just above the Else row, so it runs when the condition is true instead.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Above Else"
+          }
+        }
+      }
+    },
+    "script.action.move.above.if": {
+      "comment": "VoiceOver action on a brick in a design's program. 'If' means an If or If/Else block, the bricks between its If row and its End if row. On the first brick inside an If: takes the brick out of the If and puts it just above it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Above If"
+          }
+        }
+      }
+    },
     "script.action.move.above.loop": {
       "comment": "VoiceOver action on the first brick inside a loop (a Repeat or Forever block): takes the brick out of the loop and puts it just above it. 'Loop' means the Repeat/Forever block the brick is inside.",
       "extractionState": "manual",
@@ -2289,6 +2385,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Move Above Loop"
+          }
+        }
+      }
+    },
+    "script.action.move.below.else": {
+      "comment": "VoiceOver action on a brick in a design's program. 'If' means an If or If/Else block, the bricks between its If row and its End if row. On the last brick before an Else row: moves the brick to just below the Else row, so it runs when the condition is false instead.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Below Else"
+          }
+        }
+      }
+    },
+    "script.action.move.below.if": {
+      "comment": "VoiceOver action on a brick in a design's program. 'If' means an If or If/Else block, the bricks between its If row and its End if row. On the last brick inside an If: takes the brick out of the If and puts it just below its End if row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Below If"
           }
         }
       }
@@ -2313,6 +2433,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Move Down"
+          }
+        }
+      }
+    },
+    "script.action.move.into.if.above": {
+      "comment": "VoiceOver action on a brick in a design's program. 'If' means an If or If/Else block, the bricks between its If row and its End if row. On a brick just below an If: puts the brick inside that If, as its last brick.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Into If Above"
+          }
+        }
+      }
+    },
+    "script.action.move.into.if.below": {
+      "comment": "VoiceOver action on a brick in a design's program. 'If' means an If or If/Else block, the bricks between its If row and its End if row. On a brick just above an If: puts the brick inside that If, as its first brick.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move Into If Below"
           }
         }
       }
@@ -2411,6 +2555,94 @@
             "value": "%1$@, inside %#@loops@"
           },
           "substitutions": {
+            "loops": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg loop"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg loops"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script.row.accessibility.nested.ifs": {
+      "comment": "Spoken by VoiceOver for a block inside one or more If blocks and no loop, because a user who cannot see the indentation still needs to know it. %1$@ is the block's own sentence, e.g. \"Stitch\"; %2$lld is how many If blocks it sits inside. 'If' is the brick's name. Never shown on screen. Add the plural categories your language needs. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, inside %#@ifs@"
+          },
+          "substitutions": {
+            "ifs": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg If"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg Ifs"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "script.row.accessibility.nested.loops.and.ifs": {
+      "comment": "Spoken by VoiceOver for a block inside both loops and If blocks. %1$@ is the block's own sentence; %2$lld is how many loops (Repeat or Forever) and %3$lld how many If blocks it sits inside. 'If' is the brick's name. Never shown on screen. Add the plural categories your language needs. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, inside %#@loops@ and %#@ifs@"
+          },
+          "substitutions": {
+            "ifs": {
+              "argNum": 3,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg If"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg Ifs"
+                    }
+                  }
+                }
+              }
+            },
             "loops": {
               "argNum": 2,
               "formatSpecifier": "lld",

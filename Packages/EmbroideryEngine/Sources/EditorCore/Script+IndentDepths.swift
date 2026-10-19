@@ -13,7 +13,8 @@ public extension Script {
     /// invisible to anything importing only `ProgramModel`. ADR-008 says nesting
     /// *is a rendering concern*, and this is the editor target.
     ///
-    /// **A `loopEnd` sits at its opener's depth, not its body's** — decrementing
+    /// **An end — and an If/Else's else — sits at its opener's depth, not its
+    /// body's** — decrementing
     /// *before* appending is the whole trick, and the mistake worth guarding is
     /// doing it the other way round.
     ///
@@ -39,16 +40,21 @@ public extension Script {
         var depth = 0
 
         for brick in bricks {
-            if brick.isLoopEnd {
-                // Clamped, so a `loopEnd` closing a loop that was never opened
+            switch brick.blockRole {
+            case .closer:
+                // Clamped, so an end closing a block that was never opened
                 // leaves the depth at 0 instead of going negative.
                 depth = max(0, depth - 1)
                 depths.append(depth)
-            } else {
+            case .divider:
+                // An else sits at its opener's depth, between two branches at
+                // the body's (Variables slice 2), and leaves the depth alone.
+                depths.append(max(0, depth - 1))
+            case .opener:
                 depths.append(depth)
-                if brick.opensLoop {
-                    depth += 1
-                }
+                depth += 1
+            case .leaf:
+                depths.append(depth)
             }
         }
         return depths

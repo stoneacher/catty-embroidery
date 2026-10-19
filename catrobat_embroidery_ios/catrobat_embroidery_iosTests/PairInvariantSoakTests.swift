@@ -40,7 +40,7 @@ struct PairInvariantSoakTests {
 
     /// What the run actually did, counted only when the program changed.
     private struct Tally {
-        var inserts = 0, loopInserts = 0
+        var inserts = 0, loopInserts = 0, ifInserts = 0
         var drags = 0, pairDrags = 0
         var deletes = 0, pairDeletes = 0
         var accessibilityMoves = 0
@@ -54,9 +54,10 @@ struct PairInvariantSoakTests {
         editor.program.scenes.first?.objects.first?.scripts.first?.bricks ?? []
     }
 
+    /// Any part of a block — a loop's or, since Variables slice 2, an If's.
     private static func isLoopBrick(_ brick: Brick) -> Bool {
         switch BrickKind(of: brick) {
-        case .repeatLoop, .forever, .loopEnd: true
+        case .repeatLoop, .forever, .loopEnd, .ifThen, .ifElse, .elseBranch, .ifEnd: true
         default: false
         }
     }
@@ -90,6 +91,7 @@ struct PairInvariantSoakTests {
         // Non-vacuity: every door was walked, pairs included.
         #expect(tally.inserts >= 200, "\(tally)")
         #expect(tally.loopInserts >= 20, "\(tally)")
+        #expect(tally.ifInserts >= 10, "\(tally)")
         #expect(tally.drags >= 100, "\(tally)")
         #expect(tally.pairDrags >= 20, "\(tally)")
         #expect(tally.deletes >= 100, "\(tally)")
@@ -181,14 +183,15 @@ struct PairInvariantSoakTests {
         private mutating func insert(_ before: [Brick]) throws {
             editor.selectedBrickIndex = before.isEmpty || random(below: 4) == 0
                 ? nil : random(below: before.count)
-            // Loops are 2 of the palette's kinds; a third of the inserts pick one, so pairs are
+            // Blocks are 4 of the palette's kinds; a third of the inserts pick one, so blocks are
             // nested and crossed often enough for the pair floors to mean something.
-            let loops: [BrickKind] = [.repeatLoop, .forever]
+            let loops: [BrickKind] = [.repeatLoop, .forever, .ifThen, .ifElse]
             let kinds = random(below: 3) == 0 ? loops : PairInvariantSoakTests.paletteKinds
             let kind = try #require(kinds.randomElement(using: &generator))
             guard editor.insert(kind) != nil, changed(from: before) else { return }
             tally.inserts += 1
             tally.loopInserts += loops.contains(kind) ? 1 : 0
+            tally.ifInserts += kind == .ifThen || kind == .ifElse ? 1 : 0
         }
 
         private mutating func drag(_ before: [Brick], _ step: Int) throws {
@@ -216,8 +219,9 @@ struct PairInvariantSoakTests {
             let rows = BrickRowPresentation.rows(for: editor.program)
             let row = rows[random(below: rows.count)]
             let actions = [
-                row.moveUp, row.moveDown, row.moveAboveLoop,
-                row.moveBelowLoop, row.moveIntoLoopAbove, row.moveIntoLoopBelow
+                row.moveUp, row.moveDown, row.moveOutAbove,
+                row.moveOutBelow, row.moveIntoBlockAbove, row.moveIntoBlockBelow,
+                row.moveBelowElse, row.moveAboveElse
             ].compactMap(\.self)
             guard let action = actions.randomElement(using: &generator) else { return }
             let idsBefore = editor.rowIDs

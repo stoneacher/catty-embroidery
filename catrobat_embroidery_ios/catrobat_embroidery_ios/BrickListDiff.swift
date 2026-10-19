@@ -106,17 +106,23 @@ nonisolated struct BrickListDiff {
         Array(elements[split...] + elements[..<split])
     }
 
-    /// A leaf's length is 1; an opener's is its whole pair, if the pair closes in `bricks`.
+    /// A leaf's length is 1; an opener's is its whole block, if the block closes in `bricks`.
     private static func blockLength(atFrontOf bricks: [Brick]) -> Int? {
-        guard let first = bricks.first, !first.isLoopEnd else { return nil }
-        guard first.opensLoop else { return 1 }
-        return Script(bricks: bricks).range(ofPairAt: 0)?.count
+        guard let first = bricks.first else { return nil }
+        switch first.blockRole {
+        case .closer, .divider: return nil
+        case .leaf: return 1
+        case .opener: return Script(bricks: bricks).range(ofPairAt: 0)?.count
+        }
     }
 
-    /// A leaf's length is 1; a `loopEnd`'s is its whole pair, if the pair opens in `bricks`.
+    /// A leaf's length is 1; an end's is its whole block, if the block opens in `bricks`.
     private static func blockLength(atBackOf bricks: [Brick]) -> Int? {
-        guard let last = bricks.indices.last, !bricks[last].opensLoop else { return nil }
-        guard bricks[last].isLoopEnd else { return 1 }
-        return Script(bricks: bricks).matchingOpener(ofLoopEndAt: last).map { last - $0 + 1 }
+        guard let last = bricks.indices.last else { return nil }
+        switch bricks[last].blockRole {
+        case .opener, .divider: return nil
+        case .leaf: return 1
+        case .closer: return Script(bricks: bricks).matchingOpener(ofEndAt: last).map { last - $0 + 1 }
+        }
     }
 }

@@ -116,7 +116,8 @@ private extension Brick {
              let .changeXBy(formula), let .changeYBy(formula),
              let .repeatLoop(times: formula), let .wait(seconds: formula),
              let .setVariable(_, to: formula), let .changeVariableBy(_, value: formula),
-             let .runningStitch(length: formula), let .tripleStitch(length: formula):
+             let .runningStitch(length: formula), let .tripleStitch(length: formula),
+             let .ifThen(condition: formula), let .ifElse(condition: formula):
             [formula]
         case let .placeAt(x, y):
             [x, y]
@@ -126,7 +127,7 @@ private extension Brick {
             [radius, degrees]
         case let .goThrough(throughX, throughY, x, y):
             [throughX, throughY, x, y]
-        case .forever, .loopEnd, .stitch, .setThreadColor, .sewUp, .stopRunningStitch,
+        case .forever, .loopEnd, .elseBranch, .ifEnd, .stitch, .setThreadColor, .sewUp, .stopRunningStitch,
              .writeEmbroideryToFile:
             []
         }

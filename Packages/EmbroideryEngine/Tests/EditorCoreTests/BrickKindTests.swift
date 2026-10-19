@@ -12,12 +12,12 @@ import Testing
 /// that US-402's same-kind guard must be able to take the kind of.
 @Suite("Brick kinds and templates")
 struct BrickKindTests {
-    /// The two kinds whose template is a pair rather than a single brick
-    /// (ADR-035). Written out literally rather than derived from `opensLoop`,
-    /// or the tests below would define their expectation in terms of the code
-    /// under test.
-    static let loopOpeners: [BrickKind] = [.repeatLoop, .forever]
-    static let nonOpeners: [BrickKind] = BrickKind.allCases.filter { !loopOpeners.contains($0) }
+    /// The kinds whose template is a whole block rather than a single brick
+    /// (ADR-035; the two Ifs from Variables slice 2). Written out literally rather
+    /// than derived from `opensBlock`, or the tests below would define their
+    /// expectation in terms of the code under test.
+    static let blockOpeners: [BrickKind] = [.repeatLoop, .forever, .ifThen, .ifElse]
+    static let nonOpeners: [BrickKind] = BrickKind.allCases.filter { !blockOpeners.contains($0) }
 
     /// Test plan 2. Iterating `allCases` and round-tripping a template through
     /// the mapping proves three things at once: `template()` is **total** (it is
@@ -32,11 +32,12 @@ struct BrickKindTests {
 
     /// The `Brick → BrickKind` direction is compile-enforced by the exhaustive
     /// no-`default:` switch, so adding a `Brick` case is already a build error.
-    /// The reverse direction is not, which is what this count pins: 25 is
-    /// `Brick`'s case count (23 until Arc and GoThrough, Brick backend slices 4–5).
+    /// The reverse direction is not, which is what this count pins: 29 is
+    /// `Brick`'s case count (23 until Arc and GoThrough, Brick backend slices 4–5;
+    /// 25 until the four If bricks, Variables slice 2).
     @Test("there is exactly one kind per Brick case")
     func kindCountMatchesBrickCaseCount() {
-        #expect(BrickKind.allCases.count == 25)
+        #expect(BrickKind.allCases.count == 29)
     }
 
     /// Test plan 3. Whole-array equality, so the *order* is asserted and not
@@ -56,9 +57,10 @@ struct BrickKindTests {
     func everyNonOpenerTemplateIsExactlyOneBrick(_ kind: BrickKind) throws {
         let bricks = kind.template()
         #expect(bricks.count == 1)
-        // …and no non-opener smuggles in a stray `loopEnd`, which would be the
-        // one way `template()` could mint an unbalanced script (ADR-035).
+        // …and no non-opener smuggles in a stray closer or else, which would be
+        // the one way `template()` could mint an unbalanced script (ADR-035).
         let only = try #require(bricks.first)
-        #expect(kind == .loopEnd || !only.isLoopEnd)
+        let markers: [BrickKind] = [.loopEnd, .elseBranch, .ifEnd]
+        #expect(markers.contains(kind) || only.blockRole == .leaf)
     }
 }

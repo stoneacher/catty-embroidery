@@ -96,10 +96,10 @@ struct AccessibilityMoveTests {
     func loopEndOffersNoMove(index: Int) {
         #expect(Self.script.moveUpAction(ofBrickAt: index, in: Fixtures.address) == nil)
         #expect(Self.script.moveDownAction(ofBrickAt: index, in: Fixtures.address) == nil)
-        #expect(Self.script.moveAboveLoopAction(ofBrickAt: index, in: Fixtures.address) == nil)
-        #expect(Self.script.moveBelowLoopAction(ofBrickAt: index, in: Fixtures.address) == nil)
-        #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: index, in: Fixtures.address) == nil)
-        #expect(Self.script.moveIntoLoopBelowAction(ofBrickAt: index, in: Fixtures.address) == nil)
+        #expect(Self.script.moveOutAboveAction(ofBrickAt: index, in: Fixtures.address) == nil)
+        #expect(Self.script.moveOutBelowAction(ofBrickAt: index, in: Fixtures.address) == nil)
+        #expect(Self.script.moveIntoBlockAboveAction(ofBrickAt: index, in: Fixtures.address) == nil)
+        #expect(Self.script.moveIntoBlockBelowAction(ofBrickAt: index, in: Fixtures.address) == nil)
     }
 
     // MARK: Move out of a loop
@@ -110,7 +110,7 @@ struct AccessibilityMoveTests {
     @Test("Move Above Loop takes the first block of a body out above its opener")
     func moveAboveLoop() {
         #expect(
-            Self.applied(Self.script.moveAboveLoopAction(ofBrickAt: 2, in: Fixtures.address))
+            Self.applied(Self.script.moveOutAboveAction(ofBrickAt: 2, in: Fixtures.address))
                 == .applied(Self.reordered([0, 2, 1, 3, 4, 5, 6, 7, 8, 9]))
         )
     }
@@ -119,7 +119,7 @@ struct AccessibilityMoveTests {
     func moveBelowLoop() {
         let expected = EditResult.applied(Self.reordered([0, 1, 2, 3, 5, 4, 6, 7, 8, 9]))
 
-        #expect(Self.applied(Self.script.moveBelowLoopAction(ofBrickAt: 4, in: Fixtures.address)) == expected)
+        #expect(Self.applied(Self.script.moveOutBelowAction(ofBrickAt: 4, in: Fixtures.address)) == expected)
         #expect(Self.drag([4], to: 6) == expected, "the same place a drag puts it")
     }
 
@@ -127,11 +127,11 @@ struct AccessibilityMoveTests {
     @Test("a body's only brick can leave in either direction")
     func onlyBrickLeavesEitherWay() {
         #expect(
-            Self.applied(Self.script.moveAboveLoopAction(ofBrickAt: 7, in: Fixtures.address))
+            Self.applied(Self.script.moveOutAboveAction(ofBrickAt: 7, in: Fixtures.address))
                 == .applied(Self.reordered([0, 1, 2, 3, 4, 5, 7, 6, 8, 9]))
         )
         #expect(
-            Self.applied(Self.script.moveBelowLoopAction(ofBrickAt: 7, in: Fixtures.address))
+            Self.applied(Self.script.moveOutBelowAction(ofBrickAt: 7, in: Fixtures.address))
                 == .applied(Self.reordered([0, 1, 2, 3, 4, 5, 6, 8, 7, 9]))
         )
     }
@@ -142,7 +142,7 @@ struct AccessibilityMoveTests {
     func nestedLoopLeavesAsABlock() throws {
         let seed = Fixtures.propertySeed
         let script = seed.scenes[0].objects[0].scripts[0]
-        let action = try #require(script.moveBelowLoopAction(ofBrickAt: 3, in: ScriptAddress()))
+        let action = try #require(script.moveOutBelowAction(ofBrickAt: 3, in: ScriptAddress()))
 
         var expected = seed
         expected.scenes[0].objects[0].scripts[0].bricks = [
@@ -156,17 +156,17 @@ struct AccessibilityMoveTests {
     /// top level, and never mid-body, where the sibling moves already work.
     @Test("no move-out is offered away from a body's edge")
     func moveOutOnlyAtTheEdge() {
-        #expect(Self.script.moveAboveLoopAction(ofBrickAt: 3, in: Fixtures.address) == nil, "mid-body")
-        #expect(Self.script.moveBelowLoopAction(ofBrickAt: 3, in: Fixtures.address) == nil, "mid-body")
-        #expect(Self.script.moveBelowLoopAction(ofBrickAt: 2, in: Fixtures.address) == nil, "top, not bottom")
-        #expect(Self.script.moveAboveLoopAction(ofBrickAt: 4, in: Fixtures.address) == nil, "bottom, not top")
+        #expect(Self.script.moveOutAboveAction(ofBrickAt: 3, in: Fixtures.address) == nil, "mid-body")
+        #expect(Self.script.moveOutBelowAction(ofBrickAt: 3, in: Fixtures.address) == nil, "mid-body")
+        #expect(Self.script.moveOutBelowAction(ofBrickAt: 2, in: Fixtures.address) == nil, "top, not bottom")
+        #expect(Self.script.moveOutAboveAction(ofBrickAt: 4, in: Fixtures.address) == nil, "bottom, not top")
         for index in [0, 1, 6, 9] {
             #expect(
-                Self.script.moveAboveLoopAction(ofBrickAt: index, in: Fixtures.address) == nil,
+                Self.script.moveOutAboveAction(ofBrickAt: index, in: Fixtures.address) == nil,
                 "top level \(index)"
             )
             #expect(
-                Self.script.moveBelowLoopAction(ofBrickAt: index, in: Fixtures.address) == nil,
+                Self.script.moveOutBelowAction(ofBrickAt: index, in: Fixtures.address) == nil,
                 "top level \(index)"
             )
         }
@@ -178,8 +178,8 @@ struct AccessibilityMoveTests {
     func noMoveOutOfAnUnclosedLoop() {
         let script = Fixtures.withUnclosedOpener.scenes[0].objects[0].scripts[0]
 
-        #expect(script.moveAboveLoopAction(ofBrickAt: 1, in: ScriptAddress()) == nil)
-        #expect(script.moveBelowLoopAction(ofBrickAt: 1, in: ScriptAddress()) == nil)
+        #expect(script.moveOutAboveAction(ofBrickAt: 1, in: ScriptAddress()) == nil)
+        #expect(script.moveOutBelowAction(ofBrickAt: 1, in: ScriptAddress()) == nil)
     }
 
     // MARK: Move into a loop
@@ -190,12 +190,12 @@ struct AccessibilityMoveTests {
     @Test("Move Into Loop Above makes the block the last of that loop's body")
     func moveIntoLoopAbove() {
         #expect(
-            Self.applied(Self.script.moveIntoLoopAboveAction(ofBrickAt: 9, in: Fixtures.address))
+            Self.applied(Self.script.moveIntoBlockAboveAction(ofBrickAt: 9, in: Fixtures.address))
                 == .applied(Self.reordered([0, 1, 2, 3, 4, 5, 6, 7, 9, 8]))
         )
         // A loop enters a loop as a block.
         #expect(
-            Self.applied(Self.script.moveIntoLoopAboveAction(ofBrickAt: 6, in: Fixtures.address))
+            Self.applied(Self.script.moveIntoBlockAboveAction(ofBrickAt: 6, in: Fixtures.address))
                 == .applied(Self.reordered([0, 1, 2, 3, 4, 6, 7, 8, 5, 9]))
         )
     }
@@ -206,10 +206,10 @@ struct AccessibilityMoveTests {
     func moveIntoLoopBelow() {
         let expected = EditResult.applied(Self.reordered([1, 0, 2, 3, 4, 5, 6, 7, 8, 9]))
 
-        #expect(Self.applied(Self.script.moveIntoLoopBelowAction(ofBrickAt: 0, in: Fixtures.address)) == expected)
+        #expect(Self.applied(Self.script.moveIntoBlockBelowAction(ofBrickAt: 0, in: Fixtures.address)) == expected)
         #expect(Self.drag([0], to: 2) == expected, "the same place a drag puts it")
         #expect(
-            Self.applied(Self.script.moveIntoLoopBelowAction(ofBrickAt: 1, in: Fixtures.address))
+            Self.applied(Self.script.moveIntoBlockBelowAction(ofBrickAt: 1, in: Fixtures.address))
                 == .applied(Self.reordered([0, 6, 1, 2, 3, 4, 5, 7, 8, 9]))
         )
     }
@@ -218,14 +218,14 @@ struct AccessibilityMoveTests {
     /// `loopEnd` row offer nothing.
     @Test("no move-into is offered where the neighbour is not a loop")
     func moveIntoOnlyBesideALoop() {
-        #expect(Self.script.moveIntoLoopBelowAction(ofBrickAt: 2, in: Fixtures.address) == nil, "leaf below")
-        #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: 3, in: Fixtures.address) == nil, "leaf above")
-        #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: 1, in: Fixtures.address) == nil, "leaf above a loop")
-        #expect(Self.script.moveIntoLoopBelowAction(ofBrickAt: 9, in: Fixtures.address) == nil, "nothing below")
-        #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: 0, in: Fixtures.address) == nil, "nothing above")
+        #expect(Self.script.moveIntoBlockBelowAction(ofBrickAt: 2, in: Fixtures.address) == nil, "leaf below")
+        #expect(Self.script.moveIntoBlockAboveAction(ofBrickAt: 3, in: Fixtures.address) == nil, "leaf above")
+        #expect(Self.script.moveIntoBlockAboveAction(ofBrickAt: 1, in: Fixtures.address) == nil, "leaf above a loop")
+        #expect(Self.script.moveIntoBlockBelowAction(ofBrickAt: 9, in: Fixtures.address) == nil, "nothing below")
+        #expect(Self.script.moveIntoBlockAboveAction(ofBrickAt: 0, in: Fixtures.address) == nil, "nothing above")
         for end in [5, 8] {
-            #expect(Self.script.moveIntoLoopAboveAction(ofBrickAt: end, in: Fixtures.address) == nil)
-            #expect(Self.script.moveIntoLoopBelowAction(ofBrickAt: end, in: Fixtures.address) == nil)
+            #expect(Self.script.moveIntoBlockAboveAction(ofBrickAt: end, in: Fixtures.address) == nil)
+            #expect(Self.script.moveIntoBlockBelowAction(ofBrickAt: end, in: Fixtures.address) == nil)
         }
     }
 
@@ -261,10 +261,10 @@ struct AccessibilityMoveTests {
             [
                 script.moveUpAction(ofBrickAt: index, in: ScriptAddress()),
                 script.moveDownAction(ofBrickAt: index, in: ScriptAddress()),
-                script.moveAboveLoopAction(ofBrickAt: index, in: ScriptAddress()),
-                script.moveBelowLoopAction(ofBrickAt: index, in: ScriptAddress()),
-                script.moveIntoLoopAboveAction(ofBrickAt: index, in: ScriptAddress()),
-                script.moveIntoLoopBelowAction(ofBrickAt: index, in: ScriptAddress())
+                script.moveOutAboveAction(ofBrickAt: index, in: ScriptAddress()),
+                script.moveOutBelowAction(ofBrickAt: index, in: ScriptAddress()),
+                script.moveIntoBlockAboveAction(ofBrickAt: index, in: ScriptAddress()),
+                script.moveIntoBlockBelowAction(ofBrickAt: index, in: ScriptAddress())
             ].compactMap(\.self)
         }
     }
@@ -304,9 +304,9 @@ struct AccessibilityMoveTests {
 
         #expect(script.moveUpAction(ofBrickAt: index, in: address) == nil)
         #expect(script.moveDownAction(ofBrickAt: index, in: address) == nil)
-        #expect(script.moveAboveLoopAction(ofBrickAt: index, in: address) == nil)
-        #expect(script.moveBelowLoopAction(ofBrickAt: index, in: address) == nil)
-        #expect(script.moveIntoLoopAboveAction(ofBrickAt: index, in: address) == nil)
-        #expect(script.moveIntoLoopBelowAction(ofBrickAt: index, in: address) == nil)
+        #expect(script.moveOutAboveAction(ofBrickAt: index, in: address) == nil)
+        #expect(script.moveOutBelowAction(ofBrickAt: index, in: address) == nil)
+        #expect(script.moveIntoBlockAboveAction(ofBrickAt: index, in: address) == nil)
+        #expect(script.moveIntoBlockBelowAction(ofBrickAt: index, in: address) == nil)
     }
 }
