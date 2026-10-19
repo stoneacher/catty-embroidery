@@ -86,3 +86,32 @@ struct FormulaCodableShapeTests {
         #expect(try JSONDecoder().decode(Formula.self, from: data) == formula)
     }
 }
+
+/// Brick backend slice 4: Arc's JSON shape is part of the file format too.
+@Suite("Arc codable shape")
+struct ArcCodableShapeTests {
+    @Test("an arc brick's shape, with the direction as a named case")
+    func arcShape() throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let brick = Brick.arc(direction: .left, radius: .number(10), degrees: .number(360))
+        let json = try String(bytes: encoder.encode(brick), encoding: .utf8)
+        #expect(json
+            == #"{"arc":{"degrees":{"number":{"_0":360}},"direction":{"left":{}},"radius":{"number":{"_0":10}}}}"#)
+        #expect(try JSONEncoder().encode(ArcDirection.right) == Data(#"{"right":{}}"#.utf8))
+    }
+}
+
+/// Brick backend slice 5: GoThrough's JSON shape.
+@Suite("GoThrough codable shape")
+struct GoThroughCodableShapeTests {
+    @Test("a GoThrough brick's shape")
+    func goThroughShape() throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let brick = Brick.goThrough(throughX: .number(1), throughY: .number(2), x: .number(3), y: .number(4))
+        let json = try String(bytes: encoder.encode(brick), encoding: .utf8)
+        #expect(json == #"{"goThrough":{"throughX":{"number":{"_0":1}},"throughY":{"number":{"_0":2}},"#
+            + #""x":{"number":{"_0":3}},"y":{"number":{"_0":4}}}}"#)
+    }
+}

@@ -134,7 +134,8 @@ extension Interpreter {
     /// Executes one brick against its object's runtime, in one exhaustive switch
     /// so a new brick cannot compile without being dispatched here. Motion bricks
     /// go through the US-204 bridge (`VirtualNeedle.apply`), which applies the
-    /// per-brick bad-formula fallback and always emits exactly one update. Data
+    /// per-brick bad-formula fallback and emits at least one update: exactly
+    /// one for most motions, one per fed sample for Arc and GoThrough (ADR-047). Data
     /// bricks write the variable store; embroidery bricks (US-206) drive the
     /// engine — the interpreter only calls it, never re-implementing stream
     /// semantics (ADR-012/013/015).
@@ -142,7 +143,7 @@ extension Interpreter {
         let scope = scope(forObjectAt: objectIndex)
         switch brick {
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy:
+             .changeXBy, .changeYBy, .arc, .goThrough:
             performMotion(brick, objectIndex: objectIndex, scope: scope, into: &events)
         case let .setVariable(name, valueFormula):
             // Throwing data formula substitutes 0 (Catroid data actions read
@@ -223,20 +224,29 @@ extension Interpreter {
         objects[objectIndex].runningStitch.resume()
     }
 
-    /// Moves the needle through the US-204 bridge and feeds the update to the
+    /// Moves the needle through the US-204 bridge and feeds each update to the
     /// running stitch — Catroid `Look.positionChanged → runningStitch.update`: an
     /// active pattern consumes the motion; an idle wrapper returns [] (no-op), so
-    /// this is the documented once-per-motion feed, not once-per-tick.
+    /// this is the documented once-per-update feed, not once-per-tick. An Arc's
+    /// updates are fed one by one, each followed by its own stitches, all within
+    /// the brick's single tick (ADR-047). A many-update action is fed as one
+    /// path, so ADR-014's million-length bound covers the whole action
+    /// (`RunningStitch.update(path:from:)`); a single update is fed as before.
     private mutating func performMotion(
         _ brick: Brick, objectIndex: Int, scope: VariableStoreScope, into events: inout [InterpreterEvent]
     ) {
-        guard let update = objects[objectIndex].needle.apply(brick, scope: scope) else {
+        let start = objects[objectIndex].needle.position
+        guard let updates = objects[objectIndex].needle.apply(brick, scope: scope) else {
             assertionFailure("perform routes motion bricks only")
             return
         }
-        events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
-        let stitches = objects[objectIndex].runningStitch.update(update)
-        emitStitches(stitches, objectIndex: objectIndex, into: &events)
+        let stitchesPerUpdate = updates.count > 1
+            ? objects[objectIndex].runningStitch.update(path: updates, from: start)
+            : updates.map { objects[objectIndex].runningStitch.update($0) }
+        for (update, stitches) in zip(updates, stitchesPerUpdate) {
+            events.append(.needleMoved(actor: objects[objectIndex].actorID, update: update))
+            emitStitches(stitches, objectIndex: objectIndex, into: &events)
+        }
     }
 
     /// Sends each stage point to the shared manager (at the object's layer and

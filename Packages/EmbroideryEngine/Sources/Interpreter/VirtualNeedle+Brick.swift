@@ -3,10 +3,11 @@ import ProgramModel
 
 public extension VirtualNeedle {
     /// Applies one motion brick, evaluating its formulas against `scope`, and
-    /// returns the single `NeedleUpdate` the motion produces (US-204 AC 4). The
-    /// needle is the pattern input, so exactly one update is emitted per executed
-    /// motion brick — including the catch-and-skip cases below, where it carries
-    /// the *unchanged* state.
+    /// returns the `NeedleUpdate`s the motion produces, in order. Every motion
+    /// brick but Arc and GoThrough emits exactly one (US-204 AC 4) — including
+    /// the catch-and-skip cases below, where it carries the *unchanged* state.
+    /// Arc and GoThrough emit one per sample they feed, and one unchanged update
+    /// when they feed none (ADR-047).
     ///
     /// Returns `nil` **iff** `brick` is not a motion brick — never "no update
     /// needed" and never a crash. The stepper routes bricks with its own
@@ -23,7 +24,7 @@ public extension VirtualNeedle {
     ///   becomes `0f`): a bad x with a good y places the needle at `(0, y)`.
     ///
     /// Execution always continues.
-    mutating func apply(_ brick: Brick, scope: some Scope) -> NeedleUpdate? {
+    mutating func apply(_ brick: Brick, scope: some Scope) -> [NeedleUpdate]? {
         switch brick {
         case let .moveNSteps(steps):
             eval(steps, scope).map { moveNSteps($0) }
@@ -44,13 +45,27 @@ public extension VirtualNeedle {
             eval(dx, scope).map { changeXBy($0) }
         case let .changeYBy(dy):
             eval(dy, scope).map { changeYBy($0) }
+        case let .arc(direction, radius, degrees):
+            // Catch-and-skip on a bad formula (ADR-047), like `moveNSteps`. A
+            // signed sweep is Catroid's "negative degrees flip the direction".
+            guard let radius = eval(radius, scope), let degrees = eval(degrees, scope) else {
+                return [NeedleUpdate(position: position, heading: heading)]
+            }
+            return arc(radius: radius, sweepDegrees: direction == .left ? degrees : -degrees)
+        case let .goThrough(throughX, throughY, x, y):
+            guard let throughX = eval(throughX, scope), let throughY = eval(throughY, scope),
+                  let x = eval(x, scope), let y = eval(y, scope)
+            else {
+                return [NeedleUpdate(position: position, heading: heading)]
+            }
+            return goThrough(through: StagePoint(x: throughX, y: throughY), destination: StagePoint(x: x, y: y))
         // Listed, not defaulted: a new brick must say whether it moves the needle.
         case .repeatLoop, .forever, .loopEnd, .wait, .setVariable, .changeVariableBy, .stitch,
              .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
              .stopRunningStitch, .writeEmbroideryToFile:
             return nil
         }
-        return NeedleUpdate(position: position, heading: heading)
+        return [NeedleUpdate(position: position, heading: heading)]
     }
 
     /// Evaluates `formula`, mapping the sole `FormulaError` to `nil` so callers

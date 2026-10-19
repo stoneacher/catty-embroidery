@@ -12,7 +12,11 @@ import Testing
 ///
 ///     REGENERATE_SAMPLE_JSON=Sources/Samples/Resources \
 ///       swift test --package-path Packages/EmbroideryEngine \
-///       --filter "Sample resource regeneration"
+///       --filter SampleResourceRegenerationTests
+///
+/// (The type name, not the suite's display name: `--filter "Sample resource
+/// regeneration"` matches nothing and silently writes no file — found
+/// regenerating Arc Flower, Brick backend slice 7.)
 ///
 /// When that comparison goes red, **decide whether the builder change is correct
 /// before running this.** Regenerating is how a resource guard gets silently

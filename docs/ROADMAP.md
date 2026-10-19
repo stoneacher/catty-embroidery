@@ -36,12 +36,12 @@ Work after M4 is organised by feature (ADR-041). The milestone sections below re
 | Feature | Draws scope from | Status |
 |---|---|---|
 | [Editor UI](features/editor-ui.md) | Rest of M4: US-411, M4 exit criteria and final verification | Done — 2026-10-17, PR #69 |
-| [Brick backend](features/brick-backend.md) | M6 brick parity set: Arc, GoThrough, formula functions and sensors | Planned — 2026-10-17 |
+| [Brick backend](features/brick-backend.md) | M6 brick parity set: Arc, GoThrough, formula functions and sensors | Done — 2026-10-19, PRs #71 and #72 |
 | Variables | M6 control/data subset, beyond US-410's variable menu | Not briefed |
 | Project management | M5 | Not briefed |
 | Language-test runner | Catrobat Language Tests (supervisor's suggestion, 2026-10-17); pulls a partial `.catrobat` (code.xml) import forward from S* | Not briefed |
 
-Editor UI is done (2026-10-17); the next feature is Brick backend (briefed 2026-10-17). Backlog items ([`user-stories/backlog.md`](user-stories/backlog.md)) are pulled into whichever feature touches the same code, or become a feature of their own.
+Editor UI is done (2026-10-17); Brick backend is done (2026-10-19, PRs #71 and #72). Backlog items ([`user-stories/backlog.md`](user-stories/backlog.md)) are pulled into whichever feature touches the same code, or become a feature of their own.
 
 **Language-test runner (noted 2026-10-17, not started).** Catroid ships the Catrobat Language Tests: 215 small `.catrobat` programs in `catroid/src/androidTest/assets/catrobatTests/`, which check themselves with `AssertEqualsBrick` and signal success with `FinishStageBrick`. Catroid runs them through `CatrobatTestRunner.kt`, which starts a full stage per program with 5 retries. The suite is written to be independent of any implementation, and the supervisor suggested running a first subset of it here. Because our interpreter is headless and synchronous, the tests can run inside `swift test` with no simulator and no retries. Scope when briefed:
 - a `code.xml` → `Program` importer limited to the supported bricks. It flattens nested loop bodies into ADR-008 paired lists and handles language versions 0.99995–1.13. The `code.xml` files are extracted into fixtures with their provenance noted, so the engine needs no zip.

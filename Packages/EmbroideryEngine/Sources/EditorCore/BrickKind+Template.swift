@@ -38,6 +38,17 @@ public extension BrickKind {
         case .setY: [.setY(.number(BrickDefaults.placeAtY))]
         case .changeXBy: [.changeXBy(.number(BrickDefaults.changeXBy))]
         case .changeYBy: [.changeYBy(.number(BrickDefaults.changeYBy))]
+        case .arc: [.arc(
+                direction: BrickDefaults.arcDirection,
+                radius: .number(BrickDefaults.arcRadius),
+                degrees: .number(BrickDefaults.arcDegrees)
+            )]
+        case .goThrough: [.goThrough(
+                throughX: .number(BrickDefaults.goThroughThroughX),
+                throughY: .number(BrickDefaults.goThroughThroughY),
+                x: .number(BrickDefaults.goThroughX),
+                y: .number(BrickDefaults.goThroughY)
+            )]
         case .repeatLoop: [.repeatLoop(times: .number(BrickDefaults.repeatTimes)), .loopEnd]
         case .forever: [.forever, .loopEnd]
         case .loopEnd: [.loopEnd]

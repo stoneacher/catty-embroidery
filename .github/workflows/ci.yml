@@ -23,11 +23,12 @@ concurrency:
 jobs:
   engine-tests:
     name: Engine tests (swift test)
-    runs-on: macos-26
+    runs-on: xcode-27
     env:
       # Pin the toolchain: runner-default Xcode drifts and breaks Swift 6.x builds.
-      # Xcode 26.6 (Swift 6.3.3) matches the local development toolchain.
-      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      # Xcode 27.1 (Swift 6.4, build 27A9275) matches the local development toolchain (checked 2026-10-18).
+      # The `xcode-27` image is a public preview (actions/runner-images#14404); `macos-26` ships no Xcode 27.
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
       - name: Show toolchain
@@ -93,15 +94,16 @@ jobs:
 
   app-build-and-test:
     name: App build & test (xcodebuild)
-    runs-on: macos-26
+    runs-on: xcode-27
     # A wedged simulator would otherwise burn the 360-minute default. The healthy
-    # job is ~4m30s, so this is generous while still failing in a useful time.
-    timeout-minutes: 20
+    # job was ~4m30s on macos-26; on the xcode-27 preview image it is ~15m30s
+    # (about 5m build, 10m tests; checked 2026-10-19), which left 20 too little
+    # margin for a slow runner. 30 still fails a wedged simulator in useful time.
+    timeout-minutes: 30
     env:
-      # Same pin and the same reason as the engine job: the runner-default Xcode
-      # drifts and breaks Swift 6.x builds. Xcode 26.6 (Swift 6.3.3) matches the
-      # local development toolchain.
-      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      # Same pin, image and reason as the engine job: the runner-default Xcode
+      # drifts and breaks Swift 6.x builds.
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
       - uses: actions/checkout@v5
       - name: Show toolchain

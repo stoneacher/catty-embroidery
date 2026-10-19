@@ -11,7 +11,7 @@ public extension Brick {
         case .repeatLoop, .forever: true
         // Listed, not defaulted: a new brick must say whether it opens a pair.
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy, .loopEnd, .wait, .setVariable, .changeVariableBy, .stitch,
+             .changeXBy, .changeYBy, .arc, .goThrough, .loopEnd, .wait, .setVariable, .changeVariableBy, .stitch,
              .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
              .stopRunningStitch, .writeEmbroideryToFile:
             false

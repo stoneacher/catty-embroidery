@@ -29,9 +29,11 @@ struct PaletteTests {
 
     @Test("Motion offers Catroid's peripheral motion bricks that exist here, in Catroid's order")
     func motionGroup() {
+        // Arc follows PointInDirection, as in `setupPeripheralMotionBrickList`
+        // (`CategoryBricksFactory.kt:1080-1094`), then GoThrough.
         #expect(PaletteGroup.motion.kinds == [
             .placeAt, .setX, .setY, .changeXBy, .changeYBy, .moveNSteps, .turnLeft, .turnRight,
-            .pointInDirection
+            .pointInDirection, .arc, .goThrough
         ])
     }
 

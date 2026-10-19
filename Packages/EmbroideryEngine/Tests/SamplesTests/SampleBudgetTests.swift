@@ -6,6 +6,21 @@ import Testing
 /// a sample added later inherits them automatically.
 @Suite("Sample budgets")
 struct SampleBudgetTests {
+    /// Each shipping sample's pinned per-tick stitch maximum.
+    static let perTickMaxima = [
+        (SampleID.octagonRosette, 51),
+        (SampleID.squareCoil, 132),
+        (SampleID.arcFlower, 58)
+    ]
+
+    /// A sample missing from the table is never pinned, and nothing would say
+    /// so. Slice 7's notes claimed this guard before it existed
+    /// (`swift-code-reviewer`, slice 7).
+    @Test("every shipping sample has a pinned per-tick maximum")
+    func everySampleIsPinned() {
+        #expect(Set(Self.perTickMaxima.map(\.0)) == Set(SampleID.shipping))
+    }
+
     /// Story item 5. At one tick per frame (ADR-018's `tickDelta = 1/60`) a
     /// 120-tick program animates for two seconds. The AC's own wording for why:
     /// "a sample that finishes in 39 ticks (0.65 s) is not a preview, it is a
@@ -46,10 +61,7 @@ struct SampleBudgetTests {
     /// number nobody asserts drifts silently, and US-306 would then be citing a
     /// figure no test defends.
     @Test("per-tick stitch maximum is the number US-306's budget is sized against",
-          arguments: [
-              (SampleID.octagonRosette, 51),
-              (SampleID.squareCoil, 132)
-          ])
+          arguments: SampleBudgetTests.perTickMaxima)
     func perTickStitchMaximum(_ id: SampleID, _ expected: Int) {
         let measured = run(SampleLibrary[id])
         print("""

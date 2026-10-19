@@ -331,6 +331,13 @@ then open the printed paths. What to check:
   **2 colour blocks**, 2976 stitches, 0 jumps. Worth an aesthetic judgement as
   well as a numeric one: the colour changes 31 sides in, so the amber is the
   outer third of the coil.
+- **`ArcFlower.dst`** (Brick backend, slice 7) — twelve circles fanned around
+  the centre, their sizes a four-fold wave (radius 40 + 15·sin(petal·120°): four
+  large petals on the diagonals, smaller ones between), and a green stem curving
+  down. About 40 × 62 mm, **2 colour blocks** (rose petals, green stem),
+  821 stitches, 0 jumps. Check that the twelve circles are evenly fanned: each one
+  starts from an absolute heading, so a lopsided fan would mean the heading reset
+  is not working. Check that the stem bends to the right and ends at the bottom.
 - Optional and high-value: run sample 1 in the Android Embroidery Designer and
   compare. Per the section above, expect the **design** to match; the record
   count may or may not, and a difference there is not evidence of a bug on

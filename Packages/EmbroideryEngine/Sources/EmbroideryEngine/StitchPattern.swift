@@ -29,6 +29,10 @@ let maxStitchesPerUpdate = 1_000_000.0
 /// `EmbroideryStream` — the stream stays the single writer, owning unit
 /// conversion, long-move interpolation, dedup, and pending flags.
 public protocol StitchPattern: Sendable {
+    /// Stitch spacing in stage units: what one whole length is, for the
+    /// action-wide bound in `RunningStitch.update(path:from:)`.
+    var length: Double { get }
+
     /// Re-anchors the pattern's reference point without emitting anything
     /// (Catroid `setStartCoordinates`) — the seam US-109's sew-up uses to
     /// resume cleanly after emitting direct stitches.

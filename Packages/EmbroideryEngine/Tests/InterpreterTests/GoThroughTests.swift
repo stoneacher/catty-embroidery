@@ -1,0 +1,205 @@
+import EmbroideryEngine
+import Foundation
+import Interpreter
+import ProgramModel
+import Testing
+
+/// Brick backend slice 5: Catroid's GoThrough (`content/actions/GoThroughAction.kt`),
+/// a quadratic Bézier from the needle to the destination whose control point
+/// `A = 2T − (S + E)/2` makes it pass through T at t = ½. Same rules as Arc
+/// (ADR-047): samples i = 1…100, feed on change, chord heading, compute then
+/// commit, catch-and-skip.
+@Suite("GoThrough")
+struct GoThroughTests {
+    private let scope = VariableScope()
+    private let throwing = Formula.binary(.divide, .number(0), .number(0))
+
+    private static func goThrough(_ throughX: Double, _ throughY: Double, _ x: Double, _ y: Double) -> Brick {
+        .goThrough(throughX: .number(throughX), throughY: .number(throughY), x: .number(x), y: .number(y))
+    }
+
+    private func close(_ lhs: Double, _ rhs: Double, _ tolerance: Double = 1e-9) -> Bool {
+        abs(lhs - rhs) <= tolerance
+    }
+
+    private func updates(
+        _ brick: Brick, from position: StagePoint = StagePoint(x: 0, y: 0), heading: Double = 0
+    ) throws -> (updates: [NeedleUpdate], needle: VirtualNeedle) {
+        var needle = VirtualNeedle(position: position, heading: heading)
+        let emitted = needle.apply(brick, scope: scope)
+        let updates = try #require(emitted)
+        return (updates, needle)
+    }
+
+    @Test("the curve passes through its point halfway and ends exactly on its destination")
+    func throughAndEnd() throws {
+        let start = StagePoint(x: 3, y: -4)
+        let (updates, needle) = try updates(Self.goThrough(50, 100, 100, 0), from: start, heading: 20)
+        #expect(updates.count == 100)
+        #expect(close(updates[49].position.x, 50) && close(updates[49].position.y, 100))
+        #expect(needle.position == StagePoint(x: 100, y: 0))
+        #expect(updates.last?.position == StagePoint(x: 100, y: 0))
+    }
+
+    @Test("every update faces along the chord leading to it")
+    func everyUpdateFacesItsChord() throws {
+        let start = StagePoint(x: -20, y: 7)
+        let (updates, needle) = try updates(Self.goThrough(10, 60, 40, -30), from: start, heading: 75)
+        var previous = start
+        for update in updates {
+            let bearing = atan2(update.position.x - previous.x, update.position.y - previous.y) * 180 / .pi
+            #expect(close(update.heading, bearing), "\(update)")
+            previous = update.position
+        }
+        #expect(needle.heading == updates.last?.heading)
+    }
+
+    /// Catroid's defaults (0, 0, 0, 0) from the origin: every sample is the
+    /// start, nothing is fed, one unchanged update.
+    @Test("a curve that never leaves the needle emits one unchanged update")
+    func degenerate() throws {
+        let (updates, needle) = try updates(Self.goThrough(0, 0, 0, 0), heading: 42)
+        #expect(updates == [NeedleUpdate(position: StagePoint(x: 0, y: 0), heading: 42)])
+        #expect(needle == VirtualNeedle(heading: 42))
+    }
+
+    /// Through itself back to itself is degenerate *structurally*: the Bézier's
+    /// binary64 residuals wobble by ulps, so a sample-equality test feeds tiny
+    /// chords and turns the needle. From (100, 50) Catroid ends facing −116.6°.
+    /// Guarded, as Arc's 0° sweep is (ADR-047; `swift-code-reviewer`, slice 5).
+    @Test("a curve through itself back to itself emits one unchanged update", arguments: [
+        StagePoint(x: 100, y: 50), StagePoint(x: 7, y: -33), StagePoint(x: 0.1, y: 0.2)
+    ])
+    func selfLoopIsDegenerate(_ start: StagePoint) throws {
+        let brick = Self.goThrough(start.x, start.y, start.x, start.y)
+        let (updates, needle) = try updates(brick, from: start, heading: 90)
+        #expect(updates == [NeedleUpdate(position: start, heading: 90)])
+        #expect(needle == VirtualNeedle(position: start, heading: 90))
+    }
+
+    /// The guard needs *both* points at the start. An out-and-back loop (only the
+    /// destination is the start) and a curve through its own start (only the
+    /// through-point is) are real curves; a one-sided guard dropped either one
+    /// silently and the suite stayed green (`swift-code-reviewer`, PR 2 feature
+    /// review).
+    @Test("an out-and-back loop is drawn, not guarded")
+    func outAndBackIsACurve() throws {
+        let start = StagePoint(x: 10, y: 20)
+        let (updates, needle) = try updates(Self.goThrough(60, 20, 10, 20), from: start)
+        #expect(updates.count == 100)
+        #expect(needle.position == start)
+        #expect(close(updates.map(\.position.x).max() ?? 0, 60))
+    }
+
+    @Test("a curve through its own start is drawn, not guarded")
+    func throughTheStartIsACurve() throws {
+        let start = StagePoint(x: 10, y: 20)
+        let (updates, needle) = try updates(Self.goThrough(10, 20, 50, -30), from: start)
+        #expect(updates.count == 100)
+        #expect(needle.position == StagePoint(x: 50, y: -30))
+    }
+
+    /// Samples generated by running `GoThroughAction`'s loop arithmetic under
+    /// Java 17 (as ADR-046's function table was), on non-integer inputs where a
+    /// different but algebraically equal formula — de Casteljau, the power basis,
+    /// reassociation, a `float` start — differs in the last places.
+    @Test("samples match Catroid's arithmetic bit for bit")
+    func samplesMatchCatroidExactly() throws {
+        let (updates, _) = try updates(Self.goThrough(0.6, 0.2, 0.1, 2.9), from: StagePoint(x: 0.3, y: -0.7))
+        #expect(updates.count == 100)
+        let pinned: [Int: StagePoint] = [
+            1: StagePoint(x: 0.31383999999999995, y: -0.6996399999999999),
+            37: StagePoint(x: 0.5989599999999999, y: -0.20716000000000012),
+            50: StagePoint(x: 0.6, y: 0.19999999999999996),
+            99: StagePoint(x: 0.11784000000000001, y: 2.8283599999999995),
+            100: StagePoint(x: 0.1, y: 2.9)
+        ]
+        for (step, point) in pinned {
+            #expect(updates[step - 1].position == point, "sample \(step)")
+        }
+    }
+
+    /// A vertical curve changes only y: a feed test that compared x alone would
+    /// feed nothing (`swift-code-reviewer`, slice 5).
+    @Test("a vertical curve feeds every sample")
+    func verticalCurve() throws {
+        let (updates, needle) = try updates(Self.goThrough(0, 50, 0, 100))
+        #expect(updates.count == 100)
+        #expect(needle.position == StagePoint(x: 0, y: 100))
+    }
+
+    /// A Catroid characterization: through the origin and back to it from
+    /// (100, 0), the control point is (−50, 0), so the curve overshoots to
+    /// x = 100·(1 − t)(1 − 2t) = −12.5 at t = ¾ before returning.
+    @Test("the defaults from (100, 0) overshoot to −12.5 at three quarters")
+    func overshoot() throws {
+        let (updates, needle) = try updates(Self.goThrough(0, 0, 0, 0), from: StagePoint(x: 100, y: 0))
+        #expect(close(updates[74].position.x, -12.5))
+        #expect(needle.position == StagePoint(x: 0, y: 0))
+    }
+
+    @Test("a bad formula in any field skips the curve", arguments: 0 ..< 4)
+    func badFormulaSkips(_ field: Int) throws {
+        var values = [Formula.number(10), .number(20), .number(30), .number(40)]
+        values[field] = throwing
+        let brick = Brick.goThrough(throughX: values[0], throughY: values[1], x: values[2], y: values[3])
+        let start = StagePoint(x: 1, y: 2)
+        let (updates, needle) = try updates(brick, from: start, heading: 15)
+        #expect(updates == [NeedleUpdate(position: start, heading: 15)])
+        #expect(needle == VirtualNeedle(position: start, heading: 15))
+    }
+
+    /// The control point `2T − (S + E)/2` overflows for T = MAX; nothing is
+    /// committed, so the needle never holds a non-finite coordinate.
+    /// Both axes: a finiteness check on x alone passes an x-only overflow.
+    @Test("a curve whose samples overflow leaves the needle unchanged", arguments: [
+        (Double.greatestFiniteMagnitude, 0.0), (0, .greatestFiniteMagnitude)
+    ])
+    func overflowSkips(_ throughX: Double, _ throughY: Double) throws {
+        let (updates, needle) = try updates(Self.goThrough(throughX, throughY, 10, 10), heading: 5)
+        #expect(updates == [NeedleUpdate(position: StagePoint(x: 0, y: 0), heading: 5)])
+        #expect(needle == VirtualNeedle(heading: 5))
+    }
+
+    @Test("a GoThrough costs one tick")
+    func oneTick() {
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: [
+            Self.goThrough(50, 100, 100, 0), .moveNSteps(.number(5))
+        ])])])])
+        var interpreter = Interpreter(program: program, clock: InterpreterClock(tickDelta: 0.05))
+        guard case let .ticked(first) = interpreter.step(), case let .ticked(second) = interpreter.step() else {
+            Issue.record("expected two ticks")
+            return
+        }
+        #expect(first.count {
+            if case .needleMoved = $0 {
+                true
+            } else {
+                false
+            }
+        } == 100)
+        #expect(second.count {
+            if case .needleMoved = $0 {
+                true
+            } else {
+                false
+            }
+        } == 1)
+    }
+
+    // MARK: - Android golden export
+
+    /// Sebastian's `go_through` export. Its straight second curve, from (100, 0)
+    /// to (−100, 0), ends without a stitch at −100: Android's last stitch is at −90
+    /// although 200 is a multiple of the stitch length. This test decides whether
+    /// the `Double` needle does the same.
+    @Test("running stitch along two curves matches the Android export")
+    func androidGoThrough() throws {
+        let ours = try interpretedRecords([
+            .runningStitch(length: .number(10)),
+            Self.goThrough(50, 100, 100, 0),
+            Self.goThrough(0, 0, -100, 0)
+        ])
+        try expectMatchesAndroid(ours, decodeRecordPositions(AndroidReference.data("go_through")))
+    }
+}

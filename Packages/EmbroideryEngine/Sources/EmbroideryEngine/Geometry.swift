@@ -13,6 +13,10 @@ public struct StagePoint: Hashable, Sendable {
 /// The ADR-012 rounding rule: Java `Math.round` = `floor(x + 0.5)`, which
 /// differs from Swift `.rounded()` on negative halves (−6.5 → −6, not −7).
 /// Every stage-space rounding in the engine goes through this.
+///
+/// Not exactly Java 7+ `Math.round`: that returns 0 for 0.49999999999999994,
+/// which this rounds up, and the two differ near 2⁵². Sub-resolution for
+/// coordinates; the formula `round` follows Java 7+ (ADR-046 (d), backlog US-325).
 func javaRound(_ value: Double) -> Double {
     (value + 0.5).rounded(.down)
 }

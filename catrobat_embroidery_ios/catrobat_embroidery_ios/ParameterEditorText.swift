@@ -1,5 +1,6 @@
 import EditorCore
 import Foundation
+import ProgramModel
 
 /// The parameter editor's localized copy (US-410): one mapping per package reason, since
 /// `EditorCore` ships no resources (ADR-025's `Field` pattern, ADR-039).
@@ -61,8 +62,22 @@ nonisolated enum ParameterEditorText {
     }
 
     /// The label of a slot's control.
-    static func title(of slot: ParameterSlot, locale: Locale = .current) -> String {
-        let resource: LocalizedStringResource = switch slot {
+    /// `kind` is the brick being edited, where a slot's name depends on it: GoThrough's
+    /// destination is "To x"/"To y" (Catroid's "then to"), so it does not read as a bare "X"
+    /// beside "Through x". Required, not defaulted: a caller that left it out would
+    /// label GoThrough's destination "X" again (`swift-code-reviewer`, PR 2).
+    static func title(of slot: ParameterSlot, in kind: BrickKind?, locale: Locale = .current) -> String {
+        let resource: LocalizedStringResource = switch (kind, slot) {
+        case (.goThrough, .x): .parameterSlotToX
+        case (.goThrough, .y): .parameterSlotToY
+        default: baseTitle(of: slot)
+        }
+        return resolve(resource, locale: locale)
+    }
+
+    /// A slot's name wherever the brick does not change it.
+    private static func baseTitle(of slot: ParameterSlot) -> LocalizedStringResource {
+        switch slot {
         case .steps: .parameterSlotSteps
         case .degrees: .parameterSlotDegrees
         case .x: .parameterSlotX
@@ -75,6 +90,18 @@ nonisolated enum ParameterEditorText {
         case .variableName: .parameterSlotVariable
         case .hex: .parameterSlotThread
         case .fileName: .parameterSlotFile
+        case .direction: .parameterSlotDirection
+        case .radius: .parameterSlotRadius
+        case .throughX: .parameterSlotThroughX
+        case .throughY: .parameterSlotThroughY
+        }
+    }
+
+    /// An Arc side's name in the direction picker.
+    static func name(of direction: ArcDirection, locale: Locale = .current) -> String {
+        let resource: LocalizedStringResource = switch direction {
+        case .left: .parameterArcLeft
+        case .right: .parameterArcRight
         }
         return resolve(resource, locale: locale)
     }

@@ -109,6 +109,30 @@
         }
       }
     },
+    "brick.arc.left": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle along a circle, turning left (anticlockwise). %1$@ is the radius, %2$@ the angle in degrees; each is a value that may be a number, a variable name or a small formula, already formatted. Catroid's wording (arc_direction, arc_with_radius, arc_for_degrees). Arguments are positional and may be reordered. The degree sign follows the angle even when it is a formula (\"for \\\"r\\\" × 2°\" means the whole formula, in degrees); if your language would read it as applying to the last number only, use the word for degrees instead.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go in arc left with radius %1$@ for %2$@°"
+          }
+        }
+      }
+    },
+    "brick.arc.right": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle along a circle, turning right (clockwise). %1$@ is the radius, %2$@ the angle in degrees; each is a value that may be a number, a variable name or a small formula, already formatted. Catroid's wording (arc_direction, arc_with_radius, arc_for_degrees). Arguments are positional and may be reordered. The degree sign follows the angle even when it is a formula (\"for \\\"r\\\" × 2°\" means the whole formula, in degrees); if your language would read it as applying to the last number only, use the word for degrees instead.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go in arc right with radius %1$@ for %2$@°"
+          }
+        }
+      }
+    },
     "brick.change.variable": {
       "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Adds an amount to a variable. %1$@ is the variable's name, chosen by the user and never translated; %2$@ is the amount; %@ is a value that may be a number, a variable name or a small formula such as \"360 ÷ Inner Loop\", already formatted. Arguments are positional and may be reordered.",
       "extractionState": "manual",
@@ -153,6 +177,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Forever"
+          }
+        }
+      }
+    },
+    "brick.go.through": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Moves the needle along a curve that passes through one point and ends at another. %1$@ and %2$@ are the x and y of the point it passes through, %3$@ and %4$@ the x and y of where it ends; each is a value that may be a number, a variable name or a small formula, already formatted. Catroid's wording (go_through, go_through_target). Keep x and y as the axis names. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go through x: %1$@ y: %2$@ then to x: %3$@ y: %4$@"
           }
         }
       }
@@ -1129,6 +1165,18 @@
         }
       }
     },
+    "palette.description.arc": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the needle along a circle, turning left or right."
+          }
+        }
+      }
+    },
     "palette.description.change.variable": {
       "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
       "extractionState": "manual",
@@ -1173,6 +1221,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Repeats the bricks inside it without end."
+          }
+        }
+      }
+    },
+    "palette.description.go.through": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the needle along a curve through one point to another."
           }
         }
       }
@@ -1453,6 +1513,30 @@
         }
       }
     },
+    "parameter.arc.left": {
+      "comment": "One side of the left/right choice for an arc: it turns anticlockwise, with its centre to the left of the needle.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left"
+          }
+        }
+      }
+    },
+    "parameter.arc.right": {
+      "comment": "One side of the left/right choice for an arc: it turns clockwise, with its centre to the right of the needle.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right"
+          }
+        }
+      }
+    },
     "parameter.editor.action.edit": {
       "comment": "VoiceOver action on a brick row. Selects the brick and opens the editor for its numbers, variable, colour or file name.",
       "extractionState": "manual",
@@ -1669,6 +1753,18 @@
         }
       }
     },
+    "parameter.slot.direction": {
+      "comment": "Label of the left/right choice for which way an arc turns.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direction"
+          }
+        }
+      }
+    },
     "parameter.slot.file": {
       "comment": "Label of the field for the name of the embroidery file a brick writes.",
       "extractionState": "manual",
@@ -1689,6 +1785,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Length"
+          }
+        }
+      }
+    },
+    "parameter.slot.radius": {
+      "comment": "Label of the number field for an arc's radius.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radius"
           }
         }
       }
@@ -1729,6 +1837,30 @@
         }
       }
     },
+    "parameter.slot.through.x": {
+      "comment": "Label of the number field for the x coordinate of the point a curve passes through, as opposed to where it ends.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Through x"
+          }
+        }
+      }
+    },
+    "parameter.slot.through.y": {
+      "comment": "Label of the number field for the y coordinate of the point a curve passes through, as opposed to where it ends.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Through y"
+          }
+        }
+      }
+    },
     "parameter.slot.times": {
       "comment": "Label of the number field for how many times a loop repeats.",
       "extractionState": "manual",
@@ -1737,6 +1869,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Times"
+          }
+        }
+      }
+    },
+    "parameter.slot.to.x": {
+      "comment": "Label of the number field for the x coordinate where a curve (Go through) ends, as opposed to the point it passes through. Catroid's wording: \"then to\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To x"
+          }
+        }
+      }
+    },
+    "parameter.slot.to.y": {
+      "comment": "Label of the number field for the y coordinate where a curve (Go through) ends, as opposed to the point it passes through. Catroid's wording: \"then to\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To y"
           }
         }
       }

@@ -17,6 +17,11 @@ struct FormulaSlotEditor: View {
 
     @Environment(\.locale) private var locale
 
+    /// The slot's name for the brick being edited (GoThrough's destination is "To x").
+    private var slotTitle: String {
+        ParameterEditorText.title(of: slot, in: editor.editedBrick.map(BrickKind.init(of:)), locale: locale)
+    }
+
     private var value: ParameterValue? {
         editor.editedBrick?.parameters.first { $0.slot == slot }?.value
     }
@@ -45,7 +50,7 @@ struct FormulaSlotEditor: View {
             EmptyView()
         }
         .pickerStyle(.segmented)
-        .accessibilityLabel(Text(ParameterEditorText.title(of: slot, locale: locale)))
+        .accessibilityLabel(Text(slotTitle))
 
         if variable != nil || isNaming {
             VariableChooser(editor: editor, slot: slot, isNaming: $isNaming)
@@ -78,7 +83,7 @@ struct FormulaSlotEditor: View {
     private var numberField: some View {
         HStack {
             TextField(text: $text) {
-                Text(ParameterEditorText.title(of: slot, locale: locale))
+                Text(slotTitle)
             }
             // Not `.decimalPad`: it has no minus key on iPhone, and the templates use negatives.
             .keyboardType(.numbersAndPunctuation)
@@ -87,7 +92,7 @@ struct FormulaSlotEditor: View {
             .frame(minHeight: RunControl.minimumTouchTarget)
             // A `Form` row's `TextField` label is not used as its accessibility label — the
             // simulator's snapshot showed the field unlabelled — so it is stated outright.
-            .accessibilityLabel(Text(ParameterEditorText.title(of: slot, locale: locale)))
+            .accessibilityLabel(Text(slotTitle))
             .focused($isFocused)
             .onChange(of: isFocused) { _, focused in
                 if focused {
@@ -115,7 +120,7 @@ struct FormulaSlotEditor: View {
             // last valid value and silently discard what is in the field.
             if problem == nil {
                 Stepper {
-                    Text(ParameterEditorText.title(of: slot, locale: locale))
+                    Text(slotTitle)
                 } onIncrement: {
                     editor.stepNumber(slot, by: 1)
                     syncText()
@@ -168,7 +173,8 @@ struct VariableChooser: View {
         switch value {
         case let .formula(.variable(name)), let .variableName(name): return name
         case .formula(.number), .formula(.binary), .formula(.unaryMinus), .formula(.unaryFunction),
-             .formula(.binaryFunction), .formula(.constant), .formula(.sensor), .threadColor, .fileName:
+             .formula(.binaryFunction), .formula(.constant), .formula(.sensor), .threadColor, .fileName,
+             .arcDirection:
             return nil
         }
     }
@@ -330,5 +336,38 @@ struct ProblemLine: View {
         .font(.footnote)
         .foregroundStyle(.red)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// Arc's side, as a segmented choice: one discrete edit, like a thread swatch, so there is
+/// nothing to coalesce and nothing to type.
+///
+/// The setter is a closure *literal*, as in `VariableChooser`: passing a stored function value
+/// to `Binding(get:set:)` made Swift 6.3.3 crash in IR generation under Release (its
+/// `@isolated(any)` reabstraction thunk; CI's Release build, PR #72), while Xcode 27.1 compiled it.
+struct ArcDirectionPicker: View {
+    let editor: EditorViewModel
+    let selection: ArcDirection
+
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        Picker(selection: direction) {
+            ForEach(ArcDirection.allCases, id: \.self) { direction in
+                Text(ParameterEditorText.name(of: direction, locale: locale)).tag(direction)
+            }
+        } label: {
+            EmptyView()
+        }
+        .pickerStyle(.segmented)
+        .accessibilityLabel(Text(ParameterEditorText.title(of: .direction, in: .arc, locale: locale)))
+    }
+
+    private var direction: Binding<ArcDirection> {
+        Binding {
+            selection
+        } set: { chosen in
+            editor.setParameter(.direction, to: .arcDirection(chosen))
+        }
     }
 }

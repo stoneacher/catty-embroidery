@@ -22,6 +22,8 @@ public enum ParameterEditorKind: Sendable, Equatable {
     case threadColor(hex: String)
     /// `writeEmbroideryToFile`'s name.
     case fileName(String)
+    /// Arc's left/right choice: one discrete edit, nothing to coalesce.
+    case arcDirection(ArcDirection)
 
     public init(_ value: ParameterValue) {
         switch value {
@@ -53,6 +55,8 @@ public enum ParameterEditorKind: Sendable, Equatable {
             self = .threadColor(hex: hex)
         case let .fileName(name):
             self = .fileName(name)
+        case let .arcDirection(direction):
+            self = .arcDirection(direction)
         }
     }
 }

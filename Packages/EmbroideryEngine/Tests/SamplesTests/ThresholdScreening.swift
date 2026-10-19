@@ -1,6 +1,7 @@
 import EmbroideryEngine
 import Foundation
 import Interpreter
+import ProgramModel
 import Samples
 
 // ADR-019 screening machinery. Non-suite by design (the GoldenProgramOracle
@@ -17,7 +18,8 @@ import Samples
 
 /// One pattern update, as the engine actually performed it.
 struct BoundaryProbe {
-    /// Index of the move that produced this update, in execution order.
+    /// The update's position among all needle updates, in execution order,
+    /// counting the sub-length ones (Codex, PR 2 handover round 2).
     var moveIndex: Int
     /// The distance the pattern measured — computed the way the pattern computes
     /// it, with libm's `hypot`.
@@ -63,22 +65,31 @@ struct BoundaryProbe {
 
 /// The screening result for one sample.
 struct Screening {
+    /// The updates that reached at least one stitch length.
     var probes: [BoundaryProbe]
 
-    /// How many stitch points the mirror says each needle-move tick emitted, in
-    /// tick order and **including the zeros** — turns that moved the anchor
-    /// nowhere still occupy a tick, and dropping them would let the comparison in
-    /// `mirrorIsFaithful` line up two differently-shaped sequences by accident.
+    /// The updates that fell short of one stitch length, probed against the
+    /// first boundary: one ulp short emits nothing here and a stitch under
+    /// another libm. Kept apart from `probes` so the interval histograms the
+    /// tripwires pin count only emitting updates (`swift-code-reviewer`, slice 7).
+    var subLengthProbes: [BoundaryProbe] = []
+
+    /// How many stitch points the mirror says each needle update emitted, in
+    /// execution order and **including the zeros**: an update that moved the
+    /// anchor nowhere still occupies a place, and dropping it would let the
+    /// comparison in `mirrorIsFaithful` line up two differently-shaped
+    /// sequences by accident.
     var predictedEmissions: [Int] = []
 
-    /// Updates whose emission count libm decides.
+    /// Updates, on either side of the first boundary, whose emission count
+    /// libm decides.
     var atRisk: [BoundaryProbe] {
-        probes.filter(\.isDecidedByLibm)
+        (probes + subLengthProbes).filter(\.isDecidedByLibm)
     }
 
     /// The smallest margin any update has, in ulps.
     var minimumUlpsFromBoundary: Double {
-        probes.filter { !$0.distanceIsExactlyOnBoundary }
+        (probes + subLengthProbes).filter { !$0.distanceIsExactlyOnBoundary }
             .map { abs($0.ulpsFromBoundary) }
             .min() ?? .infinity
     }
@@ -194,26 +205,26 @@ func boundaryProbe(
 /// `pointsPerInterval` is the pattern's emission multiplier: 1 for the zigzag
 /// (one offset point per interval) and 3 for the triple stitch (`point, previous,
 /// point` per segment). It is what makes `predictedEmissions` comparable against
-/// the engine's own per-tick counts.
+/// the engine's own per-update counts.
 ///
 /// **Known limitation, stated because it is currently invisible**: the mirror
 /// models the pattern's *motion* anchor only. It does not model a re-anchor from
 /// `sewUp` (which pauses the running stitch, calls `setStartPosition` on the tack
 /// centre, and resumes) or from `stitch` / `stopRunningStitch`. That costs
 /// nothing today — `sewUp` is a non-motion brick, so it emits no `.needleMoved`
-/// and both sides of the comparison skip its tick, and in sample 2 it is the last
+/// and both sides of the comparison skip it, and in sample 2 it is the last
 /// brick anyway, so its re-anchor has no successor to affect.
 ///
 /// A future sample with a **mid-program** `sewUp` would break that, and the right
-/// thing happens: `mirrorIsFaithful` compares every tick element by element, so
+/// thing happens: `mirrorIsFaithful` compares every update element by element, so
 /// the divergence surfaces as a named red test rather than as a quietly wrong ulp
 /// figure. If that happens, teach this function about the re-anchor — do not
 /// relax the assertion.
 func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: Int) -> Screening {
     let measured = run(sample)
     var probes: [BoundaryProbe] = []
+    var subLengthProbes: [BoundaryProbe] = []
     var predicted: [Int] = []
-    var moveIndex = 0
     var isFirstEmission = true
 
     // Seed the anchor where the *engine* seeded it. Both samples activate their
@@ -228,25 +239,35 @@ func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: I
     }
     var anchor = StagePoint(x: origin.startX, y: origin.startY)
 
-    for batch in measured.batches {
-        guard let move = batch.compactMap(needleMove(in:)).first else { continue }
-
+    // Every update, not the first of each tick: an Arc or GoThrough feeds up to
+    // 100 updates in its one tick (ADR-047), and screening only the first saw 96
+    // of Arc Flower's moves and disagreed with the engine (Brick backend slice 7).
+    // For one-update-per-tick programs the two readings are the same sequence.
+    for (updateIndex, move) in measured.batches.flatMap({ $0.compactMap(needleMove(in:)) }).enumerated() {
         let target = move.position
         let current = anchor
         let dx = target.x - current.x
         let dy = target.y - current.y
         let distance = hypot(dx, dy)
         guard distance >= patternLength else {
-            // A tick that moved the needle but not far enough to emit. Recorded
-            // as a zero rather than skipped, so the predicted sequence stays
-            // aligned with the engine's tick-by-tick counts.
+            // An update that moved the needle but not far enough to emit.
+            // Recorded as a zero rather than skipped, so the predicted sequence
+            // stays aligned with the engine's update-by-update counts, and
+            // probed against the first boundary from below.
             predicted.append(0)
+            subLengthProbes.append(boundaryProbe(
+                moveIndex: updateIndex,
+                from: current,
+                to: target,
+                heading: move.heading,
+                length: patternLength
+            ))
             continue
         }
 
         let remainder = distance.truncatingRemainder(dividingBy: patternLength)
         probes.append(boundaryProbe(
-            moveIndex: moveIndex,
+            moveIndex: updateIndex,
             from: current,
             to: target,
             heading: move.heading,
@@ -257,7 +278,6 @@ func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: I
         let intervals = probes[probes.count - 1].intervals
         predicted.append(pointsPerInterval * intervals + (isFirstEmission ? 1 : 0))
         isFirstEmission = false
-        moveIndex += 1
 
         // The pattern's own clamp: the anchor advances to the surplus-stripped
         // point, not to the needle (ZigzagStitchPattern / TripleStitchPattern).
@@ -265,7 +285,7 @@ func screen(_ sample: SampleProgram, patternLength: Double, pointsPerInterval: I
         anchor = StagePoint(x: current.x + surplus * dx, y: current.y + surplus * dy)
     }
 
-    return Screening(probes: probes, predictedEmissions: predicted)
+    return Screening(probes: probes, subLengthProbes: subLengthProbes, predictedEmissions: predicted)
 }
 
 /// The `NeedleUpdate` carried by a `.needleMoved` event, if this is one.
@@ -277,17 +297,40 @@ func needleMove(in event: InterpreterEvent) -> NeedleUpdate? {
     }
 }
 
-/// The per-tick emitted-stitch counts, restricted to the ticks that actually
-/// moved the needle — the sequence `mirrorIsFaithful` compares against.
+/// Whether `screen` and `emissionCountsPerMove` can describe `program`: exactly
+/// one script in the whole program. The mirror follows one anchor, and a stitch
+/// is credited to the update before it, so a second script's stitch would be
+/// counted against another script's move (Codex, slice 7). The trace carries no
+/// boundary between two actions of one actor, so matching actors would fix only
+/// the two-object case; requiring one script fixes both.
+func isScreenable(_ program: Program) -> Bool {
+    program.scenes.flatMap(\.objects).flatMap(\.scripts).count == 1
+}
+
+/// The stitches each needle update emitted, in order: the sequence
+/// `mirrorIsFaithful` compares against. Only meaningful for a program that
+/// `isScreenable`. A stitch counts towards the update before it **in the same
+/// tick**. Counting is per *update* because an Arc's tick carries
+/// up to 100 updates, each followed by its own stitches (ADR-047). It stays inside
+/// the tick because a tick with no update, such as `sewUp`'s tack, belongs to no
+/// move, as it did when this counted whole ticks.
 func emissionCountsPerMove(_ measured: SampleRun) -> [Int] {
-    measured.batches.compactMap { batch in
-        guard batch.contains(where: { needleMove(in: $0) != nil }) else { return nil }
-        return batch.count {
-            if case .stitch = $0 {
-                true
-            } else {
-                false
+    var counts: [Int] = []
+    for batch in measured.batches {
+        var current: Int?
+        for event in batch {
+            switch event {
+            case .needleMoved:
+                counts.append(0)
+                current = counts.count - 1
+            case .stitch:
+                if let current {
+                    counts[current] += 1
+                }
+            default:
+                break
             }
         }
     }
+    return counts
 }

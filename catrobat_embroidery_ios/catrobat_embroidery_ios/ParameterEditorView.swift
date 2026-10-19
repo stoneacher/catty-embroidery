@@ -30,7 +30,9 @@ struct ParameterEditorView: View {
                         Section {
                             editor(for: parameter)
                         } header: {
-                            Text(ParameterEditorText.title(of: parameter.slot, locale: locale))
+                            Text(ParameterEditorText.title(
+                                of: parameter.slot, in: BrickKind(of: brick), locale: locale
+                            ))
                         }
                     }
                 }
@@ -68,6 +70,8 @@ struct ParameterEditorView: View {
             }
         case let .fileName(name):
             FileNameField(editor: model.editor, initialName: name)
+        case let .arcDirection(direction):
+            ArcDirectionPicker(editor: model.editor, selection: direction)
         }
     }
 }

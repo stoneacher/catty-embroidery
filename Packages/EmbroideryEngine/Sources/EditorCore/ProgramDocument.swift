@@ -122,6 +122,10 @@ private extension Brick {
             [x, y]
         case let .zigZagStitch(length, width):
             [length, width]
+        case let .arc(_, radius, degrees):
+            [radius, degrees]
+        case let .goThrough(throughX, throughY, x, y):
+            [throughX, throughY, x, y]
         case .forever, .loopEnd, .stitch, .setThreadColor, .sewUp, .stopRunningStitch,
              .writeEmbroideryToFile:
             []

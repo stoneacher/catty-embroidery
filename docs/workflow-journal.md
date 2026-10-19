@@ -3267,3 +3267,178 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Severity history: **none → Medium → Low → Low**, 4 rounds against a cap of 5.
   - Rounds 2–4 found nothing in production code; every finding was in a test fixture's guard or in documentation.
 - **What the loop says about the slice reviews:** after four slice rounds and four reviewer passes, the handover loop found no production defect. Its value was in the oracles: a fixture testing the wrong node, a prefix claim, and a promised ADR text that did not exist. ADR-032 invariant 3 ("remove every copy of a corrected claim") has a dual, *write the one copy you cite*. The brief had cited an amendment that existed nowhere.
+
+## 2026-10-18 — Brick backend slice 4: Arc, and the Android exports agree
+
+- **What landed:** Catroid's Arc, end to end, on PR 2's branch (`feature/brick-backend-paths`, stacked on PR 1). This covers the model, the needle geometry (`VirtualNeedle.arc`), the bridge (which now returns `[NeedleUpdate]?`), the per-update feed in one tick, and the editor vocabulary. The app gained a sentence per side, the segmented direction picker and the catalog entries. ADR-047 is written.
+- **The headline:** on the first green run, the interpreter's DST output for both Android exports matched the phone's record for record within ±1 unit, with the same counts. The exports were a running stitch along two arcs and a zigzag along an arc. That is the D5 feed rule, chord heading included, checked against the real reference rather than reasoned about.
+  - It was not luck that Codex's brief round had pinned: the mirrored chord heading and the per-sample zigzag offset are exactly what `arc_zigzag` exercises.
+- **Mutants:** 10 were tried, all killed.
+  - The Android goldens alone kill six of the nine engine mutants.
+  - **The one prediction:** "include Catroid's i = 0 sample" survived the planned tests, because from the origin that sample reconstructs the start exactly. An off-origin exact-count guard was added for it and kills it. The brief had predicted this ("killed by the cancellation case, not by the origin quarter arc").
+  - The view-level picker mutant has no unit test. It is the simulator's job in slice 6.
+- **What adding a brick exposed in an unrelated test:** `EditBalanceInvariantTests`' structural floors (pair relocations, rejected `loopEnd` inserts) silently depended on how many kinds exist, because the generator drew insert kinds uniformly. Adding one kind left one seed with no pair relocation, and after that was fixed, another with no rejected `loopEnd`. The floors did their job, ADR-032 invariant 2 working as designed.
+  - **The fix:** openers and `loopEnd` get fixed shares of inserts, so the floors no longer shrink with each kind GoThrough and later features add. A luckier seed would have hidden the dilution and let it recur.
+- **Slice plan change:** a new `Brick` case breaks the app's exhaustive switches, so the app arms had to land with the engine. Slice 6 is now GoThrough's fields, screenshots and the UI review.
+
+## 2026-10-18 — Brick backend PR 2: a Release-only compiler crash on CI's toolchain
+
+- **What failed:** the first push of PR 2 failed `release-build.yml`. This was not a compile error but a **Swift 6.3.3 frontend crash** during IR generation in the Release configuration, while emitting a reabstraction thunk for `(ArcDirection) -> ()` with `@isolated(any)` isolation.
+- **The cause:** the new segmented direction picker passed a stored `@MainActor @Sendable` function *value* as `Binding(get:set:)`'s setter. The SDK's `@isolated(any) @Sendable` signature then needs a thunk, and that compiler's IRGen aborted on it.
+- **Not reproducible here:** this machine now runs **Xcode 27.1**, and its Release device build of the same commit succeeds. CI pins **Xcode 26.6 (Swift 6.3.3)**, and `release-build.yml`'s comment still says that pin "matches the local development toolchain". That claim went stale when the local Xcode was updated.
+- **The fix:** the picker now mirrors the app's two existing setters, which CI's compiler has compiled many times: it holds the editor and writes through a closure *literal* (`Binding { … } set: { chosen in editor.setParameter(…) }`), so no function value is converted. The mechanism is recorded in the view's doc comment. Verification is on CI, since only CI has the crashing compiler.
+- **Lesson:** ADR-023's Release gate exists because a Debug-only build hides Release breakage. This is a second axis of the same problem: a *toolchain* that differs between the developer machine and CI. The pin is the right call (reproducible CI), but its comment is a claim about the developer's machine, and nothing checks it. Whether to move the pin to Xcode 27 is Sebastian's decision.
+
+## 2026-10-18 — Brick backend slice 4 reviews: four survivors, a decoder mask, and an exporter quirk
+
+- **`swift-code-reviewer`:** no correctness bug. It printed the per-record deviation from both Android exports: **zero everywhere**, `arc_run` 41/41 and `arc_zigzag` 105/105. It also probed headings of ±∞, NaN and 1e300, radii of 1e±300 and MAX, and sweeps of 1e300 and 5e−324; none left a non-finite needle or a NaN heading.
+- **The real findings were survivors my planned list missed:**
+  - **The per-update event order (moves interleaved with their stitches)** was stated by ADR-047 and pinned by nothing. Emitting all moves first passed the whole suite. Now pinned against a running-stitch composition oracle.
+  - **The zero-chord guard.** A radius-1e−300 arc from (5, 5) reconstructs the start exactly at every sample, so the mutant fed 100 zero chords and turned the heading to 0. Now pinned. The brief's planned mutant list had named "heading updated on a zero chord", but my slice-4 mutation run never included it. The reviewer was right to ask, and the record now says so.
+  - **The mod-360 reduction before the radian conversion.** It is reachable, because a start heading reaches the needle raw. Now pinned with 90 + 360·2⁴⁰.
+  - **Two tests the brief promised and I never wrote.**
+    - The full-circle round trip with every delta ≤ 121. Written, and my first version wrongly expected the last running stitch at the start: a running stitch never stitches its leftover, so a closing `stitch` brick is what closes it.
+    - The `repeat 1000 { arc }` budget check. Reframed as what actually matters: the preview budget counts stitches and a tick is atomic, so every tick must carry at most one arc's events.
+- **Codex slice round (Low):** the test-side DST decoder masked the kind with `0xF3`, which keeps the ±81 displacement bits, so a jump of (0, −81) decoded as a stitch. It is latent, since today's goldens hold no such records. Fixed test-first.
+- **Anchoring the decoder to Android's headers, at the reviewer's suggestion, found an exporter quirk:** Android's `arc_zigzag` header extents (`+Y:10`, `−Y:212`) are not the extents of the records it writes (0 to −222), while `arc_run`'s and `go_through`'s are. My first fix assumed the cause was the one unwritten first zigzag point. The second mismatch disproved that, so I stopped modelling the exporter and anchor only what its header demonstrably describes: stitch count and final position everywhere, and extents for the two faithful files.
+- **The goldens are pinned exactly, not just within ±1.** ±1 stays ADR-014's accepted bound, and ADR-047 says so, but a drift inside it now fails and has to be accepted deliberately.
+
+## 2026-10-18 — CI moves to Xcode 27.1 (`xcode-27` runner)
+
+- **Decision (Sebastian, 2026-10-18):** CI is pinned to Xcode 27.1 after the Swift 6.3.3 Release crash. The `macos-26` image has no Xcode 27. GitHub's separate `xcode-27` image (a public preview) ships 27.1 build 27A9275, the exact local build, so all three macOS jobs move there. Recorded as an ADR-023 amendment.
+- **What it buys:** a toolchain fault on CI now reproduces locally. With the 6.3.3 pin, the Release crash could only be checked by pushing.
+- **What it costs:** a preview image. Job names are unchanged, so the required status checks still match.
+- **The direction picker keeps its closure-literal setter.** It is harmless on 27.1, and it is the app's existing pattern anyway.
+
+## 2026-10-18 — Brick backend slice 5: GoThrough; a wrong guess about the reference, corrected by the reference
+
+- **What landed:** Catroid's GoThrough end to end, following the same rules as Arc (ADR-047). It is a quadratic Bézier with control point `2T − (S + E)/2`, sampled in Catroid's own `(1−t)²S + 2(1−t)tA + t²E` form, so t = 1 lands exactly on the destination.
+- **The Android export matched exactly on the first green run**, including the final stitch I had predicted we would *not* match. On 2026-10-17 I had told Sebastian, and written into the references README, that Android's missing stitch at −100 was "most likely" `float` arithmetic and might need an ADR-014 note. The `Double` implementation reproduces it. The cause is geometry: the first curve's last stitch sits at (100, 1), above the axis, so the running stitch measures the straight run from there, and its last full step lands short of −100. The README now says the guess was wrong and why, as a correction rather than a silent rewrite of the observation.
+- **Mutants:** 6 of 7 killed. The survivor, partial commit on overflow, is **equivalent for every finite input**:
+  - Each sample is a convex combination of S, A and E, so a finite control point bounds every sample.
+  - When `2T` overflows, every sample is infinite from the first.
+  - A search over extreme values found no input with a finite sample followed by an infinite one. The guard stays for symmetry; Arc's r = MAX case is where it is reachable and killed.
+- **The pattern repeated from slice 4:** a pinned list-position test ("Arc is the last motion kind") broke the moment GoThrough was added. It now pins adjacency ("Arc follows Point in direction"), which is what it meant.
+
+## 2026-10-18 — Brick backend slice 5 reviews: a faithful Catroid behaviour we chose not to keep
+
+- **Codex:** clean (highest severity none). It attacked the claim that partial commit is unreachable with a 729-case extreme grid and could not refute it.
+- **`swift-code-reviewer`:** no correctness bug. Java 17 runs Catroid's loop bit-identically to ours, checked with FNV hashes over every sample. Its findings:
+  - **Semantics:** `goThrough` with the through-point and destination both equal to the start is not degenerate by sample equality. The Bézier reconstructs the start with ulp residuals, the tiny chords are fed, and the heading turns: −116.6° from (100, 50), so a following `move 10` goes to (91.06, 45.53). **Catroid does exactly this**, so it is faithful. It is also exactly the residual-steering hazard ADR-047 already refused for Arc's 0° sweep, and reachable via the position sensors.
+    - **Decision (mine, under the brief's D5 "degenerate guard first"):** guard structurally and pin it as a divergence, consistent with Arc, rather than keep a noise-driven heading because the reference has it. ADR-012's "the reference wins where it is sound" does not cover a behaviour decided by the last bits of a rounding residual.
+  - **Seven surviving mutants:**
+    - The four alternative sample formulas (de Casteljau, power basis, reassociation, `float` start) were killed together by **pinning five samples generated by Catroid's own arithmetic under Java 17**. That is ADR-046's table method applied to geometry. The reviewer had expected reassociation to need hashing or be recorded as equivalent; the pinned non-integer samples were enough.
+    - The other three, all killed: an x-only finiteness check, an x-only feed test, and a foreign slot not refused.
+  - **ADR-047's context, corrected:** pooled libGDX actions keep stale rather than zeroed fields on a bad formula. The catch-and-skip decision is unchanged.
+
+## 2026-10-18 — Brick backend slice 6: the simulator found what the tests could not
+
+- **The checks no unit test could make:**
+  - In the running app, one tap on Right rewrites the Arc row live, and one Undo restores Left while the insert stays undoable. That is slice 4's view-level picker mutant, checked where it lives.
+  - The palette lists both new bricks after Point in direction, each as one accessibility element carrying its sentence and description.
+- **A real UI finding, only visible on screen:** GoThrough's editor listed "Through x", "Through y", then a bare "X", "Y". Nothing said the last two were the destination, though the row's own sentence does. The `swift-code-reviewer` had flagged it from the catalog as "worth a look"; the screenshot settled it.
+  - **The fix:** slot titles take the edited brick's kind, so GoThrough's destination reads "To x"/"To y" after Catroid's "then to", and Place at keeps "X"/"Y". It was tested first, and the section headers and accessibility labels share one title property. Recorded as an ADR-040 amendment, together with the direction picker that PR 1's amendment had deferred to PR 2.
+- **Tooling, again:** after an XcodeBuildMCP test run reinstalled the app, launching failed twice with "Application failed preflight checks". `simctl uninstall` plus a rebuild fixed it each time, as memory records. It also clears the autosave, so the bricks had to be re-added through the palette. Scrolling the palette sheet needed the right scroll container. The snapshot carries no frames, so finding it meant trying candidates until new rows appeared.
+
+## 2026-10-18 — Brick backend slice 7: a sample that found three gaps in the sample infrastructure
+
+- **What landed:** Arc Flower, the third bundled sample and the first to use the new vocabulary.
+  - Twelve circles are drawn as eight 45° Arcs each, with radius `40 + 15·sin(petal·120°)`.
+  - Each petal starts from an absolute `pointInDirection(petal·30)`, so the chord heading's drift cannot skew the fan.
+  - A green GoThrough stem bends from the `position x` sensor.
+- **What the sample exposed, in order:**
+  1. **The library's two-second animation floor failed.** An Arc costs one tick however far it goes (ADR-047), so twelve 360° Arcs finished in about 50 ticks and each circle appeared in one frame. Drawing each petal in eighths makes it grow visibly. That is a genuine product property of Arc worth knowing for anyone writing programs: a long Arc is instantaneous on the stage, as on Android.
+  2. **The ADR-019 screening mirror was unfaithful for any program with an Arc.** It took only the *first* needle update per tick, an assumption true of every motion brick until slice 4. Its own faithfulness test is what surfaced it (`faithful=false`, 96 probes for hundreds of updates).
+     - **The fix:** mirror per update, with stitches attributed within their tick.
+     - **The first rewrite was itself wrong:** attributing across ticks put `sewUp`'s five tack stitches onto the last move. The element-by-element comparison caught it on exactly that last element.
+     - The two existing samples' sequences are unchanged.
+  3. **The screening and per-tick budget tables had no totality check.** A new sample silently skipped both, and Arc Flower did until a guard over `SampleID.shipping` was added.
+- **Also found:** the regeneration suite's documented `--filter "Sample resource regeneration"` matches nothing and writes no file. It now names the type.
+  - Regenerating rewrote both existing resources **byte-identical**, which is direct evidence for the ADR-037 amendment's "v1 grows additively".
+- **A design decision made on the stage, not in the code:** the first wave, `sin(petal·60°)`, completes two cycles over twelve petals and drew a two-lobed propeller. The fan was even, as the heading test proved, but it did not read as a flower. `sin(petal·120°)` gives four-fold symmetry with the same radius multiset, so the stitch count and the screening margin are unchanged.
+- **Locked-formula screenshot:** the reason reads "calculation", not "function", because the radius's root node is `+` (ADR-040's root rule). That rule is documented, and its refinement is left for the formula editor.
+- **CI:** `fc3070a` completed every job on the Xcode 27.1 runner, the first full app-test run there.
+
+## 2026-10-18 — Brick backend slice 7 reviews: two reviewers, two different gaps, and a correction
+
+- **Correction to the slice 7 entry above (append-only, so stated here):** it says a guard was added for "the screening and per-tick budget tables". Only the screening table had one. The commit message and the brief made the same claim. The `swift-code-reviewer` caught it by reading the budget suite, which still listed its samples by hand. The guard now exists.
+- **Codex (highest severity Medium):** the screen credits each stitch to the needle update just before it, whatever its actor. A second object, or a second script on the same object, would be miscounted. Codex's reproducer was an Arc in one object and a lone `stitch` in another.
+  - **The fix states the precondition rather than generalising:** `isScreenable` requires exactly one script in the program, and every screened sample is checked against it. Matching actors would fix only the two-object case, because the event trace carries no boundary between two scripts of one actor.
+- **`swift-code-reviewer` (two important findings, no bug):**
+  - **The budget table's missing guard:** the correction above.
+  - **A blind spot in ADR-019's screen:** updates shorter than one stitch length were recorded as zeros but never probed. An update one ulp under the length emits nothing here and one stitch under another libm, which is exactly ADR-019's risk. For the old samples every update was a whole side, so it never mattered. For Arc Flower these short chords are about nine in ten updates.
+    - **The fix:** they are now probed against the first boundary. Nothing is at risk, but the true closest approach is 1.82·10¹¹ ulps, three times nearer than the ~5·10¹¹ the brief had reported.
+- **The reviewers found different things:** Codex attacked the harness's generality. The Claude reviewer measured the sample, cross-checked the documents' claims against the code, and found the screen's blind spot. Neither reported the other's findings.
+- **Also taken:** the stem must be green (CO 2 alone passes a late change); the hoop check covers every needle update; 821 stitches, no jumps and the extents are pinned. The sensor is now described as the token use it is: it is read right after `placeAt(0, 0)`, so it reads 0 and the stem would be identical with a literal 45.
+- **Mutations, all red:** dropping a sample from the budget table; `isScreenable` counting objects; skipping the sub-length probes; a minimum that ignores them; dropping the stem's colour. One mutation first failed to compile, and a failing build reports "0 failing tests", so it was redone before counting.
+- **Declined:** Codex's notes that the vocabulary and heading tests prove presence rather than behaviour. The engine and Android-golden tests pin that behaviour, and the reviewer showed the heading test kills both relative-turn mutations.
+
+## 2026-10-18 — Brick backend PR 2: the feature-level review finds what the per-slice ones could not
+
+- **The feature-level `swift-code-reviewer` (no critical findings)** saw three things that no slice review had seen:
+  - **Half of GoThrough's degenerate guard was untested.** Every test put both points at the start or neither. Two one-sided mutants (`destination != position` and `through != position`) left the whole suite green, and either would silently drop a real curve (an out-and-back loop, or a curve through its own start).
+    - Two tests now kill one mutant each, shown red before keeping them.
+    - Slice 5's own review had added the self-loop test that made the guard *needed*, but nobody asked whether the guard was too *wide*.
+  - **Four comments repeated the pre-ADR-047 rule** "one update per motion" (`VirtualNeedle`, `InterpreterEvent`, `perform`, README). Slice 7 had just shown what that rule does to a consumer (the screening mirror), but the comments it came from were never swept. ADR-032 invariant 3 asks for that sweep.
+  - **Near-zero sweeps:** the structural guard is exact, so `sin(180)`'s 1.2e-16 or a 1e-13 sweep still steers the heading by residual chords, as Catroid does.
+    - **Kept, not guarded:** any tolerance would be an invented threshold.
+    - Pinned by a test that a tolerance-guard mutant turns red, and amended into ADR-047.
+- **Also taken:**
+  - the brief's status line still read "Planned";
+  - the direction picker ignored the view's locale;
+  - `title(of:in:)` made its brick kind required, so a caller cannot reintroduce slice 6's bare "X";
+  - two palette tests pinned suffixes against slice 5's own lesson;
+  - two helpers shared the enum cases' names;
+  - one mutant count in the brief read as a conflict with ADR-047.
+- **Deferred:** extracting the two sampling loops into one helper. They are reviewed, golden-pinned engine code, and a refactor at handover is a fresh risk for a readability gain.
+- **Documenter pass:** the package README was stale far beyond this feature. Its StagePreview section described a pre-M3 API, and its Quick Start used an initializer and an enum case that do not exist.
+  - The `swift-documenter` verified every snippet by grepping declarations. I then compiled both Quick Starts in a throwaway test file, and they build.
+  - Its last change was M3's final verification (2026-09-18). That left M4's editor work and PR 1 undocumented, and the M3 pass evidently did not re-check the older StagePreview snippets.
+- **Close-out filed:** backlog US-325 (`javaRound` is not exactly Java 7+ `Math.round`), with an inline correction on ADR-012's rounding line and on `javaRound`'s comment.
+
+## 2026-10-18 — Brick backend PR 2, Codex handover round 1: a bound that a new composition outgrew
+
+- **Round 1 (highest severity Medium, code changed):** one finding, and it is a real one.
+  - **The problem:** ADR-014 bounds one needle update at a million whole stitch lengths. ADR-047 lets one action emit 100 updates, each of which passes that bound. `tripleStitch(1)` with `arc(left, 5 000 000, 360)` would therefore materialise ~94 million stitch events in one tick. ADR-027's run cap is checked between ticks, too late.
+  - **The fix extends ADR-014 to the whole action:** a path whose chords hold more than a million lengths feeds the pattern nothing, all or nothing, with the anchor untouched. The needle still moves.
+    - Single-update motions keep the old feed, so no existing behaviour or golden moved. The full suite, including the Android exports, is unchanged.
+    - Five tests first (red as a compile failure), then four mutations, all red: the interpreter never using the path feed; the first chord dropped; a bound ten times looser; feeding the pattern but discarding the results, which moves the anchor.
+    - Recorded as an ADR-047 amendment.
+- **Why every earlier review missed it:** each one checked the arc's *geometry* and the per-tick *event count*. The brief's "budget check" used a program with no stitch pattern, which looks like the case but cannot fail on it. Codex named that test as the blind spot. Two slice rounds and two Claude reviews had seen the per-update bound and the 100-sample loop separately, and none composed them.
+- **Also corrected:** the brief described that test as a check of "RunBudget/driver allocation", which it never was.
+
+## 2026-10-19 — Brick backend PR 2, Codex handover round 2: the fix holds, two Low leftovers
+
+- **Round 2 (highest severity Low, down from Medium; code changed):**
+  - **Verified:** Codex confirmed the round 1 fix is correct and complete. It worked through all three patterns, a stale anchor, re-anchoring by `stitch`/`sewUp`, a paused pattern, and non-positive lengths. It also derived the amendment's "about two million whole lengths" bound independently: the first update is capped by ADR-014, and the rest telescope against the path.
+  - **Low, docs:** the brief's D5 and its acceptance criterion still said every changed sample is fed. Both now note the exception.
+  - **Low, test harness:** the sub-length probes added in slice 7's review reused the counter that only emitting updates advance. So thousands of probes carried stale indices, and a future at-risk update would be reported at the wrong place. A test that every probe names its own update was red against the old counter; probes now take their execution-order index.
+- **The pattern again:** both leftovers sit in text and code written to fix an earlier finding (slice 7's sub-length probes, round 1's bound). Each fix is new surface, as US-302 recorded.
+- **Loop state:** Medium → Low is one decrease. A round 3 runs because this round changed code; it ends the loop if it is clean or produces no code change.
+
+## 2026-10-19 — Brick backend PR 2, Codex handover round 3: loop closed
+
+- **Round 3 (highest severity Low, no code change):**
+  - **Verified:** both round 2 fixes are correct. The index change touches only diagnostics: predicted emissions, histograms, at-risk counts and margins are unchanged.
+  - **The one finding was a third instance of "each fix is new surface":** the README's `StitchPattern` protocol lacked the `length` requirement that round 1's fix added. Someone conforming to the documented protocol would not compile. The README now shows it, plus `RunningStitch.update(path:from:)`.
+  - **No new engine, interpreter, needle-state or DST-byte defect** in the full diff.
+- **The loop ended on condition 1:** the triage changed no code.
+  - Severity history: Medium (code) → Low (code: test harness) → Low (docs only).
+  - Three rounds against the cap of 5.
+- **Thesis note:** the whole-PR rounds found one defect the per-slice reviews had all missed, the per-action stitch bound. It arose only from *composing* two pinned rules (ADR-014's per-update bound and ADR-047's many-updates tick), which is exactly the view a slice review cannot take. The two later rounds found only residue of that fix and of slice 7's.
+
+## 2026-10-19 — CI: the Xcode 27 pin tripled the app job, and a docs commit found the margin
+
+- **What happened:** after the Codex loop closed, the final head `b5aec20` (docs only) failed the app job. One test (`WorkingProgramTests.aRejectedEditKeepsTheRunAndTheFile`) hit its 60-second limit, with neighbours taking 55 s instead of ~5 s and the log showing the simulator service hub disconnecting. A rerun of the failed job was cancelled at the 20-minute timeout after 635 tests.
+- **What the run history shows:** this was not a one-off. Before the pin (`a6daa28`) the app job took 6–8 minutes, and after it 15½–16¾ minutes on healthy runs. The pin was made earlier in this same PR. Every app-job "cancelled" before this was a superseding push, so none of those runs had been long enough to show the trend.
+- **Decision:** the timeout goes from 20 to 30 minutes, as an ADR-023 amendment with the measurements. The cause of the ~3× slowdown on the `xcode-27` preview image is tracked, not guessed.
+- **Lesson:** the pin's review checked that the jobs went green on the new image, and did not compare their durations with the old one. A timeout comment that states the healthy duration ("~4m30s") is a claim about the runner, exactly like the toolchain claim ADR-023 already learned to date.
+
+## 2026-10-19 — Brick backend: Ink/Stitch check passed, feature done
+
+- **Sebastian opened `ArcFlower.dst` in Ink/Stitch's embroidery simulation:**
+  - **Size:** 39.60 × 62.20 mm, exactly the figure the tests pin.
+  - **Colours:** two colour blocks (Ink/Stitch's own palette, since DST carries no colours).
+  - **Shape:** twelve circles fanned evenly around the centre with the four large ones on the diagonals, and the stem bending right to the bottom of the hoop.
+- **The one number that looked off:** Ink/Stitch's counter reads 823, against the 821 in the brief. Decoding the file settled it: the header says `ST:821` and `CO:2`, and the body holds 820 plain stitch records, one colour-change record and one end record. So the file carries 821 stitch records as ADR-012 counts them, and Ink/Stitch's counter counts its own commands differently. Checked against the file, not assumed.
+- **The brief is closed:** Done, with all ten acceptance criteria ticked. The ROADMAP row reads Done.
