@@ -100,7 +100,10 @@ struct IfBlockModelTests {
         [.ifElse(condition: condition), .stitch, .ifEnd],
         [.ifElse(condition: condition), .elseBranch, .elseBranch, .ifEnd],
         [.ifThen(condition: condition), .elseBranch, .ifEnd],
-        [.forever, .elseBranch, .loopEnd]
+        [.forever, .elseBranch, .loopEnd],
+        // A nested closer of the wrong family, then the outer one (Codex handover review, round 2).
+        [.ifThen(condition: condition), .forever, .ifEnd, .ifEnd],
+        [.forever, .ifThen(condition: condition), .loopEnd, .loopEnd]
     ] as [[Brick]])
     func malformedBlockDoesNotResolve(_ bricks: [Brick]) {
         let script = Script(bricks: bricks)

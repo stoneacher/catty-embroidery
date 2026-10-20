@@ -3520,3 +3520,9 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 
 - **Highest severity Low, one finding, a test gap:** no test re-entered an If whose condition changes between loop passes, so a mutant caching the first decision across re-entry survived (`IfLogicAction.restart()` clears the latch on every pass). Codex's reproducer is now a test; the caching mutant is red. It also checked the seams the slice rounds could not see — validate/compiler agreement for every script the editor can produce, tick accounting, malformed-script safety, the app — and found no implementation defect.
 - The fix is a code change (a test), so a verification round follows.
+
+## 2026-10-20 — Variables PR 2a (#74): handover round 2
+
+- **Round 1's fix verified:** Codex derived `conditionPerActivation`'s profile frame by frame from libgdx and confirmed it kills both mutants it had named.
+- **New, highest severity Low:** `matchingEnd` checked only the outermost closer's family, so in `[ifThen, forever, ifEnd, ifEnd]` the outer If "resolved" through the mismatched inner end and deleting the outer end removed the whole block — the malformed-script rule broken one nesting level down. The slice 2 fix had checked the else count and the outer family; this checks every nested closer against a stack. Tests first (red on both new rows), mutant killed.
+- **Loop state:** severity Low → Low is flat and the round changed code, so round 3 runs.

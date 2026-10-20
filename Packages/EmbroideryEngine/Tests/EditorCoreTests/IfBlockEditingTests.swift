@@ -102,7 +102,11 @@ struct IfBlockEditingTests {
         StrayDelete([.ifElse(condition: condition), .elseBranch, .elseBranch, .ifEnd], 1,
                     [.ifElse(condition: condition), .elseBranch, .ifEnd]),
         StrayDelete([.ifElse(condition: condition), .elseBranch, .elseBranch, .ifEnd], 2,
-                    [.ifElse(condition: condition), .elseBranch, .ifEnd])
+                    [.ifElse(condition: condition), .elseBranch, .ifEnd]),
+        // Codex handover review, round 2: the outer If does not resolve through a nested end of
+        // the wrong family, so its end goes alone.
+        StrayDelete([.ifThen(condition: condition), .forever, .ifEnd, .ifEnd, .stitch], 3,
+                    [.ifThen(condition: condition), .forever, .ifEnd, .stitch])
     ])
     func strayMarkerIsALeaf(_ row: StrayDelete) {
         #expect(Self.apply(.delete(at: Self.at(row.index)), to: row.bricks) == .applied(Self.program(row.expected)))
