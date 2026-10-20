@@ -25,13 +25,13 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
     /// The brick's index in its script.
     let id: Int
     let kind: BrickKind
-    /// `Script.indentDepths[id]`: a `loopEnd` sits at its opener's depth.
+    /// `Script.indentDepths[id]`: an end, and an If/Else's else, sits at its opener's depth.
     let depth: Int
     /// The visible sentence.
     let text: String
-    /// `text`, plus how many loops the brick sits inside — the indentation, spoken.
+    /// `text`, plus how many loops and Ifs the brick sits inside — the indentation, spoken.
     let accessibilityLabel: String
-    /// For a `loopEnd`, the index of the loop it closes; `nil` for every other row, and for an
+    /// For an end row, the index of the block it closes; `nil` for every other row, and for an
     /// end whose opener is missing.
     let openerIndex: Int?
     /// For a thread-colour brick whose hex the stage would accept, the colour it stitches in.
@@ -43,20 +43,27 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
 
     /// Whether the row refuses a drag before it starts — `.moveDisabled`. `.onMove` has no
     /// reject hook, so a refusal after the drop springs the row back with no explanation.
-    /// True for the two drags `apply` always rejects: a `loopEnd` (the loop moves from its
+    /// True for the drags `apply` always rejects: an end or an else (the block moves from its
     /// opener) and an opener that never closes (`.unbalancedPair`).
     let isMoveDisabled: Bool
     /// The accessibility actions, as the edits they make; `nil` where the action is not
     /// offered, so no row advertises an action that always fails. Computed by the package
-    /// (`Script+ListEditing.swift`), never re-derived here. A `loopEnd` offers only `delete`
-    /// (decided 2026-09-29), which redirects to its opener.
+    /// (`Script+ListEditing.swift`), never re-derived here. An end or an else offers only
+    /// `delete` (decided 2026-09-29), which redirects to its opener.
     let moveUp: EditAction?
     let moveDown: EditAction?
-    let moveAboveLoop: EditAction?
-    let moveBelowLoop: EditAction?
-    let moveIntoLoopAbove: EditAction?
-    let moveIntoLoopBelow: EditAction?
+    let moveOutAbove: EditAction?
+    let moveOutBelow: EditAction?
+    let moveIntoBlockAbove: EditAction?
+    let moveIntoBlockBelow: EditAction?
+    /// The crossing pair of an If/Else (Variables slice 2).
+    let moveAboveElse: EditAction?
+    let moveBelowElse: EditAction?
     let delete: EditAction?
+    /// The offered moves above, each under the name VoiceOver reads for it, in rotor order:
+    /// up, down, out, into, then the else pair. A move out of or into a block is named after
+    /// that block's family, so "Move Above Loop" never moves a brick out of an If.
+    let moveActions: [NamedMove]
 
     /// The rows for the program's first script, which is the only one M4 edits.
     ///
@@ -66,29 +73,39 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
             return []
         }
         let depths = script.indentDepths
+        let enclosing = enclosingCounts(of: script)
         let text = Sentence(locale: locale)
         // The first script's address, matching the `guard` above.
         let address = ScriptAddress()
 
         return script.bricks.enumerated().map { index, brick in
-            let opener = script.matchingOpener(ofLoopEndAt: index)
+            let opener = script.matchingOpener(ofEndAt: index)
             let sentence = text.of(brick, closing: opener.map { script.bricks[$0] })
+            let moves = Moves(script: script, index: index, address: address)
             return BrickRowPresentation(
                 id: index,
                 kind: BrickKind(of: brick),
                 depth: depths[index],
                 text: sentence,
-                accessibilityLabel: text.label(sentence, depth: depths[index]),
+                accessibilityLabel: text.label(
+                    sentence,
+                    loops: enclosing[index].loops,
+                    ifs: enclosing[index].ifs
+                ),
                 openerIndex: opener,
                 threadColor: threadColor(of: brick),
-                isMoveDisabled: brick.isLoopEnd || (brick.opensLoop && script.range(ofPairAt: index) == nil),
-                moveUp: script.moveUpAction(ofBrickAt: index, in: address),
-                moveDown: script.moveDownAction(ofBrickAt: index, in: address),
-                moveAboveLoop: script.moveAboveLoopAction(ofBrickAt: index, in: address),
-                moveBelowLoop: script.moveBelowLoopAction(ofBrickAt: index, in: address),
-                moveIntoLoopAbove: script.moveIntoLoopAboveAction(ofBrickAt: index, in: address),
-                moveIntoLoopBelow: script.moveIntoLoopBelowAction(ofBrickAt: index, in: address),
-                delete: script.deleteAction(atOffsets: [index], in: address)
+                isMoveDisabled: brick.closesBlock || brick.isDivider
+                    || (brick.opensBlock && script.range(ofPairAt: index) == nil),
+                moveUp: moves.up,
+                moveDown: moves.down,
+                moveOutAbove: moves.outAbove,
+                moveOutBelow: moves.outBelow,
+                moveIntoBlockAbove: moves.intoAbove,
+                moveIntoBlockBelow: moves.intoBelow,
+                moveAboveElse: moves.aboveElse,
+                moveBelowElse: moves.belowElse,
+                delete: script.deleteAction(atOffsets: [index], in: address),
+                moveActions: moves.named(locale: locale)
             )
         }
     }
@@ -102,6 +119,30 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
         Sentence(locale: locale).of(brick, closing: nil)
     }
 
+    /// How many loops and Ifs hold each row, one per row: the spoken indentation. An end and
+    /// an else are counted outside their own block, as their depth is. Total on a malformed
+    /// script: a stray end leaves the counts at zero.
+    static func enclosingCounts(of script: Script) -> [(loops: Int, ifs: Int)] {
+        var open: [BlockFamily] = []
+        func counts(_ families: some Collection<BlockFamily>) -> (loops: Int, ifs: Int) {
+            (families.count { $0 == .loop }, families.count { $0 == .conditional })
+        }
+        return script.bricks.map { brick in
+            switch brick.blockRole {
+            case let .opener(family):
+                defer { open.append(family) }
+                return counts(open)
+            case .closer:
+                if !open.isEmpty { open.removeLast() }
+                return counts(open)
+            case .divider:
+                return counts(open.dropLast())
+            case .leaf:
+                return counts(open)
+            }
+        }
+    }
+
     /// The swatch colour for a thread-colour brick; `nil` for every other brick.
     static func threadColor(of brick: Brick) -> ThreadColor? {
         guard case let .setThreadColor(hex) = brick else { return nil }
@@ -113,8 +154,13 @@ nonisolated struct BrickRowPresentation: Equatable, Identifiable {
 nonisolated private struct Sentence {
     let locale: Locale
 
-    func label(_ sentence: String, depth: Int) -> String {
-        depth == 0 ? sentence : resolve(.scriptRowAccessibilityNested(sentence, loops: depth))
+    func label(_ sentence: String, loops: Int, ifs: Int) -> String {
+        switch (loops, ifs) {
+        case (0, 0): sentence
+        case (_, 0): resolve(.scriptRowAccessibilityNested(sentence, loops: loops))
+        case (0, _): resolve(.scriptRowAccessibilityNestedIfs(sentence, ifs: ifs))
+        default: resolve(.scriptRowAccessibilityNestedLoopsAndIfs(sentence, loops: loops, ifs: ifs))
+        }
     }
 
     /// `opener` is the brick a `loopEnd` closes, if it has one.
@@ -154,6 +200,10 @@ nonisolated private struct Sentence {
             unit(times, counted: LocalizedStringResource.brickRepeatCount, formula: LocalizedStringResource.brickRepeat)
         case .forever: resolve(.brickForever)
         case .loopEnd: loopEnd(closing: opener)
+        // One sentence for both Ifs, as in Catroid; the palette description tells them apart.
+        case let .ifThen(condition), let .ifElse(condition): resolve(.brickIf(formula(condition)))
+        case .elseBranch: resolve(.brickIfElse)
+        case .ifEnd: resolve(.brickIfEnd)
         case let .wait(seconds):
             unit(seconds, counted: LocalizedStringResource.brickWaitCount, formula: LocalizedStringResource.brickWait)
         case let .setVariable(name, value): resolve(.brickSetVariable(variable(name), formula(value)))
@@ -186,9 +236,9 @@ nonisolated private struct Sentence {
         case .forever:
             return resolve(.brickLoopEndForever)
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy, .arc, .goThrough, .loopEnd, .wait, .setVariable, .changeVariableBy, .stitch,
-             .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
-             .stopRunningStitch, .writeEmbroideryToFile:
+             .changeXBy, .changeYBy, .arc, .goThrough, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd,
+             .setVariable, .changeVariableBy, .stitch, .setThreadColor, .runningStitch, .zigZagStitch,
+             .tripleStitch, .sewUp, .stopRunningStitch, .writeEmbroideryToFile:
             return resolve(.brickLoopEndUnmatched)
         }
     }
@@ -226,5 +276,53 @@ nonisolated private struct Sentence {
         var resource = resource
         resource.locale = locale
         return String(localized: resource)
+    }
+}
+
+/// One accessibility move under the name VoiceOver reads for it.
+nonisolated struct NamedMove: Equatable {
+    let title: String
+    let action: EditAction
+}
+
+/// The package's moves for one row, and the family each move out of or into a block concerns.
+nonisolated private struct Moves {
+    let up, down, outAbove, outBelow, intoAbove, intoBelow, aboveElse, belowElse: EditAction?
+    /// The block a move out leaves, and the blocks a move into enters.
+    let enclosing, above, below: BlockFamily?
+
+    init(script: Script, index: Int, address: ScriptAddress) {
+        up = script.moveUpAction(ofBrickAt: index, in: address)
+        down = script.moveDownAction(ofBrickAt: index, in: address)
+        outAbove = script.moveOutAboveAction(ofBrickAt: index, in: address)
+        outBelow = script.moveOutBelowAction(ofBrickAt: index, in: address)
+        intoAbove = script.moveIntoBlockAboveAction(ofBrickAt: index, in: address)
+        intoBelow = script.moveIntoBlockBelowAction(ofBrickAt: index, in: address)
+        aboveElse = script.moveAboveElseAction(ofBrickAt: index, in: address)
+        belowElse = script.moveBelowElseAction(ofBrickAt: index, in: address)
+        let family = { (opener: Int?) in opener.flatMap { script.bricks[$0].blockFamily } }
+        enclosing = family(script.enclosingOpener(ofBrickAt: index))
+        above = family(script.previousSiblingIndex(ofBrickAt: index))
+        below = family(script.nextSiblingIndex(ofBrickAt: index))
+    }
+
+    func named(locale: Locale) -> [NamedMove] {
+        let entries: [(EditAction?, LocalizedStringResource)] = [
+            (up, .scriptActionMoveUp),
+            (down, .scriptActionMoveDown),
+            (outAbove, enclosing == .conditional ? .scriptActionMoveAboveIf : .scriptActionMoveAboveLoop),
+            (outBelow, enclosing == .conditional ? .scriptActionMoveBelowIf : .scriptActionMoveBelowLoop),
+            (intoAbove, above == .conditional ? .scriptActionMoveIntoIfAbove : .scriptActionMoveIntoLoopAbove),
+            (intoBelow, below == .conditional ? .scriptActionMoveIntoIfBelow : .scriptActionMoveIntoLoopBelow),
+            (aboveElse, .scriptActionMoveAboveElse),
+            (belowElse, .scriptActionMoveBelowElse)
+        ]
+        return entries.compactMap { action, title in
+            action.map {
+                var resource = title
+                resource.locale = locale
+                return NamedMove(title: String(localized: resource), action: $0)
+            }
+        }
     }
 }

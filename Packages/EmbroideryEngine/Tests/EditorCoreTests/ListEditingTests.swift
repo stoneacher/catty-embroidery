@@ -177,10 +177,10 @@ struct ListEditingTests {
                 Self.script.deleteAction(atOffsets: [index], in: Fixtures.address),
                 Self.script.moveUpAction(ofBrickAt: index, in: Fixtures.address),
                 Self.script.moveDownAction(ofBrickAt: index, in: Fixtures.address),
-                Self.script.moveAboveLoopAction(ofBrickAt: index, in: Fixtures.address),
-                Self.script.moveBelowLoopAction(ofBrickAt: index, in: Fixtures.address),
-                Self.script.moveIntoLoopAboveAction(ofBrickAt: index, in: Fixtures.address),
-                Self.script.moveIntoLoopBelowAction(ofBrickAt: index, in: Fixtures.address)
+                Self.script.moveOutAboveAction(ofBrickAt: index, in: Fixtures.address),
+                Self.script.moveOutBelowAction(ofBrickAt: index, in: Fixtures.address),
+                Self.script.moveIntoBlockAboveAction(ofBrickAt: index, in: Fixtures.address),
+                Self.script.moveIntoBlockBelowAction(ofBrickAt: index, in: Fixtures.address)
             ].compactMap(\.self)
         }
 

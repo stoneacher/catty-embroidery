@@ -20,9 +20,9 @@ struct ScriptRowView: View {
             BrickLeadingView(kind: row.kind, threadColor: row.threadColor)
             Text(row.text)
                 .font(.body)
-                // A loop's end is structure rather than an instruction; secondary keeps the eye
-                // on the bricks that do something, and the sentence still says which loop.
-                .foregroundStyle(row.kind == .loopEnd ? .secondary : .primary)
+                // An end or an else is structure rather than an instruction; secondary keeps the
+                // eye on the bricks that do something, and a loop's end still says which loop.
+                .foregroundStyle([.loopEnd, .elseBranch, .ifEnd].contains(row.kind) ? .secondary : .primary)
                 // What actually guarantees no truncation at AX1 inside a list row — see the
                 // same line in `SampleRowView`.
                 .fixedSize(horizontal: false, vertical: true)

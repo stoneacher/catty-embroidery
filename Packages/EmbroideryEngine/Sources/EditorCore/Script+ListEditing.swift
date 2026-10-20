@@ -47,7 +47,7 @@ public extension Script {
         // An unclosed opener counts as one row: `apply` rejects it as `.unbalancedPair`
         // whatever the destination, so the only thing its span could change is which
         // destination that rejection names.
-        let span = bricks[from].opensLoop ? (range(ofPairAt: from)?.count ?? 1) : 1
+        let span = bricks[from].opensBlock ? (range(ofPairAt: from)?.count ?? 1) : 1
         if (from ... from + span).contains(toOffset) {
             return nil
         }
@@ -87,67 +87,95 @@ public extension Script {
         return .move(from: BrickAddress(brickIndex: index, script: script), to: siblingEnd + 1 - span)
     }
 
-    /// VoiceOver's "Move Above Loop": the **first** block of a loop body leaves it upward, to
-    /// just above the loop's opener. `nil` anywhere else.
+    /// VoiceOver's "Move Above Loop" or "Move Above If" (named after the block left): the
+    /// **first** block of a body or then-branch leaves it upward, to just above the opener.
+    /// `nil` anywhere else, including the first block of an else-branch (Move Above Else).
     ///
     /// *Decided 2026-09-29 (Sebastian), closing the gap ADR-035's 2026-09-23 amendment named*:
     /// the sibling jump cannot move a brick out of a loop, because the opener is its parent,
     /// while a drag can. This is offered exactly where Move Up is absent for that reason. A
     /// separate verb rather than a wider Move Up: "up" out of a loop is a change of nesting, and
-    /// the name says so. Its mirror, into a loop, is `moveIntoLoopAboveAction(ofBrickAt:in:)`.
+    /// the name says so. Its mirror, into a loop, is `moveIntoBlockAboveAction(ofBrickAt:in:)`.
     ///
     /// Conservative on a malformed script, as the sibling jump is: a block or a loop whose
     /// extent cannot be resolved is offered nothing.
-    func moveAboveLoopAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
+    func moveOutAboveAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
         guard index > 0, blockSpan(at: index) != nil else { return nil }
         let parent = index - 1
-        guard bricks[parent].opensLoop, matchingEnd(ofBrickAt: parent) != nil else { return nil }
+        guard bricks[parent].opensBlock, matchingEnd(ofBrickAt: parent) != nil else { return nil }
         return .move(from: BrickAddress(brickIndex: index, script: script), to: parent)
     }
 
-    /// VoiceOver's "Move Below Loop": the **last** block of a loop body leaves it downward, to
-    /// just below the loop's end. `nil` anywhere else. The mirror of
-    /// `moveAboveLoopAction(ofBrickAt:in:)`; see it for the decision.
-    func moveBelowLoopAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
+    /// VoiceOver's "Move Below Loop" or "Move Below If": the **last** block of a body or
+    /// else-branch leaves it downward, to just below the end. `nil` anywhere else, including
+    /// the last block of a then-branch (Move Below Else). The mirror of
+    /// `moveOutAboveAction(ofBrickAt:in:)`; see it for the decision.
+    func moveOutBelowAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
         guard let span = blockSpan(at: index) else { return nil }
-        // The row just past the block must close the loop the block sits in. One call answers
-        // both halves: `matchingOpener` is `nil` for anything that is not a `loopEnd`, out of
-        // bounds included, and for a stray end.
+        // The row just past the block must close the block it sits in. One call answers
+        // both halves: `matchingOpener` is `nil` for anything that is not an end, out of
+        // bounds included, and for an end whose block does not resolve.
         let parentEnd = index + span
-        guard matchingOpener(ofLoopEndAt: parentEnd) != nil else { return nil }
+        guard matchingOpener(ofEndAt: parentEnd) != nil else { return nil }
         return .move(from: BrickAddress(brickIndex: index, script: script), to: parentEnd + 1 - span)
     }
 
-    /// VoiceOver's "Move Into Loop Above": when the previous sibling block is a loop, the block
-    /// enters it as the **last** block of its body — just before its end. `nil` otherwise.
+    /// VoiceOver's "Move Into Loop Above" or "Move Into If Above": when the previous sibling
+    /// block is a loop or an If, the block enters it as the **last** block of its last body or
+    /// branch — just before its end. `nil` otherwise.
     ///
     /// *Decided 2026-09-29 (Sebastian), at `swift-code-reviewer`'s finding*: the move-out pair
     /// alone left the mirror gap, since the sibling jump steps over a whole loop and nothing put
-    /// a brick *into* one. With this pair, the six actions reach exactly the arrangements a
-    /// drag reaches — `ListEditingTests` asserts that as a reachability property.
+    /// a brick *into* one. With this pair, the actions reach exactly the arrangements a drag
+    /// reaches — `AccessibilityMoveTests` and `IfBlockAccessibilityMoveTests` assert that as a
+    /// reachability property.
     ///
     /// The loop's end sits above the block, so removing the block does not shift it: its index
     /// is already the post-removal destination.
-    func moveIntoLoopAboveAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
-        // `matchingEnd` is `nil` unless the sibling opens a loop whose end resolves.
+    func moveIntoBlockAboveAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
+        // `matchingEnd` is `nil` unless the sibling opens a block that resolves.
         guard let sibling = previousSiblingIndex(ofBrickAt: index),
               let end = matchingEnd(ofBrickAt: sibling)
         else { return nil }
         return .move(from: BrickAddress(brickIndex: index, script: script), to: end)
     }
 
-    /// VoiceOver's "Move Into Loop Below": when the next sibling block is a loop, the block
-    /// enters it as the **first** block of its body — just after its opener, which with the
+    /// VoiceOver's "Move Into Loop Below" or "Move Into If Below": when the next sibling block
+    /// is a loop or an If, the block enters it as the **first** block of its body or then-branch
+    /// — just after its opener, which with the
     /// block removed from above it is `opener + 1 − span`. `nil` otherwise. See
-    /// `moveIntoLoopAboveAction(ofBrickAt:in:)` for the decision.
-    func moveIntoLoopBelowAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
+    /// `moveIntoBlockAboveAction(ofBrickAt:in:)` for the decision.
+    func moveIntoBlockBelowAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
         // `nextSiblingIndex` already refuses an opener whose extent is unknown, and so does
         // `blockSpan` for the block itself.
         guard let sibling = nextSiblingIndex(ofBrickAt: index),
-              bricks[sibling].opensLoop,
+              bricks[sibling].opensBlock,
               let span = blockSpan(at: index)
         else { return nil }
         return .move(from: BrickAddress(brickIndex: index, script: script), to: sibling + 1 - span)
+    }
+
+    /// VoiceOver's "Move Below Else": the then-branch's **last** block crosses the else,
+    /// to the top of the else-branch. `nil` anywhere else.
+    ///
+    /// The else sits below the block, so once the block is removed from above it the else is
+    /// at `index` and the top of the else-branch is `else + 1 − span`. Offered only where the
+    /// If/Else resolves end to end, as the move-out pair is.
+    func moveBelowElseAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
+        guard let span = blockSpan(at: index) else { return nil }
+        let divider = index + span
+        guard resolvedElse(at: divider) else { return nil }
+        return .move(from: BrickAddress(brickIndex: index, script: script), to: divider + 1 - span)
+    }
+
+    /// VoiceOver's "Move Above Else": the else-branch's **first** block crosses the else,
+    /// to the bottom of the then-branch. `nil` anywhere else.
+    ///
+    /// The else sits above the block, so removing the block does not shift it: its index is
+    /// the post-removal destination, the bottom of the then-branch.
+    func moveAboveElseAction(ofBrickAt index: Int, in script: ScriptAddress) -> EditAction? {
+        guard index > 0, blockSpan(at: index) != nil, resolvedElse(at: index - 1) else { return nil }
+        return .move(from: BrickAddress(brickIndex: index, script: script), to: index - 1)
     }
 
     /// The `.insert` a palette tap means, with `selected` the row the list has selected (US-409).
@@ -174,13 +202,22 @@ public extension Script {
 }
 
 private extension Script {
-    /// How many rows the block starting at `index` covers: one for a leaf, the whole pair for
-    /// a loop opener. `nil` for a `loopEnd` — not a block of its own — for an opener that never
-    /// closes, and out of bounds.
+    /// How many rows the block starting at `index` covers: one for a leaf, the whole block for
+    /// an opener. `nil` for an end or an else — not blocks of their own — for an opener that
+    /// never closes, and out of bounds.
     func blockSpan(at index: Int) -> Int? {
-        guard bricks.indices.contains(index), !bricks[index].isLoopEnd else { return nil }
-        guard bricks[index].opensLoop else { return 1 }
-        return range(ofPairAt: index)?.count
+        guard bricks.indices.contains(index) else { return nil }
+        switch bricks[index].blockRole {
+        case .closer, .divider: return nil
+        case .leaf: return 1
+        case .opener: return range(ofPairAt: index)?.count
+        }
+    }
+
+    /// Whether `index` is an If/Else's else whose block resolves end to end.
+    func resolvedElse(at index: Int) -> Bool {
+        guard let opener = matchingOpener(ofElseAt: index) else { return false }
+        return matchingEnd(ofBrickAt: opener) != nil
     }
 
     /// The last row of the block starting at `index`, or `nil` where `blockSpan` is.

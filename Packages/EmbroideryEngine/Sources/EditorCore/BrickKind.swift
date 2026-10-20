@@ -35,6 +35,10 @@ public enum BrickKind: Sendable, Hashable, CaseIterable {
     case forever
     case loopEnd
     case wait
+    case ifThen
+    case ifElse
+    case elseBranch
+    case ifEnd
 
     // MARK: Data
 
@@ -74,6 +78,10 @@ public enum BrickKind: Sendable, Hashable, CaseIterable {
         case .forever: self = .forever
         case .loopEnd: self = .loopEnd
         case .wait: self = .wait
+        case .ifThen: self = .ifThen
+        case .ifElse: self = .ifElse
+        case .elseBranch: self = .elseBranch
+        case .ifEnd: self = .ifEnd
         case .setVariable: self = .setVariable
         case .changeVariableBy: self = .changeVariableBy
         case .stitch: self = .stitch

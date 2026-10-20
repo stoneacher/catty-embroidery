@@ -95,6 +95,7 @@ nonisolated enum ParameterEditorText {
         case .radius: .parameterSlotRadius
         case .throughX: .parameterSlotThroughX
         case .throughY: .parameterSlotThroughY
+        case .condition: .parameterSlotCondition
         }
     }
 

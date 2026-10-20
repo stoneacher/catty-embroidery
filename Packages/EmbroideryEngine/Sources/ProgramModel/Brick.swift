@@ -1,9 +1,11 @@
 /// One instruction in a flat script list (Catroid `Brick`). Control bricks are
-/// begin/end pairs in the same list — `repeatLoop`/`forever` open a loop and a
-/// later `loopEnd` closes it (ADR-008); nesting is a rendering concern, not a
-/// type-level tree. `Codable` and `Equatable` are synthesized; the latter
-/// delegates to `Formula`'s NaN-aware `==`, so whole-`Program` equality stays
-/// reflexive. Declared `indirect` per the US-203 model contract.
+/// begin/end blocks in the same list — `repeatLoop`/`forever` open a loop and a
+/// later `loopEnd` closes it; `ifThen`/`ifElse` open an If that a later `ifEnd`
+/// closes, with an If/Else holding one `elseBranch` between (ADR-008, amended by
+/// Variables slice 2); nesting is a rendering concern, not a type-level tree.
+/// `Codable` and `Equatable` are synthesized; the latter delegates to
+/// `Formula`'s NaN-aware `==`, so whole-`Program` equality stays reflexive.
+/// Declared `indirect` per the US-203 model contract.
 ///
 /// Case order mirrors Catroid's brick categories; the embroidery cases follow
 /// `CategoryBricksFactory.setupEmbroideryCategoryList`.
@@ -37,6 +39,18 @@ public indirect enum Brick: Sendable, Equatable, Codable {
     /// no action but terminates the loop in the flat list).
     case loopEnd
     case wait(seconds: Formula)
+    /// Opens an If with no else; closed by a later `ifEnd` (Catroid
+    /// `IfThenLogicBeginBrick`).
+    case ifThen(condition: Formula)
+    /// Opens an If/Else: one `elseBranch` directly inside it, then an `ifEnd`
+    /// (Catroid `IfLogicBeginBrick`). A second opener case rather than an optional
+    /// else, so `BrickKind` stays payload-free and an importer maps 1:1 (brief D12).
+    case ifElse(condition: Formula)
+    /// Divides an If/Else into its then- and else-branch. A marker, like
+    /// `loopEnd` (Catroid `IfLogicElseBrick`).
+    case elseBranch
+    /// Closes the nearest open If (Catroid `IfLogicEndBrick`).
+    case ifEnd
 
     // MARK: Data (Catroid data category)
 
@@ -116,6 +130,13 @@ public enum BrickDefaults {
     public static let goThroughThroughY: Double = 0
     public static let goThroughX: Double = 0
     public static let goThroughY: Double = 0
+
+    // MARK: Variables additions
+
+    /// **No `BrickValues` counterpart**: the palette builds both Ifs with
+    /// `1 < 2` (`CategoryBricksFactory.kt:361-380`).
+    public static let conditionLeft: Double = 1
+    public static let conditionRight: Double = 2
 }
 
 /// Which side of the heading an Arc's centre lies on (Catroid

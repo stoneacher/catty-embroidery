@@ -3479,3 +3479,69 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **A shipped divergence the amendment silently fixed:** `arctan2(0 × −1, −1)` was −180 here and 180 in Catroid since the Brick backend, because ADR-046 had already made the zero sign magnitude-visible. ADR-017's amendment now says so, and a named test pins it.
   - **A wrong claim in four places:** Catroid ranks `=` (3) below `<` and `not` (4). Rendering is unaffected because any logic inside a comparison is bracketed; every copy is corrected (ADR-032 invariant 3).
 - **What each layer found:** mutation found a missing input class (non-canonical NaN), Codex found a missing structure in the rendering tests, and the reviewer found the most valuable item — that ADR-017's old claim had already been false on `main` for two days — by reading ADR-046 against ADR-017 rather than the diff alone.
+
+## 2026-10-19 — Variables slice 2 (block structure): green on the first implementation run
+
+- **Shape:** the four If bricks, a `blockRole` for every brick, family-aware matching and validation, and the editor verbs, sibling jumps and accessibility moves generalized from loops to blocks. Stacked on PR 1 as `feature/variables-control` (PR 2), because PR #73 is not merged yet.
+- **Red, twice:** compile errors naming the vocabulary, then behavioural against a stub that kept every structural algorithm loop-only (24 tests, 61 issues). One "red" test was an existing expected list (`payloadFree`) that the new payload-free markers belonged in, which is an update, not a failure of the code.
+- **Green on the first run** of the real implementation, engine and app, soak floors included. The stub step is what made that believable: every new test had already failed for the right reason.
+- **A design finding the tests produced:** the brief's reachability property (Codex brief review, finding 5) assumed the crossing pair was needed for parity. Building the witnesses showed it is not — a block can always leave the If and re-enter from the other end — so the test now asserts each crossing as a single action, which is the property the pair actually adds. The pair was also renamed Move Below Else / Move Above Else, which say where the block lands.
+- **Mutation:** 23 mutants, two survivors at first, both real gaps: a closer resolving to an opener of the other family (the leaf-delete fallback produced the same result, so no behaviour exposed it) and the crossing offered in an If/Else that never closes. Both have tests now; all 23 are killed. One mutant first failed to compile as written and was re-expressed.
+- **Lint as design pressure:** `function_body_length` on `template()` tempted a `default:` arm in a helper, which the repo's no-`default:` rule forbids; reverted in favour of putting short cases on one line.
+- **Simulator:** the "Application failed preflight checks" trap struck again on launch (uninstall + rebuild fixed it, as recorded); `swipe --within-element-ref` did not scroll the palette sheet, `drag --element-ref <row> --direction up` did.
+
+## 2026-10-19 — Variables slice 2: two reviews, one Medium, no reachable defect
+
+- **Codex slice round (highest Medium):** `range(ofPairAt:)` treated an If/Else with a missing or duplicate else as a whole block, because it only looked for a same-family end. Deleting the end of `[ifElse, stitch, ifEnd, sewUp]` removed the opener and body too, against ADR-045's malformed-script rule and the brief's own list. Fixed at the root: a block resolves only when its direct else count is right, and `matchingOpener(ofEndAt:)` checks back so both directions agree. Neither reachable in the shipped app — `ProgramDocument.admit` refuses malformed scripts — but an importer or API caller would reach it.
+- **`swift-code-reviewer` (worktree):** wrote and ran an exhaustive sweep, every brick list up to length 6 over seven brick kinds (~137k scripts), checking totality, offered-action applicability, drag/action parity, helper agreement and delete safety; reachability parity held for every valid script up to length 7. Its one surviving mutant was the slice's own safety claim: the guard that makes a script with an If compile inert had no test, and without it an If/Else would run both branches. It found the same duplicate-else delete as Codex independently, plus stale loop-only comments in about fifteen places.
+- **Complementarity, again:** Codex found the semantic hole by reasoning from the ADR's definition of a block; the reviewer confirmed the absence of everything else by brute force, which no fixture-based suite in the repo had done before. The sweep's source is in the session scratchpad; it is not committed, since a 137k-case property is too slow for every `swift test`.
+
+## 2026-10-19 — Variables slice 3 (If execution): one refinement to the brief, found by tracing
+
+- **The brief's D7(c)** said an If's end takes the tick "if no action ran this tick". Tracing libgdx's `SequenceAction` frame by frame for `if true { repeat 3 {} }` showed that rule is a tick slow: the repeat's exit folds into an action-free tick (ADR-018), and the end would then consume it, where Catroid's If finishes in the frame the repeat does. The rule that matches is narrower: the end takes the tick only if the If's condition was **read** in that tick. A test now compares the If-wrapped loop with the bare loop. Neither the planning pass nor the Codex brief round caught this; both reasoned about empty branches, which the two rules treat alike.
+- **Green on the first implementation run** (11 tests), all engine goldens unchanged.
+- **Mutation:** 10 mutants, 2 survivors, both test gaps rather than defects: an end that yields instead of folding on, and an else-jump one past the end. Each is invisible on the obvious fixtures and visible on one specific shape (a script ending in an If, an If in a loop, an empty then-branch), which the new tests now pin.
+
+## 2026-10-20 — Variables slice 3: two reviews, a differential model, and an unrecorded ADR-018 divergence
+
+- **Codex slice round (highest Low):** no implementation mismatch; it derived Catroid's frames by hand for every shape asked about and confirmed the libgdx model against `SequenceAction` 1.13.0. Two test gaps (nested If/Else with distinct branches; a cross-object read), both added and both killing the mutant Codex named.
+- **`swift-code-reviewer` built a differential oracle:** a small model of libgdx's `SequenceAction`, `IfLogicAction`, `RepeatAction`, `WaitAction` and the thread scheduler, transcribed from the sources, driven against the interpreter with random nested programs (~120k). No mismatch outside ADR-018's loop shapes. It is the first tick-exact cross-check this interpreter has had against Catroid that is not a golden file.
+- **What the oracle found:** a zero-count repeat takes no tick here and one frame in Catroid. It predates the Variables feature, ADR-018 reads as if exhaustion were exact ("`RepeatAction` parity"), and nothing pinned it. ADR-018 is amended and a named test pins it. ADR-049 had cited the difference as "ADR-018's existing one-tick difference" — a citation of a record that did not exist; corrected (ADR-032 invariant 3).
+- **Mutation, three survivors**, all real test gaps, all killed now. One of them (an else bound to the outermost open If) made the suite **hang**, and my mutation runner reported the timeout as "SURVIVED" — a runner bug in my scratch script that read silence as survival. The test helper is now bounded at 200 ticks so a runaway program fails instead of hanging.
+- **CI flake, twice on one commit:** `7d61fc3`'s app job failed first on `WorkingProgramTests.anUnchangingEditKeepsTheRun` (60 s limit, with 185 tests taking >30 s each — the runner slowdown recorded on 2026-10-19), and on the re-run on `StageFieldRenderingTests.designIsOnTop`, a pixel check unrelated to the interpreter. Neither test touches an If; slice 2's commits passed the same job. Verified by running the full app suite locally before pushing the review fixes, and the next push gives a third run.
+
+## 2026-10-20 — Variables PR 1 (#73): handover loop, one clean round; merged
+
+- **Codex handover round 1: no findings, highest severity none, no code changes** — the loop ended on stop condition 1. The whole-PR view found nothing the slice rounds had not, which fits the PR's shape: one slice, already reviewed twice with every finding fixed.
+- **Merged by Sebastian** as `38bd7b2` (merge commit, so the stacked #74 needed no replay). The branch was not deleted, so GitHub did not retarget #74; it was retargeted to `main` by hand, and its diff stayed exactly slices 2–3.
+- **Where this entry lives:** on #74's branch, not #73's. The journal is append-only and both stacked branches append to its end, so an entry committed to #73 after #74 had branched would have conflicted when #74 merged.
+
+## 2026-10-20 — Variables PR 2a (#74): handover round 1
+
+- **Highest severity Low, one finding, a test gap:** no test re-entered an If whose condition changes between loop passes, so a mutant caching the first decision across re-entry survived (`IfLogicAction.restart()` clears the latch on every pass). Codex's reproducer is now a test; the caching mutant is red. It also checked the seams the slice rounds could not see — validate/compiler agreement for every script the editor can produce, tick accounting, malformed-script safety, the app — and found no implementation defect.
+- The fix is a code change (a test), so a verification round follows.
+
+## 2026-10-20 — Variables PR 2a (#74): handover round 2
+
+- **Round 1's fix verified:** Codex derived `conditionPerActivation`'s profile frame by frame from libgdx and confirmed it kills both mutants it had named.
+- **New, highest severity Low:** `matchingEnd` checked only the outermost closer's family, so in `[ifThen, forever, ifEnd, ifEnd]` the outer If "resolved" through the mismatched inner end and deleting the outer end removed the whole block — the malformed-script rule broken one nesting level down. The slice 2 fix had checked the else count and the outer family; this checks every nested closer against a stack. Tests first (red on both new rows), mutant killed.
+- **Loop state:** severity Low → Low is flat and the round changed code, so round 3 runs.
+
+## 2026-10-20 — Variables PR 2a (#74): handover round 3, and the fix that stopped the recurrence
+
+- **Rounds 1–2 verified.** **New, highest severity Low:** a nested If/Else with a missing, duplicate or misplaced else still let its outer block resolve — the same class of gap as round 2 (and as slice 2's Codex finding), one nesting level further down each time.
+- **The pattern, named:** `matchingEnd` had grown its own copy of `validate()`'s rules, one rule per review round (outer family, outer else count, nested families), and each round found the next rule it lacked. The fix stops adding rules: a block resolves exactly when its own range `bricks[opener...end]` passes `validate()`, so there is one definition of a well-formed block. A new property test checks that over every script of length ≤ 5 from seven brick kinds (≈ 19.6k scripts) at every opener, so the two cannot drift again.
+- **Loop state:** Low → Low → Low, flat, with code changes each round; round 4 runs.
+
+## 2026-10-20 — Variables PR 2a (#74): handover round 4 clean; loop closed
+
+- **Round 4: no findings, highest severity none, no code changes** — the loop ended on stop condition 1 after four rounds. Codex verified all three earlier fixes and the reasoning behind the root fix: the first closer that returns the depth to zero is the only possible valid end, and validating that range ignores malformed prefixes and unrelated imbalance after it.
+- **Severity history:** Low (test) → Low (code) → Low (code) → none. Four rounds against the cap of 5, eight findings over the two slice rounds and four handover rounds of this PR, none rejected.
+- **Thesis note:** rounds 2 and 3 were the same defect class found one nesting level apart. It converged only when the fix stopped encoding rules and delegated to the single definition (`validate()`), with a property test tying the two — the same lesson as Brick backend PR 2's "each fix is new surface", with a structural remedy rather than another rule.
+
+## 2026-10-20 — Variables PR 2a (#74): a test-load regression behind the "flaky" app jobs
+
+- **Three app-job failures on this branch** (`7d61fc3` twice, `9c94f2d` once), all 60-second `.timeLimit`s in main-actor run tests (`WorkingProgramTests`, `StageFieldRenderingTests`, `HistoryTransitionTests`), none on `main`. Called runner slowness at first; the third one prompted a measurement instead.
+- **Measured locally:** `PairInvariantSoakTests`, which runs on the main actor and rebuilds every row's accessibility actions on each of 1,500 steps per seed, took **3.6 s per seed on `main` and 10 s on this branch**. Part of that is intended (the soak now inserts If blocks); part was round 3's root fix, which copied the block's rows into a new `Script` to validate them on every `matchingEnd` call. At CI speed the soak's main-actor time is enough to push time-limited main-actor tests past 60 s.
+- **Fix:** validation runs on an index range of the existing list (`validate(in:)`), no copy; same definition, same tests. Soak down to ~7.3 s per seed. The remaining gap to `main` is the larger If-bearing scripts.
+- **Lesson:** "flaky on CI, green locally" was true and still wrong as a diagnosis — the failures were on this branch only, and one local timing settled it. Codex reviews correctness, not cost, so a fix that made every row's actions allocate went through four rounds unflagged.

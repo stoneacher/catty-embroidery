@@ -3,14 +3,14 @@ import ProgramModel
 
 extension Interpreter {
     /// Advances one thread by exactly one action-producing instruction (ADR-018).
-    /// Zero-tick loop bookkeeping (added with the loop story-commit) is folded in
-    /// around it; here the loop simply runs the next brick, then keeps advancing
-    /// so the thread is marked finished in the *same* tick its last brick executes
-    /// (not a tick later) — matching Catroid `RepeatAction`'s same-tick close.
+    /// Zero-tick bookkeeping — loop heads and ends, If heads, else-jumps and If ends
+    /// (ADR-049) — is folded in around it, and the thread keeps advancing so it is
+    /// marked finished in the *same* tick its last brick executes (not a tick later),
+    /// matching Catroid `RepeatAction`'s same-tick close.
     mutating func stepThread(_ index: Int, into events: inout [InterpreterEvent]) {
-        var acted = false
+        var tick = TickState()
         while threads[index].instructionPointer < threads[index].instructions.count {
-            guard advance(index, acted: &acted, into: &events) else {
+            guard advance(index, tick: &tick, into: &events) else {
                 return // yielded the tick
             }
         }
@@ -23,17 +23,49 @@ extension Interpreter {
     /// Processes the instruction under the pointer. Returns `true` to keep folding
     /// this tick (zero-tick bookkeeping, or an action that lets the fold continue
     /// to the loop close / end), `false` to yield the tick.
-    private mutating func advance(_ index: Int, acted: inout Bool, into events: inout [InterpreterEvent]) -> Bool {
+    private mutating func advance(_ index: Int, tick: inout TickState, into events: inout [InterpreterEvent]) -> Bool {
         switch threads[index].instructions[threads[index].instructionPointer] {
+        case let .ifBegin(condition, falseTarget, endIndex):
+            // Read on the If's own first act (Catroid `IfLogicAction`): after an action
+            // this tick, the read waits for the next one.
+            if tick.acted {
+                return false
+            }
+            tick.readIf = true
+            let scope = scope(forObjectAt: threads[index].objectIndex)
+            // `interpretDouble(...).toInt() != 0` (`IfLogicAction.kt:43`); a condition
+            // that does not interpret runs neither branch (`:56-57`).
+            if let value = try? condition.interpretInteger(scope: scope) {
+                threads[index].instructionPointer = value != 0 ? threads[index].instructionPointer + 1 : falseTarget
+            } else {
+                threads[index].instructionPointer = endIndex
+            }
+            return true
+
+        case let .jump(target):
+            threads[index].instructionPointer = target
+            return true
+
+        case .ifEnd:
+            // An If read in this tick whose branch ran no action takes the tick, as an
+            // empty If is one frame of Catroid's sequence. Only one: an inner If's end has
+            // already taken it, so nested empty Ifs cost one tick in total, and an If read
+            // in an earlier tick costs nothing more here (ADR-049).
+            if tick.readIf {
+                tick.acted = true
+            }
+            threads[index].instructionPointer += 1
+            return true
+
         case let .repeatBegin(times, endIndex):
             // Entering a *new* iteration after an action already ran this tick
             // defers to the next tick (the next iteration's first brick, one per
             // tick). Exhausting the loop is not a new iteration, so it folds into
             // this tick — that is the same-tick finish.
-            return !enterRepeat(index, times: times, endIndex: endIndex, deferEntry: acted)
+            return !enterRepeat(index, times: times, endIndex: endIndex, deferEntry: tick.acted)
 
         case .foreverBegin:
-            if acted {
+            if tick.acted {
                 return false
             } // defer the next iteration to the next tick
             threads[index].instructionPointer += 1 // zero-tick; never exits itself
@@ -47,10 +79,10 @@ extension Interpreter {
             // spin. When an action did run, the begin guards stop the fold at the
             // next iteration's entry.
             threads[index].instructionPointer = beginIndex
-            return acted
+            return tick.acted
 
         case let .brick(brick):
-            return performActionBrick(index, brick, acted: &acted, into: &events)
+            return performActionBrick(index, brick, acted: &tick.acted, into: &events)
         }
     }
 
@@ -207,8 +239,8 @@ extension Interpreter {
             // (milestone deviation table). The assembled stream is always
             // available via `assembledStream()`; the brick stays for M4/M5.
             events.append(.finalizeRequested(name: name))
-        case .repeatLoop, .forever, .loopEnd, .wait:
-            // Never dispatched here: loops compile to instructions
+        case .repeatLoop, .forever, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd:
+            // Never dispatched here: loops and Ifs compile to instructions
             // (`ScriptCompiler`) and `wait` blocks in `performActionBrick`.
             break
         }
@@ -293,4 +325,14 @@ extension Interpreter {
             needle: objects[index].needle
         )
     }
+}
+
+/// What one thread's tick has done so far, threaded through `advance`.
+private struct TickState {
+    /// The tick is taken: an action ran (ADR-018: one per thread per tick), or an
+    /// action-free If's end took it (ADR-049).
+    var acted = false
+    /// An If's condition was read this tick (ADR-049): its end then takes the tick if
+    /// no action did.
+    var readIf = false
 }

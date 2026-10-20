@@ -144,7 +144,7 @@ struct EditInsertAndDeleteTests {
     /// proving that `delete` uses it.
     ///
     /// Found by `swift-code-reviewer` as a surviving mutant — swapping
-    /// `matchingOpener(ofLoopEndAt:)` for `lastIndex(where: \.opensLoop)` deleted
+    /// `matchingOpener(ofEndAt:)` for `lastIndex(where: \.opensLoop)` deleted
     /// the *inner* loop and left the whole suite green.
     @Test("the redirect resolves the matching opener, not the nearest one above")
     func theRedirectResolvesTheMatchingOpenerUnderNesting() {

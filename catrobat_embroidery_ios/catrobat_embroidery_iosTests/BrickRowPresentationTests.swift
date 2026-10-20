@@ -140,6 +140,7 @@ struct BrickRowPresentationTests {
         case let .goThrough(throughX, throughY, x, y): [formula(throughX), formula(throughY), formula(x), formula(y)]
         case let .repeatLoop(times): [formula(times)]
         case let .wait(seconds): [formula(seconds)]
+        case let .ifThen(condition), let .ifElse(condition): [formula(condition)]
         // The brick names its variable bare, as Catroid's spinner does; only a formula quotes it.
         case let .setVariable(name, value), let .changeVariableBy(name, value):
             [name.isEmpty ? formula(.variable(name)) : name, formula(value)]
@@ -147,7 +148,7 @@ struct BrickRowPresentationTests {
         case let .runningStitch(length), let .tripleStitch(length): [formula(length)]
         case let .zigZagStitch(length, width): [formula(length), formula(width)]
         case let .writeEmbroideryToFile(name): [name]
-        case .forever, .loopEnd, .stitch, .sewUp, .stopRunningStitch: []
+        case .forever, .loopEnd, .elseBranch, .ifEnd, .stitch, .sewUp, .stopRunningStitch: []
         }
     }
 
@@ -300,6 +301,10 @@ struct BrickRowPresentationTests {
         case .forever: ["Forever", "End of forever"]
         case .loopEnd: ["End of loop"]
         case .wait: ["Wait 1 second"]
+        case .ifThen: ["If 1 < 2 is true then", "End if"]
+        case .ifElse: ["If 1 < 2 is true then", "Else", "End if"]
+        case .elseBranch: ["Else"]
+        case .ifEnd: ["End if"]
         case .setVariable: ["Set (no variable) to 1"]
         case .changeVariableBy: ["Change (no variable) by 1"]
         case .stitch: ["Stitch"]

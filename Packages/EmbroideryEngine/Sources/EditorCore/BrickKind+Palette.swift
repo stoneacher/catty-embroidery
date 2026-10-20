@@ -18,8 +18,12 @@ public enum PaletteGroup: Sendable, Hashable, CaseIterable {
     ///   categories that the interpreter executes, in Catroid's order (decided 2026-10-01).
     ///   Without the two loops the editor could build neither bundled sample.
     ///
-    /// **`.loopEnd` is in no group** (ADR-035): a bare `loopEnd` is the one brick that could
-    /// unbalance a script, and inserting a loop already brings its own.
+    ///   The two Ifs sit between Forever and Repeat, If/Else first, as in Catroid's Control
+    ///   category (`CategoryBricksFactory.kt:382-390`; Variables brief D16).
+    ///
+    /// **`.loopEnd`, `.elseBranch` and `.ifEnd` are in no group** (ADR-035): a bare marker is
+    /// the one brick that could unbalance a script, and inserting a block already brings its
+    /// own.
     public var kinds: [BrickKind] {
         switch self {
         case .embroidery:
@@ -29,7 +33,7 @@ public enum PaletteGroup: Sendable, Hashable, CaseIterable {
             [.placeAt, .setX, .setY, .changeXBy, .changeYBy, .moveNSteps, .turnLeft, .turnRight,
              .pointInDirection, .arc, .goThrough]
         case .controlAndData:
-            [.wait, .forever, .repeatLoop, .setVariable, .changeVariableBy]
+            [.wait, .forever, .ifElse, .ifThen, .repeatLoop, .setVariable, .changeVariableBy]
         }
     }
 }

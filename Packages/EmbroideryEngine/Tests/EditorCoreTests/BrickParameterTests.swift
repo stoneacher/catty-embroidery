@@ -29,12 +29,13 @@ struct BrickParameterTests {
         case .setY, .changeYBy: [.y]
         case .repeatLoop: [.times]
         case .wait: [.seconds]
+        case .ifThen, .ifElse: [.condition]
         case .setVariable, .changeVariableBy: [.variableName, .value]
         case .runningStitch, .tripleStitch: [.length]
         case .zigZagStitch: [.length, .width]
         case .setThreadColor: [.hex]
         case .writeEmbroideryToFile: [.fileName]
-        case .forever, .loopEnd, .stitch, .sewUp, .stopRunningStitch: []
+        case .forever, .loopEnd, .elseBranch, .ifEnd, .stitch, .sewUp, .stopRunningStitch: []
         }
     }
 

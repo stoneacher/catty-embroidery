@@ -13,19 +13,20 @@ public extension Script {
     /// invisible to anything importing only `ProgramModel`. ADR-008 says nesting
     /// *is a rendering concern*, and this is the editor target.
     ///
-    /// **A `loopEnd` sits at its opener's depth, not its body's** — decrementing
+    /// **An end — and an If/Else's else — sits at its opener's depth, not its
+    /// body's** — decrementing
     /// *before* appending is the whole trick, and the mistake worth guarding is
     /// doing it the other way round.
     ///
-    /// It uses `opensLoop`/`isLoopEnd` — the pair vocabulary ADR-008 owns — but
+    /// It uses `blockRole` — the block vocabulary ADR-008 owns — but
     /// deliberately **not** `matchingEnd(ofBrickAt:)`/`range(ofPairAt:)`, which
     /// the story's reference note suggests. Two reasons, the first decisive:
     /// `matchingEnd` returns `nil` for an opener that is never closed, so a
     /// pair-resolving implementation needs a fallback for exactly the unbalanced
     /// case this function must survive — and that fallback is this depth counter
     /// anyway. Second, `matchingEnd` is itself an O(n) scan, so resolving per
-    /// opener would re-walk the list once per loop. Nothing about pairing is
-    /// re-derived that `opensLoop`/`isLoopEnd` do not already express; this is
+    /// opener would re-walk the list once per block. Nothing about blocks is
+    /// re-derived that `blockRole` does not already express; this is
     /// the same single scan `matchingEnd` performs internally, run once for the
     /// whole list.
     ///
@@ -39,16 +40,21 @@ public extension Script {
         var depth = 0
 
         for brick in bricks {
-            if brick.isLoopEnd {
-                // Clamped, so a `loopEnd` closing a loop that was never opened
+            switch brick.blockRole {
+            case .closer:
+                // Clamped, so an end closing a block that was never opened
                 // leaves the depth at 0 instead of going negative.
                 depth = max(0, depth - 1)
                 depths.append(depth)
-            } else {
+            case .divider:
+                // An else sits at its opener's depth, between two branches at
+                // the body's (Variables slice 2), and leaves the depth alone.
+                depths.append(max(0, depth - 1))
+            case .opener:
                 depths.append(depth)
-                if brick.opensLoop {
-                    depth += 1
-                }
+                depth += 1
+            case .leaf:
+                depths.append(depth)
             }
         }
         return depths

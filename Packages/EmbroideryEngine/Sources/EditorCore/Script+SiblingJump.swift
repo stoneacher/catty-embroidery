@@ -25,7 +25,7 @@ public extension Script {
     /// Total, and **conservative on an unbalanced script**: an unresolvable pair
     /// yields `nil` rather than a plausible-looking index.
     func previousSiblingIndex(ofBrickAt index: Int) -> Int? {
-        guard bricks.indices.contains(index), !bricks[index].isLoopEnd, index > 0 else {
+        guard bricks.indices.contains(index), Self.isBlockHead(bricks[index]), index > 0 else {
             return nil
         }
         // The same refusal `nextSiblingIndex` makes, applied to *this* function's
@@ -35,32 +35,32 @@ public extension Script {
         // enabled "Move Up" for a block that `apply` then always rejects with
         // `.unbalancedPair`, an action that is offered and can never succeed.
         // Found by `swift-code-reviewer`, 2026-09-23.
-        guard !bricks[index].opensLoop || matchingEnd(ofBrickAt: index) != nil else {
+        guard !bricks[index].opensBlock || matchingEnd(ofBrickAt: index) != nil else {
             return nil
         }
-        let predecessor = bricks[index - 1]
-        if predecessor.isLoopEnd {
-            // A sibling *pair* sits above: jump over it to its opener. `nil` here
+        switch bricks[index - 1].blockRole {
+        case .closer:
+            // A sibling *block* sits above: jump over it to its opener. `nil` here
             // means a stray end, which is not a block and cannot be a sibling.
-            return matchingOpener(ofLoopEndAt: index - 1)
-        }
-        if predecessor.opensLoop {
-            // `index` is the first brick of that loop's body — the opener is its
-            // parent, not its sibling.
+            return matchingOpener(ofEndAt: index - 1)
+        case .opener, .divider:
+            // `index` is the first brick of a body or of an else-branch — the
+            // opener is its parent, and an else a boundary, not a sibling.
             return nil
+        case .leaf:
+            return index - 1
         }
-        return index - 1
     }
 
     /// The index of the next **sibling block**, skipping over a whole nested
     /// pair, or `nil` if there is none. The mirror of
     /// `previousSiblingIndex(ofBrickAt:)`; see that function for the semantics.
     func nextSiblingIndex(ofBrickAt index: Int) -> Int? {
-        guard bricks.indices.contains(index), !bricks[index].isLoopEnd else {
+        guard bricks.indices.contains(index), Self.isBlockHead(bricks[index]) else {
             return nil
         }
         let end: Int
-        if bricks[index].opensLoop {
+        if bricks[index].opensBlock {
             // An unclosed opener has no determinate extent, so it has no
             // determinate next sibling. Falling back to `index + 1` would move
             // the opener away from its own body, which is worse than refusing.
@@ -74,7 +74,8 @@ public extension Script {
         guard bricks.indices.contains(candidate) else { return nil }
         // A `loopEnd` here closes the *enclosing* loop, so `index` is the last
         // brick of a body — the symmetric counterpart of the opener case above.
-        guard !bricks[candidate].isLoopEnd else { return nil }
+        // An else here ends a then-branch the same way (Variables slice 2).
+        guard Self.isBlockHead(bricks[candidate]) else { return nil }
         // The *answer* must be a resolvable block too, not just the query.
         // `previousSiblingIndex` already refuses here — a stray `loopEnd` above
         // it resolves to no opener and yields `nil` — so without this the two
@@ -82,9 +83,18 @@ public extension Script {
         // next(0) was 1 while previous(1) was nil. US-408 would then offer a
         // "Move Down" that lands a brick after an opener with no end, i.e. inside
         // a loop the renderer indents forever. Found by Codex round 2, 2026-09-23.
-        guard !bricks[candidate].opensLoop || matchingEnd(ofBrickAt: candidate) != nil else {
+        guard !bricks[candidate].opensBlock || matchingEnd(ofBrickAt: candidate) != nil else {
             return nil
         }
         return candidate
+    }
+
+    /// Whether a block can start at this brick: a leaf or an opener. An end and
+    /// an else belong to the block their opener heads.
+    private static func isBlockHead(_ brick: Brick) -> Bool {
+        switch brick.blockRole {
+        case .leaf, .opener: true
+        case .closer, .divider: false
+        }
     }
 }

@@ -37,18 +37,20 @@ struct PaletteTests {
         ])
     }
 
-    @Test("Control and Data offers wait, both loops and both variable bricks, in Catroid's order")
+    /// Catroid's Control category order (`CategoryBricksFactory.kt:382-390`): If/Else before
+    /// If/Then, both between Forever and Repeat (Variables brief D16).
+    @Test("Control and Data offers wait, both loops, both Ifs and both variable bricks, in Catroid's order")
     func controlAndDataGroup() {
         #expect(PaletteGroup.controlAndData.kinds == [
-            .wait, .forever, .repeatLoop, .setVariable, .changeVariableBy
+            .wait, .forever, .ifElse, .ifThen, .repeatLoop, .setVariable, .changeVariableBy
         ])
     }
 
     /// "A new brick case cannot be silently missing": a kind added to `BrickKind` and not to a
-    /// group fails here. `.loopEnd` is the one exclusion, and it is named.
-    @Test("every kind except loopEnd is in the palette")
+    /// group fails here. The three block markers are the exclusions, and they are named.
+    @Test("every kind except the block markers is in the palette")
     func completeness() {
-        #expect(Set(Self.allPaletteKinds) == Set(BrickKind.allCases).subtracting([.loopEnd]))
+        #expect(Set(Self.allPaletteKinds) == Set(BrickKind.allCases).subtracting([.loopEnd, .elseBranch, .ifEnd]))
     }
 
     @Test("no kind appears twice")
@@ -61,5 +63,12 @@ struct PaletteTests {
     @Test("loopEnd is not in the palette")
     func loopEndIsAbsent() {
         #expect(!Self.allPaletteKinds.contains(.loopEnd))
+    }
+
+    /// The same rule for the If markers (Variables slice 2): inserting an If brings its own.
+    @Test("an else or an If end is not in the palette")
+    func ifMarkersAreAbsent() {
+        #expect(!Self.allPaletteKinds.contains(.elseBranch))
+        #expect(!Self.allPaletteKinds.contains(.ifEnd))
     }
 }

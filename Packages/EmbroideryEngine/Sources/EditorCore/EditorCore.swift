@@ -15,11 +15,12 @@ import ProgramModel
 /// ## Balance is preserved, not enforced
 ///
 /// For a program whose scripts all pass `Script.validate()`, every `.applied`
-/// result does too — that is milestone exit criterion 4, and `.loopEnd` being
-/// unmintable (ADR-035) is what makes it provable rather than merely tested. For
+/// result does too — that is milestone exit criterion 4, and the block markers
+/// (`.loopEnd`, `.elseBranch`, `.ifEnd`) being unmintable (ADR-035, ADR-045) is what
+/// makes it provable rather than merely tested. For
 /// a program that is **already** unbalanced, `apply` does not repair it and does
 /// not reject solely because of an unrelated imbalance. It may still refuse for
-/// its own reasons: moving an opener whose `loopEnd` is missing stays
+/// its own reasons: moving an opener whose block does not resolve stays
 /// `.unbalancedPair`, because `movingPair` throws it and ADR-008 owns that rule.
 public enum EditorCore {
     /// Apply one action, yielding a new program or the reason it was refused.
@@ -35,6 +36,7 @@ public enum EditorCore {
             // The kind guard runs **before** address resolution, so
             // `insert(.loopEnd, …)` answers one thing wherever it is aimed.
             guard kind != .loopEnd else { return .rejected(.cannotInsertLoopEnd) }
+            guard kind != .elseBranch, kind != .ifEnd else { return .rejected(.cannotInsertIfMarker(kind)) }
             return mutatingScript(of: program, at: address) { script in
                 inserting(kind, at: address.brickIndex, in: script, address: address)
             }
@@ -151,14 +153,14 @@ public enum EditorCore {
         return .edited(edited)
     }
 
-    /// ADR-035: at a loop opener this removes `range(ofPairAt:)` inclusive —
-    /// opener, body and end (Catroid `BrickController.delete` parity); at a
-    /// `loopEnd` it redirects to that end's own opener and does the identical
-    /// thing.
+    /// ADR-035: at a block opener this removes `range(ofPairAt:)` inclusive —
+    /// opener, body and end (Catroid `BrickController.delete` parity); at an end,
+    /// or an If/Else's else, it redirects to that block's own opener and does the
+    /// identical thing (Variables slice 2, ADR-045 amendment).
     ///
     /// **On a malformed script an unresolvable control brick is deleted as a
     /// leaf** *(decision, Sebastian 2026-09-23, extending ADR-035, which pins
-    /// only the balanced case)*. A stray `loopEnd` resolves to no opener and an
+    /// only the balanced case)*. A stray end or else resolves to no block and an
     /// unclosed opener resolves to no pair; rejecting either would leave a
     /// hand-edited file with a row the user cannot remove, which is the exact
     /// failure ADR-035 cited when it chose the redirect over a rejection. This is
@@ -178,23 +180,27 @@ public enum EditorCore {
             return .refused(.addressOutOfBounds(.brick, at: address))
         }
 
-        let head = script.bricks[index].isLoopEnd
-            ? (script.matchingOpener(ofLoopEndAt: index) ?? index)
-            : index
+        let head = switch script.bricks[index].blockRole {
+        case .closer: script.matchingOpener(ofEndAt: index) ?? index
+        case .divider: script.matchingOpener(ofElseAt: index) ?? index
+        case .opener, .leaf: index
+        }
 
         var edited = script
         if let pair = script.range(ofPairAt: head) {
             edited.bricks.removeSubrange(pair)
         } else {
-            edited.bricks.remove(at: head)
+            // The selected row, never the opener it resolved to: the else of an
+            // If/Else that never closes goes alone (Variables slice 2).
+            edited.bricks.remove(at: index)
         }
         return .edited(edited)
     }
 
-    /// A loop opener delegates to `Script.movingPair(at:to:)` — already tested,
+    /// A block opener delegates to `Script.movingPair(at:to:)` — already tested,
     /// already ADR-008-blessed — and its error is normalised below rather than
-    /// restated. A `loopEnd` is rejected: it is the one move that can split a
-    /// pair. Anything else is a plain single-element move, which cannot change
+    /// restated. An end or an else is rejected: they are the moves that can split
+    /// a block. Anything else is a plain single-element move, which cannot change
     /// balance at any destination.
     ///
     /// The plain move is written here rather than added to `ProgramModel` as a
@@ -212,11 +218,16 @@ public enum EditorCore {
         guard script.bricks.indices.contains(index) else {
             return .refused(.addressOutOfBounds(.brick, at: address))
         }
-        guard !script.bricks[index].isLoopEnd else {
+        switch script.bricks[index].blockRole {
+        case .closer(.loop):
             return .refused(.cannotMoveLoopEnd(at: address))
+        case .closer(.conditional), .divider:
+            return .refused(.cannotMoveIfMarker(at: address))
+        case .opener, .leaf:
+            break
         }
 
-        if script.bricks[index].opensLoop {
+        if script.bricks[index].opensBlock {
             do {
                 return try .edited(script.movingPair(at: index, to: destination))
             } catch let error as ScriptMoveError {
@@ -249,8 +260,8 @@ public enum EditorCore {
     /// The same-kind guard runs **after** bounds resolution, which is forced
     /// rather than chosen: `from` cannot be computed without a brick to read it
     /// from. It is what makes this a *parameter* edit and keeps the pair
-    /// invariant without re-validating, since `BrickKind` decides `opensLoop` and
-    /// `isLoopEnd` outright (ADR-035).
+    /// invariant without re-validating, since `BrickKind` decides `blockRole`
+    /// outright (ADR-035).
     private static func replacing(
         at index: Int,
         with brick: Brick,
@@ -326,7 +337,7 @@ public enum EditorCore {
             // the brick that decides which kind of move this is.
             .addressOutOfBounds(.brick, at: address)
         case .sourceIsNotLoopOpener:
-            // Unreachable: delegated to only once `opensLoop` is already true.
+            // Unreachable: delegated to only once `opensBlock` is already true.
             .scriptMove(error)
         case let .destinationOutOfBounds(index):
             // Normalised, so the pair path and the leaf path answer alike.
