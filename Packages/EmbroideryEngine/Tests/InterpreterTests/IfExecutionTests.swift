@@ -297,4 +297,23 @@ struct IfExecutionTests {
         }
         #expect(!interpreter.isFinished)
     }
+
+    // MARK: - Codex handover review of PR 2a
+
+    /// Read once per activation, again on every re-entry (`IfLogicAction.restart()` clears its
+    /// latch): the first pass sets `v` and takes the then-branch over two ticks, the second
+    /// reads the new `v` and takes the else-branch. A decision cached across re-entry gives
+    /// `[1, 1]`; one re-read while the then-branch spans ticks would switch mid-branch.
+    @Test("an If in a loop reads its condition afresh on each pass, and once per pass")
+    func conditionPerActivation() {
+        let bricks: [Brick] = [
+            .repeatLoop(times: .number(2)),
+            .ifElse(condition: .binary(.equal, .variable("v"), .number(0))),
+            .setVariable(name: "v", to: .number(1)), Self.tag(1),
+            .elseBranch, Self.tag(2), .ifEnd,
+            .loopEnd
+        ]
+        #expect(Self.profile(bricks) == [[], [1], [2]])
+    }
 }
+

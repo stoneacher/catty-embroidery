@@ -3509,3 +3509,14 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **What the oracle found:** a zero-count repeat takes no tick here and one frame in Catroid. It predates the Variables feature, ADR-018 reads as if exhaustion were exact ("`RepeatAction` parity"), and nothing pinned it. ADR-018 is amended and a named test pins it. ADR-049 had cited the difference as "ADR-018's existing one-tick difference" — a citation of a record that did not exist; corrected (ADR-032 invariant 3).
 - **Mutation, three survivors**, all real test gaps, all killed now. One of them (an else bound to the outermost open If) made the suite **hang**, and my mutation runner reported the timeout as "SURVIVED" — a runner bug in my scratch script that read silence as survival. The test helper is now bounded at 200 ticks so a runaway program fails instead of hanging.
 - **CI flake, twice on one commit:** `7d61fc3`'s app job failed first on `WorkingProgramTests.anUnchangingEditKeepsTheRun` (60 s limit, with 185 tests taking >30 s each — the runner slowdown recorded on 2026-10-19), and on the re-run on `StageFieldRenderingTests.designIsOnTop`, a pixel check unrelated to the interpreter. Neither test touches an If; slice 2's commits passed the same job. Verified by running the full app suite locally before pushing the review fixes, and the next push gives a third run.
+
+## 2026-10-20 — Variables PR 1 (#73): handover loop, one clean round; merged
+
+- **Codex handover round 1: no findings, highest severity none, no code changes** — the loop ended on stop condition 1. The whole-PR view found nothing the slice rounds had not, which fits the PR's shape: one slice, already reviewed twice with every finding fixed.
+- **Merged by Sebastian** as `38bd7b2` (merge commit, so the stacked #74 needed no replay). The branch was not deleted, so GitHub did not retarget #74; it was retargeted to `main` by hand, and its diff stayed exactly slices 2–3.
+- **Where this entry lives:** on #74's branch, not #73's. The journal is append-only and both stacked branches append to its end, so an entry committed to #73 after #74 had branched would have conflicted when #74 merged.
+
+## 2026-10-20 — Variables PR 2a (#74): handover round 1
+
+- **Highest severity Low, one finding, a test gap:** no test re-entered an If whose condition changes between loop passes, so a mutant caching the first decision across re-entry survived (`IfLogicAction.restart()` clears the latch on every pass). Codex's reproducer is now a test; the caching mutant is red. It also checked the seams the slice rounds could not see — validate/compiler agreement for every script the editor can produce, tick accounting, malformed-script safety, the app — and found no implementation defect.
+- The fix is a code change (a test), so a verification round follows.
