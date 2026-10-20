@@ -43,6 +43,9 @@ public indirect enum Brick: Sendable, Equatable, Codable {
     /// no action but terminates the loop in the flat list).
     case loopEnd
     case wait(seconds: Formula)
+    /// Waits until `condition` holds, polling once per tick (Catroid `WaitUntilBrick`,
+    /// Variables brief D9). A leaf: it blocks its script like `wait`.
+    case waitUntil(condition: Formula)
     /// Opens an If with no else; closed by a later `ifEnd` (Catroid
     /// `IfThenLogicBeginBrick`).
     case ifThen(condition: Formula)

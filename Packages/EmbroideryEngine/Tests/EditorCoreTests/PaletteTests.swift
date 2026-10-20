@@ -43,7 +43,7 @@ struct PaletteTests {
     @Test("Control and Data offers wait, both loops, both Ifs and both variable bricks, in Catroid's order")
     func controlAndDataGroup() {
         #expect(PaletteGroup.controlAndData.kinds == [
-            .wait, .forever, .ifElse, .ifThen, .repeatLoop, .repeatUntil, .setVariable, .changeVariableBy
+            .wait, .forever, .ifElse, .ifThen, .waitUntil, .repeatLoop, .repeatUntil, .setVariable, .changeVariableBy
         ])
     }
 

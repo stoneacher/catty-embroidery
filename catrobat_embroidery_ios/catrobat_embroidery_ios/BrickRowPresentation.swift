@@ -204,6 +204,7 @@ nonisolated private struct Sentence {
         case .ifEnd: resolve(.brickIfEnd)
         case let .wait(seconds):
             unit(seconds, counted: LocalizedStringResource.brickWaitCount, formula: LocalizedStringResource.brickWait)
+        case let .waitUntil(condition): resolve(.brickWaitUntil(formula(condition)))
         case let .setVariable(name, value): resolve(.brickSetVariable(variable(name), formula(value)))
         case let .changeVariableBy(name, value): resolve(.brickChangeVariable(variable(name), formula(value)))
         case .stitch: resolve(.brickStitch)
@@ -236,7 +237,8 @@ nonisolated private struct Sentence {
         case let .repeatUntil(condition):
             return resolve(.brickLoopEndRepeatUntil(formula(condition)))
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy, .arc, .goThrough, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd,
+             .changeXBy, .changeYBy, .arc, .goThrough, .loopEnd, .wait, .waitUntil, .ifThen, .ifElse,
+             .elseBranch, .ifEnd,
              .setVariable, .changeVariableBy, .stitch, .setThreadColor, .runningStitch, .zigZagStitch,
              .tripleStitch, .sewUp, .stopRunningStitch, .writeEmbroideryToFile:
             return resolve(.brickLoopEndUnmatched)

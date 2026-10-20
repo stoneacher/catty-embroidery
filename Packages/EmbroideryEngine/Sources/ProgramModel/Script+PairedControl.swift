@@ -33,7 +33,7 @@ public extension Brick {
         case .loopEnd: .closer(.loop)
         case .ifEnd: .closer(.conditional)
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy, .arc, .goThrough, .wait, .setVariable, .changeVariableBy, .stitch,
+             .changeXBy, .changeYBy, .arc, .goThrough, .wait, .waitUntil, .setVariable, .changeVariableBy, .stitch,
              .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
              .stopRunningStitch, .writeEmbroideryToFile:
             .leaf

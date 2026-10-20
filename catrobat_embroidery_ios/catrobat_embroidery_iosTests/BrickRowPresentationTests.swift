@@ -140,7 +140,8 @@ struct BrickRowPresentationTests {
         case let .goThrough(throughX, throughY, x, y): [formula(throughX), formula(throughY), formula(x), formula(y)]
         case let .repeatLoop(times): [formula(times)]
         case let .wait(seconds): [formula(seconds)]
-        case let .ifThen(condition), let .ifElse(condition), let .repeatUntil(condition): [formula(condition)]
+        case let .ifThen(condition), let .ifElse(condition), let .repeatUntil(condition), let .waitUntil(condition):
+            [formula(condition)]
         // The brick names its variable bare, as Catroid's spinner does; only a formula quotes it.
         case let .setVariable(name, value), let .changeVariableBy(name, value):
             [name.isEmpty ? formula(.variable(name)) : name, formula(value)]
@@ -302,6 +303,7 @@ struct BrickRowPresentationTests {
         case .repeatUntil: ["Repeat until 1 < 2 is true", "End of repeat until 1 < 2 is true"]
         case .loopEnd: ["End of loop"]
         case .wait: ["Wait 1 second"]
+        case .waitUntil: ["Wait until 1 < 2 is true"]
         case .ifThen: ["If 1 < 2 is true then", "End if"]
         case .ifElse: ["If 1 < 2 is true then", "Else", "End if"]
         case .elseBranch: ["Else"]

@@ -58,7 +58,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 046 | Formula | Math functions, `pi` and object sensors as per-arity `Formula` cases; Catroid semantics with four pinned divergences; `rand` deferred; sensors read the acting object's needle before the brick moves it. | Active, corrected (048) |
 | 047 | Motion | Arc and GoThrough feed up to 100 samples in one tick: degenerate guard, compute-then-commit, catch-and-skip, chord heading mirrored; a `Double` feed gate pinned against Catroid's `float` one. | Active |
 | 048 | Formula | Values stay `Double`; comparisons, `and`/`or`/`not`, `true`/`false` and `power` mirror Catroid: Java `compareTo` order, one equality (NaN = NaN, −0 = +0), logic never NaN, `power` is raw `Math.pow`; decimal128 deciding comparisons is a pinned divergence. | Active |
-| 049 | Interpreter | Control-brick execution: heads read on their own first act (deferred after an action); Catroid truthiness per brick; an action-free If takes the tick it was read in and only that one; RepeatUntil checks at entry and at the body's end; WaitUntil and ForVariableFromTo follow. | Active (If, RepeatUntil so far) |
+| 049 | Interpreter | Control-brick execution: heads read on their own first act (deferred after an action); Catroid truthiness per brick; an action-free If takes the tick it was read in and only that one; RepeatUntil checks at entry and at the body's end; WaitUntil polls once per tick with truncating truthiness; ForVariableFromTo follows. | Active (If, RepeatUntil, WaitUntil so far) |
 
 ## ADR-001 — App scope: embroidery-focused block app (2026-07-06)
 **Context**: On Android, "Embroidery Designer" is the full Pocket Code app (complete Catrobat language + interpreter + stage) shipped as a Gradle flavor. A full port exceeds bachelor-project scope; a blocks-free drawing tool would lose the "learn coding" essence of Catrobat.
@@ -1447,4 +1447,9 @@ The brief got one Codex round on these rules (journal, 2026-10-17).
 - **An exit at entry takes the tick** the condition was read in, as `RepeatUntilAction` returns in that frame (decided 2026-10-20, with the same rule for a zero-count repeat in ADR-018).
 - **Pinned divergence:** Catroid also re-checks validity at the start of every frame, so a condition that turns NaN mid-body ends the loop mid-body; here only the iteration boundaries check it.
 - *(Superseded the same day: this bullet said an exit at entry took no tick, inherited from ADR-018's zero-count divergence. Both are removed; see the bullet above.)*
+
+**WaitUntil** (Variables slice 5, brief D9, `WaitUntilAction.java:52-71`):
+- **A leaf that blocks, like `wait`:** each tick it waits is one poll and costs the tick; it completes in the tick it finds the condition true, emitting one `.waited`, and the next brick runs a tick later. Reached after an action in the same tick, it first polls in the next.
+- **Truthiness is `interpretBoolean`**, `interpretDouble(...).intValue() != 0` (`Formula.java:258-259`): truncated, so `0.5` does not hold — unlike RepeatUntil's `!= 0.0`. A condition that does not interpret keeps it waiting.
+- **Pinned divergence:** Catroid polls at most every 0.02 s, so at 60 frames a second every other frame, and its timing depends on the frame rate; here it polls every tick, whatever the clock. With one object and one script in the app, a Wait until is satisfied at once or never; it is a parity brick for other objects' and scripts' writes.
 

@@ -36,6 +36,7 @@ public enum BrickKind: Sendable, Hashable, CaseIterable {
     case repeatUntil
     case loopEnd
     case wait
+    case waitUntil
     case ifThen
     case ifElse
     case elseBranch
@@ -80,6 +81,7 @@ public enum BrickKind: Sendable, Hashable, CaseIterable {
         case .repeatUntil: self = .repeatUntil
         case .loopEnd: self = .loopEnd
         case .wait: self = .wait
+        case .waitUntil: self = .waitUntil
         case .ifThen: self = .ifThen
         case .ifElse: self = .ifElse
         case .elseBranch: self = .elseBranch

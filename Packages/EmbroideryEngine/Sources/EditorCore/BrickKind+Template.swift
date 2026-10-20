@@ -55,6 +55,7 @@ public extension BrickKind {
         case .repeatUntil: [.repeatUntil(condition: Self.defaultCondition), .loopEnd]
         case .loopEnd: [.loopEnd]
         case .wait: [.wait(seconds: .number(BrickDefaults.waitSeconds))]
+        case .waitUntil: [.waitUntil(condition: Self.defaultCondition)]
         case .ifThen: [.ifThen(condition: Self.defaultCondition), .ifEnd]
         case .ifElse: [.ifElse(condition: Self.defaultCondition), .elseBranch, .ifEnd]
         case .elseBranch: [.elseBranch]

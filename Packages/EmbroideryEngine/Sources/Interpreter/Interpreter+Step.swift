@@ -109,6 +109,18 @@ extension Interpreter {
         if acted {
             return false
         } // next action → defer to the next tick
+        if case let .waitUntil(condition) = brick {
+            // One poll per tick, taking it (ADR-049): the brick completes in the tick it finds
+            // the condition true and emits one `.waited`; otherwise it stays, and the tick is
+            // spent. Polled every tick, where Catroid throttles to 0.02 s (pinned, brief D9).
+            acted = true
+            guard waitUntilHolds(condition, index) else {
+                return false
+            }
+            events.append(.waited(actor: objects[threads[index].objectIndex].actorID))
+            threads[index].instructionPointer += 1
+            return true
+        }
         if case let .wait(seconds) = brick {
             acted = true
             guard advanceWait(index, seconds: seconds, into: &events) else {
@@ -143,39 +155,6 @@ extension Interpreter {
         events.append(.waited(actor: objects[threads[index].objectIndex].actorID))
         threads[index].wait = nil
         return true
-    }
-
-    /// A `repeatUntil` head (zero-tick, ADR-049). Reached afresh or by the back-jump, it
-    /// behaves alike — `RepeatUntilAction` re-checks on every uninitialized act — so it keeps
-    /// no state: it waits out a tick that already acted, then checks the condition before the
-    /// iteration, and a holding condition leaves without running the body. Returns whether
-    /// to keep folding.
-    private mutating func advanceRepeatUntil(
-        _ index: Int,
-        condition: Formula,
-        endIndex: Int,
-        tick: inout TickState
-    ) -> Bool {
-        if tick.acted {
-            return false
-        }
-        if untilHolds(condition, index) {
-            // Exiting at entry is `RepeatUntilAction` returning in that frame: the tick is
-            // taken (decided 2026-10-20), as an action-free If's is.
-            threads[index].instructionPointer = endIndex + 1
-            tick.acted = true
-        } else {
-            threads[index].instructionPointer += 1
-        }
-        return true
-    }
-
-    /// `interpretDouble(...) != 0.0` (`RepeatUntilAction.kt:51`): not truncated, so `0.5`
-    /// holds; a condition that does not interpret holds too, ending the loop (`:61-62`).
-    private mutating func untilHolds(_ condition: Formula, _ index: Int) -> Bool {
-        let scope = scope(forObjectAt: threads[index].objectIndex)
-        guard let value = try? condition.interpretDouble(scope: scope) else { return true }
-        return value != 0
     }
 
     /// Processes a `repeatBegin` (zero-tick): on first arrival reads its count — in the
@@ -297,7 +276,7 @@ extension Interpreter {
             // (milestone deviation table). The assembled stream is always
             // available via `assembledStream()`; the brick stays for M4/M5.
             events.append(.finalizeRequested(name: name))
-        case .repeatLoop, .forever, .repeatUntil, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd:
+        case .repeatLoop, .forever, .repeatUntil, .loopEnd, .wait, .waitUntil, .ifThen, .ifElse, .elseBranch, .ifEnd:
             // Never dispatched here: loops and Ifs compile to instructions
             // (`ScriptCompiler`) and `wait` blocks in `performActionBrick`.
             break
@@ -386,7 +365,7 @@ extension Interpreter {
 }
 
 /// What one thread's tick has done so far, threaded through `advance`.
-private struct TickState {
+struct TickState {
     /// The tick is taken: an action ran (ADR-018: one per thread per tick), an
     /// action-free If's end took it (ADR-049), or a loop head read its formula and
     /// exited at once (ADR-018, 2026-10-20).

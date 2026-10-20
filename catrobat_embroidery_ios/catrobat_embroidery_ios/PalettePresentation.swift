@@ -86,6 +86,7 @@ nonisolated struct PaletteRowPresentation: Equatable, Identifiable {
         case .arc: .paletteDescriptionArc
         case .goThrough: .paletteDescriptionGoThrough
         case .wait: .paletteDescriptionWait
+        case .waitUntil: .paletteDescriptionWaitUntil
         case .forever: .paletteDescriptionForever
         case .repeatUntil: .paletteDescriptionRepeatUntil
         case .repeatLoop, .loopEnd: .paletteDescriptionRepeat

@@ -88,6 +88,13 @@ struct BrickTemplateDefaultsTests {
             )),
             .loopEnd
         ]),
+        .init(kind: .waitUntil, bricks: [
+            .waitUntil(condition: .binary(
+                .smallerThan,
+                .number(BrickDefaults.conditionLeft),
+                .number(BrickDefaults.conditionRight)
+            ))
+        ]),
         .init(kind: .elseBranch, bricks: [.elseBranch]),
         .init(kind: .ifEnd, bricks: [.ifEnd]),
         .init(kind: .wait, bricks: [.wait(seconds: .number(BrickDefaults.waitSeconds))]),

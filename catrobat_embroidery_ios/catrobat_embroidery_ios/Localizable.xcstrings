@@ -649,6 +649,18 @@
         }
       }
     },
+    "brick.wait.until": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Pauses the program until the condition is true. %@ is the condition, already formatted, e.g. \"Counter = 10\". Catroid's own words (brick_wait_until \"Wait until\", brick_wait_until_second_part \"is true\"); keep them one sentence so your language can reorder it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wait until %@ is true"
+          }
+        }
+      }
+    },
     "brick.write.file": {
       "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Saves the design so far to a file. %@ is the file name, shown exactly as stored. Word order is yours: the value is interpolated, not appended.",
       "extractionState": "manual",
@@ -1665,6 +1677,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pauses before the next brick."
+          }
+        }
+      }
+    },
+    "palette.description.wait.until": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver. The Wait until brick.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pauses until the condition is true."
           }
         }
       }

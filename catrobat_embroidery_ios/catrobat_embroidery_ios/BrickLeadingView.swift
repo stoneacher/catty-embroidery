@@ -60,6 +60,7 @@ struct BrickLeadingView: View {
         case .elseBranch: "arrow.left.arrow.right"
         case .ifEnd: "arrow.turn.down.left"
         case .wait: "clock"
+        case .waitUntil: "hourglass"
         case .setVariable, .changeVariableBy: "x.squareroot"
         case .stitch, .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
              .stopRunningStitch, .writeEmbroideryToFile:
@@ -73,7 +74,8 @@ struct BrickLeadingView: View {
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
              .changeXBy, .changeYBy, .arc, .goThrough:
             .blue
-        case .repeatLoop, .forever, .repeatUntil, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd: .orange
+        case .repeatLoop, .forever, .repeatUntil, .loopEnd, .wait, .waitUntil, .ifThen, .ifElse, .elseBranch, .ifEnd:
+            .orange
         case .setVariable, .changeVariableBy: .red
         case .stitch, .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
              .stopRunningStitch, .writeEmbroideryToFile:

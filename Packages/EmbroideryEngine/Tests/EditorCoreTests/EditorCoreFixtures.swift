@@ -226,8 +226,7 @@ enum EditorCoreFixtures {
             // structural floor in `EditBalanceInvariantTests` shrink with every
             // kind the vocabulary gained: adding Arc (Brick backend slice 4) left
             // one seed with no pair relocation and another with no rejected
-            // `loopEnd` insert in 400 steps. Loops and Ifs draw from shares of their
-            // own (Variables slices 2 and 4: RepeatUntil starved an If floor).
+            // `loopEnd` insert in 400 steps. Loops and Ifs draw from their own shares.
             switch generator.next() % 8 {
             case 0: return .insert([.repeatLoop, .forever, .repeatUntil][Int(generator.next() % 3)], at: address)
             case 1: return .insert([BrickKind.ifThen, .ifElse][Int(generator.next() % 2)], at: address)
@@ -311,6 +310,7 @@ enum EditorCoreFixtures {
         case let .repeatUntil(condition): .repeatUntil(condition: bumped(condition))
         case .loopEnd: .loopEnd
         case let .wait(seconds): .wait(seconds: bumped(seconds))
+        case let .waitUntil(condition): .waitUntil(condition: bumped(condition))
         case let .ifThen(condition): .ifThen(condition: bumped(condition))
         case let .ifElse(condition): .ifElse(condition: bumped(condition))
         case .elseBranch: .elseBranch

@@ -145,7 +145,7 @@ private extension Brick {
              let .repeatLoop(formula), let .wait(formula), let .setVariable(_, formula),
              let .changeVariableBy(_, formula),
              let .runningStitch(formula), let .tripleStitch(formula), let .ifThen(formula), let .ifElse(formula),
-             let .repeatUntil(formula):
+             let .repeatUntil(formula), let .waitUntil(formula):
             [formula]
         case let .placeAt(x, y): [x, y]
         case let .zigZagStitch(length, width): [length, width]

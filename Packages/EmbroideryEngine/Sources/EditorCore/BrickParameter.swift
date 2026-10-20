@@ -73,7 +73,7 @@ public extension Brick {
             [.init(slot: .y, value: .formula(y))]
         case let .repeatLoop(times):
             [.init(slot: .times, value: .formula(times))]
-        case let .ifThen(condition), let .ifElse(condition), let .repeatUntil(condition):
+        case let .ifThen(condition), let .ifElse(condition), let .repeatUntil(condition), let .waitUntil(condition):
             [.init(slot: .condition, value: .formula(condition))]
         case let .wait(seconds):
             [.init(slot: .seconds, value: .formula(seconds))]
@@ -135,7 +135,8 @@ public extension Brick {
             .changeXBy(formula)
         case let (.changeYBy, .y, .formula(formula)):
             .changeYBy(formula)
-        case (.ifThen, _, _), (.ifElse, _, _), (.repeatUntil, _, _): replacingCondition(slot, with: value)
+        case (.ifThen, _, _), (.ifElse, _, _), (.repeatUntil, _, _), (.waitUntil, _, _):
+            replacingCondition(slot, with: value)
         case let (.repeatLoop, .times, .formula(formula)):
             .repeatLoop(times: formula)
         case let (.wait, .seconds, .formula(formula)):
@@ -156,8 +157,7 @@ public extension Brick {
             .zigZagStitch(length: formula, width: width)
         case let (.zigZagStitch(length, _), .width, .formula(formula)):
             .zigZagStitch(length: length, width: formula)
-        case let (.setThreadColor, .hex, .threadColor(hex)):
-            .setThreadColor(hex: hex)
+        case let (.setThreadColor, .hex, .threadColor(hex)): .setThreadColor(hex: hex)
         case let (.writeEmbroideryToFile, .fileName, .fileName(name)): .writeEmbroideryToFile(name: name)
         case (.arc, _, _), (.goThrough, _, _):
             replacingPathSlot(slot, with: value)
@@ -177,6 +177,7 @@ private extension Brick {
         case let (.ifThen, .condition, .formula(formula)): .ifThen(condition: formula)
         case let (.ifElse, .condition, .formula(formula)): .ifElse(condition: formula)
         case let (.repeatUntil, .condition, .formula(formula)): .repeatUntil(condition: formula)
+        case let (.waitUntil, .condition, .formula(formula)): .waitUntil(condition: formula)
         default: nil
         }
     }
