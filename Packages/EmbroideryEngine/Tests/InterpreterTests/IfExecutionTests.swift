@@ -316,4 +316,3 @@ struct IfExecutionTests {
         #expect(Self.profile(bricks) == [[], [1], [2]])
     }
 }
-
