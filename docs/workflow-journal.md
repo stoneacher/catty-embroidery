@@ -3587,3 +3587,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Process cost:** the reviewer was cut off by the session rate limit partway through, and resumed through SendMessage once the limit reset. Its work so far was kept; nothing was rerun.
 - **Slice 6 CI** (`44e342f`) was green. Slice 5's main CI run had been cancelled when slice 6 was pushed, so `44e342f`'s run is what covers slice 5's commits.
 
+## 2026-10-21 — Variables PR 2b (#75): handover round 1, test gaps only
+
+- **Codex handover round 1 found no defect; highest severity Low; it led to test changes.** It traced the three slices' bricks composed with If, repeat and forever across scripts, and judged every profile consistent with ADR-018/049.
+- **Three gaps, all fixed.**
+  - The app's `PairInvariantSoakTests` classified blocks by a hand-kept kind list that predated RepeatUntil and For. It now reads `blockRole`, forces all six openers, and has a per-opener floor of five inserts.
+  - WaitUntil's JSON shape is now pinned, as RepeatUntil's and For's already were.
+  - A composition test now runs RepeatUntil { For { WaitUntil } } while a second script releases the wait and moves the counter. Its tick profile was derived by hand before the test ran, and it matched on the first run. A mutant that drops RepeatUntil's end check fails it.
+- **The pattern again:** a hand-kept list of kinds in a test (the soak's block list) goes stale silently, because a new case falls into its `default`. Deriving the classification from the model's own `blockRole` removes the list.
+- **Loop state:** Low, with code (test) changes; round 2 runs.
+

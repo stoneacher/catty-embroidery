@@ -51,6 +51,14 @@ struct IfBlockModelTests {
         #expect(Script(bricks: [.repeatUntil(condition: Self.condition), .ifEnd]).matchingEnd(ofBrickAt: 0) == nil)
     }
 
+    /// Variables slice 5: WaitUntil is a leaf, and its label is its file format (Codex, PR 2b handover).
+    @Test("WaitUntil has its file shape and is a leaf")
+    func waitUntil() throws {
+        #expect(try Self.json(.waitUntil(condition: .constant(.true)))
+            == #"{"waitUntil":{"condition":{"constant":{"_0":{"true":{}}}}}}"#)
+        #expect(Brick.waitUntil(condition: Self.condition).blockRole == .leaf)
+    }
+
     /// Variables slice 6: the case's labels are its file format (slice 8 checks in JSON using it).
     @Test("ForVariableFromTo has its file shape and is a loop opener")
     func forVariableFromTo() throws {

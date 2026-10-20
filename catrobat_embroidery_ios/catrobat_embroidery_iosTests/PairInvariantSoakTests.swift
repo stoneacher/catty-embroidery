@@ -41,6 +41,7 @@ struct PairInvariantSoakTests {
     /// What the run actually did, counted only when the program changed.
     private struct Tally {
         var inserts = 0, loopInserts = 0, ifInserts = 0
+        var openerInserts: [BrickKind: Int] = [:]
         var drags = 0, pairDrags = 0
         var deletes = 0, pairDeletes = 0
         var accessibilityMoves = 0
@@ -54,13 +55,16 @@ struct PairInvariantSoakTests {
         editor.program.scenes.first?.objects.first?.scripts.first?.bricks ?? []
     }
 
-    /// Any part of a block — a loop's or, since Variables slice 2, an If's.
+    /// Any part of a block — a loop's or an If's. Read from the block role, so a new opener
+    /// counts without joining a list here (Codex, PR 2b handover).
     private static func isLoopBrick(_ brick: Brick) -> Bool {
-        switch BrickKind(of: brick) {
-        case .repeatLoop, .forever, .loopEnd, .ifThen, .ifElse, .elseBranch, .ifEnd: true
-        default: false
-        }
+        brick.blockRole != .leaf
     }
+
+    /// Every block opener the palette offers; each must be inserted often enough to be tested.
+    private static let openers: [BrickKind] = [
+        .repeatLoop, .forever, .repeatUntil, .forVariableFromTo, .ifThen, .ifElse
+    ]
 
     /// Every script in the program validates. The first unbalanced step records itself and ends
     /// the run, so the failure names the step that broke it rather than every step after.
@@ -98,6 +102,9 @@ struct PairInvariantSoakTests {
         #expect(tally.inserts >= 200, "\(tally)")
         #expect(tally.loopInserts >= 20, "\(tally)")
         #expect(tally.ifInserts >= 10, "\(tally)")
+        for opener in Self.openers {
+            #expect(tally.openerInserts[opener, default: 0] >= 5, "\(opener): \(tally)")
+        }
         #expect(tally.drags >= 100, "\(tally)")
         #expect(tally.pairDrags >= 20, "\(tally)")
         #expect(tally.deletes >= 100, "\(tally)")
@@ -189,15 +196,16 @@ struct PairInvariantSoakTests {
         private mutating func insert(_ before: [Brick]) throws {
             editor.selectedBrickIndex = before.isEmpty || random(below: 4) == 0
                 ? nil : random(below: before.count)
-            // Blocks are 4 of the palette's kinds; a third of the inserts pick one, so blocks are
-            // nested and crossed often enough for the pair floors to mean something.
-            let loops: [BrickKind] = [.repeatLoop, .forever, .ifThen, .ifElse]
+            // A third of the inserts pick a block opener, so blocks are nested and crossed often
+            // enough for the pair floors to mean something.
+            let loops = PairInvariantSoakTests.openers
             let kinds = random(below: 3) == 0 ? loops : PairInvariantSoakTests.paletteKinds
             let kind = try #require(kinds.randomElement(using: &generator))
             guard editor.insert(kind) != nil, changed(from: before) else { return }
             tally.inserts += 1
             tally.loopInserts += loops.contains(kind) ? 1 : 0
             tally.ifInserts += kind == .ifThen || kind == .ifElse ? 1 : 0
+            if loops.contains(kind) { tally.openerInserts[kind, default: 0] += 1 }
         }
 
         private mutating func drag(_ before: [Brick], _ step: Int) throws {

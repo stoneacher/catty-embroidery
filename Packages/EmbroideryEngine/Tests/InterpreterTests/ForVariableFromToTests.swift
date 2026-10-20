@@ -255,6 +255,19 @@ struct ForVariableFromToTests {
         #expect(shown == [start, next])
     }
 
+    /// All three of PR 2b's bricks in one program (Codex, PR 2b handover). A polls the wait in T1
+    /// while B sets `go`; the wait completes in T2 and B moves the counter to 2; T3 shows 2 and
+    /// the For exits; T4 sets `done` and the RepeatUntil exits at its end; T5 runs the tail.
+    @Test("RepeatUntil, For and WaitUntil compose across scripts")
+    func composition() {
+        let flag = { (name: String) in Formula.binary(.equal, .variable(name), .number(1)) }
+        let inner = Self.loop(from: .number(1), to: .number(2), [.waitUntil(condition: flag("go")), Self.showI])
+        let counter: [Brick] = [.repeatUntil(condition: flag("done"))] + inner
+            + [.setVariable(name: "done", to: .number(1)), .loopEnd, Self.tag(9)]
+        let other: [Brick] = [.setVariable(name: "go", to: .number(1)), .setVariable(name: "i", to: .number(2))]
+        #expect(tagProfile(scripts: [counter, other]) == [[], [], [2], [], [9]])
+    }
+
     // MARK: - Direction and non-finite values (Codex brief review, finding 3)
 
     static func finishes(_ bricks: [Brick]) -> Bool {
