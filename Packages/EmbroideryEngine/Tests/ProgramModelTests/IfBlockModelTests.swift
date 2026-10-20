@@ -103,13 +103,40 @@ struct IfBlockModelTests {
         [.forever, .elseBranch, .loopEnd],
         // A nested closer of the wrong family, then the outer one (Codex handover review, round 2).
         [.ifThen(condition: condition), .forever, .ifEnd, .ifEnd],
-        [.forever, .ifThen(condition: condition), .loopEnd, .loopEnd]
+        [.forever, .ifThen(condition: condition), .loopEnd, .loopEnd],
+        // …and a malformed else one level down (round 3): missing, duplicate, misplaced.
+        [.ifThen(condition: condition), .ifElse(condition: condition), .ifEnd, .ifEnd],
+        [.forever, .ifElse(condition: condition), .elseBranch, .elseBranch, .ifEnd, .loopEnd],
+        [.ifThen(condition: condition), .forever, .elseBranch, .loopEnd, .ifEnd]
     ] as [[Brick]])
     func malformedBlockDoesNotResolve(_ bricks: [Brick]) {
         let script = Script(bricks: bricks)
         #expect(script.matchingEnd(ofBrickAt: 0) == nil)
         #expect(script.range(ofPairAt: 0) == nil)
         #expect(script.matchingElse(ofBrickAt: 0) == nil)
+    }
+
+    /// The definition, as a property: a block resolves exactly when its own rows validate, at
+    /// every opener of every script over a small vocabulary (Codex handover review, round 3).
+    @Test("a block resolves exactly when its own range validates")
+    func resolvesIffRangeValidates() {
+        let vocabulary: [Brick] = [
+            .stitch, .forever, .loopEnd, .ifThen(condition: Self.condition), .ifElse(condition: Self.condition),
+            .elseBranch, .ifEnd
+        ]
+        var scripts: [[Brick]] = [[]]
+        for _ in 0 ..< 5 {
+            scripts = scripts.flatMap { prefix in vocabulary.map { prefix + [$0] } }
+            for bricks in scripts {
+                let script = Script(bricks: bricks)
+                for index in bricks.indices where bricks[index].opensBlock {
+                    let validEnd = (index ..< bricks.count).first {
+                        (try? Script(bricks: Array(bricks[index ... $0])).validate()) != nil
+                    }
+                    #expect(script.matchingEnd(ofBrickAt: index) == validEnd, "\(bricks) at \(index)")
+                }
+            }
+        }
     }
 
     @Test("an else nested deeper does not count against its outer block")

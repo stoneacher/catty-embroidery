@@ -131,32 +131,31 @@ public enum ScriptMoveError: Error, Equatable {
 public extension Script {
     /// The index of the closer that ends the block opened at `index`, resolved
     /// by a depth-tracking forward scan so nested blocks match their correct
-    /// partners. Every closer in it must be of its opener's family — a `loopEnd` does
-    /// not end an If, nor an `ifEnd` a loop, at any depth. And the block must be well formed in
-    /// itself — exactly one `elseBranch` directly inside an If/Else, none directly
-    /// inside any other block — or it does not resolve, so a malformed If is never
-    /// deleted or moved as a whole (Codex slice review of slice 2). `nil` if the
-    /// brick does not open a block, or the block does not close as its own kind.
+    /// partners. The block resolves only if its own rows pass `validate()`: every
+    /// closer of its family at every depth, every If/Else with exactly one else
+    /// directly inside it. So a malformed block — even one malformed several levels
+    /// down — is never deleted or moved as a whole (Codex reviews of PR 2a). `nil` if
+    /// the brick does not open a block, or its block does not validate.
     func matchingEnd(ofBrickAt index: Int) -> Int? {
         guard bricks.indices.contains(index), case .opener = bricks[index].blockRole else {
             return nil
         }
-        // Every closer must end the innermost open block of its own family, nested ones
-        // included, or the block does not resolve (Codex handover review of PR 2a).
-        var open: [BlockFamily] = []
-        var directElses = 0
+        // The closer that brings the depth back to zero ends the block; the block
+        // resolves only if its own rows validate — every closer of its family, at every
+        // depth, and every If/Else with exactly one else directly inside it. One
+        // definition, `validate()`'s, rather than a second set of rules that drifted
+        // (Codex handover review of PR 2a, rounds 2 and 3).
+        var depth = 0
         for cursor in index ..< bricks.count {
             switch bricks[cursor].blockRole {
-            case let .opener(opening):
-                open.append(opening)
-            case let .closer(closing):
-                guard open.popLast() == closing else { return nil }
-                if open.isEmpty {
-                    let expected = bricks[index].expectsElse ? 1 : 0
-                    return directElses == expected ? cursor : nil
+            case .opener:
+                depth += 1
+            case .closer:
+                depth -= 1
+                if depth == 0 {
+                    let block = Script(bricks: Array(bricks[index ... cursor]))
+                    return (try? block.validate()) != nil ? cursor : nil
                 }
-            case .divider where open.count == 1:
-                directElses += 1
             case .leaf, .divider:
                 break
             }

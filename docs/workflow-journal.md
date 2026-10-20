@@ -3526,3 +3526,9 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Round 1's fix verified:** Codex derived `conditionPerActivation`'s profile frame by frame from libgdx and confirmed it kills both mutants it had named.
 - **New, highest severity Low:** `matchingEnd` checked only the outermost closer's family, so in `[ifThen, forever, ifEnd, ifEnd]` the outer If "resolved" through the mismatched inner end and deleting the outer end removed the whole block — the malformed-script rule broken one nesting level down. The slice 2 fix had checked the else count and the outer family; this checks every nested closer against a stack. Tests first (red on both new rows), mutant killed.
 - **Loop state:** severity Low → Low is flat and the round changed code, so round 3 runs.
+
+## 2026-10-20 — Variables PR 2a (#74): handover round 3, and the fix that stopped the recurrence
+
+- **Rounds 1–2 verified.** **New, highest severity Low:** a nested If/Else with a missing, duplicate or misplaced else still let its outer block resolve — the same class of gap as round 2 (and as slice 2's Codex finding), one nesting level further down each time.
+- **The pattern, named:** `matchingEnd` had grown its own copy of `validate()`'s rules, one rule per review round (outer family, outer else count, nested families), and each round found the next rule it lacked. The fix stops adding rules: a block resolves exactly when its own range `bricks[opener...end]` passes `validate()`, so there is one definition of a well-formed block. A new property test checks that over every script of length ≤ 5 from seven brick kinds (≈ 19.6k scripts) at every opener, so the two cannot drift again.
+- **Loop state:** Low → Low → Low, flat, with code changes each round; round 4 runs.
