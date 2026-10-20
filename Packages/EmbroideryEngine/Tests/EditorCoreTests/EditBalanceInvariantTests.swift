@@ -265,7 +265,7 @@ private struct Tally {
         appliedStructuralEdits += 1
 
         switch action {
-        case let .insert(kind, _) where kind == .repeatLoop || kind == .forever:
+        case let .insert(kind, _) where [.repeatLoop, .forever, .repeatUntil, .forVariableFromTo].contains(kind):
             appliedLoopOpenerInserts += 1
         case let .insert(kind, _) where kind == .ifThen || kind == .ifElse:
             appliedIfOpenerInserts += 1

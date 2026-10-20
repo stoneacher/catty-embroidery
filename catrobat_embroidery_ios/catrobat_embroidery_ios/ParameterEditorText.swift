@@ -96,6 +96,8 @@ nonisolated enum ParameterEditorText {
         case .throughX: .parameterSlotThroughX
         case .throughY: .parameterSlotThroughY
         case .condition: .parameterSlotCondition
+        case .from: .parameterSlotFrom
+        case .to: .parameterSlotTo
         }
     }
 

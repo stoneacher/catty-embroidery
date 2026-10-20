@@ -26,10 +26,22 @@ struct ScriptThread: Sendable {
     /// instruction index. A missing entry means "not yet initialized"; the entry
     /// is cleared when the loop exits so a nesting outer loop reinitializes it.
     var loopCounters: [Int: Int] = [:]
+    /// The running ForVariableFromTo loops, keyed by their head's instruction index.
+    /// Cleared on exit, so a nesting outer loop re-starts it from `from`.
+    var forLoops: [Int: ForLoopState] = [:]
     /// Non-nil while a `wait` brick is blocking this thread. `nil` means the wait
     /// has not started (its duration is resolved lazily on first arrival).
     var wait: WaitState?
     var finished = false
+}
+
+/// A running ForVariableFromTo (ADR-049): `to` and the step are fixed when the loop
+/// starts. An unnamed loop keeps its count here, in `hiddenValue`, and writes no
+/// variable (brief D10).
+struct ForLoopState: Sendable {
+    let to: Double
+    let step: Double
+    var hiddenValue: Double?
 }
 
 /// A `wait` brick's progress against the logical clock (ADR-018). `duration` is

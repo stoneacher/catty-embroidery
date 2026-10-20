@@ -251,6 +251,7 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 ## US-323 — A repeat reached mid-tick reads its count a tick before Catroid does
 
 **Found**: 2026-10-18, by `swift-code-reviewer` on Brick backend slice 3 (sensors), confirmed with a probe.
+**Scheduled and done**: 2026-10-20, Variables slice 4 (ADR-018 amendment). The analysis below held exactly: the probe now ends at (2, 3), and the one predicted shift — a script ending in such a loop finishes a tick later — is the only one; no golden moved.
 - **The mechanism:** `enterRepeat` runs with `deferEntry` when an action already ran this tick. If the loop has no counter yet, it still evaluates `times` this tick.
   - A count ≤ 0 exits immediately on tick t's state.
   - A positive count is discarded and re-read at t + 1.

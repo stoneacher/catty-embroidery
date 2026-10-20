@@ -169,6 +169,18 @@
         }
       }
     },
+    "brick.for.values": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens a loop that counts a variable from one value to another, running the bricks inside it once per value. %1$@ is the first value, %2$@ the last, %3$@ the variable's name, chosen by the user and never translated, or a placeholder while none is chosen (values are already formatted and may be formulas). Catroid's own words (brick_loop_for_values_from \"For values from\", brick_loop_to \"to\", brick_loop_in \"in\"); keep them one sentence so your language can reorder it. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For values from %1$@ to %2$@ in %3$@"
+          }
+        }
+      }
+    },
     "brick.forever": {
       "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens a loop whose blocks run until the program is stopped.",
       "extractionState": "manual",
@@ -229,6 +241,18 @@
         }
       }
     },
+    "brick.loop.end.for.values": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a For values loop. %1$@ and %2$@ are that loop's first and last values, %3$@ its variable, so the row reads as the end of that specific loop. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End of for values from %1$@ to %2$@ in %3$@"
+          }
+        }
+      }
+    },
     "brick.loop.end.forever": {
       "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a Forever loop. Must read as the end of that specific kind of loop.",
       "extractionState": "manual",
@@ -273,6 +297,18 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "brick.loop.end.repeat.until": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a Repeat until loop. %@ is that loop's condition, so the row reads as the end of that specific loop.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End of repeat until %@ is true"
           }
         }
       }
@@ -405,6 +441,18 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "brick.repeat.until": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens a loop: the bricks inside it repeat until the condition is true. %@ is the condition, already formatted, e.g. \"Counter = 10\". Catroid's own words (brick_repeat_until \"Repeat until\", brick_wait_until_second_part \"is true\"); keep them one sentence so your language can reorder it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeat until %@ is true"
           }
         }
       }
@@ -621,6 +669,18 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "brick.wait.until": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Pauses the program until the condition is true. %@ is the condition, already formatted, e.g. \"Counter = 10\". Catroid's own words (brick_wait_until \"Wait until\", brick_wait_until_second_part \"is true\"); keep them one sentence so your language can reorder it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wait until %@ is true"
           }
         }
       }
@@ -1393,6 +1453,18 @@
         }
       }
     },
+    "palette.description.for.values": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver. The For values brick.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeats the bricks inside it, counting a variable from one value to another."
+          }
+        }
+      }
+    },
     "palette.description.forever": {
       "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver.",
       "extractionState": "manual",
@@ -1485,6 +1557,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Repeats the bricks inside it a number of times."
+          }
+        }
+      }
+    },
+    "palette.description.repeat.until": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver. The Repeat until brick.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeats the bricks inside it until the condition is true."
           }
         }
       }
@@ -1629,6 +1713,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pauses before the next brick."
+          }
+        }
+      }
+    },
+    "palette.description.wait.until": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver. The Wait until brick.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pauses until the condition is true."
           }
         }
       }
@@ -2005,6 +2101,18 @@
         }
       }
     },
+    "parameter.slot.from": {
+      "comment": "Label of the number field for the value a For values loop starts counting at. Catroid's wording: \"For values from\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From"
+          }
+        }
+      }
+    },
     "parameter.slot.length": {
       "comment": "Label of the number field for the length of a stitch.",
       "extractionState": "manual",
@@ -2097,6 +2205,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Times"
+          }
+        }
+      }
+    },
+    "parameter.slot.to": {
+      "comment": "Label of the number field for the value a For values loop stops counting at. Catroid's wording: \"to\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To"
           }
         }
       }

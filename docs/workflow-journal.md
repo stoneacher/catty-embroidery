@@ -3545,3 +3545,61 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Measured locally:** `PairInvariantSoakTests`, which runs on the main actor and rebuilds every row's accessibility actions on each of 1,500 steps per seed, took **3.6 s per seed on `main` and 10 s on this branch**. Part of that is intended (the soak now inserts If blocks); part was round 3's root fix, which copied the block's rows into a new `Script` to validate them on every `matchingEnd` call. At CI speed the soak's main-actor time is enough to push time-limited main-actor tests past 60 s.
 - **Fix:** validation runs on an index range of the existing list (`validate(in:)`), no copy; same definition, same tests. Soak down to ~7.3 s per seed. The remaining gap to `main` is the larger If-bearing scripts.
 - **Lesson:** "flaky on CI, green locally" was true and still wrong as a diagnosis — the failures were on this branch only, and one local timing settled it. Codex reviews correctness, not cost, so a fix that made every row's actions allocate went through four rounds unflagged.
+
+## 2026-10-20 — Variables PR 2a merged; PR 2b, slice 4 (US-323 + RepeatUntil)
+
+- **PR 2a (#74) merged by me** as `10802fb` (merge commit), on Sebastian's instruction for this PR ("merge yourself once everything passed"): after the handover loop closed at round 5 and CI was green on `4e38350`. A one-off authorization, not a standing change to "Sebastian merges".
+- **Slice 4 on a fresh branch from `main`** (`feature/variables-loops`, PR 2b). Red, then green on the first implementation run; all goldens unchanged.
+- **The backlog analysis of US-323 (written 2026-10-18) held exactly** — two lines of code, the predicted single shift, no golden moved. A backlog entry that records the mechanism, not just the symptom, made this slice's US-323 half nearly free.
+- **The brief over-specified D8:** it expected RepeatUntil's head to need per-thread state to tell a first arrival from a back-jump. Writing it showed both arrivals behave alike in Catroid, and the state was write-only; removed.
+- **A soak coverage floor starved again** when a kind joined a shared random draw — the third time this generator has shown it (Arc, slice 2, now). Loops and Ifs now have separate fixed shares.
+
+## 2026-10-20 — Variables slice 4: reviews, a reversed divergence, and the soak that starved CI
+
+- **Codex slice round:** no correctness finding; five test gaps, all added.
+- **`swift-code-reviewer` extended slice 3's differential model with `RepeatAction` and `RepeatUntilAction`** and found the slice's one bug: US-323 turned a whole class of nested programs from a tick early into a tick late (a loop exiting at entry as a body's last brick left its tick action-free, so the enclosing `loopEnd` yielded; unbounded drift inside `forever`). Neither the planning pass nor Codex had seen it; it needs nesting plus a zero-iteration exit, which no hand-written fixture combined. **Sebastian chose Catroid's timing:** a head that reads and exits at once takes the tick. That also removed the zero-count divergence pinned only that morning — a pinned divergence that a later change turned from harmless to compounding, which is a case for pinning divergences with tests (it was) *and* re-running the differential when the scheduling changes (it was not, until the review).
+- **The CI app failures, root cause:** `PairInvariantSoakTests` held the main actor for its whole run — three seeds of 1,500 synchronous steps — and this feature made each step heavier. Time-limited main-actor tests (`WorkingProgramTests`, `HistoryTransitionTests`) then timed out on slow runners while waiting for the actor. The earlier in-place fix lowered the cost; the structural fix is the soak yielding every 25 steps. Three "flaky" failures over two days were one cause, and it was in this branch.
+
+## 2026-10-20 — Variables slice 5 (WaitUntil): green on the first run
+
+- **Red against a placeholder** that completed at once and silently: five of seven tests failed. The two that passed — completion timing and the deferral after an action — describe what the placeholder happened to share with the real brick; mutants aimed at exactly those two (a completion that frees the tick, a poll in an acted tick) are red, so they do discriminate. Passing a placeholder is not the same as being vacuous, and the mutation step is what tells the two apart.
+- **Green on the first implementation run**, 7 mutants killed. The one design point worth keeping: WaitUntil's truthiness truncates (`interpretBoolean`) while RepeatUntil's does not (`!= 0.0`) — Catroid's two condition loops disagree on `0.5`, and both are mirrored by name.
+
+## 2026-10-20 — Variables slice 5: two reviews, no bug; a mutant that survived on a fixture's blind side
+
+- **Both reviewers found no correctness bug.** `swift-code-reviewer`'s differential (now modelling `WaitUntilAction` verbatim, throttle and all) ran 300,000 programs with no mismatch outside ADR-018's empty-body shape — the third slice in a row where a differential against a transcribed Catroid model carried the review.
+- **Codex named eight test gaps; one of them hid a survivor.** Its cross-object case used a project variable, and so did every other cross-object test; a mutant reading the condition in object 0's scope then passes, since any object sees a project variable alike. A third object with its own `v` shadowing the project's is what kills it. The fixture was right about what it tested and silent about the variable's scope.
+- **The two reviewers' survivors coincided** with the Codex-gap tests already written, so both were dead before the reviewer reported them — a case for writing the cheaper reviewer's gaps first.
+
+## 2026-10-20 — Variables slice 6 (ForVariableFromTo): engine and app green
+
+- **Red against a placeholder** that lowered the loop as a zero-count repeat: 13 of 14 engine tests failed; the app red was exhaustive-switch errors. Green after one implementation pass.
+- **Mutation found two weak spots, both in the tests, not the code.** `step` from `<` survived because no test combined `from == to` with a pass that edits the variable, so the direction never mattered (`equalBoundsCountUp` added). The rounding mutant "survived" first only because its form also changed the error path; re-expressed to change nothing but the rounding, it is killed. A mutant that changes two things at once can survive for the wrong reason, and that says nothing about the tests.
+- **A planned mutant had no form:** the brief listed "`to` re-read", but `loopEnd` stores `to` as a value and never sees the formula, so the mutation would have to add a code path. The test (`to is read once`) stays as a guard against a future design that keeps the formula.
+- **Process:** the Localizable catalog went through Python's `json.dumps` first with Xcode's `" : "` separator guessed wrong, and showed a 4,800-line diff; the file uses `": "` and no trailing newline. Hand-editing a generated file needs a diff-size check before anything else.
+
+## 2026-10-21 — Variables slice 6: two reviews, no bug; object 0 as a fixture's blind side again
+
+- **Codex slice round: no correctness finding, ten test gaps.** Nine were added and the six mutants Codex named are all killed. The tenth gap, a NaN counter, cannot happen here while Set and Change variable write 0 for NaN (US-326), so it waits for that story.
+- **`swift-code-reviewer`'s differential**, now with a transcribed `ForVariableFromToAction`, ran 1.2 million programs. It found no mismatch outside ADR-018's empty-body shape, and none of the mismatches inside that shape involved a For.
+- **Its mutants found what both reviews' tests had missed.** Every For test, Codex's gap tests included, ran the loop in object 0. So reading the counter, reading the bounds or writing the entry value through object 0 instead of the loop's own object survived. One test with the loop in object 1 kills all three. This is the same blind side as slice 5, one level down: slice 5's cross-object test shared a project variable, and this suite never left the first object at all. The lesson for the remaining slices is to put the code under test in object 1 by default, not object 0.
+- **One survivor came from a direction gap:** the unnamed loop had only an ascending test, so a hidden counter that always steps +1 survived until a descending test was added.
+- **Process cost:** the reviewer was cut off by the session rate limit partway through, and resumed through SendMessage once the limit reset. Its work so far was kept; nothing was rerun.
+- **Slice 6 CI** (`44e342f`) was green. Slice 5's main CI run had been cancelled when slice 6 was pushed, so `44e342f`'s run is what covers slice 5's commits.
+
+## 2026-10-21 — Variables PR 2b (#75): handover round 1, test gaps only
+
+- **Codex handover round 1 found no defect; highest severity Low; it led to test changes.** It traced the three slices' bricks composed with If, repeat and forever across scripts, and judged every profile consistent with ADR-018/049.
+- **Three gaps, all fixed.**
+  - The app's `PairInvariantSoakTests` classified blocks by a hand-kept kind list that predated RepeatUntil and For. It now reads `blockRole`, forces all six openers, and has a per-opener floor of five inserts.
+  - WaitUntil's JSON shape is now pinned, as RepeatUntil's and For's already were.
+  - A composition test now runs RepeatUntil { For { WaitUntil } } while a second script releases the wait and moves the counter. Its tick profile was derived by hand before the test ran, and it matched on the first run. A mutant that drops RepeatUntil's end check fails it.
+- **The pattern again:** a hand-kept list of kinds in a test (the soak's block list) goes stale silently, because a new case falls into its `default`. Deriving the classification from the model's own `blockRole` removes the list.
+- **Loop state:** Low, with code (test) changes; round 2 runs.
+
+## 2026-10-21 — Variables PR 2b (#75): handover round 2 clean; loop closed
+
+- **Round 2 had no findings and no code changes, so the loop ended on stop condition 1** after two rounds. Severity history: Low → none.
+- **Codex confirmed all three round 1 fixes.** The soak's per-opener floor counts only inserts that changed the program, so it can fail. The pinned WaitUntil JSON is the synthesized encoding. Codex derived the composition test's profile independently, frame by frame, and got the same result.
+- **Across the PR:** three slice rounds and two handover rounds, with no correctness finding from Codex in any of them. The one runtime bug of the PR (US-323's late exit at entry in slice 4) came from `swift-code-reviewer`'s differential, and so did slice 6's object-0 survivors. That is now three slices running where the executable Catroid model found what reading the code did not.
+

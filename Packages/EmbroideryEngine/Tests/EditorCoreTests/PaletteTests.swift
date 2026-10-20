@@ -38,11 +38,13 @@ struct PaletteTests {
     }
 
     /// Catroid's Control category order (`CategoryBricksFactory.kt:382-390`): If/Else before
-    /// If/Then, both between Forever and Repeat (Variables brief D16).
-    @Test("Control and Data offers wait, both loops, both Ifs and both variable bricks, in Catroid's order")
+    /// If/Then, both between Forever and Repeat, and Repeat until after Repeat (Variables brief
+    /// D16).
+    @Test("Control and Data offers its control and data bricks in Catroid's order")
     func controlAndDataGroup() {
         #expect(PaletteGroup.controlAndData.kinds == [
-            .wait, .forever, .ifElse, .ifThen, .repeatLoop, .setVariable, .changeVariableBy
+            .wait, .forever, .ifElse, .ifThen, .waitUntil, .repeatLoop, .repeatUntil, .forVariableFromTo, .setVariable,
+            .changeVariableBy
         ])
     }
 

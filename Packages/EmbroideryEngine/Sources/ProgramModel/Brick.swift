@@ -34,11 +34,22 @@ public indirect enum Brick: Sendable, Equatable, Codable {
     case repeatLoop(times: Formula)
     /// Opens an infinite loop; closed by a later `loopEnd` (Catroid `ForeverBrick`).
     case forever
+    /// Opens a loop whose body repeats until `condition` holds, checked on entering
+    /// each iteration and at the body's end; closed by a later `loopEnd` (Catroid
+    /// `RepeatUntilBrick`, Variables brief D8).
+    case repeatUntil(condition: Formula)
+    /// Opens a loop that counts the variable `name` from `from` to `to` by one,
+    /// running the body at least once; closed by a later `loopEnd` (Catroid
+    /// `ForVariableFromToBrick`, Variables brief D10).
+    case forVariableFromTo(name: String, from: Formula, to: Formula)
     /// Closes the nearest open loop. A pure marker retained in the model — never
     /// dropped or synthesized away (ADR-008; Catroid `LoopEndBrick` contributes
     /// no action but terminates the loop in the flat list).
     case loopEnd
     case wait(seconds: Formula)
+    /// Waits until `condition` holds, polling once per tick (Catroid `WaitUntilBrick`,
+    /// Variables brief D9). A leaf: it blocks its script like `wait`.
+    case waitUntil(condition: Formula)
     /// Opens an If with no else; closed by a later `ifEnd` (Catroid
     /// `IfThenLogicBeginBrick`).
     case ifThen(condition: Formula)
@@ -137,6 +148,8 @@ public enum BrickDefaults {
     /// `1 < 2` (`CategoryBricksFactory.kt:361-380`).
     public static let conditionLeft: Double = 1
     public static let conditionRight: Double = 2
+    public static let forLoopFrom: Double = 1 // FOR_LOOP_FROM
+    public static let forLoopTo: Double = 10 // FOR_LOOP_TO
 }
 
 /// Which side of the heading an Arc's centre lies on (Catroid

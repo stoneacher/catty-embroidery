@@ -15,7 +15,8 @@ public enum InterpreterEvent: Equatable, Sendable {
     /// per fed sample, up to 100 in one tick, or one unchanged update (ADR-047).
     case needleMoved(actor: ActorID, update: NeedleUpdate)
 
-    /// A `wait` brick completed its logical duration on this tick (US-205).
+    /// A `wait` brick completed its logical duration on this tick (US-205), or a
+    /// `waitUntil` found its condition true (Variables slice 5, ADR-049).
     case waited(actor: ActorID)
 
     /// A stitch was placed (produced from US-206), carrying the thread color the

@@ -204,13 +204,12 @@ struct StepperLoopTests {
         #expect(update.position == StagePoint(x: 20, y: 20))
     }
 
-    /// **Pinned divergence** (ADR-018 amendment, 2026-10-20; found by `swift-code-reviewer`'s
-    /// differential model in Variables slice 3): a loop that runs zero iterations takes no tick
-    /// here — its exit folds into the tick of the brick before — where Catroid's `RepeatAction`
-    /// spends one frame on it. `[y1, repeat 0 {y2}, y3]` is two ticks here, three frames there.
-    /// Inside an If whose whole branch is that loop the If's own tick hides it.
-    @Test("a zero-count repeat takes no tick of its own (pinned divergence from Catroid's one frame)")
-    func zeroCountRepeatTakesNoTick() {
+    /// A loop that reads its count and runs zero iterations takes that tick, as Catroid's
+    /// `RepeatAction` spends one frame on it: `[y1, repeat 0 {y2}, y3]` is three ticks.
+    /// *Decided 2026-10-20 (Sebastian), at `swift-code-reviewer`'s slice 4 finding:* this was a
+    /// pinned divergence (no tick of its own), and with US-323 it made nested loops run late.
+    @Test("a zero-count repeat takes the tick it reads its count in, as Catroid's one frame")
+    func zeroCountRepeatTakesItsTick() {
         let script = Script(bricks: [
             .setY(.number(1)), .repeatLoop(times: .number(0)), .setY(.number(2)), .loopEnd, .setY(.number(3))
         ])
@@ -221,6 +220,6 @@ struct StepperLoopTests {
                 if case let .needleMoved(_, update) = event { update.position.y } else { nil }
             }
         }
-        #expect(ticks == [[1], [3]])
+        #expect(ticks == [[1], [], [3]])
     }
 }

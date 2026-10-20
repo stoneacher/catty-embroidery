@@ -144,9 +144,10 @@ private extension Brick {
              let .setX(formula), let .setY(formula), let .changeXBy(formula), let .changeYBy(formula),
              let .repeatLoop(formula), let .wait(formula), let .setVariable(_, formula),
              let .changeVariableBy(_, formula),
-             let .runningStitch(formula), let .tripleStitch(formula), let .ifThen(formula), let .ifElse(formula):
+             let .runningStitch(formula), let .tripleStitch(formula), let .ifThen(formula), let .ifElse(formula),
+             let .repeatUntil(formula), let .waitUntil(formula):
             [formula]
-        case let .placeAt(x, y): [x, y]
+        case let .placeAt(x, y), let .forVariableFromTo(_, x, y): [x, y]
         case let .zigZagStitch(length, width): [length, width]
         case let .arc(_, radius, degrees): [radius, degrees]
         case let .goThrough(throughX, throughY, x, y): [throughX, throughY, x, y]

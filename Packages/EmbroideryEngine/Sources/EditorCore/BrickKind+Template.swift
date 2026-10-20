@@ -6,6 +6,15 @@ public extension BrickKind {
         .binary(.smallerThan, .number(BrickDefaults.conditionLeft), .number(BrickDefaults.conditionRight))
     }
 
+    /// Catroid's palette For loop, no variable chosen yet, from 1 to 10 (`BrickValues.java:93-94`).
+    private static var defaultForLoop: Brick {
+        .forVariableFromTo(
+            name: BrickDefaults.variableName,
+            from: .number(BrickDefaults.forLoopFrom),
+            to: .number(BrickDefaults.forLoopTo)
+        )
+    }
+
     /// A new brick of this kind, seeded from `BrickDefaults` (Catroid
     /// `BrickValues.java`, ported verbatim — AGPL-3.0).
     ///
@@ -42,11 +51,8 @@ public extension BrickKind {
         case .setY: [.setY(.number(BrickDefaults.placeAtY))]
         case .changeXBy: [.changeXBy(.number(BrickDefaults.changeXBy))]
         case .changeYBy: [.changeYBy(.number(BrickDefaults.changeYBy))]
-        case .arc: [.arc(
-                direction: BrickDefaults.arcDirection,
-                radius: .number(BrickDefaults.arcRadius),
-                degrees: .number(BrickDefaults.arcDegrees)
-            )]
+        case .arc: [.arc(direction: BrickDefaults.arcDirection, radius: .number(BrickDefaults.arcRadius),
+                         degrees: .number(BrickDefaults.arcDegrees))]
         case .goThrough: [.goThrough(
                 throughX: .number(BrickDefaults.goThroughThroughX),
                 throughY: .number(BrickDefaults.goThroughThroughY),
@@ -55,8 +61,11 @@ public extension BrickKind {
             )]
         case .repeatLoop: [.repeatLoop(times: .number(BrickDefaults.repeatTimes)), .loopEnd]
         case .forever: [.forever, .loopEnd]
+        case .repeatUntil: [.repeatUntil(condition: Self.defaultCondition), .loopEnd]
+        case .forVariableFromTo: [Self.defaultForLoop, .loopEnd]
         case .loopEnd: [.loopEnd]
         case .wait: [.wait(seconds: .number(BrickDefaults.waitSeconds))]
+        case .waitUntil: [.waitUntil(condition: Self.defaultCondition)]
         case .ifThen: [.ifThen(condition: Self.defaultCondition), .ifEnd]
         case .ifElse: [.ifElse(condition: Self.defaultCondition), .elseBranch, .ifEnd]
         case .elseBranch: [.elseBranch]
