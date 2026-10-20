@@ -81,10 +81,16 @@ struct PairInvariantSoakTests {
 
     @Test("adds, drags, deletes, VoiceOver moves, undo and redo never unbalance the script",
           arguments: [UInt64(1), 7, 2026])
-    func soak(seed: UInt64) throws {
+    func soak(seed: UInt64) async throws {
         var run = Run(seed: seed)
         for step in 0 ..< Self.steps {
             try run.step(step)
+            // Yield the main actor now and then. A synchronous 1,500-step loop held it for the
+            // whole run, three seeds in a row, and on slow CI runners the time-limited
+            // main-actor tests beside it timed out waiting for it (Variables PR 2, 2026-10-20).
+            if step % 25 == 0 {
+                await Task.yield()
+            }
         }
         let tally = run.tally
 

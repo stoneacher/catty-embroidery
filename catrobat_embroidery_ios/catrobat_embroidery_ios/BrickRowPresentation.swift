@@ -220,7 +220,7 @@ nonisolated private struct Sentence {
     /// A loop's end repeats its opener's parameter, so it reads as the end of *that* loop.
     ///
     /// Exhaustive over the opener rather than `if case .repeatLoop`: `matchingOpener` returns
-    /// only openers today, but a third loop brick should be a decision here, not a silent
+    /// only openers today, but a new loop brick should be a decision here, not a silent
     /// "End of loop".
     private func loopEnd(closing opener: Brick?) -> String {
         guard let opener else { return resolve(.brickLoopEndUnmatched) }

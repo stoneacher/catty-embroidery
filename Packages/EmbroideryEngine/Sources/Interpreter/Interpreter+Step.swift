@@ -60,9 +60,10 @@ extension Interpreter {
         case let .repeatBegin(times, endIndex):
             // Entering a *new* iteration after an action already ran this tick
             // defers to the next tick (the next iteration's first brick, one per
-            // tick). Exhausting the loop is not a new iteration, so it folds into
-            // this tick — that is the same-tick finish.
-            return !enterRepeat(index, times: times, endIndex: endIndex, deferEntry: tick.acted)
+            // tick), and so does a first arrival, before reading the count (US-323).
+            // An exhausted counter is not a new iteration, so it folds into this
+            // tick — the same-tick finish; a count read now that runs nothing takes it.
+            return !enterRepeat(index, times: times, endIndex: endIndex, tick: &tick)
 
         case .foreverBegin:
             if tick.acted {
@@ -158,9 +159,14 @@ extension Interpreter {
         if tick.acted {
             return false
         }
-        threads[index].instructionPointer = untilHolds(condition, index)
-            ? endIndex + 1
-            : threads[index].instructionPointer + 1
+        if untilHolds(condition, index) {
+            // Exiting at entry is `RepeatUntilAction` returning in that frame: the tick is
+            // taken (decided 2026-10-20), as an action-free If's is.
+            threads[index].instructionPointer = endIndex + 1
+            tick.acted = true
+        } else {
+            threads[index].instructionPointer += 1
+        }
         return true
     }
 
@@ -172,32 +178,42 @@ extension Interpreter {
         return value != 0
     }
 
-    /// Processes a `repeatBegin` (zero-tick): initializes its counter on first
-    /// arrival (throw / negative / zero count → 0 iterations, Catroid
-    /// `RepeatAction` parity), then either exits past the matching `loopEnd`
-    /// (clearing the counter so a nesting outer loop reinits it) or enters the
-    /// body. Returns `true` when the caller should yield the tick: an as-yet-
-    /// unstarted iteration (`deferEntry`) is deferred to the next tick, leaving
-    /// the pointer and counter untouched. Exhaustion never yields.
-    private mutating func enterRepeat(_ index: Int, times: Formula, endIndex: Int, deferEntry: Bool) -> Bool {
+    /// Processes a `repeatBegin` (zero-tick): on first arrival reads its count — in the
+    /// next tick if an action already ran in this one (US-323) — with a throwing,
+    /// negative or zero count meaning 0 iterations (Catroid `RepeatAction` parity); then
+    /// either exits past the matching `loopEnd` (clearing the counter so a nesting outer
+    /// loop reinits it) or enters the body. Returns `true` when the caller should yield:
+    /// a read or an iteration deferred past an acted tick, pointer and counter untouched.
+    /// An exhausted counter never yields; a count read now that runs nothing takes the
+    /// tick (ADR-018, 2026-10-20).
+    private mutating func enterRepeat(_ index: Int, times: Formula, endIndex: Int, tick: inout TickState) -> Bool {
         let pointer = threads[index].instructionPointer
         let remaining: Int
+        let readNow: Bool
         if let existing = threads[index].loopCounters[pointer] {
             remaining = existing
-        } else if deferEntry {
+            readNow = false
+        } else if tick.acted {
             // US-323 (ADR-018 amendment): read the count on the loop's own first act, in
             // the next tick, not in the tick of the action before it.
             return true
         } else {
             let scope = scope(forObjectAt: threads[index].objectIndex)
             remaining = max(0, (try? times.interpretInteger(scope: scope)) ?? 0)
+            readNow = true
         }
         if remaining <= 0 {
             threads[index].loopCounters[pointer] = nil
             threads[index].instructionPointer = endIndex + 1
+            // A count read now that runs nothing is Catroid's `RepeatAction` returning in its
+            // own first frame: the tick is taken (ADR-018, 2026-10-20). An exhausted counter
+            // folds into the tick of the body's last brick, as before.
+            if readNow {
+                tick.acted = true
+            }
             return false
         }
-        if deferEntry {
+        if tick.acted {
             return true // next iteration starts next tick; counter/pointer untouched
         }
         threads[index].loopCounters[pointer] = remaining - 1
@@ -371,8 +387,9 @@ extension Interpreter {
 
 /// What one thread's tick has done so far, threaded through `advance`.
 private struct TickState {
-    /// The tick is taken: an action ran (ADR-018: one per thread per tick), or an
-    /// action-free If's end took it (ADR-049).
+    /// The tick is taken: an action ran (ADR-018: one per thread per tick), an
+    /// action-free If's end took it (ADR-049), or a loop head read its formula and
+    /// exited at once (ADR-018, 2026-10-20).
     var acted = false
     /// An If's condition was read this tick (ADR-049): its end then takes the tick if
     /// no action did.

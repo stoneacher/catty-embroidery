@@ -55,4 +55,37 @@ struct RepeatDeferralTests {
         )
         #expect(stepToCompletion(&interpreter).count == 2)
     }
+
+    // MARK: - swift-code-reviewer, slice 4: loops that exit at entry inside another loop
+
+    /// Catroid's frame for each loop that exits at entry is a tick here too, so an outer loop
+    /// whose body ends in one finishes on time. With the exit taking no tick, US-323 made the
+    /// outer `loopEnd` find an action-free tick and yield — one tick late per nesting level.
+    @Test("a loop exiting at entry as the last brick of a body keeps the outer loop on time", arguments: [
+        ([.repeatLoop(times: .number(1)), tag(2), .repeatLoop(times: .number(0)), .loopEnd, .loopEnd], [[2], []]),
+        ([.repeatLoop(times: .number(2)), .repeatLoop(times: .number(1)), tag(2),
+          .repeatLoop(times: .number(0)), tag(1), .loopEnd, .loopEnd, .loopEnd, tag(9)], [[2], [], [2], [], [9]]),
+        ([.repeatLoop(times: .number(1)), tag(2), .repeatUntil(condition: .constant(.true)), tag(1), .loopEnd,
+          .loopEnd], [[2], []])
+    ] as [([Brick], [[Double]])])
+    func exitAtEntryKeepsOuterLoopOnTime(_ bricks: [Brick], _ expected: [[Double]]) {
+        #expect(tagProfile(scripts: [bricks]) == expected)
+    }
+
+    /// Without the tick, the drift had no bound inside a `forever`.
+    @Test("a forever whose body ends in a loop exiting at entry repeats every two ticks")
+    func foreverDoesNotDrift() {
+        var interpreter = Interpreter(
+            program: Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: [
+                .forever, .repeatLoop(times: .number(1)), Self.tag(2),
+                .repeatUntil(condition: .constant(.true)), Self.tag(1), .loopEnd, .loopEnd, .loopEnd
+            ])])])]),
+            clock: InterpreterClock(tickDelta: 0.05)
+        )
+        let ticks = (0 ..< 6).map { _ -> [Double] in
+            guard case let .ticked(batch) = interpreter.step() else { return [-1] }
+            return batch.compactMap { if case let .needleMoved(_, update) = $0 { update.position.y } else { nil } }
+        }
+        #expect(ticks == [[2], [], [2], [], [2], []])
+    }
 }

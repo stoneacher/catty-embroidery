@@ -12,9 +12,10 @@ enum Instruction: Sendable {
     /// Executing one such instruction costs exactly one tick (ADR-018).
     case brick(Brick)
 
-    /// `repeatLoop` head: initializes its iteration counter on first arrival and
-    /// exits past `endIndex` (the matching `loopEnd`) when the count is exhausted.
-    /// Zero-tick bookkeeping.
+    /// `repeatLoop` head: reads its count on its own first act (after an acted tick,
+    /// in the next one: US-323) and exits past `endIndex` (the matching `loopEnd`)
+    /// when the count is exhausted. Zero-tick, except that a count read that runs
+    /// nothing takes the tick (ADR-018).
     case repeatBegin(times: Formula, endIndex: Int)
 
     /// `forever` head: never exits on its own, so it carries no forward-skip
@@ -22,8 +23,9 @@ enum Instruction: Sendable {
     case foreverBegin
 
     /// `repeatUntil` head (Variables slice 4, ADR-049): checks `condition` on
-    /// entering each iteration and exits past `endIndex` (its `loopEnd`) when it
-    /// holds; the `loopEnd` checks it again at the body's end. Zero-tick.
+    /// entering each iteration — after an acted tick, in the next one — and exits
+    /// past `endIndex` (its `loopEnd`) when it holds, taking that tick; the `loopEnd`
+    /// checks it again at the body's end. Otherwise zero-tick.
     case repeatUntilBegin(condition: Formula, endIndex: Int)
 
     /// Loop tail (`loopEnd`): back-jumps to its matching begin at `beginIndex`.
