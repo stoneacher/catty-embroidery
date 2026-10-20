@@ -3564,3 +3564,9 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 
 - **Red against a placeholder** that completed at once and silently: five of seven tests failed. The two that passed — completion timing and the deferral after an action — describe what the placeholder happened to share with the real brick; mutants aimed at exactly those two (a completion that frees the tick, a poll in an acted tick) are red, so they do discriminate. Passing a placeholder is not the same as being vacuous, and the mutation step is what tells the two apart.
 - **Green on the first implementation run**, 7 mutants killed. The one design point worth keeping: WaitUntil's truthiness truncates (`interpretBoolean`) while RepeatUntil's does not (`!= 0.0`) — Catroid's two condition loops disagree on `0.5`, and both are mirrored by name.
+
+## 2026-10-20 — Variables slice 5: two reviews, no bug; a mutant that survived on a fixture's blind side
+
+- **Both reviewers found no correctness bug.** `swift-code-reviewer`'s differential (now modelling `WaitUntilAction` verbatim, throttle and all) ran 300,000 programs with no mismatch outside ADR-018's empty-body shape — the third slice in a row where a differential against a transcribed Catroid model carried the review.
+- **Codex named eight test gaps; one of them hid a survivor.** Its cross-object case used a project variable, and so did every other cross-object test; a mutant reading the condition in object 0's scope then passes, since any object sees a project variable alike. A third object with its own `v` shadowing the project's is what kills it. The fixture was right about what it tested and silent about the variable's scope.
+- **The two reviewers' survivors coincided** with the Codex-gap tests already written, so both were dead before the reviewer reported them — a case for writing the cheaper reviewer's gaps first.

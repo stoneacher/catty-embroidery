@@ -157,7 +157,8 @@ extension Interpreter {
         return true
     }
 
-    /// Processes a `repeatBegin` (zero-tick): on first arrival reads its count — in the
+    /// Processes a `repeatBegin` (zero-tick but for an exit on a fresh read, below): on
+    /// first arrival reads its count — in the
     /// next tick if an action already ran in this one (US-323) — with a throwing,
     /// negative or zero count meaning 0 iterations (Catroid `RepeatAction` parity); then
     /// either exits past the matching `loopEnd` (clearing the counter so a nesting outer
@@ -278,7 +279,7 @@ extension Interpreter {
             events.append(.finalizeRequested(name: name))
         case .repeatLoop, .forever, .repeatUntil, .loopEnd, .wait, .waitUntil, .ifThen, .ifElse, .elseBranch, .ifEnd:
             // Never dispatched here: loops and Ifs compile to instructions
-            // (`ScriptCompiler`) and `wait` blocks in `performActionBrick`.
+            // (`ScriptCompiler`) and `wait`/`waitUntil` block in `performActionBrick`.
             break
         }
     }

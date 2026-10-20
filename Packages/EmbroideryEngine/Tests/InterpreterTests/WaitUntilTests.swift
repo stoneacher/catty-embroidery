@@ -93,4 +93,84 @@ struct WaitUntilTests {
         let first = interpreter.step()
         #expect(first == .ticked([.waited(actor: ActorID(0))]))
     }
+
+    // MARK: - Codex slice review of slice 5
+
+    @Test("−1 and MAX hold at once; −0.99 waits until it truncates to something nonzero")
+    func negativeAndLargeTruthiness() {
+        for holding in [Formula.number(-1), .number(.greatestFiniteMagnitude)] {
+            #expect(tagProfile(scripts: [[.waitUntil(condition: holding), Self.tag(2)]]) == [[], [2]])
+        }
+        // −0.99 − v: −0.99 truncates to 0; with v = 1 it is −1.99, which truncates to −1.
+        #expect(Self.released(by: .binary(.minus, .number(-0.99), .variable("v")), writing: "v", 1)
+            == [[], [], [], [], [2]])
+    }
+
+    @Test("a WaitUntil after a wait, as a loop body's last brick, and as an If branch's last brick")
+    func positions() {
+        let afterAWait: [Brick] = [.wait(seconds: .number(0.1)), .waitUntil(condition: .constant(.true)), Self.tag(2)]
+        #expect(tagProfile(scripts: [afterAWait]) == [[], [], [], [2]])
+        #expect(tagProfile(scripts: [[
+            .repeatLoop(times: .number(2)), .waitUntil(condition: .constant(.true)), .loopEnd, Self.tag(9)
+        ]]) == [[], [], [9]])
+        #expect(tagProfile(scripts: [[
+            .ifThen(condition: .constant(.true)), .waitUntil(condition: .constant(.true)), .ifEnd, Self.tag(9)
+        ]]) == [[], [9]])
+        var interpreter = Interpreter(
+            program: Program(scenes: [Scene(objects: [Object(scripts: [
+                Script(bricks: [.waitUntil(condition: .constant(.true))])
+            ])])]),
+            clock: InterpreterClock(tickDelta: 0.05)
+        )
+        #expect(stepToCompletion(&interpreter).count == 1, "a script ending in one finishes in its tick")
+    }
+
+    @Test("a WaitUntil reads a project variable another object wrote, in creation order")
+    func crossObject() {
+        let reader = Object(name: "R", scripts: [Script(bricks: [
+            .waitUntil(condition: .binary(.equal, .variable("v"), .number(1))), Self.tag(2)
+        ])])
+        let writer = Object(name: "W", scripts: [Script(bricks: [.setVariable(name: "v", to: .number(1))])])
+        let project = [Variable(name: "v")]
+        #expect(tagProfile(Program(scenes: [Scene(objects: [reader, writer])], variables: project)) == [[], [], [2]])
+        #expect(tagProfile(Program(scenes: [Scene(objects: [writer, reader])], variables: project)) == [[], [2]])
+        // Read in the waiting object's own scope: an object 0 whose own `v` shadows the project's
+        // must not decide it (found by mutation).
+        let shadow = Object(name: "S", variables: [Variable(name: "v")], scripts: [])
+        #expect(tagProfile(Program(scenes: [Scene(objects: [shadow, reader, writer])], variables: project))
+            == [[], [], [2]])
+    }
+
+    /// The event belongs to the tick of completion and to the waiting object, not to the first
+    /// poll or to object 0.
+    @Test("the waited event comes in the tick of completion, from the waiting object")
+    func waitedEventTimingAndActor() {
+        var interpreter = Interpreter(
+            program: Program(scenes: [Scene(objects: [
+                Object(name: "idle", scripts: [Script(bricks: [.setVariable(name: "x", to: .number(0))])]),
+                Object(name: "waiter", scripts: [Script(bricks: [
+                    .waitUntil(condition: .binary(.equal, .variable("v"), .number(1)))
+                ])]),
+                Object(name: "writer", scripts: [Script(bricks: [
+                    .wait(seconds: .number(0.1)), .setVariable(name: "v", to: .number(1))
+                ])])
+            ])], variables: [Variable(name: "v")]),
+            clock: InterpreterClock(tickDelta: 0.05)
+        )
+        let ticks = stepToCompletion(&interpreter)
+        let waiterEvents = ticks.map { $0.filter { $0 == .waited(actor: ActorID(1)) }.count }
+        #expect(waiterEvents == [0, 0, 0, 1])
+    }
+
+    /// No state survives an iteration: the second pass waits for a fresh release.
+    @Test("a WaitUntil in a loop waits afresh on each pass")
+    func reentry() {
+        let profile = tagProfile(scripts: [
+            [.repeatLoop(times: .number(2)), .waitUntil(condition: .binary(.equal, .variable("v"), .number(1))),
+             .setVariable(name: "v", to: .number(0)), Self.tag(1), .loopEnd],
+            [.setVariable(name: "v", to: .number(1)), .wait(seconds: .number(0.2)),
+             .setVariable(name: "v", to: .number(1))]
+        ])
+        #expect(profile == [[], [], [], [1], [], [], [], [], [1]])
+    }
 }
