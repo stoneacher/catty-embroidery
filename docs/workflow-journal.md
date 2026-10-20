@@ -3532,3 +3532,9 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Rounds 1–2 verified.** **New, highest severity Low:** a nested If/Else with a missing, duplicate or misplaced else still let its outer block resolve — the same class of gap as round 2 (and as slice 2's Codex finding), one nesting level further down each time.
 - **The pattern, named:** `matchingEnd` had grown its own copy of `validate()`'s rules, one rule per review round (outer family, outer else count, nested families), and each round found the next rule it lacked. The fix stops adding rules: a block resolves exactly when its own range `bricks[opener...end]` passes `validate()`, so there is one definition of a well-formed block. A new property test checks that over every script of length ≤ 5 from seven brick kinds (≈ 19.6k scripts) at every opener, so the two cannot drift again.
 - **Loop state:** Low → Low → Low, flat, with code changes each round; round 4 runs.
+
+## 2026-10-20 — Variables PR 2a (#74): handover round 4 clean; loop closed
+
+- **Round 4: no findings, highest severity none, no code changes** — the loop ended on stop condition 1 after four rounds. Codex verified all three earlier fixes and the reasoning behind the root fix: the first closer that returns the depth to zero is the only possible valid end, and validating that range ignores malformed prefixes and unrelated imbalance after it.
+- **Severity history:** Low (test) → Low (code) → Low (code) → none. Four rounds against the cap of 5, eight findings over the two slice rounds and four handover rounds of this PR, none rejected.
+- **Thesis note:** rounds 2 and 3 were the same defect class found one nesting level apart. It converged only when the fix stopped encoding rules and delegated to the single definition (`validate()`), with a property test tying the two — the same lesson as Brick backend PR 2's "each fix is new surface", with a structural remedy rather than another rule.
