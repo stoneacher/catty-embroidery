@@ -172,11 +172,8 @@ nonisolated private struct Sentence {
             unit(degrees, counted: LocalizedStringResource.brickTurnLeftCount,
                  formula: LocalizedStringResource.brickTurnLeft)
         case let .turnRight(degrees):
-            unit(
-                degrees,
-                counted: LocalizedStringResource.brickTurnRightCount,
-                formula: LocalizedStringResource.brickTurnRight
-            )
+            unit(degrees, counted: LocalizedStringResource.brickTurnRightCount,
+                 formula: LocalizedStringResource.brickTurnRight)
         case let .pointInDirection(degrees):
             unit(
                 degrees,
@@ -197,6 +194,8 @@ nonisolated private struct Sentence {
             unit(times, counted: LocalizedStringResource.brickRepeatCount, formula: LocalizedStringResource.brickRepeat)
         case .forever: resolve(.brickForever)
         case let .repeatUntil(condition): resolve(.brickRepeatUntil(formula(condition)))
+        case let .forVariableFromTo(name, from, to):
+            resolve(.brickForValues(formula(from), formula(to), variable(name)))
         case .loopEnd: loopEnd(closing: opener)
         // One sentence for both Ifs, as in Catroid; the palette description tells them apart.
         case let .ifThen(condition), let .ifElse(condition): resolve(.brickIf(formula(condition)))
@@ -236,6 +235,8 @@ nonisolated private struct Sentence {
             return resolve(.brickLoopEndForever)
         case let .repeatUntil(condition):
             return resolve(.brickLoopEndRepeatUntil(formula(condition)))
+        case let .forVariableFromTo(name, from, to):
+            return resolve(.brickLoopEndForValues(formula(from), formula(to), variable(name)))
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
              .changeXBy, .changeYBy, .arc, .goThrough, .loopEnd, .wait, .waitUntil, .ifThen, .ifElse,
              .elseBranch, .ifEnd,
@@ -257,7 +258,7 @@ nonisolated private struct Sentence {
         return resolve(text(formula(value)))
     }
 
-    /// The variable a Set or Change Variable brick names: bare, as Catroid's spinner shows it —
+    /// The variable a Set or Change Variable or a For values brick names: bare, as Catroid's spinner shows it —
     /// it is the brick's subject, not an operand, so there is no tree for it to be confused
     /// with. Only a formula quotes a variable.
     private func variable(_ name: String) -> String {

@@ -30,6 +30,7 @@ struct BrickParameterTests {
         case .repeatLoop: [.times]
         case .wait: [.seconds]
         case .ifThen, .ifElse, .repeatUntil, .waitUntil: [.condition]
+        case .forVariableFromTo: [.variableName, .from, .to]
         case .setVariable, .changeVariableBy: [.variableName, .value]
         case .runningStitch, .tripleStitch: [.length]
         case .zigZagStitch: [.length, .width]

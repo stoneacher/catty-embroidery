@@ -29,6 +29,9 @@ public enum ParameterSlot: Sendable, Hashable, CaseIterable {
     case throughY
     /// An If's condition (Variables slice 2).
     case condition
+    /// ForVariableFromTo's bounds (Variables slice 6); its variable reuses `.variableName`.
+    case from
+    case to
 }
 
 /// What a slot holds. The case is the shape of the value, which decides the
@@ -75,6 +78,12 @@ public extension Brick {
             [.init(slot: .times, value: .formula(times))]
         case let .ifThen(condition), let .ifElse(condition), let .repeatUntil(condition), let .waitUntil(condition):
             [.init(slot: .condition, value: .formula(condition))]
+        case let .forVariableFromTo(name, from, to):
+            [
+                .init(slot: .variableName, value: .variableName(name)),
+                .init(slot: .from, value: .formula(from)),
+                .init(slot: .to, value: .formula(to))
+            ]
         case let .wait(seconds):
             [.init(slot: .seconds, value: .formula(seconds))]
         case let .setVariable(name, value), let .changeVariableBy(name, value):
@@ -135,8 +144,8 @@ public extension Brick {
             .changeXBy(formula)
         case let (.changeYBy, .y, .formula(formula)):
             .changeYBy(formula)
-        case (.ifThen, _, _), (.ifElse, _, _), (.repeatUntil, _, _), (.waitUntil, _, _):
-            replacingCondition(slot, with: value)
+        case (.ifThen, _, _), (.ifElse, _, _), (.repeatUntil, _, _), (.waitUntil, _, _), (.forVariableFromTo, _, _):
+            replacingControlSlot(slot, with: value)
         case let (.repeatLoop, .times, .formula(formula)):
             .repeatLoop(times: formula)
         case let (.wait, .seconds, .formula(formula)):
@@ -170,14 +179,20 @@ public extension Brick {
 }
 
 private extension Brick {
-    /// An If's one slot, its condition (Variables slice 2). Every other brick, slot or
-    /// value shape refuses.
-    func replacingCondition(_ slot: ParameterSlot, with value: ParameterValue) -> Brick? {
+    /// The control bricks' slots (Variables slices 2–6): a condition, or a For loop's
+    /// variable and bounds. Every other brick, slot or value shape refuses.
+    func replacingControlSlot(_ slot: ParameterSlot, with value: ParameterValue) -> Brick? {
         switch (self, slot, value) {
         case let (.ifThen, .condition, .formula(formula)): .ifThen(condition: formula)
         case let (.ifElse, .condition, .formula(formula)): .ifElse(condition: formula)
         case let (.repeatUntil, .condition, .formula(formula)): .repeatUntil(condition: formula)
         case let (.waitUntil, .condition, .formula(formula)): .waitUntil(condition: formula)
+        case let (.forVariableFromTo(_, from, to), .variableName, .variableName(name)):
+            .forVariableFromTo(name: name, from: from, to: to)
+        case let (.forVariableFromTo(name, _, to), .from, .formula(formula)):
+            .forVariableFromTo(name: name, from: formula, to: to)
+        case let (.forVariableFromTo(name, from, _), .to, .formula(formula)):
+            .forVariableFromTo(name: name, from: from, to: formula)
         default: nil
         }
     }

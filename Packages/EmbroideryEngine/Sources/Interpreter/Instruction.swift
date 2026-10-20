@@ -28,6 +28,11 @@ enum Instruction: Sendable {
     /// checks it again at the body's end. Otherwise zero-tick.
     case repeatUntilBegin(condition: Formula, endIndex: Int)
 
+    /// `forVariableFromTo` head (Variables slice 6, ADR-049): on the loop's first act
+    /// reads its bounds, writes `from` into the variable and enters the body; on later
+    /// arrivals enters the next pass. Its `loopEnd` checks and steps the variable.
+    case forBegin(name: String, from: Formula, to: Formula, endIndex: Int)
+
     /// Loop tail (`loopEnd`): back-jumps to its matching begin at `beginIndex`.
     /// Zero-tick bookkeeping.
     case loopEnd(beginIndex: Int)
@@ -76,6 +81,9 @@ enum ScriptCompiler {
             case .forever:
                 open.append(.loop(begin: instructions.count))
                 instructions.append(.foreverBegin)
+            case let .forVariableFromTo(name, from, to):
+                open.append(.loop(begin: instructions.count))
+                instructions.append(.forBegin(name: name, from: from, to: to, endIndex: 0))
             case let .repeatUntil(condition):
                 open.append(.loop(begin: instructions.count))
                 instructions.append(.repeatUntilBegin(condition: condition, endIndex: 0))
@@ -91,16 +99,7 @@ enum ScriptCompiler {
                 guard case let .loop(beginIndex) = open.popLast() else { return [] }
                 let endIndex = instructions.count
                 instructions.append(.loopEnd(beginIndex: beginIndex))
-                // Backpatch a repeat or repeat-until head so it can skip forward past
-                // this loopEnd when it is done; forever has no forward-skip target.
-                switch instructions[beginIndex] {
-                case let .repeatBegin(times, _):
-                    instructions[beginIndex] = .repeatBegin(times: times, endIndex: endIndex)
-                case let .repeatUntilBegin(condition, _):
-                    instructions[beginIndex] = .repeatUntilBegin(condition: condition, endIndex: endIndex)
-                case .brick, .foreverBegin, .loopEnd, .ifBegin, .jump, .ifEnd:
-                    break
-                }
+                instructions[beginIndex] = instructions[beginIndex].closingLoop(at: endIndex)
             // Listed, not defaulted: a new brick must be compiled deliberately.
             case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
                  .changeXBy, .changeYBy, .arc, .goThrough, .wait, .waitUntil, .setVariable, .changeVariableBy, .stitch,
@@ -110,6 +109,19 @@ enum ScriptCompiler {
             }
         }
         return instructions
+    }
+}
+
+private extension Instruction {
+    /// A loop head given the index of its `loopEnd`, so a repeat, repeat-until or For head
+    /// can skip forward past it when it is done; forever has no forward-skip target.
+    func closingLoop(at endIndex: Int) -> Instruction {
+        switch self {
+        case let .repeatBegin(times, _): .repeatBegin(times: times, endIndex: endIndex)
+        case let .repeatUntilBegin(condition, _): .repeatUntilBegin(condition: condition, endIndex: endIndex)
+        case let .forBegin(name, from, to, _): .forBegin(name: name, from: from, to: to, endIndex: endIndex)
+        case .brick, .foreverBegin, .loopEnd, .ifBegin, .jump, .ifEnd: self
+        }
     }
 }
 

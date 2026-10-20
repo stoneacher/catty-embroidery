@@ -131,18 +131,18 @@ struct BrickRowPresentationTests {
         return switch brick {
         case let .moveNSteps(value), let .turnLeft(value), let .turnRight(value),
              let .pointInDirection(value), let .setX(value), let .setY(value),
-             let .changeXBy(value), let .changeYBy(value):
+             let .changeXBy(value), let .changeYBy(value), let .repeatLoop(value), let .wait(value):
             [formula(value)]
         case let .placeAt(x, y): [formula(x), formula(y)]
         // The side is a parameter too, and VoiceOver must say it.
         case let .arc(direction, radius, degrees):
             [direction == .left ? "left" : "right", formula(radius), formula(degrees)]
         case let .goThrough(throughX, throughY, x, y): [formula(throughX), formula(throughY), formula(x), formula(y)]
-        case let .repeatLoop(times): [formula(times)]
-        case let .wait(seconds): [formula(seconds)]
         case let .ifThen(condition), let .ifElse(condition), let .repeatUntil(condition), let .waitUntil(condition):
             [formula(condition)]
         // The brick names its variable bare, as Catroid's spinner does; only a formula quotes it.
+        case let .forVariableFromTo(name, from, to):
+            [name.isEmpty ? formula(.variable(name)) : name, formula(from), formula(to)]
         case let .setVariable(name, value), let .changeVariableBy(name, value):
             [name.isEmpty ? formula(.variable(name)) : name, formula(value)]
         case let .setThreadColor(hex): [hex]
@@ -301,6 +301,8 @@ struct BrickRowPresentationTests {
         case .repeatLoop: ["Repeat 10 times", "End of repeat 10 times"]
         case .forever: ["Forever", "End of forever"]
         case .repeatUntil: ["Repeat until 1 < 2 is true", "End of repeat until 1 < 2 is true"]
+        case .forVariableFromTo:
+            ["For values from 1 to 10 in (no variable)", "End of for values from 1 to 10 in (no variable)"]
         case .loopEnd: ["End of loop"]
         case .wait: ["Wait 1 second"]
         case .waitUntil: ["Wait until 1 < 2 is true"]

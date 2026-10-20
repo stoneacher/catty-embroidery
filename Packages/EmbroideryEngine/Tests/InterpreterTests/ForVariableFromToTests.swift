@@ -1,0 +1,166 @@
+import EmbroideryEngine
+import Interpreter
+import ProgramModel
+import Testing
+
+/// Variables slice 6 (brief D10; ADR-049): ForVariableFromTo as Catroid's
+/// `ForVariableFromToAction` (`ForVariableFromToAction.java:47-117`) in libgdx's
+/// one-child-per-frame sequence.
+///
+/// - On its own first act it reads `from` and `to` once, as `interpretDouble(...).intValue()`
+///   (truncate, saturate to Int32), sets the step to `+1` if `from ≤ to` else `−1`, writes `from`
+///   into the variable and runs the body's first brick in the same tick. Bounds that do not
+///   interpret skip the loop, leave the variable alone and take the tick.
+/// - After every pass it re-reads the variable — edits in the body count — and exits if
+///   `step > 0 ∧ v ≥ to` or `step < 0 ∧ v ≤ to`, else adds the step. So the body always runs at
+///   least once, and `to` is fixed at the start.
+/// - An exit that comes in a tick where nothing acted (an empty body) takes that tick, as
+///   Catroid's action returns in its own frame.
+/// - The variable resolves like `setVariable` (object shadows project; unknown → object-local);
+///   an empty name keeps its count in the loop and writes no variable (brief D10).
+@Suite("ForVariableFromTo execution")
+struct ForVariableFromToTests {
+    static func tag(_ y: Double) -> Brick {
+        .setY(.number(y))
+    }
+
+    static func loop(from: Formula, to: Formula, _ body: [Brick], name: String = "i") -> [Brick] {
+        [.forVariableFromTo(name: name, from: from, to: to)] + body + [.loopEnd]
+    }
+
+    static let showI = Brick.setY(.variable("i"))
+
+    @Test("it counts up or down by one, the first body brick sees from, and the next brick waits a tick")
+    func countsByOne() {
+        #expect(tagProfile(scripts: [Self.loop(from: .number(1), to: .number(3), [Self.showI]) + [Self.tag(9)]])
+            == [[1], [2], [3], [9]])
+        #expect(tagProfile(scripts: [Self.loop(from: .number(3), to: .number(1), [Self.showI]) + [Self.tag(9)]])
+            == [[3], [2], [1], [9]])
+    }
+
+    @Test("from equal to to runs the body once")
+    func runsOnce() {
+        #expect(tagProfile(scripts: [Self.loop(from: .number(5), to: .number(5), [Self.showI])]) == [[5]])
+    }
+
+    /// `from == to` counts up (`from ≤ to`): a body that drops the variable below `to` once makes
+    /// the loop climb back, where a `−1` step would end at once (found by mutation).
+    @Test("from equal to to counts up")
+    func equalBoundsCountUp() {
+        let bricks = Self.loop(from: .number(5), to: .number(5), [
+            Self.showI,
+            .ifThen(condition: .binary(.equal, .variable("f"), .number(0))),
+            .setVariable(name: "f", to: .number(1)), .setVariable(name: "i", to: .number(3)),
+            .ifEnd
+        ])
+        #expect(tagProfile(scripts: [bricks]).flatMap(\.self) == [5, 4, 5])
+    }
+
+    @Test("the bounds truncate toward zero")
+    func truncation() {
+        #expect(tagProfile(scripts: [Self.loop(from: .number(1.9), to: .number(3.9), [Self.showI])]).flatMap(\.self)
+            == [1, 2, 3])
+        #expect(tagProfile(scripts: [Self.loop(from: .number(-1.9), to: .number(-3.9), [Self.showI])]).flatMap(\.self)
+            == [-1, -2, -3])
+    }
+
+    @Test("an edit to the variable in the body counts")
+    func bodyEditCounts() {
+        let bricks = Self.loop(
+            from: .number(1), to: .number(5), [Self.showI, .changeVariableBy(name: "i", value: .number(1))]
+        )
+        #expect(tagProfile(scripts: [bricks]).flatMap(\.self) == [1, 3, 5])
+    }
+
+    @Test("to is read once at the start")
+    func toIsFixed() {
+        let bricks: [Brick] = [.setVariable(name: "n", to: .number(3))]
+            + Self.loop(from: .number(1), to: .variable("n"), [Self.showI, .setVariable(name: "n", to: .number(10))])
+        #expect(tagProfile(scripts: [bricks]).flatMap(\.self) == [1, 2, 3])
+    }
+
+    @Test("bounds that do not interpret skip the loop, leave the variable alone and take the tick")
+    func nanBoundsSkip() {
+        let bricks: [Brick] = [.setVariable(name: "i", to: .number(7))]
+            + Self.loop(from: .binary(.divide, .number(0), .number(0)), to: .number(3), [Self.showI]) + [Self.showI]
+        #expect(tagProfile(scripts: [bricks]) == [[], [], [7]])
+    }
+
+    @Test("the bounds saturate to Int32")
+    func saturation() {
+        let max = Formula.number(.greatestFiniteMagnitude)
+        #expect(tagProfile(scripts: [Self.loop(from: max, to: max, [Self.showI])]) == [[Double(Int32.max)]])
+    }
+
+    @Test("a For re-starts from from each time an outer loop re-enters it")
+    func reentry() {
+        let bricks: [Brick] = [.repeatLoop(times: .number(2))]
+            + Self.loop(from: .number(1), to: .number(2), [Self.showI]) + [.loopEnd]
+        #expect(tagProfile(scripts: [bricks]).flatMap(\.self) == [1, 2, 1, 2])
+    }
+
+    /// One empty pass per tick, and the exit takes its tick: Catroid ends in frame 3, and the
+    /// next brick runs in frame 4.
+    @Test("an empty body counts one pass per tick, and the exit takes its tick")
+    func emptyBody() {
+        #expect(tagProfile(scripts: [Self.loop(from: .number(1), to: .number(3), []) + [Self.tag(9)]])
+            == [[], [], [], [9]])
+    }
+
+    /// The loop writes the project's `i` when the object has none, and the object's own when it
+    /// declares one; B reads the project's.
+    @Test("the variable resolves like Set variable: object first, then project")
+    func resolution() {
+        func run(_ counter: Object) -> [[Double]] {
+            let reader = Object(name: "B", scripts: [Script(bricks: [.wait(seconds: .number(0.25)), Self.showI])])
+            return tagProfile(Program(scenes: [Scene(objects: [counter, reader])], variables: [Variable(name: "i")]))
+        }
+        let plain = Object(name: "A", scripts: [Script(bricks: Self.loop(from: .number(1), to: .number(3), []))])
+        #expect(run(plain).last == [3])
+        var shadowing = plain
+        shadowing.variables = [Variable(name: "i")]
+        #expect(run(shadowing).last == [0])
+    }
+
+    /// Catroid counts into a hidden dummy variable no formula can reach; a store key `""` would
+    /// be readable through `.variable("")`, which the file format round-trips (Codex brief review).
+    @Test("an empty name counts inside the loop and writes no variable")
+    func emptyName() {
+        let bricks = Self.loop(from: .number(1), to: .number(1), [.setY(.variable(""))], name: "")
+        #expect(tagProfile(scripts: [bricks]) == [[0]])
+    }
+
+    // MARK: - Direction and non-finite values (Codex brief review, finding 3)
+
+    static func finishes(_ bricks: [Brick]) -> Bool {
+        var interpreter = Interpreter(
+            program: Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: bricks)])])]),
+            clock: InterpreterClock(tickDelta: 0.05)
+        )
+        _ = interpreter.run(maxTicks: 100)
+        return interpreter.isFinished
+    }
+
+    /// Twice by ±MAX makes ±∞. Up, +∞ exits and −∞ never does; down, the reverse. A value at MAX
+    /// does not move by one (`MAX − 1 == MAX`), so a loop held there never ends. All as Catroid's
+    /// raw `Double` comparison and step.
+    @Test("non-finite and non-progressing values follow the directional exit", arguments: [
+        (1.0, 3.0, Double.greatestFiniteMagnitude, true),
+        (1.0, 3.0, -Double.greatestFiniteMagnitude, false),
+        (3.0, 1.0, -Double.greatestFiniteMagnitude, true),
+        (3.0, 1.0, Double.greatestFiniteMagnitude, false)
+    ])
+    func directionTable(_ from: Double, _ to: Double, _ push: Double, _ ends: Bool) {
+        let bricks = Self.loop(from: .number(from), to: .number(to), [
+            .changeVariableBy(name: "i", value: .number(push)), .changeVariableBy(name: "i", value: .number(push))
+        ])
+        #expect(Self.finishes(bricks) == ends)
+    }
+
+    @Test("a variable held at −MAX in an ascending loop never progresses")
+    func nonProgress() {
+        #expect(!Self.finishes(Self.loop(from: .number(1), to: .number(3), [
+            .setVariable(name: "i", to: .number(-.greatestFiniteMagnitude))
+        ])))
+    }
+}

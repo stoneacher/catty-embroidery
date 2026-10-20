@@ -95,6 +95,15 @@ struct BrickTemplateDefaultsTests {
                 .number(BrickDefaults.conditionRight)
             ))
         ]),
+        // `BrickValues.FOR_LOOP_FROM`/`FOR_LOOP_TO`; the variable starts unchosen, as Set variable's.
+        .init(kind: .forVariableFromTo, bricks: [
+            .forVariableFromTo(
+                name: BrickDefaults.variableName,
+                from: .number(BrickDefaults.forLoopFrom),
+                to: .number(BrickDefaults.forLoopTo)
+            ),
+            .loopEnd
+        ]),
         .init(kind: .elseBranch, bricks: [.elseBranch]),
         .init(kind: .ifEnd, bricks: [.ifEnd]),
         .init(kind: .wait, bricks: [.wait(seconds: .number(BrickDefaults.waitSeconds))]),

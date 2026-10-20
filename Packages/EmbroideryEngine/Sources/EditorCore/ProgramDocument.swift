@@ -120,7 +120,7 @@ private extension Brick {
              let .ifThen(condition: formula), let .ifElse(condition: formula), let .repeatUntil(condition: formula),
              let .waitUntil(condition: formula):
             [formula]
-        case let .placeAt(x, y):
+        case let .placeAt(x, y), let .forVariableFromTo(_, x, y):
             [x, y]
         case let .zigZagStitch(length, width):
             [length, width]

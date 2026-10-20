@@ -16,7 +16,7 @@ struct BrickKindTests {
     /// (ADR-035; the two Ifs from Variables slice 2). Written out literally rather
     /// than derived from `opensBlock`, or the tests below would define their
     /// expectation in terms of the code under test.
-    static let blockOpeners: [BrickKind] = [.repeatLoop, .forever, .repeatUntil, .ifThen, .ifElse]
+    static let blockOpeners: [BrickKind] = [.repeatLoop, .forever, .repeatUntil, .forVariableFromTo, .ifThen, .ifElse]
     static let nonOpeners: [BrickKind] = BrickKind.allCases.filter { !blockOpeners.contains($0) }
 
     /// Test plan 2. Iterating `allCases` and round-tripping a template through
@@ -35,10 +35,10 @@ struct BrickKindTests {
     /// The reverse direction is not, which is what this count pins: 30 is
     /// `Brick`'s case count (23 until Arc and GoThrough, Brick backend slices 4–5;
     /// 25 until the four If bricks, Variables slice 2; 29 until RepeatUntil, slice 4; 30 until
-    /// WaitUntil, slice 5).
+    /// WaitUntil, slice 5; 31 until ForVariableFromTo, slice 6).
     @Test("there is exactly one kind per Brick case")
     func kindCountMatchesBrickCaseCount() {
-        #expect(BrickKind.allCases.count == 31)
+        #expect(BrickKind.allCases.count == 32)
     }
 
     /// Test plan 3. Whole-array equality, so the *order* is asserted and not

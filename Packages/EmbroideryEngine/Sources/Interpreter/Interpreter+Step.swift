@@ -75,6 +75,9 @@ extension Interpreter {
         case let .repeatUntilBegin(condition, endIndex):
             return advanceRepeatUntil(index, condition: condition, endIndex: endIndex, tick: &tick)
 
+        case let .forBegin(name, from, to, endIndex):
+            return advanceFor(index, name: name, bounds: (from, to), endIndex: endIndex, tick: &tick)
+
         case let .loopEnd(beginIndex):
             // A repeat-until checks its condition at the body's end, in the tick of its last
             // brick, and leaves there when it holds (`RepeatUntilAction.kt:72-75`).
@@ -82,6 +85,9 @@ extension Interpreter {
                untilHolds(condition, index) {
                 threads[index].instructionPointer = endIndex + 1
                 return true
+            }
+            if case let .forBegin(name, _, _, endIndex) = threads[index].instructions[beginIndex] {
+                return closeForPass(index, name: name, beginIndex: beginIndex, endIndex: endIndex, tick: &tick)
             }
             // Close the iteration by jumping back to the matching begin. An
             // action-free iteration (e.g. `forever {}` in isolation) reaches here
@@ -277,7 +283,8 @@ extension Interpreter {
             // (milestone deviation table). The assembled stream is always
             // available via `assembledStream()`; the brick stays for M4/M5.
             events.append(.finalizeRequested(name: name))
-        case .repeatLoop, .forever, .repeatUntil, .loopEnd, .wait, .waitUntil, .ifThen, .ifElse, .elseBranch, .ifEnd:
+        case .repeatLoop, .forever, .repeatUntil, .forVariableFromTo, .loopEnd, .wait, .waitUntil, .ifThen, .ifElse,
+             .elseBranch, .ifEnd:
             // Never dispatched here: loops and Ifs compile to instructions
             // (`ScriptCompiler`) and `wait`/`waitUntil` block in `performActionBrick`.
             break

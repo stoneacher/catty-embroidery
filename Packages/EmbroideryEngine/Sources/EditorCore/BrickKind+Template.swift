@@ -6,6 +6,15 @@ public extension BrickKind {
         .binary(.smallerThan, .number(BrickDefaults.conditionLeft), .number(BrickDefaults.conditionRight))
     }
 
+    /// Catroid's palette For loop, no variable chosen yet, from 1 to 10 (`BrickValues.java:93-94`).
+    private static var defaultForLoop: Brick {
+        .forVariableFromTo(
+            name: BrickDefaults.variableName,
+            from: .number(BrickDefaults.forLoopFrom),
+            to: .number(BrickDefaults.forLoopTo)
+        )
+    }
+
     /// A new brick of this kind, seeded from `BrickDefaults` (Catroid
     /// `BrickValues.java`, ported verbatim — AGPL-3.0).
     ///
@@ -53,6 +62,7 @@ public extension BrickKind {
         case .repeatLoop: [.repeatLoop(times: .number(BrickDefaults.repeatTimes)), .loopEnd]
         case .forever: [.forever, .loopEnd]
         case .repeatUntil: [.repeatUntil(condition: Self.defaultCondition), .loopEnd]
+        case .forVariableFromTo: [Self.defaultForLoop, .loopEnd]
         case .loopEnd: [.loopEnd]
         case .wait: [.wait(seconds: .number(BrickDefaults.waitSeconds))]
         case .waitUntil: [.waitUntil(condition: Self.defaultCondition)]
