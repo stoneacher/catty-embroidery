@@ -29,15 +29,24 @@ struct IfExecutionTests {
     }
 
     static func profile(scripts: [[Brick]]) -> [[Double]] {
-        var interpreter = Interpreter(
-            program: Program(scenes: [Scene(objects: [Object(scripts: scripts.map { Script(bricks: $0) })])]),
-            clock: InterpreterClock(tickDelta: 0.05)
-        )
-        return stepToCompletion(&interpreter).map { batch in
-            batch.compactMap {
+        profile(Program(scenes: [Scene(objects: [Object(scripts: scripts.map { Script(bricks: $0) })])]))
+    }
+
+    /// Bounded, so a mis-lowered jump that loops forever fails the test instead of hanging the
+    /// suite (found by mutation: an else bound to the wrong If jumped back to instruction 0).
+    static func profile(_ program: Program, sourceLocation: SourceLocation = #_sourceLocation) -> [[Double]] {
+        var interpreter = Interpreter(program: program, clock: InterpreterClock(tickDelta: 0.05))
+        var ticks: [[Double]] = []
+        while case let .ticked(batch) = interpreter.step() {
+            ticks.append(batch.compactMap {
                 if case let .needleMoved(_, update) = $0 { update.position.y } else { nil }
+            })
+            guard ticks.count < 200 else {
+                Issue.record("the program did not finish within 200 ticks", sourceLocation: sourceLocation)
+                break
             }
         }
+        return ticks
     }
 
     // MARK: - D5: truthiness, per opener
@@ -188,4 +197,105 @@ struct IfExecutionTests {
         ])
         #expect(profile == [[1], [5]])
     }
+
+    // MARK: - Codex slice review of slice 3
+
+    /// Every branch distinct, so a compiler that patched the wrong opener's targets — a FIFO
+    /// stack, say — runs the wrong brick rather than the same empty ones.
+    @Test("nested If/Elses each jump to their own else and end")
+    func nestedIfElseTargets() {
+        let nested: [Brick] = [
+            .ifElse(condition: .constant(.true)),
+            .ifElse(condition: .constant(.false)), Self.tag(1), .elseBranch, Self.tag(2), .ifEnd,
+            .elseBranch, Self.tag(3), .ifEnd, Self.tag(4)
+        ]
+        #expect(Self.profile(nested) == [[2], [4]])
+        let withALoop: [Brick] = [
+            .ifElse(condition: .constant(.false)), Self.tag(1), .elseBranch,
+            .repeatLoop(times: .number(2)), .ifThen(condition: .constant(.true)), Self.tag(2), .ifEnd, .loopEnd,
+            .ifEnd, Self.tag(4)
+        ]
+        #expect(Self.profile(withALoop) == [[2], [2], [4]])
+    }
+
+    /// ADR-018: objects run round-robin in creation order within a tick, and the project store is
+    /// shared and written immediately — so an If in a later object sees an earlier object's write
+    /// from the same tick, and an earlier one does not. An object's own variable shadows it.
+    @Test("an If reads the project variable another object wrote, in round-robin order")
+    func crossObjectVisibility() {
+        let writer = Object(name: "A", scripts: [Script(bricks: [.setVariable(name: "v", to: .number(1))])])
+        let reader = Object(name: "B", scripts: [Script(bricks: [
+            .ifElse(condition: .binary(.equal, .variable("v"), .number(1))), Self.tag(5), .elseBranch, Self.tag(9),
+            .ifEnd
+        ])])
+        let project = [Variable(name: "v")]
+        #expect(Self.profile(Program(scenes: [Scene(objects: [writer, reader])], variables: project)) == [[5]])
+        #expect(Self.profile(Program(scenes: [Scene(objects: [reader, writer])], variables: project)) == [[9]])
+        var shadowing = reader
+        shadowing.variables = [Variable(name: "v")]
+        #expect(Self.profile(Program(scenes: [Scene(objects: [writer, shadowing])], variables: project)) == [[9]])
+    }
+
+    // MARK: - swift-code-reviewer, slice 3 (three surviving mutants)
+
+    /// The read waits after an action-free If too, since that If took the tick: two empty Ifs
+    /// are two ticks, and the second reads what another script wrote in the first.
+    @Test("an If after an empty If reads its condition a tick later")
+    func deferredAfterAnEmptyIf() {
+        let empty: [Brick] = [.ifThen(condition: .constant(.true)), .ifEnd]
+        #expect(Self.profile(empty + empty + [Self.tag(2)]) == [[], [], [2]])
+        let readsV = Formula.binary(.equal, .variable("v"), .number(1))
+        let profile = Self.profile(scripts: [
+            empty + [.ifElse(condition: readsV), Self.tag(5), .elseBranch, Self.tag(9), .ifEnd],
+            [.setVariable(name: "v", to: .number(1))]
+        ])
+        #expect(profile == [[], [5]])
+    }
+
+    /// The else-jump costs nothing even when nothing has acted yet: an If/Else with an empty
+    /// then-branch is one tick, alone and per loop iteration.
+    @Test("an empty then-branch of an If/Else costs one tick, alone and in a loop")
+    func emptyThenBranchFoldsOn() {
+        let ifElse: [Brick] = [.ifElse(condition: .constant(.true)), .elseBranch, Self.tag(3), .ifEnd]
+        var interpreter = Interpreter(
+            program: Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: ifElse)])])]),
+            clock: InterpreterClock(tickDelta: 0.05)
+        )
+        #expect(stepToCompletion(&interpreter).count == 1)
+        #expect(Self.profile([.repeatLoop(times: .number(2))] + ifElse + [.loopEnd, Self.tag(2)]) == [[], [], [2]])
+    }
+
+    /// An If/Else inside each branch of another, every branch tagged: an else bound to the
+    /// wrong open If runs the wrong brick.
+    @Test("an If/Else nested in either branch binds its else to itself", arguments: [
+        (true, true, [1.0]), (true, false, [2.0]), (false, true, [3.0]), (false, false, [4.0])
+    ])
+    func nestedInBothBranches(_ outer: Bool, _ inner: Bool, _ expected: [Double]) {
+        let innerCondition = Formula.constant(inner ? .true : .false)
+        let bricks: [Brick] = [
+            .ifElse(condition: .constant(outer ? .true : .false)),
+            .ifElse(condition: innerCondition), Self.tag(1), .elseBranch, Self.tag(2), .ifEnd,
+            .elseBranch,
+            .ifElse(condition: innerCondition), Self.tag(3), .elseBranch, Self.tag(4), .ifEnd,
+            .ifEnd
+        ]
+        #expect(Self.profile(bricks).flatMap(\.self) == expected)
+    }
+
+    /// Brief D7's planned case: an action-free If in a `forever` costs one tick per iteration and
+    /// never spins.
+    @Test("forever around an empty If ticks without spinning")
+    func foreverAroundAnEmptyIf() {
+        var interpreter = Interpreter(
+            program: Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: [
+                .forever, .ifThen(condition: .constant(.false)), Self.tag(1), .ifEnd, .loopEnd
+            ])])])]),
+            clock: InterpreterClock(tickDelta: 0.05)
+        )
+        for _ in 0 ..< 5 {
+            #expect(interpreter.step() == .ticked([]))
+        }
+        #expect(!interpreter.isFinished)
+    }
 }
+

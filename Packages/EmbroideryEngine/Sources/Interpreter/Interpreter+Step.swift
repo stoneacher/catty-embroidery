@@ -3,10 +3,10 @@ import ProgramModel
 
 extension Interpreter {
     /// Advances one thread by exactly one action-producing instruction (ADR-018).
-    /// Zero-tick loop bookkeeping (added with the loop story-commit) is folded in
-    /// around it; here the loop simply runs the next brick, then keeps advancing
-    /// so the thread is marked finished in the *same* tick its last brick executes
-    /// (not a tick later) — matching Catroid `RepeatAction`'s same-tick close.
+    /// Zero-tick bookkeeping — loop heads and ends, If heads, else-jumps and If ends
+    /// (ADR-049) — is folded in around it, and the thread keeps advancing so it is
+    /// marked finished in the *same* tick its last brick executes (not a tick later),
+    /// matching Catroid `RepeatAction`'s same-tick close.
     mutating func stepThread(_ index: Int, into events: inout [InterpreterEvent]) {
         var tick = TickState()
         while threads[index].instructionPointer < threads[index].instructions.count {
@@ -240,7 +240,7 @@ extension Interpreter {
             // available via `assembledStream()`; the brick stays for M4/M5.
             events.append(.finalizeRequested(name: name))
         case .repeatLoop, .forever, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd:
-            // Never dispatched here: loops compile to instructions
+            // Never dispatched here: loops and Ifs compile to instructions
             // (`ScriptCompiler`) and `wait` blocks in `performActionBrick`.
             break
         }
@@ -329,7 +329,8 @@ extension Interpreter {
 
 /// What one thread's tick has done so far, threaded through `advance`.
 private struct TickState {
-    /// An action ran this tick (ADR-018: one per thread per tick).
+    /// The tick is taken: an action ran (ADR-018: one per thread per tick), or an
+    /// action-free If's end took it (ADR-049).
     var acted = false
     /// An If's condition was read this tick (ADR-049): its end then takes the tick if
     /// no action did.

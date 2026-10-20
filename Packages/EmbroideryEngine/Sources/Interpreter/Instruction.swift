@@ -2,10 +2,11 @@ import ProgramModel
 
 /// A script compiled to a linear instruction array (ADR-008: the *model* stays
 /// the flat paired brick list — compilation is interpreter-internal). Straight-
-/// line bricks become one `.brick` each; loop-control bricks lower to jump
-/// instructions carrying relative targets, mirroring Catty `CBBackend`'s
-/// flatten-to-instructions precedent (`repeatBegin.endIndex + 1` is the
-/// forward-skip on exit; `loopEnd.beginIndex` is the back-jump).
+/// line bricks become one `.brick` each; loop and If control bricks lower to
+/// jump instructions carrying absolute instruction indices (one instruction per
+/// brick), mirroring Catty `CBBackend`'s flatten-to-instructions precedent
+/// (`repeatBegin.endIndex + 1` is the forward-skip on exit; `loopEnd.beginIndex`
+/// is the back-jump; `ifBegin`'s `falseTarget` and `endIndex`, ADR-049).
 enum Instruction: Sendable {
     /// A brick that produces a Catroid action — motion / data / wait / embroidery.
     /// Executing one such instruction costs exactly one tick (ADR-018).
