@@ -101,6 +101,32 @@ struct BrickParameterTests {
         #expect(ParameterEditorKind(.formula(sensor)) == .readOnlyFormula(sensor, reason: .sensor))
     }
 
+    /// Variables slice 1 (brief D16): a comparison, `and`/`or`, `not` or `true`/`false` at
+    /// the root reads as a condition, not a calculation. `power` is a function like the
+    /// others, and an arithmetic root keeps its own reason. The condition editor that makes
+    /// `leaf op leaf` editable is slice 7's.
+    @Test("logic formulas are locked as logic, by their root")
+    func logicIsLocked() {
+        let logic: [Formula] = BinaryOperator.allCases
+            .filter { ![.plus, .minus, .mult, .divide, .pow].contains($0) }
+            .map { .binary($0, .variable("i"), .number(4)) }
+            + [.logicalNot(.variable("done")), .constant(.true), .constant(.false)]
+        #expect(logic.count == 11)
+        for formula in logic {
+            #expect(ParameterEditorKind(.formula(formula)) == .readOnlyFormula(formula, reason: .logic), "\(formula)")
+        }
+        let power = Formula.binaryFunction(.power, .number(2), .number(3))
+        #expect(ParameterEditorKind(.formula(power)) == .readOnlyFormula(power, reason: .function))
+        // Every arithmetic root keeps `.binary`, not only `+` (swift-code-reviewer, slice 1).
+        for operation in [BinaryOperator.plus, .minus, .mult, .divide, .pow] {
+            let root = Formula.binary(operation, .number(2), .number(3))
+            #expect(ParameterEditorKind(.formula(root)) == .readOnlyFormula(root, reason: .binary), "\(operation)")
+        }
+        // The root decides: a sum of comparisons is a calculation.
+        let sum = Formula.binary(.plus, .binary(.smallerThan, .number(1), .number(2)), .number(1))
+        #expect(ParameterEditorKind(.formula(sum)) == .readOnlyFormula(sum, reason: .binary))
+    }
+
     /// `-5` typed on the pad is `.number(-5)` (US-404), but a persisted
     /// `.unaryMinus(.number(5))` is still a tree the pad cannot write back
     /// byte-identically. One rule: every `.unaryMinus` is read-only.

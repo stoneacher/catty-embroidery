@@ -164,7 +164,8 @@ private extension Formula {
         }
         return switch self {
         case .number, .variable, .constant, .sensor: false
-        case let .unaryMinus(operand), let .unaryFunction(_, operand): operand.containsNode(predicate)
+        case let .unaryMinus(operand), let .logicalNot(operand), let .unaryFunction(_, operand):
+            operand.containsNode(predicate)
         case let .binary(_, lhs, rhs), let .binaryFunction(_, lhs, rhs):
             lhs.containsNode(predicate) || rhs.containsNode(predicate)
         }

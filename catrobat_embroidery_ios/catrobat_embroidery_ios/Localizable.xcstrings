@@ -613,6 +613,18 @@
         }
       }
     },
+    "formula.and": {
+      "comment": "A logical operator inside a block's value, e.g. in \"Counter < 10 and Size > 2\". %1$@ and %2$@ are its two operands, already formatted. Catroid's own word for it (formula_editor_logic_and); use the word your language's Catroid translation uses. True when both are true.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ and %2$@"
+          }
+        }
+      }
+    },
     "formula.call": {
       "comment": "A one-argument math function inside a block's value, e.g. \"sine(30)\". %1$@ is the function's name, %2$@ its argument, both already formatted.",
       "extractionState": "manual",
@@ -649,6 +661,18 @@
         }
       }
     },
+    "formula.constant.false": {
+      "comment": "The logical value 'false' inside a block's value. Catroid's formula-editor name (formula_editor_function_false).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "false"
+          }
+        }
+      }
+    },
     "formula.constant.pi": {
       "comment": "The constant pi inside a block's value. Catroid's formula-editor name (formula_editor_function_pi).",
       "extractionState": "manual",
@@ -661,6 +685,18 @@
         }
       }
     },
+    "formula.constant.true": {
+      "comment": "The logical value 'true' inside a block's value. Catroid's formula-editor name (formula_editor_function_true).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "true"
+          }
+        }
+      }
+    },
     "formula.divide": {
       "comment": "An arithmetic operator inside a block's value, e.g. in \"360 ÷ Inner Loop\". %1$@ and %2$@ are its two operands, already formatted. Use the symbol a pupil in your language would write; keep the spaces unless your language does not use them. Division. Some languages write a colon instead.",
       "extractionState": "manual",
@@ -669,6 +705,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ ÷ %2$@"
+          }
+        }
+      }
+    },
+    "formula.equal": {
+      "comment": "A comparison inside a block's value, e.g. in \"Counter < 10\". %1$@ and %2$@ are its two operands, already formatted. Catroid's own symbol for it (formula_editor_logic_equal); keep the spaces unless your language does not use them. True when the two values are equal.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ = %2$@"
           }
         }
       }
@@ -841,6 +889,18 @@
         }
       }
     },
+    "formula.function.power": {
+      "comment": "A math function's name inside a block's value, e.g. the \"power\" in \"power(2, 3)\". Catroid's own formula-editor name for it (formula_editor_function_power); use your language's school term.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "power"
+          }
+        }
+      }
+    },
     "formula.function.round": {
       "comment": "A math function's name inside a block's value, e.g. the \"round\" in \"round(2.5)\". Catroid's own formula-editor name for it (formula_editor_function_round); use your language's school term.",
       "extractionState": "manual",
@@ -889,6 +949,30 @@
         }
       }
     },
+    "formula.greater.or.equal": {
+      "comment": "A comparison inside a block's value, e.g. in \"Counter < 10\". %1$@ and %2$@ are its two operands, already formatted. Catroid's own symbol for it (formula_editor_logic_greaterequal); keep the spaces unless your language does not use them. True when %1$@ is greater than or equal to %2$@.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ≥ %2$@"
+          }
+        }
+      }
+    },
+    "formula.greater.than": {
+      "comment": "A comparison inside a block's value, e.g. in \"Counter < 10\". %1$@ and %2$@ are its two operands, already formatted. Catroid's own symbol for it (formula_editor_logic_greaterthan); keep the spaces unless your language does not use them. True when %1$@ is greater than %2$@.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ > %2$@"
+          }
+        }
+      }
+    },
     "formula.group": {
       "comment": "Parentheses around part of a formula inside a block's value, e.g. the \"(a + b)\" in \"−(a + b)\". %@ is the part, already formatted.",
       "extractionState": "manual",
@@ -933,6 +1017,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "−%@"
+          }
+        }
+      }
+    },
+    "formula.not": {
+      "comment": "A logical 'not' inside a block's value, e.g. \"not Done\". %@ is its operand, already formatted. Catroid's own word for it (formula_editor_logic_not); use the word your language's Catroid translation uses. True when the operand is false.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not %@"
+          }
+        }
+      }
+    },
+    "formula.not.equal": {
+      "comment": "A comparison inside a block's value, e.g. in \"Counter < 10\". %1$@ and %2$@ are its two operands, already formatted. Catroid's own symbol for it (formula_editor_logic_notequal); keep the spaces unless your language does not use them. True when the two values differ.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ≠ %2$@"
+          }
+        }
+      }
+    },
+    "formula.or": {
+      "comment": "A logical operator inside a block's value, e.g. in \"Counter < 10 and Size > 2\". %1$@ and %2$@ are its two operands, already formatted. Catroid's own word for it (formula_editor_logic_or); use the word your language's Catroid translation uses. True when at least one is true.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ or %2$@"
           }
         }
       }
@@ -993,6 +1113,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "position y"
+          }
+        }
+      }
+    },
+    "formula.smaller.or.equal": {
+      "comment": "A comparison inside a block's value, e.g. in \"Counter < 10\". %1$@ and %2$@ are its two operands, already formatted. Catroid's own symbol for it (formula_editor_logic_leserequal); keep the spaces unless your language does not use them. True when %1$@ is smaller than or equal to %2$@.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ ≤ %2$@"
+          }
+        }
+      }
+    },
+    "formula.smaller.than": {
+      "comment": "A comparison inside a block's value, e.g. in \"Counter < 10\". %1$@ and %2$@ are its two operands, already formatted. Catroid's own symbol for it (formula_editor_logic_lesserthan); keep the spaces unless your language does not use them. True when %1$@ is smaller than %2$@.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ < %2$@"
           }
         }
       }
@@ -1713,6 +1857,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "This value uses a math function. Functions can't be edited yet, so it is kept exactly as it is."
+          }
+        }
+      }
+    },
+    "parameter.readonly.logic": {
+      "comment": "Explains why a value cannot be edited: it is a condition, such as a comparison (Counter < 10) or one joined with 'and', 'or' or 'not', which the app cannot edit yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This value is a condition. Conditions like this can't be edited yet, so it is kept exactly as it is."
           }
         }
       }

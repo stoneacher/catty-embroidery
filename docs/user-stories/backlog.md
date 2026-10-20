@@ -295,6 +295,19 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 - If so: replace `javaRound` with the Java 7+ algorithm already written for the formula function, pin 0.49999999999999994 and a 2⁵²-adjacent value, and re-run every golden. They should stay byte-identical, since no golden input sits on these edges.
 - Either way, keep the corrected wording: ADR-012's rounding line and the `javaRound` comment now note the two edges and point here.
 
+## US-326 — `setVariable` with a NaN formula writes 0 here and NaN in Catroid
+
+**Found**: 2026-10-19, by `swift-architect` planning the Variables feature.
+- **What ADR-018 says:** data bricks substitute 0 on a bad formula ("`setVariable` writes 0 … mirroring Catroid data actions reading through `interpretDouble`").
+- **What current Catroid does:** `SetVariableAction.kt:48` reads through `interpretObject`, which is `formulaTree.interpretRecursive(scope)` with no catch (`Formula.java:186-188`). A formula evaluating to NaN (`sqrt(-1)`) is stored as NaN, not 0.
+- **Why it matters from the Variables feature on:** with `=` comparing NaN equal to itself (Variables brief D1), after `set x to sqrt(-1)`, `x = 0` is 0 in Catroid and 1 here. Language tests that store an expected `"NaN"` would read 0.
+- **Not taken in Variables:** it changes ADR-018's never-halt fallback and the non-finite policy of `Variable` (ADR-037 refuses non-finite at input), so it wants its own decision.
+
+**What taking it would involve.**
+- Decide whether a variable may hold NaN at runtime (the store is runtime-only, so ADR-037's persisted-value rule is not touched directly).
+- If so: `setVariable`/`changeVariableBy` store the evaluated NaN; amend ADR-018's data-brick bullet; check every reader of the store (`interpretInteger` of a NaN variable, sensors, ForVariableFromTo's bounds).
+- Either way, correct ADR-018's provenance sentence (ADR-032 invariant 3).
+
 ---
 
 ## Scheduled out of this file — the record, because the mechanism is the point

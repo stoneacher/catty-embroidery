@@ -10,7 +10,7 @@ import Testing
 /// slice 0): a case whose same-case arm is forgotten falls into the default,
 /// and the reflexivity property below goes red.
 enum FormulaCase: CaseIterable {
-    case number, variable, binary, unaryMinus, unaryFunction, binaryFunction, constant, sensor
+    case number, variable, binary, unaryMinus, logicalNot, unaryFunction, binaryFunction, constant, sensor
 
     init(of formula: Formula) {
         switch formula {
@@ -18,6 +18,7 @@ enum FormulaCase: CaseIterable {
         case .variable: self = .variable
         case .binary: self = .binary
         case .unaryMinus: self = .unaryMinus
+        case .logicalNot: self = .logicalNot
         case .unaryFunction: self = .unaryFunction
         case .binaryFunction: self = .binaryFunction
         case .constant: self = .constant
@@ -38,6 +39,8 @@ enum FormulaCensus {
     ] + UnaryFunction.allCases.map { .unaryFunction($0, .variable("x")) }
         + BinaryFunction.allCases.map { .binaryFunction($0, .number(7), .sensor(.objectY)) }
         + [.unaryFunction(.round, .binaryFunction(.max, .constant(.pi), .unaryMinus(.number(2))))]
+        + FormulaConstant.allCases.map(Formula.constant)
+        + [.logicalNot(.binary(.logicalAnd, .variable("x"), .logicalNot(.constant(.false))))]
 
     /// Non-finite payloads nested inside every composite case. They must be
     /// reflexive (ADR-006) but never reach disk (ADR-037).
@@ -48,7 +51,8 @@ enum FormulaCensus {
         .binary(.plus, .variable("x"), .number(.nan)),
         .binary(.mult, .number(-.infinity), .unaryMinus(.number(.nan))),
         .unaryFunction(.sqrt, .number(.nan)),
-        .binaryFunction(.min, .number(1), .unaryFunction(.abs, .number(-.infinity)))
+        .binaryFunction(.min, .number(1), .unaryFunction(.abs, .number(-.infinity))),
+        .logicalNot(.number(.nan))
     ]
 
     static let examples: [Formula] = finite + nonFinite
@@ -64,12 +68,15 @@ enum FormulaCensus {
         (.binary(.plus, .number(1), .number(2)), .binary(.plus, .number(3), .number(2))),
         (.binary(.plus, .number(1), .number(2)), .binary(.plus, .number(1), .number(3))),
         (.unaryMinus(.number(1)), .unaryMinus(.number(2))),
+        (.logicalNot(.number(1)), .logicalNot(.number(2))),
+        (.logicalNot(.number(1)), .unaryMinus(.number(1))),
         (.unaryFunction(.sin, .number(1)), .unaryFunction(.cos, .number(1))),
         (.unaryFunction(.sin, .number(1)), .unaryFunction(.sin, .number(2))),
         (.binaryFunction(.min, .number(1), .number(2)), .binaryFunction(.max, .number(1), .number(2))),
         (.binaryFunction(.min, .number(1), .number(2)), .binaryFunction(.min, .number(3), .number(2))),
         (.binaryFunction(.min, .number(1), .number(2)), .binaryFunction(.min, .number(1), .number(3))),
         (.constant(.pi), .number(.pi)),
+        (.constant(.true), .constant(.false)),
         (.sensor(.objectX), .sensor(.objectY))
     ]
 }

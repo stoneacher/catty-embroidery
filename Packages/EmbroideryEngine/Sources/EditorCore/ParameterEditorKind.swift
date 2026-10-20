@@ -35,15 +35,18 @@ public enum ParameterEditorKind: Sendable, Equatable {
                 self = .number(number)
             case let .variable(name):
                 self = .variableReference(name)
-            case .binary:
-                self = .readOnlyFormula(formula, reason: .binary)
+            case let .binary(operation, _, _):
+                // The root decides (brief D16): a sum of comparisons is a calculation.
+                self = .readOnlyFormula(formula, reason: operation.isArithmetic ? .binary : .logic)
             case .unaryMinus:
                 // Every `.unaryMinus`, `.unaryMinus(.number(5))` included: the
                 // pad writes `.number(-5)`, a different tree, so one rule —
                 // anything the pad cannot write back byte-identically is
                 // read-only.
                 self = .readOnlyFormula(formula, reason: .unaryMinus)
-            case .unaryFunction, .binaryFunction, .constant:
+            case .logicalNot, .constant(.true), .constant(.false):
+                self = .readOnlyFormula(formula, reason: .logic)
+            case .unaryFunction, .binaryFunction, .constant(.pi):
                 // No UI path writes a call yet (brief D9).
                 self = .readOnlyFormula(formula, reason: .function)
             case .sensor:
@@ -70,4 +73,7 @@ public enum ReadOnlyFormulaReason: Sendable, Equatable {
     case function
     /// A value read from the object, such as its x position.
     case sensor
+    /// A condition: a comparison, `and`, `or`, `not`, `true` or `false` at the root
+    /// (Variables brief D16).
+    case logic
 }

@@ -97,6 +97,14 @@ struct FormulaTextTests {
         case .mult: "×"
         case .divide: "÷"
         case .pow: "^"
+        case .equal: "="
+        case .notEqual: "≠"
+        case .smallerThan: "<"
+        case .smallerOrEqual: "≤"
+        case .greaterThan: ">"
+        case .greaterOrEqual: "≥"
+        case .logicalAnd: "and"
+        case .logicalOr: "or"
         }
         #expect(Self.text(.binary(operation, Self.n(1), Self.n(2))) == "1 \(glyph) 2")
     }

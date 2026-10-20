@@ -46,8 +46,8 @@ struct FormulaCodableShapeTests {
     }
 
     /// Catroid's `Functions` names, lower-cased as its formula strings spell them,
-    /// so the planned code.xml importer maps 1:1. `rand` and `power` are out of
-    /// scope (brief D3, out-of-scope list).
+    /// so the planned code.xml importer maps 1:1. `rand` is out of scope (Brick
+    /// backend brief D3); `power` joins with the Variables feature (its brief D4).
     @Test("the unary function vocabulary")
     func unaryVocabulary() throws {
         let names = try UnaryFunction.allCases.map { try Self.json(.unaryFunction($0, .number(0))) }
@@ -60,7 +60,7 @@ struct FormulaCodableShapeTests {
     @Test("the binary function vocabulary")
     func binaryVocabulary() throws {
         let names = try BinaryFunction.allCases.map { try Self.json(.binaryFunction($0, .number(0), .number(0))) }
-        #expect(names == ["arctan2", "min", "max", "mod"].map {
+        #expect(names == ["arctan2", "min", "max", "mod", "power"].map {
             #"{"binaryFunction":{"_0":{"\#($0)":{}},"_1":{"number":{"_0":0}},"_2":{"number":{"_0":0}}}}"#
         })
     }
@@ -68,18 +68,37 @@ struct FormulaCodableShapeTests {
     @Test("the constant and sensor vocabulary")
     func constantAndSensorVocabulary() throws {
         #expect(try FormulaConstant.allCases.map { try Self.json(.constant($0)) }
-            == [#"{"constant":{"_0":{"pi":{}}}}"#])
+            == ["pi", "true", "false"].map { #"{"constant":{"_0":{"\#($0)":{}}}}"# })
         #expect(try Sensor.allCases.map { try Self.json(.sensor($0)) } == ["objectX", "objectY", "motionDirection"]
             .map {
                 #"{"sensor":{"_0":{"\#($0)":{}}}}"#
             })
     }
 
+    /// Variables slice 1: Catroid's `Operators` names, camel-cased (`SMALLER_OR_EQUAL`
+    /// is `smallerOrEqual`), after the five arithmetic ones.
+    @Test("the binary operator vocabulary")
+    func operatorVocabulary() throws {
+        let names = try BinaryOperator.allCases.map { try Self.json(.binary($0, .number(0), .number(0))) }
+        #expect(names == [
+            "plus", "minus", "mult", "divide", "pow", "equal", "notEqual", "smallerThan", "smallerOrEqual",
+            "greaterThan", "greaterOrEqual", "logicalAnd", "logicalOr"
+        ].map { #"{"binary":{"_0":{"\#($0)":{}},"_1":{"number":{"_0":0}},"_2":{"number":{"_0":0}}}}"# })
+    }
+
+    /// `not` is a unary operator like minus, so it is a case of its own beside `unaryMinus`.
+    @Test("a logical not")
+    func logicalNot() throws {
+        #expect(try Self.json(.logicalNot(.variable("done"))) == #"{"logicalNot":{"_0":{"variable":{"_0":"done"}}}}"#)
+    }
+
     @Test("every new node decodes back to itself", arguments: [
         Formula.unaryFunction(.sqrt, .binary(.plus, .number(1), .variable("x"))),
         .binaryFunction(.arctan2, .sensor(.objectY), .unaryMinus(.constant(.pi))),
         .constant(.pi),
-        .sensor(.motionDirection)
+        .sensor(.motionDirection),
+        .logicalNot(.binary(.smallerOrEqual, .variable("i"), .constant(.true))),
+        .binaryFunction(.power, .number(2), .binary(.logicalOr, .constant(.false), .number(3)))
     ])
     func decodes(_ formula: Formula) throws {
         let data = try JSONEncoder().encode(formula)

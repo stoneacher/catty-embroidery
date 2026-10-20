@@ -36,6 +36,7 @@ nonisolated enum ParameterEditorText {
         case .unaryMinus: .parameterReadonlyNegation
         case .function: .parameterReadonlyFunction
         case .sensor: .parameterReadonlySensor
+        case .logic: .parameterReadonlyLogic
         }
         return resolve(resource, locale: locale)
     }

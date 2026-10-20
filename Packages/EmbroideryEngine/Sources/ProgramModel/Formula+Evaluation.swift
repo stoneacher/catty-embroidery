@@ -51,12 +51,20 @@ extension Formula {
             )
         case let .unaryMinus(operand):
             Self.normalize(-operand.evaluate(scope: scope))
+        case let .logicalNot(operand):
+            // Catroid `right == FALSE` (`FormulaElement.java:806`): a NaN operand is
+            // not zero, so `not NaN` is 0 and never NaN.
+            operand.evaluate(scope: scope) == 0 ? 1 : 0
         case let .unaryFunction(function, argument):
             Self.normalize(function.apply(argument.evaluate(scope: scope)))
         case let .binaryFunction(function, first, second):
             Self.normalize(function.apply(first.evaluate(scope: scope), second.evaluate(scope: scope)))
         case .constant(.pi):
             Double.pi
+        case .constant(.true):
+            1
+        case .constant(.false):
+            0
         case let .sensor(sensor):
             Self.normalize(scope.value(of: sensor))
         }
@@ -101,10 +109,18 @@ extension Formula {
 
 extension BinaryOperator {
     /// Catroid operator semantics (`FormulaElement.interpretBinaryOperator`) on
-    /// operands the caller has already normalized. `plus`/`minus`/`mult` run in
-    /// native `Double` — the pinned ADR-017 divergence from Catroid's
+    /// operands the caller has already normalized. `plus`/`minus`/`mult`/`divide`
+    /// run in native `Double` — the pinned ADR-017 divergence from Catroid's
     /// decimal128; for those, IEEE NaN propagation is equivalent to Catroid's
-    /// `atLeastOneIsNaN` guard. `divide` returns NaN for a zero divisor
+    /// `atLeastOneIsNaN` guard. **Their zero results carry Catroid's sign**
+    /// (ADR-017 amendment, Variables brief D2): Catroid's decimal result of an exact
+    /// zero has no sign, so a zero sum, a product with a zero factor and a zero
+    /// dividend give +0, where IEEE can give −0; Java's ordering would otherwise
+    /// see the difference (`0 × −1 < 0`). A nonzero decimal result that underflows
+    /// keeps its sign in Catroid's `doubleValue()` too, so `−MIN / 2` stays −0.
+    /// A `Double` sum is zero only by exact cancellation or zero operands
+    /// (addition cannot underflow), so for `plus`/`minus` "zero result" and
+    /// "exact zero" coincide. `divide` returns NaN for a zero divisor
     /// (Catroid DIVIDE; BigDecimal `equals` treats -0.0 == 0.0 there, and Swift
     /// `rhs == 0` is likewise true for -0.0; a NaN divisor fails the comparison
     /// and flows through `lhs / rhs` to NaN). `pow` needs two explicit guards:
@@ -117,22 +133,89 @@ extension BinaryOperator {
     /// US-202 round 1, ADR-017). Zero operands are therefore canonicalized to
     /// +0.0. For non-NaN, ∞-free, canonicalized operands `Foundation.pow` and
     /// `Math.pow` agree everywhere.
+    ///
+    /// The comparisons are Java's `Double.compareTo` (`:865-872`): NaN sorts above
+    /// every number and equals itself, −0 sorts below +0. `equal` is Catroid's
+    /// `interpretOperatorEqual`, which over doubles is IEEE equality with NaN equal
+    /// to NaN, so −0 = +0 (`FormulaElementOperations.kt:64-76`). `and`/`or` test
+    /// `x ≠ 0` (`:873-876`), so a NaN operand is true. None of them yields NaN.
     func apply(_ lhs: Double, _ rhs: Double) -> Double {
         switch self {
         case .plus:
-            lhs + rhs
+            Self.unsignedZero(lhs + rhs)
         case .minus:
-            lhs - rhs
+            Self.unsignedZero(lhs - rhs)
         case .mult:
-            lhs * rhs
+            lhs == 0 || rhs == 0 ? Self.unsignedZero(lhs * rhs) : lhs * rhs
         case .divide:
-            rhs == 0 ? .nan : lhs / rhs
+            if rhs == 0 {
+                .nan
+            } else {
+                lhs == 0 ? Self.unsignedZero(lhs / rhs) : lhs / rhs
+            }
         case .pow:
             if lhs.isNaN || rhs.isNaN {
                 .nan
             } else {
                 Foundation.pow(lhs.isZero ? 0 : lhs, rhs.isZero ? 0 : rhs)
             }
+        case .equal:
+            Self.truth(Self.catroidEqual(lhs, rhs))
+        case .notEqual:
+            Self.truth(!Self.catroidEqual(lhs, rhs))
+        case .smallerThan:
+            Self.truth(Self.javaCompare(lhs, rhs) < 0)
+        case .smallerOrEqual:
+            Self.truth(Self.javaCompare(lhs, rhs) <= 0)
+        case .greaterThan:
+            Self.truth(Self.javaCompare(lhs, rhs) > 0)
+        case .greaterOrEqual:
+            Self.truth(Self.javaCompare(lhs, rhs) >= 0)
+        case .logicalAnd:
+            Self.truth(lhs != 0 && rhs != 0)
+        case .logicalOr:
+            Self.truth(lhs != 0 || rhs != 0)
+        }
+    }
+
+    /// +0 for a zero, everything else (NaN included) unchanged.
+    private static func unsignedZero(_ x: Double) -> Double {
+        x == 0 ? 0 : x
+    }
+
+    /// Catroid's `TRUE` and `FALSE` (`Conversions.kt:31-32`).
+    private static func truth(_ condition: Bool) -> Double {
+        condition ? 1 : 0
+    }
+
+    private static func catroidEqual(_ lhs: Double, _ rhs: Double) -> Bool {
+        lhs == rhs || lhs.isNaN && rhs.isNaN
+    }
+
+    /// Java `Double.compare`: the IEEE order where it decides, then the signed
+    /// `doubleToLongBits`, whose canonical NaN is the largest and whose −0 is below +0.
+    private static func javaCompare(_ lhs: Double, _ rhs: Double) -> Int {
+        if lhs < rhs {
+            return -1
+        }
+        if lhs > rhs {
+            return 1
+        }
+        let left = javaLongBits(lhs), right = javaLongBits(rhs)
+        return left == right ? 0 : (left < right ? -1 : 1)
+    }
+
+    private static func javaLongBits(_ x: Double) -> Int64 {
+        x.isNaN ? 0x7FF8_0000_0000_0000 : Int64(bitPattern: x.bitPattern)
+    }
+
+    /// Whether the operator is one of the five arithmetic ones, rather than a
+    /// comparison or `and`/`or` (Variables brief D16: which lock reason a root gets).
+    public var isArithmetic: Bool {
+        switch self {
+        case .plus, .minus, .mult, .divide, .pow: true
+        case .equal, .notEqual, .smallerThan, .smallerOrEqual, .greaterThan, .greaterOrEqual, .logicalAnd,
+             .logicalOr: false
         }
     }
 }
@@ -192,7 +275,8 @@ extension UnaryFunction {
 extension BinaryFunction {
     /// Catroid `MathFunctionProvider` on arguments the caller has already
     /// normalized, with two pinned divergences (brief D2): `mod` is the floored
-    /// modulo, and `arctan2` of two zeros is 0 instead of a random angle.
+    /// modulo, and `arctan2` of two zeros is 0 instead of a random angle. `power`
+    /// is mirrored exactly (Variables brief D4).
     func apply(_ first: Double, _ second: Double) -> Double {
         switch self {
         case .arctan2:
@@ -204,6 +288,11 @@ extension BinaryFunction {
             -Self.javaMin(-first, -second)
         case .mod:
             Self.flooredMod(first, second)
+        case .power:
+            // Raw `Math.pow` (`MathFunctionProvider.java:50`), not `^`: no NaN guard,
+            // no zero canonicalization (Variables brief D4). Java and C differ only at
+            // `pow(1, NaN)` — 1 in C, NaN in Java — once operands are finite or NaN.
+            second.isNaN ? .nan : Foundation.pow(first, second)
         }
     }
 

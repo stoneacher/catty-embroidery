@@ -50,7 +50,9 @@ struct FormulaFunctionTests {
     @Test("the table covers every function")
     func tableCoversEveryFunction() {
         #expect(Set(CatroidFunctionTable.unaryTable.map(\.function)) == Set(UnaryFunction.allCases))
-        #expect(Set(CatroidFunctionTable.binaryTable.map(\.function)) == Set(BinaryFunction.allCases))
+        // `power` has its own table beside the logic it joined with (Variables slice 1).
+        #expect(!CatroidLogicTable.powerRows.isEmpty)
+        #expect(Set(CatroidFunctionTable.binaryTable.map(\.function)).union([.power]) == Set(BinaryFunction.allCases))
     }
 
     @Test("pi is Math.PI exactly")

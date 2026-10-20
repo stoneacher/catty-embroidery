@@ -154,9 +154,11 @@ struct FormulaTests {
         }
     }
 
+    /// The arithmetic operators only: comparisons and logic consume a NaN operand and
+    /// return 0 or 1, as Catroid's do (Variables brief D2–D3, `FormulaLogicTests`).
     @Test(
-        "NaN is sticky through every binary operator on either side",
-        arguments: BinaryOperator.allCases
+        "NaN is sticky through every arithmetic operator on either side",
+        arguments: [BinaryOperator.plus, .minus, .mult, .divide, .pow]
     )
     func nanStickyThroughEveryOperator(binaryOperator: BinaryOperator) {
         let nanSubtree = Formula.binary(.divide, .number(0), .number(0))

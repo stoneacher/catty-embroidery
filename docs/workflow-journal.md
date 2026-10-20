@@ -3442,3 +3442,40 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **Shape:** twelve circles fanned evenly around the centre with the four large ones on the diagonals, and the stem bending right to the bottom of the hoop.
 - **The one number that looked off:** Ink/Stitch's counter reads 823, against the 821 in the brief. Decoding the file settled it: the header says `ST:821` and `CO:2`, and the body holds 820 plain stitch records, one colour-change record and one end record. So the file carries 821 stitch records as ADR-012 counts them, and Ink/Stitch's counter counts its own commands differently. Checked against the file, not assumed.
 - **The brief is closed:** Done, with all ten acceptance criteria ticked. The ROADMAP row reads Done.
+
+## 2026-10-19 — Variables: planned with `swift-architect`, four decisions taken
+
+- **Delegation:** one `swift-architect` pass (read-only, ~12 minutes, 54 tool calls) produced the plan behind `docs/features/variables.md`: 16 decisions with Catroid file:line provenance, eight slices and a three-PR split. It also statically scanned all 215 Catrobat language tests to measure how many need strings as values.
+- **Sebastian decided, all four as recommended:** Double-only values (strings go to the Language-test runner; five string-dependent tests become expected failures there); the decimal128-vs-Double divergence accepted and pinned now that `=` lets it decide branches; a minimal condition editor (one `leaf op leaf` comparison) in this feature; backlog US-323 pulled in, because every new condition brick would otherwise inherit it.
+- **What planning found that no earlier document said:**
+  - Catroid's truthiness differs by brick: If and WaitUntil truncate to Int32 (`if 0.5` is false), RepeatUntil tests `≠ 0` (0.5 exits). NaN skips an If, exits a RepeatUntil, and keeps a WaitUntil waiting.
+  - Java `compareTo` ordering puts −0 below +0, which contradicts ADR-017's "zero-sign residue is invisible to comparisons". The proposed fix canonicalizes zero results of the four arithmetic operators to +0, as Catroid's BigDecimal does.
+  - The Brick backend brief's reason for leaving `power()` out ("`^` exists") was wrong: they differ at NaN and −0.
+  - ADR-018's description of `setVariable`'s failure value is stale against current Catroid (`interpretObject` stores NaN, not 0). Filed for the backlog, not changed here.
+- **Next:** one Codex round on the brief before any test (ADR-041: the semantics are not pinned by an ADR). The brief lists what it should attack.
+
+## 2026-10-19 — Variables: Codex brief review, one round, 8 findings, all valid
+
+- **Why a brief round:** no ADR pins comparison, logic or control-brick semantics (ADR-041). One round on `docs/features/variables.md`, `codex exec -m gpt-5.6-sol`, read-only, with `../Catroid` added as a readable directory; Codex ran JDK 17 probes itself.
+- **Highest severity: High.** D2 proposed turning every zero result of `+ − × ÷` into +0, to match Catroid's BigDecimal arithmetic. But Catroid's DECIMAL128 product of two nonzero doubles is nonzero, and `doubleValue()` rounds a tiny negative to −0, so `(−MIN/2) < 0` is 1 there and would be 0 here. Re-probed in this session under JDK 17 before accepting: `−MIN/2` and `−1e-300 × 1e-300` give −0, `−0 × 5` and `−0 + −0` give +0. The rule is now "+0 exactly where the decimal result is an exact zero": any zero sum, a product with a zero operand, a zero dividend. The planned operand table (NaN, ±0, ±MAX) could not have found this; it now includes ±`leastNonzeroMagnitude` and ±smallest normal.
+- **Mediums (5):**
+  - ForVariableFromTo with an empty name: Catroid's dummy variable is unreachable by formulas, but our format round-trips `.variable("")`, so a store key `""` would be visible. The counter now lives in per-thread loop state.
+  - D10's "`−∞` loops until the budget" was wrong for a descending loop (it exits at once). Replaced by a direction table including non-progress at ±MAX and 2^53.
+  - D13 broke ADR-045's malformed-script rule: delete at a stray else/end has no opener to redirect to, so it falls back to a leaf delete.
+  - D13 named no actual accessibility action for crossing an else. Two move-out actions are generalized from loops to blocks and a new pair, Move Into Else Branch / Move Into Then Branch, is specified, with a reachability property that must observe the crossing.
+  - The optional PR 2a/2b split would have merged RepeatUntil, WaitUntil and For cases with no execution. Each case now lands in the slice that executes it.
+- **Lows (2):** the IfThen truthiness claim lacked the citation that it builds `IfLogicAction` too; D2 cited `floor(−0.5)` as producing −0 (it is −1; `ceil(−0.5)` is −0), and the matching criterion contradicted the brief's own retained −0s.
+- **What held:** Codex checked D7 (If ticks against libgdx's one-child-per-frame `SequenceAction`), D8 (RepeatUntil's two checks across scripts) and D11 (no golden tick profile moves under US-323) and found no fault, and confirmed the `Double.toString` round trip behind `=` preserves NaN, ±0, subnormals and ±MAX.
+- **Thesis note:** the planning agent had flagged D2 as the riskiest decision and named its fallback. The flaw was in neither the decision nor the fallback but in the test oracle: an operand table of "special values" that left out the one class (subnormal products) where the rule fails.
+
+## 2026-10-19 — Variables slice 1 (formula logic): green, two reviews, no evaluator defect
+
+- **Test-first, with Catroid as the oracle.** The expected values were generated by copying Catroid's operator code (`FormulaElement.interpretBinaryOperator`, `interpretOperatorEqual`, per-node normalization, `Math::pow`) into a jshell script under JDK 17: 8 truth tables over 12 operands, 206 zero and near-zero arithmetic results compared bit for bit, 144 `power` rows. The generator is kept in the table file.
+- **Red** was compile errors first, then behavioural against NaN placeholders (15 tests, 164 issues); the app was red as 10 exhaustive-switch errors, shown by setting the app sources aside.
+- **Mutation, before review:** 17 mutants, one survivor — NaN bits not canonicalized. Every NaN the tests built was already canonical; unary minus produces one that is not, and Java still sorts it highest. A test now builds it.
+- **Codex slice round (highest Low, test code only):** checked the evaluator against Catroid adversarially, including both NaN signs, subnormals and 2⁵³, found no defect, and found one rendering-test gap (`and`/`or` inside a comparison). Covered; its named mutant is red.
+- **`swift-code-reviewer` (worktree, 35 mutants):** also no evaluator defect. Its findings were of three kinds:
+  - **Test gaps:** the arithmetic roots other than `+`/`−` were not pinned to `.binary`, and `not` was never put under arithmetic (a reasoned app survivor, confirmed red-able here). Both covered.
+  - **A shipped divergence the amendment silently fixed:** `arctan2(0 × −1, −1)` was −180 here and 180 in Catroid since the Brick backend, because ADR-046 had already made the zero sign magnitude-visible. ADR-017's amendment now says so, and a named test pins it.
+  - **A wrong claim in four places:** Catroid ranks `=` (3) below `<` and `not` (4). Rendering is unaffected because any logic inside a comparison is bracketed; every copy is corrected (ADR-032 invariant 3).
+- **What each layer found:** mutation found a missing input class (non-canonical NaN), Codex found a missing structure in the rendering tests, and the reviewer found the most valuable item — that ADR-017's old claim had already been false on `main` for two days — by reading ADR-046 against ADR-017 rather than the diff alone.
