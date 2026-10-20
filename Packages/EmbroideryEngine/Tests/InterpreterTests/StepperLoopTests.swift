@@ -214,7 +214,8 @@ struct StepperLoopTests {
         let script = Script(bricks: [
             .setY(.number(1)), .repeatLoop(times: .number(0)), .setY(.number(2)), .loopEnd, .setY(.number(3))
         ])
-        var interpreter = Interpreter(program: Program(scenes: [Scene(objects: [Object(scripts: [script])])]), clock: clock)
+        let program = Program(scenes: [Scene(objects: [Object(scripts: [script])])])
+        var interpreter = Interpreter(program: program, clock: clock)
         let ticks = stepToCompletion(&interpreter).map { batch in
             batch.compactMap { event -> Double? in
                 if case let .needleMoved(_, update) = event { update.position.y } else { nil }
@@ -223,4 +224,3 @@ struct StepperLoopTests {
         #expect(ticks == [[1], [3]])
     }
 }
-

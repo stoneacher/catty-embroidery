@@ -298,4 +298,3 @@ struct IfExecutionTests {
         #expect(!interpreter.isFinished)
     }
 }
-
