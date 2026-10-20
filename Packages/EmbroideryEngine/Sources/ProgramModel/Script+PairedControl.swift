@@ -27,7 +27,7 @@ public extension Brick {
     /// brick must say what it is.
     var blockRole: BlockRole {
         switch self {
-        case .repeatLoop, .forever: .opener(.loop)
+        case .repeatLoop, .forever, .repeatUntil: .opener(.loop)
         case .ifThen, .ifElse: .opener(.conditional)
         case .elseBranch: .divider
         case .loopEnd: .closer(.loop)

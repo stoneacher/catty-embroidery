@@ -73,7 +73,7 @@ public extension Brick {
             [.init(slot: .y, value: .formula(y))]
         case let .repeatLoop(times):
             [.init(slot: .times, value: .formula(times))]
-        case let .ifThen(condition), let .ifElse(condition):
+        case let .ifThen(condition), let .ifElse(condition), let .repeatUntil(condition):
             [.init(slot: .condition, value: .formula(condition))]
         case let .wait(seconds):
             [.init(slot: .seconds, value: .formula(seconds))]
@@ -135,7 +135,7 @@ public extension Brick {
             .changeXBy(formula)
         case let (.changeYBy, .y, .formula(formula)):
             .changeYBy(formula)
-        case (.ifThen, _, _), (.ifElse, _, _): replacingCondition(slot, with: value)
+        case (.ifThen, _, _), (.ifElse, _, _), (.repeatUntil, _, _): replacingCondition(slot, with: value)
         case let (.repeatLoop, .times, .formula(formula)):
             .repeatLoop(times: formula)
         case let (.wait, .seconds, .formula(formula)):
@@ -176,6 +176,7 @@ private extension Brick {
         switch (self, slot, value) {
         case let (.ifThen, .condition, .formula(formula)): .ifThen(condition: formula)
         case let (.ifElse, .condition, .formula(formula)): .ifElse(condition: formula)
+        case let (.repeatUntil, .condition, .formula(formula)): .repeatUntil(condition: formula)
         default: nil
         }
     }

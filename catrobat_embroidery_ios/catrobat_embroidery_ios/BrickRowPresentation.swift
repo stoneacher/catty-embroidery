@@ -169,11 +169,8 @@ nonisolated private struct Sentence {
         case let .moveNSteps(steps):
             unit(steps, counted: LocalizedStringResource.brickMoveCount, formula: LocalizedStringResource.brickMove)
         case let .turnLeft(degrees):
-            unit(
-                degrees,
-                counted: LocalizedStringResource.brickTurnLeftCount,
-                formula: LocalizedStringResource.brickTurnLeft
-            )
+            unit(degrees, counted: LocalizedStringResource.brickTurnLeftCount,
+                 formula: LocalizedStringResource.brickTurnLeft)
         case let .turnRight(degrees):
             unit(
                 degrees,
@@ -199,6 +196,7 @@ nonisolated private struct Sentence {
         case let .repeatLoop(times):
             unit(times, counted: LocalizedStringResource.brickRepeatCount, formula: LocalizedStringResource.brickRepeat)
         case .forever: resolve(.brickForever)
+        case let .repeatUntil(condition): resolve(.brickRepeatUntil(formula(condition)))
         case .loopEnd: loopEnd(closing: opener)
         // One sentence for both Ifs, as in Catroid; the palette description tells them apart.
         case let .ifThen(condition), let .ifElse(condition): resolve(.brickIf(formula(condition)))
@@ -235,6 +233,8 @@ nonisolated private struct Sentence {
             )
         case .forever:
             return resolve(.brickLoopEndForever)
+        case let .repeatUntil(condition):
+            return resolve(.brickLoopEndRepeatUntil(formula(condition)))
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
              .changeXBy, .changeYBy, .arc, .goThrough, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd,
              .setVariable, .changeVariableBy, .stitch, .setThreadColor, .runningStitch, .zigZagStitch,

@@ -80,6 +80,14 @@ struct BrickTemplateDefaultsTests {
             )),
             .ifEnd
         ]),
+        .init(kind: .repeatUntil, bricks: [
+            .repeatUntil(condition: .binary(
+                .smallerThan,
+                .number(BrickDefaults.conditionLeft),
+                .number(BrickDefaults.conditionRight)
+            )),
+            .loopEnd
+        ]),
         .init(kind: .elseBranch, bricks: [.elseBranch]),
         .init(kind: .ifEnd, bricks: [.ifEnd]),
         .init(kind: .wait, bricks: [.wait(seconds: .number(BrickDefaults.waitSeconds))]),

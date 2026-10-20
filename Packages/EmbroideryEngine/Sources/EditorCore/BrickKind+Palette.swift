@@ -33,7 +33,7 @@ public enum PaletteGroup: Sendable, Hashable, CaseIterable {
             [.placeAt, .setX, .setY, .changeXBy, .changeYBy, .moveNSteps, .turnLeft, .turnRight,
              .pointInDirection, .arc, .goThrough]
         case .controlAndData:
-            [.wait, .forever, .ifElse, .ifThen, .repeatLoop, .setVariable, .changeVariableBy]
+            [.wait, .forever, .ifElse, .ifThen, .repeatLoop, .repeatUntil, .setVariable, .changeVariableBy]
         }
     }
 }

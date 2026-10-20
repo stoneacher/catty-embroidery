@@ -87,6 +87,7 @@ nonisolated struct PaletteRowPresentation: Equatable, Identifiable {
         case .goThrough: .paletteDescriptionGoThrough
         case .wait: .paletteDescriptionWait
         case .forever: .paletteDescriptionForever
+        case .repeatUntil: .paletteDescriptionRepeatUntil
         case .repeatLoop, .loopEnd: .paletteDescriptionRepeat
         // The markers are never offered either; each takes its If/Else's meaning.
         case .ifElse, .elseBranch: .paletteDescriptionIfElse

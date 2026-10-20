@@ -34,6 +34,10 @@ public indirect enum Brick: Sendable, Equatable, Codable {
     case repeatLoop(times: Formula)
     /// Opens an infinite loop; closed by a later `loopEnd` (Catroid `ForeverBrick`).
     case forever
+    /// Opens a loop whose body repeats until `condition` holds, checked on entering
+    /// each iteration and at the body's end; closed by a later `loopEnd` (Catroid
+    /// `RepeatUntilBrick`, Variables brief D8).
+    case repeatUntil(condition: Formula)
     /// Closes the nearest open loop. A pure marker retained in the model — never
     /// dropped or synthesized away (ADR-008; Catroid `LoopEndBrick` contributes
     /// no action but terminates the loop in the flat list).

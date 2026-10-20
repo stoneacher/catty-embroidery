@@ -42,11 +42,8 @@ public extension BrickKind {
         case .setY: [.setY(.number(BrickDefaults.placeAtY))]
         case .changeXBy: [.changeXBy(.number(BrickDefaults.changeXBy))]
         case .changeYBy: [.changeYBy(.number(BrickDefaults.changeYBy))]
-        case .arc: [.arc(
-                direction: BrickDefaults.arcDirection,
-                radius: .number(BrickDefaults.arcRadius),
-                degrees: .number(BrickDefaults.arcDegrees)
-            )]
+        case .arc: [.arc(direction: BrickDefaults.arcDirection, radius: .number(BrickDefaults.arcRadius),
+                         degrees: .number(BrickDefaults.arcDegrees))]
         case .goThrough: [.goThrough(
                 throughX: .number(BrickDefaults.goThroughThroughX),
                 throughY: .number(BrickDefaults.goThroughThroughY),
@@ -55,6 +52,7 @@ public extension BrickKind {
             )]
         case .repeatLoop: [.repeatLoop(times: .number(BrickDefaults.repeatTimes)), .loopEnd]
         case .forever: [.forever, .loopEnd]
+        case .repeatUntil: [.repeatUntil(condition: Self.defaultCondition), .loopEnd]
         case .loopEnd: [.loopEnd]
         case .wait: [.wait(seconds: .number(BrickDefaults.waitSeconds))]
         case .ifThen: [.ifThen(condition: Self.defaultCondition), .ifEnd]

@@ -277,6 +277,18 @@
         }
       }
     },
+    "brick.loop.end.repeat.until": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a Repeat until loop. %@ is that loop's condition, so the row reads as the end of that specific loop.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End of repeat until %@ is true"
+          }
+        }
+      }
+    },
     "brick.loop.end.unmatched": {
       "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Closes a loop whose start is missing. Rare; appears only in a damaged design.",
       "extractionState": "manual",
@@ -405,6 +417,18 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "brick.repeat.until": {
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens a loop: the bricks inside it repeat until the condition is true. %@ is the condition, already formatted, e.g. \"Counter = 10\". Catroid's own words (brick_repeat_until \"Repeat until\", brick_wait_until_second_part \"is true\"); keep them one sentence so your language can reorder it.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeat until %@ is true"
           }
         }
       }
@@ -1485,6 +1509,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "Repeats the bricks inside it a number of times."
+          }
+        }
+      }
+    },
+    "palette.description.repeat.until": {
+      "comment": "One line under a brick in the list of bricks to add, saying what the brick does. Shown under the brick's own text and spoken after it by VoiceOver. The Repeat until brick.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repeats the bricks inside it until the condition is true."
           }
         }
       }

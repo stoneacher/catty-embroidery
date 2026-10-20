@@ -3545,3 +3545,11 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Measured locally:** `PairInvariantSoakTests`, which runs on the main actor and rebuilds every row's accessibility actions on each of 1,500 steps per seed, took **3.6 s per seed on `main` and 10 s on this branch**. Part of that is intended (the soak now inserts If blocks); part was round 3's root fix, which copied the block's rows into a new `Script` to validate them on every `matchingEnd` call. At CI speed the soak's main-actor time is enough to push time-limited main-actor tests past 60 s.
 - **Fix:** validation runs on an index range of the existing list (`validate(in:)`), no copy; same definition, same tests. Soak down to ~7.3 s per seed. The remaining gap to `main` is the larger If-bearing scripts.
 - **Lesson:** "flaky on CI, green locally" was true and still wrong as a diagnosis — the failures were on this branch only, and one local timing settled it. Codex reviews correctness, not cost, so a fix that made every row's actions allocate went through four rounds unflagged.
+
+## 2026-10-20 — Variables PR 2a merged; PR 2b, slice 4 (US-323 + RepeatUntil)
+
+- **PR 2a (#74) merged by me** as `10802fb` (merge commit), on Sebastian's instruction for this PR ("merge yourself once everything passed"): after the handover loop closed at round 5 and CI was green on `4e38350`. A one-off authorization, not a standing change to "Sebastian merges".
+- **Slice 4 on a fresh branch from `main`** (`feature/variables-loops`, PR 2b). Red, then green on the first implementation run; all goldens unchanged.
+- **The backlog analysis of US-323 (written 2026-10-18) held exactly** — two lines of code, the predicted single shift, no golden moved. A backlog entry that records the mechanism, not just the symptom, made this slice's US-323 half nearly free.
+- **The brief over-specified D8:** it expected RepeatUntil's head to need per-thread state to tell a first arrival from a back-jump. Writing it showed both arrivals behave alike in Catroid, and the state was write-only; removed.
+- **A soak coverage floor starved again** when a kind joined a shared random draw — the third time this generator has shown it (Arc, slice 2, now). Loops and Ifs now have separate fixed shares.

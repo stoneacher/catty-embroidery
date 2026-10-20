@@ -1,5 +1,6 @@
 import EmbroideryEngine
 import Interpreter
+import ProgramModel
 import Testing
 
 // Shared helpers for the embroidery stepper suites. Free functions (not suite
@@ -118,4 +119,34 @@ func expectApproximates(
             sourceLocation: sourceLocation
         )
     }
+}
+
+/// The `y` each tick's needle moves end at, one inner array per tick: a run as a profile of
+/// ticks when every action brick is a `setY` tag. Bounded, so a program that never finishes
+/// fails its test instead of hanging the suite.
+func tagProfile(
+    _ program: Program,
+    maxTicks: Int = 200,
+    sourceLocation: SourceLocation = #_sourceLocation
+) -> [[Double]] {
+    var interpreter = Interpreter(program: program, clock: InterpreterClock(tickDelta: 0.05))
+    var ticks: [[Double]] = []
+    while case let .ticked(batch) = interpreter.step() {
+        ticks.append(batch.compactMap {
+            if case let .needleMoved(_, update) = $0 { update.position.y } else { nil }
+        })
+        guard ticks.count < maxTicks else {
+            Issue.record("the program did not finish within \(maxTicks) ticks", sourceLocation: sourceLocation)
+            break
+        }
+    }
+    return ticks
+}
+
+/// One object, one script per array.
+func tagProfile(scripts: [[Brick]], sourceLocation: SourceLocation = #_sourceLocation) -> [[Double]] {
+    tagProfile(
+        Program(scenes: [Scene(objects: [Object(scripts: scripts.map { Script(bricks: $0) })])]),
+        sourceLocation: sourceLocation
+    )
 }

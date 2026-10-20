@@ -71,7 +71,17 @@ extension Interpreter {
             threads[index].instructionPointer += 1 // zero-tick; never exits itself
             return true
 
+        case let .repeatUntilBegin(condition, endIndex):
+            return advanceRepeatUntil(index, condition: condition, endIndex: endIndex, tick: &tick)
+
         case let .loopEnd(beginIndex):
+            // A repeat-until checks its condition at the body's end, in the tick of its last
+            // brick, and leaves there when it holds (`RepeatUntilAction.kt:72-75`).
+            if case let .repeatUntilBegin(condition, endIndex) = threads[index].instructions[beginIndex],
+               untilHolds(condition, index) {
+                threads[index].instructionPointer = endIndex + 1
+                return true
+            }
             // Close the iteration by jumping back to the matching begin. An
             // action-free iteration (e.g. `forever {}` in isolation) reaches here
             // with no action this tick, so the back-jump itself consumes the tick
@@ -134,6 +144,34 @@ extension Interpreter {
         return true
     }
 
+    /// A `repeatUntil` head (zero-tick, ADR-049). Reached afresh or by the back-jump, it
+    /// behaves alike — `RepeatUntilAction` re-checks on every uninitialized act — so it keeps
+    /// no state: it waits out a tick that already acted, then checks the condition before the
+    /// iteration, and a holding condition leaves without running the body. Returns whether
+    /// to keep folding.
+    private mutating func advanceRepeatUntil(
+        _ index: Int,
+        condition: Formula,
+        endIndex: Int,
+        tick: inout TickState
+    ) -> Bool {
+        if tick.acted {
+            return false
+        }
+        threads[index].instructionPointer = untilHolds(condition, index)
+            ? endIndex + 1
+            : threads[index].instructionPointer + 1
+        return true
+    }
+
+    /// `interpretDouble(...) != 0.0` (`RepeatUntilAction.kt:51`): not truncated, so `0.5`
+    /// holds; a condition that does not interpret holds too, ending the loop (`:61-62`).
+    private mutating func untilHolds(_ condition: Formula, _ index: Int) -> Bool {
+        let scope = scope(forObjectAt: threads[index].objectIndex)
+        guard let value = try? condition.interpretDouble(scope: scope) else { return true }
+        return value != 0
+    }
+
     /// Processes a `repeatBegin` (zero-tick): initializes its counter on first
     /// arrival (throw / negative / zero count → 0 iterations, Catroid
     /// `RepeatAction` parity), then either exits past the matching `loopEnd`
@@ -146,6 +184,10 @@ extension Interpreter {
         let remaining: Int
         if let existing = threads[index].loopCounters[pointer] {
             remaining = existing
+        } else if deferEntry {
+            // US-323 (ADR-018 amendment): read the count on the loop's own first act, in
+            // the next tick, not in the tick of the action before it.
+            return true
         } else {
             let scope = scope(forObjectAt: threads[index].objectIndex)
             remaining = max(0, (try? times.interpretInteger(scope: scope)) ?? 0)
@@ -239,7 +281,7 @@ extension Interpreter {
             // (milestone deviation table). The assembled stream is always
             // available via `assembledStream()`; the brick stays for M4/M5.
             events.append(.finalizeRequested(name: name))
-        case .repeatLoop, .forever, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd:
+        case .repeatLoop, .forever, .repeatUntil, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd:
             // Never dispatched here: loops and Ifs compile to instructions
             // (`ScriptCompiler`) and `wait` blocks in `performActionBrick`.
             break

@@ -40,6 +40,17 @@ struct IfBlockModelTests {
         #expect(try Self.json(.ifEnd) == #"{"ifEnd":{}}"#)
     }
 
+    /// Variables slice 4: RepeatUntil is a loop, closed by `loopEnd` like Catroid's loops.
+    @Test("RepeatUntil has its file shape and is a loop opener")
+    func repeatUntil() throws {
+        #expect(try Self.json(.repeatUntil(condition: .constant(.true)))
+            == #"{"repeatUntil":{"condition":{"constant":{"_0":{"true":{}}}}}}"#)
+        #expect(Brick.repeatUntil(condition: Self.condition).blockRole == .opener(.loop))
+        let loop = Script(bricks: [.repeatUntil(condition: Self.condition), .stitch, .loopEnd])
+        #expect(loop.matchingEnd(ofBrickAt: 0) == 2)
+        #expect(Script(bricks: [.repeatUntil(condition: Self.condition), .ifEnd]).matchingEnd(ofBrickAt: 0) == nil)
+    }
+
     @Test("each brick has its block role")
     func roles() {
         #expect(Brick.ifThen(condition: Self.condition).blockRole == .opener(.conditional))
