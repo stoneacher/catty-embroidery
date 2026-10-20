@@ -3597,3 +3597,9 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **The pattern again:** a hand-kept list of kinds in a test (the soak's block list) goes stale silently, because a new case falls into its `default`. Deriving the classification from the model's own `blockRole` removes the list.
 - **Loop state:** Low, with code (test) changes; round 2 runs.
 
+## 2026-10-21 — Variables PR 2b (#75): handover round 2 clean; loop closed
+
+- **Round 2 had no findings and no code changes, so the loop ended on stop condition 1** after two rounds. Severity history: Low → none.
+- **Codex confirmed all three round 1 fixes.** The soak's per-opener floor counts only inserts that changed the program, so it can fail. The pinned WaitUntil JSON is the synthesized encoding. Codex derived the composition test's profile independently, frame by frame, and got the same result.
+- **Across the PR:** three slice rounds and two handover rounds, with no correctness finding from Codex in any of them. The one runtime bug of the PR (US-323's late exit at entry in slice 4) came from `swift-code-reviewer`'s differential, and so did slice 6's object-0 survivors. That is now three slices running where the executable Catroid model found what reading the code did not.
+
