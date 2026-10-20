@@ -170,7 +170,7 @@
       }
     },
     "brick.for.values": {
-      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens a loop that counts a variable from one value to another, running the bricks inside it once per value. %1$@ is the first value, %2$@ the last, %3$@ the variable's name, chosen by the user and never translated (values are already formatted and may be formulas). Catroid's own words (brick_loop_for_values_from \"For values from\", brick_loop_to \"to\", brick_loop_in \"in\"); keep them one sentence so your language can reorder it. Arguments are positional and may be reordered.",
+      "comment": "One block (brick) in the list of a design's program, read as an instruction. Shown on screen and spoken by VoiceOver. Opens a loop that counts a variable from one value to another, running the bricks inside it once per value. %1$@ is the first value, %2$@ the last, %3$@ the variable's name, chosen by the user and never translated, or a placeholder while none is chosen (values are already formatted and may be formulas). Catroid's own words (brick_loop_for_values_from \"For values from\", brick_loop_to \"to\", brick_loop_in \"in\"); keep them one sentence so your language can reorder it. Arguments are positional and may be reordered.",
       "extractionState": "manual",
       "localizations": {
         "en": {

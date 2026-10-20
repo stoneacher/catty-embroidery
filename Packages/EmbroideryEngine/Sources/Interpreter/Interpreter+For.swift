@@ -59,6 +59,8 @@ extension Interpreter {
         tick: inout TickState
     ) -> Bool {
         guard var state = threads[index].forLoops[beginIndex] else {
+            // Unreachable: a pass's end is only reached through its head, which set the state.
+            assertionFailure("a For loop's end was reached without its head's state")
             threads[index].instructionPointer = endIndex + 1
             return true
         }
@@ -77,6 +79,8 @@ extension Interpreter {
             setVariable(name, to: value + state.step, objectIndex: objectIndex)
         }
         threads[index].instructionPointer = beginIndex
+        // After an acted pass, keep folding: the head defers the next pass itself. An action-free
+        // pass yields here instead, so each empty pass costs one tick.
         return tick.acted
     }
 }

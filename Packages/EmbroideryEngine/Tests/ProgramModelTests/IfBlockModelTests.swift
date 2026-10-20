@@ -51,6 +51,14 @@ struct IfBlockModelTests {
         #expect(Script(bricks: [.repeatUntil(condition: Self.condition), .ifEnd]).matchingEnd(ofBrickAt: 0) == nil)
     }
 
+    /// Variables slice 6: the case's labels are its file format (slice 8 checks in JSON using it).
+    @Test("ForVariableFromTo has its file shape and is a loop opener")
+    func forVariableFromTo() throws {
+        #expect(try Self.json(.forVariableFromTo(name: "i", from: .number(1), to: .number(10)))
+            == #"{"forVariableFromTo":{"from":{"number":{"_0":1}},"name":"i","to":{"number":{"_0":10}}}}"#)
+        #expect(Brick.forVariableFromTo(name: "i", from: .number(1), to: .number(10)).blockRole == .opener(.loop))
+    }
+
     @Test("each brick has its block role")
     func roles() {
         #expect(Brick.ifThen(condition: Self.condition).blockRole == .opener(.conditional))

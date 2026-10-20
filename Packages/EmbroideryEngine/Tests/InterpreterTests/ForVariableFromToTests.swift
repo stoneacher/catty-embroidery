@@ -130,6 +130,131 @@ struct ForVariableFromToTests {
         #expect(tagProfile(scripts: [bricks]) == [[0]])
     }
 
+    // MARK: - Codex slice round: test gaps
+
+    @Test("nested Fors keep separate state, and an inner exit leaves the outer running")
+    func nested() {
+        let inner = Self.loop(from: .number(1), to: .number(2), [Self.showI, .setY(.variable("j"))], name: "j")
+        let bricks = Self.loop(from: .number(1), to: .number(2), inner, name: "i")
+        #expect(tagProfile(scripts: [bricks]).flatMap(\.self) == [1, 1, 1, 2, 2, 1, 2, 2])
+    }
+
+    /// The inner loop leaves the shared `i` at 1 every pass, so the outer never reaches 3 — as in
+    /// Catroid, where both actions write the same variable.
+    @Test("nested Fors on one variable interact through it")
+    func nestedSharedName() {
+        let inner = Self.loop(from: .number(1), to: .number(1), [])
+        #expect(!Self.finishes(Self.loop(from: .number(1), to: .number(3), [Self.showI] + inner)))
+    }
+
+    @Test("an unnamed loop counts every pass without a variable")
+    func unnamedPasses() {
+        let bricks = Self.loop(from: .number(1), to: .number(3), [.setY(.variable(""))], name: "") + [Self.tag(9)]
+        #expect(tagProfile(scripts: [bricks]) == [[0], [0], [0], [9]])
+    }
+
+    @Test("an unnamed loop counts down too")
+    func unnamedDescending() {
+        let bricks = Self.loop(from: .number(3), to: .number(1), [Self.tag(1)], name: "") + [Self.tag(9)]
+        #expect(tagProfile(scripts: [bricks]) == [[1], [1], [1], [9]])
+    }
+
+    /// A For in the second object reads its bounds and counter, and writes, in its own scope —
+    /// every other test runs the loop in object 0 (`swift-code-reviewer`, slice 6).
+    @Test("a For in a later object reads and writes its own variables")
+    func laterObject() {
+        let idle = Object(name: "A", scripts: [Script(bricks: [])])
+        var counter = Object(name: "B", scripts: [Script(bricks: [.setVariable(name: "n", to: .number(3))]
+                + Self.loop(from: .number(1), to: .variable("n"), [Self.showI]))])
+        counter.variables = [Variable(name: "i"), Variable(name: "n")]
+        let program = Program(scenes: [Scene(objects: [idle, counter])], variables: [Variable(name: "i")])
+        #expect(tagProfile(program).flatMap(\.self) == [1, 2, 3])
+    }
+
+    @Test("a to that does not interpret skips the loop and leaves the variable alone")
+    func nanToSkips() {
+        let bricks: [Brick] = [.setVariable(name: "i", to: .number(7))]
+            + Self.loop(from: .number(1), to: .binary(.divide, .number(0), .number(0)), [Self.showI]) + [Self.showI]
+        #expect(tagProfile(scripts: [bricks]) == [[], [], [7]])
+    }
+
+    @Test("both bounds are read before the variable is written")
+    func boundsBeforeWrite() {
+        let bricks: [Brick] = [.setVariable(name: "i", to: .number(3))]
+            + Self.loop(from: .number(1), to: .variable("i"), [Self.showI])
+        #expect(tagProfile(scripts: [bricks]).flatMap(\.self) == [1, 2, 3])
+    }
+
+    @Test("a fractional variable steps by one and is compared as it is")
+    func fractionalVariable() {
+        let half = Brick.changeVariableBy(name: "i", value: .number(0.5))
+        #expect(tagProfile(scripts: [Self.loop(from: .number(1), to: .number(3), [Self.showI, half])])
+            .flatMap(\.self) == [1, 2.5])
+    }
+
+    /// Wait until ends its pass's tick; the next pass waits for the following tick.
+    @Test("a blocking body brick keeps the loop's state")
+    func blockingBody() {
+        let holds = Brick.waitUntil(condition: .binary(.equal, .number(1), .number(1)))
+        #expect(tagProfile(scripts: [Self.loop(from: .number(1), to: .number(2), [holds, Self.showI]) + [Self.tag(9)]])
+            == [[], [1], [], [2], [9]])
+    }
+
+    @Test("a For ending an If branch or an outer loop's body folds into its last tick")
+    func lastInBlock() {
+        let once = Self.loop(from: .number(1), to: .number(2), [Self.showI])
+        let ifBranch: [Brick] = [.ifThen(condition: .binary(.smallerThan, .number(1), .number(2)))] + once + [.ifEnd]
+        #expect(tagProfile(scripts: [ifBranch + [Self.tag(9)]]) == [[1], [2], [9]])
+        let outer: [Brick] = [.repeatLoop(times: .number(2)), Self.tag(8)]
+            + Self.loop(from: .number(1), to: .number(1), [Self.showI]) + [.loopEnd]
+        #expect(tagProfile(scripts: [outer]) == [[8], [1], [8], [1]])
+    }
+
+    /// Script B runs after A in each tick: its write lands between A's passes.
+    @Test("another script's write to the counter counts at the next pass's end")
+    func crossScriptCounter() {
+        let counter = Self.loop(from: .number(1), to: .number(5), [Self.showI])
+        #expect(tagProfile(scripts: [counter, [.setVariable(name: "i", to: .number(4))]]) == [[1], [4], [5]])
+    }
+
+    /// The head after an action reads its bounds next tick, after B has written `n`.
+    @Test("a head deferred after an action reads bounds another script wrote meanwhile")
+    func deferredBounds() {
+        let counter = [Self.tag(1)] + Self.loop(from: .number(1), to: .variable("n"), [Self.showI])
+        #expect(tagProfile(scripts: [counter, [.setVariable(name: "n", to: .number(2))]]) == [[1], [1], [2]])
+    }
+
+    @Test("an undeclared variable is created on the object, unseen by others")
+    func undeclaredIsObjectLocal() {
+        let counting = Self.loop(from: .number(1), to: .number(3), [], name: "k") + [.setY(.variable("k"))]
+        let counter = Object(name: "A", scripts: [Script(bricks: counting)])
+        let reader = Object(name: "B", scripts: [Script(bricks: [.wait(seconds: .number(0.5)), .setY(.variable("k"))])])
+        #expect(tagProfile(Program(scenes: [Scene(objects: [counter, reader])])).flatMap(\.self) == [3, 0])
+    }
+
+    /// Above 2^53 adding one changes nothing; at −2^53 it still does. Catroid's raw `Double` step.
+    @Test("the step is raw Double addition, which stops progressing beyond 2^53", arguments: [
+        (-9_007_199_254_740_992.0, -9_007_199_254_740_991.0),
+        (-18_014_398_509_481_984.0, -18_014_398_509_481_984.0)
+    ])
+    func doublePrecision(_ start: Double, _ next: Double) {
+        let bricks = Self.loop(from: .number(1), to: .number(3), [
+            .ifThen(condition: .binary(.equal, .variable("f"), .number(0))),
+            .setVariable(name: "f", to: .number(1)), .setVariable(name: "i", to: .number(start)),
+            .ifEnd,
+            Self.showI
+        ])
+        var interpreter = Interpreter(
+            program: Program(scenes: [Scene(objects: [Object(scripts: [Script(bricks: bricks)])])]),
+            clock: InterpreterClock(tickDelta: 0.05)
+        )
+        var shown: [Double] = []
+        while shown.count < 2, case let .ticked(batch) = interpreter.step() {
+            shown += batch.compactMap { if case let .needleMoved(_, update) = $0 { update.position.y } else { nil } }
+        }
+        #expect(shown == [start, next])
+    }
+
     // MARK: - Direction and non-finite values (Codex brief review, finding 3)
 
     static func finishes(_ bricks: [Brick]) -> Bool {
