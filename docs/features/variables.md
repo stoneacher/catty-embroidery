@@ -103,6 +103,8 @@ Every slice except 7 is **risky** → `swift-code-reviewer` + one Codex round wh
 
 **PR split** (~1,800–2,000 lines of non-test Swift; new `Brick` cases break the app's exhaustive switches, so app arms land with each case): **PR 1 — formula logic**, slice 1 (~350). **PR 2 — control bricks**, slices 2–6 (~1,100); if it runs over, 2a (slices 2–3) and 2b (slices 4–6) — safe because each brick case lands with its execution. **PR 3 — condition editor and sample**, slices 7–8 (~450).
 
+*Decided 2026-10-20 (Sebastian): PR 2 is split as planned.* **PR 2a** (#74, branch `feature/variables-control`) holds slices 2–3, If and If/Else end to end; **PR 2b** holds slices 4–6 (US-323 + RepeatUntil, WaitUntil, ForVariableFromTo) and starts from `main` once #73 and #74 are merged. Both PRs get their own handover loop before merging, and they are merged with merge commits, so #74 needs no replay of #73's commits.
+
 ## Verification at handover
 
 - Every slice mutation-checked and recorded; risky slices reviewed when green (reviewer + one Codex round each), then each PR's Codex loop (cap 5).
