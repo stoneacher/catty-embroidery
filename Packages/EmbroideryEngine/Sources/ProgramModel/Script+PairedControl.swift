@@ -153,8 +153,9 @@ public extension Script {
             case .closer:
                 depth -= 1
                 if depth == 0 {
-                    let block = Script(bricks: Array(bricks[index ... cursor]))
-                    return (try? block.validate()) != nil ? cursor : nil
+                    // In place, without copying the rows: this runs for every row's
+                    // move actions on every edit.
+                    return (try? validate(in: index ..< cursor + 1)) != nil ? cursor : nil
                 }
             case .leaf, .divider:
                 break
@@ -198,8 +199,15 @@ public extension Script {
     /// (last-opened) when several remain. Typed (US-404) so a caller mapping the
     /// reason needs no unreachable `catch`.
     func validate() throws(ScriptValidationError) {
+        try validate(in: bricks.indices)
+    }
+
+    /// `validate()` over `range` of the list, as if those rows were the whole script; indices
+    /// in errors are absolute. `matchingEnd` uses it on one block's rows.
+    private func validate(in range: Range<Int>) throws(ScriptValidationError) {
         var open: [OpenBlock] = []
-        for (index, brick) in bricks.enumerated() {
+        for index in range {
+            let brick = bricks[index]
             switch brick.blockRole {
             case .leaf:
                 break
