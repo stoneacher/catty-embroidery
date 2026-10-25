@@ -60,9 +60,9 @@ public extension VirtualNeedle {
             }
             return goThrough(through: StagePoint(x: throughX, y: throughY), destination: StagePoint(x: x, y: y))
         // Listed, not defaulted: a new brick must say whether it moves the needle.
-        case .repeatLoop, .forever, .loopEnd, .wait, .ifThen, .ifElse, .elseBranch, .ifEnd, .setVariable,
-             .changeVariableBy, .stitch, .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
-             .stopRunningStitch, .writeEmbroideryToFile:
+        case .repeatLoop, .forever, .repeatUntil, .forVariableFromTo, .loopEnd, .wait, .waitUntil, .ifThen, .ifElse,
+             .elseBranch, .ifEnd, .setVariable, .changeVariableBy, .stitch, .setThreadColor, .runningStitch,
+             .zigZagStitch, .tripleStitch, .sewUp, .stopRunningStitch, .writeEmbroideryToFile:
             return nil
         }
         return [NeedleUpdate(position: position, heading: heading)]

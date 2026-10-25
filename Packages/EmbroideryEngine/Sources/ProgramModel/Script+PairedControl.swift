@@ -27,13 +27,13 @@ public extension Brick {
     /// brick must say what it is.
     var blockRole: BlockRole {
         switch self {
-        case .repeatLoop, .forever: .opener(.loop)
+        case .repeatLoop, .forever, .repeatUntil, .forVariableFromTo: .opener(.loop)
         case .ifThen, .ifElse: .opener(.conditional)
         case .elseBranch: .divider
         case .loopEnd: .closer(.loop)
         case .ifEnd: .closer(.conditional)
         case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-             .changeXBy, .changeYBy, .arc, .goThrough, .wait, .setVariable, .changeVariableBy, .stitch,
+             .changeXBy, .changeYBy, .arc, .goThrough, .wait, .waitUntil, .setVariable, .changeVariableBy, .stitch,
              .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
              .stopRunningStitch, .writeEmbroideryToFile:
             .leaf

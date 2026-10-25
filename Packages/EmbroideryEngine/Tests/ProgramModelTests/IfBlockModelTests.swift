@@ -40,6 +40,33 @@ struct IfBlockModelTests {
         #expect(try Self.json(.ifEnd) == #"{"ifEnd":{}}"#)
     }
 
+    /// Variables slice 4: RepeatUntil is a loop, closed by `loopEnd` like Catroid's loops.
+    @Test("RepeatUntil has its file shape and is a loop opener")
+    func repeatUntil() throws {
+        #expect(try Self.json(.repeatUntil(condition: .constant(.true)))
+            == #"{"repeatUntil":{"condition":{"constant":{"_0":{"true":{}}}}}}"#)
+        #expect(Brick.repeatUntil(condition: Self.condition).blockRole == .opener(.loop))
+        let loop = Script(bricks: [.repeatUntil(condition: Self.condition), .stitch, .loopEnd])
+        #expect(loop.matchingEnd(ofBrickAt: 0) == 2)
+        #expect(Script(bricks: [.repeatUntil(condition: Self.condition), .ifEnd]).matchingEnd(ofBrickAt: 0) == nil)
+    }
+
+    /// Variables slice 5: WaitUntil is a leaf, and its label is its file format (Codex, PR 2b handover).
+    @Test("WaitUntil has its file shape and is a leaf")
+    func waitUntil() throws {
+        #expect(try Self.json(.waitUntil(condition: .constant(.true)))
+            == #"{"waitUntil":{"condition":{"constant":{"_0":{"true":{}}}}}}"#)
+        #expect(Brick.waitUntil(condition: Self.condition).blockRole == .leaf)
+    }
+
+    /// Variables slice 6: the case's labels are its file format (slice 8 checks in JSON using it).
+    @Test("ForVariableFromTo has its file shape and is a loop opener")
+    func forVariableFromTo() throws {
+        #expect(try Self.json(.forVariableFromTo(name: "i", from: .number(1), to: .number(10)))
+            == #"{"forVariableFromTo":{"from":{"number":{"_0":1}},"name":"i","to":{"number":{"_0":10}}}}"#)
+        #expect(Brick.forVariableFromTo(name: "i", from: .number(1), to: .number(10)).blockRole == .opener(.loop))
+    }
+
     @Test("each brick has its block role")
     func roles() {
         #expect(Brick.ifThen(condition: Self.condition).blockRole == .opener(.conditional))

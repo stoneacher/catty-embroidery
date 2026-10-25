@@ -117,10 +117,13 @@ private extension Brick {
              let .repeatLoop(times: formula), let .wait(seconds: formula),
              let .setVariable(_, to: formula), let .changeVariableBy(_, value: formula),
              let .runningStitch(length: formula), let .tripleStitch(length: formula),
-             let .ifThen(condition: formula), let .ifElse(condition: formula):
+             let .ifThen(condition: formula), let .ifElse(condition: formula), let .repeatUntil(condition: formula),
+             let .waitUntil(condition: formula):
             [formula]
         case let .placeAt(x, y):
             [x, y]
+        case let .forVariableFromTo(_, from, to):
+            [from, to]
         case let .zigZagStitch(length, width):
             [length, width]
         case let .arc(_, radius, degrees):

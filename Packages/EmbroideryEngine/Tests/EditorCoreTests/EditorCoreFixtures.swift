@@ -220,19 +220,15 @@ enum EditorCoreFixtures {
 
         switch generator.next() % 5 {
         case 0:
-            // Fixed shares for the structural kinds: a quarter of inserts open a
-            // loop, an eighth try a bare `loopEnd` (always rejected), and the
-            // rest draw uniformly over every kind. A uniform draw alone made each
-            // structural floor in `EditBalanceInvariantTests` shrink with every
-            // kind the vocabulary gained: adding Arc (Brick backend slice 4) left
-            // one seed with no pair relocation and another with no rejected
-            // `loopEnd` insert in 400 steps. The Ifs and their markers joined
-            // these shares in Variables slice 2.
-            switch generator.next() % 8 {
-            case 0, 1:
-                let openers: [BrickKind] = [.repeatLoop, .forever, .ifThen, .ifElse]
-                return .insert(openers[Int(generator.next() % 4)], at: address)
-            case 2:
+            // Fixed shares: a tenth of inserts open a loop, a fifth an If, a tenth try a
+            // bare marker (always rejected); the rest draw uniformly over every kind. A
+            // uniform draw alone starved `EditBalanceInvariantTests`' structural floors
+            // with each kind the vocabulary gained (Arc, RepeatUntil, ForVariableFromTo).
+            switch generator.next() % 10 {
+            case 0: return .insert([.repeatLoop, .forever, .repeatUntil, .forVariableFromTo][Int(generator.next() % 4)],
+                                   at: address)
+            case 1, 2: return .insert([BrickKind.ifThen, .ifElse][Int(generator.next() % 2)], at: address)
+            case 3:
                 let markers: [BrickKind] = [.loopEnd, .elseBranch, .ifEnd]
                 return .insert(markers[Int(generator.next() % 3)], at: address)
             default:
@@ -309,8 +305,12 @@ enum EditorCoreFixtures {
             )
         case let .repeatLoop(times): .repeatLoop(times: bumped(times))
         case .forever: .forever
+        case let .repeatUntil(condition): .repeatUntil(condition: bumped(condition))
+        case let .forVariableFromTo(name, from, to):
+            .forVariableFromTo(name: toggled(name), from: bumped(from), to: bumped(to, salt: 7))
         case .loopEnd: .loopEnd
         case let .wait(seconds): .wait(seconds: bumped(seconds))
+        case let .waitUntil(condition): .waitUntil(condition: bumped(condition))
         case let .ifThen(condition): .ifThen(condition: bumped(condition))
         case let .ifElse(condition): .ifElse(condition: bumped(condition))
         case .elseBranch: .elseBranch
