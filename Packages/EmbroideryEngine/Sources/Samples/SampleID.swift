@@ -21,6 +21,10 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     /// in a wave of sizes, with a curved stem — Arc, GoThrough, `sin` and a sensor.
     case arcFlower
 
+    /// Our own content (Variables): thirty-six rays, long and short in turn, around a red
+    /// circle — a For loop counts the rays, an If/Else alternates their length.
+    case sunburst
+
     #if DEBUG
     /// US-309's measurement fixture: a 50 000-stitch hatch, reachable in the
     /// picker so the exit criterion can be captured and screenshotted in the
@@ -82,6 +86,7 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
         case .octagonRosette: "OctagonRosette"
         case .squareCoil: "SquareCoil"
         case .arcFlower: "ArcFlower"
+        case .sunburst: "Sunburst"
         #if DEBUG
         // 14 ASCII characters, inside the DST `LA` field's 15 (ADR-012), so the
         // seeded export name is valid and the export gate opens in the

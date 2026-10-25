@@ -10,7 +10,8 @@ struct SampleBudgetTests {
     static let perTickMaxima = [
         (SampleID.octagonRosette, 51),
         (SampleID.squareCoil, 132),
-        (SampleID.arcFlower, 58)
+        (SampleID.arcFlower, 58),
+        (SampleID.sunburst, 28)
     ]
 
     /// A sample missing from the table is never pinned, and nothing would say

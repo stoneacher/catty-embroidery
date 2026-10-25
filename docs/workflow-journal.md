@@ -3611,3 +3611,14 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Mutation:** 12 mutants, all killed. The red phase was compile errors in both halves, so the mutants are the evidence that the assertions discriminate.
 - **Tooling:** the session scratchpad had been cleared since PR 2b, taking the mutation scripts with it. They were rewritten as one generic runner per half (engine via `swift test`, app via `xcodebuild -only-testing`).
 
+## 2026-10-25 — Variables slice 8 (Sunburst sample): the ADR-019 screening redesigned the sample
+
+- **The first design sat on floor boundaries on every ray.** Each ray went out from the centre and came back to it. Running stitches are spaced from where the walk started, so each return measured exactly a whole number of stitch lengths from the last stitch (148 = 37 · 4, 84 = 21 · 4). That put all 36 returns between 0.5 and 7 ulps from a boundary, so `hypot`'s last bit would decide the design's stitch count. The always-on screening suite found it on the first run, before any figure was pinned. The fix was geometric: the rays became one zigzag outline whose every point comes from `sin`/`cos`, now 3.2 × 10¹¹ ulps clear. This is ADR-019's "choose inputs off the boundary" clause working as a design tool, not only as a tripwire.
+- **A screening assertion had a hidden premise.** `|along| < distance` in the residue decomposition holds only for an update that moves forward of the needle's heading. Every earlier sample happened to satisfy that, including Arc Flower's `placeAt` returns. Sunburst's inward valleys don't. Two wrong fixes were considered and rejected:
+  - Dropping the bound for every sample would have let a decomposition with swapped axes pass.
+  - My first scoping ("updates that travel along the heading") was false for the coil and the flower too, because the stitch anchor lags behind the needle after a turn. Measuring the split per sample showed this before the test was written.
+  - The bound is now scoped to forward-moving updates, and a new test pins that every update of the three earlier samples moves forward. The swapped-axes mutant is killed by it.
+- **This sits close to the US-302 trap** (changing a test to fit the code), so the reasoning is recorded here and both slice reviewers are pointed at it explicitly.
+- **An older guard caught the colour.** `ThreadPaletteTests` requires every sample colour to be one of the 14 palette swatches (ADR-040), so a user who edits the colour brick sees it selected. The first circle colour (`#ea580c`) was not a swatch. The circle is now the palette's red: the palette's orange sits too close to the amber rays.
+- **CI flake on slice 7:** the app job failed once on `StageFieldRenderingTests.matIsDrawnAtCurrent`, a stage pixel test this PR does not touch, with no failure message in the log. It passed locally, and the failed job was rerun.
+

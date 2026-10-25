@@ -17,7 +17,8 @@ struct SampleThresholdTests {
     static let screenedSamples = [
         (SampleID.octagonRosette, 2.0, 1),
         (SampleID.squareCoil, 6.0, 3),
-        (SampleID.arcFlower, 4.0, 1)
+        (SampleID.arcFlower, 4.0, 1),
+        (SampleID.sunburst, 4.0, 1)
     ]
 
     /// A sample missing from the table is never screened, and nothing would
@@ -57,6 +58,18 @@ struct SampleThresholdTests {
     func arcFlowerIsFarOffBoundary() {
         let screening = screen(SampleLibrary[.arcFlower], patternLength: 4, pointsPerInterval: 1)
         #expect(screening.probes.count > 800)
+        #expect(screening.atRisk.isEmpty, "at risk: \(screening.atRisk.map(\.moveIndex))")
+        #expect(screening.minimumUlpsFromBoundary > 1e9, "closest approach \(screening.minimumUlpsFromBoundary) ulps")
+    }
+
+    /// Sample 4 places every point by `sin`/`cos`, so no update returns to a stitch-aligned
+    /// point. Its first design did, on every ray: each ray went back to the centre a whole
+    /// number of stitches from its last stitch, 0.5 to 7 ulps from the boundary (Variables
+    /// slice 8). This pins the redesign's clearance.
+    @Test("the sunburst is far from any floor boundary")
+    func sunburstIsFarOffBoundary() {
+        let screening = screen(SampleLibrary[.sunburst], patternLength: 4, pointsPerInterval: 1)
+        #expect(screening.probes.count > 100)
         #expect(screening.atRisk.isEmpty, "at risk: \(screening.atRisk.map(\.moveIndex))")
         #expect(screening.minimumUlpsFromBoundary > 1e9, "closest approach \(screening.minimumUlpsFromBoundary) ulps")
     }
@@ -208,6 +221,19 @@ struct SampleThresholdTests {
         #expect(run(SampleLibrary[.octagonRosette]).stitchEventCount == 3194)
     }
 
+    /// Every update of the three samples before Sunburst moves forward of its heading, so the
+    /// bound above applied to all of them before it was scoped. A decomposition that projected
+    /// on the wrong axis — `sin` and `cos` swapped, a sign flipped — fails here rather than
+    /// silently skipping the bound (Variables slice 8).
+    @Test("the earlier samples move forward of their heading on every update",
+          arguments: [SampleID.octagonRosette, .squareCoil, .arcFlower])
+    func earlierSamplesMoveForward(_ id: SampleID) throws {
+        let (_, length, points) = try #require(Self.screenedSamples.first { $0.0 == id })
+        let screening = screen(SampleLibrary[id], patternLength: length, pointsPerInterval: points)
+        #expect(!screening.probes.isEmpty)
+        #expect(screening.probes.allSatisfy { $0.movesForwardOfHeading })
+    }
+
     /// The along/perpendicular split ADR-019 requires, asserted as a *rule* rather
     /// than a value: an update whose residue is dominated by the perpendicular
     /// term is safe for US-207's reason, whatever its ulp figure says.
@@ -244,7 +270,16 @@ struct SampleThresholdTests {
             // costs ~1e-31. Which term dominates is the *finding*, not a
             // precondition, so this suite reports the split and lets the at-risk
             // classification (asserted per sample below) carry the verdict.
-            #expect(probe.alongComponent.magnitude < probe.distance)
+            //
+            // Only for an update that moves forward of its heading, though. A
+            // `placeAt` goes where its formula says, so its projection onto the
+            // heading can be negative and the along term then exceeds the distance.
+            // Sunburst's valleys do; Arc Flower's returns to the centre happened
+            // not to (Variables slice 8). `earlierSamplesMoveForward` keeps this
+            // branch from going vacuous.
+            if probe.movesForwardOfHeading {
+                #expect(probe.alongComponent.magnitude < probe.distance)
+            }
         }
         let histogram = Dictionary(grouping: screening.probes, by: \.intervals)
             .mapValues(\.count)

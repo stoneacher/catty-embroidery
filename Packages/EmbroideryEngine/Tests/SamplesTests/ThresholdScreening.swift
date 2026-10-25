@@ -41,6 +41,12 @@ struct BoundaryProbe {
     /// The quadratic contribution of the perpendicular residue. When this
     /// dominates `alongComponent` the update is safe for US-207's reason.
     var perpendicularContribution: Double
+    /// Whether the update moves forward of the needle's heading (a positive
+    /// projection). The along/perpendicular split is defined against the heading,
+    /// so only then is the along term bounded by the distance. A `placeAt` goes
+    /// where its formula says and can move backward: Sunburst's valleys do
+    /// (Variables slice 8).
+    var movesForwardOfHeading: Bool
 
     /// Whether libm's rounding, rather than the geometry, decides this update's
     /// emission count.
@@ -180,7 +186,8 @@ func boundaryProbe(
         alongComponent: alongComponent,
         // Whatever the along term does not account for. Defined as the remainder
         // so the two provably sum to the residual instead of nearly doing so.
-        perpendicularContribution: residual - alongComponent
+        perpendicularContribution: residual - alongComponent,
+        movesForwardOfHeading: projection > 0
     )
 }
 

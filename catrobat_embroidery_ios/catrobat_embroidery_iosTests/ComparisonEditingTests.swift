@@ -2,6 +2,7 @@
 import EditorCore
 import Foundation
 import ProgramModel
+import Samples
 import Testing
 import UIKit
 
@@ -85,6 +86,17 @@ struct ComparisonEditingTests {
         editor.endParameterEdit()
         #expect(editor.program == Self.program(locked))
         #expect(editor.undoStack.undoDepth == 0)
+    }
+
+    /// The Sunburst sample exists to show this feature, so its If must open editable, not
+    /// locked (Variables slice 8).
+    @Test("the Sunburst sample's If opens in the comparison editor")
+    func sunburstIsEditable() throws {
+        let program = SampleLibrary[.sunburst].program
+        let bricks = program.scenes.flatMap(\.objects).flatMap(\.scripts).flatMap(\.bricks)
+        let condition = try #require(bricks.first { BrickKind(of: $0) == .ifElse }?.parameters.first)
+        #expect(ParameterEditorKind(condition)
+            == .comparison(lhs: .variable("Long"), relation: .equal, rhs: .number(1)))
     }
 
     // MARK: - Words
