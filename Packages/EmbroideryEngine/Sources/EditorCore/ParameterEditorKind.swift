@@ -31,8 +31,7 @@ public enum ParameterEditorKind: Sendable, Equatable {
     /// The editor for a parameter. Only a condition slot offers the comparison editor (D16): the
     /// same `1 < 2` in Move's steps is a calculation's operand and stays locked.
     public init(_ parameter: BrickParameter) {
-        if parameter.slot == .condition, case let .formula(formula) = parameter.value,
-           let comparison = EditableComparison(formula) {
+        if let comparison = EditableComparison(parameter) {
             self = .comparison(lhs: comparison.lhs, relation: comparison.relation, rhs: comparison.rhs)
         } else {
             self.init(parameter.value)

@@ -2,14 +2,20 @@ import ProgramModel
 
 /// One side of a comparison, in reading order (Variables slice 7).
 public enum ComparisonSide: Sendable, Hashable, CaseIterable {
-    case first, second
+    /// The left-hand operand.
+    case first
+    /// The right-hand operand.
+    case second
 }
 
 /// What one control of the parameter editor edits: a whole slot, or one side of the comparison
 /// a condition slot holds (Variables slice 7). The number and variable controls take a target,
 /// so a comparison's sides reuse them rather than copies of them.
 public enum ParameterTarget: Sendable, Hashable {
+    /// The whole slot: the control writes the slot's value, not one side of a comparison in it.
     case slot(ParameterSlot)
+    /// One side of the comparison the slot holds. Only a condition slot holding an editable
+    /// comparison has one.
     case operand(ParameterSlot, ComparisonSide)
 
     /// The slot the target lives in.
@@ -56,6 +62,15 @@ struct EditableComparison: Equatable {
             : Self(lhs: lhs, relation: relation, rhs: operand)
     }
 
+    /// The editable comparison a parameter holds, or `nil`. **The one place the slot rule
+    /// lives** (brief D16): only a condition slot offers the comparison editor, so the same
+    /// `1 < 2` in Move's steps has no sides to read or write, and the editor kind and every
+    /// target operation agree (`swift-code-reviewer`, feature review).
+    init?(_ parameter: BrickParameter) {
+        guard parameter.slot == .condition, case let .formula(formula) = parameter.value else { return nil }
+        self.init(formula)
+    }
+
     /// A number or a variable reference: what the number and variable controls write.
     static func isPlain(_ formula: Formula) -> Bool {
         switch formula {
@@ -69,10 +84,9 @@ public extension Brick {
     /// The value a target addresses, or `nil` where the brick has no such slot — or, for a side,
     /// where the slot does not hold an editable comparison.
     func value(at target: ParameterTarget) -> ParameterValue? {
-        let value = parameters.first { $0.slot == target.slot }?.value
-        guard case let .operand(_, side) = target else { return value }
-        guard case let .formula(formula)? = value, let comparison = EditableComparison(formula) else { return nil }
-        return .formula(comparison.side(side))
+        let parameter = parameters.first { $0.slot == target.slot }
+        guard case let .operand(_, side) = target else { return parameter?.value }
+        return editableComparison(in: target.slot).map { .formula($0.side(side)) }
     }
 
     /// The brick with one target replaced. A side takes only a number or a variable reference,
@@ -81,8 +95,7 @@ public extension Brick {
     func replacing(_ target: ParameterTarget, with value: ParameterValue) -> Brick? {
         guard case let .operand(slot, side) = target else { return replacing(target.slot, with: value) }
         guard case let .formula(operand) = value, EditableComparison.isPlain(operand),
-              case let .formula(formula)? = self.value(at: .slot(slot)),
-              let comparison = EditableComparison(formula)
+              let comparison = editableComparison(in: slot)
         else { return nil }
         return replacing(slot, with: .formula(comparison.replacing(side, with: operand).formula))
     }
@@ -90,10 +103,14 @@ public extension Brick {
     /// The brick with its comparison's operator changed and both sides kept, or `nil` where the
     /// slot does not hold an editable comparison.
     func replacingComparisonOperator(in slot: ParameterSlot, with relation: ComparisonOperator) -> Brick? {
-        guard case let .formula(formula)? = value(at: .slot(slot)),
-              let comparison = EditableComparison(formula)
+        guard let comparison = editableComparison(in: slot)
         else { return nil }
         let changed = EditableComparison(lhs: comparison.lhs, relation: relation, rhs: comparison.rhs)
         return replacing(slot, with: .formula(changed.formula))
+    }
+
+    /// The editable comparison in `slot`, under the one slot rule.
+    private func editableComparison(in slot: ParameterSlot) -> EditableComparison? {
+        parameters.first { $0.slot == slot }.flatMap(EditableComparison.init(_:))
     }
 }

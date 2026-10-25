@@ -37,7 +37,7 @@ Work after M4 is organised by feature (ADR-041). The milestone sections below re
 |---|---|---|
 | [Editor UI](features/editor-ui.md) | Rest of M4: US-411, M4 exit criteria and final verification | Done — 2026-10-17, PR #69 |
 | [Brick backend](features/brick-backend.md) | M6 brick parity set: Arc, GoThrough, formula functions and sensors | Done — 2026-10-19, PRs #71 and #72 |
-| [Variables](features/variables.md) | M6 control/data subset, beyond US-410's variable menu | Planned — 2026-10-19, brief review pending |
+| [Variables](features/variables.md) | M6 control/data subset, beyond US-410's variable menu | In review — PRs #73–#75 merged, PR 3 (#76) at handover, 2026-10-25 |
 | Project management | M5 | Not briefed |
 | Language-test runner | Catrobat Language Tests (supervisor's suggestion, 2026-10-17); pulls a partial `.catrobat` (code.xml) import forward from S* | Not briefed |
 

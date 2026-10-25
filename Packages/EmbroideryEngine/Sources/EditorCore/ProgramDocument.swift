@@ -107,32 +107,13 @@ public enum ProgramDocument {
 }
 
 private extension Brick {
-    /// Every formula this brick carries. Exhaustive on purpose: a new brick case
-    /// with a formula payload must be added here, or the compiler says so.
+    /// Every formula this brick carries, read off `parameters` — the one exhaustive list of a
+    /// brick's slots, which `BrickParameterTests` pins per kind. A second switch here had to be
+    /// kept in step by hand, and the depth guard was tested for one new brick only
+    /// (`swift-code-reviewer`, Variables feature review).
     var formulas: [Formula] {
-        switch self {
-        case let .moveNSteps(formula), let .turnLeft(formula), let .turnRight(formula),
-             let .pointInDirection(formula), let .setX(formula), let .setY(formula),
-             let .changeXBy(formula), let .changeYBy(formula),
-             let .repeatLoop(times: formula), let .wait(seconds: formula),
-             let .setVariable(_, to: formula), let .changeVariableBy(_, value: formula),
-             let .runningStitch(length: formula), let .tripleStitch(length: formula),
-             let .ifThen(condition: formula), let .ifElse(condition: formula), let .repeatUntil(condition: formula),
-             let .waitUntil(condition: formula):
-            [formula]
-        case let .placeAt(x, y):
-            [x, y]
-        case let .forVariableFromTo(_, from, to):
-            [from, to]
-        case let .zigZagStitch(length, width):
-            [length, width]
-        case let .arc(_, radius, degrees):
-            [radius, degrees]
-        case let .goThrough(throughX, throughY, x, y):
-            [throughX, throughY, x, y]
-        case .forever, .loopEnd, .elseBranch, .ifEnd, .stitch, .setThreadColor, .sewUp, .stopRunningStitch,
-             .writeEmbroideryToFile:
-            []
+        parameters.compactMap { parameter in
+            if case let .formula(formula) = parameter.value { formula } else { nil }
         }
     }
 }

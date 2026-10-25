@@ -94,6 +94,17 @@ struct ComparisonEditorTests {
         #expect(Brick.moveNSteps(.number(1)).replacing(.operand(.steps, .first), with: .formula(.number(2))) == nil)
     }
 
+    /// The slot rule lives in one place: a comparison in a number slot is locked for the editor
+    /// kind, so no target can read or write its sides either (`swift-code-reviewer`, feature
+    /// review). Move's steps holding `1 < 2` stays exactly as it is.
+    @Test("a comparison outside a condition slot has no sides to edit")
+    func sidesOnlyInConditionSlots() {
+        let move = Brick.moveNSteps(Self.less)
+        #expect(move.value(at: .operand(.steps, .first)) == nil)
+        #expect(move.replacing(.operand(.steps, .first), with: .formula(.number(5))) == nil)
+        #expect(move.replacingComparisonOperator(in: .steps, with: .equal) == nil)
+    }
+
     @Test("a slot target replaces as the slot does")
     func slotTarget() {
         #expect(Self.ifLess.replacing(.slot(.condition), with: .formula(.constant(.true)))

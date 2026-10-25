@@ -20,7 +20,7 @@ struct ComparisonEditor: View {
             Text(ParameterEditorText.title(of: ComparisonSide.first, locale: locale))
         }
         Section {
-            ComparisonOperatorPicker(editor: editor, selection: selection)
+            ComparisonOperatorPicker(editor: editor, slot: slot, selection: selection)
         }
         Section {
             FormulaSlotEditor(editor: editor, target: .operand(slot, .second))
@@ -37,6 +37,7 @@ struct ComparisonEditor: View {
 /// The setter is a closure literal, as in `ArcDirectionPicker` (Release-build crash, PR #72).
 struct ComparisonOperatorPicker: View {
     let editor: EditorViewModel
+    let slot: ParameterSlot
     let selection: ComparisonOperator
 
     @Environment(\.locale) private var locale
@@ -61,7 +62,7 @@ struct ComparisonOperatorPicker: View {
         Binding {
             selection
         } set: { chosen in
-            editor.setComparisonOperator(chosen)
+            editor.setComparisonOperator(chosen, in: slot)
         }
     }
 

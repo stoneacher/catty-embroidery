@@ -3,7 +3,7 @@ import ProgramModel
 /// The comparison editor's operator picker (Variables slice 7, brief D16): the six comparisons
 /// of `BinaryOperator`, in Catroid's order (`Operators.java`), and nothing else, so the picker
 /// can never write an arithmetic or logical root.
-public enum ComparisonOperator: Sendable, Equatable, CaseIterable {
+public enum ComparisonOperator: Sendable, Hashable, CaseIterable {
     case equal, notEqual, smallerThan, smallerOrEqual, greaterThan, greaterOrEqual
 
     /// The comparison a formula operator is, or `nil` for arithmetic and `and`/`or`.
@@ -19,6 +19,8 @@ public enum ComparisonOperator: Sendable, Equatable, CaseIterable {
         }
     }
 
+    /// The formula operator this comparison writes into a condition's root. The inverse of
+    /// `init?(_:)` over the six comparisons.
     public var binaryOperator: BinaryOperator {
         switch self {
         case .equal: .equal

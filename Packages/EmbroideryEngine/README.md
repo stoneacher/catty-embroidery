@@ -9,7 +9,7 @@ A platform-independent Swift package architecture for embroidery-focused block p
 | **EmbroideryEngine** | Stitch generation, pattern management, DST serialization. No I/O, no dependencies, strict concurrency. | — |
 | **ProgramModel** | Pure value graph (Program/Scene/Object/Script/Brick/Formula), plus the `EditorCore` editing vocabulary (ADR-033). No engine types. | Foundation |
 | **Interpreter** | Maps `Program` onto engine; executes bricks tick-by-tick; collects stitches. | ProgramModel, EmbroideryEngine |
-| **Samples** | Bundled example programs for learning (octagon rosette, square coil, arc flower). | ProgramModel |
+| **Samples** | Bundled example programs for learning (octagon rosette, square coil, arc flower, sunburst). | ProgramModel |
 | **StagePreview** | Display lists, zoom/pan math, run driver for live preview. Foundation-only. | Interpreter, EmbroideryEngine |
 
 The dependency DAG is a straight line inward (ADR-016): `ProgramModel` is platform-independent and editor-safe; `Interpreter` is the only place model and engine meet; `Samples` depends on `ProgramModel` only; `StagePreview` depends on `Interpreter`.
@@ -359,7 +359,27 @@ public struct Script: Sendable, Equatable, Codable {
 }
 ```
 
-Scripts are flat, not nested — loops are represented as `.repeatLoop` / `.forever` opener / `.loopEnd` pairs in the same list (ADR-008). The script validates its brick structure via `validate()`, which throws `ScriptValidationError` if control bricks do not balance. `movingPair(at:to:)` returns a copy with the pair relocated as one unit (it does not mutate the script). Pair operations throw `ScriptMoveError` if the indices are invalid or the pair is unbalanced.
+Scripts are flat, not nested — loops are represented as `.repeatLoop` / `.forever` / `.repeatUntil` / `.forVariableFromTo` opener / `.loopEnd` pairs, and Ifs as `.ifThen` / `.ifElse` opener, optional `.elseBranch` divider, `.ifEnd` closer, all in the same list (ADR-008, amended for Ifs by Variables slice 2). The script validates its brick structure via `validate()`, which throws `ScriptValidationError` if control bricks do not balance (unmatched or mismatched openers and closers, a misplaced or duplicate `elseBranch`, a missing one in an If/Else). `movingPair(at:to:)` returns a copy with the pair relocated as one unit (it does not mutate the script) and moves an If with its else-branch intact. Pair operations throw `ScriptMoveError` if the indices are invalid or the pair is unbalanced.
+
+**BlockRole** / **BlockFamily** — Where a brick sits in the block structure. A closer ends only an opener of its own family, so a `loopEnd` cannot close an If.
+
+```swift
+public enum BlockFamily: Sendable, Equatable { case loop, conditional }
+
+public enum BlockRole: Sendable, Equatable {
+    case leaf                 // motion, data, wait, waitUntil, embroidery
+    case opener(BlockFamily)  // repeatLoop, forever, repeatUntil, forVariableFromTo, ifThen, ifElse
+    case divider              // elseBranch
+    case closer(BlockFamily)  // loopEnd (loop), ifEnd (conditional)
+}
+
+let role = brick.blockRole      // Listed exhaustively: a new Brick case must declare its role
+brick.opensBlock, brick.closesBlock, brick.isDivider
+brick.opensLoop, brick.isLoopEnd   // loop-only views
+brick.expectsElse                  // true only for .ifElse
+```
+
+`wait` is a leaf despite sitting in the control category, and `waitUntil` is a leaf too: neither opens a pair. Only loops count as `opensLoop`; an If is a block but not a loop.
 
 **ScriptHeader** — What triggers a script.
 
@@ -402,8 +422,15 @@ public indirect enum Brick: Sendable, Equatable, Codable {
     // Control
     case repeatLoop(times: Formula)
     case forever
+    case repeatUntil(condition: Formula)                 // opener; ADR-049
+    case forVariableFromTo(name: String, from: Formula, to: Formula)  // opener; ADR-049
     case loopEnd
     case wait(seconds: Formula)
+    case waitUntil(condition: Formula)                   // leaf; ADR-049
+    case ifThen(condition: Formula)                      // opener
+    case ifElse(condition: Formula)                      // opener, needs one elseBranch
+    case elseBranch                                      // divider
+    case ifEnd                                           // closer
     
     // Data
     case setVariable(name: String, to: Formula)
@@ -444,7 +471,7 @@ public enum ArcDirection: Sendable, Hashable, CaseIterable, Codable {
 }
 ```
 
-`BrickDefaults` provides Catroid-compatible default values that the M4 editor seeds new bricks with (the US-401 defaults are omitted above). `Arc` turns counter-clockwise for `.left` and clockwise for `.right`; a negative `degrees` flips the sweep, as in Catroid. `GoThrough` curves from the needle through `(throughX, throughY)` to `(x, y)`. Both are motion bricks that the interpreter executes in one tick (ADR-047).
+`BrickDefaults` provides Catroid-compatible default values that the M4 editor seeds new bricks with (the US-401 defaults are omitted above; the Variables ones are `conditionLeft`/`conditionRight` = 1 < 2 for a new If, and `forLoopFrom`/`forLoopTo` = 1 and 10). `Arc` turns counter-clockwise for `.left` and clockwise for `.right`; a negative `degrees` flips the sweep, as in Catroid. `GoThrough` curves from the needle through `(throughX, throughY)` to `(x, y)`. Both are motion bricks that the interpreter executes in one tick (ADR-047).
 
 **Formula** — Expressions composed of numbers, variables, operators, Catroid's math functions, `pi`, and the object's own position and direction sensors (ADR-046).
 
@@ -452,11 +479,12 @@ public enum ArcDirection: Sendable, Hashable, CaseIterable, Codable {
 public indirect enum Formula: Sendable, Equatable, Codable {
     case number(Double)
     case variable(String)
-    case binary(BinaryOperator, Formula, Formula)
+    case binary(BinaryOperator, Formula, Formula)          // arithmetic, comparison, and/or
     case unaryMinus(Formula)
+    case logicalNot(Formula)                               // not x: 1 for 0, else 0
     case unaryFunction(UnaryFunction, Formula)            // sin(30)
-    case binaryFunction(BinaryFunction, Formula, Formula)  // mod(7, 3)
-    case constant(FormulaConstant)                         // pi
+    case binaryFunction(BinaryFunction, Formula, Formula)  // mod(7, 3), power(2, 8)
+    case constant(FormulaConstant)                         // pi, true, false
     case sensor(Sensor)                                    // objectX, objectY, motionDirection
     
     public func interpretDouble(scope: some Scope) throws -> Double
@@ -466,6 +494,8 @@ public indirect enum Formula: Sendable, Equatable, Codable {
 
 public enum BinaryOperator: Sendable, Equatable, CaseIterable, Codable {
     case plus, minus, mult, divide, pow
+    case equal, notEqual, smallerThan, smallerOrEqual, greaterThan, greaterOrEqual  // comparisons
+    case logicalAnd, logicalOr
 }
 
 public enum UnaryFunction: Sendable, Hashable, CaseIterable, Codable {
@@ -473,11 +503,12 @@ public enum UnaryFunction: Sendable, Hashable, CaseIterable, Codable {
 }
 
 public enum BinaryFunction: Sendable, Hashable, CaseIterable, Codable {
-    case arctan2, min, max, mod
+    case arctan2, min, max, mod, power  // power is Math.pow, not the ^ operator
 }
 
 public enum FormulaConstant: Sendable, Hashable, CaseIterable, Codable {
     case pi
+    case `true`, `false`  // 1 and 0
 }
 
 public enum Sensor: Sendable, Hashable, CaseIterable, Codable {
@@ -489,7 +520,7 @@ public enum FormulaError: Error, Equatable, Sendable {
 }
 ```
 
-Formulas evaluate via `interpretDouble(scope:)`, which resolves variables and sensors through the `Scope`. Every node's result is normalized: ±∞ is capped at ±`Double.greatestFiniteMagnitude` (Catroid's per-node rule), so only a NaN at the root throws `FormulaError.notANumber`. Division by a zero divisor yields NaN, so `1 / 0` throws. `interpretInteger(scope:)` truncates toward zero and saturates to the Int32 range (Java's `(int)` cast), and `interpretFloat(scope:)` narrows to `Float` for the zig-zag brick. Trigonometry takes and returns degrees. `mod` is a floored modulo, and `arctan2` of two zeros is 0 (ADR-046). The case names of `Formula` and the four vocabularies are coding keys in the file format, so they are never renamed; the four formula cases were added additively (ADR-037, ADR-046). ADR-017 covers arithmetic precision (native `Double`, not decimal128), fallback semantics, and caveats about bit parity with Android.
+Formulas evaluate via `interpretDouble(scope:)`, which resolves variables and sensors through the `Scope`. Every node's result is normalized: ±∞ is capped at ±`Double.greatestFiniteMagnitude` (Catroid's per-node rule), so only a NaN at the root throws `FormulaError.notANumber`. Division by a zero divisor yields NaN, so `1 / 0` throws. `interpretInteger(scope:)` truncates toward zero and saturates to the Int32 range (Java's `(int)` cast), and `interpretFloat(scope:)` narrows to `Float` for the zig-zag brick. Trigonometry takes and returns degrees. `mod` is a floored modulo, and `arctan2` of two zeros is 0 (ADR-046). Comparisons and `and`/`or` yield 1 or 0 and never NaN; `not` is 1 for a zero operand. Comparisons follow Catroid's order and equality (NaN equals NaN, −0 equals +0), and `power` is raw `Math.pow` where `^` guards NaN and zeros (ADR-048). Conditions are read as `Double`, and each control brick applies its own truthiness rule to them (ADR-049). The case names of `Formula` and the four vocabularies are coding keys in the file format, so they are never renamed; the formula cases were added additively (ADR-037, ADR-046, ADR-048), so an older document still decodes. ADR-017 covers arithmetic precision (native `Double`, not decimal128), fallback semantics, and caveats about bit parity with Android.
 
 **Variable** — A named numeric value.
 
@@ -515,6 +546,9 @@ public enum ParameterSlot: Sendable, Hashable, CaseIterable {
     case radius      // Arc's radius
     case throughX    // GoThrough's through-point; its destination reuses .x and .y
     case throughY
+    case condition   // An If's, RepeatUntil's or WaitUntil's condition
+    case from        // ForVariableFromTo's first value; its variable reuses .variableName
+    case to          // ForVariableFromTo's last value
 }
 
 public enum ParameterValue: Sendable, Equatable {
@@ -529,7 +563,55 @@ public enum ParameterValue: Sendable, Equatable {
 let parameters = Brick.arc(direction: .left, radius: .number(10), degrees: .number(360)).parameters
 ```
 
-`ParameterEditorKind` decides which editor a value gets. Function calls, `pi` and sensors are shown read-only (`ReadOnlyFormulaReason.function` and `.sensor`), because no editor path writes them yet (ADR-046, ADR-040).
+`ParameterEditorKind` decides which editor a value gets. Function calls (including `power`), `pi` and sensors are shown read-only (`ReadOnlyFormulaReason.function` and `.sensor`), because no editor path writes them yet (ADR-046, ADR-040).
+
+### Comparison conditions
+
+A condition slot holds any formula (ADR-048). When it holds one comparison of two plain values, a number or a variable each, the comparison editor edits it as an operator and one number-or-variable control per side (ADR-040, amended by Variables slice 7). A `ParameterTarget` names the control: a whole slot, or one side of the slot's comparison.
+
+```swift
+public enum ComparisonOperator: Sendable, Equatable, CaseIterable {
+    case equal, notEqual, smallerThan, smallerOrEqual, greaterThan, greaterOrEqual
+    public init?(_ operation: BinaryOperator)  // nil for arithmetic, and, or
+    public var binaryOperator: BinaryOperator
+}
+
+public enum ComparisonSide: Sendable, Hashable, CaseIterable { case first, second }
+
+public enum ParameterTarget: Sendable, Hashable {
+    case slot(ParameterSlot)
+    case operand(ParameterSlot, ComparisonSide)
+    public var slot: ParameterSlot { get }
+}
+
+public extension Brick {
+    func value(at target: ParameterTarget) -> ParameterValue?
+    func replacing(_ target: ParameterTarget, with value: ParameterValue) -> Brick?
+    func replacingComparisonOperator(in slot: ParameterSlot, with relation: ComparisonOperator) -> Brick?
+}
+```
+
+`value(at:)` returns `nil` where the brick has no such slot, or where a side's slot does not hold an editable comparison. `replacing(_:with:)` writes a side only with a number or a variable reference, and only into a slot that holds an editable comparison, so the editor cannot write a tree it would then lock. Both keep the brick's kind. `replacingComparisonOperator(in:with:)` changes the operator and keeps both sides.
+
+```swift
+let brick = Brick.ifThen(condition: .binary(.smallerThan, .number(1), .variable("Long")))
+brick.value(at: .operand(.condition, .second))                  // .formula(.variable("Long"))
+brick.replacing(.operand(.condition, .second), with: .formula(.number(0)))
+brick.replacingComparisonOperator(in: .condition, with: .greaterThan)  // 1 > Long
+```
+
+`ParameterEditorKind` has a matching case and initialiser:
+
+```swift
+// Only a condition slot offers the comparison editor; the same 1 < 2 in Move's steps stays locked.
+switch ParameterEditorKind(parameter) {   // parameter: a BrickParameter from brick.parameters
+case let .comparison(lhs, relation, rhs): ...
+case let .readOnlyFormula(formula, reason): ...   // reason: .logic for and/or/not/true/false
+default: ...
+}
+```
+
+`ParameterEditorKind(_ parameter:)` is the entry point for a slot; `ParameterEditorKind(_ value:)` is the value-only fallback it uses for everything that is not a comparison. A condition that is not one plain comparison (`and`, `or`, `not`, `true`, `false`, or a comparison of a calculation) is locked with `ReadOnlyFormulaReason.logic`.
 
 ## Design Constraints
 
@@ -621,9 +703,10 @@ public struct VirtualNeedle: Hashable, Sendable {
 - **Arc and GoThrough are one action**: they feed many needle updates, and the stitches they produce, within their single tick (ADR-047).
 - **`wait` uses accumulating logical time**, not wall-clock, so frame rate does not affect duration.
 - **Variable resolution** is first-declaration-wins; object variables shadow project variables.
-- **Formula errors are non-fatal**: a motion brick with a bad formula leaves the needle unchanged and still emits one unchanged update (`placeAt` substitutes 0 for the failed coordinate); data operations fall back to zero, loops to zero iterations.
+- **Formula errors are non-fatal**: a motion brick with a bad formula leaves the needle unchanged and still emits one unchanged update (`placeAt` substitutes 0 for the failed coordinate); data operations fall back to zero, loops to zero iterations. A condition that does not interpret is non-fatal too; ADR-049 says which way each control brick falls.
+- **Control bricks** (ADR-049): `ifThen` and `ifElse` choose a branch from their condition, `repeatUntil` checks its condition at entry and at the end of each pass, `waitUntil` polls once per tick like `wait` blocks its script, and `forVariableFromTo` reads its bounds once and counts its variable through them.
 
-See [ADR-018](../../docs/DECISIONS.md) for the complete tick accounting and loop nesting semantics.
+See [ADR-018](../../docs/DECISIONS.md) for the complete tick accounting and loop nesting semantics, and [ADR-049](../../docs/DECISIONS.md) for the If, RepeatUntil, WaitUntil and ForVariableFromTo tick costs and truthiness rules.
 
 ## Design Constraints
 
@@ -667,9 +750,12 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     case octagonRosette
     case squareCoil
     case arcFlower
+    case sunburst
     // A DEBUG-only measurement case (us309Synthetic) is not in SampleLibrary.all.
 }
 ```
+
+The raw values are persistence tokens (M5 keys a copied sample by them), so a case may be added but a raw value is never renamed. A decoder should fall back to a shipping sample for an unknown token rather than throw, because a debug-only case can write one a Release build cannot read.
 
 ## Bundled Samples
 
@@ -678,6 +764,7 @@ Each sample is built by a Swift function (e.g. `makeOctagonRosetteProgram()`) an
 - **Octagon Rosette** — Demonstrates nested loops, variables, and zigzag stitching. Transcribed brick-for-brick from Catroid's default example project with verified libm-dependent behaviour (ADR-019).
 - **Square Coil** — A spiral of increasing sides, demonstrating motion from variables and thread-color changes. Carefully parameterized off the DST threshold boundaries (ADR-020).
 - **Arc Flower** — Twelve circles drawn with Arc in a wave of sizes set by `sin`, with a curved GoThrough stem and an absolute heading for each petal. Shows the brick-backend vocabulary (ADR-046, ADR-047).
+- **Sunburst** — Thirty-six rays counted by a For loop, alternating long and short through an If/Else, around a circle in a second colour. Shows the Variables vocabulary (ADR-048, ADR-049).
 
 See `Sources/Samples/Resources/PROVENANCE.md` for detailed transcription notes, measured figures, and cross-platform comparison caveats.
 
@@ -1033,5 +1120,7 @@ The following Architecture Decision Records document the design rationale and ar
 - **[ADR-033](../../docs/DECISIONS.md#adr-033)** — `EditorCore` as a target vended through the `ProgramModel` product.
 - **[ADR-046](../../docs/DECISIONS.md#adr-046)** — Formula functions, constants and sensors (ProgramModel, Interpreter).
 - **[ADR-047](../../docs/DECISIONS.md#adr-047)** — Arc and GoThrough: many needle updates per tick (Interpreter).
+- **[ADR-048](../../docs/DECISIONS.md#adr-048)** — Logic and comparisons: `Double` values, Catroid's operators, `power` (ProgramModel).
+- **[ADR-049](../../docs/DECISIONS.md#adr-049)** — Control-brick execution: If, RepeatUntil, WaitUntil, ForVariableFromTo (Interpreter).
 
 When implementing features across products, consult the relevant ADRs before modifying code.

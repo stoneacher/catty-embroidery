@@ -78,11 +78,11 @@ extension EditorViewModel {
     }
 
     /// The comparison editor's operator picker: both sides kept. `nil`, changing nothing, unless
-    /// the edited brick's condition is an editable comparison (Variables slice 7).
+    /// `slot` of the edited brick holds an editable comparison (Variables slice 7).
     @discardableResult
-    func setComparisonOperator(_ relation: ComparisonOperator) -> EditResult? {
+    func setComparisonOperator(_ relation: ComparisonOperator, in slot: ParameterSlot = .condition) -> EditResult? {
         guard let session = parameterSession,
-              let replacement = brick(at: session.address)?.replacingComparisonOperator(in: .condition, with: relation)
+              let replacement = brick(at: session.address)?.replacingComparisonOperator(in: slot, with: relation)
         else { return nil }
         return apply(.replaceBrick(at: session.address, with: replacement), coalescing: session.key)
     }

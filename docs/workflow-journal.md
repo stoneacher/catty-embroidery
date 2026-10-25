@@ -3639,3 +3639,20 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The app job's duration has not jumped (14–17 min has been normal since before PR 2a). The time limits are hang guards, and CI's main-actor queue now regularly approaches them.
   - Raising them, or serialising the heaviest suites, is a decision for Sebastian, not for a feature PR. Recorded here with the evidence.
 
+## 2026-10-25 — Variables: feature-close review and documentation pass
+
+- **`swift-code-reviewer` over the whole feature** (`e3ba4c4..e1bfcb1`, 102 files) found nothing critical: the engine's slices agree with each other. It found three things no per-slice review could, all fixed on PR 3:
+  - **One rule, two places:** only `ParameterEditorKind` enforced "only a condition slot gets the comparison editor". The target operations would have rewritten `1 < 2` in Move's steps, although the editor shows that as locked. The rule now has one definition (`EditableComparison(_ parameter:)`), and the operator picker passes its slot instead of the view model hardcoding `.condition`. Test-first, red shown, mutant killed.
+  - **A divergence visible only across slices:** US-326 (Set variable writes 0 where Catroid stores NaN) became observable through conditions once `=` existed. It is now pinned by a named test and marked `[disputed]` inline in ADR-018 (ADR-032 invariant 3).
+  - **Drift in the docs:** the brief still said "Planned", no acceptance box was ticked, the ROADMAP line was a week stale, and three of the six promised screenshots were missing. One committed screenshot (the locked `1 < 2`) now shows behaviour slice 7 removed. Each box was ticked only against its slice record. The missing captures were committed from the session's simulator runs, and 03 is labelled as history.
+- **Also taken:** `ProgramDocument`'s formula walk now derives from `parameters` instead of keeping a second exhaustive switch. A mutant dropping a new brick's formula there would have survived, because only `ifThen` had a depth test. `ComparisonOperator` now declares `Hashable`.
+- **Deferred, recorded for the backlog** (refactors with no defect behind them):
+  - ADR-049's truthiness lives in two files.
+  - The editor's indent walk and the app's nesting counts are parallel walks.
+  - The "block marker" kind set is spelled in four places.
+  - `BinaryOperator` is classified four times.
+  - `matchingElse`, `opensLoop` and `isLoopEnd` are public but used only by tests.
+  - `ParameterEditorKind.init(_ value:)` is public and answers differently from `init(_ parameter:)` for a condition.
+  - Row presentations are rebuilt on every list body (1.3 ms for 82 rows; not a hotspot, but caching per revision would also lighten the soak).
+- **`swift-documenter`** updated the package README for the feature's public API and added missing doc comments on the new EditorCore types. One of its sentences was wrong: it said a condition slot "holds one comparison of two plain values". A condition holds any formula, and only a plain comparison is editable (ADR-040, not ADR-048). Corrected before commit.
+

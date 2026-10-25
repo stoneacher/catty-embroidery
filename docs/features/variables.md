@@ -1,6 +1,6 @@
 # Variables
 
-**Status**: Planned — 2026-10-19 | **Epic**: E8 (+ E3 formulas) | **Branch**: `feature/variables` (PR 1; later PRs get their own branches)
+**Status**: In review — PR 3 (#76), 2026-10-25; PRs #73–#75 merged | **Epic**: E8 (+ E3 formulas) | **Branch**: `feature/variables` (PR 1; later PRs get their own branches)
 
 **Goal**: a program can make decisions and loop on conditions. Formulas gain comparisons, `and`/`or`/`not`, `true`/`false` and Catroid's `power()`; the control bricks If, If/Else, RepeatUntil, WaitUntil and ForVariableFromTo execute, preview and export as the Android Embroidery Designer does wherever Catroid is sound; and the user can author a simple condition in the app. Every divergence from Catroid is pinned by a named test.
 
@@ -48,17 +48,17 @@ Planned with `swift-architect`. Four decisions taken by Sebastian on 2026-10-19:
 
 ## Acceptance criteria
 
-- [ ] Every new `Brick` and `Formula` case round-trips through `ProgramDocument` and is reflexively `==` — the existing case census, which fails to compile when a case is added.
-- [ ] Every comparison and logic node matches a characterization table generated from Catroid's expressions under Java 17, including NaN, ±0 and ±MAX operands; `power` matches `Math.pow` and each D4 difference from `^` has a named test.
-- [ ] The four decimal operators yield +0 exactly where Catroid's decimal result is an exact zero, and keep −0 on negative underflow; every −0 Catroid produces (unary minus, `ceil(−0.5)`, `min`, underflow) still does; no DST golden changes.
-- [ ] Every divergence (D2 fallback if taken, D6, D8 mid-body NaN, D9 throttle, D10 `""` name) has a named test.
-- [ ] Each control brick's truthiness follows D5, pinned per brick at 0.5, −0.99, −1, MAX and NaN.
-- [ ] Each control brick's tick cost matches D7–D10 (the D7 tick table; nested empty Ifs cost one tick; a WaitUntil released by another script; RepeatUntil's two checks observed from a second script).
-- [ ] The US-323 probe ends at (2, 3), and no existing golden's event timing moves.
-- [ ] `validate()` accepts exactly the well-formed block structures — a property over generated scripts — and every editor verb keeps every script valid (`PairInvariantSoakTests`, `EditBalanceInvariantTests` over the new openers); accessibility moves still reach every arrangement a drag reaches.
-- [ ] A condition of the form `leaf op leaf` is editable as one undoable session; any other condition is shown locked with its reason.
-- [ ] Every palette kind, row sentence and new formula node has String Catalog entries.
-- [ ] The new sample runs and exports, and its `.dst` opens correctly in Ink/Stitch (manual check).
+- [x] Every new `Brick` and `Formula` case round-trips through `ProgramDocument` and is reflexively `==` — the existing case census, which fails to compile when a case is added.
+- [x] Every comparison and logic node matches a characterization table generated from Catroid's expressions under Java 17, including NaN, ±0 and ±MAX operands; `power` matches `Math.pow` and each D4 difference from `^` has a named test.
+- [x] The four decimal operators yield +0 exactly where Catroid's decimal result is an exact zero, and keep −0 on negative underflow; every −0 Catroid produces (unary minus, `ceil(−0.5)`, `min`, underflow) still does; no DST golden changes.
+- [x] Every divergence (D2 fallback if taken, D6, D8 mid-body NaN, D9 throttle, D10 `""` name) has a named test. *(D2 not taken; US-326 pinned too, `StepperVariableTests.setVariableNaNIsZero`, feature review.)*
+- [x] Each control brick's truthiness follows D5, pinned per brick at 0.5, −0.99, −1, MAX and NaN.
+- [x] Each control brick's tick cost matches D7–D10 (the D7 tick table; nested empty Ifs cost one tick; a WaitUntil released by another script; RepeatUntil's two checks observed from a second script).
+- [x] The US-323 probe ends at (2, 3), and no existing golden's event timing moves.
+- [x] `validate()` accepts exactly the well-formed block structures — a property over generated scripts — and every editor verb keeps every script valid (`PairInvariantSoakTests`, `EditBalanceInvariantTests` over the new openers); accessibility moves still reach every arrangement a drag reaches.
+- [x] A condition of the form `leaf op leaf` is editable as one undoable session; any other condition is shown locked with its reason.
+- [x] Every palette kind, row sentence and new formula node has String Catalog entries.
+- [ ] The new sample runs and exports, and its `.dst` opens correctly in Ink/Stitch (manual check). *(Runs and exports: done, slice 8. Ink/Stitch: pending, Sebastian.)*
 
 ## Slices and test-first outline
 
@@ -144,7 +144,7 @@ Every slice except 7 is **risky** → `swift-code-reviewer` + one Codex round wh
 ## Verification at handover
 
 - Every slice mutation-checked and recorded; risky slices reviewed when green (reviewer + one Codex round each), then each PR's Codex loop (cap 5).
-- Simulator screenshots: the palette's control group, an If/Else block with its else row, a ForVariableFromTo row, the condition editor, a locked logic formula and the sample's preview.
+- Simulator screenshots, in `docs/screenshots/variables/`: the palette's control group (01, 04), an If/Else block with its else row (02), a ForVariableFromTo row (05), the condition editor and its operator menu (06, 07), and the sample's script and preview (08, 09). 04–09 are the 368 × 800 captures taken during slices 6–8. **03 shows slice 2's lock on the default `1 < 2`, which slice 7 replaced with the comparison editor**, so it is kept as history only. A locked logic formula (`and`/`or`/`not`) cannot be authored in the app yet; its row is the unchanged `ReadOnlyFormulaRow`, covered by `ComparisonEditingTests.lockedStays` and the lock-reason test (feature review, 2026-10-25).
 - **Ink/Stitch**: the sample's `.dst`.
 - Pre-beta accessibility questions: VoiceOver reading of an If/Else block (is the else row announced as a boundary?), the condition editor's operator picker label and value, and the accessibility move actions across an else.
 
