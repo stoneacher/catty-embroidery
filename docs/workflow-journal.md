@@ -3697,3 +3697,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **US-327 decided:** raise the CI hang guards. The 25 one-minute literals became one named trait, `.hangGuard` (three minutes), so the reason sits in one place.
 - **Brief review:** D3, D7 and D8 are new behaviour, so the brief gets one Codex round before any test (ADR-041).
 
+## 2026-10-25 — M5: Codex brief review, 14 findings before any test
+
+- **One round on the brief, highest severity High:** 14 findings, 5 of them High. All are valid; none reversed a decision Sebastian made. Each made a decision precise where it had been loose. The five Highs:
+  - **"One name" contradicted ADR-026.** `A/B` is a valid DST name, but ADR-026 sanitises the file name to `A_B.dst`. The `LA` field is the name; the file name is derived from it.
+  - **Migration could lose edits.** If the legacy delete failed and the user then edited the migrated project, the next launch would have overwritten it with the old file. Now the fixed-ID project is never overwritten, and the step order is pinned.
+  - **Launch could resurrect a deleted project.** A stored scene ID whose file was gone would have become the new draft's ID, so the first edit would recreate the file. An unresolved ID is never reused now.
+  - **Refused files lost ADR-037's protection.** "The window that failed to open it never writes it" left other windows free to overwrite. Now a refusal blocks every window's writes to that one ID.
+  - **The rename exception had no mechanism.** The change callback is untyped today, so the rule now rests on the before and after values, with the undo/redo sequences named.
+- **What a brief review is for, measured:** each High is a data-loss or resurrection path that slice tests written from the original brief would not have contained, because the tests encode the brief. This is ADR-041's reason for a pre-test round on new behaviour, now with a concrete count.
+
