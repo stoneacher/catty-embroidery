@@ -3687,3 +3687,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Where the defects came from:** the feature's one runtime bug (US-323's late exit in slice 4) was found by `swift-code-reviewer`'s executable Catroid differential, as was slice 6's biggest test gap (every For test ran in object 0, so wrong-object mutants survived; no production defect). The floor-boundary design flaw in slice 8 was found by the always-on ADR-019 screening. Cross-slice drift (the slot rule held in one place, US-326 newly observable) was found by the feature-level pass. Codex's handover rounds mostly found test gaps and doc drift, with no runtime defect across #75 and #76.
 - **Open after the feature:** US-327 (CI hang guards on `main`, awaiting Sebastian's decision) and US-328 (one-definition follow-ups).
 
+## 2026-10-25 — M5 Project management: planning
+
+- **`swift-architect` planned the feature before the brief**, as CLAUDE.md requires. Its most useful finding was about the code, not files. The app has two names: `program.name`, saved but not editable on any screen, and the stage's export name, editable but never saved. M5's "rename validates the 15-character DST rule" therefore means merging them. Once the name is part of the program, every rename would void a finished run under ADR-038/045, so a rename-only exception is needed. Neither was in the roadmap's one-line M5 scope.
+- **Sebastian accepted all twelve design recommendations** (D1–D12 in the brief: one file per UUID-named project, lazy drafts, one name with generated names uniqued, migration of the M4 working file, per-project last-writer-wins, rename keeps the run, refused files listed but never opened).
+  - US-316 becomes its own feature right after M5. That is the reason the backlog asked for before a third deferral.
+  - The US-312 colour sidecar stays out.
+  - No build has been distributed, so ADR-037's format freeze has not started.
+- **US-327 decided:** raise the CI hang guards. The 25 one-minute literals became one named trait, `.hangGuard` (three minutes), so the reason sits in one place.
+- **Brief review:** D3, D7 and D8 are new behaviour, so the brief gets one Codex round before any test (ADR-041).
+

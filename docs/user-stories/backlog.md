@@ -14,6 +14,8 @@ ADR and journal references keep resolving.
 
 ## US-316 — The mid-gesture tail survives both rungs of the ladder, and the next experiment is named
 
+*Decided 2026-10-25 (Sebastian), M5 planning: not pulled into Project management, which shares no code with it; scheduled as **its own feature right after M5**, before any device or TestFlight capture. This is the reason the entry below asks for before a third deferral.*
+
 **Considered at M4 planning (2026-09-19) and not taken.** It stays here, and the cost is stated
 rather than glossed: M3's 60 fps exit criterion remains **unmet with no scheduled work against
 it**, and the A15-class capture — open since 2026-09-02, and already re-deferred once at M3 close
@@ -177,6 +179,8 @@ documents why it needs one, and a release build is a weaker claim than that test
 
 ## US-320 — A new window opens on a validation error the user did not cause
 
+*Pulled into Project management (2026-10-25): every project always has a valid name, so a fresh window has nothing to flag.*
+
 **Found**: 2026-09-28, US-407's simulator pass. **Accepted by Sebastian for US-407 and moved here.**
 Since ADR-039, launch selects the blank program as an untitled design, so the stage shows its
 design-name field with an empty name. `DesignNameField` reports the empty name at once, in red: "Enter a
@@ -316,6 +320,7 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 - **Evidence (result bundles):** `RunViewModelTests` and `ExportWiringTests` exceeded `.timeLimit(.minutes(1))`. Trivial tests report about 80 s, so they are waiting on a saturated main actor, not running slowly. `StageFieldRenderingTests.matIsDrawnAtCurrent` once read an all-black `ImageRenderer` pixel. The device was iOS 27.0, and job duration did not jump (14–17 min is normal).
 - **Options:** raise the hang guards (they are not performance assertions); serialise the heaviest main-actor suites (`PairInvariantSoakTests`, the run/export wiring tests); cache `BrickRowPresentation.rows` per program revision, which also lightens the soak.
 - **Needs Sebastian's decision**, because it changes test guards. Journal, 2026-10-25.
+- *Decided 2026-10-25 (Sebastian): raise the guards.* The 25 one-minute guards became one named trait, `.hangGuard` (three minutes, `HangGuard.swift`), as the first commit of Project management.
 
 ## US-328 — Variables follow-ups: one definition per rule
 

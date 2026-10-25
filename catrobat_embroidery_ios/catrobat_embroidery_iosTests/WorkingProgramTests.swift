@@ -168,7 +168,7 @@ struct WorkingProgramTests {
 
     // MARK: 6 — an applied edit voids the run
 
-    @Test("an applied edit discards the finished run and its prepared file", .timeLimit(.minutes(1)))
+    @Test("an applied edit discards the finished run and its prepared file", .hangGuard)
     func anAppliedEditDiscardsTheRunAndTheFile() async throws {
         let writer = RecordingDSTFileWriter()
         let model = try await Self.finishedModel(.squareCoil, writer: writer)
@@ -186,7 +186,7 @@ struct WorkingProgramTests {
     /// The generation bump is what stops a voided run's buffered frames landing after the
     /// reset — ADR-027's discard path, reused rather than reimplemented.
     @Test("an edit applied mid-run leaves nothing behind once the run would have finished",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func anEditMidRunLeavesNothingBehind() async throws {
         let model = Self.immediateModel()
         model.select(SampleLibrary[.squareCoil])
@@ -207,7 +207,7 @@ struct WorkingProgramTests {
     /// The other half of item 6, and the reason ADR-033 made `apply` return a result: a
     /// rejected edit leaves a finished design, and the file prepared from it, exactly where
     /// they were.
-    @Test("a rejected edit keeps the finished run and its prepared file", .timeLimit(.minutes(1)))
+    @Test("a rejected edit keeps the finished run and its prepared file", .hangGuard)
     func aRejectedEditKeepsTheRunAndTheFile() async throws {
         let writer = RecordingDSTFileWriter()
         let model = try await Self.finishedModel(.squareCoil, writer: writer)
@@ -224,7 +224,7 @@ struct WorkingProgramTests {
 
     /// Decided at planning (2026-09-27): an edit that applies and changes nothing voids
     /// nothing.
-    @Test("an edit that changes nothing keeps the finished run", .timeLimit(.minutes(1)))
+    @Test("an edit that changes nothing keeps the finished run", .hangGuard)
     func anUnchangingEditKeepsTheRun() async throws {
         let writer = RecordingDSTFileWriter()
         let model = try await Self.finishedModel(.squareCoil, writer: writer)
@@ -239,7 +239,7 @@ struct WorkingProgramTests {
 
     /// Play after an edit runs the **edited** program, not the sample it came from — the
     /// reason the selection no longer carries a program for `play()` to reach.
-    @Test("playing after an edit runs the working program", .timeLimit(.minutes(1)))
+    @Test("playing after an edit runs the working program", .hangGuard)
     func playingAfterAnEditRunsTheWorkingProgram() async throws {
         let model = Self.immediateModel()
         model.select(SampleLibrary[.squareCoil])

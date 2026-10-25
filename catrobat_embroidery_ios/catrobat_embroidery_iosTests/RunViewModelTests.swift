@@ -58,7 +58,7 @@ struct RunViewModelTests {
     /// full stitch count and an export model — the whole thread from a tap to
     /// something US-308 can write out.
     @Test("playing a sample runs it to a finished state with an export model",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func playingASampleRunsItToAFinishedState() async {
         let model = Self.immediateModel()
         let sample = SampleLibrary[.squareCoil]
@@ -82,7 +82,7 @@ struct RunViewModelTests {
     /// observed property is the honest form — and the two numbers being compared differ
     /// by more than an order of magnitude, so the failure is loud.
     @Test("the view model mutates its observed state once per batch, not once per stitch",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func theViewModelMutatesOncePerBatch() async {
         let model = Self.immediateModel()
 
@@ -107,7 +107,7 @@ struct RunViewModelTests {
     /// `PreviewRunState.apply` now refuses updates unless the run is `.running` — the
     /// structural half of the discarded-run fix. A direct-apply version of this test was
     /// exercising a path the production code no longer permits.
-    @Test("each applied frame notifies observers of the run", .timeLimit(.minutes(1)))
+    @Test("each applied frame notifies observers of the run", .hangGuard)
     func eachAppliedFrameNotifiesObservers() async {
         let pacing = GatedPacing()
         let model = RunViewModel(driver: InterpreterDriver(pacing: pacing))
@@ -151,7 +151,7 @@ struct RunViewModelTests {
     /// package's test target rather than shared: SwiftPM forbids a test target depending
     /// on another test target, and an app test target cannot import one at all.
     @Test("stopping mid-run keeps the design and still yields an export model",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func stoppingMidRunKeepsTheDesignAndTheExportModel() async {
         let pacing = GatedPacing()
         let model = RunViewModel(driver: InterpreterDriver(pacing: pacing))
@@ -175,7 +175,7 @@ struct RunViewModelTests {
         #expect(model.run.display.count < 2976)
     }
 
-    @Test("resetting returns to idle and clears the design", .timeLimit(.minutes(1)))
+    @Test("resetting returns to idle and clears the design", .hangGuard)
     func resettingReturnsToIdleAndClearsTheDesign() async throws {
         let model = Self.immediateModel()
 
@@ -211,7 +211,7 @@ struct RunViewModelTests {
     /// nothing has been applied. `await Task.sleep` would hand the consumer turns and drain
     /// it, which is precisely the interleaving that hides the bug.
     @Test("a discarded run's buffered frames never land in the next run",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func aDiscardedRunsBufferedFramesNeverLand() async {
         let model = Self.immediateModel()
 
@@ -233,7 +233,7 @@ struct RunViewModelTests {
     /// Here the corruption is silent — the display list simply holds two runs' stitches, and
     /// `count` was measured at 9 996 for a design whose run is 2 976.
     @Test("a second play does not inherit the first run's buffered frames",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func aSecondPlayDoesNotInheritBufferedFrames() async {
         let model = Self.immediateModel()
         let program = SampleLibrary[.squareCoil].program
@@ -259,7 +259,7 @@ struct RunViewModelTests {
     /// true if a suspension point were ever introduced between that check and `apply`. No
     /// current test can tell the two apart, and saying so is better than implying one does.
     @Test("a reset run's buffered frames do not land in the run started after it",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func aResetRunsFramesDoNotLandInTheRunStartedAfterIt() async {
         let model = Self.immediateModel()
         let program = SampleLibrary[.squareCoil].program
@@ -279,7 +279,7 @@ struct RunViewModelTests {
 
     /// Playing twice must not draw the second run on top of the first.
     @Test("playing again replaces the previous run rather than adding to it",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func playingAgainReplacesThePreviousRun() async {
         let model = Self.immediateModel()
         let program = SampleLibrary[.squareCoil].program

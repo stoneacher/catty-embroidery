@@ -101,7 +101,7 @@ struct HistoryTransitionTests {
     }
 
     @Test("undo after running an edit voids the run, discards its file and saves the restored program",
-          .timeLimit(.minutes(1)), arguments: HistorySurface.allCases)
+          .hangGuard, arguments: HistorySurface.allCases)
     func undoVoidsTheRunAndSaves(via surface: HistorySurface) async throws {
         let window = Self.window()
         let sample = SampleLibrary[.squareCoil]
@@ -123,7 +123,7 @@ struct HistoryTransitionTests {
     }
 
     @Test("redo after running the undone program voids the run, discards its file and saves",
-          .timeLimit(.minutes(1)), arguments: HistorySurface.allCases)
+          .hangGuard, arguments: HistorySurface.allCases)
     func redoVoidsTheRunAndSaves(via surface: HistorySurface) async throws {
         let window = Self.window()
         window.model.select(SampleLibrary[.squareCoil])
@@ -146,7 +146,7 @@ struct HistoryTransitionTests {
 
     /// The other half, as `WorkingProgramTests` pins it for a rejected edit: an undo with
     /// nothing to undo leaves a finished design and its file exactly where they were.
-    @Test("undo with nothing to undo keeps the finished run and saves nothing", .timeLimit(.minutes(1)))
+    @Test("undo with nothing to undo keeps the finished run and saves nothing", .hangGuard)
     func emptyUndoKeepsTheRun() async throws {
         let window = Self.window()
         window.model.select(SampleLibrary[.squareCoil])

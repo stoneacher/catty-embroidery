@@ -42,7 +42,7 @@ struct ExportWiringTests {
 
     /// The run reports its own termination exactly once, carrying the terminal's export
     /// model — not *some* stream, the one the terminal carried.
-    @Test("a terminating run reports its export model exactly once", .timeLimit(.minutes(1)))
+    @Test("a terminating run reports its export model exactly once", .hangGuard)
     func aTerminatingRunReportsItsExportModel() async {
         let runner = RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing()))
         var reported: [EmbroideryStream] = []
@@ -143,7 +143,7 @@ struct ExportWiringTests {
     /// design, while the new run had already cleared the stage. `ExportControl` masked it, so
     /// nothing wrong could be shared — but a view masking a broken model invariant is not the
     /// invariant holding, and ADR-026 says the file goes when the design does.
-    @Test("replaying discards the file the previous run prepared", .timeLimit(.minutes(1)))
+    @Test("replaying discards the file the previous run prepared", .hangGuard)
     func replayingDiscardsThePreparedFile() async {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
@@ -167,7 +167,7 @@ struct ExportWiringTests {
     /// `RunViewModel.onRunDiscarded`, the one chokepoint both paths already pass through, so
     /// these two calls cannot leave a prepared file behind either.
     @Test("discarding a run through the runner alone still drops the file",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func theRunnerAloneAlsoDiscardsTheFile() async {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
@@ -197,7 +197,7 @@ struct ExportWiringTests {
     /// This is the test that would fail if the hook were never connected — every other test
     /// here exercises one half.
     @Test("playing a selected design leaves a named file ready to share",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func playingLeavesAFileReady() async throws {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
@@ -217,7 +217,7 @@ struct ExportWiringTests {
     /// Committing an edited name re-prepares from the run's export model, because the name is
     /// in the `LA` **bytes** and not only in the file name — so a rename genuinely invalidates
     /// the previous file rather than merely relabelling it.
-    @Test("committing a new name rewrites the file", .timeLimit(.minutes(1)))
+    @Test("committing a new name rewrites the file", .hangGuard)
     func committingANameRewritesTheFile() async {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
@@ -266,7 +266,7 @@ struct ExportWiringTests {
     /// accessibility snapshot. The colour counts are required as premises, so the test cannot
     /// silently stop covering both cases if a sample changes.
     @Test("one colour or several, a ready export carries the thread-colour note",
-          .timeLimit(.minutes(1)),
+          .hangGuard,
           arguments: [(SampleID.octagonRosette, 1), (SampleID.squareCoil, 2)])
     func aReadyExportCarriesTheNoteWhateverTheColorCount(id: SampleID, colors: Int) async throws {
         let model = Self.immediateModel(writer: RecordingDSTFileWriter())

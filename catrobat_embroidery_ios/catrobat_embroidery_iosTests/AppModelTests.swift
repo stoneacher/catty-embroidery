@@ -206,7 +206,7 @@ struct AppModelTests {
     /// `AppModel` owns a `RunViewModel` with the real display pacing, so this waits for a few
     /// real frames rather than injecting anything: at 1/60 s a handful of frames is a few tens
     /// of milliseconds, and `squareCoil` stitches on its very first tick.
-    @Test(.timeLimit(.minutes(1)))
+    @Test(.hangGuard)
     func selectingASampleDiscardsThePreviousRun() async throws {
         let model = AppModel(autosave: .inMemory())
         let chosen = try #require(SampleLibrary.all.first)

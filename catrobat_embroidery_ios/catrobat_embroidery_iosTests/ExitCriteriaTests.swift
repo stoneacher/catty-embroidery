@@ -36,7 +36,7 @@ struct ExitCriteriaTests {
     /// are asserted equal to an independent run of that literal program, so the file is known
     /// to be of *that* run.
     @Test("a program built from nothing runs to the end and exports as .dst",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func builtFromNothingRunsAndExports() async throws {
         let writer = RecordingDSTFileWriter()
         let model = AppModel(

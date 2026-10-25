@@ -38,7 +38,7 @@ Work after M4 is organised by feature (ADR-041). The milestone sections below re
 | [Editor UI](features/editor-ui.md) | Rest of M4: US-411, M4 exit criteria and final verification | Done — 2026-10-17, PR #69 |
 | [Brick backend](features/brick-backend.md) | M6 brick parity set: Arc, GoThrough, formula functions and sensors | Done — 2026-10-19, PRs #71 and #72 |
 | [Variables](features/variables.md) | M6 control/data subset, beyond US-410's variable menu | Done — 2026-10-25, PRs #73–#76 |
-| Project management | M5 | Not briefed |
+| [Project management](features/project-management.md) | M5 | Planned — 2026-10-25 |
 | Language-test runner | Catrobat Language Tests (supervisor's suggestion, 2026-10-17); pulls a partial `.catrobat` (code.xml) import forward from S* | Not briefed |
 
 Editor UI is done (2026-10-17); Brick backend is done (2026-10-19, PRs #71 and #72); Variables is done (2026-10-25, PRs #73–#76). Next comes Project management, then the Language-test runner (order told to the supervisor on 2026-10-19). Backlog items ([`user-stories/backlog.md`](user-stories/backlog.md)) are pulled into whichever feature touches the same code, or become a feature of their own.
