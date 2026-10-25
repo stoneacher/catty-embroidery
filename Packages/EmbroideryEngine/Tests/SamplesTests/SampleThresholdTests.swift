@@ -221,17 +221,18 @@ struct SampleThresholdTests {
         #expect(run(SampleLibrary[.octagonRosette]).stitchEventCount == 3194)
     }
 
-    /// Every update of the three samples before Sunburst moves forward of its heading, so the
-    /// bound above applied to all of them before it was scoped. A decomposition that projected
-    /// on the wrong axis — `sin` and `cos` swapped, a sign flipped — fails here rather than
-    /// silently skipping the bound (Variables slice 8).
-    @Test("the earlier samples move forward of their heading on every update",
+    /// Every update of the three samples before Sunburst travels near its heading, so the along
+    /// term stays inside the distance, as this suite asserted for every probe until Sunburst's
+    /// `placeAt`s, made with the heading left at 0 (Variables slice 8). A decomposition on the
+    /// wrong axis or with a flipped
+    /// sign breaks it here.
+    @Test("the earlier samples keep the along term inside the distance on every update",
           arguments: [SampleID.octagonRosette, .squareCoil, .arcFlower])
-    func earlierSamplesMoveForward(_ id: SampleID) throws {
+    func earlierSamplesStayNearTheirHeading(_ id: SampleID) throws {
         let (_, length, points) = try #require(Self.screenedSamples.first { $0.0 == id })
         let screening = screen(SampleLibrary[id], patternLength: length, pointsPerInterval: points)
         #expect(!screening.probes.isEmpty)
-        #expect(screening.probes.allSatisfy { $0.movesForwardOfHeading })
+        #expect(screening.probes.allSatisfy { $0.alongIsBoundedByDistance })
     }
 
     /// The along/perpendicular split ADR-019 requires, asserted as a *rule* rather
@@ -271,15 +272,16 @@ struct SampleThresholdTests {
             // precondition, so this suite reports the split and lets the at-risk
             // classification (asserted per sample below) carry the verdict.
             //
-            // Only for an update that moves forward of its heading, though. A
-            // `placeAt` goes where its formula says, so its projection onto the
-            // heading can be negative and the along term then exceeds the distance.
-            // Sunburst's valleys do; Arc Flower's returns to the centre happened
-            // not to (Variables slice 8). `earlierSamplesMoveForward` keeps this
-            // branch from going vacuous.
-            if probe.movesForwardOfHeading {
-                #expect(probe.alongComponent.magnitude < probe.distance)
-            }
+            // The bound this loop once asserted for every probe, `|along| < distance`,
+            // holds only for an update that travels near its heading. A `placeAt` goes
+            // where its formula says and leaves the heading stale, and Sunburst places
+            // every point with the heading still at 0, so half its moves go against it
+            // (Variables slice 8). It is now a property of the samples that have it
+            // (`earlierSamplesStayNearTheirHeading`), and the decomposition's sign and
+            // axes are pinned by exact synthetic cases (`CompensatedMagnitudeTests`).
+            // What holds for every update is Cauchy–Schwarz: a projection is never
+            // longer than the move.
+            #expect(probe.projection.magnitude <= probe.distance * (1 + 1e-12))
         }
         let histogram = Dictionary(grouping: screening.probes, by: \.intervals)
             .mapValues(\.count)

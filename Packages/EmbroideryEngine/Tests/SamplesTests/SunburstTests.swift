@@ -14,9 +14,8 @@ struct SunburstTests {
         SampleLibrary[.sunburst]
     }
 
-    private var measured: SampleRun {
-        run(sample)
-    }
+    /// One run per test: Swift Testing builds a fresh suite value for each.
+    private let measured = run(SampleLibrary[.sunburst])
 
     private var bricks: [Brick] {
         sample.program.scenes.flatMap(\.objects).flatMap(\.scripts).flatMap(\.bricks)
@@ -61,7 +60,7 @@ struct SunburstTests {
     /// skipped the If's flip, or a For that reused a heading, leaves fewer distinct tips. Tips
     /// are the needle's own positions, not stitches, whose phase carries across moves.
     @Test("eighteen long and eighteen short rays, alternating around the centre")
-    func raysAlternate() throws {
+    func raysAlternate() {
         let tips = measured.events.compactMap { event -> StagePoint? in
             guard case let .needleMoved(_, update) = event, Self.radius(update.position) > 50 else { return nil }
             return update.position
@@ -82,22 +81,30 @@ struct SunburstTests {
     /// after every ray is stitched. Its stitches lie inside the valleys' 40-point radius: the
     /// circle's own 35, the step in from the last valley, and the tie-off tack.
     @Test("the circle is stitched in the second colour, in the middle")
-    func circleIsOrange() throws {
-        let gold = try #require(ThreadColor(hexString: "#f59e0b"))
+    func circleIsRed() throws {
+        let amber = try #require(ThreadColor(hexString: "#f59e0b"))
         let red = try #require(ThreadColor(hexString: "#ff0000"))
-        #expect(stitches.first?.color == gold)
+        #expect(stitches.first?.color == amber)
         let circle = stitches.filter { $0.color == red }
         #expect(circle.count > 40)
         let outermost = circle.map { Self.radius($0.point) }.max() ?? 0
         #expect(outermost <= 40, "\(outermost)")
-        #expect(stitches.filter { Self.radius($0.point) > 140 }.allSatisfy { $0.color == gold })
+        #expect(stitches.filter { Self.radius($0.point) > 140 }.allSatisfy { $0.color == amber })
+        // Inside the valleys' 40 there are only the step in and the circle, so all of it is red:
+        // a colour change one Arc late would leave an eighth of the circle amber and pass every
+        // count above (Codex, slice 8).
+        let inner = stitches.filter { Self.radius($0.point) < 39.5 }
+        #expect(inner.count > 40)
+        #expect(inner.allSatisfy { $0.color == red })
     }
 
     /// The figures PROVENANCE states and the Ink/Stitch check reads, pinned so they cannot drift
-    /// undefended: 1429 stitches, all records (no jumps), x and y [−147, 147] stage points,
-    /// 58.8 mm square.
-    @Test("1429 stitches, no jumps, 58.8 millimetres square")
+    /// undefended: 123 ticks, 1429 stitches, all records (no jumps), x and y [−147, 147] stage
+    /// points, 58.8 mm square. The ticks are 3 over the library's 120 floor, so a restructuring
+    /// fails here on its own figure first (`swift-code-reviewer`, slice 8).
+    @Test("123 ticks, 1429 stitches, no jumps, 58.8 millimetres square")
     func pinnedFigures() throws {
+        #expect(measured.ticks == 123)
         #expect(measured.stitchEventCount == 1429)
         #expect(measured.stream.count == 1429)
         #expect(measured.stream.stitches.allSatisfy { !$0.isJump })

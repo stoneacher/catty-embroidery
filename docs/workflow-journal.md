@@ -3622,3 +3622,20 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **An older guard caught the colour.** `ThreadPaletteTests` requires every sample colour to be one of the 14 palette swatches (ADR-040), so a user who edits the colour brick sees it selected. The first circle colour (`#ea580c`) was not a swatch. The circle is now the palette's red: the palette's orange sits too close to the amber rays.
 - **CI flake on slice 7:** the app job failed once on `StageFieldRenderingTests.matIsDrawnAtCurrent`, a stage pixel test this PR does not touch, with no failure message in the log. It passed locally, and the failed job was rerun.
 
+## 2026-10-25 — Variables slice 8: the reviews, and a correction to the slice 8 entry above
+
+- **Correction to "Variables slice 8 (Sunburst sample): the ADR-019 screening redesigned the sample":** that entry says the scoped bound fails for "Sunburst's inward valleys" because they "move backward". `swift-code-reviewer` showed the reason is different:
+  - A `placeAt` doesn't change the heading, and Sunburst places every point with the heading still 0. So "backward" only meant "moving down", and 18 tips are among the 37 such probes.
+  - The predicate itself (`projection > 0`) was also not the bound's precondition. Codex and the reviewer each built a forward move that breaks the bound (it rounds up to the next boundary).
+  - The bound now lives where it is true: as a pinned property of the three earlier samples, plus exact synthetic cases for the decomposition's sign and axes.
+  - What held from the start, and both reviewers confirmed: no ADR-019 verdict depends on the along term. `atRisk` and the ulp figure use only the distance, so the sample's safety was never in question.
+- **The two reviewers found the same harness problem from different directions.** Codex built a synthetic counterexample; the reviewer ran mutants before and after the change and found no lost kill power, but a misstated reason. Each also found something the other did not:
+  - Codex: the colour change's placement was unpinned.
+  - The reviewer: the heading-90 axis case, and that `measured` re-ran the interpreter on every access.
+- **Pre-existing screening gaps, not fixed here:** sub-length probes measured against twice the stitch length, and the ulp figure halved, both survive the suite (the reviewer's S12 and S14; they survived at 4f94e39 too). Each needs one synthetic probe near a boundary. Tracked here for the next ADR-019 touch.
+- **CI health — `main` is red, and not because of this PR.** After PR #75 merged, `main`'s app job failed. Since then two different tests have failed, each once, on this branch.
+  - The result bundles give the causes: `RunViewModelTests` and `ExportWiringTests` exceeded their one-minute `.timeLimit`, and `StageFieldRenderingTests.matIsDrawnAtCurrent` read an all-black pixel from `ImageRenderer`.
+  - In the same bundles, trivial tests are reported at about 80 seconds, so tests are queueing on a saturated main actor; they are not slow themselves. The device was iOS 27.0, so the new runner image's 27.1 runtime is not the cause.
+  - The app job's duration has not jumped (14–17 min has been normal since before PR 2a). The time limits are hang guards, and CI's main-actor queue now regularly approaches them.
+  - Raising them, or serialising the heaviest suites, is a decision for Sebastian, not for a feature PR. Recorded here with the evidence.
+
