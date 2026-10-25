@@ -222,9 +222,9 @@ extension Interpreter {
              .changeXBy, .changeYBy, .arc, .goThrough:
             performMotion(brick, objectIndex: objectIndex, scope: scope, into: &events)
         case let .setVariable(name, valueFormula):
-            // Throwing data formula substitutes 0 (Catroid data actions read
-            // through interpretDouble, which returns 0 on failure) — distinct
-            // from motion catch-and-skip.
+            // Throwing data formula substitutes 0 (ADR-018) — distinct from
+            // motion catch-and-skip. Disputed: current Catroid's SetVariableAction
+            // stores NaN (US-326, pinned by StepperVariableTests).
             let value = (try? valueFormula.interpretDouble(scope: scope)) ?? 0
             setVariable(name, to: value, objectIndex: objectIndex)
         case let .changeVariableBy(name, valueFormula):

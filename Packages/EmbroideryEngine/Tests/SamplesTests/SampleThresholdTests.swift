@@ -17,7 +17,8 @@ struct SampleThresholdTests {
     static let screenedSamples = [
         (SampleID.octagonRosette, 2.0, 1),
         (SampleID.squareCoil, 6.0, 3),
-        (SampleID.arcFlower, 4.0, 1)
+        (SampleID.arcFlower, 4.0, 1),
+        (SampleID.sunburst, 4.0, 1)
     ]
 
     /// A sample missing from the table is never screened, and nothing would
@@ -57,6 +58,18 @@ struct SampleThresholdTests {
     func arcFlowerIsFarOffBoundary() {
         let screening = screen(SampleLibrary[.arcFlower], patternLength: 4, pointsPerInterval: 1)
         #expect(screening.probes.count > 800)
+        #expect(screening.atRisk.isEmpty, "at risk: \(screening.atRisk.map(\.moveIndex))")
+        #expect(screening.minimumUlpsFromBoundary > 1e9, "closest approach \(screening.minimumUlpsFromBoundary) ulps")
+    }
+
+    /// Sample 4 places every point by `sin`/`cos`, so no update returns to a stitch-aligned
+    /// point. Its first design did, on every ray: each ray went back to the centre a whole
+    /// number of stitches from its last stitch, 0.5 to 7 ulps from the boundary (Variables
+    /// slice 8). This pins the redesign's clearance.
+    @Test("the sunburst is far from any floor boundary")
+    func sunburstIsFarOffBoundary() {
+        let screening = screen(SampleLibrary[.sunburst], patternLength: 4, pointsPerInterval: 1)
+        #expect(screening.probes.count > 100)
         #expect(screening.atRisk.isEmpty, "at risk: \(screening.atRisk.map(\.moveIndex))")
         #expect(screening.minimumUlpsFromBoundary > 1e9, "closest approach \(screening.minimumUlpsFromBoundary) ulps")
     }
@@ -208,6 +221,20 @@ struct SampleThresholdTests {
         #expect(run(SampleLibrary[.octagonRosette]).stitchEventCount == 3194)
     }
 
+    /// Every update of the three samples before Sunburst travels near its heading, so the along
+    /// term stays inside the distance, as this suite asserted for every probe until Sunburst's
+    /// `placeAt`s, made with the heading left at 0 (Variables slice 8). A decomposition on the
+    /// wrong axis or with a flipped
+    /// sign breaks it here.
+    @Test("the earlier samples keep the along term inside the distance on every update",
+          arguments: [SampleID.octagonRosette, .squareCoil, .arcFlower])
+    func earlierSamplesStayNearTheirHeading(_ id: SampleID) throws {
+        let (_, length, points) = try #require(Self.screenedSamples.first { $0.0 == id })
+        let screening = screen(SampleLibrary[id], patternLength: length, pointsPerInterval: points)
+        #expect(!screening.probes.isEmpty)
+        #expect(screening.probes.allSatisfy { $0.alongIsBoundedByDistance })
+    }
+
     /// The along/perpendicular split ADR-019 requires, asserted as a *rule* rather
     /// than a value: an update whose residue is dominated by the perpendicular
     /// term is safe for US-207's reason, whatever its ulp figure says.
@@ -244,7 +271,17 @@ struct SampleThresholdTests {
             // costs ~1e-31. Which term dominates is the *finding*, not a
             // precondition, so this suite reports the split and lets the at-risk
             // classification (asserted per sample below) carry the verdict.
-            #expect(probe.alongComponent.magnitude < probe.distance)
+            //
+            // The bound this loop once asserted for every probe, `|along| < distance`,
+            // holds only for an update that travels near its heading. A `placeAt` goes
+            // where its formula says and leaves the heading stale, and Sunburst places
+            // every point with the heading still at 0, so half its moves go against it
+            // (Variables slice 8). It is now a property of the samples that have it
+            // (`earlierSamplesStayNearTheirHeading`), and the decomposition's sign and
+            // axes are pinned by exact synthetic cases (`CompensatedMagnitudeTests`).
+            // What holds for every update is Cauchy–Schwarz: a projection is never
+            // longer than the move.
+            #expect(probe.projection.magnitude <= probe.distance * (1 + 1e-12))
         }
         let histogram = Dictionary(grouping: screening.probes, by: \.intervals)
             .mapValues(\.count)

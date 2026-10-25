@@ -144,4 +144,20 @@ struct StepperVariableTests {
             .needleMoved(actor: ActorID(0), update: NeedleUpdate(position: StagePoint(x: 0, y: 7)))
         ])
     }
+
+    /// **Pinned divergence, US-326.** A Set variable whose formula does not interpret writes 0
+    /// here (ADR-018's data-brick fallback); current Catroid stores NaN (`SetVariableAction.kt:48`).
+    /// Since Variables, a condition can see the difference: `x = 0` holds here and not in
+    /// Catroid, so this If runs its branch here and Catroid's would not ([[], [], [9]] there).
+    @Test("a variable set from a formula that does not interpret is 0, not NaN (US-326)")
+    func setVariableNaNIsZero() {
+        let bricks: [Brick] = [
+            .setVariable(name: "x", to: .unaryFunction(.sqrt, .number(-1))),
+            .ifThen(condition: .binary(.equal, .variable("x"), .number(0))),
+            .setY(.number(5)),
+            .ifEnd,
+            .setY(.number(9))
+        ]
+        #expect(tagProfile(scripts: [bricks]) == [[], [5], [9]])
+    }
 }

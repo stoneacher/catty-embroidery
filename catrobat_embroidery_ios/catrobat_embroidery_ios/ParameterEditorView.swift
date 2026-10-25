@@ -27,12 +27,17 @@ struct ParameterEditorView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     ForEach(brick.parameters, id: \.slot) { parameter in
-                        Section {
-                            editor(for: parameter)
-                        } header: {
-                            Text(ParameterEditorText.title(
-                                of: parameter.slot, in: BrickKind(of: brick), locale: locale
-                            ))
+                        if case let .comparison(_, relation, _) = ParameterEditorKind(parameter) {
+                            // Three sections in reading order: first value, comparison, second.
+                            ComparisonEditor(editor: model.editor, slot: parameter.slot, selection: relation)
+                        } else {
+                            Section {
+                                editor(for: parameter)
+                            } header: {
+                                Text(ParameterEditorText.title(
+                                    of: parameter.slot, in: BrickKind(of: brick), locale: locale
+                                ))
+                            }
                         }
                     }
                 }
@@ -57,13 +62,13 @@ struct ParameterEditorView: View {
 
     @ViewBuilder
     private func editor(for parameter: BrickParameter) -> some View {
-        switch ParameterEditorKind(parameter.value) {
+        switch ParameterEditorKind(parameter) {
         case .number, .variableReference:
-            FormulaSlotEditor(editor: model.editor, slot: parameter.slot)
+            FormulaSlotEditor(editor: model.editor, target: .slot(parameter.slot))
         case let .readOnlyFormula(formula, reason):
             ReadOnlyFormulaRow(formula: formula, reason: reason)
         case .variableName:
-            VariableChooser(editor: model.editor, slot: parameter.slot)
+            VariableChooser(editor: model.editor, target: .slot(parameter.slot))
         case let .threadColor(hex):
             ThreadPaletteGrid(selectedHex: hex) { swatch in
                 model.editor.setParameter(.hex, to: .threadColor(hex: swatch.hex))
@@ -72,6 +77,9 @@ struct ParameterEditorView: View {
             FileNameField(editor: model.editor, initialName: name)
         case let .arcDirection(direction):
             ArcDirectionPicker(editor: model.editor, selection: direction)
+        case .comparison:
+            // Laid out by `ComparisonEditor` in `body`, which needs three sections, not one.
+            EmptyView()
         }
     }
 }

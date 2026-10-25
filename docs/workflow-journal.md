@@ -3603,3 +3603,75 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Codex confirmed all three round 1 fixes.** The soak's per-opener floor counts only inserts that changed the program, so it can fail. The pinned WaitUntil JSON is the synthesized encoding. Codex derived the composition test's profile independently, frame by frame, and got the same result.
 - **Across the PR:** three slice rounds and two handover rounds, with no correctness finding from Codex in any of them. The one runtime bug of the PR (US-323's late exit at entry in slice 4) came from `swift-code-reviewer`'s differential, and so did slice 6's object-0 survivors. That is now three slices running where the executable Catroid model found what reading the code did not.
 
+## 2026-10-25 — Variables PR 3, slice 7 (condition editor): the design pass paid for itself
+
+- **`swift-ui-design` ran before any test was written,** as the brief required. Its most useful output was structural, not visual. Every number/variable operation in the view model addressed a whole `ParameterSlot`, and a comparison's two sides live inside one slot. Without a fix, each "reused" editor would have been a copy. The fix is a `ParameterTarget` (a slot, or one side of a slot's comparison), plus slot overloads so that no existing call site or test changed. It also caught that the editor kind must depend on the slot, not only the value.
+- **One of its suggestions was wrong:** the proposed lock wording ("this condition is more than one comparison") is false for a comparison in a number slot, which stays locked under the same reason. It was rewritten before it was tested. Delegated design output still gets read against the cases it did not consider.
+- **The simulator found a defect that no test could have.** Two SF Symbol names (`lessthan.or.equalto`) did not exist, and the menu showed blank icons. A test that resolves every operator's symbol was written red against them, then fixed. The design agent had flagged the names as unverified, and they were the wrong ones of the two candidates it listed.
+- **Mutation:** 12 mutants, all killed. The red phase was compile errors in both halves, so the mutants are the evidence that the assertions discriminate.
+- **Tooling:** the session scratchpad had been cleared since PR 2b, taking the mutation scripts with it. They were rewritten as one generic runner per half (engine via `swift test`, app via `xcodebuild -only-testing`).
+
+## 2026-10-25 — Variables slice 8 (Sunburst sample): the ADR-019 screening redesigned the sample
+
+- **The first design sat on floor boundaries on every ray.** Each ray went out from the centre and came back to it. Running stitches are spaced from where the walk started, so each return measured exactly a whole number of stitch lengths from the last stitch (148 = 37 · 4, 84 = 21 · 4). That put all 36 returns between 0.5 and 7 ulps from a boundary, so `hypot`'s last bit would decide the design's stitch count. The always-on screening suite found it on the first run, before any figure was pinned. The fix was geometric: the rays became one zigzag outline whose every point comes from `sin`/`cos`, now 3.2 × 10¹¹ ulps clear. This is ADR-019's "choose inputs off the boundary" clause working as a design tool, not only as a tripwire.
+- **A screening assertion had a hidden premise.** `|along| < distance` in the residue decomposition holds only for an update that moves forward of the needle's heading. Every earlier sample happened to satisfy that, including Arc Flower's `placeAt` returns. Sunburst's inward valleys don't. Two wrong fixes were considered and rejected:
+  - Dropping the bound for every sample would have let a decomposition with swapped axes pass.
+  - My first scoping ("updates that travel along the heading") was false for the coil and the flower too, because the stitch anchor lags behind the needle after a turn. Measuring the split per sample showed this before the test was written.
+  - The bound is now scoped to forward-moving updates, and a new test pins that every update of the three earlier samples moves forward. The swapped-axes mutant is killed by it.
+- **This sits close to the US-302 trap** (changing a test to fit the code), so the reasoning is recorded here and both slice reviewers are pointed at it explicitly.
+- **An older guard caught the colour.** `ThreadPaletteTests` requires every sample colour to be one of the 14 palette swatches (ADR-040), so a user who edits the colour brick sees it selected. The first circle colour (`#ea580c`) was not a swatch. The circle is now the palette's red: the palette's orange sits too close to the amber rays.
+- **CI flake on slice 7:** the app job failed once on `StageFieldRenderingTests.matIsDrawnAtCurrent`, a stage pixel test this PR does not touch, with no failure message in the log. It passed locally, and the failed job was rerun.
+
+## 2026-10-25 — Variables slice 8: the reviews, and a correction to the slice 8 entry above
+
+- **Correction to "Variables slice 8 (Sunburst sample): the ADR-019 screening redesigned the sample":** that entry says the scoped bound fails for "Sunburst's inward valleys" because they "move backward". `swift-code-reviewer` showed the reason is different:
+  - A `placeAt` doesn't change the heading, and Sunburst places every point with the heading still 0. So "backward" only meant "moving down", and 18 tips are among the 37 such probes.
+  - The predicate itself (`projection > 0`) was also not the bound's precondition. Codex and the reviewer each built a forward move that breaks the bound (it rounds up to the next boundary).
+  - The bound now lives where it is true: as a pinned property of the three earlier samples, plus exact synthetic cases for the decomposition's sign and axes.
+  - What held from the start, and both reviewers confirmed: no ADR-019 verdict depends on the along term. `atRisk` and the ulp figure use only the distance, so the sample's safety was never in question.
+- **The two reviewers found the same harness problem from different directions.** Codex built a synthetic counterexample; the reviewer ran mutants before and after the change and found no lost kill power, but a misstated reason. Each also found something the other did not:
+  - Codex: the colour change's placement was unpinned.
+  - The reviewer: the heading-90 axis case, and that `measured` re-ran the interpreter on every access.
+- **Pre-existing screening gaps, not fixed here:** sub-length probes measured against twice the stitch length, and the ulp figure halved, both survive the suite (the reviewer's S12 and S14; they survived at 4f94e39 too). Each needs one synthetic probe near a boundary. Tracked here for the next ADR-019 touch.
+- **CI health — `main` is red, and not because of this PR.** After PR #75 merged, `main`'s app job failed. Since then two different tests have failed, each once, on this branch.
+  - The result bundles give the causes: `RunViewModelTests` and `ExportWiringTests` exceeded their one-minute `.timeLimit`, and `StageFieldRenderingTests.matIsDrawnAtCurrent` read an all-black pixel from `ImageRenderer`.
+  - In the same bundles, trivial tests are reported at about 80 seconds, so tests are queueing on a saturated main actor; they are not slow themselves. The device was iOS 27.0, so the new runner image's 27.1 runtime is not the cause.
+  - The app job's duration has not jumped (14–17 min has been normal since before PR 2a). The time limits are hang guards, and CI's main-actor queue now regularly approaches them.
+  - Raising them, or serialising the heaviest suites, is a decision for Sebastian, not for a feature PR. Recorded here with the evidence.
+
+## 2026-10-25 — Variables: feature-close review and documentation pass
+
+- **`swift-code-reviewer` over the whole feature** (`e3ba4c4..e1bfcb1`, 102 files) found nothing critical: the engine's slices agree with each other. It found three things no per-slice review could, all fixed on PR 3:
+  - **One rule, two places:** only `ParameterEditorKind` enforced "only a condition slot gets the comparison editor". The target operations would have rewritten `1 < 2` in Move's steps, although the editor shows that as locked. The rule now has one definition (`EditableComparison(_ parameter:)`), and the operator picker passes its slot instead of the view model hardcoding `.condition`. Test-first, red shown, mutant killed.
+  - **A divergence visible only across slices:** US-326 (Set variable writes 0 where Catroid stores NaN) became observable through conditions once `=` existed. It is now pinned by a named test and marked `[disputed]` inline in ADR-018 (ADR-032 invariant 3).
+  - **Drift in the docs:** the brief still said "Planned", no acceptance box was ticked, the ROADMAP line was a week stale, and three of the six promised screenshots were missing. One committed screenshot (the locked `1 < 2`) now shows behaviour slice 7 removed. Each box was ticked only against its slice record. The missing captures were committed from the session's simulator runs, and 03 is labelled as history.
+- **Also taken:** `ProgramDocument`'s formula walk now derives from `parameters` instead of keeping a second exhaustive switch. A mutant dropping a new brick's formula there would have survived, because only `ifThen` had a depth test. `ComparisonOperator` now declares `Hashable`.
+- **Deferred, recorded for the backlog** (refactors with no defect behind them):
+  - ADR-049's truthiness lives in two files.
+  - The editor's indent walk and the app's nesting counts are parallel walks.
+  - The "block marker" kind set is spelled in four places.
+  - `BinaryOperator` is classified four times.
+  - `matchingElse`, `opensLoop` and `isLoopEnd` are public but used only by tests.
+  - `ParameterEditorKind.init(_ value:)` is public and answers differently from `init(_ parameter:)` for a condition.
+  - Row presentations are rebuilt on every list body (1.3 ms for 82 rows; not a hotspot, but caching per revision would also lighten the soak).
+- **`swift-documenter`** updated the package README for the feature's public API and added missing doc comments on the new EditorCore types. One of its sentences was wrong: it said a condition slot "holds one comparison of two plain values". A condition holds any formula, and only a plain comparison is editable (ADR-040, not ADR-048). Corrected before commit.
+
+## 2026-10-25 — Variables PR 3 (#76): handover round 1; loop closed on doc-only changes
+
+- **Round 1 found no editor or format defect; highest severity Medium; no code changes.**
+  - *Medium:* the Ink/Stitch check ADR-041 requires at handover is not done. It is Sebastian's manual step, so it is the one open item before merge.
+  - *Low:* the brief's slice 8 bullet still gave the "forward motion" explanation that both slice reviews had disproven. Corrected in place, with a note saying it was corrected.
+  - Codex confirmed what the feature review fixed: classification and target operations now share the condition-slot rule, anchors are side-specific, and edits share the session key.
+- **The loop ends on stop condition 1** (doc-only changes), one round of five. Severity history: Medium (no code).
+- **Backlog:** US-327 (CI hang guards; needs a decision) and US-328 (the feature review's one-definition follow-ups and two pre-existing screening gaps) were filed, so the deferred items outlive this feature. US-326 notes its new pin.
+
+## 2026-10-25 — Variables PR 3: Ink/Stitch verification of Sunburst
+
+- **Sebastian opened `Sunburst.dst` in Ink/Stitch:** the design rendered as intended, and the viewer reported 1431 stitches against our pinned 1429.
+- **The difference was resolved by decoding the file, not by argument:**
+  - The header says `ST:1429`, `CO:2`.
+  - The file holds 1430 records: 1428 stitches, one `0xC3` colour change and one `0xF3` terminator.
+  - 1429 + 1 (end record) + 1 (`0xC3` expanded twice) = 1431, exactly the convention already recorded for the Square Coil in August (2976 → 2978).
+  - Extents decode to 58.8 × 58.8 mm.
+- **The acceptance criterion is closed,** and the last open handover item with it. A recorded viewer convention turned a discrepancy into a one-line check, which is the PROVENANCE section's purpose.
+

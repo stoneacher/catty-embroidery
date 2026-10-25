@@ -2,13 +2,14 @@ import EditorCore
 import ProgramModel
 import SwiftUI
 
-/// A numeric slot: a number, or a variable, and the switch between them (US-410).
+/// A numeric slot — or one side of a comparison (Variables slice 7) —: a number, or a variable,
+/// and the switch between them (US-410).
 ///
 /// The switch is one `replaceBrick` each way (test-first item 7c). Switching to a variable with
 /// none declared opens the naming field instead of writing a variable that does not exist.
 struct FormulaSlotEditor: View {
     let editor: EditorViewModel
-    let slot: ParameterSlot
+    let target: ParameterTarget
 
     @State private var text = ""
     @State private var problem: FormulaLiteralError?
@@ -17,13 +18,19 @@ struct FormulaSlotEditor: View {
 
     @Environment(\.locale) private var locale
 
-    /// The slot's name for the brick being edited (GoThrough's destination is "To x").
+    /// The slot's name for the brick being edited (GoThrough's destination is "To x"), or the
+    /// side's ("First value").
     private var slotTitle: String {
-        ParameterEditorText.title(of: slot, in: editor.editedBrick.map(BrickKind.init(of:)), locale: locale)
+        switch target {
+        case let .slot(slot):
+            ParameterEditorText.title(of: slot, in: editor.editedBrick.map(BrickKind.init(of:)), locale: locale)
+        case let .operand(_, side):
+            ParameterEditorText.title(of: side, locale: locale)
+        }
     }
 
     private var value: ParameterValue? {
-        editor.editedBrick?.parameters.first { $0.slot == slot }?.value
+        editor.editedBrick?.value(at: target)
     }
 
     private var number: Double? {
@@ -53,7 +60,7 @@ struct FormulaSlotEditor: View {
         .accessibilityLabel(Text(slotTitle))
 
         if variable != nil || isNaming {
-            VariableChooser(editor: editor, slot: slot, isNaming: $isNaming)
+            VariableChooser(editor: editor, target: target, isNaming: $isNaming)
         } else {
             numberField
         }
@@ -67,13 +74,13 @@ struct FormulaSlotEditor: View {
         } set: { toVariable in
             if toVariable {
                 if let first = editor.variableMenu.names.first {
-                    editor.chooseVariable(named: first, for: slot)
+                    editor.chooseVariable(named: first, for: target)
                 } else {
                     isNaming = true
                 }
             } else {
                 isNaming = false
-                editor.switchToNumber(slot)
+                editor.switchToNumber(target)
                 syncText()
             }
         }
@@ -97,7 +104,7 @@ struct FormulaSlotEditor: View {
             .onChange(of: isFocused) { _, focused in
                 if focused {
                     // A typing run starts: a rejected entry will return the slot here.
-                    editor.beginNumberEntry(for: slot)
+                    editor.beginNumberEntry(for: target)
                 } else if problem != nil {
                     // Leaving a rejected entry shows the value the brick actually holds.
                     syncText()
@@ -107,7 +114,7 @@ struct FormulaSlotEditor: View {
             // Harmless only because `NumberFieldText` round-trips exactly (`NumberFieldTextTests`):
             // the re-parse yields the stored value, and the stack drops an unchanged edit.
             .onChange(of: text) { _, newText in
-                let rejected = editor.enterNumber(newText, for: slot)
+                let rejected = editor.enterNumber(newText, for: target)
                 if rejected != problem {
                     problem = rejected
                     if let rejected {
@@ -122,10 +129,10 @@ struct FormulaSlotEditor: View {
                 Stepper {
                     Text(slotTitle)
                 } onIncrement: {
-                    editor.stepNumber(slot, by: 1)
+                    editor.stepNumber(target, by: 1)
                     syncText()
                 } onDecrement: {
-                    editor.stepNumber(slot, by: -1)
+                    editor.stepNumber(target, by: -1)
                     syncText()
                 }
                 .labelsHidden()
@@ -153,20 +160,20 @@ struct FormulaSlotEditor: View {
 /// typing "Side" live would declare "S", "Si" and "Sid".
 struct VariableChooser: View {
     let editor: EditorViewModel
-    let slot: ParameterSlot
+    let target: ParameterTarget
     @Binding var isNaming: Bool
 
     @State private var newName = ""
     @State private var problem: VariableNameProblem?
 
-    init(editor: EditorViewModel, slot: ParameterSlot, isNaming: Binding<Bool> = .constant(false)) {
+    init(editor: EditorViewModel, target: ParameterTarget, isNaming: Binding<Bool> = .constant(false)) {
         self.editor = editor
-        self.slot = slot
+        self.target = target
         _isNaming = isNaming
     }
 
     private var current: String? {
-        guard let value = editor.editedBrick?.parameters.first(where: { $0.slot == slot })?.value else {
+        guard let value = editor.editedBrick?.value(at: target) else {
             return nil
         }
         // Exhaustive, so a new value shape is a decision here (the repo's no-`default:` rule).
@@ -238,12 +245,12 @@ struct VariableChooser: View {
         Binding {
             current ?? ""
         } set: { name in
-            editor.chooseVariable(named: name, for: slot)
+            editor.chooseVariable(named: name, for: target)
         }
     }
 
     private func create() {
-        switch editor.createVariable(named: newName, for: slot) {
+        switch editor.createVariable(named: newName, for: target) {
         case let .rejected(.invalidVariableName(rejected)):
             problem = rejected
             AccessibilityNotification.Announcement(ParameterEditorText.message(for: rejected)).post()

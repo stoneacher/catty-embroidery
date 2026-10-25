@@ -233,6 +233,43 @@ somewhere" would pass against a change on the second stitch.
 | DST size | 9443 bytes = 512 + 3 × 2976 + 3 |
 | Peak stitches in one tick | 132, on the longest side |
 
+## `Sunburst.json` — sample 4
+
+Our own content (Variables, slice 8). It shows the Variables feature: a **For
+values** loop counts 36 rays and places each one by its counter, and an
+**If/Else** on `Long = 1` makes them long and short in turn, each branch flipping
+`Long` for the next. That condition is one comparison of a variable and a number,
+so it opens in the comparison editor rather than locked.
+
+| Parameter | Value | Why |
+|---|---|---|
+| Rays | 36, tips at Ray·10° − 5°, valleys at Ray·10° | 3 action bricks per ray ⇒ 123 ticks, past the 120 floor |
+| Tip radii | 150 long, 85 short | alternating; inside the 240-point hoop margin |
+| Valley radius / start | 40, straight up | the outline starts and closes at (0, 40), so no line runs to the centre |
+| `runningStitch(length:)` | 4 | must be an integer (ADR-017) |
+| Circle | radius 35, eight 45° Arcs | inside the valleys; eighths so it grows visibly (ADR-047) |
+| Colours | `#f59e0b` → `#ff0000` | palette swatches (amber, red; ADR-040); must differ as parsed `ThreadColor`s (ADR-015) |
+
+**The rays are one zigzag outline, tip to valley to tip, never back to the
+centre — because of ADR-019.** The first design drew each ray out from the
+centre and back. Every return then measured exactly a whole number of stitches
+from the last stitch (148 = 37 · 4 for a long ray, 84 = 21 · 4 for a short one),
+0.5 to 7 ulps from a `floor` boundary, on every ray: a design whose stitch count
+`hypot`'s last bit would decide. Every point now comes from `sin`/`cos`, so no
+update returns to a stitch-aligned point. Measured closest approach: **3.2 × 10¹¹
+ulps**, 127 probes, none at risk.
+
+| | |
+|---|---|
+| Ticks | 123 |
+| Stitch events / records | 1429 (includes the 5-point `sewUp` tack) |
+| Colour blocks | 2 — `CO 2`, one effective change |
+| Jumps | 0 |
+| Extent | 58.8 × 58.8 mm |
+| Stage bounds | x [−147.0, +147.0], y [−147.0, +147.0] |
+| DST size | 4802 bytes = 512 + 3 × 1429 + 3 |
+| Peak stitches in one tick | 28 |
+
 ## Regeneration
 
 These files are **generated, never hand-edited**:
@@ -313,6 +350,28 @@ asymmetry between `+Y` and `-Y` is ADR-012's rule that extents are measured from
 the **first stitch**, not from the design centre. The coil's `270/264` and
 `258/270` give 534 × 528 units = 53.4 × 52.8 mm, matching the viewer exactly.
 
+### Sunburst (Variables, slice 8) — verified 2026-10-25
+
+**Verified by Sebastian in Ink/Stitch.** The render shows 36 rays alternating long
+and short all the way round, an outline that starts and closes at the top of the
+circle with no line to the centre, and the circle inside the inner points as the
+second colour block.
+
+Ink/Stitch reports **1431 stitches**. The file decodes as the Square Coil's
+convention predicts:
+
+| | records in file | `ST:` field | flag bytes present |
+|---|---|---|---|
+| Sunburst | 1430 (1428 stitches + 1 colour change + 1 terminator) | **1429** | `0x03` ×1428, `0xC3` ×1, `0xF3` ×1 |
+
+```
+sunburst: 1429 + 1 (end-of-file record) + 1 (0xC3 counted twice)          = 1431
+```
+
+No jump-only (`0x83`) record. Header extents `+X 294 / -X 294`, `+Y 214 / -Y 374`
+give 588 × 588 units = 58.8 × 58.8 mm; the vertical asymmetry is ADR-012's
+first-stitch origin, the outline's start at (0, 40).
+
 ### Reproducing the check
 
 To produce the files:
@@ -338,6 +397,12 @@ then open the printed paths. What to check:
   821 stitches, 0 jumps. Check that the twelve circles are evenly fanned: each one
   starts from an absolute heading, so a lopsided fan would mean the heading reset
   is not working. Check that the stem bends to the right and ends at the bottom.
+- **`Sunburst.dst`** (Variables, slice 8) — 36 amber rays around a red
+  circle, long and short in turn. 58.8 × 58.8 mm, **2 colour blocks**, 1429
+  stitches, 0 jumps. Check that the rays alternate evenly all the way round (a
+  missed flip in the If/Else would put two long rays side by side), that the
+  outline closes at the top without a stray line to the centre, and that the
+  circle sits inside the valleys.
 - Optional and high-value: run sample 1 in the Android Embroidery Designer and
   compare. Per the section above, expect the **design** to match; the record
   count may or may not, and a difference there is not evidence of a bug on

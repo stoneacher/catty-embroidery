@@ -92,6 +92,53 @@ struct CompensatedMagnitudeTests {
         #expect(abs(probe.perpendicularContribution - 0.9) > 0.05)
     }
 
+    /// A move against the heading: the projection is negative, so the along component is
+    /// projection − boundary = −8 − 8 = −16, larger than the distance. A decomposition that took
+    /// the projection's magnitude would report 0 here, and no sample would notice: every sample
+    /// update that moves backward is a `placeAt` (Codex, Variables slice 8).
+    @Test("a move against the heading has a negative projection and an along term beyond the distance")
+    func backwardMove() {
+        let probe = boundaryProbe(
+            moveIndex: 0, from: StagePoint(x: 0, y: 0), to: StagePoint(x: 0, y: -8), heading: 0, length: 4
+        )
+        #expect(probe.projection == -8)
+        #expect(probe.alongComponent == -16)
+        #expect(probe.perpendicularContribution == 16)
+        #expect(!probe.alongIsBoundedByDistance)
+    }
+
+    /// `|along| < distance` holds exactly when projection > boundary − distance. Forward is not
+    /// enough: (0,0) → (7.9, 0.05) at heading 0 projects +0.05 onto the heading, but its boundary
+    /// is 8, so the along term is −7.95, beyond the 7.9 distance (Codex, Variables slice 8).
+    @Test("the bound's domain is exact, not just forward motion")
+    func boundDomain() {
+        let barelyForward = boundaryProbe(
+            moveIndex: 0, from: StagePoint(x: 0, y: 0), to: StagePoint(x: 7.9, y: 0.05), heading: 0, length: 4
+        )
+        #expect(barelyForward.projection > 0)
+        #expect(barelyForward.alongComponent.magnitude > barelyForward.distance)
+        #expect(!barelyForward.alongIsBoundedByDistance)
+        let along = boundaryProbe(
+            moveIndex: 0, from: StagePoint(x: 0, y: 0), to: StagePoint(x: 0, y: 7.9), heading: 0, length: 4
+        )
+        #expect(along.alongIsBoundedByDistance)
+        #expect(along.alongComponent.magnitude < along.distance)
+    }
+
+    /// The axes, case by case, independent of any sample's geometry: a move straight along the
+    /// heading has no along residue at heading 0 and at heading 90, and straight against it at
+    /// 180 has −2·boundary. Heading 90 separates `sin` from `cos`, which the (3,4) case at heading
+    /// 0 cannot (`swift-code-reviewer`, Variables slice 8).
+    @Test("the projection follows the heading's axes", arguments: [
+        (0.0, 8.0, 0.0, 0.0), (8.0, 0.0, 90.0, 0.0), (0.0, 8.0, 180.0, -16.0)
+    ])
+    func axes(_ x: Double, _ y: Double, _ heading: Double, _ along: Double) {
+        let probe = boundaryProbe(
+            moveIndex: 0, from: StagePoint(x: 0, y: 0), to: StagePoint(x: x, y: y), heading: heading, length: 4
+        )
+        #expect(abs(probe.alongComponent - along) < 1e-12, "along \(probe.alongComponent)")
+    }
+
     /// The tail must actually carry information. Without this, a
     /// `compensatedMagnitude` that returned `(hypot(dx, dy), 0)` would satisfy
     /// every other test in this suite while measuring nothing at all — and the

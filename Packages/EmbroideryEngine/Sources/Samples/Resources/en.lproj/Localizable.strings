@@ -35,6 +35,15 @@
    curve in a second thread colour. */
 "sample.arcFlower.description" = "Twelve circles in a wave of sizes, with a curved stem in a second colour.";
 
+/* Display name of the fourth bundled design: rays of thread around a small
+   circle, like a drawing of the sun. Shown in the sample picker. */
+"sample.sunburst.name" = "Sunburst";
+
+/* One-line description of the sunburst design, shown under its name in the
+   sample picker. The rays are alternately long and short; the circle in the
+   middle is a second thread colour. */
+"sample.sunburst.description" = "Thirty-six rays, long and short in turn, around a circle in a second colour.";
+
 /* DNT — do not translate. Display name of US-309's measurement fixture, shown
    in the sample picker in debug builds only, so no user in any locale ever sees
    it. The key cannot be #if DEBUG'd out of this catalog, so it reaches Crowdin

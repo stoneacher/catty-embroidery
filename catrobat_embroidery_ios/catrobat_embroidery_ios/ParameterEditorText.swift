@@ -101,6 +101,31 @@ nonisolated enum ParameterEditorText {
         }
     }
 
+    /// An operator's name in the comparison editor's menu: spoken by VoiceOver, so a name, never
+    /// a symbol (Variables slice 7).
+    static func name(of comparison: ComparisonOperator, locale: Locale = .current) -> String {
+        let resource: LocalizedStringResource = switch comparison {
+        case .equal: .parameterComparisonEqual
+        case .notEqual: .parameterComparisonNotEqual
+        case .smallerThan: .parameterComparisonSmallerThan
+        case .smallerOrEqual: .parameterComparisonSmallerOrEqual
+        case .greaterThan: .parameterComparisonGreaterThan
+        case .greaterOrEqual: .parameterComparisonGreaterOrEqual
+        }
+        return resolve(resource, locale: locale)
+    }
+
+    /// A comparison side's title, in reading order — not "left"/"right", which right-to-left
+    /// languages reverse.
+    static func title(of side: ComparisonSide, locale: Locale = .current) -> String {
+        resolve(side == .first ? .parameterComparisonFirst : .parameterComparisonSecond, locale: locale)
+    }
+
+    /// The operator menu's title.
+    static func comparisonTitle(locale: Locale = .current) -> String {
+        resolve(.parameterComparison, locale: locale)
+    }
+
     /// An Arc side's name in the direction picker.
     static func name(of direction: ArcDirection, locale: Locale = .current) -> String {
         let resource: LocalizedStringResource = switch direction {

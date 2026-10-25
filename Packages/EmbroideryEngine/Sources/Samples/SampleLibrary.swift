@@ -8,7 +8,8 @@ public enum SampleLibrary {
     public static let all: [SampleProgram] = [
         SampleProgram(id: .octagonRosette, program: makeOctagonRosetteProgram()),
         SampleProgram(id: .squareCoil, program: makeSquareCoilProgram()),
-        SampleProgram(id: .arcFlower, program: makeArcFlowerProgram())
+        SampleProgram(id: .arcFlower, program: makeArcFlowerProgram()),
+        SampleProgram(id: .sunburst, program: makeSunburstProgram())
     ]
 
     /// The sample with this id.

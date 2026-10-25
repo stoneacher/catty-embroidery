@@ -41,6 +41,20 @@ struct BoundaryProbe {
     /// The quadratic contribution of the perpendicular residue. When this
     /// dominates `alongComponent` the update is safe for US-207's reason.
     var perpendicularContribution: Double
+    /// The displacement projected onto the needle's heading, the nominal direction
+    /// of motion the split is defined against.
+    var projection: Double
+
+    /// Whether the along term is smaller than the distance. True for an update that
+    /// travels near its heading, which every update of the first three samples
+    /// does. Not for a `placeAt`: it leaves the heading where it was, so its
+    /// "along" term measures the move against a stale direction. Sunburst places
+    /// all its points with the heading still at 0 (Variables slice 8). Exactly
+    /// when projection > boundary − distance:
+    /// forward motion alone is not enough (Codex, slice 8).
+    var alongIsBoundedByDistance: Bool {
+        alongComponent.magnitude < distance
+    }
 
     /// Whether libm's rounding, rather than the geometry, decides this update's
     /// emission count.
@@ -180,7 +194,8 @@ func boundaryProbe(
         alongComponent: alongComponent,
         // Whatever the along term does not account for. Defined as the remainder
         // so the two provably sum to the residual instead of nearly doing so.
-        perpendicularContribution: residual - alongComponent
+        perpendicularContribution: residual - alongComponent,
+        projection: projection
     )
 }
 

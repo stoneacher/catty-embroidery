@@ -308,6 +308,24 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 - Decide whether a variable may hold NaN at runtime (the store is runtime-only, so ADR-037's persisted-value rule is not touched directly).
 - If so: `setVariable`/`changeVariableBy` store the evaluated NaN; amend ADR-018's data-brick bullet; check every reader of the store (`interpretInteger` of a NaN variable, sensors, ForVariableFromTo's bounds).
 - Either way, correct ADR-018's provenance sentence (ADR-032 invariant 3).
+- *Update 2026-10-25 (Variables feature review):* the divergence is pinned by `StepperVariableTests.setVariableNaNIsZero`, and ADR-018's sentence is marked `[disputed: US-326]` inline. The decision itself is still open.
+
+## US-327 — CI app tests queue past their one-minute hang guards
+
+**Found**: 2026-10-25, Variables PR 3. `main` went red after PR #75 merged, and the branch failed twice more on different tests.
+- **Evidence (result bundles):** `RunViewModelTests` and `ExportWiringTests` exceeded `.timeLimit(.minutes(1))`. Trivial tests report about 80 s, so they are waiting on a saturated main actor, not running slowly. `StageFieldRenderingTests.matIsDrawnAtCurrent` once read an all-black `ImageRenderer` pixel. The device was iOS 27.0, and job duration did not jump (14–17 min is normal).
+- **Options:** raise the hang guards (they are not performance assertions); serialise the heaviest main-actor suites (`PairInvariantSoakTests`, the run/export wiring tests); cache `BrickRowPresentation.rows` per program revision, which also lightens the soak.
+- **Needs Sebastian's decision**, because it changes test guards. Journal, 2026-10-25.
+
+## US-328 — Variables follow-ups: one definition per rule
+
+**Found**: 2026-10-25, by the feature-level `swift-code-reviewer` pass. No defect behind any of these; each is a rule spelled in more than one place.
+- ADR-049's truthiness in one helper (the If's `interpretInteger != 0` is inline in `Interpreter+Step.swift`, WaitUntil's in `Interpreter+Conditions.swift`).
+- The editor's indent walk (`Script.indentDepths`) and the app's nesting counts (`BrickRowPresentation.enclosingCounts`) are parallel walks that must agree.
+- A `BrickKind.isBlockMarker`, which is spelled out in four places today.
+- One category for `BinaryOperator` (arithmetic, comparison, logical), which is classified four times today.
+- Public API trims: `Script.matchingElse`, `opensLoop`, `isLoopEnd` are used only by tests; `ParameterEditorKind.init(_ value:)` answers differently from `init(_ parameter:)` for a condition.
+- Two pre-existing ADR-019 screening gaps (sub-length probes against the wrong length; the ulp figure halved), each needing one synthetic probe near a boundary.
 
 ---
 
