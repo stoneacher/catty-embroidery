@@ -3665,3 +3665,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **The loop ends on stop condition 1** (doc-only changes), one round of five. Severity history: Medium (no code).
 - **Backlog:** US-327 (CI hang guards; needs a decision) and US-328 (the feature review's one-definition follow-ups and two pre-existing screening gaps) were filed, so the deferred items outlive this feature. US-326 notes its new pin.
 
+## 2026-10-25 — Variables PR 3: Ink/Stitch verification of Sunburst
+
+- **Sebastian opened `Sunburst.dst` in Ink/Stitch:** the design rendered as intended, and the viewer reported 1431 stitches against our pinned 1429.
+- **The difference was resolved by decoding the file, not by argument:**
+  - The header says `ST:1429`, `CO:2`.
+  - The file holds 1430 records: 1428 stitches, one `0xC3` colour change and one `0xF3` terminator.
+  - 1429 + 1 (end record) + 1 (`0xC3` expanded twice) = 1431, exactly the convention already recorded for the Square Coil in August (2976 → 2978).
+  - Extents decode to 58.8 × 58.8 mm.
+- **The acceptance criterion is closed,** and the last open handover item with it. A recorded viewer convention turned a discrepancy into a one-line check, which is the PROVENANCE section's purpose.
+

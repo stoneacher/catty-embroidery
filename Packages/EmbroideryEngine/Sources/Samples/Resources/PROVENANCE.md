@@ -350,6 +350,28 @@ asymmetry between `+Y` and `-Y` is ADR-012's rule that extents are measured from
 the **first stitch**, not from the design centre. The coil's `270/264` and
 `258/270` give 534 × 528 units = 53.4 × 52.8 mm, matching the viewer exactly.
 
+### Sunburst (Variables, slice 8) — verified 2026-10-25
+
+**Verified by Sebastian in Ink/Stitch.** The render shows 36 rays alternating long
+and short all the way round, an outline that starts and closes at the top of the
+circle with no line to the centre, and the circle inside the inner points as the
+second colour block.
+
+Ink/Stitch reports **1431 stitches**. The file decodes as the Square Coil's
+convention predicts:
+
+| | records in file | `ST:` field | flag bytes present |
+|---|---|---|---|
+| Sunburst | 1430 (1428 stitches + 1 colour change + 1 terminator) | **1429** | `0x03` ×1428, `0xC3` ×1, `0xF3` ×1 |
+
+```
+sunburst: 1429 + 1 (end-of-file record) + 1 (0xC3 counted twice)          = 1431
+```
+
+No jump-only (`0x83`) record. Header extents `+X 294 / -X 294`, `+Y 214 / -Y 374`
+give 588 × 588 units = 58.8 × 58.8 mm; the vertical asymmetry is ADR-012's
+first-stitch origin, the outline's start at (0, 40).
+
 ### Reproducing the check
 
 To produce the files:
