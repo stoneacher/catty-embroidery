@@ -3656,3 +3656,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Row presentations are rebuilt on every list body (1.3 ms for 82 rows; not a hotspot, but caching per revision would also lighten the soak).
 - **`swift-documenter`** updated the package README for the feature's public API and added missing doc comments on the new EditorCore types. One of its sentences was wrong: it said a condition slot "holds one comparison of two plain values". A condition holds any formula, and only a plain comparison is editable (ADR-040, not ADR-048). Corrected before commit.
 
+## 2026-10-25 — Variables PR 3 (#76): handover round 1; loop closed on doc-only changes
+
+- **Round 1 found no editor or format defect; highest severity Medium; no code changes.**
+  - *Medium:* the Ink/Stitch check ADR-041 requires at handover is not done. It is Sebastian's manual step, so it is the one open item before merge.
+  - *Low:* the brief's slice 8 bullet still gave the "forward motion" explanation that both slice reviews had disproven. Corrected in place, with a note saying it was corrected.
+  - Codex confirmed what the feature review fixed: classification and target operations now share the condition-slot rule, anchors are side-specific, and edits share the session key.
+- **The loop ends on stop condition 1** (doc-only changes), one round of five. Severity history: Medium (no code).
+- **Backlog:** US-327 (CI hang guards; needs a decision) and US-328 (the feature review's one-definition follow-ups and two pre-existing screening gaps) were filed, so the deferred items outlive this feature. US-326 notes its new pin.
+
