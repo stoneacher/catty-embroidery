@@ -1,6 +1,6 @@
 # Variables
 
-**Status**: In review — PR 3 (#76), 2026-10-25; PRs #73–#75 merged | **Epic**: E8 (+ E3 formulas) | **Branch**: `feature/variables` (PR 1; later PRs get their own branches)
+**Status**: Done — 2026-10-25, PRs #73, #74, #75 and #76 | **Epic**: E8 (+ E3 formulas) | **Branch**: `feature/variables` (PR 1; later PRs get their own branches)
 
 **Goal**: a program can make decisions and loop on conditions. Formulas gain comparisons, `and`/`or`/`not`, `true`/`false` and Catroid's `power()`; the control bricks If, If/Else, RepeatUntil, WaitUntil and ForVariableFromTo execute, preview and export as the Android Embroidery Designer does wherever Catroid is sound; and the user can author a simple condition in the app. Every divergence from Catroid is pinned by a named test.
 

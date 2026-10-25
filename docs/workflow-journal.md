@@ -3675,3 +3675,15 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Extents decode to 58.8 × 58.8 mm.
 - **The acceptance criterion is closed,** and the last open handover item with it. A recorded viewer convention turned a discrepancy into a one-line check, which is the PROVENANCE section's purpose.
 
+## 2026-10-25 — Variables: feature closed
+
+- **PR #76 merged by Sebastian.** The Variables feature is done over four PRs: #73 formula logic, #74 If/IfElse, #75 RepeatUntil, WaitUntil, ForVariableFromTo and US-323, #76 condition editor and the Sunburst sample. The brief and ROADMAP now read Done.
+- **Shape of the feature, for the thesis:**
+  - Eight slices, every one mutation-checked.
+  - Seven risky slices, each reviewed by `swift-code-reviewer` and one Codex round.
+  - Four handover loops (#73: per its own entries; #74: 5 rounds; #75: 2 rounds; #76: 1 round).
+  - A feature-level review and a documentation pass at close.
+  - One manual Ink/Stitch check, whose count difference was resolved by decoding the file.
+- **Where the defects came from:** the runtime bugs (US-323's late exit in slice 4, the object-0 blind spot in slice 6) were found by `swift-code-reviewer`'s executable Catroid differentials. The floor-boundary design flaw in slice 8 was found by the always-on ADR-019 screening. Cross-slice drift (the slot rule held in one place, US-326 newly observable) was found by the feature-level pass. Codex's handover rounds mostly found test gaps and doc drift, with no runtime defect across #75 and #76.
+- **Open after the feature:** US-327 (CI hang guards on `main`, awaiting Sebastian's decision) and US-328 (one-definition follow-ups).
+
