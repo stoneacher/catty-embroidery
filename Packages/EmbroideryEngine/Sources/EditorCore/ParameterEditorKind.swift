@@ -24,6 +24,20 @@ public enum ParameterEditorKind: Sendable, Equatable {
     case fileName(String)
     /// Arc's left/right choice: one discrete edit, nothing to coalesce.
     case arcDirection(ArcDirection)
+    /// A condition that is one comparison of two plain values (a number or a variable each):
+    /// the operator picker and a number/variable control per side (Variables slice 7, D16).
+    case comparison(lhs: Formula, relation: ComparisonOperator, rhs: Formula)
+
+    /// The editor for a parameter. Only a condition slot offers the comparison editor (D16): the
+    /// same `1 < 2` in Move's steps is a calculation's operand and stays locked.
+    public init(_ parameter: BrickParameter) {
+        if parameter.slot == .condition, case let .formula(formula) = parameter.value,
+           let comparison = EditableComparison(formula) {
+            self = .comparison(lhs: comparison.lhs, relation: comparison.relation, rhs: comparison.rhs)
+        } else {
+            self.init(parameter.value)
+        }
+    }
 
     public init(_ value: ParameterValue) {
         switch value {
@@ -73,7 +87,8 @@ public enum ReadOnlyFormulaReason: Sendable, Equatable {
     case function
     /// A value read from the object, such as its x position.
     case sensor
-    /// A condition: a comparison, `and`, `or`, `not`, `true` or `false` at the root
-    /// (Variables brief D16).
+    /// A condition the comparison editor cannot show: `and`, `or`, `not`, `true` or `false` at
+    /// the root, a comparison of anything but two plain values, or a comparison outside a
+    /// condition slot (Variables brief D16, slice 7).
     case logic
 }

@@ -1837,6 +1837,114 @@
         }
       }
     },
+    "parameter.comparison": {
+      "comment": "Title of the menu that chooses how a condition compares its two values (equal to, less than, …). Catroid's wording: 'Comparison operators'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comparison"
+          }
+        }
+      }
+    },
+    "parameter.comparison.equal": {
+      "comment": "One of the six ways the condition editor can compare two values, in the menu that chooses it. Spoken by VoiceOver, so it is the name of the comparison, never its symbol. The symbol is =.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equal to"
+          }
+        }
+      }
+    },
+    "parameter.comparison.first": {
+      "comment": "Title of the editor for the first of the two values a condition compares, e.g. 'Counter' in 'Counter < 10'. Not 'left': the order is reading order.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First value"
+          }
+        }
+      }
+    },
+    "parameter.comparison.greater.or.equal": {
+      "comment": "One of the six ways the condition editor can compare two values, in the menu that chooses it. Spoken by VoiceOver, so it is the name of the comparison, never its symbol. The symbol is ≥.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Greater than or equal to"
+          }
+        }
+      }
+    },
+    "parameter.comparison.greater.than": {
+      "comment": "One of the six ways the condition editor can compare two values, in the menu that chooses it. Spoken by VoiceOver, so it is the name of the comparison, never its symbol. The symbol is >.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Greater than"
+          }
+        }
+      }
+    },
+    "parameter.comparison.not.equal": {
+      "comment": "One of the six ways the condition editor can compare two values, in the menu that chooses it. Spoken by VoiceOver, so it is the name of the comparison, never its symbol. The symbol is ≠.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not equal to"
+          }
+        }
+      }
+    },
+    "parameter.comparison.second": {
+      "comment": "Title of the editor for the second of the two values a condition compares, e.g. '10' in 'Counter < 10'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Second value"
+          }
+        }
+      }
+    },
+    "parameter.comparison.smaller.or.equal": {
+      "comment": "One of the six ways the condition editor can compare two values, in the menu that chooses it. Spoken by VoiceOver, so it is the name of the comparison, never its symbol. The symbol is ≤.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Less than or equal to"
+          }
+        }
+      }
+    },
+    "parameter.comparison.smaller.than": {
+      "comment": "One of the six ways the condition editor can compare two values, in the menu that chooses it. Spoken by VoiceOver, so it is the name of the comparison, never its symbol. The symbol is <.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Less than"
+          }
+        }
+      }
+    },
     "parameter.editor.action.edit": {
       "comment": "VoiceOver action on a brick row. Selects the brick and opens the editor for its numbers, variable, colour or file name.",
       "extractionState": "manual",
@@ -2018,13 +2126,13 @@
       }
     },
     "parameter.readonly.logic": {
-      "comment": "Explains why a value cannot be edited: it is a condition, such as a comparison (Counter < 10) or one joined with 'and', 'or' or 'not', which the app cannot edit yet.",
+      "comment": "Explains why a value cannot be edited: it is a condition the app cannot edit yet, such as two comparisons joined with 'and', 'or' or 'not', or a comparison used where a number is expected. A single comparison of two values in an If or a loop can be edited.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This value is a condition. Conditions like this can't be edited yet, so it is kept exactly as it is."
+            "value": "Only a single comparison of two values in a condition can be edited. This one can't be edited yet, so it is kept exactly as it is."
           }
         }
       }

@@ -264,14 +264,18 @@ final class EditorViewModel {
         return true
     }
 
-    /// The number field gained focus: record the slot's literal as the anchor a rejected entry
-    /// returns to. A slot holding anything but a literal records nothing — the field is not
-    /// showing then.
     func beginNumberEntry(for slot: ParameterSlot) {
+        beginNumberEntry(for: .slot(slot))
+    }
+
+    /// The number field gained focus: record the target's literal as the anchor a rejected entry
+    /// returns to. A target holding anything but a literal records nothing — the field is not
+    /// showing then.
+    func beginNumberEntry(for target: ParameterTarget) {
         guard var session = parameterSession,
-              case let .formula(.number(value)) = editedBrick?.parameters.first(where: { $0.slot == slot })?.value
+              case let .formula(.number(value)) = editedBrick?.value(at: target)
         else { return }
-        session.entryAnchor = EntryAnchor(slot: slot, value: .formula(.number(value)))
+        session.entryAnchor = EntryAnchor(target: target, value: .formula(.number(value)))
         parameterSession = session
     }
 
@@ -281,7 +285,7 @@ final class EditorViewModel {
         guard var session = parameterSession,
               let value = editedBrick?.parameters.first(where: { $0.slot == .fileName })?.value
         else { return }
-        session.entryAnchor = EntryAnchor(slot: .fileName, value: value)
+        session.entryAnchor = EntryAnchor(target: .slot(.fileName), value: value)
         parameterSession = session
     }
 

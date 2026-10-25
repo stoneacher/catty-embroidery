@@ -16,10 +16,12 @@ struct ParameterSession: Equatable {
     var entryAnchor: EntryAnchor?
 }
 
-/// A slot's value as it stood when a text field started a typing run. Live-apply commits every
-/// prefix that is valid, so a run that ends refused would otherwise leave the last one behind.
+/// A slot's value — or one side of a comparison's — as it stood when a text field started a
+/// typing run. Live-apply commits every prefix that is valid, so a run that ends refused would
+/// otherwise leave the last one behind. A side's anchor restores that side alone, so an operator
+/// chosen during the run survives (Variables slice 7).
 struct EntryAnchor: Equatable {
-    let slot: ParameterSlot
+    let target: ParameterTarget
     let value: ParameterValue
 }
 
@@ -62,8 +64,25 @@ extension EditorViewModel {
     /// same kind (`Brick.replacing`), and ADR-035's guard stays a backstop (test-first item 10).
     @discardableResult
     func setParameter(_ slot: ParameterSlot, to value: ParameterValue) -> EditResult? {
+        setParameter(.slot(slot), to: value)
+    }
+
+    /// Replaces one target: a slot, or one side of the comparison a condition holds
+    /// (`Brick.replacing(_:with:)` for targets refuses anything that would reshape the tree).
+    @discardableResult
+    func setParameter(_ target: ParameterTarget, to value: ParameterValue) -> EditResult? {
         guard let session = parameterSession,
-              let replacement = brick(at: session.address)?.replacing(slot, with: value)
+              let replacement = brick(at: session.address)?.replacing(target, with: value)
+        else { return nil }
+        return apply(.replaceBrick(at: session.address, with: replacement), coalescing: session.key)
+    }
+
+    /// The comparison editor's operator picker: both sides kept. `nil`, changing nothing, unless
+    /// the edited brick's condition is an editable comparison (Variables slice 7).
+    @discardableResult
+    func setComparisonOperator(_ relation: ComparisonOperator) -> EditResult? {
+        guard let session = parameterSession,
+              let replacement = brick(at: session.address)?.replacingComparisonOperator(in: .condition, with: relation)
         else { return nil }
         return apply(.replaceBrick(at: session.address, with: replacement), coalescing: session.key)
     }
@@ -74,17 +93,22 @@ extension EditorViewModel {
     /// A rejection returns the slot to the anchor `beginNumberEntry(for:)` recorded, so the
     /// brick never keeps a value the user typed past.
     func enterNumber(_ text: String, for slot: ParameterSlot) -> FormulaLiteralError? {
+        enterNumber(text, for: .slot(slot))
+    }
+
+    func enterNumber(_ text: String, for target: ParameterTarget) -> FormulaLiteralError? {
         switch NumberEntry.parse(text, decimalSeparator: decimalSeparator) {
         case let .success(formula):
-            setParameter(slot, to: .formula(formula))
+            // A target that cannot take it (a locked tree) leaves nothing to report.
+            setParameter(target, to: .formula(formula))
             return nil
         case let .failure(error):
             guard let session = parameterSession else { return nil }
             // Live-apply committed every prefix that parsed on the way here — typing `1e400`
             // commits `1e40` — so a rejection puts the slot back where the typing run began.
             // Within the session that nets the run to nothing (found on the simulator).
-            if let anchor = session.entryAnchor, anchor.slot == slot {
-                setParameter(slot, to: anchor.value)
+            if let anchor = session.entryAnchor, anchor.target == target {
+                setParameter(target, to: anchor.value)
             }
             return error
         }
@@ -93,25 +117,34 @@ extension EditorViewModel {
     /// The stepper. Only a literal steps, and only to a finite value — a value the document can
     /// save (ADR-037).
     func stepNumber(_ slot: ParameterSlot, by delta: Double) {
-        guard case let .formula(.number(value)) = value(of: slot) else { return }
+        stepNumber(.slot(slot), by: delta)
+    }
+
+    func stepNumber(_ target: ParameterTarget, by delta: Double) {
+        guard case let .formula(.number(value)) = editedBrick?.value(at: target) else { return }
         let stepped = value + delta
         guard stepped.isFinite else { return }
-        setParameter(slot, to: .formula(.number(stepped)))
+        setParameter(target, to: .formula(.number(stepped)))
         // A tap is a committed value, so a later rejected entry returns here rather than
-        // silently discarding the taps. Only an anchor this slot already holds moves.
-        if parameterSession?.entryAnchor?.slot == slot {
-            beginNumberEntry(for: slot)
+        // silently discarding the taps. Only an anchor this target already holds moves.
+        if parameterSession?.entryAnchor?.target == target {
+            beginNumberEntry(for: target)
         }
     }
 
     /// Switches a variable slot back to a number: the number it held when the editor opened, or
     /// the kind's template default if it opened as something else (test-first item 7c).
     func switchToNumber(_ slot: ParameterSlot) {
+        switchToNumber(.slot(slot))
+    }
+
+    /// A comparison's side seeds the same way: its opening number, else the template's `1 < 2`.
+    func switchToNumber(_ target: ParameterTarget) {
         guard let session = parameterSession else { return }
-        let seed = Self.number(in: session.opening, at: slot)
-            ?? Self.number(in: BrickKind(of: session.opening).template()[0], at: slot)
+        let seed = Self.number(in: session.opening, at: target)
+            ?? Self.number(in: BrickKind(of: session.opening).template()[0], at: target)
         guard let seed else { return }
-        setParameter(slot, to: .formula(.number(seed)))
+        setParameter(target, to: .formula(.number(seed)))
     }
 
     /// The variable menu: points a slot at a variable the object already declares, exactly as
@@ -124,8 +157,13 @@ extension EditorViewModel {
     /// quotation mark is still usable.
     @discardableResult
     func chooseVariable(named name: String, for slot: ParameterSlot) -> EditResult? {
+        chooseVariable(named: name, for: .slot(slot))
+    }
+
+    @discardableResult
+    func chooseVariable(named name: String, for target: ParameterTarget) -> EditResult? {
         guard variableMenu.scope(of: name) != nil else { return nil }
-        return reference(name, for: slot)
+        return reference(name, for: target)
     }
 
     /// The Create field: the typed name, **always** trimmed and validated, then referenced —
@@ -141,19 +179,24 @@ extension EditorViewModel {
     /// never leave a brick naming a variable it just un-declared.
     @discardableResult
     func createVariable(named name: String, for slot: ParameterSlot) -> EditResult? {
+        createVariable(named: name, for: .slot(slot))
+    }
+
+    @discardableResult
+    func createVariable(named name: String, for target: ParameterTarget) -> EditResult? {
         guard let session = parameterSession else { return nil }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         if case let .failure(problem) = VariableName.validate(trimmed) {
             return .rejected(.invalidVariableName(problem))
         }
-        guard brick(at: session.address)?.replacing(slot, with: Self.value(naming: trimmed, for: slot)) != nil
+        guard brick(at: session.address)?.replacing(target, with: Self.value(naming: trimmed, for: target)) != nil
         else { return nil }
         if variableMenu.scope(of: trimmed) == nil {
             let declaration = EditAction.declareVariable(name: trimmed, script: session.address.script)
             let declared = apply(declaration, coalescing: session.key)
             if case .rejected = declared { return declared }
         }
-        return reference(trimmed, for: slot)
+        return reference(trimmed, for: target)
     }
 
     /// `writeEmbroideryToFile`'s name, **exactly as typed** — file names are not restricted
@@ -164,7 +207,7 @@ extension EditorViewModel {
     /// `"ol"` and `"o"` on the way (Codex round 3).
     func setFileName(_ text: String) {
         guard text.contains(where: { !$0.isWhitespace }) else {
-            if let anchor = parameterSession?.entryAnchor, anchor.slot == .fileName {
+            if let anchor = parameterSession?.entryAnchor, anchor.target == .slot(.fileName) {
                 setParameter(.fileName, to: anchor.value)
             }
             return
@@ -174,12 +217,12 @@ extension EditorViewModel {
 
     // MARK: Reading
 
-    private func reference(_ name: String, for slot: ParameterSlot) -> EditResult? {
-        setParameter(slot, to: Self.value(naming: name, for: slot))
+    private func reference(_ name: String, for target: ParameterTarget) -> EditResult? {
+        setParameter(target, to: Self.value(naming: name, for: target))
     }
 
-    private static func value(naming name: String, for slot: ParameterSlot) -> ParameterValue {
-        slot == .variableName ? .variableName(name) : .formula(.variable(name))
+    private static func value(naming name: String, for target: ParameterTarget) -> ParameterValue {
+        target == .slot(.variableName) ? .variableName(name) : .formula(.variable(name))
     }
 
     private func brick(at address: BrickAddress) -> Brick? {
@@ -193,13 +236,8 @@ extension EditorViewModel {
         return bricks.indices.contains(address.brickIndex) ? bricks[address.brickIndex] : nil
     }
 
-    private func value(of slot: ParameterSlot) -> ParameterValue? {
-        editedBrick?.parameters.first { $0.slot == slot }?.value
-    }
-
-    private static func number(in brick: Brick, at slot: ParameterSlot) -> Double? {
-        guard case let .formula(.number(value)) = brick.parameters.first(where: { $0.slot == slot })?.value
-        else { return nil }
+    private static func number(in brick: Brick, at target: ParameterTarget) -> Double? {
+        guard case let .formula(.number(value)) = brick.value(at: target) else { return nil }
         return value
     }
 }
