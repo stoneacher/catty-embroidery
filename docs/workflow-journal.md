@@ -3861,3 +3861,11 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - A doc comment that sat on `modified(_:)` but described `delete(_:)` is moved. It was my own slip in PR #78's round 1, when `modified` was inserted between a comment and its function.
   - The isolation scan is an **allowlist** of imports rather than a denylist. `import Combine` now fails, and it, a split `import SwiftUI` and an `@_exported import struct SwiftUI.Color` were each mutated red.
 - **Mutation speed held up in the reviewer's hands too:** "each mutant run took a few seconds", against the 60–110 s app baseline.
+
+## 2026-10-26 — PR #79 (US-329) handover, Codex round 1
+
+- **Round 1, highest severity Medium, 3 findings: 2 fixed, 1 rejected with a reason; code changed (CI).**
+  - **Medium:** the CI pin checked that `Samples` vends `Projects`, but not that no other product does. Adding `Projects` to the `EmbroideryEngine` product passed. Now `Projects` must appear in exactly one product. Codex's exact repro fails the step, and the real manifest passes.
+  - **Low:** the package README still called the whole package "only Sendable value types". It now names `Projects` as the exception.
+  - **Rejected (Medium):** a dependency that `@_exported import`s SwiftUI would slip past the source scan. That is the transitive limit `EditorCoreTargetIsolationTests` already documents as the dependency's own to guard. The total answer is the Linux engine job (US-317). The test's doc now says so.
+- **No behaviour finding:** Codex compared the moved code, the duplicated doubles, the defaults sweep and the Documents access, and found the move faithful.

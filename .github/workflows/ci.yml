@@ -96,6 +96,11 @@ jobs:
               failures.append(f"Projects depends on {sorted(deps)}, expected ['EditorCore', 'EmbroideryEngine', 'ProgramModel'] (US-329)")
           if set(samples["targets"]) != {"Samples", "Projects"}:
               failures.append(f"Samples product vends {sorted(samples['targets'])}, expected ['Projects', 'Samples'] (US-329)")
+          # Through Samples *only*: the EmbroideryEngine product stays free of app concerns
+          # (ADR-042), so no other product may vend Projects (Codex, PR #79 round 1).
+          vending = sorted(p["name"] for p in manifest["products"] if "Projects" in p["targets"])
+          if vending != ["Samples"]:
+              failures.append(f"Projects is vended by {vending}, expected ['Samples'] only (US-329)")
 
           for failure in failures:
               print(f"::error::{failure}")

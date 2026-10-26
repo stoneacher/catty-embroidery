@@ -14,7 +14,7 @@ A platform-independent Swift package architecture for embroidery-focused block p
 
 The dependency DAG is a straight line inward (ADR-016): `ProgramModel` is platform-independent and editor-safe; `Interpreter` is the only place model and engine meet; `Samples` depends on `ProgramModel` only; `StagePreview` depends on `Interpreter`.
 
-EmbroideryEngine powers the embroidery functionality of the Catrobat iOS app, porting the byte-level semantics of Catroid's `org.catrobat.catroid.embroidery` module while maintaining compatibility with the Catty reference fixtures. It is deliberately synchronous, uses only Sendable value types, and runs Swift 6 strict concurrency—the app layer controls async boundaries and actor placement.
+EmbroideryEngine powers the embroidery functionality of the Catrobat iOS app, porting the byte-level semantics of Catroid's `org.catrobat.catroid.embroidery` module while maintaining compatibility with the Catty reference fixtures. It is deliberately synchronous, uses only Sendable value types, and runs Swift 6 strict concurrency—the app layer controls async boundaries and actor placement. The one exception is the `Projects` target (US-329): its stores and `ProjectLibrary` are main-actor-isolated reference types that do file I/O.
 
 ## Typical Workflow
 

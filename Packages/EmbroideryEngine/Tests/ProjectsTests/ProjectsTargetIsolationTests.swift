@@ -7,6 +7,11 @@ import Testing
 /// (read its suite comment for each layer's limits): this source scan and a textual manifest
 /// pin are the fast local signal, and CI's `dump-package` step pins the *evaluated* manifest.
 ///
+/// It scans this target's own sources. A module an allowed dependency re-exports
+/// (`@_exported import`) is that dependency's to guard, the limit `EditorCoreTargetIsolationTests`
+/// states too; the total answer is a Linux engine job (US-317), where SwiftUI and UIKit do not
+/// exist (Codex, PR #79 round 1, deferred there).
+///
 /// The normaliser is a copy of `EditorCoreTargetIsolationTests.strippedAndNormalised`, hardened
 /// there over three Codex rounds; SwiftPM forbids one test target depending on another, so it is
 /// copied rather than shared. A fix to one belongs in both.
