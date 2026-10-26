@@ -140,7 +140,7 @@ final class ProjectLibrary {
             return .failed
         }
         setFailure(nil, for: id)
-        upsert(ProjectFile(id: id, inspection: .openable(program), modified: now()))
+        upsert(ProjectFile(id: id, inspection: .openable(program), modified: store.modified(id) ?? now()))
         return .written
     }
 
@@ -150,6 +150,8 @@ final class ProjectLibrary {
     /// missing file lifts a block, since there is no longer anything to protect. Either way the
     /// summary follows what was found.
     func open(_ id: ProjectID) -> ProjectOpening {
+        let summary = files.first { $0.id == id }
+        let modified = store.modified(id) ?? summary?.modified ?? now()
         let loaded: Program?
         do {
             loaded = try store.load(id)
@@ -159,13 +161,12 @@ final class ProjectLibrary {
             case let .document(reason): reason
             case .unreadable: .corrupt
             }
-            let summary = files.first { $0.id == id }
             let name: String? = switch summary?.inspection {
             case let .openable(program): program.name
             case let .refused(_, name): name
             case nil: nil
             }
-            upsert(ProjectFile(id: id, inspection: .refused(reason, name: name), modified: summary?.modified ?? now()))
+            upsert(ProjectFile(id: id, inspection: .refused(reason, name: name), modified: modified))
             return .refused(error)
         }
         unblock(id)
@@ -173,9 +174,8 @@ final class ProjectLibrary {
             files.removeAll { $0.id == id }
             return .missing
         }
-        let summary = files.first { $0.id == id }
         if summary?.inspection != .openable(loaded) {
-            upsert(ProjectFile(id: id, inspection: .openable(loaded), modified: summary?.modified ?? now()))
+            upsert(ProjectFile(id: id, inspection: .openable(loaded), modified: modified))
         }
         return .opened(loaded)
     }

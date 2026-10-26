@@ -4,6 +4,7 @@ import EmbroideryEngine
 import Foundation
 import Observation
 import ProgramModel
+import Samples
 import Testing
 
 // The guards the slice 4 review found unpinned (`swift-code-reviewer`'s surviving mutants and
@@ -163,4 +164,50 @@ extension ProjectLibraryTests {
 /// local `var`.
 private nonisolated final class ObservationFlag: @unchecked Sendable {
     var value = false
+}
+
+// MARK: - Handover review (Codex, PR #78 round 1)
+
+/// A summary's date is the file's own (brief D1, ADR-050), not a time the library made up.
+@MainActor
+@Suite("Project library dates")
+struct ProjectLibraryDateTests {
+    private static let program = SampleLibrary[.squareCoil].program
+    private static let invented = Date(timeIntervalSince1970: 1_000)
+
+    private static func dateOnDisk(_ store: DocumentsProjectStore, _ id: ProjectID) throws -> Date? {
+        try store.url(for: id).resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+    }
+
+    @Test("a saved project's summary carries the file's modification date")
+    func aSaveCarriesTheFileDate() throws {
+        try inDisposableDirectory { root in
+            let store = DocumentsProjectStore(directory: root)
+            let library = ProjectLibrary(store: store, lastOpened: .disposable(), now: { Self.invented })
+
+            library.save(Self.program, to: .fixed(1), revision: library.mintRevision())
+
+            let summary = try #require(library.files.first)
+            #expect(summary.modified == (try Self.dateOnDisk(store, .fixed(1))))
+            #expect(summary.modified != Self.invented)
+        }
+    }
+
+    /// A file the launch listing did not see — written since, or missed by a listing that
+    /// failed — enters the list with its own date when it is opened.
+    @Test("a project first seen by opening it is listed with the file's modification date")
+    func anOpenedFileCarriesItsDate() throws {
+        try inDisposableDirectory { root in
+            let store = DocumentsProjectStore(directory: root)
+            let library = ProjectLibrary(store: store, lastOpened: .disposable(), now: { Self.invented })
+            try store.save(Self.program, as: .fixed(2))
+            let old = Date(timeIntervalSince1970: 1_600_000_000)
+            let path = store.url(for: .fixed(2)).path
+            try FileManager.default.setAttributes([.modificationDate: old], ofItemAtPath: path)
+
+            #expect(library.open(.fixed(2)) == .opened(Self.program))
+
+            #expect(library.files.map(\.modified) == [old])
+        }
+    }
 }

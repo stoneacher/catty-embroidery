@@ -3794,3 +3794,10 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **Caching was considered and rejected.** SwiftPM and xcodebuild rebuild by timestamp, and a fresh checkout renews every timestamp.
   - **Pushes are batched per slice** rather than per sub-step.
 - **The structural fix is filed, not done:** US-329 moves the project logic, which has no UI dependency, into a package target. There it would be tested and mutated with `swift test`, in seconds per mutant. It needs Sebastian's decision before PR 2. US-330 files the stage pixel-test flake that cost three CI re-runs this week.
+
+## 2026-10-26 — M5 PR 1 handover, Codex round 1: the CI change was the riskiest code in the PR
+
+- **Round 1 of the handover loop (PR #78), highest severity High, 2 findings, both valid, code changed.**
+  - **High:** the docs-only CI skip, added earlier the same day to save CI time, could be fooled by a rename. With rename detection `git diff --name-only` lists only a moved file's new path, so a source file moved into `docs/` reads as documentation, and both test jobs would be skipped before merge. Reproduced in a scratch repository; `--no-renames` lists both sides.
+  - **Low:** summaries written by a save or first seen by `open` carried the library's clock, not the file's modification date that D1 makes authoritative. Two real-disk tests, red first; the store now reports the date.
+- **What the round says about where risk sits:** the per-slice reviews had covered the persistence code closely; this one found nothing new in the tombstones, blocks, revisions, migration replay, draft rules or the rename→export chain. Its High was in the newest and least-reviewed code, a workflow change made to speed things up, which no slice review had seen. A speed-up to the gate is part of the gate, and deserves the same scrutiny.

@@ -42,7 +42,9 @@ jobs:
             echo "code=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
+          # `--no-renames`: with rename detection a moved file shows only its new path, so a
+          # source file moved into docs/ would read as documentation (Codex, PR #78 round 1).
+          changed=$(git diff --no-renames --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
           code=$(printf '%s\n' "$changed" | grep -vE '^docs/|\.md$' | grep -c . || true)
           echo "code=$([ "$code" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "$code non-documentation file(s) changed in this pull request"

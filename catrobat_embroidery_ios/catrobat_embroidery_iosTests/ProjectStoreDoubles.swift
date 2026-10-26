@@ -70,6 +70,11 @@ final class InMemoryProjectStore: ProjectStoring {
         deletes.append(id)
     }
 
+    /// Unknown, so the library falls back to its injected clock, which the tests pin.
+    func modified(_: ProjectID) -> Date? {
+        nil
+    }
+
     func list() throws -> [ProjectFile] {
         listCount += 1
         return entries.map { id, entry in

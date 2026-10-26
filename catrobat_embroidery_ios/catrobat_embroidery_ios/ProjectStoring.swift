@@ -61,6 +61,9 @@ protocol ProjectStoring {
     /// Every project file, in no particular order, including the ones that cannot be opened
     /// or even read. Throws only when the directory itself cannot be read.
     func list() throws -> [ProjectFile]
+
+    /// The project file's own modification date (brief D1), or `nil` when it cannot be read.
+    func modified(_ id: ProjectID) -> Date?
 }
 
 /// The projects as one JSON file each, `Projects/<UUID>.json` under the app's Documents
@@ -110,6 +113,10 @@ final class DocumentsProjectStore: ProjectStoring {
     }
 
     /// Removes whatever is at `url(for:)`; the store only ever puts a regular file there.
+    func modified(_ id: ProjectID) -> Date? {
+        try? url(for: id).resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+    }
+
     func delete(_ id: ProjectID) throws {
         do {
             try FileManager.default.removeItem(at: url(for: id))
