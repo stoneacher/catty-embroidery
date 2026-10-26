@@ -325,35 +325,27 @@ final class AppModel {
     /// class has ever had. (In-loop review.)
     @ObservationIgnored private var nextGeneration = 0
 
-    /// Selects `sample` and shows its script (US-407; the stage until then).
+    /// Selects `sample` as a new draft and shows its script (US-407; brief D3).
     ///
-    /// **Loads a copy** into the editor and resets its history (US-405): the working program
-    /// is a value, so editing it can never reach `SampleLibrary`, which is shared
-    /// process-wide — asserted by `WorkingProgramTests` because a reference-typed model would
-    /// make it false without a compiler error. Picking the sample again therefore throws the
-    /// edits away, which is US-304's "start over" reaching the history too.
+    /// **Loads a copy** into the editor and resets its history (US-405): editing it can never
+    /// reach `SampleLibrary`, which is shared process-wide (`WorkingProgramTests`). The project
+    /// the window held keeps its saved edits; one whose last save failed is retried first, and
+    /// if that fails the window stays (`canLeaveProject()`). (Until M5 a pick discarded them.)
     ///
-    /// Never a no-op, even for the sample already selected: the fresh generation
-    /// makes the new value unequal to the old one, which is what lets a later
-    /// consumer treat any selection as "start over" (US-306).
+    /// Never a no-op, even for the sample already selected: the fresh generation makes the new
+    /// value unequal to the old one, so a consumer can treat any selection as "start over"
+    /// (US-306). The path is **assigned**, not appended to, so Back returns to the list; it is
+    /// written under the split layout too, so a window resized down to compact opens on the
+    /// selected design, as UIKit's own split-view collapse does.
     ///
-    /// The path is **assigned**, not appended to. Appending would stack a second
-    /// script on the first, so Back would return to a script rather than to the
-    /// list of samples.
-    ///
-    /// It writes `path` even when the split layout is showing, which ignores it.
-    /// That is deliberate rather than a leak: it means a window resized down to
-    /// compact opens on the design the user had selected, which is how UIKit's
-    /// own split-view collapse behaves.
-    /// It also **discards whatever the previous design left on the stage**, and it does
-    /// so here rather than in a view. The view-side spellings — `.onChange(of:
-    /// initial:)`, `.task(id:)` — re-fire when `RootView` rebuilds a navigation
-    /// container after a horizontal size-class change (ADR-023), so on an iPad window
-    /// resize they would wipe a design the user had just watched finish. The reset belongs
-    /// with the selection's writers — `launch(sceneID:)` skips it only because it runs
-    /// once, before anything can play — and `programChanged(from:to:)` is the other thing that
-    /// voids a run, for any change but a rename.
+    /// It also **discards whatever the previous design left on the stage**, here rather than in
+    /// a view: the view-side spellings (`.onChange(of:initial:)`, `.task(id:)`) re-fire when
+    /// `RootView` rebuilds a container after a size-class change (ADR-023) and would wipe a
+    /// design the user had just watched finish. `launch(sceneID:)` skips the reset only because
+    /// it runs before anything can play; `programChanged(from:to:)` voids a run for any change
+    /// but a rename.
     func select(_ sample: SampleProgram) {
+        guard canLeaveProject() else { return }
         selection = ProgramSelection(
             generation: nextGeneration, provenance: sample.id, title: sample.displayName
         )
@@ -376,6 +368,14 @@ final class AppModel {
     /// A sample opens as a **draft** (brief D3): a fresh ID with no file, which the first
     /// change writes. Named after its program, made unique among every name the user can see
     /// (D4), and registered so another window's generated names avoid it.
+    /// A change whose save failed is retried before the window leaves it; if it fails again the
+    /// window stays, its failure showing, rather than discard the change (Codex, PR #78 round 4).
+    private func canLeaveProject() -> Bool {
+        guard let heldRevision, saveFailure == .saveFailed else { return true }
+        recordSave(library.save(editor.program, to: projectID, revision: heldRevision))
+        return saveFailure != .saveFailed
+    }
+
     /// The title follows the program's name (`syncName()`, brief D4): the one write to
     /// `selection` that is not a new selection.
     func retitle(_ title: LocalizedStringResource) {

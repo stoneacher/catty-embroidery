@@ -270,7 +270,7 @@ final class ProjectLibrary {
         guard holders(of: id).subtracting([window].compactMap(\.self)).isEmpty else {
             throw ProjectLibraryError.heldByAnotherWindow
         }
-        // A leftover legacy file would migrate this project back at the next launch (slice 6).
+        // First: a leftover would migrate it back next launch (slice 6); it only copies a project.
         if id == .legacyWorkingProgram {
             try legacy?.remove()
         }

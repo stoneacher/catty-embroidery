@@ -127,4 +127,38 @@ extension ProjectWiringTests {
         #expect(model.projectID == last)
         #expect(try #require(model.launchRefusal).reason == .document(.corrupt))
     }
+
+    /// Codex, PR #78 round 4 (and `swift-code-reviewer`'s slice 5 note): a change whose save
+    /// failed must not be thrown away by picking a sample. The pick retries the save first.
+    @Test("picking a sample after a failed save retries it, and switches once it is written")
+    func aPickRetriesAFailedSave() {
+        let app = App([Self.stored: .program(Self.rosette.program)])
+        let model = app.window(scene: Self.stored)
+        app.store.failingSaves = [Self.stored]
+        model.editor.apply(Self.editQ)
+        let edited = model.editor.program
+        app.store.failingSaves = []
+
+        model.select(Self.coil)
+
+        #expect(app.store.program(Self.stored) == edited)
+        #expect(model.projectID != Self.stored)
+    }
+
+    /// If the retry fails too, the window stays on the unsaved program, its failure showing,
+    /// rather than discarding it.
+    @Test("picking a sample while the save keeps failing keeps the unsaved program on screen")
+    func aPickKeepsAnUnsavableProgram() {
+        let app = App([Self.stored: .program(Self.rosette.program)])
+        let model = app.window(scene: Self.stored)
+        app.store.failingSaves = [Self.stored]
+        model.editor.apply(Self.editQ)
+        let edited = model.editor.program
+
+        model.select(Self.coil)
+
+        #expect(model.projectID == Self.stored)
+        #expect(model.editor.program == edited)
+        #expect(model.saveFailure == .saveFailed)
+    }
 }

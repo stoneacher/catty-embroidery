@@ -21,44 +21,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Whether this run needs the macOS jobs at all. A pull request whose **whole** diff against
-  # its base touches only documentation cannot change a build or a test, so
-  # the engine and app jobs are skipped; GitHub reports a job skipped by `if:` as a success,
-  # which is exactly right here and nowhere else. The whole PR diff, not the last push: runs
-  # cancel each other (the concurrency group above), so a docs-only push after a code push whose
-  # run was cancelled must still test that code. A push to `main` always runs everything.
-  # **It fails closed** (Codex, PR #78 round 3): the test jobs run unless this job positively
-  # answered `false`. A classifier that fails or is skipped leaves its output empty, and a job
-  # skipped because a prerequisite failed would otherwise report success under a required name.
-  # "Documentation" is a place, not a file type: `docs/` and the Markdown files at the
-  # repository root. A `.md` file anywhere else may be a resource a test reads (Codex, PR #78
-  # round 2), so it counts as code.
-  changes:
-    name: Changes
-    runs-on: ubuntu-latest
-    outputs:
-      code: ${{ steps.diff.outputs.code }}
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - id: diff
-        run: |
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # `--no-renames`: with rename detection a moved file shows only its new path, so a
-          # source file moved into docs/ would read as documentation (Codex, PR #78 round 1).
-          changed=$(git diff --no-renames --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
-          code=$(printf '%s\n' "$changed" | grep -vE '^docs/|^[^/]+\.md$' | grep -c . || true)
-          echo "code=$([ "$code" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "$code non-documentation file(s) changed in this pull request"
-
   engine-tests:
     name: Engine tests (swift test)
-    needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: xcode-27
     env:
       # Pin the toolchain: runner-default Xcode drifts and breaks Swift 6.x builds.
@@ -130,8 +94,6 @@ jobs:
 
   app-build-and-test:
     name: App build & test (xcodebuild)
-    needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: xcode-27
     # A wedged simulator would otherwise burn the 360-minute default. The healthy
     # job was ~4m30s on macos-26; on the xcode-27 preview image it is ~15m30s
