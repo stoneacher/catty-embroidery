@@ -2,6 +2,7 @@
 import EditorCore
 import EmbroideryEngine
 import Foundation
+import Observation
 import ProgramModel
 import Samples
 import Testing
@@ -12,26 +13,26 @@ import Testing
 @MainActor
 @Suite("Project library")
 struct ProjectLibraryTests {
-    private static let rosette = SampleLibrary[.octagonRosette].program
-    private static let coil = SampleLibrary[.squareCoil].program
-    private static let first = ProjectID.fixed(1)
-    private static let second = ProjectID.fixed(2)
-    private static let createdAt = Date(timeIntervalSince1970: 1_800_000_000)
+    static let rosette = SampleLibrary[.octagonRosette].program
+    static let coil = SampleLibrary[.squareCoil].program
+    static let first = ProjectID.fixed(1)
+    static let second = ProjectID.fixed(2)
+    static let createdAt = Date(timeIntervalSince1970: 1_800_000_000)
 
-    private static func library(
+    static func library(
         _ store: InMemoryProjectStore,
         ids: SequentialProjectIDs = SequentialProjectIDs()
     ) -> ProjectLibrary {
         ProjectLibrary(store: store, makeID: { ids.make() }, now: { createdAt })
     }
 
-    private static func named(_ name: String, _ program: Program = rosette) -> Program {
+    static func named(_ name: String, _ program: Program = rosette) -> Program {
         var renamed = program
         renamed.name = name
         return renamed
     }
 
-    private static func name(_ raw: String) throws -> DesignName {
+    static func name(_ raw: String) throws -> DesignName {
         try DesignName.validating(raw).get()
     }
 

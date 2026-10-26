@@ -15,6 +15,8 @@ final class InMemoryProjectStore: ProjectStoring {
     enum Entry: Equatable {
         case program(Program)
         case refused(ProgramDocumentError, name: String?)
+        /// A file that exists but cannot be read at all.
+        case unreadable
     }
 
     var entries: [ProjectID: Entry]
@@ -48,6 +50,7 @@ final class InMemoryProjectStore: ProjectStoring {
         case nil: nil
         case let .program(program): program
         case let .refused(reason, _): throw .document(reason)
+        case .unreadable: throw .unreadable
         }
     }
 
@@ -75,6 +78,8 @@ final class InMemoryProjectStore: ProjectStoring {
                 ProjectFile(id: id, inspection: .openable(program), modified: modified)
             case let .refused(reason, name):
                 ProjectFile(id: id, inspection: .refused(reason, name: name), modified: modified)
+            case .unreadable:
+                ProjectFile(id: id, inspection: .refused(.corrupt, name: nil), modified: modified)
             }
         }
     }

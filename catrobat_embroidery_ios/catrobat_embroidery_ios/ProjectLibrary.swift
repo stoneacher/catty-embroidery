@@ -25,11 +25,20 @@ enum ProjectSaveOutcome: Equatable {
     case written
     /// A newer revision of this project was already accepted; this one was dropped.
     case superseded
-    /// The project's file was refused, and nothing may overwrite it.
+    /// The project's file was refused, and nothing may overwrite it; for a catalog rename, also
+    /// a project with no file.
     case blocked
+    /// Another window holds the project, so the catalog may not change it (brief D7).
+    case held
     case failed
     /// The project was deleted; a late save must not bring the file back.
     case deleted
+}
+
+/// Why the catalog refused to delete a project.
+enum ProjectLibraryError: Error, Equatable {
+    /// Another window holds the project (brief D7).
+    case heldByAnotherWindow
 }
 
 /// One window, as the registry knows it. Explicit rather than an object identity, so a late
@@ -39,7 +48,8 @@ struct WindowToken: Hashable, Sendable {
 }
 
 /// The one guard on every project file, shared by every window (project management slice 4;
-/// brief D3, D7, D9, D11). It replaces `ProgramAutosave`, and keeps its reasoning: app-scoped
+/// brief D3, D7, D9, D11). It takes over from `ProgramAutosave` in slice 5, and keeps its
+/// reasoning: app-scoped
 /// because every window may write the same files, so the rule deciding which write wins has
 /// to see all of them; synchronous on the main actor, so writes are ordered by construction.
 ///
@@ -52,8 +62,11 @@ struct WindowToken: Hashable, Sendable {
 /// deleted. **A deleted project stays deleted** (D9): its ID is remembered for the life of the
 /// process, so a late save from a window that still held it cannot recreate the file.
 ///
-/// The summaries in `files` are kept in step with every write and delete here, so the list
-/// never rescans the disk after launch: this process is the files' only writer.
+/// The summaries in `files` are kept in step with every write, delete and re-probe here, so
+/// the list never rescans the disk after launch: this process is the files' only writer.
+///
+/// `files`, the failures and the registry are observed — windows show the list, their banner
+/// and "held by another window" from them; the guard state is bookkeeping and is not.
 @MainActor
 @Observable
 final class ProjectLibrary {
@@ -78,8 +91,12 @@ final class ProjectLibrary {
     private var registry: [WindowToken: Registration] = [:]
 
     @ObservationIgnored private var revisions = RevisionCounter()
+    /// The newest revision a save has been *accepted* for, per project — not necessarily
+    /// written: a failed or blocked newer save must still stop an older one landing after it.
     @ObservationIgnored private var highestAccepted: [ProjectID: SaveRevision] = [:]
+    /// Projects whose file was refused (D11); nothing is written to them.
     @ObservationIgnored private var blocked: Set<ProjectID> = []
+    /// Projects deleted in this process (D9); a late save must not recreate their files.
     @ObservationIgnored private var tombstones: Set<ProjectID> = []
 
     /// Lists the projects once. A listing that fails leaves the list empty; nothing is written
@@ -137,29 +154,46 @@ final class ProjectLibrary {
         do {
             try store.save(program, as: id)
         } catch {
-            failures[id] = .saveFailed
+            setFailure(.saveFailed, for: id)
             return .failed
         }
-        failures[id] = nil
+        setFailure(nil, for: id)
         upsert(ProjectFile(id: id, inspection: .openable(program), modified: now()))
         return .written
     }
 
     // MARK: Opening
 
-    /// Reads `id`, writing nothing. A refusal blocks the project; an openable or missing file
-    /// lifts a block, since there is no longer anything to protect.
+    /// Reads `id`, writing nothing to disk. A refusal blocks the project; an openable or
+    /// missing file lifts a block, since there is no longer anything to protect. Either way the
+    /// summary follows what was found.
     func open(_ id: ProjectID) -> ProjectOpening {
         let loaded: Program?
         do {
             loaded = try store.load(id)
         } catch {
             block(id)
+            let reason: ProgramDocumentError = switch error {
+            case let .document(reason): reason
+            case .unreadable: .corrupt
+            }
+            let summary = files.first { $0.id == id }
+            let name: String? = switch summary?.inspection {
+            case let .openable(program): program.name
+            case let .refused(_, name): name
+            case nil: nil
+            }
+            upsert(ProjectFile(id: id, inspection: .refused(reason, name: name), modified: summary?.modified ?? now()))
             return .refused(error)
         }
         unblock(id)
         guard let loaded else {
+            files.removeAll { $0.id == id }
             return .missing
+        }
+        let summary = files.first { $0.id == id }
+        if summary?.inspection != .openable(loaded) {
+            upsert(ProjectFile(id: id, inspection: .openable(loaded), modified: summary?.modified ?? now()))
         }
         return .opened(loaded)
     }
@@ -168,12 +202,17 @@ final class ProjectLibrary {
 
     /// Removes the file first; only once it is gone are the tombstone, the summary and the
     /// project's block and failure changed. A removal that throws changes nothing (brief D9).
-    func delete(_ id: ProjectID) throws {
+    /// A project another window holds is refused before anything is touched (D7); the window
+    /// asking may hold it itself.
+    func delete(_ id: ProjectID, requestedBy window: WindowToken? = nil) throws {
+        guard holders(of: id).subtracting([window].compactMap(\.self)).isEmpty else {
+            throw ProjectLibraryError.heldByAnotherWindow
+        }
         try store.delete(id)
         tombstones.insert(id)
         files.removeAll { $0.id == id }
         blocked.remove(id)
-        failures[id] = nil
+        setFailure(nil, for: id)
     }
 
     /// Writes `program` at once as a new project with a generated, unique name (brief D3, D4),
@@ -184,6 +223,8 @@ final class ProjectLibrary {
         copy.name = uniquedName(base).value
         let id = makeID()
         guard save(copy, to: id, revision: mintRevision()) == .written else {
+            // Nothing holds the new ID, so nothing should show its failure.
+            setFailure(nil, for: id)
             return nil
         }
         return id
@@ -191,8 +232,12 @@ final class ProjectLibrary {
 
     /// Renames a project no window holds: load, rename, save under a fresh revision, so a
     /// window's save from before the rename cannot bring the old name back (brief D8). A
-    /// refused or missing project is `.blocked`, and nothing is written.
+    /// project a window holds is `.held` — its rename is that window's edit — and a refused or
+    /// missing one is `.blocked`; neither is written.
     func rename(_ id: ProjectID, to name: DesignName) -> ProjectSaveOutcome {
+        guard holders(of: id).isEmpty else {
+            return .held
+        }
         guard case let .opened(program) = open(id) else {
             return .blocked
         }
@@ -216,9 +261,12 @@ final class ProjectLibrary {
 
     // MARK: Registry (D7)
 
-    /// Records that `window` now holds `id`, replacing whatever it held before. `owner` is
-    /// held weakly, only so a window torn down without unregistering stops counting.
+    /// Records that `window` now holds `id`, replacing whatever it held before — the draft
+    /// name included, so a window re-registers with `nil` once its draft has a file. `owner` is
+    /// held weakly, only so a window torn down without unregistering stops counting; its entry
+    /// is pruned at the next registration, which is also when observers hear of it.
     func register(_ window: WindowToken, owner: AnyObject, holding id: ProjectID, draftName: String?) {
+        registry = registry.filter { $0.value.owner != nil }
         registry[window] = Registration(owner: owner, projectID: id, draftName: draftName)
     }
 
@@ -244,16 +292,25 @@ final class ProjectLibrary {
 
     // MARK: Private
 
+    /// The refusal replaces any earlier `.saveFailed`: it is the stronger state, and while it
+    /// holds nothing is written anyway.
     private func block(_ id: ProjectID) {
         blocked.insert(id)
-        failures[id] = .refusedDocument
+        setFailure(.refusedDocument, for: id)
     }
 
     private func unblock(_ id: ProjectID) {
         guard blocked.remove(id) != nil else {
             return
         }
-        failures[id] = nil
+        setFailure(nil, for: id)
+    }
+
+    /// Writes only a change, so an ordinary save does not notify every window's banner.
+    private func setFailure(_ failure: ProjectSaveFailure?, for id: ProjectID) {
+        if failures[id] != failure {
+            failures[id] = failure
+        }
     }
 
     private func upsert(_ file: ProjectFile) {
