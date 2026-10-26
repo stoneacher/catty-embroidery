@@ -54,14 +54,15 @@ nonisolated struct ProgramSelection: Equatable, Sendable {
     /// writer; `AppModel.selection` is `private(set)`, so nothing outside the model reaches it.
     var provenance: SampleID?
 
-    /// The stage's navigation title, captured when the program was loaded.
+    /// The stage's navigation title: the project's one name (M5, brief D4), kept in step with
+    /// `program.name` by `AppModel.syncName()`, so a rename retitles the stage.
     ///
     /// **Not cleared by an edit**, unlike `provenance`: "Octagon Rosette, with one brick
     /// changed" is still the design the user is looking at, and a title flipping to "Stage"
     /// on the first nudge would read as the design having been thrown away. `nil` is not
     /// reachable through `select(_:)` and is kept optional so the stage's own `nil` — nothing
-    /// picked — has one spelling.
-    let title: LocalizedStringResource?
+    /// picked — has one spelling. `var` for `syncName()`.
+    var title: LocalizedStringResource?
 }
 
 extension ProgramSelection {
@@ -70,8 +71,8 @@ extension ProgramSelection {
     ///
     /// Until US-407 a window launched with no selection at all, and since `AppModel.play()` is
     /// gated on one, a program built from nothing could never run — M4's exit criterion 1.
-    /// `launch(sceneID:)` replaces it with the saved program's own title; a refused file
-    /// leaves it, which is right, because the window holds the blank program either way.
+    /// `launch(sceneID:)` replaces it with the opened project's name, or the new draft's
+    /// ("Design"), as `syncName()` keeps every title.
     static func launch(generation: Int) -> ProgramSelection {
         ProgramSelection(generation: generation, provenance: nil, title: .programTitleUntitled)
     }

@@ -100,6 +100,21 @@ struct ProjectLaunchTests {
         #expect(library.resolveLaunch(sceneID: Self.scene).opened == nil)
     }
 
+    /// Codex, slice 5: the tombstone skips the deleted ID before the "missing" branch could
+    /// clear it, so the delete itself must.
+    @Test("deleting the last opened project clears it")
+    func deletingTheLastOpenedClearsIt() throws {
+        let (library, remembered) = Self.library(
+            [Self.last: .program(Self.coil), Self.scene: .program(Self.rosette)], lastOpened: Self.last
+        )
+
+        try library.delete(Self.scene)
+        #expect(remembered.id == Self.last, "deleting another project leaves it")
+        try library.delete(Self.last)
+
+        #expect(remembered.id == nil)
+    }
+
     // MARK: The stored form
 
     /// Decoded defensively: whatever else is under the key reads as "nothing stored".

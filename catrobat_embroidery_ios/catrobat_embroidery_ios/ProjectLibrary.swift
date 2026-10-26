@@ -19,7 +19,7 @@ nonisolated struct SaveRevision: Comparable, Sendable {
 }
 
 /// The one guard on every project file, shared by every window (project management slice 4;
-/// brief D3, D7, D9, D11). It takes over from `ProgramAutosave` in slice 5, and keeps its
+/// brief D3, D7, D9, D11). It replaced M4's `ProgramAutosave` in slice 5, and keeps its
 /// reasoning: app-scoped
 /// because every window may write the same files, so the rule deciding which write wins has
 /// to see all of them; synchronous on the main actor, so writes are ordered by construction.
@@ -111,7 +111,7 @@ final class ProjectLibrary {
     /// Saves `program` as `id` unless a newer revision of `id` was already accepted, the file
     /// is refused, or the project was deleted.
     ///
-    /// As in `ProgramAutosave`, an **equal** revision is written again (the same edit asking
+    /// As in M4's `ProgramAutosave`, an **equal** revision is written again (the same edit asking
     /// twice), and *accepted* is the line rather than *written*: a failed newer write must
     /// still stop an older one landing after it.
     @discardableResult
@@ -213,13 +213,18 @@ final class ProjectLibrary {
     /// Removes the file first; only once it is gone are the tombstone, the summary and the
     /// project's block and failure changed. A removal that throws changes nothing (brief D9).
     /// A project another window holds is refused before anything is touched (D7); the window
-    /// asking may hold it itself.
+    /// asking may hold it itself. A deleted project stops being the last opened.
     func delete(_ id: ProjectID, requestedBy window: WindowToken? = nil) throws {
         guard holders(of: id).subtracting([window].compactMap(\.self)).isEmpty else {
             throw ProjectLibraryError.heldByAnotherWindow
         }
         try store.delete(id)
         tombstones.insert(id)
+        // The tombstone makes launch skip this ID before it could find it missing and clear it
+        // (Codex, slice 5), so the delete clears it.
+        if lastOpened.id == id {
+            lastOpened.id = nil
+        }
         files.removeAll { $0.id == id }
         blocked.remove(id)
         setFailure(nil, for: id)

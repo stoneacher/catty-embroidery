@@ -4,9 +4,9 @@ import SwiftUI
 /// The design-name field: a label, the field itself, a live counter, and the one sentence
 /// saying what is wrong with what has been typed so far (US-308).
 ///
-/// **Dumb by construction.** It owns no name, no validator and no commit: `ExportViewModel`
-/// holds the string and recomputes the verdict, and the *commit* — the point at which a new
-/// `.dst` is written — is the caller's, because it is a side effect. A caller attaches
+/// **Dumb by construction.** It owns no name, no validator and no commit: `AppModel` holds the
+/// draft (`nameDraft`) and recomputes the verdict, and the *commit* — the point at which the
+/// draft becomes a rename — is the caller's, because it is a side effect. A caller attaches
 /// `.onSubmit { … }` to this view and watches its own `@FocusState`; both propagate down and
 /// up respectively, so no callback needs to be threaded through here.
 ///

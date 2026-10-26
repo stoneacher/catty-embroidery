@@ -125,8 +125,7 @@ struct WindowRootView: View {
     }
 
     /// Spoken on a transition only, so a window opening onto an existing failure shows the
-    /// banner without announcing it. Not while the launch alert is up: when the refused file
-    /// could not be moved, the alert's own message already says saving is paused.
+    /// banner without announcing it. Not while the launch alert is up, which speaks for itself.
     ///
     /// **Known gap**: the failure is per project, so two windows on one project both announce it.
     private func announce(_ failure: ProjectSaveFailure?, replacing old: ProjectSaveFailure?) {

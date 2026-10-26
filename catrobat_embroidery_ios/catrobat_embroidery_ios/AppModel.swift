@@ -98,11 +98,6 @@ final class AppModel {
     /// every load set it back to `program.name`.
     var nameDraft = ""
 
-    /// Why this window's project is not being saved, or `nil` while it is.
-    var saveFailure: ProjectSaveFailure? {
-        library.failure(for: projectID)
-    }
-
     /// The rest are injectable so tests can supply immediate pacing and a recording writer;
     /// the defaults are what the app runs with. `library` has no default: it is shared across
     /// windows, so only their owner can supply it, and a default would be silent non-saving.
@@ -161,8 +156,7 @@ final class AppModel {
     ///   story names as the detail most likely to be missed.
     /// - **No new generation.** An edit is not a new selection; nothing downstream should treat
     ///   it as "start over".
-    /// - **No `path` write.** Whatever the user is looking at — the script or the stage — stays.
-    /// - **No zoom, generation or path change** applies to a rename as much as to any edit.
+    /// - **No `path` write.** Whatever the user is looking at stays. All three hold for a rename.
     ///
     /// `reset()` is ADR-027's existing discard path: it cancels the consumer, bumps the run
     /// generation so buffered frames from the voided run cannot land, clears the display list
@@ -173,8 +167,7 @@ final class AppModel {
         selection?.provenance = nil
         if after.differsOnlyInName(from: before) {
             syncName()
-            // Only a finished run has an export model: `begin()` clears it and only a
-            // termination sets it, so a rename mid-run prepares nothing until the run ends.
+            // Only a terminated run has one, so a rename mid-run waits for the run's end.
             if let exportModel = runner.run.exportModel {
                 exporter.prepare(exportModel: exportModel)
             }
@@ -193,13 +186,21 @@ final class AppModel {
     @ObservationIgnored private var hasLaunched = false
 
     /// Stamps the working program with a new revision and saves it to this window's project —
-    /// for every user-initiated change and nothing else. ADR-037 keeps the list; a rejected or
-    /// unchanging edit, an opening and a sample pick are not on it (brief D3). A draft's first
-    /// written save gives it a file: it stops reserving its name and becomes the last opened.
+    /// for every user-initiated change and nothing else (ADR-037; not a rejected or unchanging
+    /// edit, an opening or a sample pick, brief D3).
     private func persistWorkingProgram() {
         let revision = library.mintRevision()
         heldRevision = revision
-        guard library.save(editor.program, to: projectID, revision: revision) == .written, !hasFile else {
+        recordSave(library.save(editor.program, to: projectID, revision: revision))
+    }
+
+    /// What a save means for a draft, through a change or the lifecycle retry (Codex, slice 5):
+    /// the first written one gives it a file, whose name now counts, and makes it the last
+    /// opened. Until then it reserves its **current** name, which a rename may change.
+    private func recordSave(_ outcome: ProjectSaveOutcome) {
+        guard !hasFile else { return }
+        guard outcome == .written else {
+            library.register(window, owner: self, holding: projectID, draftName: editor.program.name)
             return
         }
         hasFile = true
@@ -209,16 +210,18 @@ final class AppModel {
 
     /// Opens what this window holds, once per window — from `onAppear`, not `init`, which
     /// `State(initialValue:)` evaluates on every view initialisation. Brief D6: the scene's
-    /// project, else the last opened, else a draft under a **fresh** ID, so a stale ID can
-    /// never become a draft that recreates what it named. The first refused candidate is
-    /// alerted for; its file stays where it is.
+    /// project, else the last opened, else a draft under a **fresh** ID, so a stale ID can never
+    /// become a draft that recreates what it named. The first refused candidate is alerted for;
+    /// its file stays where it is. Appearing again only registers the window again.
     ///
     /// An opened project is a selection **without provenance** (ADR-038): the file records a
-    /// program, not a sample. Its name is the title, and seeds the export only if the `LA`
-    /// field can hold it. It holds no revision, so the window writes nothing until the user
-    /// changes something.
+    /// program, not a sample. Its name is the title and the export's name (`syncName()`). It
+    /// holds no revision, so the window writes nothing until the user changes something.
     func launch(sceneID: ProjectID?) {
-        guard !hasLaunched else { return }
+        guard !hasLaunched else {
+            library.register(window, owner: self, holding: projectID, draftName: hasFile ? nil : editor.program.name)
+            return
+        }
         hasLaunched = true
         let resolution = library.resolveLaunch(sceneID: sceneID)
         launchRefusal = resolution.refusals.first.map { ProgramRefusal(reason: $0.reason) }
@@ -226,9 +229,8 @@ final class AppModel {
             var blank = Program.blank
             blank.name = Self.defaultName.value
             startDraft(from: blank)
-            selection = ProgramSelection(
-                generation: nextGeneration, provenance: nil, title: .programTitleNamed(editor.program.name)
-            )
+            selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: nil)
+            syncName()
             nextGeneration += 1
             return
         }
@@ -237,9 +239,8 @@ final class AppModel {
         library.register(window, owner: self, holding: projectID, draftName: nil)
         editor.load(opened.program)
         heldRevision = nil
-        let title: LocalizedStringResource = opened.program.name.isEmpty
-            ? .programTitleUntitled : .programTitleNamed(opened.program.name)
-        selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: title)
+        // Titled by `syncName()` below, the title's one writer.
+        selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: nil)
         nextGeneration += 1
         path = [.script] // Already so from `init`; kept so launch does not depend on it.
         palette.isPresented = false
@@ -251,12 +252,7 @@ final class AppModel {
     /// that produced it, so the save is dropped if another window has changed the program since.
     func sceneDidLeaveActive() {
         guard let heldRevision else { return }
-        library.save(editor.program, to: projectID, revision: heldRevision)
-    }
-
-    /// The window is going away: it no longer holds its project (brief D7).
-    func close() {
-        library.unregister(window, from: projectID)
+        recordSave(library.save(editor.program, to: projectID, revision: heldRevision))
     }
 
     /// The user has read the launch refusal.
@@ -284,7 +280,8 @@ final class AppModel {
     /// `private(set)` so every new selection goes through `select(_:)` and the
     /// generation can never be skipped — an assignment that bypassed it would
     /// reintroduce exactly the no-op this story exists to forbid. `launch(sceneID:)` also
-    /// mints one; `programChanged()` only clears `provenance`.
+    /// mints one; `programChanged(from:to:)` only clears `provenance` and `retitle(_:)` only
+    /// renames it.
     private(set) var selection: ProgramSelection?
 
     /// The compact navigation stack's path.
@@ -353,7 +350,8 @@ final class AppModel {
     /// container after a horizontal size-class change (ADR-023), so on an iPad window
     /// resize they would wipe a design the user had just watched finish. The reset belongs
     /// with the selection's writers — `launch(sceneID:)` skips it only because it runs
-    /// once, before anything can play — and `programChanged()` is the other thing that voids a run.
+    /// once, before anything can play — and `programChanged(from:to:)` is the other thing that
+    /// voids a run, for any change but a rename.
     func select(_ sample: SampleProgram) {
         selection = ProgramSelection(
             generation: nextGeneration, provenance: sample.id, title: sample.displayName
@@ -377,9 +375,16 @@ final class AppModel {
     /// A sample opens as a **draft** (brief D3): a fresh ID with no file, which the first
     /// change writes. Named after its program, made unique among every name the user can see
     /// (D4), and registered so another window's generated names avoid it.
-    /// The registration replaces whatever the window held before, so the old project needs no
-    /// separate unregister.
+    /// The title follows the program's name (`syncName()`, brief D4): the one write to
+    /// `selection` that is not a new selection.
+    func retitle(_ title: LocalizedStringResource) {
+        selection?.title = title
+    }
+
+    /// Unregisters first, so the window does not reserve its own name against itself when a
+    /// sample is picked again (`swift-code-reviewer`, slice 5).
     private func startDraft(from program: Program) {
+        library.unregister(window, from: projectID)
         projectID = library.makeDraftID()
         hasFile = false
         heldRevision = nil

@@ -1,5 +1,7 @@
 @testable import catrobat_embroidery_ios
 import EmbroideryEngine
+import Foundation
+import ProgramModel
 import Samples
 import StagePreview
 import Testing
@@ -74,7 +76,8 @@ struct AppModelTests {
 
         let selection = try #require(model.selection)
         #expect(selection.provenance == sample.id)
-        #expect(selection.title == sample.displayName)
+        // The stage is titled with the project's one name, its program's (M5, brief D4).
+        #expect(selection.title.map { String(localized: $0) } == sample.program.name)
         #expect(model.editor.program == sample.program)
     }
 

@@ -34,11 +34,13 @@ extension AppModel {
         return true
     }
 
-    /// One name (brief D4): the export's name is the program's, and the field shows it again.
-    /// Setting `exporter.name` discards a file prepared under the old name.
+    /// One name (brief D4): the export's name and the stage's title are the program's, and the
+    /// field shows it again. Setting `exporter.name` discards a file prepared under the old name.
     func syncName() {
-        exporter.name = editor.program.name
-        nameDraft = editor.program.name
+        let name = editor.program.name
+        exporter.name = name
+        nameDraft = name
+        retitle(name.isEmpty ? .programTitleUntitled : .programTitleNamed(name))
     }
 
     /// A new design's name (brief D4): the catalog's, or ASCII "Design" if a translation is

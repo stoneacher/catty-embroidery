@@ -19,12 +19,12 @@ import Testing
 @MainActor
 @Suite("Project wiring")
 struct ProjectWiringTests {
-    private static let rosette = SampleLibrary[.octagonRosette]
-    private static let coil = SampleLibrary[.squareCoil]
-    private static let stored = ProjectID.fixed(1)
+    static let rosette = SampleLibrary[.octagonRosette]
+    static let coil = SampleLibrary[.squareCoil]
+    static let stored = ProjectID.fixed(1)
 
     /// One app: a store, the last-opened default and the library over them.
-    private struct App {
+    struct App {
         let store: InMemoryProjectStore
         let remembered: LastOpenedProject
         let library: ProjectLibrary
@@ -63,8 +63,8 @@ struct ProjectWiringTests {
     }
 
     /// Edits every program here accepts and that change it: no sample is called this.
-    private static let editQ = EditAction.renameProgram("M5 Q")
-    private static let editR = EditAction.renameProgram("M5 R")
+    static let editQ = EditAction.renameProgram("M5 Q")
+    static let editR = EditAction.renameProgram("M5 R")
 
     // MARK: Drafts (D3)
 
@@ -183,6 +183,8 @@ struct ProjectWiringTests {
 
         #expect(model.projectID == Self.stored)
         #expect(model.editor.program == Self.rosette.program)
+        #expect(model.nameDraft == Self.rosette.program.name, "the field shows the opened name")
+        #expect(model.exporter.name == Self.rosette.program.name)
         #expect(try #require(model.selection).provenance == nil)
         #expect(app.remembered.id == Self.stored)
         #expect(app.library.holders(of: Self.stored) == [model.window])
@@ -231,8 +233,6 @@ struct ProjectWiringTests {
         #expect(!relaunched.editor.canUndo)
     }
 
-    /// The save fails, so the disk still holds the original: a second launch would read it back
-    /// over the edit.
     @Test("launching a window twice does not replace its program")
     func launchingTwiceKeepsTheProgram() {
         let app = App([Self.stored: .program(Self.rosette.program)])

@@ -3760,3 +3760,15 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Scope of the damage:** the defect can only produce false survivors, never false kills. This session's survivor verdicts were each resolved by a test change or an equivalence argument, and none rested on a parameterized test. The runner script lives outside the repo; earlier sessions' copies probably had the same pattern, so a past "survived" that led to a test change may have been killed already. That test was redundant, not wrong.
 - **Lesson, the same as the morning's compile-failure misread:** a survivor is a claim about the runner as much as about the tests. Before acting on one, confirm by hand that the mutant built and that its failures could have been seen.
 - **A test-intent drift that D8 exposed:** `WorkingProgramTests` used a *rename* as its stand-in for "an edit" when proving that edits void the run. Under D8 a rename is exactly the edit that does not void, so four tests failed for the right reason. Their edit is now a content edit. A fixture chosen as "any edit" encodes an assumption about which edits are alike; this feature made renames unlike the rest.
+
+## 2026-10-26 — M5 slice 5 review: a fix that undid an "equivalent" verdict
+
+- **Slice 5's two reviews found no data loss, and still changed eleven behaviours or pins.**
+  - **Codex (highest severity Medium)** found three state transitions with two doors where only one did the bookkeeping:
+    - a draft's first write through the lifecycle retry;
+    - a failed save leaving a stale reserved name;
+    - a delete leaving "last opened" stale behind the tombstone.
+  - **`swift-code-reviewer`** found two user-visible gaps against the brief: the stage title ignored "one name", and the launch alert's wording is wrong when a fallback opens. It ran 9 mutants beyond the author's 30, and 8 survived. Each surviving mutant is now pinned by a test; all 12 review mutants are killed.
+- **An "equivalent mutant" verdict was wrong.** In 5a, removing `startDraft`'s unregister-before-register survived. It was judged equivalent, because `register` replaces the window's entry anyway, and the line was deleted. The reviewer then showed that re-picking a sample alternated its name ("Square Coil" / "Square Coil 2" / "Square Coil"). Before the window re-registers, `uniquedName` counts the window's *own* live reservation. The line was equivalent only while no test picked a sample twice in one window. An equivalence claim is a claim about every reachable state, so it deserves a probe, not just a reading of the code.
+- **The baseline ran after the mutants, not before.** The review mutants were launched before the unmutated suites had been re-run after a refactor. A broken baseline would have turned every mutant into a false kill. It was checked afterwards and was green, so this time the order did not matter; the runner should assert a green baseline first.
+- **Deferred with reasons:** an invalid submit (slice 9), the alert copy (slice 7), and `onDisappear` reliability (slice 8). All are recorded in the brief.

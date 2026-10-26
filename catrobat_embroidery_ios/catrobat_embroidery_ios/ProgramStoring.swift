@@ -12,12 +12,12 @@ enum ProgramLoadError: Error, Equatable {
     case unreadable
 }
 
-/// The app's seam to the saved working program (US-406; ADR-006 pattern 2).
+/// The app's seam to M4's single saved working program (US-406; ADR-006 pattern 2). Since M5
+/// every design is a project (`ProjectStoring`); this seam remains only for reading the legacy
+/// file, which slice 6 migrates.
 ///
 /// Structurally the split US-308 made for `DSTFileWriting`: the bytes are `ProgramDocument`'s,
-/// computed in the package with no I/O, and this protocol adds only *where* they go. It holds no
-/// policy — which write wins is `ProgramAutosave`'s rule, so a test double cannot carry a second
-/// copy of it.
+/// computed in the package with no I/O, and this protocol adds only *where* they go.
 protocol ProgramStoring {
     /// The saved program, or `nil` when there is none.
     func load() throws(ProgramLoadError) -> Program?

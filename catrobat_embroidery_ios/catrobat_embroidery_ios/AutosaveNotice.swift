@@ -43,9 +43,10 @@ enum AutosaveNotice {
         .autosaveRefusalTitle
     }
 
-    /// Every message also says a blank design was opened: the alert is the only place that
-    /// does. A refused project file is never moved or overwritten (brief D11), so it is always
-    /// "kept"; the three "paused" messages went with M4's set-aside.
+    /// Every message also says a blank design was opened, which is wrong when launch opened the
+    /// last opened project instead (a known gap: the copy for that case comes with slice 7's
+    /// D11 wording). A refused project file is never moved or overwritten (brief D11), so it is
+    /// always "kept"; the three "paused" messages went with M4's set-aside.
     static func message(for refusal: ProgramRefusal) -> LocalizedStringResource {
         switch cause(of: refusal.reason) {
         case .newerApp: .autosaveRefusalMessageNewerKept

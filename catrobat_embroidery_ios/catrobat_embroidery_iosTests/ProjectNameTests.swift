@@ -258,6 +258,40 @@ struct ProjectNameTests {
         #expect(window.store.saves.map(\.program.name) == ["Moon"])
     }
 
+    // MARK: The title is the name (D4)
+
+    private static func title(_ window: Window) throws -> String {
+        String(localized: try #require(window.model.selection?.title))
+    }
+
+    @Test("the stage is titled with the project's name, and follows a rename and its undo")
+    func theTitleFollowsTheName() throws {
+        let window = Self.window()
+        #expect(try Self.title(window) == "Design")
+
+        window.model.select(SampleLibrary[.squareCoil])
+        #expect(try Self.title(window) == "Square Coil")
+
+        window.model.nameDraft = "Moon"
+        window.model.commitName()
+        #expect(try Self.title(window) == "Moon")
+
+        window.model.editor.undo()
+        #expect(try Self.title(window) == "Square Coil")
+    }
+
+    /// ADR-038: any change means the program is no longer the bundled sample, a rename too.
+    @Test("a rename clears the sample's highlight")
+    func aRenameClearsProvenance() {
+        let window = Self.window()
+        window.model.select(SampleLibrary[.squareCoil])
+
+        window.model.nameDraft = "Moon"
+        window.model.commitName()
+
+        #expect(window.model.selection?.provenance == nil)
+    }
+
     // MARK: The chokepoint reports both programs (D8)
 
     @Test("every change reports the program before and after it")
