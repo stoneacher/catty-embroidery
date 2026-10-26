@@ -4,8 +4,9 @@ import ProgramModel
 
 /// The order in which working programs were produced, across every window.
 ///
-/// Minted only by `ProgramAutosave.mintRevision()`, on the main actor, at the moment of the
-/// edit or replacement it stamps — so the order of revisions is the order the user acted in.
+/// Minted only through a coordinator's `RevisionCounter` (`ProgramAutosave` and
+/// `ProjectLibrary`), on the main actor, at the moment of the edit or replacement it stamps —
+/// so the order of revisions is the order the user acted in.
 /// `nonisolated` because a `Comparable` conformance on a main-actor type is itself main-actor
 /// isolated, and the comparison should not care where it runs.
 nonisolated struct SaveRevision: Comparable, Sendable {
@@ -13,6 +14,16 @@ nonisolated struct SaveRevision: Comparable, Sendable {
 
     static func < (lhs: SaveRevision, rhs: SaveRevision) -> Bool {
         lhs.value < rhs.value
+    }
+}
+
+/// The one source of `SaveRevision`s for a coordinator: each value newer than every one before.
+struct RevisionCounter {
+    private var next = 0
+
+    mutating func mint() -> SaveRevision {
+        defer { next += 1 }
+        return SaveRevision(value: next)
     }
 }
 
@@ -83,7 +94,7 @@ final class ProgramAutosave {
     /// successful write clears it.
     private(set) var failure: ProgramSaveFailure?
 
-    @ObservationIgnored private var nextRevision = 0
+    @ObservationIgnored private var revisions = RevisionCounter()
 
     /// The newest revision a save has been *accepted* for — not necessarily written, since the
     /// write may have failed. Accepted is the right line: a failed newer write must still stop
@@ -101,8 +112,7 @@ final class ProgramAutosave {
 
     /// A revision newer than every one minted before it.
     func mintRevision() -> SaveRevision {
-        defer { nextRevision += 1 }
-        return SaveRevision(value: nextRevision)
+        revisions.mint()
     }
 
     /// Saves `program` unless a newer revision has already been accepted.
