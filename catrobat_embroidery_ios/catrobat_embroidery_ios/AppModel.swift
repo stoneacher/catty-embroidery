@@ -197,15 +197,17 @@ final class AppModel {
     /// What a save means for a draft, through a change or the lifecycle retry (Codex, slice 5):
     /// the first written one gives it a file, whose name now counts, and makes it the last
     /// opened. Until then it reserves its **current** name, which a rename may change.
-    private func recordSave(_ outcome: ProjectSaveOutcome) {
-        guard !hasFile else { return }
+    @discardableResult
+    private func recordSave(_ outcome: ProjectSaveOutcome) -> ProjectSaveOutcome {
+        guard !hasFile else { return outcome }
         guard outcome == .written else {
             library.register(window, owner: self, holding: projectID, draftName: editor.program.name)
-            return
+            return outcome
         }
         hasFile = true
         library.register(window, owner: self, holding: projectID, draftName: nil)
         library.markOpened(projectID)
+        return outcome
     }
 
     /// Opens what this window holds, once per window — from `onAppear`, not `init`, which
@@ -368,12 +370,10 @@ final class AppModel {
     /// A sample opens as a **draft** (brief D3): a fresh ID with no file, which the first
     /// change writes. Named after its program, made unique among every name the user can see
     /// (D4), and registered so another window's generated names avoid it.
-    /// A change whose save failed is retried before the window leaves it; if it fails again the
-    /// window stays, its failure showing, rather than discard the change (Codex, PR #78 round 4).
+    /// Retries a failed save before the window leaves; only a failed retry keeps it (PR #78 rounds 4–5).
     private func canLeaveProject() -> Bool {
         guard let heldRevision, saveFailure == .saveFailed else { return true }
-        recordSave(library.save(editor.program, to: projectID, revision: heldRevision))
-        return saveFailure != .saveFailed
+        return recordSave(library.save(editor.program, to: projectID, revision: heldRevision)) != .failed
     }
 
     /// The title follows the program's name (`syncName()`, brief D4): the one write to

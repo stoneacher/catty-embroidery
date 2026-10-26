@@ -1,6 +1,6 @@
 # Project management
 
-**Status**: In progress — PR 1 (slices 0–6) built and reviewed slice by slice, 2026-10-26; ADR-050 written | **Epic**: E6 (M5) | **Branch**: `feature/project-management` (PR 1; PR 2 gets its own branch)
+**Status**: In progress — PR 1 (slices 0–6, PR #78) handed over 2026-10-26 after the Codex loop (5 rounds, cap); PR 2 (slices 7–10) next | **Epic**: E6 (M5) | **Branch**: `feature/project-management` (PR 1; PR 2 gets its own branch)
 
 **Goal**: a user keeps several designs. They see their designs in a list, newest first, and can create, open, rename, duplicate and delete them. Each design autosaves to its own file, and relaunching reopens the last design, even after a force-quit. A design has one name: it is the list's name and the export's DST `LA` name, and the exported file is named after it (ADR-026's sanitised form, so `A/B` exports as `A_B.dst`). Renaming checks the 15-character DST rule as the user types. Bundled samples become templates: opening one starts a new design from it.
 

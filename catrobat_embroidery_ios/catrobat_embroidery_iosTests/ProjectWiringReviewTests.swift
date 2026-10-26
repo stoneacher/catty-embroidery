@@ -161,4 +161,23 @@ extension ProjectWiringTests {
         #expect(model.editor.program == edited)
         #expect(model.saveFailure == .saveFailed)
     }
+
+    /// Codex, PR #78 round 5: a retry that another window's newer revision supersedes is a
+    /// deliberate drop, not a failed write, so it must not keep the window from leaving.
+    @Test("a retry superseded by another window's newer save lets the window leave")
+    func aSupersededRetryLetsTheWindowLeave() {
+        let app = App([Self.stored: .program(Self.rosette.program)])
+        let windowA = app.window(scene: Self.stored)
+        let windowB = app.window(scene: Self.stored)
+        app.store.failingSaves = [Self.stored]
+        windowA.editor.apply(Self.editQ)
+        windowB.editor.apply(Self.editR)
+        windowB.close()
+        app.store.failingSaves = []
+
+        windowA.select(Self.coil)
+
+        #expect(windowA.projectID != Self.stored)
+        #expect(app.store.program(Self.stored) == Self.rosette.program, "the older revision is not written")
+    }
 }
