@@ -27,6 +27,9 @@ jobs:
   # which is exactly right here and nowhere else. The whole PR diff, not the last push: runs
   # cancel each other (the concurrency group above), so a docs-only push after a code push whose
   # run was cancelled must still test that code. A push to `main` always runs everything.
+  # **It fails closed** (Codex, PR #78 round 3): the test jobs run unless this job positively
+  # answered `false`. A classifier that fails or is skipped leaves its output empty, and a job
+  # skipped because a prerequisite failed would otherwise report success under a required name.
   # "Documentation" is a place, not a file type: `docs/` and the Markdown files at the
   # repository root. A `.md` file anywhere else may be a resource a test reads (Codex, PR #78
   # round 2), so it counts as code.
@@ -55,7 +58,7 @@ jobs:
   engine-tests:
     name: Engine tests (swift test)
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: xcode-27
     env:
       # Pin the toolchain: runner-default Xcode drifts and breaks Swift 6.x builds.
@@ -128,7 +131,7 @@ jobs:
   app-build-and-test:
     name: App build & test (xcodebuild)
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     runs-on: xcode-27
     # A wedged simulator would otherwise burn the 360-minute default. The healthy
     # job was ~4m30s on macos-26; on the xcode-27 preview image it is ~15m30s
