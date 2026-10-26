@@ -3,8 +3,9 @@ import Foundation
 import ProgramModel
 
 /// A project's identity (project management, brief D2): stable across renames, so a name is
-/// never part of a path and two projects may share one.
-struct ProjectID: Hashable, Sendable, Codable {
+/// never part of a path and two projects may share one. Its stored form (scene storage, the
+/// last-opened default) is decided where it is first stored.
+struct ProjectID: Hashable, Sendable {
     let rawValue: UUID
 
     init(_ rawValue: UUID) {
@@ -35,7 +36,8 @@ protocol ProjectStoring {
     /// file system refuses throws and leaves the file in place.
     func delete(_ id: ProjectID) throws
 
-    /// Every project file, in no particular order, including the ones that cannot be opened.
+    /// Every project file, in no particular order, including the ones that cannot be opened
+    /// or even read. Throws only when the directory itself cannot be read.
     func list() throws -> [ProjectFile]
 }
 
@@ -52,6 +54,11 @@ final class DocumentsProjectStore: ProjectStoring {
 
     /// Where `id`'s file lives. The UUID's canonical uppercase spelling is the only one the
     /// store writes, and so the only one `list()` recognises.
+    ///
+    /// Assumes nothing else writes the directory, which the sandbox guarantees (no file
+    /// sharing is declared). A device volume is case-sensitive, so a lowercase lookalike would
+    /// be a separate file; the simulator's host volume folds case, so there it would alias
+    /// this path. Neither can arise from the app.
     func url(for id: ProjectID) -> URL {
         directory.appending(path: "\(id.rawValue.uuidString).json")
     }
@@ -80,6 +87,7 @@ final class DocumentsProjectStore: ProjectStoring {
         try data.write(to: url(for: id), options: .atomic)
     }
 
+    /// Removes whatever is at `url(for:)`; the store only ever puts a regular file there.
     func delete(_ id: ProjectID) throws {
         do {
             try FileManager.default.removeItem(at: url(for: id))
@@ -89,8 +97,12 @@ final class DocumentsProjectStore: ProjectStoring {
     }
 
     /// Only a regular file named exactly `url(for:)` of some ID is a project. An atomic
-    /// write's temporary file, a foreign name and a directory are not, and are skipped rather
-    /// than listed as refused.
+    /// write's temporary file, a foreign name, a directory and a symbolic link are not, and are
+    /// skipped rather than listed as refused.
+    ///
+    /// One file must not hide the others (slice 3 review): a project file that cannot be read
+    /// is listed as damaged — `.corrupt`, with no name — so the list can offer to delete it,
+    /// and one that vanishes between the scan and the read is skipped.
     func list() throws -> [ProjectFile] {
         let urls: [URL]
         do {
@@ -101,19 +113,25 @@ final class DocumentsProjectStore: ProjectStoring {
         } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
             return []
         }
-        return try urls.compactMap { url in
+        return urls.compactMap { url in
             guard let id = Self.projectID(named: url.lastPathComponent) else {
                 return nil
             }
-            let values = try url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey])
-            guard values.isRegularFile == true, let modified = values.contentModificationDate else {
+            guard let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey]),
+                  values.isRegularFile == true,
+                  let modified = values.contentModificationDate
+            else {
                 return nil
             }
-            return try ProjectFile(
-                id: id,
-                inspection: ProgramDocument.inspect(Data(contentsOf: url)),
-                modified: modified
-            )
+            let inspection: DocumentInspection
+            do {
+                inspection = try ProgramDocument.inspect(Data(contentsOf: url))
+            } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
+                return nil
+            } catch {
+                inspection = .refused(.corrupt, name: nil)
+            }
+            return ProjectFile(id: id, inspection: inspection, modified: modified)
         }
     }
 

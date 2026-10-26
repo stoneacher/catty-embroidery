@@ -15,6 +15,9 @@ struct DocumentsProjectStoreTests {
     private static let coil = SampleLibrary[.squareCoil].program
     private static let first = ProjectID(UUID(uuidString: "00000000-0000-0000-0000-000000000001")!)
     private static let second = ProjectID(UUID(uuidString: "00000000-0000-0000-0000-000000000002")!)
+    /// An ID with hex letters: an all-digit UUID reads the same in either case, so it cannot
+    /// tell the canonical uppercase file name from a lowercase one (slice 3 review).
+    private static let lettered = ProjectID(UUID(uuidString: "ABCDEF00-0000-0000-0000-00000000000A")!)
 
     private static func projects(in root: URL) -> URL {
         root.appending(path: "Projects")
@@ -37,6 +40,18 @@ struct DocumentsProjectStoreTests {
             #expect(store.url(for: Self.first) == file)
             #expect(try Data(contentsOf: file) == ProgramDocument.encode(Self.rosette))
             #expect(try store.load(Self.first) == Self.rosette)
+        }
+    }
+
+    @Test("the file name is the UUID's canonical uppercase spelling, and lists back")
+    func theFileNameIsUppercase() throws {
+        try inDisposableDirectory { root in
+            let store = DocumentsProjectStore(directory: root)
+
+            try store.save(Self.rosette, as: Self.lettered)
+
+            #expect(try Self.names(in: Self.projects(in: root)) == ["ABCDEF00-0000-0000-0000-00000000000A.json"])
+            #expect(try store.list().map(\.id) == [Self.lettered])
         }
     }
 
@@ -209,6 +224,53 @@ struct DocumentsProjectStoreTests {
             try FileManager.default.createDirectory(
                 at: directory.appending(path: "00000000-0000-0000-0000-000000000003.json"),
                 withIntermediateDirectories: false
+            )
+
+            #expect(try store.list().map(\.id) == [Self.first])
+        }
+    }
+
+    /// One file the store cannot read must not hide the others (slice 3 review: Codex and
+    /// `swift-code-reviewer`). It is listed as damaged, with no name, so it can be deleted.
+    @Test("an unreadable project file is listed as damaged beside the readable ones")
+    func anUnreadableFileIsListedAsDamaged() throws {
+        try inDisposableDirectory { root in
+            let store = DocumentsProjectStore(directory: root)
+            try store.save(Self.rosette, as: Self.first)
+            try store.save(Self.coil, as: Self.second)
+            let path = store.url(for: Self.second).path
+            try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: path)
+            defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: path) }
+
+            let files = try store.list().sorted { $0.id.rawValue.uuidString < $1.id.rawValue.uuidString }
+
+            #expect(files.map(\.id) == [Self.first, Self.second])
+            #expect(files.map(\.inspection) == [.openable(Self.rosette), .refused(.corrupt, name: nil)])
+        }
+    }
+
+    /// Only "no directory yet" is an empty list. Anything else wrong with the directory must
+    /// not pass for "no projects", or launch would start a draft over a library it cannot see.
+    @Test("a projects path that is not a directory makes the list throw")
+    func aBrokenProjectsDirectoryThrows() throws {
+        try inDisposableDirectory { root in
+            let store = DocumentsProjectStore(directory: root)
+            try Data("not a directory".utf8).write(to: Self.projects(in: root))
+
+            #expect(throws: (any Error).self) {
+                try store.list()
+            }
+        }
+    }
+
+    /// The store never makes links; one found in the directory is not a project.
+    @Test("a symbolic link named like a project is skipped")
+    func aSymlinkIsSkipped() throws {
+        try inDisposableDirectory { root in
+            let store = DocumentsProjectStore(directory: root)
+            try store.save(Self.rosette, as: Self.first)
+            try FileManager.default.createSymbolicLink(
+                at: store.url(for: Self.second), withDestinationURL: store.url(for: Self.first)
             )
 
             #expect(try store.list().map(\.id) == [Self.first])
