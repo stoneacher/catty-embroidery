@@ -3778,3 +3778,19 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Slice 6** (legacy migration) was red as a compile failure. 11 mutants: 8 were killed at once, and 2 genuine survivors needed one new test. Removing the legacy file *before* writing the project, or after a *failed* write, left the same end state in the in-memory double. The double reads the program into memory before anything is removed, so a crash between the steps is not modelled. A test whose project write fails now shows the difference: the file must survive for the next launch.
 - **The third survivor was false.** Run by hand, "a refused legacy file's error swallowed" is killed by two tests. The runner had reported it SURVIVED, most likely because an incremental build missed a mutation applied right after the previous mutant had restored the same file. That makes three different runner defects in one day: a compile failure read as a survivor, parameterized failures invisible, and now a stale build.
 - **The runner is now defensive by construction.** It refuses to run unless the unmutated suite is green, so no false kills. It re-runs every survivor once after touching the file. It matches parameterized case names, and it logs an anchor miss instead of aborting the run. A survivor is now only reported after two independent builds agree.
+
+## 2026-10-26 — M5 slice 6 review, and cutting the wait: CI and mutation runs
+
+- **Slice 6's two reviewers converged on one High.** Codex and `swift-code-reviewer` each found that a refused file at the migration's fixed ID let the migration delete the readable legacy file, which after an earlier failed removal could be the only good copy. Both were independent and found it by reading. The reviewer also found a second path the brief's D6/D9 forbid: a migrated project the user deleted comes back from a leftover legacy file. Its surviving mutant exposed a contradiction between the code and its own doc ("a replay never takes last opened"), now settled for the doc. 7 new tests; 8 mutants on the fixes, all killed.
+- **Sebastian: "We need to do something about these damn long CI runs and mutation runs."** Measured:
+  - CI's app job took 5.5–8.5 min and the engine job about 2.5 min, and pushes came 3–4 times per slice.
+  - App mutants cost 60–110 s each, serially, so a slice's 10–16 mutants took 15–25 min.
+- **What changed:**
+  - **The mutation runner is parallel.** Three workers each copy the working tree with `rsync`, keep their own DerivedData and own a simulator. Builds skip coverage and the index store. A warm run of 5 mutants plus 3 baselines took 266 s.
+  - **A cold first run is slow:** 866 s for 3 mutants, because every worker builds from scratch.
+  - **One "speed-up" broke the runner.** `-parallel-testing-enabled NO` changed how Swift Testing failures are printed, so the runner matched none and reported every mutant UNKNOWN. The flag is gone, and a `TEST FAILED` with no matched name now counts as a kill and points to the saved log. This is the runner's fourth defect today. Every one was caught because a result looked wrong; none was caught by the runner itself.
+  - **CI's app job** now runs with coverage and the index store off.
+  - **The engine and app jobs** are skipped when a pull request's *whole* diff against its base is documentation. The last push alone is not enough, because cancelled runs would let a docs push hide untested code.
+  - **Caching was considered and rejected.** SwiftPM and xcodebuild rebuild by timestamp, and a fresh checkout renews every timestamp.
+  - **Pushes are batched per slice** rather than per sub-step.
+- **The structural fix is filed, not done:** US-329 moves the project logic, which has no UI dependency, into a package target. There it would be tested and mutated with `swift test`, in seconds per mutant. It needs Sebastian's decision before PR 2. US-330 files the stage pixel-test flake that cost three CI re-runs this week.

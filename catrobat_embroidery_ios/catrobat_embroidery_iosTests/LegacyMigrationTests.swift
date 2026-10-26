@@ -13,13 +13,13 @@ import Testing
 @MainActor
 @Suite("Legacy migration")
 struct LegacyMigrationTests {
-    private static let rosette = SampleLibrary[.octagonRosette].program
-    private static let coil = SampleLibrary[.squareCoil].program
-    private static let migrated = ProjectID.legacyWorkingProgram
-    private static let defaultName = ProjectLibrary.fallbackName
+    static let rosette = SampleLibrary[.octagonRosette].program
+    static let coil = SampleLibrary[.squareCoil].program
+    static let migrated = ProjectID.legacyWorkingProgram
+    static let defaultName = ProjectLibrary.fallbackName
 
     /// One launch: the legacy file, the project store and the last-opened default.
-    private struct Launch {
+    struct Launch {
         let legacy: InMemoryProgramStore
         let projects: InMemoryProjectStore
         let remembered: LastOpenedProject
@@ -47,7 +47,7 @@ struct LegacyMigrationTests {
         }
     }
 
-    private static func named(_ name: String, _ program: Program = rosette) -> Program {
+    static func named(_ name: String, _ program: Program = rosette) -> Program {
         var renamed = program
         renamed.name = name
         return renamed
@@ -176,18 +176,6 @@ struct LegacyMigrationTests {
 
         #expect(launch.projects.program(Self.migrated) == edited)
         #expect(launch.legacy.stored == nil)
-    }
-
-    @Test("a refused file at the fixed ID is not overwritten either")
-    func aRefusedFixedIDIsKept() {
-        let launch = Launch(
-            legacy: InMemoryProgramStore(stored: Self.rosette),
-            projects: InMemoryProjectStore([Self.migrated: .refused(.corrupt, name: nil)])
-        )
-
-        launch.migrate()
-
-        #expect(launch.projects.entries[Self.migrated] == .refused(.corrupt, name: nil))
     }
 
     /// A replay must not take "last opened" from a project the user has opened since.

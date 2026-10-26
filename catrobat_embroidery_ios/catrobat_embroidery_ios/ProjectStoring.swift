@@ -27,7 +27,12 @@ struct ProjectID: Hashable, Sendable {
 
     /// Where M4's single working file is migrated to (brief D5): fixed, so a replay of an
     /// interrupted migration finds its own earlier work rather than making a second project.
-    static let legacyWorkingProgram = ProjectID(UUID(uuidString: "4D400000-0000-4000-8000-000000000001")!)
+    static let legacyWorkingProgram: ProjectID = {
+        guard let uuid = UUID(uuidString: "4D400000-0000-4000-8000-000000000001") else {
+            preconditionFailure("the legacy project's fixed ID must be a UUID")
+        }
+        return ProjectID(uuid)
+    }()
 }
 
 /// One project file as the list sees it: what it holds, readable or not, and when it last

@@ -186,11 +186,11 @@ final class ProjectLibrary {
     /// its launch. Returns a refused legacy file's reason on that one attempt, so exactly one
     /// window alerts; the file stays where it is.
     ///
-    /// Three steps, each finished by a replay if a crash or failure stops the one before: write
-    /// the program to `ProjectID.legacyWorkingProgram` **only if that ID has no file**, since a
-    /// project there may have been edited since a migration whose removal failed; make it the
-    /// last opened, unless a replay finds another project opened since; remove the file. A
-    /// name the `LA` field cannot hold becomes `defaultName`.
+    /// Three steps, each replayed if a crash or failure stops the one before: write the program
+    /// to `ProjectID.legacyWorkingProgram` **only if that ID has no file** (it may have been
+    /// edited since a migration whose removal failed); make it the last opened only if nothing
+    /// is; remove the file. A fixed-ID file that does not open stops everything, since the legacy
+    /// file may be the only good copy. An invalid name becomes `defaultName`, made unique.
     func migrateLegacyIfNeeded(defaultName: DesignName) -> ProgramLoadError? {
         guard !hasMigrated, let legacy else { return nil }
         hasMigrated = true
@@ -202,16 +202,23 @@ final class ProjectLibrary {
             return error
         }
         let id = ProjectID.legacyWorkingProgram
-        var wrote = false
-        if case .missing = open(id) {
+        switch open(id) {
+        case .missing:
             var named = program
             if case .failure = DesignName.validating(program.name) {
-                named.name = defaultName.value
+                named.name = uniquedName(defaultName).value
             }
-            guard save(named, to: id, revision: mintRevision()) == .written else { return nil }
-            wrote = true
+            guard save(named, to: id, revision: mintRevision()) == .written else {
+                // No window holds the project yet, so nothing should show its failure.
+                setFailure(nil, for: id)
+                return nil
+            }
+        case .opened:
+            break
+        case .refused:
+            return nil
         }
-        if wrote || lastOpened.id == nil {
+        if lastOpened.id == nil {
             lastOpened.id = id
         }
         try? legacy.remove()
@@ -262,6 +269,10 @@ final class ProjectLibrary {
     func delete(_ id: ProjectID, requestedBy window: WindowToken? = nil) throws {
         guard holders(of: id).subtracting([window].compactMap(\.self)).isEmpty else {
             throw ProjectLibraryError.heldByAnotherWindow
+        }
+        // A leftover legacy file would migrate this project back at the next launch (slice 6).
+        if id == .legacyWorkingProgram {
+            try legacy?.remove()
         }
         try store.delete(id)
         tombstones.insert(id)
@@ -386,14 +397,4 @@ private struct Registration {
     weak var owner: AnyObject?
     let projectID: ProjectID
     let draftName: String?
-}
-
-extension ProjectLibrary {
-    /// For previews: saves into a scratch directory, never the user's Documents.
-    static var preview: ProjectLibrary {
-        ProjectLibrary(
-            store: DocumentsProjectStore(directory: .temporaryDirectory.appending(path: "preview-projects")),
-            lastOpened: LastOpenedProject(defaults: UserDefaults(suiteName: "preview-projects") ?? .standard)
-        )
-    }
 }

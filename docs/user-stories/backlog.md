@@ -332,6 +332,19 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 - Public API trims: `Script.matchingElse`, `opensLoop`, `isLoopEnd` are used only by tests; `ParameterEditorKind.init(_ value:)` answers differently from `init(_ parameter:)` for a condition.
 - Two pre-existing ADR-019 screening gaps (sub-length probes against the wrong length; the ulp figure halved), each needing one synthetic probe near a boundary.
 
+## US-329 — Project logic lives in the app target, where every test needs a simulator
+
+**Found**: 2026-10-26, Project management PR 1, while measuring why slices took so long. App-target mutation runs cost 60–110 s per mutant (an incremental app build plus a simulator run), so a slice's 10–16 mutants took 15–25 min; engine mutants take seconds under `swift test`.
+- `ProjectLibrary`, `DocumentsProjectStore`, `LastOpenedProject` and the legacy migration import no UIKit or SwiftUI. In a package target they would be tested and mutated with `swift test`.
+- **What taking it would involve:** a target in `Packages/EmbroideryEngine` (ADR-042's layout), vended through an existing product the way `EditorCore` is (ADR-033), so the app needs no `pbxproj` change; the app keeps the `AppModel` wiring and the views. `ProgramLoadError` and `ProgramStoring` would move with it.
+- **Decide before Project management PR 2**, whose list, create, duplicate and rename slices add more library behaviour. Needs Sebastian's decision: it changes the package layout.
+
+## US-330 — The stage pixel tests read a black frame on a saturated CI runner
+
+**Found**: 2026-10-26, Project management PR 1 (twice in one day), after one occurrence on 2026-10-24. `StageFieldRenderingTests.designIsOnTop` and `.matIsDrawnAtCurrent` failed on CI with no change near the stage, and passed on the next commit; locally they pass. The 2026-10-24 result bundle showed an all-black `ImageRenderer` pixel, the same family as US-327's main-actor saturation.
+- **Options:** render off the main actor or with a retry on an all-black frame; serialise the suite (`.serialized`) so it never renders while the soak tests run; or assert on the draw plan rather than on pixels where a pixel adds nothing.
+- Each occurrence costs a re-run (about 8 min) and a triage.
+
 ---
 
 ## Scheduled out of this file — the record, because the mechanism is the point

@@ -90,8 +90,8 @@ final class AppModel {
     /// first change.
     @ObservationIgnored private var hasFile = false
 
-    /// A project found at launch and not opened, until the user has been told.
-    private(set) var launchRefusal: ProgramRefusal?
+    /// Projects found at launch and not opened, told one at a time until read (Codex, slice 6).
+    private(set) var launchRefusals: [ProgramRefusal] = []
 
     /// What the stage's name field holds (brief D8's transient buffer): raw, possibly invalid,
     /// reaching the program only through `commitName()` as a valid rename. Every change and
@@ -223,9 +223,9 @@ final class AppModel {
             return
         }
         hasLaunched = true
-        let legacyRefusal = library.migrateLegacyIfNeeded(defaultName: Self.defaultName)
+        let legacy = library.migrateLegacyIfNeeded(defaultName: Self.defaultName)
         let resolution = library.resolveLaunch(sceneID: sceneID)
-        launchRefusal = (resolution.refusals.first?.reason ?? legacyRefusal).map(ProgramRefusal.init(reason:))
+        launchRefusals = ([legacy].compactMap(\.self) + resolution.refusals.map(\.reason)).map(ProgramRefusal.init)
         guard let opened = resolution.opened else {
             var blank = Program.blank
             blank.name = Self.defaultName.value
@@ -258,7 +258,7 @@ final class AppModel {
 
     /// The user has read the launch refusal.
     func dismissLaunchRefusal() {
-        launchRefusal = nil
+        launchRefusals = Array(launchRefusals.dropFirst())
     }
 
     /// Where this window's stage is zoomed and panned to, and what is currently happening to

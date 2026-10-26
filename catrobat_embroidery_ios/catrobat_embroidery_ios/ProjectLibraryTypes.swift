@@ -3,7 +3,8 @@ import Foundation
 import ProgramModel
 
 // The values `ProjectLibrary` takes and returns (project management slices 4–5), apart from
-// `SaveRevision`, which stays beside the one method allowed to mint it.
+// `SaveRevision`, which stays beside the one method allowed to mint it; and the library's
+// preview factory.
 
 /// A project found at launch and not opened, until the user has been told. Its file stays
 /// where it is (brief D11).
@@ -71,4 +72,14 @@ enum ProjectLibraryError: Error, Equatable {
 /// message from a window can be told apart from its successor's.
 struct WindowToken: Hashable, Sendable {
     private let rawValue = UUID()
+}
+
+extension ProjectLibrary {
+    /// For previews: saves into a scratch directory, never the user's Documents.
+    static var preview: ProjectLibrary {
+        ProjectLibrary(
+            store: DocumentsProjectStore(directory: .temporaryDirectory.appending(path: "preview-projects")),
+            lastOpened: LastOpenedProject(defaults: UserDefaults(suiteName: "preview-projects") ?? .standard)
+        )
+    }
 }

@@ -21,8 +21,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Whether this run needs the macOS jobs at all. A pull request whose **whole** diff against
+  # its base touches only documentation (`docs/`, Markdown) cannot change a build or a test, so
+  # the engine and app jobs are skipped; GitHub reports a job skipped by `if:` as a success,
+  # which is exactly right here and nowhere else. The whole PR diff, not the last push: runs
+  # cancel each other (the concurrency group above), so a docs-only push after a code push whose
+  # run was cancelled must still test that code. A push to `main` always runs everything.
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: diff
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
+          code=$(printf '%s\n' "$changed" | grep -vE '^docs/|\.md$' | grep -c . || true)
+          echo "code=$([ "$code" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "$code non-documentation file(s) changed in this pull request"
+
   engine-tests:
     name: Engine tests (swift test)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: xcode-27
     env:
       # Pin the toolchain: runner-default Xcode drifts and breaks Swift 6.x builds.
@@ -94,6 +122,8 @@ jobs:
 
   app-build-and-test:
     name: App build & test (xcodebuild)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: xcode-27
     # A wedged simulator would otherwise burn the 360-minute default. The healthy
     # job was ~4m30s on macos-26; on the xcode-27 preview image it is ~15m30s
@@ -127,12 +157,20 @@ jobs:
         # two devices named "iPhone 17", and xcodebuild picks one silently. That
         # is a coin flip the day the image ships a second runtime, so the choice
         # is stated rather than inherited.
+        #
+        # Coverage and the index store are off: the scheme instruments for coverage, which
+        # nothing here reads, and indexing serves only an editor. Both cost build time on every
+        # run (M5, 2026-10-26). No DerivedData or SwiftPM cache: both rebuild by file
+        # timestamp, and a fresh checkout gives every file a new one, so a restored cache would
+        # be rebuilt anyway.
         run: |
           xcodebuild test \
             -project catrobat_embroidery_ios/catrobat_embroidery_ios.xcodeproj \
             -scheme catrobat_embroidery_ios \
             -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
-            -resultBundlePath "$RUNNER_TEMP/AppTests.xcresult"
+            -enableCodeCoverage NO \
+            -resultBundlePath "$RUNNER_TEMP/AppTests.xcresult" \
+            COMPILER_INDEX_STORE_ENABLE=NO
       - name: Upload result bundle
         if: failure()
         uses: actions/upload-artifact@v4
