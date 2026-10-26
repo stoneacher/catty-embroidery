@@ -93,6 +93,11 @@ final class AppModel {
     /// A project found at launch and not opened, until the user has been told.
     private(set) var launchRefusal: ProgramRefusal?
 
+    /// What the stage's name field holds (brief D8's transient buffer): raw, possibly invalid,
+    /// reaching the program only through `commitName()` as a valid rename. Every change and
+    /// every load set it back to `program.name`.
+    var nameDraft = ""
+
     /// Why this window's project is not being saved, or `nil` while it is.
     var saveFailure: ProjectSaveFailure? {
         library.failure(for: projectID)
@@ -128,8 +133,8 @@ final class AppModel {
         runner.onRunDiscarded = { [weak self] in
             self?.exporter.discard()
         }
-        editor.onProgramChanged = { [weak self] in
-            self?.programChanged()
+        editor.onProgramChanged = { [weak self] before, after in
+            self?.programChanged(from: before, to: after)
         }
 
         // Launch selects the blank program, opening on its script (US-407) — see `.launch`.
@@ -139,8 +144,16 @@ final class AppModel {
     }
 
     /// What an edit, an undo or a redo (US-408) does to the window (ADR-038) — one handler, so
-    /// undoing to P after running Q cannot leave Q's `.dst` offered. **`runner.reset()` and
-    /// nothing else from `select(_:)`'s list**, and each omission is deliberate:
+    /// undoing to P after running Q cannot leave Q's `.dst` offered.
+    ///
+    /// **A change that differs only in the name keeps the run** (project management, brief D8,
+    /// amending ADR-038/045): the stitches are the same, so only the export is re-prepared,
+    /// under the new name. Judged on the values reaching this chokepoint, so a rename's undo
+    /// and redo are judged the same way, and a run a content change already voided stays void:
+    /// there is nothing finished to re-prepare. Every change is saved.
+    ///
+    /// Every other change: **`runner.reset()` and nothing else from `select(_:)`'s list**, and
+    /// each omission is deliberate:
     ///
     /// - **No `interaction.followFit()`.** A new *design* arrives fitted; an edit to the design
     ///   on screen keeps the zoom the user chose. Re-fitting on every parameter nudge would be
@@ -149,16 +162,26 @@ final class AppModel {
     /// - **No new generation.** An edit is not a new selection; nothing downstream should treat
     ///   it as "start over".
     /// - **No `path` write.** Whatever the user is looking at — the script or the stage — stays.
-    /// - **No `exporter.name` re-seed.** The name may be one the user typed.
+    /// - **No zoom, generation or path change** applies to a rename as much as to any edit.
     ///
     /// `reset()` is ADR-027's existing discard path: it cancels the consumer, bumps the run
     /// generation so buffered frames from the voided run cannot land, clears the display list
     /// and needle, and fires `onRunDiscarded`, which deletes the prepared file. The file is the
     /// part that actually goes stale — the interpreter took the program by value (ADR-026's
     /// eager preparation is why a stale file would otherwise be offered).
-    private func programChanged() {
+    private func programChanged(from before: Program, to after: Program) {
         selection?.provenance = nil
-        runner.reset()
+        if after.differsOnlyInName(from: before) {
+            syncName()
+            // Only a finished run has an export model: `begin()` clears it and only a
+            // termination sets it, so a rename mid-run prepares nothing until the run ends.
+            if let exportModel = runner.run.exportModel {
+                exporter.prepare(exportModel: exportModel)
+            }
+        } else {
+            runner.reset()
+            syncName()
+        }
         persistWorkingProgram()
     }
 
@@ -200,7 +223,13 @@ final class AppModel {
         let resolution = library.resolveLaunch(sceneID: sceneID)
         launchRefusal = resolution.refusals.first.map { ProgramRefusal(reason: $0.reason) }
         guard let opened = resolution.opened else {
-            library.register(window, owner: self, holding: projectID, draftName: editor.program.name)
+            var blank = Program.blank
+            blank.name = Self.defaultName.value
+            startDraft(from: blank)
+            selection = ProgramSelection(
+                generation: nextGeneration, provenance: nil, title: .programTitleNamed(editor.program.name)
+            )
+            nextGeneration += 1
             return
         }
         projectID = opened.id
@@ -214,9 +243,7 @@ final class AppModel {
         nextGeneration += 1
         path = [.script] // Already so from `init`; kept so launch does not depend on it.
         palette.isPresented = false
-        if case .success = DesignName.validating(opened.program.name) {
-            exporter.name = opened.program.name
-        }
+        syncName()
         interaction.followFit()
     }
 
@@ -339,15 +366,6 @@ final class AppModel {
         // design's file with it. Leaving the file would offer a share button that sends the
         // *last* design — the staleness ADR-023 exists to prevent, one layer up.
         runner.reset()
-        // **`SampleID.resourceName`, not `sample.displayName`.** `displayName` is a
-        // `LocalizedStringResource` from the `Samples` bundle, and "Octagon Rosette" is
-        // *exactly* 15 characters in English — so any locale whose translation is one
-        // character longer, or not Latin at all, would open this screen already showing a
-        // validation error the user did not cause. `resourceName` is ASCII, locale-
-        // independent, and already the canonical file stem. It reuses a persistence token as
-        // a default machine label, which is defensible precisely because `LA` is a machine
-        // label rather than UI copy (ADR-026).
-        exporter.name = sample.id.resourceName
         // A new design arrives fitted. Inheriting the previous design's 4× zoom would show a
         // corner of something the user has not seen whole yet — and the zoom was chosen
         // against a fit that no longer applies. Here rather than in an `.onChange`, for the
@@ -371,5 +389,6 @@ final class AppModel {
         }
         editor.load(named)
         library.register(window, owner: self, holding: projectID, draftName: named.name)
+        syncName()
     }
 }

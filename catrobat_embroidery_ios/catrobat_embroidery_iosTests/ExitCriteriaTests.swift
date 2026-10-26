@@ -76,7 +76,8 @@ struct ExitCriteriaTests {
         #expect(model.editor.program == expected)
         #expect(model.selection?.provenance == nil, "no bundled sample is involved")
 
-        model.exporter.name = "HandBuilt"
+        model.nameDraft = "HandBuilt"
+        model.commitName()
         model.play()
         await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
         try #require(model.runner.run.state == .finished(.programFinished))

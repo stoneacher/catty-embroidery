@@ -1,9 +1,9 @@
 import StagePreview
 
-/// Starting a run and re-preparing its export (US-306, US-308).
+/// Starting a run (US-306).
 ///
 /// Moved out of `AppModel.swift` unchanged in M5, when that file reached SwiftLint's length
-/// limit again. Neither needs the class's private state.
+/// limit again. It needs none of the class's private state.
 extension AppModel {
     /// Starts the selected design from the beginning, throwing away whatever the last run
     /// prepared.
@@ -21,19 +21,5 @@ extension AppModel {
     func play() {
         guard selection != nil else { return }
         runner.play(editor.program)
-    }
-
-    /// Rewrites the file under the name the user has just committed.
-    ///
-    /// Called on submit and on focus loss, **never per keystroke**: the name goes into the
-    /// `LA` bytes as well as the file name, so every commit genuinely invalidates the
-    /// previous file and a per-keystroke call would write one file per character.
-    ///
-    /// A no-op before anything has run, which is not merely defensive — there is no design
-    /// to serialise, and a file named after one that does not exist is a lie the share
-    /// control would then offer.
-    func commitName() {
-        guard let model = runner.run.exportModel else { return }
-        exporter.prepare(exportModel: model)
     }
 }

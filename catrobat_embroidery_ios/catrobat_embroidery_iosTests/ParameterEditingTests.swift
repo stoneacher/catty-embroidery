@@ -51,7 +51,7 @@ struct ParameterEditingTests {
     ) -> (EditorViewModel, Announcements) {
         let editor = EditorViewModel(program: program, decimalSeparator: decimalSeparator)
         let announcements = Announcements()
-        editor.onProgramChanged = { announcements.fired += 1 }
+        editor.onProgramChanged = { _, _ in announcements.fired += 1 }
         return (editor, announcements)
     }
 

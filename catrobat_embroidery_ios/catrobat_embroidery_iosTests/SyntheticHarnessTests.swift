@@ -1,6 +1,7 @@
 @testable import catrobat_embroidery_ios
 import EmbroideryEngine
 import Interpreter
+import ProgramModel
 import Samples
 import StagePreview
 import Testing
@@ -55,9 +56,9 @@ struct SyntheticHarnessTests {
 
         #expect(model.selection?.provenance == .us309Synthetic)
         #expect(model.isSelected(synthetic))
-        // Seeded from the sample, exactly as US-308 does for the shipping two, and valid —
-        // a name the field rejected would leave the export gate shut in every screenshot.
-        #expect(try model.exporter.validatedName.get().value == SampleID.us309Synthetic.resourceName)
+        // Its program's name, as for every sample (M5, one name), and valid — a name the field
+        // rejected would leave the export gate shut in every screenshot.
+        #expect(try model.exporter.validatedName.get().value == synthetic.program.name)
     }
 
     /// The design actually reaches the scale the story is about.

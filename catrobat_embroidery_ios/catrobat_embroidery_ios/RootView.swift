@@ -111,13 +111,7 @@ struct RootView: View {
     /// hierarchy would make every frame retain a copy of an array nothing on screen
     /// reads. US-308 takes the export model from the view model directly.
     private var stage: some View {
-        // A local `@Bindable` because `AppModel.exporter` is a `let` reference — the identity
-        // never changes, so `$model.exporter` would be projecting a constant. `@Bindable`
-        // projects the *observable class's* own properties instead, which is what `name`
-        // needs to be: a two-way binding into the object that also validates it.
-        @Bindable var exporter = model.exporter
-
-        return StageView(
+        StageView(
             title: model.selection?.title,
             showsFrameTimeReadout: model.showsFrameTimeReadout,
             display: model.runner.run.display,
@@ -141,8 +135,9 @@ struct RootView: View {
                 name: model.exporter.validatedName,
                 exportState: model.exporter.state
             ),
-            designName: $exporter.name,
-            nameValidation: model.exporter.validatedName,
+            // The field edits a draft, never the program (brief D8): see `AppModel+Name.swift`.
+            designName: $model.nameDraft,
+            nameValidation: model.nameDraftValidation,
             // `model.play()` only because it checks the selection and runs the working program.
             // The exporter cleanup is **not** this call's doing — it hangs off `RunViewModel.onRunDiscarded`, so a
             // direct `runner.play(_:)` would be equally safe. An earlier version of this

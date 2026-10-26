@@ -32,8 +32,10 @@ struct WorkingProgramTests {
         )
     }
 
-    /// An edit every shipping sample accepts and that changes it: no sample is called this.
-    private static let edit = EditAction.renameProgram("US-405 edited")
+    /// An edit every shipping sample accepts and that changes its **content**. It was a rename
+    /// until M5, when a change that differs only in the name stopped voiding the run (brief
+    /// D8); a stitch at the top changes what is sewn.
+    private static let edit = EditAction.insert(.stitch, at: BrickAddress(brickIndex: 0))
 
     /// Selects `id`, runs it to the end and requires that a file was prepared — the state an
     /// edit has something to void in.
@@ -101,12 +103,12 @@ struct WorkingProgramTests {
         #expect(edited.provenance == nil)
         #expect(!model.isSelected(sample), "the picker highlight still claims the edited program is the sample")
         // What an edit must *not* touch: the title (still this design), the generation (not a
-        // new selection), the path (the stage stays on screen) and the name the user may have
-        // typed.
+        // new selection) and the path (the stage stays on screen). The export's name is the
+        // program's (M5, one name), so it follows the edit, which here is a rename.
         #expect(edited.title == loaded.title)
         #expect(edited.generation == loaded.generation)
         #expect(model.path == [.script])
-        #expect(model.exporter.name == sample.id.resourceName)
+        #expect(model.exporter.name == model.editor.program.name)
     }
 
     @Test("a rejected edit keeps the provenance")
@@ -141,7 +143,11 @@ struct WorkingProgramTests {
         #expect(second != first)
         #expect(second.generation == first.generation + 1)
         #expect(second.provenance == sample.id)
-        #expect(model.editor.program == sample.program)
+        // The sample's own program again — under a uniqued name, since the edit wrote the first
+        // pick as a project called "Square Coil" (M5, brief D4).
+        var expected = sample.program
+        expected.name = "Square Coil 2"
+        #expect(model.editor.program == expected)
         #expect(!model.editor.undoStack.canUndo)
         #expect(!model.editor.undoStack.canRedo)
     }

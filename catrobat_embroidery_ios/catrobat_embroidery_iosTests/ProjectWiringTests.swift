@@ -74,7 +74,9 @@ struct ProjectWiringTests {
 
         let model = app.window()
 
-        #expect(model.editor.program == .blank)
+        var named = Program.blank
+        named.name = "Design"
+        #expect(model.editor.program == named)
         #expect(app.store.entries.isEmpty)
         #expect(app.library.holders(of: model.projectID) == [model.window])
         #expect(model.path == [.script])

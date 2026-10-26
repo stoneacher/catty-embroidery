@@ -1,6 +1,7 @@
 @testable import catrobat_embroidery_ios
 import EmbroideryEngine
 import Foundation
+import ProgramModel
 import Samples
 import StagePreview
 import Testing
@@ -89,23 +90,22 @@ struct ExportWiringTests {
 
     // MARK: - Selection
 
-    /// **The default name comes from `SampleID.resourceName`, not from `displayName`.**
-    /// `displayName` is a `LocalizedStringResource` from the `Samples` bundle and "Octagon
-    /// Rosette" is *exactly* 15 characters in English — so any locale whose translation is one
-    /// character longer, or not Latin at all, would open the screen already in a validation
-    /// error the user did not cause. `resourceName` is ASCII, locale-independent, and already
-    /// the canonical file stem.
+    /// **The name is the program's** (one name, M5 brief D4), not the localised `displayName`:
+    /// "Octagon Rosette" is *exactly* 15 characters in English, so a translation one character
+    /// longer, or not Latin at all, would open the screen in a validation error the user did
+    /// not cause. `program.name` is the builder's ASCII name in every locale. It replaced
+    /// `SampleID.resourceName` ("OctagonRosette"), so an exported sample's `LA` gains a space.
     @Test("selecting a design seeds a name that is valid in every locale")
     func selectingSeedsAValidName() throws {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
 
         model.select(SampleLibrary[.octagonRosette])
-        #expect(model.exporter.name == "OctagonRosette")
+        #expect(model.exporter.name == "Octagon Rosette")
         #expect(throws: Never.self) { try model.exporter.validatedName.get() }
 
         model.select(SampleLibrary[.squareCoil])
-        #expect(model.exporter.name == "SquareCoil")
+        #expect(model.exporter.name == "Square Coil")
     }
 
     /// Every bundled sample's seeded name is valid — the guard that makes the claim above a
@@ -119,7 +119,7 @@ struct ExportWiringTests {
         model.select(SampleLibrary[id])
 
         let name = try model.exporter.validatedName.get()
-        #expect(name.value == id.resourceName)
+        #expect(name.value == SampleLibrary[id].program.name)
     }
 
     /// A new selection throws the previous design's file away. Leaving it would offer a share
@@ -207,7 +207,7 @@ struct ExportWiringTests {
         await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
 
         let written = try #require(writer.written.last)
-        #expect(written.name.value == "SquareCoil.dst")
+        #expect(written.name.value == "Square Coil.dst")
         #expect(model.exporter.state == .ready(written.url))
 
         // The gate agrees, which is what the share control reads.
@@ -227,7 +227,7 @@ struct ExportWiringTests {
         await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
         let afterRun = writer.written.count
 
-        model.exporter.name = "Renamed"
+        model.nameDraft = "Renamed"
         model.commitName()
 
         #expect(writer.written.count == afterRun + 1)
@@ -243,7 +243,7 @@ struct ExportWiringTests {
         let model = Self.immediateModel(writer: writer)
 
         model.select(SampleLibrary[.squareCoil])
-        model.exporter.name = "Renamed"
+        model.nameDraft = "Renamed"
         model.commitName()
 
         #expect(writer.written.isEmpty)
