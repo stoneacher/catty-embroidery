@@ -3722,3 +3722,10 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Deferred (Low): a refused file is parsed three times per list scan. Refused files are rare.
 - **The two reviewers complemented each other again.** The reviewer's executable mutants found test gaps; Codex's semantic reading found the one equality hole. Neither found what the other did. Six follow-up mutants were all killed.
 - **Process slip:** the slice commit carried a co-author trailer, against the repo's convention. A force-push to drop it was denied by the auto-mode classifier, so it stays on the pushed commit for Sebastian to decide.
+
+## 2026-10-26 — M5 slice 3: the mutation runner misread a compile failure as a survivor
+
+- **Slice 3** (`DocumentsProjectStore`, one file per project): red as a compile failure, then green after one fixture fix. The fixture had the bug, not the code: the "lowercase spelling" row used an all-digit UUID, whose lowercase form *is* the canonical one, so it was a real project file.
+- **A false survivor:** the app mutation runner reported the "canonical spelling not checked" mutant as SURVIVED with no failing tests. Run by hand, it turned out not to compile: removing the last `guard` condition left a dangling comma. xcodebuild reports that as "Testing cancelled because the build failed", which the runner's BUILD-FAIL check did not match. The runner now matches it. With the comma removed as well, the mutant is killed.
+- **Lesson for the thesis data:** every SURVIVED from the app runner before today rested on that check. A survivor is a claim worth re-running by hand before it drives a test change; this one would have prompted a redundant test.
+- **CI flake:** `0860c03`'s app job failed on `StageFieldRenderingTests.designIsOnTop` (an `ImageRenderer` pixel read, 52 s on a saturated runner). It is the same family as the 2026-10-24 entries. The next commit, which changed only engine files, passed.
