@@ -24,6 +24,10 @@ struct ProjectID: Hashable, Sendable {
     var uuidString: String {
         rawValue.uuidString
     }
+
+    /// Where M4's single working file is migrated to (brief D5): fixed, so a replay of an
+    /// interrupted migration finds its own earlier work rather than making a second project.
+    static let legacyWorkingProgram = ProjectID(UUID(uuidString: "4D400000-0000-4000-8000-000000000001")!)
 }
 
 /// One project file as the list sees it: what it holds, readable or not, and when it last

@@ -51,6 +51,9 @@ final class ProjectLibrary {
 
     private let store: any ProjectStoring
     private let lastOpened: LastOpenedProject
+    /// M4's single working file, migrated once per process (slice 6); `nil` in tests that do
+    /// not care.
+    private let legacy: (any ProgramStoring)?
     private let makeID: () -> ProjectID
     private let now: () -> Date
 
@@ -70,17 +73,21 @@ final class ProjectLibrary {
     @ObservationIgnored private var blocked: Set<ProjectID> = []
     /// Projects deleted in this process (D9); a late save must not recreate their files.
     @ObservationIgnored private var tombstones: Set<ProjectID> = []
+    /// Whether this process has tried the legacy migration: several windows make one attempt.
+    @ObservationIgnored private var hasMigrated = false
 
     /// Lists the projects once. A listing that fails leaves the list empty; nothing is written
     /// on that account, and each project is still guarded when it is opened.
     init(
         store: any ProjectStoring,
         lastOpened: LastOpenedProject,
+        legacy: (any ProgramStoring)? = nil,
         makeID: @escaping () -> ProjectID = { ProjectID(UUID()) },
         now: @escaping () -> Date = { .now }
     ) {
         self.store = store
         self.lastOpened = lastOpened
+        self.legacy = legacy
         self.makeID = makeID
         self.now = now
         files = (try? store.list()) ?? []
@@ -171,6 +178,44 @@ final class ProjectLibrary {
             upsert(ProjectFile(id: id, inspection: .openable(loaded), modified: summary?.modified ?? now()))
         }
         return .opened(loaded)
+    }
+
+    // MARK: Legacy migration (D5)
+
+    /// Makes M4's working file a project, once per process, before the first window resolves
+    /// its launch. Returns a refused legacy file's reason on that one attempt, so exactly one
+    /// window alerts; the file stays where it is.
+    ///
+    /// Three steps, each finished by a replay if a crash or failure stops the one before: write
+    /// the program to `ProjectID.legacyWorkingProgram` **only if that ID has no file**, since a
+    /// project there may have been edited since a migration whose removal failed; make it the
+    /// last opened, unless a replay finds another project opened since; remove the file. A
+    /// name the `LA` field cannot hold becomes `defaultName`.
+    func migrateLegacyIfNeeded(defaultName: DesignName) -> ProgramLoadError? {
+        guard !hasMigrated, let legacy else { return nil }
+        hasMigrated = true
+        let program: Program
+        do {
+            guard let loaded = try legacy.load() else { return nil }
+            program = loaded
+        } catch {
+            return error
+        }
+        let id = ProjectID.legacyWorkingProgram
+        var wrote = false
+        if case .missing = open(id) {
+            var named = program
+            if case .failure = DesignName.validating(program.name) {
+                named.name = defaultName.value
+            }
+            guard save(named, to: id, revision: mintRevision()) == .written else { return nil }
+            wrote = true
+        }
+        if wrote || lastOpened.id == nil {
+            lastOpened.id = id
+        }
+        try? legacy.remove()
+        return nil
     }
 
     // MARK: Launch (D6)

@@ -21,11 +21,14 @@ final class InMemoryProgramStore: ProgramStoring {
     private(set) var saves: [Program] = []
     private(set) var loadCount = 0
     private(set) var setAsideCount = 0
+    private(set) var removeCount = 0
 
     /// When set, `load()` throws it instead of reading `stored`.
     var loadError: ProgramLoadError?
     /// When `true`, `save(_:)` throws and leaves `stored` alone.
     var failsSaves = false
+    /// When `true`, `remove()` throws and leaves the file where it is.
+    var failsRemove = false
 
     init(stored: Program? = nil) {
         self.stored = stored
@@ -45,6 +48,15 @@ final class InMemoryProgramStore: ProgramStoring {
         }
         stored = program
         saves.append(program)
+    }
+
+    func remove() throws {
+        if failsRemove {
+            throw Failure()
+        }
+        removeCount += 1
+        loadError = nil
+        stored = nil
     }
 
     func setAside() throws -> URL {
@@ -77,6 +89,10 @@ final class SetAsideFailingStore: ProgramStoring {
 
     func save(_ program: Program) throws {
         try wrapped.save(program)
+    }
+
+    func remove() throws {
+        try wrapped.remove()
     }
 
     func setAside() throws -> URL {

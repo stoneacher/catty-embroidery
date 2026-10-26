@@ -29,6 +29,10 @@ protocol ProgramStoring {
     /// Moves the saved file out of the way without altering its bytes, and returns where it
     /// went. Never overwrites a file set aside earlier.
     func setAside() throws -> URL
+
+    /// Deletes the working file once it has been migrated (project management slice 6); a file
+    /// already gone is the outcome asked for. Files set aside earlier are left alone.
+    func remove() throws
 }
 
 /// The saved working program as one JSON file in the app's Documents directory.
@@ -68,6 +72,14 @@ final class DocumentsProgramStore: ProgramStoring {
         let data = try ProgramDocument.encode(program)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try data.write(to: workingURL, options: .atomic)
+    }
+
+    func remove() throws {
+        do {
+            try FileManager.default.removeItem(at: workingURL)
+        } catch let error as CocoaError where error.code == .fileNoSuchFile {
+            return
+        }
     }
 
     /// `moveItem` refuses an existing destination (`fileWriteFileExists`) and leaves its source

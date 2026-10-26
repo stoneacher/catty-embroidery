@@ -8,7 +8,9 @@ struct CatrobatEmbroideryApp: App {
     /// window's program or selection, so sharing it moves nothing one window's user can see in
     /// another.
     @State private var library = ProjectLibrary(
-        store: DocumentsProjectStore(), lastOpened: LastOpenedProject(defaults: .standard)
+        store: DocumentsProjectStore(),
+        lastOpened: LastOpenedProject(defaults: .standard),
+        legacy: DocumentsProgramStore()
     )
 
     var body: some Scene {

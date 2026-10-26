@@ -223,8 +223,9 @@ final class AppModel {
             return
         }
         hasLaunched = true
+        let legacyRefusal = library.migrateLegacyIfNeeded(defaultName: Self.defaultName)
         let resolution = library.resolveLaunch(sceneID: sceneID)
-        launchRefusal = resolution.refusals.first.map { ProgramRefusal(reason: $0.reason) }
+        launchRefusal = (resolution.refusals.first?.reason ?? legacyRefusal).map(ProgramRefusal.init(reason:))
         guard let opened = resolution.opened else {
             var blank = Program.blank
             blank.name = Self.defaultName.value
