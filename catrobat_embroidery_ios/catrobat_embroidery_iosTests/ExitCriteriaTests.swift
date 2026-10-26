@@ -36,11 +36,11 @@ struct ExitCriteriaTests {
     /// are asserted equal to an independent run of that literal program, so the file is known
     /// to be of *that* run.
     @Test("a program built from nothing runs to the end and exports as .dst",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func builtFromNothingRunsAndExports() async throws {
         let writer = RecordingDSTFileWriter()
         let model = AppModel(
-            autosave: ProgramAutosave(store: InMemoryProgramStore()),
+            library: .inMemory(),
             runner: Self.immediateRunner(),
             exporter: ExportViewModel(writer: writer)
         )
@@ -76,7 +76,8 @@ struct ExitCriteriaTests {
         #expect(model.editor.program == expected)
         #expect(model.selection?.provenance == nil, "no bundled sample is involved")
 
-        model.exporter.name = "HandBuilt"
+        model.nameDraft = "HandBuilt"
+        model.commitName()
         model.play()
         await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
         try #require(model.runner.run.state == .finished(.programFinished))
@@ -97,20 +98,26 @@ struct ExitCriteriaTests {
     // MARK: Criterion 3
 
     /// A force-quit runs no lifecycle code, so what survives it is what was saved **at the
-    /// change**. This edits through a window on the real Documents store, never calls
-    /// `sceneDidLeaveActive()`, and opens a fresh coordinator and window over the same
-    /// directory — the process boundary, with nothing carried across but the disk.
+    /// change**. This edits through a window on the real project store, never calls
+    /// `sceneDidLeaveActive()`, and opens a fresh library and window over the same directory and
+    /// defaults — the process boundary, with nothing carried across but the disk. Re-pointed at
+    /// M5's projects: the window reopens the last opened project (brief D6).
     @Test("an edit survives a relaunch with no lifecycle save, through the real disk")
     func editSurvivesRelaunchWithoutLifecycleSave() throws {
         try inDisposableDirectory { directory in
-            let before = AppModel(autosave: ProgramAutosave(store: DocumentsProgramStore(directory: directory)))
-            before.restoreSavedProgram()
+            let remembered = LastOpenedProject.disposable()
+            let before = AppModel(
+                library: ProjectLibrary(store: DocumentsProjectStore(directory: directory), lastOpened: remembered)
+            )
+            before.launch(sceneID: nil)
             before.addFromPalette(.stitch)
             before.editor.apply(.renameProgram("Kept"))
             let edited = before.editor.program
 
-            let after = AppModel(autosave: ProgramAutosave(store: DocumentsProgramStore(directory: directory)))
-            after.restoreSavedProgram()
+            let after = AppModel(
+                library: ProjectLibrary(store: DocumentsProjectStore(directory: directory), lastOpened: remembered)
+            )
+            after.launch(sceneID: nil)
 
             #expect(after.editor.program == edited)
             #expect(after.editor.program != .blank)

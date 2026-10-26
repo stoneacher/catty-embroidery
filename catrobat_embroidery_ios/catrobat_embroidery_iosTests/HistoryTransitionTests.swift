@@ -29,15 +29,15 @@ struct HistoryTransitionTests {
 
     private struct Window {
         let model: AppModel
-        let store: InMemoryProgramStore
+        let store: InMemoryProjectStore
         let writer: RecordingDSTFileWriter
     }
 
     private static func window() -> Window {
-        let store = InMemoryProgramStore()
+        let store = InMemoryProjectStore()
         let writer = RecordingDSTFileWriter()
         let model = AppModel(
-            autosave: ProgramAutosave(store: store),
+            library: ProjectLibrary(store: store, lastOpened: .disposable()),
             runner: RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing())),
             exporter: ExportViewModel(writer: writer)
         )
@@ -66,7 +66,7 @@ struct HistoryTransitionTests {
         #expect(window.model.exporter.state == .idle, "a file describing the other program is still offered")
         #expect(window.writer.removeAllCount > removalsBefore)
         #expect(window.store.saves.count == savesBefore + 1)
-        #expect(window.store.saves.last == program)
+        #expect(window.store.saves.last?.program == program)
     }
 
     /// The two doors a history transition comes through (US-411): the toolbar drives the package
@@ -101,7 +101,7 @@ struct HistoryTransitionTests {
     }
 
     @Test("undo after running an edit voids the run, discards its file and saves the restored program",
-          .timeLimit(.minutes(1)), arguments: HistorySurface.allCases)
+          .hangGuard, arguments: HistorySurface.allCases)
     func undoVoidsTheRunAndSaves(via surface: HistorySurface) async throws {
         let window = Self.window()
         let sample = SampleLibrary[.squareCoil]
@@ -123,7 +123,7 @@ struct HistoryTransitionTests {
     }
 
     @Test("redo after running the undone program voids the run, discards its file and saves",
-          .timeLimit(.minutes(1)), arguments: HistorySurface.allCases)
+          .hangGuard, arguments: HistorySurface.allCases)
     func redoVoidsTheRunAndSaves(via surface: HistorySurface) async throws {
         let window = Self.window()
         window.model.select(SampleLibrary[.squareCoil])
@@ -146,7 +146,7 @@ struct HistoryTransitionTests {
 
     /// The other half, as `WorkingProgramTests` pins it for a rejected edit: an undo with
     /// nothing to undo leaves a finished design and its file exactly where they were.
-    @Test("undo with nothing to undo keeps the finished run and saves nothing", .timeLimit(.minutes(1)))
+    @Test("undo with nothing to undo keeps the finished run and saves nothing", .hangGuard)
     func emptyUndoKeepsTheRun() async throws {
         let window = Self.window()
         window.model.select(SampleLibrary[.squareCoil])

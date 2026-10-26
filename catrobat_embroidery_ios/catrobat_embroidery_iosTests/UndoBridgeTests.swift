@@ -216,7 +216,7 @@ struct UndoBridgeTests {
         let (editor, manager) = Self.editor()
         Self.rename(editor, through: 1)
         var changes = 0
-        editor.onProgramChanged = { changes += 1 }
+        editor.onProgramChanged = { _, _ in changes += 1 }
 
         manager.undo()
         #expect(changes == 1)

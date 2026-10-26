@@ -44,13 +44,17 @@ struct PaletteInsertTests {
     private static func editor(_ program: Program = seed) -> (EditorViewModel, Announcements) {
         let editor = EditorViewModel(program: program)
         let announcements = Announcements()
-        editor.onProgramChanged = { announcements.fired += 1 }
+        editor.onProgramChanged = { _, _ in announcements.fired += 1 }
         return (editor, announcements)
     }
 
+    private static let storedID = ProjectID.fixed(1)
+
     private static func window(stored: Program? = nil) -> AppModel {
         AppModel(
-            autosave: ProgramAutosave(store: InMemoryProgramStore(stored: stored)),
+            library: ProjectLibrary(
+                store: InMemoryProjectStore(stored.map { [storedID: .program($0)] } ?? [:]), lastOpened: .disposable()
+            ),
             runner: RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing())),
             exporter: ExportViewModel(writer: RecordingDSTFileWriter())
         )
@@ -338,12 +342,12 @@ struct PaletteInsertTests {
         #expect(regular.isPalettePresented)
     }
 
-    @Test("restoring a saved program closes the palette")
-    func restoringClosesThePalette() {
+    @Test("opening a saved project at launch closes the palette")
+    func launchingClosesThePalette() {
         let model = Self.window(stored: Self.seed)
         model.isPalettePresented = true
 
-        model.restoreSavedProgram()
+        model.launch(sceneID: Self.storedID)
 
         #expect(model.editor.program == Self.seed)
         #expect(model.isPalettePresented == false)

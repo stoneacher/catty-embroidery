@@ -10,7 +10,7 @@ extension AppModel {
     ///
     /// The palette opens no undo session: an insert is one discrete entry, so nothing can be
     /// left half-coalesced if the presentation goes away. It is closed by every writer of the
-    /// selection (`select(_:)`, `restoreSavedProgram()`), by a path that leaves the script, and
+    /// selection (`select(_:)`, `launch(sceneID:)`), by a path that leaves the script, and
     /// by a palette tap that inserted.
     var isPalettePresented: Bool {
         get { palette.isPresented }

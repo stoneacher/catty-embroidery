@@ -1,8 +1,10 @@
 /// Stable identity of a bundled sample program.
 ///
-/// The raw value is a **persistence token**: M5 copies a sample's JSON into
-/// Documents to create a real project and keys it by this string, so a case may
-/// be added or deprecated but a raw value must never be renamed.
+/// The raw value is a stable token — a case may be added or deprecated, but a raw
+/// value must never be renamed. **It is not persisted** (M5, ADR-050): a sample
+/// opens as a draft holding a copy of its program, and the project file records
+/// the program, never which sample it came from. *(Corrected 2026-10-26: this
+/// comment used to say M5 would key projects by this string.)*
 ///
 /// A closed enum rather than a `String` or a `RawRepresentable` struct, because
 /// sample content ships *inside* this target: an open id type would buy
@@ -49,17 +51,13 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     /// it on the command line to keep the optimiser on while leaving this
     /// reachable (ADR-029).
     ///
-    /// **It is not, however, safe from M5 by construction, and the earlier
-    /// wording here ("cannot be persisted by M5") overstated it.** This enum is
-    /// `Codable` over a `String` raw value that the doc above calls a persistence
-    /// token, so the moment M5 writes a selected id anywhere durable, a token
-    /// written by a debug build becomes **undecodable in Release** — a decode
-    /// failure on a user's own stored state, produced by a case that build cannot
-    /// see. What makes it harmless today is only that the app persists nothing at
-    /// all (no `AppStorage`, `SceneStorage`, `UserDefaults` or `JSONEncoder` in
-    /// the app target), which is a property of today's app rather than an
-    /// enforced invariant. **M5 must decode this token defensively — an unknown
-    /// raw value falling back to a shipping sample rather than throwing.**
+    /// **It is safe from persistence because no sample id is persisted** (M5,
+    /// ADR-050): the app stores project IDs (scene storage, the last-opened
+    /// default) and programs, never a `SampleID`, so a debug-only case cannot leave
+    /// a token a Release build fails to decode. Were an id ever stored, it would
+    /// have to be decoded defensively, an unknown raw value falling back rather than
+    /// throwing. *(Corrected 2026-10-26: this comment used to rest the safety on
+    /// "the app persists nothing", which M5 made false.)*
     case us309Synthetic
     #endif
 
@@ -78,9 +76,9 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
         #endif
     }
 
-    /// Base name of the sample's checked-in JSON resource, and the stem M5 will
-    /// use when copying it into Documents. Kept here so the file naming has
-    /// exactly one definition.
+    /// Base name of the sample's checked-in JSON resource. Kept here so the file
+    /// naming has exactly one definition. *(No longer an export or project name:
+    /// since M5 both are the program's own name, ADR-050.)*
     public var resourceName: String {
         switch self {
         case .octagonRosette: "OctagonRosette"

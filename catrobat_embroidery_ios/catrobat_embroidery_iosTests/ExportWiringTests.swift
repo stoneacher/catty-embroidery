@@ -1,6 +1,7 @@
 @testable import catrobat_embroidery_ios
 import EmbroideryEngine
 import Foundation
+import ProgramModel
 import Samples
 import StagePreview
 import Testing
@@ -32,7 +33,7 @@ struct ExportWiringTests {
         writer: RecordingDSTFileWriter
     ) -> AppModel {
         AppModel(
-            autosave: .inMemory(),
+            library: .inMemory(),
             runner: RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing())),
             exporter: ExportViewModel(writer: writer)
         )
@@ -42,7 +43,7 @@ struct ExportWiringTests {
 
     /// The run reports its own termination exactly once, carrying the terminal's export
     /// model — not *some* stream, the one the terminal carried.
-    @Test("a terminating run reports its export model exactly once", .timeLimit(.minutes(1)))
+    @Test("a terminating run reports its export model exactly once", .hangGuard)
     func aTerminatingRunReportsItsExportModel() async {
         let runner = RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing()))
         var reported: [EmbroideryStream] = []
@@ -89,23 +90,22 @@ struct ExportWiringTests {
 
     // MARK: - Selection
 
-    /// **The default name comes from `SampleID.resourceName`, not from `displayName`.**
-    /// `displayName` is a `LocalizedStringResource` from the `Samples` bundle and "Octagon
-    /// Rosette" is *exactly* 15 characters in English — so any locale whose translation is one
-    /// character longer, or not Latin at all, would open the screen already in a validation
-    /// error the user did not cause. `resourceName` is ASCII, locale-independent, and already
-    /// the canonical file stem.
+    /// **The name is the program's** (one name, M5 brief D4), not the localised `displayName`:
+    /// "Octagon Rosette" is *exactly* 15 characters in English, so a translation one character
+    /// longer, or not Latin at all, would open the screen in a validation error the user did
+    /// not cause. `program.name` is the builder's ASCII name in every locale. It replaced
+    /// `SampleID.resourceName` ("OctagonRosette"), so an exported sample's `LA` gains a space.
     @Test("selecting a design seeds a name that is valid in every locale")
     func selectingSeedsAValidName() throws {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
 
         model.select(SampleLibrary[.octagonRosette])
-        #expect(model.exporter.name == "OctagonRosette")
+        #expect(model.exporter.name == "Octagon Rosette")
         #expect(throws: Never.self) { try model.exporter.validatedName.get() }
 
         model.select(SampleLibrary[.squareCoil])
-        #expect(model.exporter.name == "SquareCoil")
+        #expect(model.exporter.name == "Square Coil")
     }
 
     /// Every bundled sample's seeded name is valid — the guard that makes the claim above a
@@ -119,7 +119,7 @@ struct ExportWiringTests {
         model.select(SampleLibrary[id])
 
         let name = try model.exporter.validatedName.get()
-        #expect(name.value == id.resourceName)
+        #expect(name.value == SampleLibrary[id].program.name)
     }
 
     /// A new selection throws the previous design's file away. Leaving it would offer a share
@@ -143,7 +143,7 @@ struct ExportWiringTests {
     /// design, while the new run had already cleared the stage. `ExportControl` masked it, so
     /// nothing wrong could be shared — but a view masking a broken model invariant is not the
     /// invariant holding, and ADR-026 says the file goes when the design does.
-    @Test("replaying discards the file the previous run prepared", .timeLimit(.minutes(1)))
+    @Test("replaying discards the file the previous run prepared", .hangGuard)
     func replayingDiscardsThePreparedFile() async {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
@@ -167,7 +167,7 @@ struct ExportWiringTests {
     /// `RunViewModel.onRunDiscarded`, the one chokepoint both paths already pass through, so
     /// these two calls cannot leave a prepared file behind either.
     @Test("discarding a run through the runner alone still drops the file",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func theRunnerAloneAlsoDiscardsTheFile() async {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
@@ -197,7 +197,7 @@ struct ExportWiringTests {
     /// This is the test that would fail if the hook were never connected — every other test
     /// here exercises one half.
     @Test("playing a selected design leaves a named file ready to share",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func playingLeavesAFileReady() async throws {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
@@ -207,7 +207,7 @@ struct ExportWiringTests {
         await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
 
         let written = try #require(writer.written.last)
-        #expect(written.name.value == "SquareCoil.dst")
+        #expect(written.name.value == "Square Coil.dst")
         #expect(model.exporter.state == .ready(written.url))
 
         // The gate agrees, which is what the share control reads.
@@ -217,7 +217,7 @@ struct ExportWiringTests {
     /// Committing an edited name re-prepares from the run's export model, because the name is
     /// in the `LA` **bytes** and not only in the file name — so a rename genuinely invalidates
     /// the previous file rather than merely relabelling it.
-    @Test("committing a new name rewrites the file", .timeLimit(.minutes(1)))
+    @Test("committing a new name rewrites the file", .hangGuard)
     func committingANameRewritesTheFile() async {
         let writer = RecordingDSTFileWriter()
         let model = Self.immediateModel(writer: writer)
@@ -227,7 +227,7 @@ struct ExportWiringTests {
         await Self.settle(until: { model.runner.run.state == .finished(.programFinished) })
         let afterRun = writer.written.count
 
-        model.exporter.name = "Renamed"
+        model.nameDraft = "Renamed"
         model.commitName()
 
         #expect(writer.written.count == afterRun + 1)
@@ -243,7 +243,7 @@ struct ExportWiringTests {
         let model = Self.immediateModel(writer: writer)
 
         model.select(SampleLibrary[.squareCoil])
-        model.exporter.name = "Renamed"
+        model.nameDraft = "Renamed"
         model.commitName()
 
         #expect(writer.written.isEmpty)
@@ -266,7 +266,7 @@ struct ExportWiringTests {
     /// accessibility snapshot. The colour counts are required as premises, so the test cannot
     /// silently stop covering both cases if a sample changes.
     @Test("one colour or several, a ready export carries the thread-colour note",
-          .timeLimit(.minutes(1)),
+          .hangGuard,
           arguments: [(SampleID.octagonRosette, 1), (SampleID.squareCoil, 2)])
     func aReadyExportCarriesTheNoteWhateverTheColorCount(id: SampleID, colors: Int) async throws {
         let model = Self.immediateModel(writer: RecordingDSTFileWriter())

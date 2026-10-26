@@ -59,7 +59,8 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     /// cannot disagree.
     let exportReadiness: ExportControl.Readiness
 
-    /// The design's name, owned by `AppModel` (ADR-023) and edited here.
+    /// A draft of the design's name, owned by `AppModel` (ADR-023, brief D8) and edited here;
+    /// it reaches the program only through `onCommitName`.
     @Binding var designName: String
 
     /// The name's verdict. Passed in rather than computed, so the field, the counter and the
@@ -72,8 +73,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     let onStop: () -> Void
 
     /// Called when the name is committed — on submit and on focus loss, **never per
-    /// keystroke**, because the name goes into the `LA` bytes and every commit rewrites the
-    /// file.
+    /// keystroke**, because each commit is a rename edit that re-prepares the export.
     let onCommitName: () -> Void
 
     /// Declared here rather than in `DesignNameField`, because focus *loss* is what triggers

@@ -93,7 +93,11 @@ final class EditorViewModel {
     /// reports a rename to the current name as `.applied`, and `UndoStack` already records
     /// nothing for it. Voiding a finished design over an edit that did not happen would be the
     /// same mistake one layer up.
-    @ObservationIgnored var onProgramChanged: (() -> Void)?
+    ///
+    /// **It reports the program before and after** (project management, brief D8): whether a
+    /// change voids the run is decided by the actual values, not by which action or history
+    /// step produced them, so a rename's undo and redo are judged like the rename.
+    @ObservationIgnored var onProgramChanged: ((_ before: Program, _ after: Program) -> Void)?
 
     /// The open parameter editor's session (US-410), and so whether the editor is showing.
     ///
@@ -158,7 +162,7 @@ final class EditorViewModel {
                 endParameterEdit()
                 selectedBrickIndex = nil
             }
-            onProgramChanged?()
+            onProgramChanged?(before, undoStack.current)
         }
         return result
     }
@@ -192,7 +196,7 @@ final class EditorViewModel {
         guard undoStack.undo() != nil else { return false }
         endParameterEdit()
         selectedBrickIndex = nil
-        onProgramChanged?()
+        onProgramChanged?(before, program)
         announce(HistoryAnnouncement.text(.undo, from: before, to: program))
         return true
     }
@@ -205,7 +209,7 @@ final class EditorViewModel {
         guard undoStack.redo() != nil else { return false }
         endParameterEdit()
         selectedBrickIndex = nil
-        onProgramChanged?()
+        onProgramChanged?(before, program)
         announce(HistoryAnnouncement.text(.redo, from: before, to: program))
         return true
     }

@@ -26,14 +26,16 @@ struct WorkingProgramTests {
 
     private static func immediateModel(writer: RecordingDSTFileWriter = RecordingDSTFileWriter()) -> AppModel {
         AppModel(
-            autosave: .inMemory(),
+            library: .inMemory(),
             runner: RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing())),
             exporter: ExportViewModel(writer: writer)
         )
     }
 
-    /// An edit every shipping sample accepts and that changes it: no sample is called this.
-    private static let edit = EditAction.renameProgram("US-405 edited")
+    /// An edit every shipping sample accepts and that changes its **content**. It was a rename
+    /// until M5, when a change that differs only in the name stopped voiding the run (brief
+    /// D8); a stitch at the top changes what is sewn.
+    private static let edit = EditAction.insert(.stitch, at: BrickAddress(brickIndex: 0))
 
     /// Selects `id`, runs it to the end and requires that a file was prepared — the state an
     /// edit has something to void in.
@@ -101,12 +103,12 @@ struct WorkingProgramTests {
         #expect(edited.provenance == nil)
         #expect(!model.isSelected(sample), "the picker highlight still claims the edited program is the sample")
         // What an edit must *not* touch: the title (still this design), the generation (not a
-        // new selection), the path (the stage stays on screen) and the name the user may have
-        // typed.
+        // new selection) and the path (the stage stays on screen). The export's name is the
+        // program's (M5, one name), so it follows the edit, which here is a rename.
         #expect(edited.title == loaded.title)
         #expect(edited.generation == loaded.generation)
         #expect(model.path == [.script])
-        #expect(model.exporter.name == sample.id.resourceName)
+        #expect(model.exporter.name == model.editor.program.name)
     }
 
     @Test("a rejected edit keeps the provenance")
@@ -141,7 +143,11 @@ struct WorkingProgramTests {
         #expect(second != first)
         #expect(second.generation == first.generation + 1)
         #expect(second.provenance == sample.id)
-        #expect(model.editor.program == sample.program)
+        // The sample's own program again — under a uniqued name, since the edit wrote the first
+        // pick as a project called "Square Coil" (M5, brief D4).
+        var expected = sample.program
+        expected.name = "Square Coil 2"
+        #expect(model.editor.program == expected)
         #expect(!model.editor.undoStack.canUndo)
         #expect(!model.editor.undoStack.canRedo)
     }
@@ -168,7 +174,7 @@ struct WorkingProgramTests {
 
     // MARK: 6 — an applied edit voids the run
 
-    @Test("an applied edit discards the finished run and its prepared file", .timeLimit(.minutes(1)))
+    @Test("an applied edit discards the finished run and its prepared file", .hangGuard)
     func anAppliedEditDiscardsTheRunAndTheFile() async throws {
         let writer = RecordingDSTFileWriter()
         let model = try await Self.finishedModel(.squareCoil, writer: writer)
@@ -186,7 +192,7 @@ struct WorkingProgramTests {
     /// The generation bump is what stops a voided run's buffered frames landing after the
     /// reset — ADR-027's discard path, reused rather than reimplemented.
     @Test("an edit applied mid-run leaves nothing behind once the run would have finished",
-          .timeLimit(.minutes(1)))
+          .hangGuard)
     func anEditMidRunLeavesNothingBehind() async throws {
         let model = Self.immediateModel()
         model.select(SampleLibrary[.squareCoil])
@@ -207,7 +213,7 @@ struct WorkingProgramTests {
     /// The other half of item 6, and the reason ADR-033 made `apply` return a result: a
     /// rejected edit leaves a finished design, and the file prepared from it, exactly where
     /// they were.
-    @Test("a rejected edit keeps the finished run and its prepared file", .timeLimit(.minutes(1)))
+    @Test("a rejected edit keeps the finished run and its prepared file", .hangGuard)
     func aRejectedEditKeepsTheRunAndTheFile() async throws {
         let writer = RecordingDSTFileWriter()
         let model = try await Self.finishedModel(.squareCoil, writer: writer)
@@ -224,7 +230,7 @@ struct WorkingProgramTests {
 
     /// Decided at planning (2026-09-27): an edit that applies and changes nothing voids
     /// nothing.
-    @Test("an edit that changes nothing keeps the finished run", .timeLimit(.minutes(1)))
+    @Test("an edit that changes nothing keeps the finished run", .hangGuard)
     func anUnchangingEditKeepsTheRun() async throws {
         let writer = RecordingDSTFileWriter()
         let model = try await Self.finishedModel(.squareCoil, writer: writer)
@@ -239,7 +245,7 @@ struct WorkingProgramTests {
 
     /// Play after an edit runs the **edited** program, not the sample it came from — the
     /// reason the selection no longer carries a program for `play()` to reach.
-    @Test("playing after an edit runs the working program", .timeLimit(.minutes(1)))
+    @Test("playing after an edit runs the working program", .hangGuard)
     func playingAfterAnEditRunsTheWorkingProgram() async throws {
         let model = Self.immediateModel()
         model.select(SampleLibrary[.squareCoil])

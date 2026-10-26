@@ -3687,3 +3687,146 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Where the defects came from:** the feature's one runtime bug (US-323's late exit in slice 4) was found by `swift-code-reviewer`'s executable Catroid differential, as was slice 6's biggest test gap (every For test ran in object 0, so wrong-object mutants survived; no production defect). The floor-boundary design flaw in slice 8 was found by the always-on ADR-019 screening. Cross-slice drift (the slot rule held in one place, US-326 newly observable) was found by the feature-level pass. Codex's handover rounds mostly found test gaps and doc drift, with no runtime defect across #75 and #76.
 - **Open after the feature:** US-327 (CI hang guards on `main`, awaiting Sebastian's decision) and US-328 (one-definition follow-ups).
 
+## 2026-10-25 — M5 Project management: planning
+
+- **`swift-architect` planned the feature before the brief**, as CLAUDE.md requires. Its most useful finding was about the code, not files. The app has two names: `program.name`, saved but not editable on any screen, and the stage's export name, editable but never saved. M5's "rename validates the 15-character DST rule" therefore means merging them. Once the name is part of the program, every rename would void a finished run under ADR-038/045, so a rename-only exception is needed. Neither was in the roadmap's one-line M5 scope.
+- **Sebastian accepted all twelve design recommendations** (D1–D12 in the brief: one file per UUID-named project, lazy drafts, one name with generated names uniqued, migration of the M4 working file, per-project last-writer-wins, rename keeps the run, refused files listed but never opened).
+  - US-316 becomes its own feature right after M5. That is the reason the backlog asked for before a third deferral.
+  - The US-312 colour sidecar stays out.
+  - No build has been distributed, so ADR-037's format freeze has not started.
+- **US-327 decided:** raise the CI hang guards. The 25 one-minute literals became one named trait, `.hangGuard` (three minutes), so the reason sits in one place.
+- **Brief review:** D3, D7 and D8 are new behaviour, so the brief gets one Codex round before any test (ADR-041).
+
+## 2026-10-25 — M5: Codex brief review, 14 findings before any test
+
+- **One round on the brief, highest severity High:** 14 findings, 5 of them High. All are valid; none reversed a decision Sebastian made. Each made a decision precise where it had been loose. The five Highs:
+  - **"One name" contradicted ADR-026.** `A/B` is a valid DST name, but ADR-026 sanitises the file name to `A_B.dst`. The `LA` field is the name; the file name is derived from it.
+  - **Migration could lose edits.** If the legacy delete failed and the user then edited the migrated project, the next launch would have overwritten it with the old file. Now the fixed-ID project is never overwritten, and the step order is pinned.
+  - **Launch could resurrect a deleted project.** A stored scene ID whose file was gone would have become the new draft's ID, so the first edit would recreate the file. An unresolved ID is never reused now.
+  - **Refused files lost ADR-037's protection.** "The window that failed to open it never writes it" left other windows free to overwrite. Now a refusal blocks every window's writes to that one ID.
+  - **The rename exception had no mechanism.** The change callback is untyped today, so the rule now rests on the before and after values, with the undo/redo sequences named.
+- **What a brief review is for, measured:** each High is a data-loss or resurrection path that slice tests written from the original brief would not have contained, because the tests encode the brief. This is ADR-041's reason for a pre-test round on new behaviour, now with a concrete count.
+
+
+## 2026-10-26 — M5 slice 2: reviewer and Codex on `inspect` and `differsOnlyInName`
+
+- **Slice 2** (`0860c03`) adds `ProgramDocument.inspect`, a non-throwing read that keeps a refused file's name, and `Program.differsOnlyInName`, the rename-only rule from brief D8. Red was a compile failure. 7 author mutants were all killed.
+- **`swift-code-reviewer` (worktree), highest severity Important:** it ran 8 mutants of its own; 3 survived.
+  - A case-only rename ("Star" → "star") was not pinned. Slice 1's uniquing folds case, so reusing that comparison here would plausibly void a run on a rename.
+  - The refused name's exact value was undecided: empty and padded names survived trimming and empty-to-nil mutants. Decided: the name is kept verbatim, and the list owns one fallback for an empty name.
+  - It also answered the author's NaN question: `Program.==` is NaN-reflexive by design (`isSameValue`), so a NaN cannot make a pure rename look like content.
+- **Codex, one round, highest severity Medium:** it found the one *semantic* defect. `Program.==` treats `-0.0` and `0.0` as equal, but `arctan2(-0, -1)` is -180 while `arctan2(+0, -1)` is 180, so `==` could call a change rename-only while the run would differ.
+  - The fix compares the encoded documents with the names equalised. It runs only when the names differ, and an encode failure counts as content, the safe direction.
+  - The signed-zero witness went red before the fix.
+  - Also from Codex: test both directions, since undo and redo travel opposite ways.
+  - Deferred (Low): a refused file is parsed three times per list scan. Refused files are rare.
+- **The two reviewers complemented each other again.** The reviewer's executable mutants found test gaps; Codex's semantic reading found the one equality hole. Neither found what the other did. Six follow-up mutants were all killed.
+- **Process slip:** the slice commit carried a co-author trailer, against the repo's convention. A force-push to drop it was denied by the auto-mode classifier, so it stays on the pushed commit for Sebastian to decide.
+
+## 2026-10-26 — M5 slice 3: the mutation runner misread a compile failure as a survivor
+
+- **Slice 3** (`DocumentsProjectStore`, one file per project): red as a compile failure, then green after one fixture fix. The fixture had the bug, not the code: the "lowercase spelling" row used an all-digit UUID, whose lowercase form *is* the canonical one, so it was a real project file.
+- **A false survivor:** the app mutation runner reported the "canonical spelling not checked" mutant as SURVIVED with no failing tests. Run by hand, it turned out not to compile: removing the last `guard` condition left a dangling comma. xcodebuild reports that as "Testing cancelled because the build failed", which the runner's BUILD-FAIL check did not match. The runner now matches it. With the comma removed as well, the mutant is killed.
+- **Lesson for the thesis data:** every SURVIVED from the app runner before today rested on that check. A survivor is a claim worth re-running by hand before it drives a test change; this one would have prompted a redundant test.
+- **CI flake:** `0860c03`'s app job failed on `StageFieldRenderingTests.designIsOnTop` (an `ImageRenderer` pixel read, 52 s on a saturated runner). It is the same family as the 2026-10-24 entries. The next commit, which changed only engine files, passed.
+
+## 2026-10-26 — M5 slice 3 review: one bad file hid the whole library
+
+- **Both reviewers, independently, found the same defect:** `DocumentsProjectStore.list()` threw if *one* project file could not be read, so the list would show no designs at all. Name uniquing and launch's last-opened check depend on it too. `swift-code-reviewer` showed it with a mode-000 file on the simulator; Codex reached it by reading. The file is now listed as damaged, so it can be deleted.
+- **Codex rated its top finding High; the triage rated it Low.** The finding: a lowercase file name aliasing the canonical path on a case-insensitive volume. iOS device volumes are case-sensitive, only the simulator's host volume folds case, and nothing but the app writes the sandbox. This is the second Codex High this feature that turned on an environment assumption the reviewer could not see. The response is a documented assumption, not a guard.
+- **The all-digit fixture trap struck twice.** After slice 3's own fixture bug, the reviewer found the main fixture IDs were all-digit too, so a lowercase `url(for:)` mutant survived. The fixture now uses an ID with hex letters.
+- **CI:** the app job flaked again on slice 4's commit, this time on `StageFieldRenderingTests.matIsDrawnAtCurrent` (the ImageRenderer pixel read). It is the second pixel-test flake today. The failed job was re-run.
+
+## 2026-10-26 — M5 slice 4 review: correct code, unpinned rules
+
+- **`swift-code-reviewer` ran 10 mutants on `ProjectLibrary`, beyond the author's 14, and 8 survived.** Every survivor was a test gap on correct code. The most serious was ADR-037's "accepted, not written" rule on the blocked path. ADR-037 calls its single-file version (M8b) "a real data-loss sequence under mutation", and the per-project port had no test for it. Codex found the same gap by reading. Nine new tests now kill all 13 mutants.
+- **What the author's own mutants missed:** they were drawn from the brief's red list (global `highestAccepted`, no tombstone, …), so they tested what the brief named. The reviewer's came from the code's *other* decisions: which properties are observed, which errors block, what `unblock` clears. That is the same split the slice 2 review showed, now with a count: 14 brief-derived mutants killed, 8 of 10 code-derived ones surviving.
+- **Codex, highest severity High:** the catalog could delete or rename a project another window holds. D7 had put that guard only in the UI ("disabled with a reason"); the library now enforces it too. Its second finding was that summaries went stale after a re-probe.
+- **CI:** a re-run of slice 4's flaky app job was cancelled, superseded by the next push; that run (`8233811`, which contains slice 4) was green on every job.
+
+## 2026-10-26 — M5 slice 5a: two deleted suites, and a wait loop that matched itself
+
+- **The persistence swap deleted two suites** (`ProgramAutosaveTests`, `AutosaveWiringTests`) along with `ProgramAutosave` itself. Deleting tests needs a reason in a TDD repo, and this is it: every claim in them that still holds was ported per project into `ProjectLibraryTests` (slice 4) or `ProjectWiringTests`, and one was deliberately reversed. Brief D3 makes a picked sample a draft that writes nothing, so "a picked sample survives a relaunch without a single edit" is now false by design.
+- **Mutation, 16 mutants:**
+  - 13 were killed at once.
+  - 2 survived for reasons worth recording: in both, the fixture made the mutant's wrong state coincide with the right one. A draft's first write was also its first rename, so a stale name reservation equalled the persisted name. A second launch re-read a disk that already held the edit. Both tests now break the coincidence.
+  - 1 was equivalent: a redundant unregister. The line was removed rather than tested.
+- **A tooling slip, caught by Sebastian asking what two shells were doing:** two background wait loops (`until ! pgrep -f appmut.py`) had been running for hours. Each loop's own command line contains `appmut.py`, so `pgrep` always found itself and the loops could never end. They were killed; nothing depended on them. The fix in practice is to wait on the harness's task notification rather than polling for a process by name.
+- **File length:** `AppModel.swift` passed SwiftLint's 400-line limit again. `samples`, `play()` and `commitName()` moved to extension files, the US-409 pattern. Members touching private state stayed, so no access level was loosened to make the split.
+
+## 2026-10-26 — M5 slice 5b: the mutation runner could not see parameterized failures
+
+- **A second runner defect in one day.** The app mutation runner found failing tests with the pattern `Test case '…/(\w+)\(\)' failed`, which only matches a test function with no arguments. A parameterized test's case is reported as `aSamplesExportNameIsItsProgramName(id:)` and never matched. So a mutant killed *only* by a parameterized test was reported SURVIVED. Re-run with a corrected pattern, the "resourceName seed kept" mutant is killed.
+- **Scope of the damage:** the defect can only produce false survivors, never false kills. This session's survivor verdicts were each resolved by a test change or an equivalence argument, and none rested on a parameterized test. The runner script lives outside the repo; earlier sessions' copies probably had the same pattern, so a past "survived" that led to a test change may have been killed already. That test was redundant, not wrong.
+- **Lesson, the same as the morning's compile-failure misread:** a survivor is a claim about the runner as much as about the tests. Before acting on one, confirm by hand that the mutant built and that its failures could have been seen.
+- **A test-intent drift that D8 exposed:** `WorkingProgramTests` used a *rename* as its stand-in for "an edit" when proving that edits void the run. Under D8 a rename is exactly the edit that does not void, so four tests failed for the right reason. Their edit is now a content edit. A fixture chosen as "any edit" encodes an assumption about which edits are alike; this feature made renames unlike the rest.
+
+## 2026-10-26 — M5 slice 5 review: a fix that undid an "equivalent" verdict
+
+- **Slice 5's two reviews found no data loss, and still changed eleven behaviours or pins.**
+  - **Codex (highest severity Medium)** found three state transitions with two doors where only one did the bookkeeping:
+    - a draft's first write through the lifecycle retry;
+    - a failed save leaving a stale reserved name;
+    - a delete leaving "last opened" stale behind the tombstone.
+  - **`swift-code-reviewer`** found two user-visible gaps against the brief: the stage title ignored "one name", and the launch alert's wording is wrong when a fallback opens. It ran 9 mutants beyond the author's 30, and 8 survived. Each surviving mutant is now pinned by a test; all 12 review mutants are killed.
+- **An "equivalent mutant" verdict was wrong.** In 5a, removing `startDraft`'s unregister-before-register survived. It was judged equivalent, because `register` replaces the window's entry anyway, and the line was deleted. The reviewer then showed that re-picking a sample alternated its name ("Square Coil" / "Square Coil 2" / "Square Coil"). Before the window re-registers, `uniquedName` counts the window's *own* live reservation. The line was equivalent only while no test picked a sample twice in one window. An equivalence claim is a claim about every reachable state, so it deserves a probe, not just a reading of the code.
+- **The baseline ran after the mutants, not before.** The review mutants were launched before the unmutated suites had been re-run after a refactor. A broken baseline would have turned every mutant into a false kill. It was checked afterwards and was green, so this time the order did not matter; the runner should assert a green baseline first.
+- **Deferred with reasons:** an invalid submit (slice 9), the alert copy (slice 7), and `onDisappear` reliability (slice 8). All are recorded in the brief.
+
+## 2026-10-26 — M5 slice 6: a third mutation-runner misreport, and a hardened runner
+
+- **Slice 6** (legacy migration) was red as a compile failure. 11 mutants: 8 were killed at once, and 2 genuine survivors needed one new test. Removing the legacy file *before* writing the project, or after a *failed* write, left the same end state in the in-memory double. The double reads the program into memory before anything is removed, so a crash between the steps is not modelled. A test whose project write fails now shows the difference: the file must survive for the next launch.
+- **The third survivor was false.** Run by hand, "a refused legacy file's error swallowed" is killed by two tests. The runner had reported it SURVIVED, most likely because an incremental build missed a mutation applied right after the previous mutant had restored the same file. That makes three different runner defects in one day: a compile failure read as a survivor, parameterized failures invisible, and now a stale build.
+- **The runner is now defensive by construction.** It refuses to run unless the unmutated suite is green, so no false kills. It re-runs every survivor once after touching the file. It matches parameterized case names, and it logs an anchor miss instead of aborting the run. A survivor is now only reported after two independent builds agree.
+
+## 2026-10-26 — M5 slice 6 review, and cutting the wait: CI and mutation runs
+
+- **Slice 6's two reviewers converged on one High.** Codex and `swift-code-reviewer` each found that a refused file at the migration's fixed ID let the migration delete the readable legacy file, which after an earlier failed removal could be the only good copy. Both were independent and found it by reading. The reviewer also found a second path the brief's D6/D9 forbid: a migrated project the user deleted comes back from a leftover legacy file. Its surviving mutant exposed a contradiction between the code and its own doc ("a replay never takes last opened"), now settled for the doc. 7 new tests; 8 mutants on the fixes, all killed.
+- **Sebastian: "We need to do something about these damn long CI runs and mutation runs."** Measured:
+  - CI's app job took 5.5–8.5 min and the engine job about 2.5 min, and pushes came 3–4 times per slice.
+  - App mutants cost 60–110 s each, serially, so a slice's 10–16 mutants took 15–25 min.
+- **What changed:**
+  - **The mutation runner is parallel.** Three workers each copy the working tree with `rsync`, keep their own DerivedData and own a simulator. Builds skip coverage and the index store. A warm run of 5 mutants plus 3 baselines took 266 s.
+  - **A cold first run is slow:** 866 s for 3 mutants, because every worker builds from scratch.
+  - **One "speed-up" broke the runner.** `-parallel-testing-enabled NO` changed how Swift Testing failures are printed, so the runner matched none and reported every mutant UNKNOWN. The flag is gone, and a `TEST FAILED` with no matched name now counts as a kill and points to the saved log. This is the runner's fourth defect today. Every one was caught because a result looked wrong; none was caught by the runner itself.
+  - **CI's app job** now runs with coverage and the index store off.
+  - **The engine and app jobs** are skipped when a pull request's *whole* diff against its base is documentation. The last push alone is not enough, because cancelled runs would let a docs push hide untested code.
+  - **Caching was considered and rejected.** SwiftPM and xcodebuild rebuild by timestamp, and a fresh checkout renews every timestamp.
+  - **Pushes are batched per slice** rather than per sub-step.
+- **The structural fix is filed, not done:** US-329 moves the project logic, which has no UI dependency, into a package target. There it would be tested and mutated with `swift test`, in seconds per mutant. It needs Sebastian's decision before PR 2. US-330 files the stage pixel-test flake that cost three CI re-runs this week.
+
+## 2026-10-26 — M5 PR 1 handover, Codex round 1: the CI change was the riskiest code in the PR
+
+- **Round 1 of the handover loop (PR #78), highest severity High, 2 findings, both valid, code changed.**
+  - **High:** the docs-only CI skip, added earlier the same day to save CI time, could be fooled by a rename. With rename detection `git diff --name-only` lists only a moved file's new path, so a source file moved into `docs/` reads as documentation, and both test jobs would be skipped before merge. Reproduced in a scratch repository; `--no-renames` lists both sides.
+  - **Low:** summaries written by a save or first seen by `open` carried the library's clock, not the file's modification date that D1 makes authoritative. Two real-disk tests, red first; the store now reports the date.
+- **What the round says about where risk sits:** the per-slice reviews had covered the persistence code closely; this one found nothing new in the tombstones, blocks, revisions, migration replay, draft rules or the rename→export chain. Its High was in the newest and least-reviewed code, a workflow change made to speed things up, which no slice review had seen. A speed-up to the gate is part of the gate, and deserves the same scrutiny.
+
+## 2026-10-26 — M5 PR 1 handover, Codex round 2: documentation is a place, not a file type
+
+- **Round 2 (verification), highest severity Medium (round 1: High), 2 findings: 1 fixed, 1 rejected; code changed.**
+  - **Valid (Medium):** both round-1 fixes held, but the docs-only classifier still let any `.md` path count as documentation. A Markdown file inside a SwiftPM resource folder that a test reads is code, and changing only it would have skipped both required test jobs. Now only `docs/` and root-level Markdown count. Checked against fixture lists: `Sources/Samples/Resources/PROVENANCE.md` now counts as code.
+  - **Rejected (Low):** Codex wanted a successful save whose date lookup fails to fall back to the summary's old date. The save has just written the file, so its true date is "now", and the old date would show an edited project as stale. `open`, which writes nothing, already prefers the old date, and Codex confirmed that order.
+- **The pattern of rounds 1–2:** both Highest findings were in the CI speed-up, not the feature. A filter that decides whether the gate runs at all needs adversarial review as much as code does, because its failure mode is silent: a skipped required job reports success.
+
+## 2026-10-26 — M5 PR 1 handover, Codex round 3: a gate filter must fail closed
+
+- **Round 3 (verification), highest severity High (round 2: Medium), 1 finding, valid; code changed.** Codex confirmed round 2's fix and accepted the rejected date suggestion. Its new High is in the same CI filter: the test jobs `needs: changes`, and when a prerequisite fails, a dependent job is skipped, which reports success under a required check's name. So a PR that broke the classifier would get no tests. The jobs now run unless the classifier positively answers `false` (`!cancelled() && needs.changes.outputs.code != 'false'`).
+- **Severity history so far: High → Medium → High.** Not converging, so the loop goes on to round 4 under the cap of 5. All three Highs this loop were in one 20-line workflow change made to save CI time; the feature's code produced only a Low. The speed-up has now cost three review rounds, which is the price of putting a filter in front of the gate. Worth weighing next time against simply paying the CI minutes.
+
+## 2026-10-26 — M5 PR 1 handover, Codex round 4: the docs-only skip is withdrawn
+
+- **Round 4 (verification), highest severity High (round 3: High), 3 findings: 2 acted on, 1 rejected; code changed.**
+  - **High, CI:** a classifier step that writes `false` and then fails would still skip both test jobs, since the condition did not check the job's result. This is the fourth consecutive round with a High in that filter. Rather than patch it a fourth time, **the docs-only skip is removed**. It saved minutes only on docs-only pull requests, while each round found a new way for it to let untested code reach `main`. The coverage and index-store flags stay. *This corrects the 2026-10-26 entry "cutting the wait", which records the skip as in place.*
+  - **High, feature:** picking a sample after a failed save dropped the unsaved edit and hid its failure banner. `swift-code-reviewer` had flagged this at slice 5 and it was recorded as a known gap, but it loses user data, so it is fixed here. The pick retries the save, and stays on the project if the retry fails. Two tests, red first.
+  - **Low, rejected:** a failed delete of the migrated project can already have removed the legacy file. By then that file only duplicates a project that still exists, and the reverse order would let a deleted project return at the next launch. The comment at the call site says so.
+- **Severity history: High → Medium → High → High.** Round 5 is the cap. Its findings will be fixed test-first but not re-reviewed by Codex (ADR-041).
+- **The lesson for the thesis:** a filter in front of a required gate is cheap to write and expensive to make safe. Here four review rounds found four distinct bypasses: renames, nested Markdown, a failed classifier, a failure after the output was written. The CI minutes it would have saved on a handful of close-out PRs are worth less than one of those rounds.
+
+## 2026-10-26 — M5 PR 1 handover, Codex round 5: the loop ends at the cap
+
+- **Round 5 (verification, the cap), highest severity Medium (round 4: High), 1 finding, valid; code changed.** Codex confirmed all three round-4 outcomes and accepted the rejected legacy-delete finding. Its finding was in the new leave check. If a second window had saved a newer revision of the same project and then closed while saves were failing, the first window's retry came back `.superseded`, a deliberate drop under ADR-037. The check read the project's lingering failure rather than the retry's outcome, so that window could never leave without making an edit. It now decides on the outcome: only `.failed` keeps the window. One test, red first. **Not re-reviewed by Codex**: the loop stopped at 5 rounds (ADR-041).
+- **The loop's history: High → Medium → High → High → Medium; 10 findings, 7 fixed, 3 rejected; code changed in every round.** It never converged by its own rule and stopped at the cap.
+  - **4 of the 10 findings, including all 3 Highs of rounds 1–4, were in the docs-only CI skip**, a speed-up added during the same session. It was withdrawn in round 4.
+  - **The feature itself gave up 4 findings:** a Low (dates), a High (a failed save dropped by a sample pick, which `swift-code-reviewer` had flagged at slice 5 and the triage had wrongly filed as a known gap), the Medium in its fix, and the Low rejected in round 2.
+  - **Lesson:** a gap is only "known" if losing it is acceptable. One that loses user data is a finding, whoever calls it a gap.

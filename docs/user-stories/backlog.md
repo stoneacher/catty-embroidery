@@ -14,6 +14,8 @@ ADR and journal references keep resolving.
 
 ## US-316 — The mid-gesture tail survives both rungs of the ladder, and the next experiment is named
 
+*Decided 2026-10-25 (Sebastian), M5 planning: not pulled into Project management, which shares no code with it; scheduled as **its own feature right after M5**, before any device or TestFlight capture. This is the reason the entry below asks for before a third deferral.*
+
 **Considered at M4 planning (2026-09-19) and not taken.** It stays here, and the cost is stated
 rather than glossed: M3's 60 fps exit criterion remains **unmet with no scheduled work against
 it**, and the A15-class capture — open since 2026-09-02, and already re-deferred once at M3 close
@@ -177,6 +179,8 @@ documents why it needs one, and a release build is a weaker claim than that test
 
 ## US-320 — A new window opens on a validation error the user did not cause
 
+*Pulled into Project management (2026-10-25): every project always has a valid name, so a fresh window has nothing to flag.*
+
 **Found**: 2026-09-28, US-407's simulator pass. **Accepted by Sebastian for US-407 and moved here.**
 Since ADR-039, launch selects the blank program as an untitled design, so the stage shows its
 design-name field with an empty name. `DesignNameField` reports the empty name at once, in red: "Enter a
@@ -316,6 +320,7 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 - **Evidence (result bundles):** `RunViewModelTests` and `ExportWiringTests` exceeded `.timeLimit(.minutes(1))`. Trivial tests report about 80 s, so they are waiting on a saturated main actor, not running slowly. `StageFieldRenderingTests.matIsDrawnAtCurrent` once read an all-black `ImageRenderer` pixel. The device was iOS 27.0, and job duration did not jump (14–17 min is normal).
 - **Options:** raise the hang guards (they are not performance assertions); serialise the heaviest main-actor suites (`PairInvariantSoakTests`, the run/export wiring tests); cache `BrickRowPresentation.rows` per program revision, which also lightens the soak.
 - **Needs Sebastian's decision**, because it changes test guards. Journal, 2026-10-25.
+- *Decided 2026-10-25 (Sebastian): raise the guards.* The 25 one-minute guards became one named trait, `.hangGuard` (three minutes, `HangGuard.swift`), as the first commit of Project management.
 
 ## US-328 — Variables follow-ups: one definition per rule
 
@@ -326,6 +331,19 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 - One category for `BinaryOperator` (arithmetic, comparison, logical), which is classified four times today.
 - Public API trims: `Script.matchingElse`, `opensLoop`, `isLoopEnd` are used only by tests; `ParameterEditorKind.init(_ value:)` answers differently from `init(_ parameter:)` for a condition.
 - Two pre-existing ADR-019 screening gaps (sub-length probes against the wrong length; the ulp figure halved), each needing one synthetic probe near a boundary.
+
+## US-329 — Project logic lives in the app target, where every test needs a simulator
+
+**Found**: 2026-10-26, Project management PR 1, while measuring why slices took so long. App-target mutation runs cost 60–110 s per mutant (an incremental app build plus a simulator run), so a slice's 10–16 mutants took 15–25 min; engine mutants take seconds under `swift test`.
+- `ProjectLibrary`, `DocumentsProjectStore`, `LastOpenedProject` and the legacy migration import no UIKit or SwiftUI. In a package target they would be tested and mutated with `swift test`.
+- **What taking it would involve:** a target in `Packages/EmbroideryEngine` (ADR-042's layout), vended through an existing product the way `EditorCore` is (ADR-033), so the app needs no `pbxproj` change; the app keeps the `AppModel` wiring and the views. `ProgramLoadError` and `ProgramStoring` would move with it.
+- **Decide before Project management PR 2**, whose list, create, duplicate and rename slices add more library behaviour. Needs Sebastian's decision: it changes the package layout.
+
+## US-330 — The stage pixel tests read a black frame on a saturated CI runner
+
+**Found**: 2026-10-26, Project management PR 1 (twice in one day), after one occurrence on 2026-10-24. `StageFieldRenderingTests.designIsOnTop` and `.matIsDrawnAtCurrent` failed on CI with no change near the stage, and passed on the next commit; locally they pass. The 2026-10-24 result bundle showed an all-black `ImageRenderer` pixel, the same family as US-327's main-actor saturation.
+- **Options:** render off the main actor or with a retry on an all-black frame; serialise the suite (`.serialized`) so it never renders while the soak tests run; or assert on the draw plan rather than on pixels where a pixel adds nothing.
+- Each occurrence costs a re-run (about 8 min) and a triage.
 
 ---
 

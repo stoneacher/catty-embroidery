@@ -29,7 +29,7 @@ struct EditorViewModelTests {
     private static func editor() -> (EditorViewModel, Announcements) {
         let editor = EditorViewModel(program: seed)
         let announcements = Announcements()
-        editor.onProgramChanged = { announcements.fired += 1 }
+        editor.onProgramChanged = { _, _ in announcements.fired += 1 }
         return (editor, announcements)
     }
 
@@ -129,7 +129,7 @@ struct EditorViewModelTests {
     private static func loopedEditor() -> (EditorViewModel, Announcements) {
         let editor = EditorViewModel(program: looped)
         let announcements = Announcements()
-        editor.onProgramChanged = { announcements.fired += 1 }
+        editor.onProgramChanged = { _, _ in announcements.fired += 1 }
         return (editor, announcements)
     }
 

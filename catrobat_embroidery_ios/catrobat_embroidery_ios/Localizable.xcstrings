@@ -2533,6 +2533,18 @@
         }
       }
     },
+    "project.default.name": {
+      "comment": "The name a new, blank design gets (and the name of its embroidery file). It is written into the machine file, so it must be at most 15 characters of plain ASCII (letters, digits, spaces, common punctuation); a translation that is not falls back to English. Keep it short and generic.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Design"
+          }
+        }
+      }
+    },
     "root.sample.accessibility.label": {
       "comment": "Spoken by VoiceOver for one row of the list of example designs. %1$@ is the design's name, %2$@ is a one-line description of what it looks like; both arrive already translated. The separator is what makes VoiceOver pause between them — use the sentence-ending punctuation and spacing your language reads naturally (which is not a full stop everywhere). Arguments are positional and may be reordered.",
       "extractionState": "manual",

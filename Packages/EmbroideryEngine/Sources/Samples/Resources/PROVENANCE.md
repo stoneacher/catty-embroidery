@@ -17,8 +17,9 @@ for the second.
 **The builders are the single source of truth.** A resource that disagrees with
 one is a failing test, not a second opinion. Nothing in M3 reads these files —
 the app links the builders directly and has no decode path (US-304). They exist
-so the encoding is guarded now, and so M5 can copy one into Documents to create
-a real project rather than re-deriving ADR-003's format.
+so the encoding is guarded. *(They were also meant for M5 to copy into Documents;
+M5 instead writes a project from the builder's value, so a sample's project file is
+the program's encoding, equal to these bytes, ADR-050.)*
 
 ## `OctagonRosette.json` — sample 1
 

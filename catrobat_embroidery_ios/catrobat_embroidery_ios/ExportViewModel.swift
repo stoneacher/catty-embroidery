@@ -28,15 +28,15 @@ import Observation
 @MainActor
 @Observable
 final class ExportViewModel {
-    /// What the field holds, raw and unvalidated — bound directly to the `TextField`, so it
-    /// must accept anything the user can type. Validation is a *view* of it.
+    /// The design's name, which the export writes into the `LA` field and, sanitised, into the
+    /// file name. Since M5 it is **the program's name** (one name, brief D4): `AppModel` sets
+    /// it on every change and load, and the stage field edits a draft instead. It may still be
+    /// invalid — a design opened from a file need not carry a valid name — so validation stays
+    /// a *view* of it, and the share control's gate.
     ///
-    /// Editing it **invalidates a prepared file**, because the name goes into the `LA`
-    /// bytes: without this, the model can offer `Alpha.dst` while the field reads "Beta",
-    /// and the user shares the wrong name *and* the wrong bytes. An in-loop review found
-    /// that window open — closed today only by `StageView` hiding the share row while the
-    /// field has focus, which is a **view** condition guarding a **model** invariant, and
-    /// untested besides.
+    /// Changing it **invalidates a prepared file**, because the name goes into the `LA`
+    /// bytes: without this, the model could offer `Alpha.dst` for a design now called "Beta",
+    /// and the user would share the wrong name *and* the wrong bytes.
     var name = "" {
         didSet { discardIfPreparedNameIsStale() }
     }

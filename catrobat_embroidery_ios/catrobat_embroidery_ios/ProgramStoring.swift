@@ -12,12 +12,12 @@ enum ProgramLoadError: Error, Equatable {
     case unreadable
 }
 
-/// The app's seam to the saved working program (US-406; ADR-006 pattern 2).
+/// The app's seam to M4's single saved working program (US-406; ADR-006 pattern 2). Since M5
+/// every design is a project (`ProjectStoring`); this seam remains only for reading the legacy
+/// file, which slice 6 migrates.
 ///
 /// Structurally the split US-308 made for `DSTFileWriting`: the bytes are `ProgramDocument`'s,
-/// computed in the package with no I/O, and this protocol adds only *where* they go. It holds no
-/// policy — which write wins is `ProgramAutosave`'s rule, so a test double cannot carry a second
-/// copy of it.
+/// computed in the package with no I/O, and this protocol adds only *where* they go.
 protocol ProgramStoring {
     /// The saved program, or `nil` when there is none.
     func load() throws(ProgramLoadError) -> Program?
@@ -29,6 +29,10 @@ protocol ProgramStoring {
     /// Moves the saved file out of the way without altering its bytes, and returns where it
     /// went. Never overwrites a file set aside earlier.
     func setAside() throws -> URL
+
+    /// Deletes the working file once it has been migrated (project management slice 6); a file
+    /// already gone is the outcome asked for. Files set aside earlier are left alone.
+    func remove() throws
 }
 
 /// The saved working program as one JSON file in the app's Documents directory.
@@ -68,6 +72,14 @@ final class DocumentsProgramStore: ProgramStoring {
         let data = try ProgramDocument.encode(program)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try data.write(to: workingURL, options: .atomic)
+    }
+
+    func remove() throws {
+        do {
+            try FileManager.default.removeItem(at: workingURL)
+        } catch let error as CocoaError where error.code == .fileNoSuchFile {
+            return
+        }
     }
 
     /// `moveItem` refuses an existing destination (`fileWriteFileExists`) and leaves its source

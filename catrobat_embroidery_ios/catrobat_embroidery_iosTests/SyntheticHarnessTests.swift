@@ -1,6 +1,7 @@
 @testable import catrobat_embroidery_ios
 import EmbroideryEngine
 import Interpreter
+import ProgramModel
 import Samples
 import StagePreview
 import Testing
@@ -24,14 +25,14 @@ import Testing
 struct SyntheticHarnessTests {
     @Test("the picker offers the synthetic design in debug builds")
     func thePickerOffersTheSyntheticDesignInDebugBuilds() {
-        #expect(AppModel(autosave: .inMemory()).samples.map(\.id).contains(.us309Synthetic))
+        #expect(AppModel(library: .inMemory()).samples.map(\.id).contains(.us309Synthetic))
     }
 
     /// It is **last**, so it can never displace a shipping sample from the top of the picker
     /// and every existing screenshot and index-based expectation keeps its meaning.
     @Test("the synthetic design is last in the picker")
     func theSyntheticDesignIsLastInThePicker() {
-        let ids = AppModel(autosave: .inMemory()).samples.map(\.id)
+        let ids = AppModel(library: .inMemory()).samples.map(\.id)
         #expect(ids.last == .us309Synthetic)
         #expect(ids.dropLast() == SampleLibrary.all.map(\.id))
     }
@@ -48,16 +49,16 @@ struct SyntheticHarnessTests {
     /// screenshots this story owes are of a different screen from the one users see.
     @Test("selecting the synthetic design configures the stage like any other")
     func selectingTheSyntheticDesignConfiguresTheStageLikeAnyOther() throws {
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         let synthetic = try #require(model.samples.last)
 
         model.select(synthetic)
 
         #expect(model.selection?.provenance == .us309Synthetic)
         #expect(model.isSelected(synthetic))
-        // Seeded from the sample, exactly as US-308 does for the shipping two, and valid —
-        // a name the field rejected would leave the export gate shut in every screenshot.
-        #expect(try model.exporter.validatedName.get().value == SampleID.us309Synthetic.resourceName)
+        // Its program's name, as for every sample (M5, one name), and valid — a name the field
+        // rejected would leave the export gate shut in every screenshot.
+        #expect(try model.exporter.validatedName.get().value == synthetic.program.name)
     }
 
     /// The design actually reaches the scale the story is about.
@@ -68,7 +69,7 @@ struct SyntheticHarnessTests {
     /// `SyntheticDesignTests` and still capture a 3 000-stitch design.
     @Test("the synthetic design the app links reaches fifty thousand stitches")
     func theSyntheticDesignTheAppLinksReachesFiftyThousandStitches() throws {
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         let synthetic = try #require(model.samples.last)
 
         var interpreter = Interpreter(program: synthetic.program, clock: InterpreterClock(tickDelta: 1.0 / 60.0))

@@ -174,6 +174,33 @@ struct DocumentsProgramStoreTests {
         }
     }
 
+    // MARK: Removing (project management slice 6)
+
+    @Test("removing deletes the working file, and leaves set-aside files alone")
+    func removingDeletesOnlyTheWorkingFile() throws {
+        try inDisposableDirectory { directory in
+            let store = DocumentsProgramStore(directory: directory)
+            try RefusedDocument.corrupt.write(to: store.workingURL)
+            let aside = try store.setAside()
+            try store.save(Self.rosette)
+
+            try store.remove()
+
+            #expect(!FileManager.default.fileExists(atPath: store.workingURL.path))
+            #expect(try Data(contentsOf: aside) == RefusedDocument.corrupt)
+        }
+    }
+
+    /// A replay after a crash may find the file already gone: that is the outcome asked for.
+    @Test("removing with no working file succeeds")
+    func removingNothingSucceeds() throws {
+        try inDisposableDirectory { directory in
+            #expect(throws: Never.self) {
+                try DocumentsProgramStore(directory: directory).remove()
+            }
+        }
+    }
+
     // MARK: Setting aside
 
     @Test("setting aside moves the bytes unchanged and frees the working path")
