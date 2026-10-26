@@ -3,36 +3,44 @@ import Foundation
 import ProgramModel
 
 // The values `ProjectLibrary` takes and returns (project management slices 4–5), apart from
-// `SaveRevision`, which stays beside the one method allowed to mint it; and the library's
-// preview factory.
-
-/// A project found at launch and not opened, until the user has been told. Its file stays
-/// where it is (brief D11).
-struct ProgramRefusal: Equatable {
-    let reason: ProgramLoadError
-}
+// `SaveRevision`, which stays beside the one method allowed to mint it.
 
 /// A project launch opened.
-struct OpenedProject: Equatable {
-    let id: ProjectID
-    let program: Program
+public struct OpenedProject: Equatable, Sendable {
+    public let id: ProjectID
+    public let program: Program
+
+    public init(id: ProjectID, program: Program) {
+        self.id = id
+        self.program = program
+    }
 }
 
 /// A launch candidate whose file was refused.
-struct ProjectRefusal: Equatable {
-    let id: ProjectID
-    let reason: ProgramLoadError
+public struct ProjectRefusal: Equatable, Sendable {
+    public let id: ProjectID
+    public let reason: ProgramLoadError
+
+    public init(id: ProjectID, reason: ProgramLoadError) {
+        self.id = id
+        self.reason = reason
+    }
 }
 
 /// What a window opens on (brief D6): a project, or nothing — the window then starts a draft
 /// under a fresh ID — and the candidates refused on the way.
-struct LaunchResolution: Equatable {
-    let opened: OpenedProject?
-    let refusals: [ProjectRefusal]
+public struct LaunchResolution: Equatable, Sendable {
+    public let opened: OpenedProject?
+    public let refusals: [ProjectRefusal]
+
+    public init(opened: OpenedProject?, refusals: [ProjectRefusal]) {
+        self.opened = opened
+        self.refusals = refusals
+    }
 }
 
 /// What opening a project found.
-enum ProjectOpening: Equatable {
+public enum ProjectOpening: Equatable, Sendable {
     case opened(Program)
     /// No file: never saved, or deleted elsewhere.
     case missing
@@ -40,7 +48,7 @@ enum ProjectOpening: Equatable {
 }
 
 /// Why a project is not being saved.
-enum ProjectSaveFailure: Equatable {
+public enum ProjectSaveFailure: Equatable, Sendable {
     /// The last write threw.
     case saveFailed
     /// The project's file cannot be opened, so nothing may overwrite it (brief D11).
@@ -48,7 +56,7 @@ enum ProjectSaveFailure: Equatable {
 }
 
 /// What became of one save request.
-enum ProjectSaveOutcome: Equatable {
+public enum ProjectSaveOutcome: Equatable, Sendable {
     case written
     /// A newer revision of this project was already accepted; this one was dropped.
     case superseded
@@ -63,23 +71,15 @@ enum ProjectSaveOutcome: Equatable {
 }
 
 /// Why the catalog refused to delete a project.
-enum ProjectLibraryError: Error, Equatable {
+public enum ProjectLibraryError: Error, Equatable {
     /// Another window holds the project (brief D7).
     case heldByAnotherWindow
 }
 
 /// One window, as the registry knows it. Explicit rather than an object identity, so a late
 /// message from a window can be told apart from its successor's.
-struct WindowToken: Hashable, Sendable {
+public struct WindowToken: Hashable, Sendable {
     private let rawValue = UUID()
-}
 
-extension ProjectLibrary {
-    /// For previews: saves into a scratch directory, never the user's Documents.
-    static var preview: ProjectLibrary {
-        ProjectLibrary(
-            store: DocumentsProjectStore(directory: .temporaryDirectory.appending(path: "preview-projects")),
-            lastOpened: LastOpenedProject(defaults: UserDefaults(suiteName: "preview-projects") ?? .standard)
-        )
-    }
+    public init() {}
 }

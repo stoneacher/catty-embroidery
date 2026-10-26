@@ -7,7 +7,7 @@ import ProgramModel
 /// `document` carries US-404's reasons unchanged, so the refusal copy switches over them with no
 /// cast (ADR-037). `unreadable` is every read failure other than "there is no file", which is not
 /// a failure at all: it is a first launch.
-enum ProgramLoadError: Error, Equatable {
+public enum ProgramLoadError: Error, Equatable {
     case document(ProgramDocumentError)
     case unreadable
 }
@@ -18,7 +18,8 @@ enum ProgramLoadError: Error, Equatable {
 ///
 /// Structurally the split US-308 made for `DSTFileWriting`: the bytes are `ProgramDocument`'s,
 /// computed in the package with no I/O, and this protocol adds only *where* they go.
-protocol ProgramStoring {
+@MainActor
+public protocol ProgramStoring {
     /// The saved program, or `nil` when there is none.
     func load() throws(ProgramLoadError) -> Program?
 
@@ -36,20 +37,21 @@ protocol ProgramStoring {
 }
 
 /// The saved working program as one JSON file in the app's Documents directory.
-final class DocumentsProgramStore: ProgramStoring {
+@MainActor
+public final class DocumentsProgramStore: ProgramStoring {
     private let directory: URL
 
     /// The directory is injectable so a test can point it somewhere disposable.
-    init(directory: URL = .documentsDirectory) {
+    public init(directory: URL = .documentsDirectory) {
         self.directory = directory
     }
 
     /// Where the working program lives.
-    var workingURL: URL {
+    public var workingURL: URL {
         directory.appending(path: "WorkingProgram.json")
     }
 
-    func load() throws(ProgramLoadError) -> Program? {
+    public func load() throws(ProgramLoadError) -> Program? {
         let data: Data
         do {
             data = try Data(contentsOf: workingURL)
@@ -68,13 +70,13 @@ final class DocumentsProgramStore: ProgramStoring {
     /// Encode first: a program the codec refuses throws here, before anything on disk has
     /// been touched. The write is atomic — the new bytes replace the old file in one rename —
     /// so an interrupted save leaves the previous program, never half of the new one.
-    func save(_ program: Program) throws {
+    public func save(_ program: Program) throws {
         let data = try ProgramDocument.encode(program)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try data.write(to: workingURL, options: .atomic)
     }
 
-    func remove() throws {
+    public func remove() throws {
         do {
             try FileManager.default.removeItem(at: workingURL)
         } catch let error as CocoaError where error.code == .fileNoSuchFile {
@@ -86,7 +88,7 @@ final class DocumentsProgramStore: ProgramStoring {
     /// in place, so trying successive names can never overwrite a file set aside earlier. The
     /// names keep `.json`, so a later version of the app can offer to recover them; M5 owns
     /// that list.
-    func setAside() throws -> URL {
+    public func setAside() throws -> URL {
         for attempt in 1 ... Self.maximumSetAsideAttempts {
             let destination = directory.appending(path: "WorkingProgram-refused-\(attempt).json")
             do {

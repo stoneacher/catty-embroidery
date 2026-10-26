@@ -1,3 +1,4 @@
+import Projects
 import SwiftUI
 
 @main

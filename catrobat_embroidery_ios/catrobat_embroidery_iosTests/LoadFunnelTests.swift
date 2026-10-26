@@ -2,6 +2,7 @@
 import EditorCore
 import Foundation
 import ProgramModel
+import Projects
 import Samples
 import Testing
 

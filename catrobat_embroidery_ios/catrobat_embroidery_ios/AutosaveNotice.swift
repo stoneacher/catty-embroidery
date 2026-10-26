@@ -1,5 +1,6 @@
 import EditorCore
 import Foundation
+import Projects
 
 /// What the window says about the saved program (US-406): the launch refusal's alert and the
 /// save-failure banner.

@@ -1,7 +1,8 @@
 import EditorCore
-import Foundation
 import EmbroideryEngine
+import Foundation
 import ProgramModel
+import Projects
 
 /// The stage's name field, as one name (project management slice 5; brief D4, D8).
 ///

@@ -17,6 +17,7 @@ import EmbroideryEngine
 import Foundation
 import Observation
 import ProgramModel
+import Projects
 import Samples
 import StagePreview
 
@@ -376,8 +377,7 @@ final class AppModel {
         return recordSave(library.save(editor.program, to: projectID, revision: heldRevision)) != .failed
     }
 
-    /// The title follows the program's name (`syncName()`, brief D4): the one write to
-    /// `selection` that is not a new selection.
+    /// The title follows the program's name (`syncName()`, D4): the one non-selecting write to `selection`.
     func retitle(_ title: LocalizedStringResource) {
         selection?.title = title
     }

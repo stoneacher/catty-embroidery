@@ -20,7 +20,11 @@ let package = Package(
         // bookkeeping no longer holds: six targets, five products.
         .library(name: "ProgramModel", targets: ["ProgramModel", "EditorCore"]),
         .library(name: "Interpreter", targets: ["Interpreter"]),
-        .library(name: "Samples", targets: ["Samples"]),
+        // US-329: `Projects` is vended through the *existing* `Samples` product, ADR-033's
+        // device, so the app — which already links it — can `import Projects` with no
+        // `project.pbxproj` change. `Samples`, because both are ADR-022 app-support targets;
+        // the engine product stays free of app concerns. Seven targets, five products.
+        .library(name: "Samples", targets: ["Samples", "Projects"]),
         .library(name: "StagePreview", targets: ["StagePreview"])
     ],
     targets: [
@@ -62,6 +66,12 @@ let package = Package(
         // `swift test` and the pre-commit gate instead of behind a simulator
         // boot. The app adds a small `CGAffineTransform` adapter in US-305.
         .target(name: "StagePreview", dependencies: ["Interpreter", "EmbroideryEngine"]),
+        // US-329's app-support target: one file per project, the library that guards every
+        // file, the last-opened default and M4's legacy store (ADR-050). Foundation and
+        // Observation only — no SwiftUI or UIKit (`ProjectsTargetIsolationTests`) — so its
+        // tests and mutants run under `swift test` instead of on a simulator. Main-actor
+        // isolated explicitly, as the app's default isolation made it implicitly.
+        .target(name: "Projects", dependencies: ["EditorCore", "ProgramModel", "EmbroideryEngine"]),
         .testTarget(
             name: "EmbroideryEngineTests",
             dependencies: ["EmbroideryEngine"],
@@ -98,6 +108,10 @@ let package = Package(
         // program: SwiftPM forbids test→test dependencies, so the sample
         // builders could not have been reached from InterpreterTests — which
         // is why US-301 had to land first.
+        .testTarget(
+            name: "ProjectsTests",
+            dependencies: ["Projects", "EditorCore", "ProgramModel", "Samples", "EmbroideryEngine"]
+        ),
         .testTarget(
             name: "StagePreviewTests",
             dependencies: [

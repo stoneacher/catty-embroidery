@@ -2,9 +2,12 @@
 import EditorCore
 import Foundation
 import ProgramModel
+import Projects
 
 // Doubles for the project seam (project management slice 4), as `ProgramStoreDoubles.swift`
-// is for M4's single file. Free types; each test builds its own instance.
+// is for M4's single file. Free types; each test builds its own instance. Since US-329 the
+// `Projects` package's own suites keep fuller copies; these are the ones the app's
+// `AppModel` suites use (a shared test-support target would need a pbxproj change).
 
 /// Holds the projects in memory and records every write and delete.
 @MainActor
@@ -89,21 +92,6 @@ final class InMemoryProjectStore: ProjectStoring {
         }
     }
 }
-
-/// Mints `ProjectID`s from a fixed sequence, so a test can name the ID a library will create.
-@MainActor
-final class SequentialProjectIDs {
-    private var next = 100
-
-    func make() -> ProjectID {
-        defer { next += 1 }
-        return ProjectID(UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", next))!)
-    }
-}
-
-/// A window, as far as the registry is concerned: something with a lifetime.
-@MainActor
-final class WindowOwner {}
 
 extension ProjectID {
     /// A fixed ID for tests, `00000000-0000-0000-0000-<n>`.

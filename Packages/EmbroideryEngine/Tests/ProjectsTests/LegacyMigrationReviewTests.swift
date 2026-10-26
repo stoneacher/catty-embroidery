@@ -1,4 +1,4 @@
-@testable import catrobat_embroidery_ios
+@testable import Projects
 import EditorCore
 import EmbroideryEngine
 import Foundation
@@ -40,29 +40,6 @@ extension LegacyMigrationTests {
         launch.migrate()
 
         #expect(launch.projects.program(Self.migrated)?.name == "\(Self.defaultName.value) 2")
-    }
-
-    /// Codex, slice 6: two refusals in one launch are both told, one after the other.
-    @Test("a refused legacy file and a refused scene project are both alerted for")
-    func twoRefusalsAreBothTold() throws {
-        let legacy = InMemoryProgramStore()
-        legacy.loadError = .document(.corrupt)
-        let scene = ProjectID.fixed(3)
-        let launch = Launch(
-            legacy: legacy, projects: InMemoryProjectStore([scene: .refused(.unsupportedVersion(2), name: nil)])
-        )
-        let model = AppModel(library: launch.library)
-
-        model.launch(sceneID: scene)
-
-        let first = try #require(model.launchRefusal).reason
-        model.dismissLaunchRefusal()
-        let second = try #require(model.launchRefusal).reason
-        model.dismissLaunchRefusal()
-        #expect(Set([first, second].map { "\($0)" }).count == 2)
-        #expect([first, second].contains(.document(.corrupt)))
-        #expect([first, second].contains(.document(.unsupportedVersion(2))))
-        #expect(model.launchRefusal == nil)
     }
 
     /// `swift-code-reviewer`, slice 6: a replay that writes the project still does not take

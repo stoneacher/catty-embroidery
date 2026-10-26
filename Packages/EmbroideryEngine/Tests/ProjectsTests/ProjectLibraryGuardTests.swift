@@ -1,4 +1,4 @@
-@testable import catrobat_embroidery_ios
+@testable import Projects
 import EditorCore
 import EmbroideryEngine
 import Foundation
@@ -162,7 +162,7 @@ extension ProjectLibraryTests {
 
 /// A flag an observation callback can set; the callback is `@Sendable`, so it cannot capture a
 /// local `var`.
-private nonisolated final class ObservationFlag: @unchecked Sendable {
+private final class ObservationFlag: @unchecked Sendable {
     var value = false
 }
 

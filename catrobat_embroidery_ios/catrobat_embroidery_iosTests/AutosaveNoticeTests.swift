@@ -2,6 +2,7 @@
 import EditorCore
 import Foundation
 import ProgramModel
+import Projects
 import Testing
 
 /// The words the window uses about the saved program (US-406).

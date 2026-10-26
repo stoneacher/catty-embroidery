@@ -3,6 +3,7 @@ import EditorCore
 import EmbroideryEngine
 import Foundation
 import ProgramModel
+import Projects
 import StagePreview
 import Testing
 

@@ -3830,3 +3830,19 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **4 of the 10 findings, including all 3 Highs of rounds 1–4, were in the docs-only CI skip**, a speed-up added during the same session. It was withdrawn in round 4.
   - **The feature itself gave up 4 findings:** a Low (dates), a High (a failed save dropped by a sample pick, which `swift-code-reviewer` had flagged at slice 5 and the triage had wrongly filed as a known gap), the Medium in its fix, and the Low rejected in round 2.
   - **Lesson:** a gap is only "known" if losing it is acceptable. One that loses user data is a finding, whoever calls it a gap.
+
+## 2026-10-26 — US-329: the project logic moves into the package, and mutants drop from ~90 s to ~2.4 s
+
+- **Sebastian: "Take US-329 into the package."** `swift-architect` planned it before any code. It changed three things in my draft:
+  - vend the new target through `Samples`, not `EmbroideryEngine`, whose product should stay free of app concerns;
+  - leave `ProgramRefusal` in the app, since the library never uses it;
+  - make the move one atomic commit, so every commit builds and rename history survives.
+
+  It also named the risks the move then actually hit: nested helper types losing their implicit `@MainActor`, macOS defaults suites persisting in `~/Library/Preferences`, the real `~/Documents` reachable through a default argument, and app tests unable to link a package test-support target.
+- **What moved:** `Projects` holds the stores, `ProjectLibrary`, `LastOpenedProject` and the legacy migration, plus 96 tests in 6 suites. The three tests that drive `AppModel` stayed in the app. The counts were recorded before and after (99 = 96 + 3), and two isolation tests were added.
+  - **Isolation is now explicit**, `@MainActor` on the stores, protocols and library, keeping today's semantics exactly.
+  - **The ADR-033 probe holds:** `project.pbxproj`'s diff was byte-identical before and after.
+  - **The new isolation tests** were each mutated: a planted `import SwiftUI` split across a comment and a newline, and an extra manifest dependency. Both went red.
+  - **CI's `dump-package` step** now pins `Projects`' evaluated dependencies and the `Samples` product. A doctored manifest made it fail.
+- **The speed result, which was the point.** 7 mutants on the moved code, one per area, were all killed at **about 2.4 s each** under `swift test`. The baseline run took 4.5 s. The app runner took 60–110 s per mutant on a simulator, or about 25–45 times as long.
+- **A test-hygiene catch on macOS:** the first package run left 24 defaults plists in `~/Library/Preferences`, one per disposable suite, because a test has no end at which to delete its own. The first `disposable()` call in a process now sweeps earlier processes' suites. The name carries the PID, so concurrent runs, such as parallel mutation workers, never delete each other's live defaults.
