@@ -6,7 +6,7 @@ import ProgramModel
 ///
 /// The strings live in this target's own resource bundle rather than in the app
 /// (US-301). That keeps the samples self-describing — anything linking the
-/// `Samples` product gets real text, including M5's project creation — and it is
+/// `Samples` product gets real text — and it is
 /// what lets this package *test* that they resolve, which a bare key handed to a
 /// catalog somewhere else cannot.
 public struct SampleProgram: Sendable, Hashable, Identifiable {
@@ -73,8 +73,8 @@ public struct SampleProgram: Sendable, Hashable, Identifiable {
     /// for (US-304). The file exists so US-301's round-trip test can prove the
     /// encoding still matches the builder, so US-404's tests can prove the
     /// program document (`ProgramDocument.decode`) opens these exact bytes, and
-    /// so M5 can copy it into Documents to create a real project instead of
-    /// re-deriving ADR-003's format.
+    /// as the checked-in record of each sample's encoding. *(M5 creates projects
+    /// from the builder's value, not from this file, ADR-050.)*
     ///
     /// Optional rather than force-unwrapped: a missing resource is a build
     /// misconfiguration, and this package does not trap on states a caller could
