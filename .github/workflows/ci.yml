@@ -22,11 +22,14 @@ concurrency:
 
 jobs:
   # Whether this run needs the macOS jobs at all. A pull request whose **whole** diff against
-  # its base touches only documentation (`docs/`, Markdown) cannot change a build or a test, so
+  # its base touches only documentation cannot change a build or a test, so
   # the engine and app jobs are skipped; GitHub reports a job skipped by `if:` as a success,
   # which is exactly right here and nowhere else. The whole PR diff, not the last push: runs
   # cancel each other (the concurrency group above), so a docs-only push after a code push whose
   # run was cancelled must still test that code. A push to `main` always runs everything.
+  # "Documentation" is a place, not a file type: `docs/` and the Markdown files at the
+  # repository root. A `.md` file anywhere else may be a resource a test reads (Codex, PR #78
+  # round 2), so it counts as code.
   changes:
     name: Changes
     runs-on: ubuntu-latest
@@ -45,7 +48,7 @@ jobs:
           # `--no-renames`: with rename detection a moved file shows only its new path, so a
           # source file moved into docs/ would read as documentation (Codex, PR #78 round 1).
           changed=$(git diff --no-renames --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
-          code=$(printf '%s\n' "$changed" | grep -vE '^docs/|\.md$' | grep -c . || true)
+          code=$(printf '%s\n' "$changed" | grep -vE '^docs/|^[^/]+\.md$' | grep -c . || true)
           echo "code=$([ "$code" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "$code non-documentation file(s) changed in this pull request"
 
