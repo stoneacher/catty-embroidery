@@ -10,9 +10,10 @@ public enum DocumentInspection: Equatable, Sendable {
 }
 
 public extension ProgramDocument {
-    /// `data` read without throwing: `.openable` exactly when `decode` succeeds, otherwise
-    /// `decode`'s own reason. The name comes from a probe that ignores every other key, so a
-    /// newer format or a malformed body still shows the name its author gave it.
+    /// Reads `data` without throwing: `.openable` exactly when `decode` succeeds, otherwise
+    /// `decode`'s own reason (never `.encodingFailed`, which only `encode` throws). The name
+    /// comes from a probe that ignores every other key, so a newer format or a malformed body
+    /// still shows the name its author gave it — verbatim and unvalidated, possibly empty.
     static func inspect(_ data: Data) -> DocumentInspection {
         do {
             return try .openable(decode(data))
@@ -20,8 +21,8 @@ public extension ProgramDocument {
             return .refused(error, name: try? JSONDecoder().decode(NameProbe.self, from: data).name)
         }
     }
-}
 
-private struct NameProbe: Decodable {
-    let name: String
+    private struct NameProbe: Decodable {
+        let name: String
+    }
 }

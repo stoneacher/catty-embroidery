@@ -3707,3 +3707,18 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **The rename exception had no mechanism.** The change callback is untyped today, so the rule now rests on the before and after values, with the undo/redo sequences named.
 - **What a brief review is for, measured:** each High is a data-loss or resurrection path that slice tests written from the original brief would not have contained, because the tests encode the brief. This is ADR-041's reason for a pre-test round on new behaviour, now with a concrete count.
 
+
+## 2026-10-26 — M5 slice 2: reviewer and Codex on `inspect` and `differsOnlyInName`
+
+- **Slice 2** (`0860c03`) adds `ProgramDocument.inspect`, a non-throwing read that keeps a refused file's name, and `Program.differsOnlyInName`, the rename-only rule from brief D8. Red was a compile failure. 7 author mutants were all killed.
+- **`swift-code-reviewer` (worktree), highest severity Important:** it ran 8 mutants of its own; 3 survived.
+  - A case-only rename ("Star" → "star") was not pinned. Slice 1's uniquing folds case, so reusing that comparison here would plausibly void a run on a rename.
+  - The refused name's exact value was undecided: empty and padded names survived trimming and empty-to-nil mutants. Decided: the name is kept verbatim, and the list owns one fallback for an empty name.
+  - It also answered the author's NaN question: `Program.==` is NaN-reflexive by design (`isSameValue`), so a NaN cannot make a pure rename look like content.
+- **Codex, one round, highest severity Medium:** it found the one *semantic* defect. `Program.==` treats `-0.0` and `0.0` as equal, but `arctan2(-0, -1)` is -180 while `arctan2(+0, -1)` is 180, so `==` could call a change rename-only while the run would differ.
+  - The fix compares the encoded documents with the names equalised. It runs only when the names differ, and an encode failure counts as content, the safe direction.
+  - The signed-zero witness went red before the fix.
+  - Also from Codex: test both directions, since undo and redo travel opposite ways.
+  - Deferred (Low): a refused file is parsed three times per list scan. Refused files are rare.
+- **The two reviewers complemented each other again.** The reviewer's executable mutants found test gaps; Codex's semantic reading found the one equality hole. Neither found what the other did. Six follow-up mutants were all killed.
+- **Process slip:** the slice commit carried a co-author trailer, against the repo's convention. A force-push to drop it was denied by the auto-mode classifier, so it stays on the pushed commit for Sebastian to decide.
