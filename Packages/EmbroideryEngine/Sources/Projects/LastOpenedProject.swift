@@ -9,7 +9,7 @@ import Foundation
 @MainActor
 public final class LastOpenedProject {
     /// The defaults key. Its value is the ID's UUID string.
-    public static let key = "lastOpenedProjectID"
+    static let key = "lastOpenedProjectID"
 
     private let defaults: UserDefaults
 

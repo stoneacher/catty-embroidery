@@ -9,22 +9,12 @@ import ProgramModel
 public struct OpenedProject: Equatable, Sendable {
     public let id: ProjectID
     public let program: Program
-
-    public init(id: ProjectID, program: Program) {
-        self.id = id
-        self.program = program
-    }
 }
 
 /// A launch candidate whose file was refused.
 public struct ProjectRefusal: Equatable, Sendable {
     public let id: ProjectID
     public let reason: ProgramLoadError
-
-    public init(id: ProjectID, reason: ProgramLoadError) {
-        self.id = id
-        self.reason = reason
-    }
 }
 
 /// What a window opens on (brief D6): a project, or nothing — the window then starts a draft
@@ -32,11 +22,6 @@ public struct ProjectRefusal: Equatable, Sendable {
 public struct LaunchResolution: Equatable, Sendable {
     public let opened: OpenedProject?
     public let refusals: [ProjectRefusal]
-
-    public init(opened: OpenedProject?, refusals: [ProjectRefusal]) {
-        self.opened = opened
-        self.refusals = refusals
-    }
 }
 
 /// What opening a project found.

@@ -3846,3 +3846,18 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **CI's `dump-package` step** now pins `Projects`' evaluated dependencies and the `Samples` product. A doctored manifest made it fail.
 - **The speed result, which was the point.** 7 mutants on the moved code, one per area, were all killed at **about 2.4 s each** under `swift test`. The baseline run took 4.5 s. The app runner took 60–110 s per mutant on a simulator, or about 25–45 times as long.
 - **A test-hygiene catch on macOS:** the first package run left 24 defaults plists in `~/Library/Preferences`, one per disposable suite, because a test has no end at which to delete its own. The first `disposable()` call in a process now sweeps earlier processes' suites. The name carries the PID, so concurrent runs, such as parallel mutation workers, never delete each other's live defaults.
+
+## 2026-10-26 — US-329 review: a refactor with nothing to fix, and five things to tighten
+
+- **`swift-code-reviewer` on the move found no behaviour change, and nothing at Important level.** Evidence:
+  - It counted tests *and* assertions per file before and after: 99 tests with 248 assertions became 96 + 3 with the same assertions, and the 3 moved tests' 11 assertions are identical in the app.
+  - It diffed every moved source with rename detection: only access, isolation, `Sendable` and initializers changed.
+  - It ran its own 8 mutants under `swift test`, all killed in seconds, and the Release device compile.
+  - It exercised the CI pin with a manifest mutation the text pin cannot see.
+- **Its five suggestions, all taken:**
+  - No default `.documentsDirectory` on either store, because a forgotten argument in a macOS package test would write to the developer's real Documents. The app passes the directory explicitly.
+  - API the app does not use is internal again, so the app cannot forge launch results.
+  - Two stray `public`s in a private struct from the bulk edit are gone.
+  - A doc comment that sat on `modified(_:)` but described `delete(_:)` is moved. It was my own slip in PR #78's round 1, when `modified` was inserted between a comment and its function.
+  - The isolation scan is an **allowlist** of imports rather than a denylist. `import Combine` now fails, and it, a split `import SwiftUI` and an `@_exported import struct SwiftUI.Color` were each mutated red.
+- **Mutation speed held up in the reviewer's hands too:** "each mutant run took a few seconds", against the 60–110 s app baseline.

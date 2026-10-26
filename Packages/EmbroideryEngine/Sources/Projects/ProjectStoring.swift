@@ -79,9 +79,10 @@ public protocol ProjectStoring {
 public final class DocumentsProjectStore: ProjectStoring {
     private let directory: URL
 
-    /// The root is injectable so a test can point it somewhere disposable; the projects live
-    /// in its `Projects` subdirectory.
-    public init(directory: URL = .documentsDirectory) {
+    /// The projects live in the root's `Projects` subdirectory. No default root (US-329 review):
+    /// the app passes `.documentsDirectory`, and on macOS a package test that forgot to pass one
+    /// would write to the developer's real Documents.
+    public init(directory: URL) {
         self.directory = directory.appending(path: "Projects")
     }
 
@@ -92,7 +93,7 @@ public final class DocumentsProjectStore: ProjectStoring {
     /// sharing is declared). A device volume is case-sensitive, so a lowercase lookalike would
     /// be a separate file; the simulator's host volume folds case, so there it would alias
     /// this path. Neither can arise from the app.
-    public func url(for id: ProjectID) -> URL {
+    func url(for id: ProjectID) -> URL {
         directory.appending(path: "\(id.rawValue.uuidString).json")
     }
 
@@ -120,11 +121,11 @@ public final class DocumentsProjectStore: ProjectStoring {
         try data.write(to: url(for: id), options: .atomic)
     }
 
-    /// Removes whatever is at `url(for:)`; the store only ever puts a regular file there.
     public func modified(_ id: ProjectID) -> Date? {
         try? url(for: id).resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
     }
 
+    /// Removes whatever is at `url(for:)`; the store only ever puts a regular file there.
     public func delete(_ id: ProjectID) throws {
         do {
             try FileManager.default.removeItem(at: url(for: id))

@@ -41,13 +41,14 @@ public protocol ProgramStoring {
 public final class DocumentsProgramStore: ProgramStoring {
     private let directory: URL
 
-    /// The directory is injectable so a test can point it somewhere disposable.
-    public init(directory: URL = .documentsDirectory) {
+    /// No default directory (US-329 review): the app passes `.documentsDirectory`, and on macOS
+    /// a package test that forgot to pass one would write to the developer's real Documents.
+    public init(directory: URL) {
         self.directory = directory
     }
 
     /// Where the working program lives.
-    public var workingURL: URL {
+    var workingURL: URL {
         directory.appending(path: "WorkingProgram.json")
     }
 

@@ -393,6 +393,6 @@ public final class ProjectLibrary {
 
 private struct Registration {
     weak var owner: AnyObject?
-    public let projectID: ProjectID
-    public let draftName: String?
+    let projectID: ProjectID
+    let draftName: String?
 }

@@ -12,7 +12,11 @@ import Testing
 /// copied rather than shared. A fix to one belongs in both.
 @Suite("Projects target isolation")
 struct ProjectsTargetIsolationTests {
-    private static let forbiddenModules = ["SwiftUI", "UIKit", "AppKit", "CoreGraphics"]
+    /// An allowlist, not EditorCore's denylist (US-329 review): a module not named here — `Combine`,
+    /// `os`, `Dispatch` — fails too, so the suite checks exactly what its name claims.
+    private static let allowedModules: Set = [
+        "Foundation", "Observation", "EditorCore", "ProgramModel", "EmbroideryEngine"
+    ]
 
     private static func strippedAndNormalised(_ source: String) -> String {
         var stripped = ""
@@ -78,13 +82,21 @@ struct ProjectsTargetIsolationTests {
         for relativePath in swiftFiles {
             let file = sourceDirectory.appendingPathComponent(relativePath)
             let source = try Self.strippedAndNormalised(String(contentsOf: file, encoding: .utf8))
-            for module in Self.forbiddenModules {
-                let name = "`?\(module)`?"
-                let kind = "(?:`?[A-Za-z_][A-Za-z0-9_]*`?\\s+)?"
-                let pattern = "(?<![A-Za-z0-9_])import\\s+\(kind)\(name)(?![A-Za-z0-9_])"
+            // Every `import`: plain, `@_exported`, the kind form (`import struct X.Y`), a submodule
+            // (`import X.Y`), backticks, and `;` as the separator — the spellings EditorCore's scan
+            // learned over three Codex rounds. The module is the name before any `.`.
+            let kind = "(?:`?(?:typealias|struct|class|enum|protocol|let|var|func)`?\\s+)?"
+            let pattern = "(?<![A-Za-z0-9_])import\\s+\(kind)`?([A-Za-z_][A-Za-z0-9_]*)`?"
+            let regex = try NSRegularExpression(pattern: pattern)
+            let range = NSRange(source.startIndex..., in: source)
+            let modules = regex.matches(in: source, range: range).compactMap { match in
+                Range(match.range(at: 1), in: source).map { String(source[$0]) }
+            }
+            try #require(!modules.isEmpty, "\(relativePath) has no import, so the scan saw nothing")
+            for module in modules {
                 #expect(
-                    source.range(of: pattern, options: .regularExpression) == nil,
-                    "\(relativePath) imports \(module); Projects is Foundation-and-Observation (US-329)"
+                    Self.allowedModules.contains(module),
+                    "\(relativePath) imports \(module); Projects imports only \(Self.allowedModules.sorted()) (US-329)"
                 )
             }
         }
