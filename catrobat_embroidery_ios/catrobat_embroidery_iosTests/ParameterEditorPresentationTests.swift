@@ -15,7 +15,7 @@ import Testing
 struct ParameterEditorPresentationTests {
     private static func window() -> AppModel {
         let model = AppModel(
-            autosave: ProgramAutosave(store: InMemoryProgramStore(stored: nil)),
+            library: .inMemory(),
             runner: RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing())),
             exporter: ExportViewModel(writer: RecordingDSTFileWriter())
         )

@@ -106,3 +106,18 @@ extension ProjectID {
         ProjectID(UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", number))!)
     }
 }
+
+extension LastOpenedProject {
+    /// Over a defaults suite of its own, so no test reads or writes the app's defaults.
+    static func disposable() -> LastOpenedProject {
+        LastOpenedProject(defaults: UserDefaults(suiteName: "last-opened-\(UUID().uuidString)")!)
+    }
+}
+
+extension ProjectLibrary {
+    /// A library nothing will ever look at, for suites that need an `AppModel` and do not test
+    /// persistence.
+    static func inMemory() -> ProjectLibrary {
+        ProjectLibrary(store: InMemoryProjectStore(), lastOpened: .disposable())
+    }
+}

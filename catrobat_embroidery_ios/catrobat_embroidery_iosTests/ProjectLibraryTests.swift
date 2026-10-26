@@ -23,7 +23,7 @@ struct ProjectLibraryTests {
         _ store: InMemoryProjectStore,
         ids: SequentialProjectIDs = SequentialProjectIDs()
     ) -> ProjectLibrary {
-        ProjectLibrary(store: store, makeID: { ids.make() }, now: { createdAt })
+        ProjectLibrary(store: store, lastOpened: .disposable(), makeID: { ids.make() }, now: { createdAt })
     }
 
     static func named(_ name: String, _ program: Program = rosette) -> Program {
@@ -208,7 +208,7 @@ struct ProjectLibraryTests {
         try inDisposableDirectory { root in
             let store = DocumentsProjectStore(directory: root)
             try store.save(Self.rosette, as: Self.first)
-            let library = ProjectLibrary(store: store, makeID: { ProjectID(UUID()) }, now: { Self.createdAt })
+            let library = ProjectLibrary(store: store, lastOpened: .disposable(), now: { Self.createdAt })
 
             try library.delete(Self.first)
             let outcome = library.save(Self.coil, to: Self.first, revision: library.mintRevision())

@@ -11,7 +11,7 @@ import SwiftUI
 /// are centred; `.bar` makes it read as an extension of the top chrome, and a system material
 /// honours Reduce Transparency and Increase Contrast on its own.
 struct AutosaveBanner: View {
-    let failure: ProgramSaveFailure
+    let failure: ProjectSaveFailure
 
     var body: some View {
         VStack(spacing: 0) {
@@ -43,5 +43,5 @@ struct AutosaveBanner: View {
 }
 
 #Preview("Saving paused") {
-    AutosaveBanner(failure: .unpreservedDocument)
+    AutosaveBanner(failure: .refusedDocument)
 }

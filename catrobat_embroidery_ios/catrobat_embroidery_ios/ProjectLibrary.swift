@@ -4,47 +4,18 @@ import Foundation
 import Observation
 import ProgramModel
 
-/// What opening a project found.
-enum ProjectOpening: Equatable {
-    case opened(Program)
-    /// No file: never saved, or deleted elsewhere.
-    case missing
-    case refused(ProgramLoadError)
-}
+/// The order in which programs were produced, across every window and project.
+///
+/// Minted only by `ProjectLibrary.mintRevision()`, on the main actor, at the moment of the edit
+/// or replacement it stamps — so the order of revisions is the order the user acted in.
+/// `nonisolated` because a `Comparable` conformance on a main-actor type is itself main-actor
+/// isolated, and the comparison should not care where it runs.
+nonisolated struct SaveRevision: Comparable, Sendable {
+    fileprivate let value: Int
 
-/// Why a project is not being saved.
-enum ProjectSaveFailure: Equatable {
-    /// The last write threw.
-    case saveFailed
-    /// The project's file cannot be opened, so nothing may overwrite it (brief D11).
-    case refusedDocument
-}
-
-/// What became of one save request.
-enum ProjectSaveOutcome: Equatable {
-    case written
-    /// A newer revision of this project was already accepted; this one was dropped.
-    case superseded
-    /// The project's file was refused, and nothing may overwrite it; for a catalog rename, also
-    /// a project with no file.
-    case blocked
-    /// Another window holds the project, so the catalog may not change it (brief D7).
-    case held
-    case failed
-    /// The project was deleted; a late save must not bring the file back.
-    case deleted
-}
-
-/// Why the catalog refused to delete a project.
-enum ProjectLibraryError: Error, Equatable {
-    /// Another window holds the project (brief D7).
-    case heldByAnotherWindow
-}
-
-/// One window, as the registry knows it. Explicit rather than an object identity, so a late
-/// message from a window can be told apart from its successor's.
-struct WindowToken: Hashable, Sendable {
-    private let rawValue = UUID()
+    static func < (lhs: SaveRevision, rhs: SaveRevision) -> Bool {
+        lhs.value < rhs.value
+    }
 }
 
 /// The one guard on every project file, shared by every window (project management slice 4;
@@ -79,6 +50,7 @@ final class ProjectLibrary {
     }()
 
     private let store: any ProjectStoring
+    private let lastOpened: LastOpenedProject
     private let makeID: () -> ProjectID
     private let now: () -> Date
 
@@ -90,7 +62,7 @@ final class ProjectLibrary {
     /// Which project each window holds, and the name of the draft it holds, if any.
     private var registry: [WindowToken: Registration] = [:]
 
-    @ObservationIgnored private var revisions = RevisionCounter()
+    @ObservationIgnored private var nextRevision = 0
     /// The newest revision a save has been *accepted* for, per project — not necessarily
     /// written: a failed or blocked newer save must still stop an older one landing after it.
     @ObservationIgnored private var highestAccepted: [ProjectID: SaveRevision] = [:]
@@ -103,10 +75,12 @@ final class ProjectLibrary {
     /// on that account, and each project is still guarded when it is opened.
     init(
         store: any ProjectStoring,
+        lastOpened: LastOpenedProject,
         makeID: @escaping () -> ProjectID = { ProjectID(UUID()) },
         now: @escaping () -> Date = { .now }
     ) {
         self.store = store
+        self.lastOpened = lastOpened
         self.makeID = makeID
         self.now = now
         files = (try? store.list()) ?? []
@@ -121,7 +95,8 @@ final class ProjectLibrary {
 
     /// A revision newer than every one minted before it, for any project.
     func mintRevision() -> SaveRevision {
-        revisions.mint()
+        defer { nextRevision += 1 }
+        return SaveRevision(value: nextRevision)
     }
 
     /// A fresh ID for a draft: no file exists for it until its first save (brief D3).
@@ -196,6 +171,41 @@ final class ProjectLibrary {
             upsert(ProjectFile(id: id, inspection: .openable(loaded), modified: summary?.modified ?? now()))
         }
         return .opened(loaded)
+    }
+
+    // MARK: Launch (D6)
+
+    /// The scene's project if it opens, else the last opened one if it opens, else none. An
+    /// opened project becomes the last opened; a last-opened ID whose file is gone is cleared.
+    /// A refused candidate is reported once and skipped, and stays the last opened, since its
+    /// file is still there. A project deleted in this process is gone, whatever a stale scene
+    /// says.
+    func resolveLaunch(sceneID: ProjectID?) -> LaunchResolution {
+        var refusals: [ProjectRefusal] = []
+        let remembered = lastOpened.id
+        for candidate in [sceneID, remembered].compactMap(\.self) where !tombstones.contains(candidate) {
+            guard !refusals.contains(where: { $0.id == candidate }) else {
+                continue
+            }
+            switch open(candidate) {
+            case let .opened(program):
+                lastOpened.id = candidate
+                return LaunchResolution(opened: OpenedProject(id: candidate, program: program), refusals: refusals)
+            case let .refused(reason):
+                refusals.append(ProjectRefusal(id: candidate, reason: reason))
+            case .missing:
+                if candidate == remembered {
+                    lastOpened.id = nil
+                }
+            }
+        }
+        return LaunchResolution(opened: nil, refusals: refusals)
+    }
+
+    /// Records `id` as the project to reopen after a relaunch: on opening one, and on a
+    /// draft's first write.
+    func markOpened(_ id: ProjectID) {
+        lastOpened.id = id
     }
 
     // MARK: Catalog operations
@@ -331,6 +341,9 @@ private struct Registration {
 extension ProjectLibrary {
     /// For previews: saves into a scratch directory, never the user's Documents.
     static var preview: ProjectLibrary {
-        ProjectLibrary(store: DocumentsProjectStore(directory: .temporaryDirectory.appending(path: "preview-projects")))
+        ProjectLibrary(
+            store: DocumentsProjectStore(directory: .temporaryDirectory.appending(path: "preview-projects")),
+            lastOpened: LastOpenedProject(defaults: UserDefaults(suiteName: "preview-projects") ?? .standard)
+        )
     }
 }

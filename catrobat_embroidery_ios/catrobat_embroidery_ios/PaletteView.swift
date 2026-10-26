@@ -115,5 +115,5 @@ struct PaletteRowView: View {
 }
 
 #Preview {
-    PaletteView(model: AppModel(autosave: .preview))
+    PaletteView(model: AppModel(library: .preview))
 }

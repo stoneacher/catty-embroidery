@@ -40,7 +40,7 @@ struct AppModelTests {
     /// duplicate. Stated as a prefix rather than as equality so the claim keeps its meaning
     /// in both configurations instead of being weakened to whatever both happen to satisfy.
     @Test func thePickerOffersEverySampleInLibraryOrderAndNoneTwice() {
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         let ids = model.samples.map(\.id)
         let library = SampleLibrary.all.map(\.id)
 
@@ -67,7 +67,7 @@ struct AppModelTests {
     /// sample makes *its* program the one that runs — and so is the parameterisation.
     @Test(arguments: SampleLibrary.all)
     func selectingASamplePublishesItAndExposesItsProgram(_ sample: SampleProgram) throws {
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         #expect(model.selection?.provenance == nil, "no sample is selected before the first tap")
 
         model.select(sample)
@@ -110,7 +110,7 @@ struct AppModelTests {
     /// `select` replaced the sample, sample-identity alone would pass for a
     /// no-op, and the generation is what pins *which* of the two changed.
     @Test func reselectingTheSameSamplePublishesAgainRatherThanBeingANoOp() throws {
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         let sample = try #require(SampleLibrary.all.first)
 
         model.select(sample)
@@ -132,7 +132,7 @@ struct AppModelTests {
     /// the whole array (rather than `NavigationPath`, which exposes only `count`) is why the
     /// model stores `[StageDestination]`.
     @Test func selectingTwiceLeavesExactlyOneScriptOnThePath() throws {
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         let sample = try #require(SampleLibrary.all.first)
         model.path = [.script, .stage]
 
@@ -159,7 +159,7 @@ struct AppModelTests {
     /// than here, is the picker row staying highlighted after Back in compact —
     /// see `SamplePickerView.showsSelection`.
     @Test func poppingTheStageKeepsTheSelection() throws {
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         let sample = try #require(SampleLibrary.all.first)
         model.select(sample)
 
@@ -177,7 +177,7 @@ struct AppModelTests {
     /// on passing while saying nothing.
     @Test func onlyTheSelectedSampleReportsAsSelected() throws {
         try #require(SampleLibrary.all.count >= 2)
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         let chosen = try #require(SampleLibrary.all.first)
         let other = try #require(SampleLibrary.all.last)
 
@@ -208,7 +208,7 @@ struct AppModelTests {
     /// of milliseconds, and `squareCoil` stitches on its very first tick.
     @Test(.hangGuard)
     func selectingASampleDiscardsThePreviousRun() async throws {
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         let chosen = try #require(SampleLibrary.all.first)
 
         model.runner.play(chosen.program)
@@ -240,7 +240,7 @@ struct AppModelTests {
     /// after a horizontal size-class change (ADR-023), so on an iPad resize they would
     /// discard a zoom the user had just set.
     @Test func selectingADesignReturnsTheStageToTheFit() throws {
-        let model = AppModel(autosave: .inMemory())
+        let model = AppModel(library: .inMemory())
         let first = try #require(model.samples.first)
         let second = try #require(model.samples.dropFirst().first)
         model.select(first)

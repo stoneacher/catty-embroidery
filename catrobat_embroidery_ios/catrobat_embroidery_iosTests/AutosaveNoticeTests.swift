@@ -29,18 +29,15 @@ struct AutosaveNoticeTests {
 
     // MARK: The alert
 
-    /// The key pins which sentence each combination gets, without asserting English.
-    @Test("each reason group and outcome has its own message")
-    func eachCombinationHasItsOwnMessage() {
-        let newer = ProgramLoadError.document(.unsupportedVersion(2))
-        let tooDeep = ProgramLoadError.document(.formulaTooDeep(limit: 128))
+    /// The key pins which sentence each group gets, without asserting English. A refused
+    /// project file always stays where it is (brief D11), so every message is a "kept" one.
+    @Test("each reason group has its own message")
+    func eachGroupHasItsOwnMessage() {
         let cases: [(refusal: ProgramRefusal, key: String)] = [
-            (.init(reason: newer, preserved: true), "autosave.refusal.message.newer.kept"),
-            (.init(reason: newer, preserved: false), "autosave.refusal.message.newer.paused"),
-            (.init(reason: .document(.corrupt), preserved: true), "autosave.refusal.message.damaged.kept"),
-            (.init(reason: .unreadable, preserved: false), "autosave.refusal.message.damaged.paused"),
-            (.init(reason: tooDeep, preserved: true), "autosave.refusal.message.blocks.kept"),
-            (.init(reason: tooDeep, preserved: false), "autosave.refusal.message.blocks.paused")
+            (.init(reason: .document(.unsupportedVersion(2))), "autosave.refusal.message.newer.kept"),
+            (.init(reason: .document(.corrupt)), "autosave.refusal.message.damaged.kept"),
+            (.init(reason: .unreadable), "autosave.refusal.message.damaged.kept"),
+            (.init(reason: .document(.formulaTooDeep(limit: 128))), "autosave.refusal.message.blocks.kept")
         ]
         for (refusal, key) in cases {
             #expect(AutosaveNotice.message(for: refusal).key == key, "\(refusal)")
@@ -58,7 +55,7 @@ struct AutosaveNoticeTests {
             (.autosaveRefusalMessageBlocksKept, "autosave.refusal.message.blocks.kept"),
             (.autosaveRefusalMessageBlocksPaused, "autosave.refusal.message.blocks.paused"),
             (AutosaveNotice.banner(for: .saveFailed), "autosave.failure.save"),
-            (AutosaveNotice.banner(for: .unpreservedDocument), "autosave.failure.paused"),
+            (AutosaveNotice.banner(for: .refusedDocument), "autosave.failure.paused"),
             (.programTitleUntitled, "program.title.untitled")
         ]
         let resolved = entries.map { String(localized: $0.resource) }
@@ -81,7 +78,7 @@ struct AutosaveNoticeTests {
     @Test("the two banners have different symbols")
     func theBannerSymbolsDiffer() {
         let save = AutosaveNotice.bannerSymbol(for: .saveFailed)
-        let paused = AutosaveNotice.bannerSymbol(for: .unpreservedDocument)
+        let paused = AutosaveNotice.bannerSymbol(for: .refusedDocument)
         #expect(!save.isEmpty)
         #expect(!paused.isEmpty)
         #expect(save != paused)

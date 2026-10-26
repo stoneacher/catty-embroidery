@@ -44,34 +44,32 @@ enum AutosaveNotice {
     }
 
     /// Every message also says a blank design was opened: the alert is the only place that
-    /// does.
+    /// does. A refused project file is never moved or overwritten (brief D11), so it is always
+    /// "kept"; the three "paused" messages went with M4's set-aside.
     static func message(for refusal: ProgramRefusal) -> LocalizedStringResource {
-        switch (cause(of: refusal.reason), refusal.preserved) {
-        case (.newerApp, true): .autosaveRefusalMessageNewerKept
-        case (.newerApp, false): .autosaveRefusalMessageNewerPaused
-        case (.damaged, true): .autosaveRefusalMessageDamagedKept
-        case (.damaged, false): .autosaveRefusalMessageDamagedPaused
-        case (.blocksDontFit, true): .autosaveRefusalMessageBlocksKept
-        case (.blocksDontFit, false): .autosaveRefusalMessageBlocksPaused
+        switch cause(of: refusal.reason) {
+        case .newerApp: .autosaveRefusalMessageNewerKept
+        case .damaged: .autosaveRefusalMessageDamagedKept
+        case .blocksDontFit: .autosaveRefusalMessageBlocksKept
         }
     }
 
-    /// The paused banner explains itself because the failure is shared by every window, and a
-    /// window that never showed the alert can still show the banner.
-    static func banner(for failure: ProgramSaveFailure) -> LocalizedStringResource {
+    /// The paused banner explains itself because the failure is shared by every window holding
+    /// the project, and a window that never showed the alert can still show the banner.
+    static func banner(for failure: ProjectSaveFailure) -> LocalizedStringResource {
         switch failure {
         case .saveFailed: .autosaveFailureSave
-        case .unpreservedDocument: .autosaveFailurePaused
+        case .refusedDocument: .autosaveFailurePaused
         }
     }
 
     /// One glyph per meaning, as on the stage (`StageNotices`): neither reuses
     /// `exclamationmark.triangle` ("outside the hoop") or `stop.circle` (the stitch limit),
     /// which can be on screen at the same time.
-    static func bannerSymbol(for failure: ProgramSaveFailure) -> String {
+    static func bannerSymbol(for failure: ProjectSaveFailure) -> String {
         switch failure {
         case .saveFailed: "exclamationmark.arrow.triangle.2.circlepath"
-        case .unpreservedDocument: "pause.circle"
+        case .refusedDocument: "pause.circle"
         }
     }
 }

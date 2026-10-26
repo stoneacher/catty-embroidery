@@ -3,13 +3,26 @@ import Foundation
 import ProgramModel
 
 /// A project's identity (project management, brief D2): stable across renames, so a name is
-/// never part of a path and two projects may share one. Its stored form (scene storage, the
-/// last-opened default) is decided where it is first stored.
+/// never part of a path and two projects may share one.
 struct ProjectID: Hashable, Sendable {
     let rawValue: UUID
 
     init(_ rawValue: UUID) {
         self.rawValue = rawValue
+    }
+
+    /// The ID a stored string names, or `nil` for anything else — scene storage and the
+    /// last-opened default are read defensively (brief D6).
+    init?(uuidString: String?) {
+        guard let uuidString, let uuid = UUID(uuidString: uuidString) else {
+            return nil
+        }
+        self.init(uuid)
+    }
+
+    /// The stored form: the UUID's canonical string, as in the file name.
+    var uuidString: String {
+        rawValue.uuidString
     }
 }
 

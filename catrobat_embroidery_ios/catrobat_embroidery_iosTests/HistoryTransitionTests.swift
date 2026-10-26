@@ -29,15 +29,15 @@ struct HistoryTransitionTests {
 
     private struct Window {
         let model: AppModel
-        let store: InMemoryProgramStore
+        let store: InMemoryProjectStore
         let writer: RecordingDSTFileWriter
     }
 
     private static func window() -> Window {
-        let store = InMemoryProgramStore()
+        let store = InMemoryProjectStore()
         let writer = RecordingDSTFileWriter()
         let model = AppModel(
-            autosave: ProgramAutosave(store: store),
+            library: ProjectLibrary(store: store, lastOpened: .disposable()),
             runner: RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing())),
             exporter: ExportViewModel(writer: writer)
         )
@@ -66,7 +66,7 @@ struct HistoryTransitionTests {
         #expect(window.model.exporter.state == .idle, "a file describing the other program is still offered")
         #expect(window.writer.removeAllCount > removalsBefore)
         #expect(window.store.saves.count == savesBefore + 1)
-        #expect(window.store.saves.last == program)
+        #expect(window.store.saves.last?.program == program)
     }
 
     /// The two doors a history transition comes through (US-411): the toolbar drives the package

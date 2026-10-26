@@ -87,14 +87,6 @@ final class SetAsideFailingStore: ProgramStoring {
     }
 }
 
-extension ProgramAutosave {
-    /// An autosave nothing will ever look at, for suites that need an `AppModel` and do not
-    /// test persistence.
-    static func inMemory() -> ProgramAutosave {
-        ProgramAutosave(store: InMemoryProgramStore())
-    }
-}
-
 /// A per-test directory under the system temporary directory, removed afterwards —
 /// `TemporaryDSTFileWriterTests`' arrangement, since a fixed path would be shared mutable state
 /// under parallel execution.

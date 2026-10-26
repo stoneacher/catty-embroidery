@@ -10,14 +10,14 @@ import Testing
 /// steps after a load would let shake "undo" into a program the user has replaced.
 ///
 /// The story names three callers. Two exist: picking a sample (`select(_:)`) and the launch
-/// restore (`restoreSavedProgram()`). The third, starting a blank program, is not a replacement
+/// launch opening a saved project (`launch(sceneID:)`). The third, starting a blank program, is not a replacement
 /// in M4 — the blank program is the editor's *initial* state (ADR-045), so it is asserted as a
 /// fresh window with empty history. A user-initiated "new program" (M5) must go through `load`.
 @MainActor
 @Suite("Whole-program replacement clears both histories")
 struct LoadFunnelTests {
     private static func window() -> AppModel {
-        AppModel(autosave: ProgramAutosave(store: InMemoryProgramStore()))
+        AppModel(library: .inMemory())
     }
 
     /// Two edits and an undo, so there is history in **both** directions to clear.
@@ -55,8 +55,8 @@ struct LoadFunnelTests {
         try Self.expectEmpty(model)
     }
 
-    /// The restore runs once, before the user can edit — and every edit autosaves, so history
-    /// made through the window would be what the restore reads back. The history is therefore
+    /// The launch runs once, before the user can edit — and every edit autosaves, so history
+    /// made through the window would be what the launch reads back. The history is therefore
     /// made on the editor **before** it joins the window, where nothing listens to save it.
     @Test("restoring the saved program clears both histories")
     func restore() throws {
@@ -65,15 +65,15 @@ struct LoadFunnelTests {
         editor.apply(.renameProgram("one"))
         editor.apply(.renameProgram("two"))
         editor.undo()
-        let model = AppModel(
-            autosave: ProgramAutosave(store: InMemoryProgramStore(stored: saved)), editor: editor
-        )
+        let stored = ProjectID.fixed(1)
+        let library = ProjectLibrary(store: InMemoryProjectStore([stored: .program(saved)]), lastOpened: .disposable())
+        let model = AppModel(library: library, editor: editor)
         let manager = try #require(model.editor.systemUndoManager)
         try #require(manager.canUndo && manager.canRedo, "the premise: system history both ways")
 
-        model.restoreSavedProgram()
+        model.launch(sceneID: stored)
 
-        try #require(model.editor.program == saved, "the premise: the restore happened")
+        try #require(model.editor.program == saved, "the premise: the launch opened it")
         try Self.expectEmpty(model)
     }
 }

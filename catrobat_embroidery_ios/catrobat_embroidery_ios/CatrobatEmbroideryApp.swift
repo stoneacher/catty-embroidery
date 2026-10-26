@@ -3,14 +3,17 @@ import SwiftUI
 @main
 struct CatrobatEmbroideryApp: App {
     /// The one object here that **is** App-scoped, and the exception is the rule below applied
-    /// rather than broken: every window writes the same saved program, so the guard deciding
-    /// which write wins must see all of them (US-406, ADR-037). It holds no program and no
-    /// selection, so sharing it moves nothing one window's user can see in another.
-    @State private var autosave = ProgramAutosave(store: DocumentsProgramStore())
+    /// rather than broken: windows may write the same project files, so the guard deciding
+    /// which write wins must see all of them (ADR-037, per project since M5). It holds no
+    /// window's program or selection, so sharing it moves nothing one window's user can see in
+    /// another.
+    @State private var library = ProjectLibrary(
+        store: DocumentsProjectStore(), lastOpened: LastOpenedProject(defaults: .standard)
+    )
 
     var body: some Scene {
         WindowGroup {
-            WindowRootView(autosave: autosave)
+            WindowRootView(library: library)
         }
     }
 }
@@ -47,19 +50,23 @@ struct CatrobatEmbroideryApp: App {
 /// stage — and the argument never needed the depth claim.)
 ///
 /// **Autosave's window-level wiring lives here too, above the ADR-023 branch**, so a
-/// size-class swap can neither re-run the launch restore nor re-fire the lifecycle save, and
+/// size-class swap can neither re-run the launch nor re-fire the lifecycle save, and
 /// the banner and alert survive it (US-406).
 struct WindowRootView: View {
     /// `State(initialValue:)` evaluates its argument on every initialisation of this view and
     /// keeps only the first, which is why `AppModel.init` must stay free of side effects and
-    /// the restore happens in `onAppear`.
+    /// the launch happens in `onAppear`.
     @State private var model: AppModel
+
+    /// The project this window holds, so a relaunch reopens each window on its own design
+    /// (brief D6). Read defensively: a string that names no ID launches as if there were none.
+    @SceneStorage("projectID") private var storedProjectID: String?
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(autosave: ProgramAutosave) {
-        _model = State(initialValue: AppModel(autosave: autosave))
+    init(library: ProjectLibrary) {
+        _model = State(initialValue: AppModel(library: library))
     }
 
     var body: some View {
@@ -92,13 +99,20 @@ struct WindowRootView: View {
             message: { Text(AutosaveNotice.message(for: $0)) }
         )
         .onAppear {
-            // Without animation: on iPhone the restore pushes the stage, and the window should
+            // Without animation: on iPhone the launch pushes the stage, and the window should
             // open on it rather than animate there from the picker.
             var transaction = Transaction()
             transaction.disablesAnimations = true
             withTransaction(transaction) {
-                model.restoreSavedProgram()
+                model.launch(sceneID: ProjectID(uuidString: storedProjectID))
             }
+            storedProjectID = model.projectID.uuidString
+        }
+        .onDisappear {
+            model.close()
+        }
+        .onChange(of: model.projectID) { _, new in
+            storedProjectID = new.uuidString
         }
         .onChange(of: scenePhase) { old, _ in
             if old == .active {
@@ -114,8 +128,8 @@ struct WindowRootView: View {
     /// banner without announcing it. Not while the launch alert is up: when the refused file
     /// could not be moved, the alert's own message already says saving is paused.
     ///
-    /// **Known gap**: the failure is shared, so with two windows open both announce it.
-    private func announce(_ failure: ProgramSaveFailure?, replacing old: ProgramSaveFailure?) {
+    /// **Known gap**: the failure is per project, so two windows on one project both announce it.
+    private func announce(_ failure: ProjectSaveFailure?, replacing old: ProjectSaveFailure?) {
         guard let failure, failure != old, model.launchRefusal == nil else { return }
         AccessibilityNotification.Announcement(String(localized: AutosaveNotice.banner(for: failure)))
             .post()

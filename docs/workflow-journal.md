@@ -3743,3 +3743,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **What the author's own mutants missed:** they were drawn from the brief's red list (global `highestAccepted`, no tombstone, …), so they tested what the brief named. The reviewer's came from the code's *other* decisions: which properties are observed, which errors block, what `unblock` clears. That is the same split the slice 2 review showed, now with a count: 14 brief-derived mutants killed, 8 of 10 code-derived ones surviving.
 - **Codex, highest severity High:** the catalog could delete or rename a project another window holds. D7 had put that guard only in the UI ("disabled with a reason"); the library now enforces it too. Its second finding was that summaries went stale after a re-probe.
 - **CI:** a re-run of slice 4's flaky app job was cancelled, superseded by the next push; that run (`8233811`, which contains slice 4) was green on every job.
+
+## 2026-10-26 — M5 slice 5a: two deleted suites, and a wait loop that matched itself
+
+- **The persistence swap deleted two suites** (`ProgramAutosaveTests`, `AutosaveWiringTests`) along with `ProgramAutosave` itself. Deleting tests needs a reason in a TDD repo, and this is it: every claim in them that still holds was ported per project into `ProjectLibraryTests` (slice 4) or `ProjectWiringTests`, and one was deliberately reversed. Brief D3 makes a picked sample a draft that writes nothing, so "a picked sample survives a relaunch without a single edit" is now false by design.
+- **Mutation, 16 mutants:**
+  - 13 were killed at once.
+  - 2 survived for reasons worth recording: in both, the fixture made the mutant's wrong state coincide with the right one. A draft's first write was also its first rename, so a stale name reservation equalled the persisted name. A second launch re-read a disk that already held the edit. Both tests now break the coincidence.
+  - 1 was equivalent: a redundant unregister. The line was removed rather than tested.
+- **A tooling slip, caught by Sebastian asking what two shells were doing:** two background wait loops (`until ! pgrep -f appmut.py`) had been running for hours. Each loop's own command line contains `appmut.py`, so `pgrep` always found itself and the loops could never end. They were killed; nothing depended on them. The fix in practice is to wait on the harness's task notification rather than polling for a process by name.
+- **File length:** `AppModel.swift` passed SwiftLint's 400-line limit again. `samples`, `play()` and `commitName()` moved to extension files, the US-409 pattern. Members touching private state stayed, so no access level was loosened to make the split.
