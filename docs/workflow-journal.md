@@ -3870,3 +3870,21 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **Rejected (Medium):** a dependency that `@_exported import`s SwiftUI would slip past the source scan. That is the transitive limit `EditorCoreTargetIsolationTests` already documents as the dependency's own to guard. The total answer is the Linux engine job (US-317). The test's doc now says so.
 - **No behaviour finding:** Codex compared the moved code, the duplicated doubles, the defaults sweep and the Documents access, and found the move faithful.
 - **Round 2 (verification): no findings; the loop ends on its first condition (no code changes).** Codex confirmed both round-1 fixes, accepted the rejection, and found no hidden behaviour change, lost test claim, guard regression or ADR contradiction across the whole diff. History: Medium → none. Compare PR #78's five rounds, which never converged. That loop's Highs sat in a new gate filter, while this PR was a move with guards proved before review, which is the kind of diff Codex can close quickly.
+
+## 2026-10-27 — Project management PR 2, slice 7: the UI plan's questions, a mutant only a unit test saw, and a delegated view
+
+- **Planning (`swift-ui-design`, before any view).** The agent read the brief and the code and returned a plan with four questions for Sebastian. All four were answered the same day, each with the recommended option:
+  - the empty state sits inside "My Designs";
+  - a draft gets no row until it is written;
+  - two badges, with blocks-don't-fit counted as "Damaged";
+  - `AppModel`'s project state is extracted first.
+  - It also found two defects in existing code by reading it, and I confirmed both before routing them: `AppModel.swift` was exactly at SwiftLint's 400-line limit, and the stage field commits twice on an invalid submit (`onSubmit`, then the focus loss that Return causes). The second is slice 9's.
+- **A mutant only the new unit test caught.** In `WindowProject`, a draft that never gets its file (`hasFile` never set) left all 30 `ProjectWiringTests`/`ProjectWiringReviewTests` green and was killed only by `WindowProjectTests`. The wiring suites assert what reaches the store and the registry. The mutant still writes every save and re-registers the draft name, so nothing they observe changes until a later rename. The extraction was decided for line count; the unit tests it made possible turned out to be the only guard on that transition.
+- **A vacuous pass, caught before green.** The legacy-listing delete test passed on the unimplemented code, because deleting from an empty list leaves an empty list. It now checks the row exists first, which makes it red.
+- **A test expectation I got wrong, not the code.** I expected a refused file's row to carry the double's name ("Coil"); the library keeps the name it last read ("Square Coil"), as slice 4 designed. I corrected the test and added a comment saying why.
+- **Delegated generation against a complete spec: `swiftui-specialist` built the views.** It had the tested `ProjectListPresentation`, the string keys and a do-not-touch list.
+  - It stayed in scope: no tests, model or catalog edits, and no pbxproj. It took and returned screenshots of compact, the iPad sidebar and the empty state, ran the full suite, and kept lint clean.
+  - Two layout fixes it made only after looking at its own screenshots: an indented separator on refused rows, and the `Label` icon spacing inside a list row.
+  - It flagged three things instead of fixing them: two stale comments in files it was told not to touch (I fixed them), the empty state's "Tap +" naming a button slice 8 adds, and that the runtime snapshot cannot show a non-interactive row's VoiceOver sentence (that goes to the pre-beta pass).
+  - One choice was better than the spec: whether a row is a button is decided by `row.actions.contains(.open)` rather than `badge != nil`, so the view uses the rule the tested mutant targets.
+- **Mutants:** 11, all killed. The "empty state beside samples" mutant from the brief cannot be written, because `content(files:…)` never sees the samples. The design removed it rather than a test killing it.
