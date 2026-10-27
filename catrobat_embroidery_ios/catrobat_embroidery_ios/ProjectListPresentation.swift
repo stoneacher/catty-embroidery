@@ -100,7 +100,9 @@ enum ProjectListPresentation {
         let formatter = RelativeDateTimeFormatter()
         formatter.locale = locale
         formatter.dateTimeStyle = .named
-        return formatter.localizedString(for: modified, relativeTo: now)
+        // `now` ticks once a minute, so a file saved since the last tick is newer than it: it was
+        // edited just now, not "in 21 seconds" (`swiftui-specialist`, slice 9).
+        return formatter.localizedString(for: min(modified, now), relativeTo: now)
     }
 
     /// One sentence per row, one whole catalog entry per kind, so a translator can make the

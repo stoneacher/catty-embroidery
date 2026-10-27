@@ -195,6 +195,16 @@ struct ProjectListPresentationTests {
         #expect(text == "1 hour ago")
     }
 
+    /// The list reads `now` once a minute (`TimelineView(.everyMinute)`), so a file saved since
+    /// the last tick is newer than `now`; it was edited just now, not "in 21 seconds".
+    @Test("a file saved after the clock last ticked reads as edited now, not in the future")
+    func aNewerFileIsNotInTheFuture() {
+        let text = ProjectListPresentation.dateText(Self.now + 21, now: Self.now, locale: Self.english)
+
+        #expect(text == ProjectListPresentation.dateText(Self.now, now: Self.now, locale: Self.english))
+        #expect(!text.contains("in "))
+    }
+
     @Test("the accessibility label is one sentence: the name, then when it was edited")
     func openableAccessibilityLabel() throws {
         let row = try #require(Self.rows(ProjectListPresentation.content(
