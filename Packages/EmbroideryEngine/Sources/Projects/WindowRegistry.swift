@@ -12,7 +12,7 @@ struct WindowRegistry {
     /// re-registers with `nil` once its draft has a file. Dead entries are pruned here, which
     /// is also when observers hear of them.
     mutating func register(_ window: WindowToken, owner: AnyObject, holding id: ProjectID, draftName: String?) {
-        entries = entries.filter { $0.value.owner != nil }
+        pruneDead()
         entries[window] = Registration(owner: owner, projectID: id, draftName: draftName)
     }
 
@@ -23,6 +23,15 @@ struct WindowRegistry {
             return
         }
         entries[window] = nil
+    }
+
+    /// Whether any entry's window has gone without unregistering.
+    var hasDeadEntries: Bool {
+        entries.values.contains { $0.owner == nil }
+    }
+
+    mutating func pruneDead() {
+        entries = entries.filter { $0.value.owner != nil }
     }
 
     /// The live windows holding `id`.

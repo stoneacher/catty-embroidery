@@ -355,6 +355,12 @@ public final class ProjectLibrary {
         registry.unregister(window, from: id)
     }
 
+    /// Drops windows gone without unregistering, so open ones hear of it now (slice 8). Writes
+    /// only if one is dead: every registry write notifies all observers of who holds what.
+    public func pruneDeadRegistrations() {
+        if registry.hasDeadEntries { registry.pruneDead() }
+    }
+
     /// The live windows holding `id`.
     public func holders(of id: ProjectID) -> Set<WindowToken> {
         registry.holders(of: id)
