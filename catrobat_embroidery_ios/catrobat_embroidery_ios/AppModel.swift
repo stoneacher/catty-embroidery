@@ -288,6 +288,11 @@ final class AppModel {
                 palette.isPresented = false
                 editor.endParameterEdit()
             }
+            // Leaving the stage is the name field's focus loss (D8, decided 2026-10-27): here, not
+            // in `onDisappear`, which also fires on the ADR-023 container swap.
+            if oldValue.contains(.stage), !path.contains(.stage) {
+                nameFieldLostFocus()
+            }
         }
     }
 

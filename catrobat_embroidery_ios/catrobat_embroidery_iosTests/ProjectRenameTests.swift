@@ -228,4 +228,43 @@ struct ProjectRenameTests {
 
         #expect(model.editor.program.name == "Rosette")
     }
+
+    // MARK: Leaving the stage (decided 2026-10-27)
+
+    @Test("leaving the stage with an invalid draft returns the field to the committed name")
+    func leavingTheStageReverts() {
+        let app = Self.twoProjects()
+        let model = app.window()
+        model.path = [.script, .stage]
+        model.nameDraft = "Far too long a name"
+        #expect(!model.submitName())
+
+        model.path = [.script]
+
+        #expect(model.nameDraft == Self.rosette.name)
+        #expect(model.editor.program == Self.rosette)
+    }
+
+    @Test("leaving the stage with a valid draft commits it")
+    func leavingTheStageCommits() {
+        let app = Self.twoProjects()
+        let model = app.window()
+        model.path = [.script, .stage]
+        model.nameDraft = "Rosette"
+
+        model.path = []
+
+        #expect(model.editor.program.name == "Rosette")
+    }
+
+    @Test("going to the stage, or moving elsewhere without leaving it, leaves the draft alone")
+    func otherPathChangesKeepTheDraft() {
+        let app = Self.twoProjects()
+        let model = app.window()
+        model.nameDraft = "Far too long a name"
+
+        model.path = [.script, .stage]
+
+        #expect(model.nameDraft == "Far too long a name")
+    }
 }
