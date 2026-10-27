@@ -121,7 +121,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         // the notices scroll, and **both** pinned action rows never shrink. US-308 added the
         // second row; the sentence above used to say "the transport button", singular.
         VStack(spacing: 12) {
-            canvasSlot
+            canvasSlot.simultaneousGesture(tapOutOfName)
             notices
             // Above the transport row, not below it: the transport button is this screen's
             // primary action and stays nearest the thumb. `.bordered` against its
@@ -143,6 +143,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
                 onPlay: onPlay,
                 onStop: onStop
             )
+            .simultaneousGesture(tapOutOfName)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -330,6 +331,13 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             refocusesAfterRejectedSubmit = false
             isNameFocused = true
         }
+    }
+
+    /// A tap on the canvas or the transport row drops the name's focus, giving D8's focus-loss
+    /// commit-or-revert a tap path on iPhone (Sebastian, 2026-10-27). Simultaneous, so the
+    /// canvas's recognisers and the button still take the same tap; a no-op when unfocused.
+    private var tapOutOfName: some Gesture {
+        TapGesture().onEnded { isNameFocused = false }
     }
 
     /// A rejected Return keeps the text, the error and focus (D8). The flag is armed before
