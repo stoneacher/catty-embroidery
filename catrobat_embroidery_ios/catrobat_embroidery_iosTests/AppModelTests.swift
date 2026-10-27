@@ -160,7 +160,7 @@ struct AppModelTests {
     /// compact and then widening to regular shows that design in the detail
     /// column again. What is *not* intended, and is handled in the view rather
     /// than here, is the picker row staying highlighted after Back in compact —
-    /// see `SamplePickerView.showsSelection`.
+    /// see `ProjectListView.showsSelection`.
     @Test func poppingTheStageKeepsTheSelection() throws {
         let model = AppModel(library: .inMemory())
         let sample = try #require(SampleLibrary.all.first)

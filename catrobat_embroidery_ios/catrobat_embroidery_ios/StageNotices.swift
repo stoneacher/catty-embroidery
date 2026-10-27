@@ -158,7 +158,7 @@ struct StageNotices<NameField: View>: View {
     /// error line are content, not chrome, and at reduced contrast they are the two things a
     /// user needs most. `.multilineTextAlignment(.center)` is likewise a caption style — a
     /// wrapped label above a left-aligned field would centre itself over it. `.leading`
-    /// rather than `.trailing` because it mirrors in RTL, the argument `SamplePickerView`
+    /// rather than `.trailing` because it mirrors in RTL, the argument `SampleRowView`
     /// already makes.
     private var nameFieldBlock: some View {
         nameField()

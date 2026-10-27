@@ -156,7 +156,7 @@ struct DesignNameField: View {
         .foregroundStyle(.red)
         .multilineTextAlignment(.leading)
         // Wraps rather than ellipsising under a height-constrained proposal — the guard
-        // `SamplePickerView`'s rows and the stage's notice block both needed.
+        // `SampleRowView` and the stage's notice block both needed.
         .fixedSize(horizontal: false, vertical: true)
     }
 }

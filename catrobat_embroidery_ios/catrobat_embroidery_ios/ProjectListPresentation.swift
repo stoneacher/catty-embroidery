@@ -67,7 +67,7 @@ enum ProjectListContent: Equatable {
 enum ProjectListPresentation {
     /// Newest first; files modified at the same moment by ID, so the order never depends on
     /// the directory scan. `showsSelection` is the container's: only the split view's sidebar
-    /// shows one (`SamplePickerView.showsSelection` set that precedent).
+    /// shows one (`ProjectListView.showsSelection`).
     static func content(files: [ProjectFile], openID: ProjectID, showsSelection: Bool) -> ProjectListContent {
         guard !files.isEmpty else { return .empty }
         let sorted = files.sorted {

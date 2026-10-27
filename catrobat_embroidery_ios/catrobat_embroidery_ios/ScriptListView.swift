@@ -40,7 +40,7 @@ import SwiftUI
 /// and the selection's title alone. `RootView`'s own body reads the run — once per batch while
 /// a design stitches — and a value parameter would hand this view a fresh copy each time.
 struct ScriptListView: View {
-    /// Where the list sits, decided by the container — the `SamplePickerView.showsSelection`
+    /// Where the list sits, decided by the container — the `ProjectListView.showsSelection`
     /// pattern; this view never reads the size class.
     enum Placement {
         /// Compact: the list is the screen a selection opens, titled with the design's name, and
