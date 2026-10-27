@@ -32,10 +32,8 @@ public struct SaveRevision: Comparable, Sendable {
 /// process, so a late save from a window that still held it cannot recreate the file.
 ///
 /// The summaries in `files` are kept in step with every write, delete and re-probe here, so
-/// the list never rescans the disk after launch: this process is the files' only writer.
-///
-/// `files`, the failures and the registry are observed — windows show the list, their banner
-/// and "held by another window" from them; the guard state is bookkeeping and is not.
+/// the list never rescans the disk after launch. `files`, the failures and the registry are
+/// observed (the list, the banner, "held by another window"); the guard state is not.
 @MainActor
 @Observable
 public final class ProjectLibrary {
@@ -73,6 +71,7 @@ public final class ProjectLibrary {
     @ObservationIgnored private var tombstones: Set<ProjectID> = []
     /// Whether this process has tried the legacy migration: several windows make one attempt.
     @ObservationIgnored private var hasMigrated = false
+    @ObservationIgnored private var legacyListedAlone = false // A refused legacy row, no project file.
 
     /// Lists the projects once. A listing that fails leaves the list empty; nothing is written
     /// on that account, and each project is still guarded when it is opened.
@@ -228,6 +227,7 @@ public final class ProjectLibrary {
         let id = ProjectID.legacyWorkingProgram
         guard !files.contains(where: { $0.id == id }) else { return }
         block(id)
+        legacyListedAlone = true
         files.append(ProjectFile(id: id, inspection: .refused(error.documentReason, name: nil), modified: now()))
     }
 
@@ -276,11 +276,12 @@ public final class ProjectLibrary {
         guard holders(of: id).subtracting([window].compactMap(\.self)).isEmpty else {
             throw ProjectLibraryError.heldByAnotherWindow
         }
-        // First: a leftover would migrate it back next launch (slice 6); it only copies a project.
         if id == .legacyWorkingProgram {
-            try legacy?.remove()
+            try legacy?.remove() // First: a leftover would migrate back next launch (slice 6).
         }
-        try store.delete(id)
+        if !(id == .legacyWorkingProgram && legacyListedAlone) { // Alone: no project file to delete.
+            try store.delete(id)
+        }
         tombstones.insert(id)
         // The tombstone makes launch skip this ID before it could find it missing and clear it
         // (Codex, slice 5), so the delete clears it.
@@ -356,9 +357,8 @@ public final class ProjectLibrary {
     /// Drops windows gone without unregistering, so open ones hear of it now (D7). Writes
     /// only if one is dead: every registry write notifies all observers of who holds what.
     public func pruneDeadRegistrations() {
-        if registry.hasDeadEntries {
-            registry.pruneDead()
-        }
+        guard registry.hasDeadEntries else { return }
+        registry.pruneDead()
     }
 
     /// The live windows holding `id`.

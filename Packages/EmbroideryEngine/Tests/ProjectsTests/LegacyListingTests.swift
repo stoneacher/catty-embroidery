@@ -88,4 +88,34 @@ struct LegacyListingTests {
         #expect(library.files.map(\.inspection) == [.openable(LegacyMigrationTests.coil)])
         #expect(library.failure(for: Self.migrated) == nil)
     }
+
+    /// The listed row is the legacy file alone: no project file stands behind it, so its delete
+    /// must not depend on the project store, whose failure would otherwise be reported after the
+    /// legacy file was already gone (D9; Codex, PR 2 round 1).
+    @Test("deleting the listed legacy file does not depend on the project store")
+    func deletingTheRowNeedsOnlyTheLegacyFile() throws {
+        let launch = Launch(legacy: Self.refusedLegacy(.document(.corrupt)))
+        let library = Self.library(over: launch)
+        library.migrateLegacyIfNeeded(defaultName: LegacyMigrationTests.defaultName)
+        launch.projects.failsDeletes = true
+
+        try library.delete(Self.migrated)
+
+        #expect(library.files.isEmpty)
+        #expect(launch.legacy.removeCount == 1)
+        #expect(launch.projects.deletes.isEmpty)
+    }
+
+    @Test("a legacy file that cannot be removed leaves its row, its block and its file")
+    func aFailedLegacyRemovalChangesNothing() {
+        let launch = Launch(legacy: Self.refusedLegacy(.document(.corrupt)))
+        let library = Self.library(over: launch)
+        library.migrateLegacyIfNeeded(defaultName: LegacyMigrationTests.defaultName)
+        launch.legacy.failsRemove = true
+
+        #expect(throws: (any Error).self) { try library.delete(Self.migrated) }
+
+        #expect(library.files.map(\.id) == [Self.migrated])
+        #expect(library.failure(for: Self.migrated) == .refusedDocument)
+    }
 }
