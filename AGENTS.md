@@ -21,7 +21,7 @@ A standalone native iOS app bringing Catrobat's embroidery functionality (the An
 ## Stack & standards
 
 - Swift 6 (strict concurrency), SwiftUI, min iOS 17, universal (iPhone-first). App layer: `@Observable` MVVM on `@MainActor`, no architecture frameworks (ADR-006).
-- Engine lives in `Packages/EmbroideryEngine` — platform-independent, synchronous, `Sendable` value types, no I/O; test with `swift test` run inside the package directory (no simulator needed).
+- Engine lives in `Packages/EmbroideryEngine` — platform-independent, synchronous, `Sendable` value types, no I/O; test with `swift test` run inside the package directory (no simulator needed). The one exception is the `Projects` target (US-329, ADR-042): project-file I/O and `ProjectLibrary`, main-actor isolated, moved out of the app so its tests run under `swift test` too.
 - **Swift Testing only** (`@Test`/`#expect`/`#require`), never XCTest. Tests run in parallel: no shared mutable state or fixed file paths; fixtures via `Bundle.module`.
 - Format Swift with SwiftFormat using the repo's `.swiftformat` config.
 

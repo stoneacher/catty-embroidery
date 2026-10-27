@@ -1,6 +1,7 @@
 @testable import catrobat_embroidery_ios
 import EditorCore
 import ProgramModel
+import Projects
 import Samples
 import StagePreview
 import Testing

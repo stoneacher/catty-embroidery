@@ -1,4 +1,4 @@
-@testable import catrobat_embroidery_ios
+@testable import Projects
 import EditorCore
 import Foundation
 import ProgramModel

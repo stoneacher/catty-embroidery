@@ -1,3 +1,5 @@
+import Projects
+
 /// The window's project, as other code reads it (project management slice 5).
 ///
 /// Moved out of `AppModel.swift`, which is at SwiftLint's length limit; neither member writes

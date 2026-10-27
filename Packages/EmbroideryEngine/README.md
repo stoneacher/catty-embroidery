@@ -9,12 +9,12 @@ A platform-independent Swift package architecture for embroidery-focused block p
 | **EmbroideryEngine** | Stitch generation, pattern management, DST serialization. No I/O, no dependencies, strict concurrency. | — |
 | **ProgramModel** | Pure value graph (Program/Scene/Object/Script/Brick/Formula), plus the `EditorCore` editing vocabulary (ADR-033). No engine types. | Foundation |
 | **Interpreter** | Maps `Program` onto engine; executes bricks tick-by-tick; collects stitches. | ProgramModel, EmbroideryEngine |
-| **Samples** | Bundled example programs for learning (octagon rosette, square coil, arc flower, sunburst). | ProgramModel |
+| **Samples** | Bundled example programs for learning (octagon rosette, square coil, arc flower, sunburst); also vends the **`Projects`** target (US-329, ADR-050): project files, `ProjectLibrary`, last opened, legacy migration. `Projects` does file I/O and is main-actor isolated, unlike the rest of the package. | ProgramModel (`Projects`: EditorCore, ProgramModel, EmbroideryEngine) |
 | **StagePreview** | Display lists, zoom/pan math, run driver for live preview. Foundation-only. | Interpreter, EmbroideryEngine |
 
 The dependency DAG is a straight line inward (ADR-016): `ProgramModel` is platform-independent and editor-safe; `Interpreter` is the only place model and engine meet; `Samples` depends on `ProgramModel` only; `StagePreview` depends on `Interpreter`.
 
-EmbroideryEngine powers the embroidery functionality of the Catrobat iOS app, porting the byte-level semantics of Catroid's `org.catrobat.catroid.embroidery` module while maintaining compatibility with the Catty reference fixtures. It is deliberately synchronous, uses only Sendable value types, and runs Swift 6 strict concurrency—the app layer controls async boundaries and actor placement.
+EmbroideryEngine powers the embroidery functionality of the Catrobat iOS app, porting the byte-level semantics of Catroid's `org.catrobat.catroid.embroidery` module while maintaining compatibility with the Catty reference fixtures. It is deliberately synchronous, uses only Sendable value types, and runs Swift 6 strict concurrency—the app layer controls async boundaries and actor placement. The one exception is the `Projects` target (US-329): its stores and `ProjectLibrary` are main-actor-isolated reference types that do file I/O.
 
 ## Typical Workflow
 

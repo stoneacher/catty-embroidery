@@ -1,4 +1,4 @@
-@testable import catrobat_embroidery_ios
+@testable import Projects
 import EditorCore
 import EmbroideryEngine
 import Foundation
@@ -19,6 +19,7 @@ struct LegacyMigrationTests {
     static let defaultName = ProjectLibrary.fallbackName
 
     /// One launch: the legacy file, the project store and the last-opened default.
+    @MainActor
     struct Launch {
         let legacy: InMemoryProgramStore
         let projects: InMemoryProjectStore
@@ -231,31 +232,5 @@ struct LegacyMigrationTests {
         launch.migrate()
 
         #expect(launch.legacy.loadCount == 1)
-    }
-
-    // MARK: Through a window
-
-    @Test("a window launched over a legacy file opens the migrated project")
-    func aWindowOpensTheMigratedProject() {
-        let launch = Launch(legacy: InMemoryProgramStore(stored: Self.rosette))
-        let model = AppModel(library: launch.library)
-
-        model.launch(sceneID: nil)
-
-        #expect(model.projectID == Self.migrated)
-        #expect(model.editor.program == Self.rosette)
-        #expect(launch.projects.saves.count == 1, "the migration's write, and nothing else")
-    }
-
-    @Test("a window launched over a refused legacy file says so, and opens a draft")
-    func aWindowReportsARefusedLegacyFile() throws {
-        let legacy = InMemoryProgramStore()
-        legacy.loadError = .document(.corrupt)
-        let model = AppModel(library: Launch(legacy: legacy).library)
-
-        model.launch(sceneID: nil)
-
-        #expect(try #require(model.launchRefusal).reason == .document(.corrupt))
-        #expect(model.projectID != Self.migrated)
     }
 }

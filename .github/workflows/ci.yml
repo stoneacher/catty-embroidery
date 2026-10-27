@@ -45,7 +45,7 @@ jobs:
       #
       # ADR-023's division: EditorCoreTargetIsolationTests' textual pin is the
       # fast local convenience, this required status check is the enforcement.
-      - name: Pin EditorCore's evaluated dependencies (ADR-033)
+      - name: Pin EditorCore's and Projects' evaluated dependencies (ADR-033, US-329)
         run: |
           swift package --package-path Packages/EmbroideryEngine dump-package > /tmp/package.json
           python3 - <<'CHECK'
@@ -83,6 +83,24 @@ jobs:
               failures.append(f"EditorCore depends on {sorted(deps)}, expected ['ProgramModel'] (ADR-033)")
           if vended != {"ProgramModel", "EditorCore"}:
               failures.append(f"ProgramModel product vends {sorted(vended)}, expected both targets (ADR-033)")
+
+          # US-329: Projects depends on exactly these three local targets, and is vended
+          # through the Samples product beside Samples, so the app reaches it with no
+          # pbxproj change.
+          projects = next(t for t in manifest["targets"] if t["name"] == "Projects")
+          deps, foreign = local_dependency_names(projects["dependencies"])
+          samples = next(p for p in manifest["products"] if p["name"] == "Samples")
+          if foreign:
+              failures.append(f"Projects has non-local dependencies {sorted(foreign)} (US-329)")
+          if deps != {"EditorCore", "ProgramModel", "EmbroideryEngine"}:
+              failures.append(f"Projects depends on {sorted(deps)}, expected ['EditorCore', 'EmbroideryEngine', 'ProgramModel'] (US-329)")
+          if set(samples["targets"]) != {"Samples", "Projects"}:
+              failures.append(f"Samples product vends {sorted(samples['targets'])}, expected ['Projects', 'Samples'] (US-329)")
+          # Through Samples *only*: the EmbroideryEngine product stays free of app concerns
+          # (ADR-042), so no other product may vend Projects (Codex, PR #79 round 1).
+          vending = sorted(p["name"] for p in manifest["products"] if "Projects" in p["targets"])
+          if vending != ["Samples"]:
+              failures.append(f"Projects is vended by {vending}, expected ['Samples'] only (US-329)")
 
           for failure in failures:
               print(f"::error::{failure}")

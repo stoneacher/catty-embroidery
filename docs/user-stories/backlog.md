@@ -334,6 +334,8 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 
 ## US-329 — Project logic lives in the app target, where every test needs a simulator
 
+*Taken 2026-10-26 (Sebastian: "Take US-329 into the package"), branch `feature/project-store-package`: the `Projects` target, vended through `Samples` (ADR-042 and ADR-050 amendments). 96 tests moved, 3 stayed with `AppModel`; mutants went from 60–110 s to about 2.4 s each.*
+
 **Found**: 2026-10-26, Project management PR 1, while measuring why slices took so long. App-target mutation runs cost 60–110 s per mutant (an incremental app build plus a simulator run), so a slice's 10–16 mutants took 15–25 min; engine mutants take seconds under `swift test`.
 - `ProjectLibrary`, `DocumentsProjectStore`, `LastOpenedProject` and the legacy migration import no UIKit or SwiftUI. In a package target they would be tested and mutated with `swift test`.
 - **What taking it would involve:** a target in `Packages/EmbroideryEngine` (ADR-042's layout), vended through an existing product the way `EditorCore` is (ADR-033), so the app needs no `pbxproj` change; the app keeps the `AppModel` wiring and the views. `ProgramLoadError` and `ProgramStoring` would move with it.
