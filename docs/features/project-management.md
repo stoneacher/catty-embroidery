@@ -1,6 +1,6 @@
 # Project management
 
-**Status**: In progress — PR 1 (slices 0–6, PR #78) merged after the Codex loop (5 rounds, cap); US-329 (persistence into the `Projects` package target, PR #79) merged; PR 2 (slices 7–10, PR #80) green 2026-10-27, handover pending (documenter, Codex loop, manual checks) | **Epic**: E6 (M5) | **Branch**: `feature/project-management` (PR 1), `feature/project-list` (PR 2)
+**Status**: In progress — PR 1 (slices 0–6, PR #78) merged after the Codex loop (5 rounds, cap); US-329 (persistence into the `Projects` package target, PR #79) merged; PR 2 (slices 7–10, PR #80) handed over 2026-10-27 after the Codex loop (3 rounds, Medium → Medium → none); before merge: the Ink/Stitch `LA`-with-a-space check | **Epic**: E6 (M5) | **Branch**: `feature/project-management` (PR 1), `feature/project-list` (PR 2)
 
 **Goal**: a user keeps several designs. They see their designs in a list, newest first, and can create, open, rename, duplicate and delete them. Each design autosaves to its own file, and relaunching reopens the last design, even after a force-quit. A design has one name: it is the list's name and the export's DST `LA` name, and the exported file is named after it (ADR-026's sanitised form, so `A/B` exports as `A_B.dst`). Renaming checks the 15-character DST rule as the user types. Bundled samples become templates: opening one starts a new design from it.
 
