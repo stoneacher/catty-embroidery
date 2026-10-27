@@ -30,6 +30,8 @@ final class InMemoryProjectStore: ProjectStoring {
 
     /// IDs whose saves throw and leave the entry alone.
     var failingSaves: Set<ProjectID> = []
+    /// When `true`, every save throws, including one to an ID not yet known (a duplicate's).
+    var failsEverySave = false
     /// When `true`, `delete(_:)` throws and leaves the entry alone.
     var failsDeletes = false
 
@@ -58,7 +60,7 @@ final class InMemoryProjectStore: ProjectStoring {
     }
 
     func save(_ program: Program, as id: ProjectID) throws {
-        if failingSaves.contains(id) {
+        if failsEverySave || failingSaves.contains(id) {
             throw Failure()
         }
         entries[id] = .program(program)

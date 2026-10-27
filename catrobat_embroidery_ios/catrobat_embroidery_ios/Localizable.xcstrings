@@ -2533,6 +2533,54 @@
         }
       }
     },
+    "project.action.delete": {
+      "comment": "Menu item and swipe button on one of the user's designs: delete it, after a confirmation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "project.action.duplicate": {
+      "comment": "Menu item on one of the user's designs: make a copy of it, which appears in the list.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate"
+          }
+        }
+      }
+    },
+    "project.action.held": {
+      "comment": "Why Rename and Delete are unavailable for a design: it is open in another window of this app (iPad). Shown under the disabled menu item and under the design in the list.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in another window"
+          }
+        }
+      }
+    },
+    "project.action.rename": {
+      "comment": "Menu item on one of the user's designs: give it a new name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        }
+      }
+    },
     "project.default.name": {
       "comment": "The name a new, blank design gets (and the name of its embroidery file). It is written into the machine file, so it must be at most 15 characters of plain ASCII (letters, digits, spaces, common punctuation); a translation that is not falls back to English. Keep it short and generic.",
       "extractionState": "manual",
@@ -2541,6 +2589,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Design"
+          }
+        }
+      }
+    },
+    "project.delete.message": {
+      "comment": "Message of the confirmation before deleting one of the user's designs. There is no trash or undo, so do not promise any way back.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design will be deleted. This can't be undone."
+          }
+        }
+      }
+    },
+    "project.delete.title": {
+      "comment": "Title of the confirmation before deleting one of the user's designs. %@ is the design's name. Use your language's quotation marks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete “%@”?"
           }
         }
       }
@@ -2569,6 +2641,18 @@
         }
       }
     },
+    "project.list.new": {
+      "comment": "Accessibility name and tooltip of the '+' button that starts a new, empty design. Title case. 'Design' means an embroidery design the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Design"
+          }
+        }
+      }
+    },
     "project.list.section.mine": {
       "comment": "Header of the list of the user's own embroidery designs on the main screen, above the examples. 'Designs' means embroidery patterns the user built from blocks.",
       "extractionState": "manual",
@@ -2577,6 +2661,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "My Designs"
+          }
+        }
+      }
+    },
+    "project.notice.delete.failed.message": {
+      "comment": "Alert message under 'Couldn't Delete'. Nothing was deleted. 'Design' means an embroidery design the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong. The design is still there."
+          }
+        }
+      }
+    },
+    "project.notice.delete.failed.title": {
+      "comment": "Alert title: deleting one of the user's designs did not work. %@ is the design's name. Title case.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Delete “%@”"
+          }
+        }
+      }
+    },
+    "project.notice.duplicate.failed.message": {
+      "comment": "Alert message under 'Couldn't Duplicate the Design'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong. Nothing was copied."
+          }
+        }
+      }
+    },
+    "project.notice.duplicate.failed.title": {
+      "comment": "Alert title: copying one of the user's designs did not work. Title case. 'Design' means an embroidery design the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Duplicate the Design"
+          }
+        }
+      }
+    },
+    "project.notice.held.message": {
+      "comment": "Alert message under 'Is Open in Another Window'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close it there first, then try again."
+          }
+        }
+      }
+    },
+    "project.notice.held.title": {
+      "comment": "Alert title: a design cannot be deleted because it is open in another window of this app (iPad). %@ is the design's name. Title case.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” Is Open in Another Window"
           }
         }
       }

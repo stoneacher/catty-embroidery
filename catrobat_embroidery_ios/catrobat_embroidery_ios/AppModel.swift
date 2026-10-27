@@ -92,6 +92,9 @@ final class AppModel {
         project.id
     }
 
+    /// The list's pending delete and notice (slice 8; `ProjectListState`).
+    var listState = ProjectListState()
+
     /// Projects found at launch and not opened, told one at a time until read (Codex, slice 6).
     private(set) var launchRefusals: [ProgramRefusal] = []
 
