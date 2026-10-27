@@ -1,6 +1,6 @@
 # Project management
 
-**Status**: In progress — PR 1 (slices 0–6, PR #78) merged after the Codex loop (5 rounds, cap); US-329 (persistence into the `Projects` package target, PR #79) merged; PR 2 (slices 7–10, PR #80) handed over 2026-10-27 after the Codex loop (3 rounds, Medium → Medium → none); before merge: the Ink/Stitch `LA`-with-a-space check | **Epic**: E6 (M5) | **Branch**: `feature/project-management` (PR 1), `feature/project-list` (PR 2)
+**Status**: Done — 2026-10-27. PR 1 (slices 0–6, PR #78; Codex loop 5 rounds, cap), US-329 (persistence into the `Projects` package target, PR #79), PR 2 (slices 7–10, PR #80; Codex loop 3 rounds, Medium → Medium → none). The Ink/Stitch check passed (Sebastian, 2026-10-27): `LA:Square Coil` plus four spaces of padding, then `0A 1A`, `ST` at offset 20, and the name shown intact in Ink/Stitch | **Epic**: E6 (M5) | **Branch**: `feature/project-management` (PR 1), `feature/project-list` (PR 2)
 
 **Goal**: a user keeps several designs. They see their designs in a list, newest first, and can create, open, rename, duplicate and delete them. Each design autosaves to its own file, and relaunching reopens the last design, even after a force-quit. A design has one name: it is the list's name and the export's DST `LA` name, and the exported file is named after it (ADR-026's sanitised form, so `A/B` exports as `A_B.dst`). Renaming checks the 15-character DST rule as the user types. Bundled samples become templates: opening one starts a new design from it.
 
@@ -34,16 +34,16 @@
 
 ## Acceptance criteria
 
-- [ ] Every project is one file, `Documents/Projects/<UUID>.json`, a v1 program document; a save never writes a file the window did not create or open, and a failed save leaves the previous bytes.
-- [ ] A draft writes no file until its first change, then exactly one; duplicate writes at once with a new ID and a uniqued name.
-- [ ] Every generated name passes `DesignName` validation and is unique, case-insensitively, among persisted names, live drafts' names and refused files' names (a property over generated bases, including 15-character bases and 9→10, 99→100 suffixes).
-- [ ] A save to one project never supersedes another's; a save after a delete leaves the file deleted; failures show only in windows holding that project.
-- [ ] One name: the export's `LA` equals `program.name` and its file name is ADR-026's sanitised form of it; an invalid typed name never reaches the program; a rename-only change, and its undo and redo, keep a live run and re-prepare the export; every other change voids the run and saves.
-- [ ] Launch opens the window's project, else the last opened, else a draft with a fresh ID; an unresolved stored ID is never reused; after a force-quit the last design reopens (M4 exit criterion 3, re-pointed).
-- [ ] The legacy working file migrates exactly once, also when replayed after a crash or a failed delete at each step; an existing migrated project is never overwritten.
-- [ ] Refused files are listed, badged and deletable, never opened or overwritten by any window; a failed delete changes nothing.
-- [ ] The list, create, rename, duplicate and delete work on compact and regular, with String Catalog entries for all new copy; screenshots of both.
-- [ ] An exported sample with a space in its `LA` name opens correctly in Ink/Stitch (manual check).
+- [x] Every project is one file, `Documents/Projects/<UUID>.json`, a v1 program document; a save never writes a file the window did not create or open, and a failed save leaves the previous bytes.
+- [x] A draft writes no file until its first change, then exactly one; duplicate writes at once with a new ID and a uniqued name.
+- [x] Every generated name passes `DesignName` validation and is unique, case-insensitively, among persisted names, live drafts' names and refused files' names (a property over generated bases, including 15-character bases and 9→10, 99→100 suffixes).
+- [x] A save to one project never supersedes another's; a save after a delete leaves the file deleted; failures show only in windows holding that project.
+- [x] One name: the export's `LA` equals `program.name` and its file name is ADR-026's sanitised form of it; an invalid typed name never reaches the program; a rename-only change, and its undo and redo, keep a live run and re-prepare the export; every other change voids the run and saves.
+- [x] Launch opens the window's project, else the last opened, else a draft with a fresh ID; an unresolved stored ID is never reused; after a force-quit the last design reopens (M4 exit criterion 3, re-pointed).
+- [x] The legacy working file migrates exactly once, also when replayed after a crash or a failed delete at each step; an existing migrated project is never overwritten.
+- [x] Refused files are listed, badged and deletable, never opened or overwritten by any window; a failed delete changes nothing.
+- [x] The list, create, rename, duplicate and delete work on compact and regular, with String Catalog entries for all new copy; screenshots of both.
+- [x] An exported sample with a space in its `LA` name opens correctly in Ink/Stitch (manual check).
 
 ## Slices and test-first outline
 
