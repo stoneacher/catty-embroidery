@@ -84,8 +84,8 @@ final class AppModel {
     let window = WindowToken()
 
     /// The project this window holds and how far it has got (`WindowProject`). Observed,
-    /// because the scene stores its ID.
-    private(set) var project: WindowProject
+    /// because the scene stores its ID. Written only by replacing it or through its transitions.
+    var project: WindowProject
 
     /// An existing project, or a draft with no file yet (brief D3).
     var projectID: ProjectID {
@@ -183,31 +183,6 @@ final class AppModel {
     /// `onAppear` may fire twice; a second launch would replace the user's edits with the disk.
     @ObservationIgnored private var hasLaunched = false
 
-    /// Stamps the working program with a new revision and saves it to this window's project —
-    /// for every user-initiated change and nothing else (ADR-037; not a rejected or unchanging
-    /// edit, an opening or a sample pick, brief D3).
-    private func persistWorkingProgram() {
-        let revision = library.mintRevision()
-        project.changed(revision)
-        recordSave(library.save(editor.program, to: projectID, revision: revision))
-    }
-
-    /// What a save means for a draft, through a change or the lifecycle retry (Codex, slice 5):
-    /// the first written one gives it a file, whose name now counts, and makes it the last
-    /// opened. Until then it reserves its **current** name, which a rename may change.
-    @discardableResult
-    private func recordSave(_ outcome: ProjectSaveOutcome) -> ProjectSaveOutcome {
-        guard outcome == .written, project.written() else {
-            if !project.hasFile {
-                library.register(window, owner: self, holding: projectID, draftName: editor.program.name)
-            }
-            return outcome
-        }
-        library.register(window, owner: self, holding: projectID, draftName: nil)
-        library.markOpened(projectID)
-        return outcome
-    }
-
     /// Opens what this window holds, once per window — from `onAppear`, not `init`, which
     /// `State(initialValue:)` evaluates on every view initialisation. Brief D6: the scene's
     /// project, else the last opened, else a draft under a **fresh** ID, so a stale ID can never
@@ -227,15 +202,22 @@ final class AppModel {
         let resolution = library.resolveLaunch(sceneID: sceneID)
         launchRefusals = ([legacy].compactMap(\.self) + resolution.refusals.map(\.reason)).map(ProgramRefusal.init)
         guard let opened = resolution.opened else {
-            var blank = Program.blank
-            blank.name = Self.defaultName.value
-            startDraft(from: blank)
-            selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: nil)
-            syncName()
-            nextGeneration += 1
+            startBlankDraft()
             return
         }
         adopt(opened.id, program: opened.program)
+    }
+
+    /// A blank design under a fresh ID, named from the catalog and made unique (D4, US-320): a
+    /// new selection without provenance. For a launch with nothing to open, "+" and deleting
+    /// the open project (slice 8).
+    func startBlankDraft() {
+        var blank = Program.blank
+        blank.name = Self.defaultName.value
+        startDraft(from: blank)
+        selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: nil)
+        syncName()
+        nextGeneration += 1
     }
 
     /// The window now holds `id`, read from its file — for launch and for the list
@@ -253,13 +235,6 @@ final class AppModel {
         palette.isPresented = false
         syncName()
         interaction.followFit()
-    }
-
-    /// The window stopped being active: save what it holds, carrying the revision of the change
-    /// that produced it, so the save is dropped if another window has changed the program since.
-    func sceneDidLeaveActive() {
-        guard let heldRevision = project.heldRevision else { return }
-        recordSave(library.save(editor.program, to: projectID, revision: heldRevision))
     }
 
     /// The user has read the launch refusal.
@@ -367,12 +342,6 @@ final class AppModel {
         // reason the run's reset is here: the view-side spellings re-fire on the ADR-023
         // container rebuild.
         interaction.followFit()
-    }
-
-    /// Retries a failed save before the window leaves; only a failed retry keeps it (PR #78 rounds 4–5).
-    func canLeaveProject() -> Bool {
-        guard let heldRevision = project.heldRevision, saveFailure == .saveFailed else { return true }
-        return recordSave(library.save(editor.program, to: projectID, revision: heldRevision)) != .failed
     }
 
     /// The title follows the program's name (`syncName()`, D4): the one non-selecting write to `selection`.
