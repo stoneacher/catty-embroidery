@@ -61,7 +61,7 @@ public final class ProjectLibrary {
     private var failures: [ProjectID: ProjectSaveFailure] = [:]
 
     /// Which project each window holds, and the name of the draft it holds, if any.
-    private var registry: [WindowToken: Registration] = [:]
+    private var registry = WindowRegistry()
 
     @ObservationIgnored private var nextRevision = 0
     /// The newest revision a save has been *accepted* for, per project — not necessarily
@@ -197,6 +197,7 @@ public final class ProjectLibrary {
             guard let loaded = try legacy.load() else { return nil }
             program = loaded
         } catch {
+            listRefusedLegacy(error)
             return error
         }
         let id = ProjectID.legacyWorkingProgram
@@ -221,6 +222,20 @@ public final class ProjectLibrary {
         }
         try? legacy.remove()
         return nil
+    }
+
+    /// Lists a refused legacy file under the fixed ID, blocked like any refused project, so the
+    /// list can delete it — `delete` removes the legacy file first (slice 7, closing slice 6's
+    /// gap). An existing fixed-ID project keeps its row: it is the migrated copy, not this file.
+    private func listRefusedLegacy(_ error: ProgramLoadError) {
+        let id = ProjectID.legacyWorkingProgram
+        guard !files.contains(where: { $0.id == id }) else { return }
+        let reason: ProgramDocumentError = switch error {
+        case let .document(reason): reason
+        case .unreadable: .corrupt
+        }
+        block(id)
+        files.append(ProjectFile(id: id, inspection: .refused(reason, name: nil), modified: now()))
     }
 
     // MARK: Launch (D6)
@@ -324,39 +339,25 @@ public final class ProjectLibrary {
             case let .refused(_, name): name
             }
         }
-        let drafts = liveRegistrations.compactMap(\.draftName)
-        return name.uniqued(avoiding: persisted + drafts)
+        return name.uniqued(avoiding: persisted + registry.draftNames)
     }
 
     // MARK: Registry (D7)
 
-    /// Records that `window` now holds `id`, replacing whatever it held before — the draft
-    /// name included, so a window re-registers with `nil` once its draft has a file. `owner` is
-    /// held weakly, only so a window torn down without unregistering stops counting; its entry
-    /// is pruned at the next registration, which is also when observers hear of it.
+    /// Records that `window` now holds `id`, replacing whatever it held before (`WindowRegistry`).
     public func register(_ window: WindowToken, owner: AnyObject, holding id: ProjectID, draftName: String?) {
-        registry = registry.filter { $0.value.owner != nil }
-        registry[window] = Registration(owner: owner, projectID: id, draftName: draftName)
+        registry.register(window, owner: owner, holding: id, draftName: draftName)
     }
 
-    /// Records that `window` no longer holds `id`. A late message about a project the window
-    /// has since left does nothing, so it cannot remove its successor.
+    /// Records that `window` no longer holds `id`; a late message from a window that has
+    /// since moved on does nothing.
     public func unregister(_ window: WindowToken, from id: ProjectID) {
-        guard registry[window]?.projectID == id else {
-            return
-        }
-        registry[window] = nil
+        registry.unregister(window, from: id)
     }
 
     /// The live windows holding `id`.
     public func holders(of id: ProjectID) -> Set<WindowToken> {
-        Set(registry.compactMap { window, registration in
-            registration.owner != nil && registration.projectID == id ? window : nil
-        })
-    }
-
-    private var liveRegistrations: [Registration] {
-        registry.values.filter { $0.owner != nil }
+        registry.holders(of: id)
     }
 
     // MARK: Private
@@ -389,10 +390,4 @@ public final class ProjectLibrary {
             files.append(file)
         }
     }
-}
-
-private struct Registration {
-    weak var owner: AnyObject?
-    let projectID: ProjectID
-    let draftName: String?
 }
