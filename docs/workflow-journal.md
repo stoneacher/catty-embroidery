@@ -3912,3 +3912,19 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **The reviewer answered the question I had parked:** a failed catalog rename did leave `.saveFailed` on a project no window holds, and a window opening it later showed the banner and the VoiceOver announcement. Fixed in the package, red first.
 - **A screenshot agent's warning that was really about me.** The capture agent reported that "something other than me changed the working tree" mid-run. That was my review fixes. Its build predated them, so the screenshots are valid, and it said so rather than silently mixing builds. Running two agents that build in one working tree is a hazard to plan for: separate DerivedData and a separate simulator kept my test runs out of its way.
 - **The screenshots found what no test can:** iPadOS 26 does not render a disabled menu item's subtitle, so D7's "disabled with a reason" holds only through the row's own line. They also showed truncations in narrow iPad columns, and two "+" buttons side by side on iPad landscape. All are recorded in the brief; the truncations predate this PR.
+
+## 2026-10-27 — PR #80 (project list) handover: three Codex rounds, Medium → Medium → none
+
+- **Round 1 — Medium; code changed.**
+  - **Medium, fixed:** deleting the listed refused legacy file removed `WorkingProgram.json` first, then asked the project store to delete a file that does not exist. A store failure then reported a failed delete after the file was gone (D9).
+  - **Low, fixed:** the disconnect prune's task held the closing scene's model.
+  - **Low, tracked:** a future-version legacy file is listed unnamed. Under D10 no build was distributed, so only development devices can hold one.
+  - Codex found this partial delete in a path the slice 7 package change made reachable from the UI. Neither `swift-code-reviewer` nor I had looked at deletion where the store fails *and* the row has no file behind it.
+- **Round 2 — Medium (flat); code changed.**
+  - **Medium, fixed:** my round 1 fix had introduced a stale flag. The "listed alone" flag was never cleared once a real fixed-ID file appeared, so a delete would skip the store and leave the file. This is the recurring pattern the codex-review skill warns about: a fix's own state is new surface, and the verification round found it at once.
+  - **Medium, rejected:** a partial delete when an earlier migration removal had failed. The removed legacy file is a redundant copy (D5), and reversing the order would bring back slice 6's resurrection bug. Codex accepted the rejection in round 3.
+- **Round 3 — no findings.** The loop ended on its first condition. Codex traced every path to the fixed ID and confirmed the flag follows the row.
+- **What each reviewer saw:**
+  - `swift-code-reviewer` found the app-level High: a switch from the stage renamed the next project. It also found two app-level Mediums: the stale failure mark and a vacuous test.
+  - Codex found nothing in the app layer. All of its findings were in the package's two-store delete path (legacy file plus project store). This matches PR #79's split: the in-loop reviewer reads behaviour across the app, while Codex attacks the state machine of a single type.
+- **Line-budget pressure, a side effect worth recording.** `ProjectLibrary.swift` hit SwiftLint's 400-line or 250-body-line limit four times in this PR: the slice 7 registry move, the feature review, and Codex rounds 1 and 2. Each fix had to pay its way with a refactor, ending in `WindowRegistry`, `ProgramLoadError.documentReason` and `LastOpenedProject.forget`. The type is at its limit, and the next change to it should start by splitting the migration out.
