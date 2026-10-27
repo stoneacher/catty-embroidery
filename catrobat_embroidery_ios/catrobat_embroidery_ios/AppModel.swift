@@ -83,13 +83,14 @@ final class AppModel {
     /// This window, as the library's registry knows it (brief D7).
     let window = WindowToken()
 
-    /// The project this window holds: an existing one, or a draft with no file yet (brief D3).
-    /// Observed, because the scene stores it.
-    private(set) var projectID: ProjectID
+    /// The project this window holds and how far it has got (`WindowProject`). Observed,
+    /// because the scene stores its ID.
+    private(set) var project: WindowProject
 
-    /// Whether `projectID` has a file this window opened or wrote. A draft has none until its
-    /// first change.
-    @ObservationIgnored private var hasFile = false
+    /// An existing project, or a draft with no file yet (brief D3).
+    var projectID: ProjectID {
+        project.id
+    }
 
     /// Projects found at launch and not opened, told one at a time until read (Codex, slice 6).
     private(set) var launchRefusals: [ProgramRefusal] = []
@@ -115,7 +116,7 @@ final class AppModel {
         self.exporter = exporter
         self.editor = editor
         self.library = library
-        projectID = library.makeDraftID()
+        project = .draft(library.makeDraftID())
 
         // The export is prepared when the run *ends*, which is what a `ShareLink` needs:
         // it takes its item at construction time, so there is nothing to hand it unless the
@@ -179,10 +180,6 @@ final class AppModel {
         persistWorkingProgram()
     }
 
-    /// The revision of exactly the program this window holds; `nil` until it changes one. Not a
-    /// "has edited" flag, which would let a superseded window put an older program back (3b).
-    @ObservationIgnored private var heldRevision: SaveRevision?
-
     /// `onAppear` may fire twice; a second launch would replace the user's edits with the disk.
     @ObservationIgnored private var hasLaunched = false
 
@@ -191,7 +188,7 @@ final class AppModel {
     /// edit, an opening or a sample pick, brief D3).
     private func persistWorkingProgram() {
         let revision = library.mintRevision()
-        heldRevision = revision
+        project.changed(revision)
         recordSave(library.save(editor.program, to: projectID, revision: revision))
     }
 
@@ -200,12 +197,12 @@ final class AppModel {
     /// opened. Until then it reserves its **current** name, which a rename may change.
     @discardableResult
     private func recordSave(_ outcome: ProjectSaveOutcome) -> ProjectSaveOutcome {
-        guard !hasFile else { return outcome }
-        guard outcome == .written else {
-            library.register(window, owner: self, holding: projectID, draftName: editor.program.name)
+        guard outcome == .written, project.written() else {
+            if !project.hasFile {
+                library.register(window, owner: self, holding: projectID, draftName: editor.program.name)
+            }
             return outcome
         }
-        hasFile = true
         library.register(window, owner: self, holding: projectID, draftName: nil)
         library.markOpened(projectID)
         return outcome
@@ -222,7 +219,7 @@ final class AppModel {
     /// holds no revision, so the window writes nothing until the user changes something.
     func launch(sceneID: ProjectID?) {
         guard !hasLaunched else {
-            library.register(window, owner: self, holding: projectID, draftName: hasFile ? nil : editor.program.name)
+            library.register(window, owner: self, holding: projectID, draftName: project.draftName(editor.program.name))
             return
         }
         hasLaunched = true
@@ -238,11 +235,9 @@ final class AppModel {
             nextGeneration += 1
             return
         }
-        projectID = opened.id
-        hasFile = true
+        project = .opened(opened.id)
         library.register(window, owner: self, holding: projectID, draftName: nil)
         editor.load(opened.program)
-        heldRevision = nil
         // Titled by `syncName()` below, the title's one writer.
         selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: nil)
         nextGeneration += 1
@@ -255,7 +250,7 @@ final class AppModel {
     /// The window stopped being active: save what it holds, carrying the revision of the change
     /// that produced it, so the save is dropped if another window has changed the program since.
     func sceneDidLeaveActive() {
-        guard let heldRevision else { return }
+        guard let heldRevision = project.heldRevision else { return }
         recordSave(library.save(editor.program, to: projectID, revision: heldRevision))
     }
 
@@ -368,12 +363,9 @@ final class AppModel {
         interaction.followFit()
     }
 
-    /// A sample opens as a **draft** (brief D3): a fresh ID with no file, which the first
-    /// change writes. Named after its program, made unique among every name the user can see
-    /// (D4), and registered so another window's generated names avoid it.
     /// Retries a failed save before the window leaves; only a failed retry keeps it (PR #78 rounds 4–5).
     private func canLeaveProject() -> Bool {
-        guard let heldRevision, saveFailure == .saveFailed else { return true }
+        guard let heldRevision = project.heldRevision, saveFailure == .saveFailed else { return true }
         return recordSave(library.save(editor.program, to: projectID, revision: heldRevision)) != .failed
     }
 
@@ -382,13 +374,15 @@ final class AppModel {
         selection?.title = title
     }
 
+    /// A sample opens as a **draft** (brief D3): a fresh ID with no file, which the first
+    /// change writes. Named after its program, made unique among every name the user can see
+    /// (D4), and registered so another window's generated names avoid it.
+    ///
     /// Unregisters first, so the window does not reserve its own name against itself when a
     /// sample is picked again (`swift-code-reviewer`, slice 5).
     private func startDraft(from program: Program) {
         library.unregister(window, from: projectID)
-        projectID = library.makeDraftID()
-        hasFile = false
-        heldRevision = nil
+        project = .draft(library.makeDraftID())
         var named = program
         if case let .success(name) = DesignName.validating(program.name) {
             named.name = library.uniquedName(name).value
