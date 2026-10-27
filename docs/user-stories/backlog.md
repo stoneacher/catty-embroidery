@@ -177,28 +177,6 @@ documents why it needs one, and a release build is a weaker claim than that test
 
 ---
 
-## US-320 — A new window opens on a validation error the user did not cause
-
-*Pulled into Project management (2026-10-25): every project always has a valid name, so a fresh window has nothing to flag.*
-
-**Found**: 2026-09-28, US-407's simulator pass. **Accepted by Sebastian for US-407 and moved here.**
-Since ADR-039, launch selects the blank program as an untitled design, so the stage shows its
-design-name field with an empty name. `DesignNameField` reports the empty name at once, in red: "Enter a
-name so the file has one." On iPad the stage sits beside the script, so this is on screen the first time
-anyone opens the app. On iPhone it is one push away.
-- US-406 already showed the same message for a restored untitled design, but that was a rarer path.
-- `ExportControl` ranks its run-related reasons above the name reason, so the Share button's own hint is
-  correct. It is only the field's inline message that fires early.
-
-**What taking it would involve.** Decide when an empty name counts as a mistake. Candidates:
-- after the user has edited the field;
-- once a run has finished, which is when a name first matters, because only then is there a file to share;
-- when Share is attempted.
-
-The rule lives in `ExportViewModel`/`DesignNameField` (US-308, ADR-026). It needs its own test-first pass,
-since the reason precedence is pinned there. Seeding a default name was the rejected alternative: it
-changes what an exported file is called.
-
 ## US-321 — A loop's end row wears the Undo glyph
 
 **Found**: 2026-09-29, US-408's simulator pass (flagged by the `swift-ui-design` pass). US-407 gave `loopEnd`
@@ -314,14 +292,6 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 - Either way, correct ADR-018's provenance sentence (ADR-032 invariant 3).
 - *Update 2026-10-25 (Variables feature review):* the divergence is pinned by `StepperVariableTests.setVariableNaNIsZero`, and ADR-018's sentence is marked `[disputed: US-326]` inline. The decision itself is still open.
 
-## US-327 — CI app tests queue past their one-minute hang guards
-
-**Found**: 2026-10-25, Variables PR 3. `main` went red after PR #75 merged, and the branch failed twice more on different tests.
-- **Evidence (result bundles):** `RunViewModelTests` and `ExportWiringTests` exceeded `.timeLimit(.minutes(1))`. Trivial tests report about 80 s, so they are waiting on a saturated main actor, not running slowly. `StageFieldRenderingTests.matIsDrawnAtCurrent` once read an all-black `ImageRenderer` pixel. The device was iOS 27.0, and job duration did not jump (14–17 min is normal).
-- **Options:** raise the hang guards (they are not performance assertions); serialise the heaviest main-actor suites (`PairInvariantSoakTests`, the run/export wiring tests); cache `BrickRowPresentation.rows` per program revision, which also lightens the soak.
-- **Needs Sebastian's decision**, because it changes test guards. Journal, 2026-10-25.
-- *Decided 2026-10-25 (Sebastian): raise the guards.* The 25 one-minute guards became one named trait, `.hangGuard` (three minutes, `HangGuard.swift`), as the first commit of Project management.
-
 ## US-328 — Variables follow-ups: one definition per rule
 
 **Found**: 2026-10-25, by the feature-level `swift-code-reviewer` pass. No defect behind any of these; each is a rule spelled in more than one place.
@@ -331,15 +301,6 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 - One category for `BinaryOperator` (arithmetic, comparison, logical), which is classified four times today.
 - Public API trims: `Script.matchingElse`, `opensLoop`, `isLoopEnd` are used only by tests; `ParameterEditorKind.init(_ value:)` answers differently from `init(_ parameter:)` for a condition.
 - Two pre-existing ADR-019 screening gaps (sub-length probes against the wrong length; the ulp figure halved), each needing one synthetic probe near a boundary.
-
-## US-329 — Project logic lives in the app target, where every test needs a simulator
-
-*Taken 2026-10-26 (Sebastian: "Take US-329 into the package"), branch `feature/project-store-package`: the `Projects` target, vended through `Samples` (ADR-042 and ADR-050 amendments). 96 tests moved, 3 stayed with `AppModel`; mutants went from 60–110 s to about 2.4 s each.*
-
-**Found**: 2026-10-26, Project management PR 1, while measuring why slices took so long. App-target mutation runs cost 60–110 s per mutant (an incremental app build plus a simulator run), so a slice's 10–16 mutants took 15–25 min; engine mutants take seconds under `swift test`.
-- `ProjectLibrary`, `DocumentsProjectStore`, `LastOpenedProject` and the legacy migration import no UIKit or SwiftUI. In a package target they would be tested and mutated with `swift test`.
-- **What taking it would involve:** a target in `Packages/EmbroideryEngine` (ADR-042's layout), vended through an existing product the way `EditorCore` is (ADR-033), so the app needs no `pbxproj` change; the app keeps the `AppModel` wiring and the views. `ProgramLoadError` and `ProgramStoring` would move with it.
-- **Decide before Project management PR 2**, whose list, create, duplicate and rename slices add more library behaviour. Needs Sebastian's decision: it changes the package layout.
 
 ## US-330 — The stage pixel tests read a black frame on a saturated CI runner
 
@@ -442,5 +403,22 @@ in the same spirit as US-211's and US-313's above.
   round caught it. That is a real failure mode of this file — an entry is a snapshot of the code as
   well as of the reasoning, and only the reasoning is durable.
 
+- **US-320 — a new window opens on a name error the user did not cause** → fixed by design in
+  [Project management](../features/project-management.md) (pulled in 2026-10-25, D4): every
+  project always has a valid name, and a blank draft is named "Design", made unique. The entry's
+  reproduction held exactly; what it could not know was that the fix would come from storage, not
+  from the name field.
+- **US-327 — CI app tests queue past their one-minute hang guards** → decided by Sebastian on
+  2026-10-25 (raise the guards) and done as Project management's first commit: the 25 one-minute
+  guards became one `.hangGuard` trait of three minutes (`HangGuard.swift`). The entry's options
+  survived planning unchanged; it was a decision waiting for an owner, not an analysis.
+- **US-329 — project logic lives in the app target** → taken on 2026-10-26 as its own PR (#79):
+  the `Projects` package target, vended through `Samples` (ADR-042 and ADR-050 amendments). The
+  entry's measurement (60–110 s per app mutant) was the case for it, and it held: package mutants
+  then ran in about 2.4 s.
+
 **Left in this file at M4 planning: US-316 only** — see above for why, and for what it costs.
-**Added since**: US-317 (2026-09-20, US-401's escalation) and US-318 (2026-09-23, found in passing during US-402).
+**Added since**: US-317 (2026-09-20), US-318 (2026-09-23), US-319 and US-321–US-326 (from M4 and
+the brick-backend and variables features), US-328 (2026-10-25) and US-330 (2026-10-26).
+US-320, US-327 and US-329 have left again (above). Next to be taken: US-316, as its own feature
+(Sebastian, 2026-10-25; [`ROADMAP.md`](../ROADMAP.md#features-from-2026-10-09)).

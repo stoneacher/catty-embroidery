@@ -3935,3 +3935,20 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **I had told him to expect the wrong bytes:** 16 characters ending in `0D`. ADR-012 and ADR-026 pin 15 characters, terminated by `0A 1A` (Catroid's). The file was right and my instruction was wrong. I had written the expected values from general knowledge of the Tajima format instead of from the ADR that pins them, the same mistake CLAUDE.md rule 3 forbids for tests. A manual-check instruction is a spec too, and should be read off the ADR rather than off memory.
 - **Thread colours:** the export showed Ink/Stitch's own palette, as it must, because DST carries colour *changes* but no colours. The US-312 sidecar was deferred to M5 and then put out of scope by this feature's brief, and it has no backlog entry. Sebastian decided it should not get one: it is not relevant for now.
 - **The feature is done:** PRs #78, #79 and #80, all ten acceptance criteria ticked. US-316 follows as its own feature, then the Language-test runner.
+
+## 2026-10-27 — Post-M5 cleanup: documentation drift found by a second session, and a catalog key Xcode extracted after the merge
+
+- **How the drift surfaced.** After PR #80 merged, Sebastian asked a second session what comes next. It answered "US-316". That was correct by `ROADMAP.md`, but it read like the pre-ADR-041 story process, so he asked which document is the source of truth. A check against `main` found the answer consistent but the documents around it drifting:
+  - US-316 was named in the roadmap's "next" sentence but missing from its features table, and had no brief.
+  - M5 had no "closed" paragraph, unlike M3 and M4.
+  - The backlog still listed US-320, US-327 and US-329 as open, although Project management resolved all three; its "added since" line stopped at US-318.
+  - The README had just gained its own "Next up" line, a second copy of the order.
+- **What changed:**
+  - US-316 is a row in the features table ("Next, not briefed").
+  - "M5 closed 2026-10-27" is recorded.
+  - The three resolved entries moved to the backlog's "Scheduled out" record, each with a note on whether its analysis survived.
+  - The README's "Next up" now links to the roadmap instead of restating the order.
+  - **The rule this settles:** the roadmap's features table owns the order, a brief owns a feature's state, and the backlog is a pool, not a queue.
+- **Skipped, by decision:** the knowledge-graph drift check CLAUDE.md asks for at a milestone close (Sebastian, 2026-10-27). It is deferred to the next milestone or release boundary and recorded in the M5 paragraph.
+- **A catalog key no test could see.** After the merge, Xcode's string extraction added an empty key `""` to `Localizable.xcstrings`, and rewrote the file's formatting while it was at it. The source was slice 8's `Text(model.listState.notice?.title ?? "")`: the `""` fallback is a localized literal. CI and every reviewer missed it, because extraction happens only when Xcode syncs the catalog, never in `xcodebuild` or the tests. My first fix, `Text(verbatim: "")`, was refused by the project's own SwiftLint rule (`localized_string_literal_constructors`: a verbatim literal is still untranslated text on screen). The fix that passed binds the value, `Text(String())`. The rule caught a fix that would have traded one smell for another.
+- **Local simulators unavailable:** every CoreSimulator device's data folder was gone during this cleanup. The app and the test target were built locally for a generic simulator, and the suite ran on CI.
