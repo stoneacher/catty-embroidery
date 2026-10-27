@@ -17,6 +17,9 @@ struct AutosaveNoticeTests {
     func everyReasonHasItsGroup() {
         let groups: [(ProgramLoadError, AutosaveNotice.Cause)] = [
             (.document(.unsupportedVersion(2)), .newerApp),
+            // Only a version above the app's own is "newer"; 0 or below is damage (slice 2 note).
+            (.document(.unsupportedVersion(0)), .damaged),
+            (.document(.unsupportedVersion(-1)), .damaged),
             (.document(.corrupt), .damaged),
             (.document(.encodingFailed), .damaged),
             (.unreadable, .damaged),

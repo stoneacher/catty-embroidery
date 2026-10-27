@@ -235,13 +235,21 @@ final class AppModel {
             nextGeneration += 1
             return
         }
-        project = .opened(opened.id)
-        library.register(window, owner: self, holding: projectID, draftName: nil)
-        editor.load(opened.program)
+        adopt(opened.id, program: opened.program)
+    }
+
+    /// The window now holds `id`, read from its file — for launch and for the list
+    /// (`openProject(_:)`): a new selection on its script, fitted, with the project's history
+    /// starting here.
+    func adopt(_ id: ProjectID, program: Program) {
+        library.unregister(window, from: projectID)
+        project = .opened(id)
+        library.register(window, owner: self, holding: id, draftName: nil)
+        editor.load(program)
         // Titled by `syncName()` below, the title's one writer.
         selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: nil)
         nextGeneration += 1
-        path = [.script] // Already so from `init`; kept so launch does not depend on it.
+        path = [.script]
         palette.isPresented = false
         syncName()
         interaction.followFit()
@@ -291,9 +299,8 @@ final class AppModel {
     /// the reason is readability of its *contents*, not equality, which an
     /// earlier version of this comment got wrong.
     ///
-    /// Every writer — `init`, `select(_:)`, `launch(sceneID:)` — assigns `[.script]`
-    /// (US-407, ADR-039); the stage is pushed from the script by a `NavigationLink`. "A
-    /// non-empty path implies a selection" holds from `init` on, since launch selects.
+    /// Every model-side writer (`init`, `select(_:)`, `adopt(_:program:)`, `openProject(_:)`)
+    /// assigns `[.script]` (US-407, ADR-039); the stage is pushed from the script.
     var path: [StageDestination] = [] {
         didSet {
             // On compact the stage link stays tappable under a sheet that allows background
@@ -326,9 +333,8 @@ final class AppModel {
     /// Selects `sample` as a new draft and shows its script (US-407; brief D3).
     ///
     /// **Loads a copy** into the editor and resets its history (US-405): editing it can never
-    /// reach `SampleLibrary`, which is shared process-wide (`WorkingProgramTests`). The project
-    /// the window held keeps its saved edits; one whose last save failed is retried first, and
-    /// if that fails the window stays (`canLeaveProject()`). (Until M5 a pick discarded them.)
+    /// reach `SampleLibrary`, shared process-wide (`WorkingProgramTests`). The held project keeps
+    /// its saved edits; a failed save is retried first, and the window stays if that fails too.
     ///
     /// Never a no-op, even for the sample already selected: the fresh generation makes the new
     /// value unequal to the old one, so a consumer can treat any selection as "start over"
@@ -364,7 +370,7 @@ final class AppModel {
     }
 
     /// Retries a failed save before the window leaves; only a failed retry keeps it (PR #78 rounds 4–5).
-    private func canLeaveProject() -> Bool {
+    func canLeaveProject() -> Bool {
         guard let heldRevision = project.heldRevision, saveFailure == .saveFailed else { return true }
         return recordSave(library.save(editor.program, to: projectID, revision: heldRevision)) != .failed
     }
