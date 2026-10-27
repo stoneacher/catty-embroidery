@@ -37,7 +37,7 @@ struct ProjectRowView: View {
         } else {
             // **Not a button, not dimmed** (D11): a refused file cannot be opened, and a
             // greyed-out button would read as "not yet" rather than "never". The badge says
-            // why; slice 8 gives it its only action, Delete.
+            // why; its only action is Delete (`ProjectRowAction`).
             content
         }
     }

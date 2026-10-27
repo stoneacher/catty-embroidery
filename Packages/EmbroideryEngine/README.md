@@ -776,6 +776,91 @@ See `Sources/Samples/Resources/PROVENANCE.md` for detailed transcription notes, 
 
 ---
 
+# Projects
+
+Project persistence for the app's design library (ADR-050): one JSON file per project, the one guard every window's saves pass through, and the last-opened default. It is vended through the `Samples` product (ADR-042) and is the package's only I/O target. Its stores and `ProjectLibrary` are `@MainActor`, and it depends on Foundation and Observation only, so its tests run under `swift test`.
+
+## Public API
+
+**ProjectID** — A project's identity. It is stable across renames, so a name is never part of a path.
+
+```swift
+public struct ProjectID: Hashable, Sendable {
+    public init(_ rawValue: UUID)
+    public init?(uuidString: String?)
+    public var uuidString: String { get }
+
+    /// Where M4's `WorkingProgram.json` is migrated: fixed, so a replayed migration finds its own earlier work.
+    public static let legacyWorkingProgram: ProjectID
+}
+```
+
+**ProjectStoring** / **DocumentsProjectStore** — The file seam, at `Documents/Projects/<UUID>.json`. The store encodes before it touches the disk and writes atomically. `list()` returns every project file, including ones that cannot be opened. The store holds no policy: which write wins, and which files may be written, is the library's rule.
+
+```swift
+@MainActor
+public protocol ProjectStoring {
+    func load(_ id: ProjectID) throws(ProgramLoadError) -> Program?
+    func save(_ program: Program, as id: ProjectID) throws
+    func delete(_ id: ProjectID) throws
+    func list() throws -> [ProjectFile]
+    func modified(_ id: ProjectID) -> Date?
+}
+```
+
+**ProjectLibrary** — The guard on every project file. The app creates one and shares it across windows, since every window may write the same files. `files`, the failures and each project's holders are observed.
+
+```swift
+@MainActor @Observable
+public final class ProjectLibrary {
+    public init(
+        store: any ProjectStoring,
+        lastOpened: LastOpenedProject,
+        legacy: (any ProgramStoring)? = nil,
+        makeID: @escaping () -> ProjectID = { ProjectID(UUID()) },
+        now: @escaping () -> Date = { .now }
+    )
+
+    public private(set) var files: [ProjectFile]
+
+    public func mintRevision() -> SaveRevision
+    public func makeDraftID() -> ProjectID
+    public func save(_ program: Program, to id: ProjectID, revision: SaveRevision) -> ProjectSaveOutcome
+    public func open(_ id: ProjectID) -> ProjectOpening
+    public func resolveLaunch(sceneID: ProjectID?) -> LaunchResolution
+    public func markOpened(_ id: ProjectID)
+    public func migrateLegacyIfNeeded(defaultName: DesignName) -> ProgramLoadError?
+    public func duplicate(_ program: Program) -> ProjectID?
+    public func rename(_ id: ProjectID, to name: DesignName) -> ProjectSaveOutcome
+    public func delete(_ id: ProjectID, requestedBy window: WindowToken? = nil) throws
+    public func uniquedName(_ name: DesignName) -> DesignName
+    public func failure(for id: ProjectID) -> ProjectSaveFailure?
+
+    public func register(_ window: WindowToken, owner: AnyObject, holding id: ProjectID, draftName: String?)
+    public func unregister(_ window: WindowToken, from id: ProjectID)
+    public func pruneDeadRegistrations()
+    public func holders(of id: ProjectID) -> Set<WindowToken>
+}
+```
+
+**Outcomes.** `save` and `rename` return a `ProjectSaveOutcome`: `.written`; `.superseded` (a newer revision was already accepted); `.blocked` (a refused file, or, for `rename`, a missing one); `.held` (another window holds it); `.failed`; or `.deleted`. `open` returns a `ProjectOpening`: `.opened(Program)`, `.missing`, or `.refused(ProgramLoadError)`.
+
+**LastOpenedProject** — The project a window reopens after a relaunch, stored in an injected `UserDefaults`. It reads defensively: a value that is not a UUID string reads as `nil`.
+
+**ProgramStoring** / **DocumentsProgramStore** — M4's single `WorkingProgram.json`, read only by the migration. Once a project has been migrated, `remove()` deletes the file.
+
+## Design Constraints
+
+- **Last writer wins, per project.** Revisions come from one counter, so their order is the order the user acted in. Each project keeps its own newest accepted revision and its own failure, so a success for one project never clears another's failure (ADR-037).
+- **Refused files are never written.** A file that cannot be opened is listed as refused. Saves and renames to that ID are blocked until it is re-probed as openable or missing, or deleted. A refused legacy file is listed under `legacyWorkingProgram`, blocked and deletable; deleting it removes the legacy file as well.
+- **Deleted stays deleted.** `delete` removes the file first and changes nothing if that fails. On success it leaves an in-memory tombstone for the life of the process, so a late save returns `.deleted` rather than recreating the file.
+- **Held projects are protected.** `rename` and `delete` refuse a project another live window holds. A late `unregister` from a window that has moved on does nothing, so it cannot remove its successor.
+- **Rename is a catalog write.** It loads the project, renames it, and saves under a fresh revision. If that write fails, no failure is left behind, since no window holds the project to show it.
+- **Dead windows.** A window torn down without unregistering stops counting in `holders(of:)` at once. `pruneDeadRegistrations()` drops such entries so open windows hear of it now. It writes only when one is dead, because every registry write notifies all observers.
+- **Migration is attempted once per process.** `migrateLegacyIfNeeded` writes the legacy program to `legacyWorkingProgram` only if no file has that ID, then sets the last opened project if there is none, then removes the legacy file. A failed step is replayed by the next launch, and an existing migrated project is never overwritten.
+
+---
+
 # StagePreview
 
 Display lists, stage geometry, zoom/pan transforms, and an interpreter driver for live preview. Foundation-only (no SwiftUI or CoreGraphics) so the math is unit-testable and the app can use it for rendering, bounding, and accessibility.
@@ -1118,9 +1203,11 @@ The following Architecture Decision Records document the design rationale and ar
 - **[ADR-027](../../docs/DECISIONS.md#adr-027)** — Run lifecycle and interpreter driver.
 - **[ADR-028](../../docs/DECISIONS.md#adr-028)** — Zoom/pan and stage VoiceOver summary.
 - **[ADR-033](../../docs/DECISIONS.md#adr-033)** — `EditorCore` as a target vended through the `ProgramModel` product.
+- **[ADR-042](../../docs/DECISIONS.md#adr-042)** — Package layout: the `Projects` target and its `Samples` vending.
 - **[ADR-046](../../docs/DECISIONS.md#adr-046)** — Formula functions, constants and sensors (ProgramModel, Interpreter).
 - **[ADR-047](../../docs/DECISIONS.md#adr-047)** — Arc and GoThrough: many needle updates per tick (Interpreter).
 - **[ADR-048](../../docs/DECISIONS.md#adr-048)** — Logic and comparisons: `Double` values, Catroid's operators, `power` (ProgramModel).
 - **[ADR-049](../../docs/DECISIONS.md#adr-049)** — Control-brick execution: If, RepeatUntil, WaitUntil, ForVariableFromTo (Interpreter).
+- **[ADR-050](../../docs/DECISIONS.md#adr-050)** — Projects: one file per project, last writer wins per project, refused files blocked (Projects).
 
 When implementing features across products, consult the relevant ADRs before modifying code.

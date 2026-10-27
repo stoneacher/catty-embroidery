@@ -12,6 +12,17 @@ public enum ProgramLoadError: Error, Equatable {
     case unreadable
 }
 
+extension ProgramLoadError {
+    /// The reason a refused file is listed under: an unreadable one is damaged, as far as the
+    /// list can tell.
+    var documentReason: ProgramDocumentError {
+        switch self {
+        case let .document(reason): reason
+        case .unreadable: .corrupt
+        }
+    }
+}
+
 /// The app's seam to M4's single saved working program (US-406; ADR-006 pattern 2). Since M5
 /// every design is a project (`ProjectStoring`); this seam remains only for reading the legacy
 /// file, which slice 6 migrates.

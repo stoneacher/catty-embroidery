@@ -18,9 +18,9 @@ public struct SaveRevision: Comparable, Sendable {
 
 /// The one guard on every project file, shared by every window (project management slice 4;
 /// brief D3, D7, D9, D11). It replaced M4's `ProgramAutosave` in slice 5, and keeps its
-/// reasoning: app-scoped
-/// because every window may write the same files, so the rule deciding which write wins has
-/// to see all of them; synchronous on the main actor, so writes are ordered by construction.
+/// reasoning: app-scoped because every window may write the same files, so the rule deciding
+/// which write wins has to see all of them; synchronous on the main actor, so writes are
+/// ordered by construction.
 ///
 /// **ADR-037's last writer wins, per project.** Revisions are minted from one counter, so
 /// their order is the order the user acted in, but each project keeps its own newest accepted
@@ -155,10 +155,7 @@ public final class ProjectLibrary {
             loaded = try store.load(id)
         } catch {
             block(id)
-            let reason: ProgramDocumentError = switch error {
-            case let .document(reason): reason
-            case .unreadable: .corrupt
-            }
+            let reason = error.documentReason
             let name: String? = switch summary?.inspection {
             case let .openable(program): program.name
             case let .refused(_, name): name
@@ -187,8 +184,8 @@ public final class ProjectLibrary {
     /// Three steps, each replayed if a crash or failure stops the one before: write the program
     /// to `ProjectID.legacyWorkingProgram` **only if that ID has no file** (it may have been
     /// edited since a migration whose removal failed); make it the last opened only if nothing
-    /// is; remove the file. A fixed-ID file that does not open stops everything, since the legacy
-    /// file may be the only good copy. An invalid name becomes `defaultName`, made unique.
+    /// is; remove the file. A fixed-ID file that does not open stops the remaining steps, since
+    /// the legacy file may be the only good copy. An invalid name becomes `defaultName`, made unique.
     public func migrateLegacyIfNeeded(defaultName: DesignName) -> ProgramLoadError? {
         guard !hasMigrated, let legacy else { return nil }
         hasMigrated = true
@@ -230,12 +227,8 @@ public final class ProjectLibrary {
     private func listRefusedLegacy(_ error: ProgramLoadError) {
         let id = ProjectID.legacyWorkingProgram
         guard !files.contains(where: { $0.id == id }) else { return }
-        let reason: ProgramDocumentError = switch error {
-        case let .document(reason): reason
-        case .unreadable: .corrupt
-        }
         block(id)
-        files.append(ProjectFile(id: id, inspection: .refused(reason, name: nil), modified: now()))
+        files.append(ProjectFile(id: id, inspection: .refused(error.documentReason, name: nil), modified: now()))
     }
 
     // MARK: Launch (D6)
@@ -327,7 +320,10 @@ public final class ProjectLibrary {
         var renamed = program
         renamed.name = name.value
         let outcome = save(renamed, to: id, revision: mintRevision())
-        if outcome == .failed { setFailure(nil, for: id) } // No window holds it to show it.
+        // No window holds it, so none should show the failure; the caller tells the user.
+        if outcome == .failed {
+            setFailure(nil, for: id)
+        }
         return outcome
     }
 
@@ -345,7 +341,8 @@ public final class ProjectLibrary {
 
     // MARK: Registry (D7)
 
-    /// Records that `window` now holds `id`, replacing whatever it held before (`WindowRegistry`).
+    /// Records that `window` now holds `id`, replacing whatever it held before, its draft name
+    /// included (D7).
     public func register(_ window: WindowToken, owner: AnyObject, holding id: ProjectID, draftName: String?) {
         registry.register(window, owner: owner, holding: id, draftName: draftName)
     }
@@ -356,10 +353,12 @@ public final class ProjectLibrary {
         registry.unregister(window, from: id)
     }
 
-    /// Drops windows gone without unregistering, so open ones hear of it now (slice 8). Writes
+    /// Drops windows gone without unregistering, so open ones hear of it now (D7). Writes
     /// only if one is dead: every registry write notifies all observers of who holds what.
     public func pruneDeadRegistrations() {
-        if registry.hasDeadEntries { registry.pruneDead() }
+        if registry.hasDeadEntries {
+            registry.pruneDead()
+        }
     }
 
     /// The live windows holding `id`.

@@ -15,7 +15,8 @@ struct WindowProject: Equatable {
     private(set) var hasFile: Bool
 
     /// The revision of exactly the program this window holds; `nil` until it changes one. Not a
-    /// "has edited" flag, which would let a superseded window put an older program back (3b).
+    /// "has edited" flag, which would let a window that another window has superseded put an
+    /// older program back (ADR-037, D7).
     private(set) var heldRevision: SaveRevision?
 
     /// A fresh ID with no file, which the first change writes.

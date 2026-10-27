@@ -1,8 +1,8 @@
 import Foundation
 
 /// Which project each window holds, and the name of the draft it holds, if any (brief D7).
-/// `ProjectLibrary`'s, moved out of it in slice 7 when the library reached SwiftLint's length
-/// limit; the library forwards to it and stays the only API.
+/// Kept out of `ProjectLibrary` in slice 7, which had reached SwiftLint's length limit; the
+/// library forwards to it and stays the only API.
 ///
 /// `owner` is held weakly, only so a window torn down without unregistering stops counting.
 struct WindowRegistry {
