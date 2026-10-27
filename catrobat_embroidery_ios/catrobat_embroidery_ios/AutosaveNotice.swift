@@ -48,8 +48,8 @@ enum AutosaveNotice {
 
     /// No message says which design is open now, since launch may have opened a blank one or the
     /// last opened (slice 7's D11 wording). A refused project file is never moved or overwritten
-    /// (brief D11), so it is always "kept" and stays in the list; the three "paused" messages
-    /// went with M4's set-aside.
+    /// (brief D11), so it is always "kept" and stays in the list. The three "paused" messages
+    /// went with M4's set-aside; their catalog entries were retired in slice 10.
     static func message(for refusal: ProgramRefusal) -> LocalizedStringResource {
         switch cause(of: refusal.reason) {
         case .newerApp: .autosaveRefusalMessageNewerKept

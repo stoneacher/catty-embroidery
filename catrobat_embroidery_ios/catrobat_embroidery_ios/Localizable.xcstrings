@@ -37,18 +37,6 @@
         }
       }
     },
-    "autosave.refusal.message.blocks.paused": {
-      "comment": "Alert message: the saved design was read, but its blocks (the visual programming pieces, e.g. a 'repeat' without its end) do not form a valid program. The old design could not be moved out of the way, so the app stops saving to avoid writing over it. 'For now' matters: saving may start again later. Must match autosave.failure.paused in meaning.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Some of its blocks don't fit together. A new, empty design is open instead, and to protect the old one, nothing will be saved for now."
-          }
-        }
-      }
-    },
     "autosave.refusal.message.damaged.kept": {
       "comment": "Alert message: the saved design could not be read. It may be damaged. Written for young users: no technical words like 'file' or 'data format'. It stays in the user's list of designs, unchanged; the user cannot open it yet, so promise nothing about getting it back. Say nothing about which design is open now: it may be a new one or the one opened last. Keep both sentences in one entry so pronouns can agree.",
       "extractionState": "manual",
@@ -61,18 +49,6 @@
         }
       }
     },
-    "autosave.refusal.message.damaged.paused": {
-      "comment": "Alert message: the saved design could not be read. It may be damaged. Written for young users: do not use technical words like 'file' or 'data format'. The old design could not be moved out of the way, so the app stops saving to avoid writing over it. 'For now' matters: saving may start again later. Must match autosave.failure.paused in meaning.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "It seems to be damaged. A new, empty design is open instead, and to protect the old one, nothing will be saved for now."
-          }
-        }
-      }
-    },
     "autosave.refusal.message.newer.kept": {
       "comment": "Alert message: the saved design was made by a newer version of this app, which this version cannot read. It is not broken. It stays in the user's list of designs, unchanged; the user cannot open it yet, so promise nothing about getting it back. Say nothing about which design is open now: it may be a new one or the one opened last. Keep both sentences in one entry so pronouns can agree.",
       "extractionState": "manual",
@@ -81,18 +57,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "It was made with a newer version of this app. It stays in your list, untouched."
-          }
-        }
-      }
-    },
-    "autosave.refusal.message.newer.paused": {
-      "comment": "Alert message: the saved design was made by a newer version of this app, which this version cannot read. It is not broken. The old design could not be moved out of the way, so the app stops saving to avoid writing over it. 'For now' matters: saving may start again later. Must match autosave.failure.paused in meaning.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "It was made with a newer version of this app. A new, empty design is open instead, and to protect the old one, nothing will be saved for now."
           }
         }
       }

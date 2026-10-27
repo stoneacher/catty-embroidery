@@ -53,11 +53,8 @@ struct AutosaveNoticeTests {
         let entries: [(resource: LocalizedStringResource, key: String)] = [
             (AutosaveNotice.refusalTitle, "autosave.refusal.title"),
             (.autosaveRefusalMessageNewerKept, "autosave.refusal.message.newer.kept"),
-            (.autosaveRefusalMessageNewerPaused, "autosave.refusal.message.newer.paused"),
             (.autosaveRefusalMessageDamagedKept, "autosave.refusal.message.damaged.kept"),
-            (.autosaveRefusalMessageDamagedPaused, "autosave.refusal.message.damaged.paused"),
             (.autosaveRefusalMessageBlocksKept, "autosave.refusal.message.blocks.kept"),
-            (.autosaveRefusalMessageBlocksPaused, "autosave.refusal.message.blocks.paused"),
             (AutosaveNotice.banner(for: .saveFailed), "autosave.failure.save"),
             (AutosaveNotice.banner(for: .refusedDocument), "autosave.failure.paused"),
             (.programTitleUntitled, "program.title.untitled")

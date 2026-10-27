@@ -184,12 +184,12 @@ struct AppModelTests {
         let chosen = try #require(SampleLibrary.all.first)
         let other = try #require(SampleLibrary.all.last)
 
-        #expect(!model.isSelected(chosen), "nothing is selected before the first tap")
+        #expect(model.selection?.provenance != chosen.id, "nothing is selected before the first tap")
 
         model.select(chosen)
 
-        #expect(model.isSelected(chosen))
-        #expect(!model.isSelected(other))
+        #expect(model.selection?.provenance == chosen.id)
+        #expect(model.selection?.provenance != other.id)
     }
 
     /// Choosing a design discards whatever the previous one left on the stage.
