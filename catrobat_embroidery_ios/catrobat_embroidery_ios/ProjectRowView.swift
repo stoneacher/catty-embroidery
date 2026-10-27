@@ -12,6 +12,9 @@ struct ProjectRowView: View {
     /// Read once per render by the list, so every row's "Edited …" agrees and nothing ticks
     /// under VoiceOver (`ProjectListPresentation.dateText`).
     let now: Date
+    /// Another window holds this design (brief D7), shown as a line of its own so the row says
+    /// why its Rename and Delete are disabled before the menu is opened.
+    let heldElsewhere: Bool
     let onOpen: () -> Void
 
     var body: some View {
@@ -59,6 +62,10 @@ struct ProjectRowView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if heldElsewhere {
+                    ProjectHeldLine()
+                }
             }
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -80,6 +87,25 @@ struct ProjectRowView: View {
         // Voice Control: "tap Rosette" rather than the whole sentence.
         .accessibilityInputLabels([Text(row.name)])
         .accessibilityAddTraits(row.isSelected ? [.isSelected] : [])
+    }
+}
+
+/// "Open in another window" under the date (slice 8, D7): the same words the menu shows as
+/// the disabled reason, so the row and the menu name one state once.
+///
+/// **Known gap**: VoiceOver does not hear it, because the row speaks only its tested sentence
+/// (`ProjectListPresentation.accessibilityLabel(for:now:)`) and the catalog has no variant
+/// with the held clause yet. The menu's disabled items still carry the reason.
+private struct ProjectHeldLine: View {
+    var body: some View {
+        // An `HStack`, not a `Label`, for `ProjectBadgeView`'s reason (the row's icon spacing).
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Image(systemName: "macwindow.on.rectangle")
+            Text(.projectActionHeld)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
     }
 }
 

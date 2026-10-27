@@ -43,6 +43,64 @@ struct ProjectListView: View {
         // being spelled twice in `RootView`'s branches, where the two copies could drift.
         .navigationTitle(Text(.rootTitle))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    model.newDesign()
+                } label: {
+                    // The icon in the bar; the title is what VoiceOver and Voice Control use.
+                    Label {
+                        Text(.projectListNew)
+                    } icon: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+        }
+        // One dialog for the list, not one per row (D9), driven by `AppModel.listState` so an
+        // iPad resize that rebuilds this view re-presents it rather than losing it (ADR-023).
+        // The binding's setter clears the request on any dismissal; after Delete it finds
+        // nothing left to clear, because SwiftUI runs a dialog's action *before* dismissing
+        // ("All actions in a confirmation dialog will dismiss the dialog after the action
+        // runs"), so `confirmDeletion()` runs once and sees the request.
+        .confirmationDialog(
+            Text(.projectDeleteTitle(model.listState.pendingDeletion?.name ?? "")),
+            isPresented: Binding(
+                get: { model.listState.pendingDeletion != nil },
+                set: {
+                    if !$0 {
+                        model.cancelDeletion()
+                    }
+                }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                model.confirmDeletion()
+            } label: {
+                Text(.projectActionDelete)
+            }
+            // No Cancel button of our own: the dialog supplies its standard one, in the system
+            // language, which is what the launch alert's empty actions rely on too.
+        } message: {
+            Text(.projectDeleteMessage)
+        }
+        .alert(
+            Text(model.listState.notice?.title ?? ""),
+            isPresented: Binding(
+                get: { model.listState.notice != nil },
+                set: {
+                    if !$0 {
+                        model.dismissListNotice()
+                    }
+                }
+            ),
+            presenting: model.listState.notice,
+            // Empty on purpose, as for the launch alert: the system supplies OK, and dismissing
+            // by it goes through the setter above.
+            actions: { _ in },
+            message: { Text($0.message) }
+        )
     }
 
     /// "My Designs": the project rows, or the empty state *inside* the section, so the
@@ -67,9 +125,15 @@ struct ProjectListView: View {
                 }
             case let .rows(rows):
                 ForEach(rows) { row in
-                    ProjectRowView(row: row, now: now) {
+                    let heldElsewhere = model.isHeldElsewhere(row.id)
+                    ProjectRowView(row: row, now: now, heldElsewhere: heldElsewhere) {
                         model.openProject(row.id)
                     }
+                    .projectRowActions(
+                        ProjectActions.states(for: row, heldElsewhere: heldElsewhere),
+                        onDuplicate: { model.duplicate(row.id) },
+                        onDelete: { model.requestDeletion(of: row) }
+                    )
                 }
             }
         } header: {

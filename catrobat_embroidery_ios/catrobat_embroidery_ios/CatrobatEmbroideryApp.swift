@@ -117,10 +117,20 @@ struct WindowRootView: View {
         .onChange(of: model.projectID) { _, new in
             storedProjectID = new.uuidString
         }
-        .onChange(of: scenePhase) { old, _ in
+        .onChange(of: scenePhase) { old, new in
             if old == .active {
                 model.sceneDidLeaveActive()
             }
+            if new == .active {
+                model.library.pruneDeadRegistrations()
+            }
+        }
+        // A window closed from the app switcher may never see `onDisappear`, and its registry
+        // entry dies only with its model (D7's weak references). Pruning here, and again when a
+        // window comes to the front, keeps a dead window from leaving another window's rows
+        // "Open in another window" (brief D7, UI plan). Library-wide, so any window may do it.
+        .onReceive(NotificationCenter.default.publisher(for: UIScene.didDisconnectNotification)) { _ in
+            model.library.pruneDeadRegistrations()
         }
         .onChange(of: model.saveFailure) { old, new in
             announce(new, replacing: old)
