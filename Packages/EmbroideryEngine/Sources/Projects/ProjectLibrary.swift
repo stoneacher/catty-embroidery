@@ -314,10 +314,9 @@ public final class ProjectLibrary {
         return id
     }
 
-    /// Renames a project no window holds: load, rename, save under a fresh revision, so a
-    /// window's save from before the rename cannot bring the old name back (brief D8). A
-    /// project a window holds is `.held` — its rename is that window's edit — and a refused or
-    /// missing one is `.blocked`; neither is written.
+    /// Renames a project no window holds: load, rename, save under a fresh revision, so an older
+    /// window's save cannot bring the old name back (D8). A held project is `.held` (its rename
+    /// is that window's edit), a refused or missing one `.blocked`; neither is written.
     public func rename(_ id: ProjectID, to name: DesignName) -> ProjectSaveOutcome {
         guard holders(of: id).isEmpty else {
             return .held
@@ -327,7 +326,9 @@ public final class ProjectLibrary {
         }
         var renamed = program
         renamed.name = name.value
-        return save(renamed, to: id, revision: mintRevision())
+        let outcome = save(renamed, to: id, revision: mintRevision())
+        if outcome == .failed { setFailure(nil, for: id) } // No window holds it to show it.
+        return outcome
     }
 
     /// `name` made unique among every name the user can see: persisted projects', refused

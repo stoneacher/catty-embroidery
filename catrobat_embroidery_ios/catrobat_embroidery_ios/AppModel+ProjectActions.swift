@@ -16,6 +16,7 @@ extension AppModel {
     /// A project whose last save failed is retried first, and kept if that fails again, as for a
     /// sample. A new design is a new selection, so the previous run goes and the stage refits.
     func newDesign() {
+        nameFieldLostFocus()
         guard canLeaveProject() else { return }
         startBlankDraft()
         path = [.script]

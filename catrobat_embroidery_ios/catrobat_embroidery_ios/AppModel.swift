@@ -234,9 +234,10 @@ final class AppModel {
         // Titled by `syncName()` below, the title's one writer.
         selection = ProgramSelection(generation: nextGeneration, provenance: nil, title: nil)
         nextGeneration += 1
+        // Before `path`: leaving the stage commits the field, which must hold this name by then.
+        syncName()
         path = [.script]
         palette.isPresented = false
-        syncName()
         interaction.followFit()
     }
 
@@ -332,6 +333,7 @@ final class AppModel {
     /// it runs before anything can play; `programChanged(from:to:)` voids a run for any change
     /// but a rename.
     func select(_ sample: SampleProgram) {
+        nameFieldLostFocus()
         guard canLeaveProject() else { return }
         selection = ProgramSelection(
             generation: nextGeneration, provenance: sample.id, title: sample.displayName

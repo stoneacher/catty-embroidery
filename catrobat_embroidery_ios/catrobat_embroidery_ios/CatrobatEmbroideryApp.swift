@@ -130,7 +130,9 @@ struct WindowRootView: View {
         // window comes to the front, keeps a dead window from leaving another window's rows
         // "Open in another window" (brief D7, UI plan). Library-wide, so any window may do it.
         .onReceive(NotificationCenter.default.publisher(for: UIScene.didDisconnectNotification)) { _ in
-            model.library.pruneDeadRegistrations()
+            // A turn later: the closing scene's model may still be alive while this is posted,
+            // and SwiftUI releases it afterwards (feature review, PR 2).
+            Task { @MainActor in model.library.pruneDeadRegistrations() }
         }
         .onChange(of: model.saveFailure) { old, new in
             announce(new, replacing: old)

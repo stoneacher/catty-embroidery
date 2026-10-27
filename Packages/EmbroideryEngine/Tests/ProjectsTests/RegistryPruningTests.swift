@@ -48,12 +48,15 @@ struct RegistryPruningTests {
         let window = WindowToken()
         library.register(window, owner: owner, holding: Self.project, draftName: nil)
 
-        #expect(!Self.notifies {
-            _ = library.holders(of: Self.project)
-        } when: {
-            library.pruneDeadRegistrations()
-        })
-        #expect(library.holders(of: Self.project) == [window])
+        // The owner must outlive the checks: the registry holds it weakly (feature review).
+        withExtendedLifetime(owner) {
+            #expect(!Self.notifies {
+                _ = library.holders(of: Self.project)
+            } when: {
+                library.pruneDeadRegistrations()
+            })
+            #expect(library.holders(of: Self.project) == [window])
+        }
     }
 }
 

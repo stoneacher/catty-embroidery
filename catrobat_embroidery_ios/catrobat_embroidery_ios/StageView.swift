@@ -322,6 +322,9 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         }
         // Focus *loss* is the second commit trigger, and it has to be watched from the owner
         // of the state. Only on losing it: gaining focus commits nothing.
+        // Typing again disarms the flag, so a Return that did not resign (a hardware keyboard,
+        // say) cannot turn the user's next real tap-out back into focus (feature review, PR 2).
+        .onChange(of: designName) { refocusesAfterRejectedSubmit = false }
         .onChange(of: isNameFocused) { _, focused in
             guard !focused else { return }
             guard refocusesAfterRejectedSubmit else {

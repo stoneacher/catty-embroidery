@@ -147,11 +147,57 @@ struct ProjectOpeningTests {
     func aHeldProjectOpens() {
         let app = Self.twoProjects()
         let other = app.window(scene: Self.second)
-        let model = app.window()
+        // On `first` by name: opening `second` above made it the last opened (feature review).
+        let model = app.window(scene: Self.first)
+        #expect(model.projectID == Self.first)
 
         model.openProject(Self.second)
 
         #expect(model.projectID == Self.second)
         #expect(app.library.holders(of: Self.second) == [other.window, model.window])
+    }
+
+    // MARK: Switching from the stage (feature review, PR 2)
+
+    /// On an iPad resized from compact, `path` can still hold the stage when the sidebar opens a
+    /// project; leaving the stage commits the field, which must not reach the new project.
+    @Test("opening a project while the stage is on the path writes nothing and keeps its name")
+    func openingFromTheStage() {
+        let app = Self.twoProjects()
+        let model = app.window()
+        model.path = [.script, .stage]
+
+        model.openProject(Self.second)
+
+        #expect(model.editor.program == Self.coil)
+        #expect(model.nameDraft == Self.coil.name)
+        #expect(app.store.saves.isEmpty)
+    }
+
+    @Test("a valid name typed but not yet committed goes to the project being left", arguments: Switch.allCases)
+    func aTypedNameGoesToTheProjectLeft(_ route: Switch) {
+        let app = Self.twoProjects()
+        let model = app.window()
+        model.path = [.script, .stage]
+        model.nameDraft = "Typed"
+
+        route.perform(on: model)
+
+        #expect(app.store.program(Self.first)?.name == "Typed")
+        #expect(model.editor.program.name != "Typed")
+        #expect(app.store.program(Self.second) == Self.coil)
+    }
+
+    enum Switch: CaseIterable {
+        case openProject, pickSample, newDesign
+
+        @MainActor
+        func perform(on model: AppModel) {
+            switch self {
+            case .openProject: model.openProject(ProjectOpeningTests.second)
+            case .pickSample: model.select(SampleLibrary[.arcFlower])
+            case .newDesign: model.newDesign()
+            }
+        }
     }
 }
