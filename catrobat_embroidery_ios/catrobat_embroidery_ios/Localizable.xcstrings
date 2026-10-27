@@ -2737,6 +2737,66 @@
         }
       }
     },
+    "project.notice.rename.failed.message": {
+      "comment": "Alert message under 'Couldn't Rename'. The design was not changed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong. It keeps its old name."
+          }
+        }
+      }
+    },
+    "project.notice.rename.failed.title": {
+      "comment": "Alert title: renaming one of the user's designs did not work. %@ is the design's old name. Title case.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Rename “%@”"
+          }
+        }
+      }
+    },
+    "project.rename.cancel": {
+      "comment": "Button in the rename sheet that closes it without changing the name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "project.rename.save": {
+      "comment": "Button in the rename sheet that saves the new name. Disabled while the name is not allowed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "project.rename.title": {
+      "comment": "Title of the sheet where the user types a new name for one of their designs. Title case. 'Design' means an embroidery design the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename Design"
+          }
+        }
+      }
+    },
     "project.row.accessibility.label": {
       "comment": "Spoken by VoiceOver for one of the user's designs. %1$@ is the design's name, %2$@ a relative time that arrives already translated, e.g. '5 minutes ago'. Arguments are positional and may be reordered.",
       "extractionState": "manual",

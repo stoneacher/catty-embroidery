@@ -197,7 +197,8 @@ struct ProjectListActionsTests {
         let app = Self.twoProjects()
         // Kept alive to the end: the registry holds windows weakly, so a discarded one holds nothing.
         let other = app.window(scene: Self.second)
-        let model = app.window()
+        // On `first` by name: opening `second` above made it the last opened.
+        let model = app.window(scene: Self.first)
         try model.requestDeletion(of: Self.row(Self.second, in: app))
 
         model.confirmDeletion()
@@ -205,6 +206,7 @@ struct ProjectListActionsTests {
         #expect(app.store.deletes.isEmpty)
         #expect(model.listState.notice == .heldElsewhere(name: Self.coil.name))
         #expect(other.projectID == Self.second)
+        #expect(model.projectID == Self.first)
     }
 
     @Test("a refused file can be deleted from the list")

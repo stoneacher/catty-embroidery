@@ -1,4 +1,5 @@
 import EditorCore
+import EmbroideryEngine
 import ProgramModel
 import Projects
 import StagePreview
@@ -70,6 +71,42 @@ extension AppModel {
         path = []
         runner.reset()
         interaction.followFit()
+    }
+
+    /// Opens the rename sheet on `row`'s name (D8). The open project starts from the name on
+    /// screen, which its file already has unless a save failed.
+    func beginRename(of row: ProjectRow) {
+        let name = row.id == projectID ? editor.program.name : row.name
+        listState.rename = RenameSession(id: row.id, originalName: name, text: name)
+    }
+
+    func cancelRename() {
+        listState.rename = nil
+    }
+
+    /// Saves the sheet's name, trimmed. An invalid one keeps the sheet open with what was typed
+    /// and returns `false`. Otherwise the sheet closes: the open project is renamed by an edit
+    /// (undoable, saved, keeping the run, D8), any other through the catalog, which refuses a
+    /// project another window holds; a refusal or failure is told. An unchanged name writes
+    /// nothing.
+    @discardableResult
+    func commitRename() -> Bool {
+        guard let session = listState.rename, case let .success(name) = session.validation else { return false }
+        listState.rename = nil
+        guard name.value != session.originalName else { return true }
+        guard session.id != projectID else {
+            editor.apply(.renameProgram(name.value))
+            return true
+        }
+        switch library.rename(session.id, to: name) {
+        case .written:
+            break
+        case .held:
+            listState.notice = .heldElsewhere(name: session.originalName)
+        case .superseded, .blocked, .failed, .deleted:
+            listState.notice = .renameFailed(name: session.originalName)
+        }
+        return true
     }
 
     /// The user has read the notice.

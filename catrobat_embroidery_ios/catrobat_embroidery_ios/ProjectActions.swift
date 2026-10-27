@@ -1,3 +1,4 @@
+import EmbroideryEngine
 import Foundation
 import Projects
 
@@ -55,12 +56,14 @@ enum ProjectListNotice: Equatable {
     case deleteFailed(name: String)
     case heldElsewhere(name: String)
     case duplicateFailed
+    case renameFailed(name: String)
 
     var title: LocalizedStringResource {
         switch self {
         case let .deleteFailed(name): .projectNoticeDeleteFailedTitle(name)
         case let .heldElsewhere(name): .projectNoticeHeldTitle(name)
         case .duplicateFailed: .projectNoticeDuplicateFailedTitle
+        case let .renameFailed(name): .projectNoticeRenameFailedTitle(name)
         }
     }
 
@@ -69,6 +72,7 @@ enum ProjectListNotice: Equatable {
         case .deleteFailed: .projectNoticeDeleteFailedMessage
         case .heldElsewhere: .projectNoticeHeldMessage
         case .duplicateFailed: .projectNoticeDuplicateFailedMessage
+        case .renameFailed: .projectNoticeRenameFailedMessage
         }
     }
 }
@@ -79,4 +83,23 @@ enum ProjectListNotice: Equatable {
 struct ProjectListState: Equatable {
     var pendingDeletion: PendingDeletion?
     var notice: ProjectListNotice?
+    var rename: RenameSession?
+}
+
+/// The rename sheet's transient buffer (brief D8): the raw text, possibly invalid, which reaches
+/// the program or the catalog only through `AppModel.commitRename()` as a valid name.
+struct RenameSession: Equatable, Identifiable {
+    let id: ProjectID
+    /// The name the sheet started from, which the notices name and an unchanged save compares.
+    let originalName: String
+    var text: String
+
+    var validation: Result<DesignName, DesignNameProblem> {
+        DesignName.validating(text)
+    }
+
+    /// Save is disabled while the name is invalid (D8).
+    var canSave: Bool {
+        if case .success = validation { true } else { false }
+    }
 }
