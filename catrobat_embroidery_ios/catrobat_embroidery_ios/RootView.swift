@@ -54,7 +54,7 @@ struct RootView: View {
         // safe default; the earlier `== .compact` inverted that and handed an
         // unknown environment the split. (In-loop review.)
         if horizontalSizeClass == .regular {
-            // **Three columns since US-407** (ADR-039): samples, the script, the stage — so the
+            // **Three columns since US-407** (ADR-039): the list, the script, the stage — so the
             // editor sits beside what it draws, which is ADR-010's whole promise for iPad.
             // `.balanced` rather than the automatic style, which in portrait *overlays* the
             // sidebar and content columns on the detail and would hide the script exactly
@@ -62,8 +62,8 @@ struct RootView: View {
             NavigationSplitView {
                 // The sidebar shows the selection, because the columns beside it
                 // *are* the selection. The stack does not — see
-                // `SamplePickerView.showsSelection`.
-                SamplePickerView(model: model, showsSelection: true)
+                // `ProjectListView.showsSelection`.
+                ProjectListView(model: model, showsSelection: true)
             } content: {
                 ScriptListView(model: model, placement: .column)
             } detail: {
@@ -77,7 +77,7 @@ struct RootView: View {
             // Compact is a chain: picker → script → stage. Every selection lands on the script
             // (`AppModel.path`), and the stage is pushed from its toolbar.
             NavigationStack(path: $model.path) {
-                SamplePickerView(model: model, showsSelection: false)
+                ProjectListView(model: model, showsSelection: false)
                     .navigationDestination(for: StageDestination.self) { destination in
                         switch destination {
                         case .script: ScriptListView(model: model, placement: .stack)
@@ -145,7 +145,10 @@ struct RootView: View {
             // round 2 had already moved it.
             onPlay: { model.play() },
             onStop: { model.runner.stop() },
-            onCommitName: { model.commitName() }
+            // Split since slice 9 (brief D8): Return keeps an invalid draft for the user to fix,
+            // focus loss abandons it. Both commit through `AppModel.commitName()`.
+            onSubmitName: { model.submitName() },
+            onNameFocusLost: { model.nameFieldLostFocus() }
         )
     }
 }

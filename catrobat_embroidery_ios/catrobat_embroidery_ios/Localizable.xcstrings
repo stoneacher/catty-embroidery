@@ -26,73 +26,37 @@
       }
     },
     "autosave.refusal.message.blocks.kept": {
-      "comment": "Alert message: the saved design was read, but its blocks (the visual programming pieces, e.g. a 'repeat' without its end) do not form a valid program. 'Kept safe' means the old design was moved out of the way untouched. It was not copied, so do not say 'copy'. The user cannot open it yet, so promise nothing about getting it back. Keep the two sentences in one entry so pronouns can agree.",
+      "comment": "Alert message: the saved design was read, but its blocks (the visual programming pieces, e.g. a 'repeat' without its end) do not form a valid program. It stays in the user's list of designs, unchanged; the user cannot open it yet, so promise nothing about getting it back. Say nothing about which design is open now: it may be a new one or the one opened last. Keep both sentences in one entry so pronouns can agree.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Some of its blocks don't fit together. It's been kept safe, and a new, empty design is open instead."
-          }
-        }
-      }
-    },
-    "autosave.refusal.message.blocks.paused": {
-      "comment": "Alert message: the saved design was read, but its blocks (the visual programming pieces, e.g. a 'repeat' without its end) do not form a valid program. The old design could not be moved out of the way, so the app stops saving to avoid writing over it. 'For now' matters: saving may start again later. Must match autosave.failure.paused in meaning.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Some of its blocks don't fit together. A new, empty design is open instead, and to protect the old one, nothing will be saved for now."
+            "value": "Some of its blocks don't fit together. It stays in your list, untouched."
           }
         }
       }
     },
     "autosave.refusal.message.damaged.kept": {
-      "comment": "Alert message: the saved design could not be read. It may be damaged. Written for young users: do not use technical words like 'file' or 'data format'. 'Kept safe' means the old design was moved out of the way untouched. It was not copied, so do not say 'copy'. The user cannot open it yet, so promise nothing about getting it back. Keep the two sentences in one entry so pronouns can agree.",
+      "comment": "Alert message: the saved design could not be read. It may be damaged. Written for young users: no technical words like 'file' or 'data format'. It stays in the user's list of designs, unchanged; the user cannot open it yet, so promise nothing about getting it back. Say nothing about which design is open now: it may be a new one or the one opened last. Keep both sentences in one entry so pronouns can agree.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "It seems to be damaged. It's been kept safe, and a new, empty design is open instead."
-          }
-        }
-      }
-    },
-    "autosave.refusal.message.damaged.paused": {
-      "comment": "Alert message: the saved design could not be read. It may be damaged. Written for young users: do not use technical words like 'file' or 'data format'. The old design could not be moved out of the way, so the app stops saving to avoid writing over it. 'For now' matters: saving may start again later. Must match autosave.failure.paused in meaning.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "It seems to be damaged. A new, empty design is open instead, and to protect the old one, nothing will be saved for now."
+            "value": "It seems to be damaged. It stays in your list, untouched."
           }
         }
       }
     },
     "autosave.refusal.message.newer.kept": {
-      "comment": "Alert message: the saved design was made by a newer version of this app, which this version cannot read. It is not broken. 'Kept safe' means the old design was moved out of the way untouched. It was not copied, so do not say 'copy'. The user cannot open it yet, so promise nothing about getting it back. Keep the two sentences in one entry so pronouns can agree.",
+      "comment": "Alert message: the saved design was made by a newer version of this app, which this version cannot read. It is not broken. It stays in the user's list of designs, unchanged; the user cannot open it yet, so promise nothing about getting it back. Say nothing about which design is open now: it may be a new one or the one opened last. Keep both sentences in one entry so pronouns can agree.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "It was made with a newer version of this app. It's been kept safe, and a new, empty design is open instead."
-          }
-        }
-      }
-    },
-    "autosave.refusal.message.newer.paused": {
-      "comment": "Alert message: the saved design was made by a newer version of this app, which this version cannot read. It is not broken. The old design could not be moved out of the way, so the app stops saving to avoid writing over it. 'For now' matters: saving may start again later. Must match autosave.failure.paused in meaning.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "It was made with a newer version of this app. A new, empty design is open instead, and to protect the old one, nothing will be saved for now."
+            "value": "It was made with a newer version of this app. It stays in your list, untouched."
           }
         }
       }
@@ -2533,6 +2497,54 @@
         }
       }
     },
+    "project.action.delete": {
+      "comment": "Menu item and swipe button on one of the user's designs: delete it, after a confirmation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "project.action.duplicate": {
+      "comment": "Menu item on one of the user's designs: make a copy of it, which appears in the list.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate"
+          }
+        }
+      }
+    },
+    "project.action.held": {
+      "comment": "Why Rename and Delete are unavailable for a design: it is open in another window of this app (iPad). Shown under the disabled menu item and under the design in the list.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open in another window"
+          }
+        }
+      }
+    },
+    "project.action.rename": {
+      "comment": "Menu item on one of the user's designs: give it a new name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        }
+      }
+    },
     "project.default.name": {
       "comment": "The name a new, blank design gets (and the name of its embroidery file). It is written into the machine file, so it must be at most 15 characters of plain ASCII (letters, digits, spaces, common punctuation); a translation that is not falls back to English. Keep it short and generic.",
       "extractionState": "manual",
@@ -2541,6 +2553,294 @@
           "stringUnit": {
             "state": "translated",
             "value": "Design"
+          }
+        }
+      }
+    },
+    "project.delete.message": {
+      "comment": "Message of the confirmation before deleting one of the user's designs. There is no trash or undo, so do not promise any way back.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This design will be deleted. This can't be undone."
+          }
+        }
+      }
+    },
+    "project.delete.title": {
+      "comment": "Title of the confirmation before deleting one of the user's designs. %@ is the design's name. Use your language's quotation marks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete “%@”?"
+          }
+        }
+      }
+    },
+    "project.list.empty.description": {
+      "comment": "Shown under 'No Designs Yet'. '+' is the add button at the top of the screen; keep the symbol. The examples are listed below this text.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap + to start a new design, or pick an example below."
+          }
+        }
+      }
+    },
+    "project.list.empty.title": {
+      "comment": "Title shown in place of the user's own designs while they have none. Title case.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Designs Yet"
+          }
+        }
+      }
+    },
+    "project.list.new": {
+      "comment": "Accessibility name and tooltip of the '+' button that starts a new, empty design. Title case. 'Design' means an embroidery design the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Design"
+          }
+        }
+      }
+    },
+    "project.list.section.mine": {
+      "comment": "Header of the list of the user's own embroidery designs on the main screen, above the examples. 'Designs' means embroidery patterns the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Designs"
+          }
+        }
+      }
+    },
+    "project.notice.delete.failed.message": {
+      "comment": "Alert message under 'Couldn't Delete'. Nothing was deleted. 'Design' means an embroidery design the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong. The design is still there."
+          }
+        }
+      }
+    },
+    "project.notice.delete.failed.title": {
+      "comment": "Alert title: deleting one of the user's designs did not work. %@ is the design's name. Title case.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Delete “%@”"
+          }
+        }
+      }
+    },
+    "project.notice.duplicate.failed.message": {
+      "comment": "Alert message under 'Couldn't Duplicate the Design'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong. Nothing was copied."
+          }
+        }
+      }
+    },
+    "project.notice.duplicate.failed.title": {
+      "comment": "Alert title: copying one of the user's designs did not work. Title case. 'Design' means an embroidery design the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Duplicate the Design"
+          }
+        }
+      }
+    },
+    "project.notice.held.message": {
+      "comment": "Alert message under 'Is Open in Another Window'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close it there first, then try again."
+          }
+        }
+      }
+    },
+    "project.notice.held.title": {
+      "comment": "Alert title: a design cannot be deleted because it is open in another window of this app (iPad). %@ is the design's name. Title case.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” Is Open in Another Window"
+          }
+        }
+      }
+    },
+    "project.notice.rename.failed.message": {
+      "comment": "Alert message under 'Couldn't Rename'. The design was not changed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong. It keeps its old name."
+          }
+        }
+      }
+    },
+    "project.notice.rename.failed.title": {
+      "comment": "Alert title: renaming one of the user's designs did not work. %@ is the design's old name. Title case.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't Rename “%@”"
+          }
+        }
+      }
+    },
+    "project.rename.cancel": {
+      "comment": "Button in the rename sheet that closes it without changing the name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "project.rename.save": {
+      "comment": "Button in the rename sheet that saves the new name. Disabled while the name is not allowed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "project.rename.title": {
+      "comment": "Title of the sheet where the user types a new name for one of their designs. Title case. 'Design' means an embroidery design the user built from blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename Design"
+          }
+        }
+      }
+    },
+    "project.row.accessibility.label": {
+      "comment": "Spoken by VoiceOver for one of the user's designs. %1$@ is the design's name, %2$@ a relative time that arrives already translated, e.g. '5 minutes ago'. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, edited %2$@"
+          }
+        }
+      }
+    },
+    "project.row.accessibility.label.damaged": {
+      "comment": "Spoken by VoiceOver for one of the user's designs that could not be read: it cannot be opened, only deleted. %1$@ is the design's name, %2$@ a relative time that arrives already translated. Must agree with project.row.badge.damaged. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, damaged, edited %2$@. It can only be deleted."
+          }
+        }
+      }
+    },
+    "project.row.accessibility.label.newer": {
+      "comment": "Spoken by VoiceOver for one of the user's designs that was made with a newer version of this app: it cannot be opened, only deleted. %1$@ is the design's name, %2$@ a relative time that arrives already translated. Must agree with project.row.badge.newer. Arguments are positional and may be reordered.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, needs a newer app, edited %2$@. It can only be deleted."
+          }
+        }
+      }
+    },
+    "project.row.badge.damaged": {
+      "comment": "Small label on one of the user's designs that could not be read and seems broken. Short: it sits under the design's name. Written for young users: no technical words like 'file' or 'data format'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Damaged"
+          }
+        }
+      }
+    },
+    "project.row.badge.newer": {
+      "comment": "Small label on one of the user's designs that was made with a newer version of this app and cannot be opened here. It is not broken. Short: it sits under the design's name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs a newer app"
+          }
+        }
+      }
+    },
+    "project.row.edited": {
+      "comment": "Under each of the user's designs: when it was last changed. %@ is a relative time that arrives already translated, e.g. '5 minutes ago' or 'yesterday'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edited %@"
+          }
+        }
+      }
+    },
+    "project.row.unnamed": {
+      "comment": "Name shown for one of the user's designs that could not be read well enough to know its name. Written for young users: no technical words like 'file' or 'data format'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unnamed design"
           }
         }
       }

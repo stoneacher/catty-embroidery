@@ -66,7 +66,7 @@ struct WorkingProgramTests {
         let selection = try #require(model.selection)
         #expect(selection.provenance == nil)
         #expect(String(localized: try #require(selection.title)) == "Untitled Design")
-        #expect(!model.samples.contains { model.isSelected($0) }, "no sample row claims the blank program")
+        #expect(model.selection?.provenance == nil, "no sample claims the blank program")
         #expect(model.path == [.script], "the first screen is the blank program's script")
 
         model.play()
@@ -95,13 +95,16 @@ struct WorkingProgramTests {
         model.select(sample)
         let loaded = try #require(model.selection)
         #expect(loaded.provenance == sample.id)
-        #expect(model.isSelected(sample))
+        #expect(model.selection?.provenance == sample.id)
 
         model.editor.apply(Self.edit)
 
         let edited = try #require(model.selection, "an edit must not clear the selection itself")
         #expect(edited.provenance == nil)
-        #expect(!model.isSelected(sample), "the picker highlight still claims the edited program is the sample")
+        #expect(
+            model.selection?.provenance != sample.id,
+            "the selection still claims the edited program is the sample"
+        )
         // What an edit must *not* touch: the title (still this design), the generation (not a
         // new selection) and the path (the stage stays on screen). The export's name is the
         // program's (M5, one name), so it follows the edit, which here is a rename.
@@ -121,7 +124,6 @@ struct WorkingProgramTests {
 
         #expect(result == .rejected(.cannotInsertLoopEnd))
         #expect(model.selection?.provenance == sample.id)
-        #expect(model.isSelected(sample))
     }
 
     // MARK: 4 — reloading

@@ -55,7 +55,7 @@ struct SyntheticHarnessTests {
         model.select(synthetic)
 
         #expect(model.selection?.provenance == .us309Synthetic)
-        #expect(model.isSelected(synthetic))
+        #expect(model.selection?.provenance == synthetic.id)
         // Its program's name, as for every sample (M5, one name), and valid — a name the field
         // rejected would leave the export gate shut in every screenshot.
         #expect(try model.exporter.validatedName.get().value == synthetic.program.name)

@@ -33,10 +33,10 @@ struct PaletteView: View {
                                 PaletteRowView(row: row)
                             }
                             // `.plain` keeps the sentence untinted, and the style restores the
-                            // pressed state `.plain` drops — `SamplePickerView`'s reasons.
+                            // pressed state `.plain` drops — `PickerRowButtonStyle`'s reasons.
                             .buttonStyle(PickerRowButtonStyle())
                             // Zeroed so the label is the whole row's hit area; the row
-                            // re-applies the spacing inside (`SamplePickerView`).
+                            // re-applies the spacing inside (`SampleRowView`).
                             .listRowInsets(EdgeInsets())
                         }
                     } header: {

@@ -160,6 +160,25 @@ extension ProjectLibraryTests {
     }
 }
 
+// MARK: - PR 2 feature review (`swift-code-reviewer`)
+
+extension ProjectLibraryTests {
+    /// No window holds a project the catalog renames, so nothing should show its failure: a
+    /// window opening it later would otherwise announce a save failure for a project it never
+    /// edited (feature review, PR 2). The caller tells the user instead.
+    @Test("a failed rename leaves no failure behind")
+    func aFailedRenameLeavesNoFailure() throws {
+        let store = InMemoryProjectStore([Self.first: .program(Self.named("Star"))])
+        store.failingSaves = [Self.first]
+        let library = Self.library(store)
+
+        #expect(try library.rename(Self.first, to: Self.name("Moon")) == .failed)
+
+        #expect(library.failure(for: Self.first) == nil)
+        #expect(store.program(Self.first) == Self.named("Star"))
+    }
+}
+
 /// A flag an observation callback can set; the callback is `@Sendable`, so it cannot capture a
 /// local `var`.
 private final class ObservationFlag: @unchecked Sendable {

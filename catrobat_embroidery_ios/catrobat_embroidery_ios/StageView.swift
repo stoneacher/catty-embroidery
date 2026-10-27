@@ -60,7 +60,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     let exportReadiness: ExportControl.Readiness
 
     /// A draft of the design's name, owned by `AppModel` (ADR-023, brief D8) and edited here;
-    /// it reaches the program only through `onCommitName`.
+    /// it reaches the program only through `onSubmitName` and `onNameFocusLost`.
     @Binding var designName: String
 
     /// The name's verdict. Passed in rather than computed, so the field, the counter and the
@@ -72,13 +72,32 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     let onPlay: () -> Void
     let onStop: () -> Void
 
-    /// Called when the name is committed — on submit and on focus loss, **never per
-    /// keystroke**, because each commit is a rename edit that re-prepares the export.
-    let onCommitName: () -> Void
+    /// Return in the name field. Returns whether the name was committed; `false` means the
+    /// draft was invalid and is still the field's text, so the field keeps focus (brief D8).
+    /// Like `onNameFocusLost`, **never per keystroke**: each commit is a rename edit that
+    /// re-prepares the export.
+    let onSubmitName: () -> Bool
+
+    /// Focus left the name field: a valid draft is committed, an invalid one gives way to the
+    /// committed name (D8).
+    let onNameFocusLost: () -> Void
 
     /// Declared here rather than in `DesignNameField`, because focus *loss* is what triggers
     /// the commit and only the owner of the state can watch for it.
     @FocusState private var isNameFocused: Bool
+
+    /// Set by a rejected Return, to swallow the focus loss that Return itself causes.
+    ///
+    /// **The trap this closes** (slice 9's UI plan): a single-line `TextField` resigns first
+    /// responder on Return whatever `onSubmit` does, so `isNameFocused` turns false right after
+    /// a rejected submit, and the focus-loss handler would revert the very text the submit was
+    /// meant to keep. The flag tells that loss apart from a real one (an iPad's keyboard-dismiss
+    /// key, another field taking focus): the one loss it marks takes focus back instead of
+    /// calling `onNameFocusLost`. View-local, because it is a fact about UIKit's Return handling,
+    /// not about the name. Re-asserting focus synchronously inside `onChange` held on the
+    /// simulator (iOS 26, 2026-10-27): the log read submit → focus false (flag set) → focus true,
+    /// with no deferral needed.
+    @State private var refocusesAfterRejectedSubmit = false
 
     private var state: StageContentState {
         .resolving(
@@ -102,7 +121,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         // the notices scroll, and **both** pinned action rows never shrink. US-308 added the
         // second row; the sentence above used to say "the transport button", singular.
         VStack(spacing: 12) {
-            canvasSlot
+            canvasSlot.simultaneousGesture(tapOutOfName)
             notices
             // Above the transport row, not below it: the transport button is this screen's
             // primary action and stays nearest the thumb. `.bordered` against its
@@ -113,7 +132,8 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             // Hidden while the name is being edited. At AX4–AX5 with the keyboard raised the
             // two pinned rows plus the canvas floor exceed a short device's height, and there
             // is no outer `ScrollView` to absorb it (`canvasSlot`). You cannot share a name
-            // you are still typing, and the keyboard's Done key is the way out.
+            // you are still typing, and the keyboard's Done key is the way out — for a valid
+            // name; an invalid one keeps focus on Done until it is fixed (slice 9, D8).
             if !isNameFocused, title != nil {
                 StageExportRow(readiness: exportReadiness)
             }
@@ -123,6 +143,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
                 onPlay: onPlay,
                 onStop: onStop
             )
+            .simultaneousGesture(tapOutOfName)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -282,7 +303,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
     ///
     /// The field is a slot rather than three more parameters on `StageNotices`, because
     /// `@FocusState.Binding` can only come from the view that declares the `@FocusState` —
-    /// and the commit it drives belongs here, next to `onCommitName`.
+    /// and the commit it drives belongs here, next to `onSubmitName` and `onNameFocusLost`.
     private var notices: some View {
         StageNotices(
             display: display,
@@ -296,16 +317,37 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
                     validation: nameValidation,
                     isFocused: $isNameFocused
                 )
-                .onSubmit(onCommitName)
+                .onSubmit(submitName)
             }
         }
         // Focus *loss* is the second commit trigger, and it has to be watched from the owner
         // of the state. Only on losing it: gaining focus commits nothing.
+        // Typing again disarms the flag, so a Return that did not resign (a hardware keyboard,
+        // say) cannot turn the user's next real tap-out back into focus (feature review, PR 2).
+        .onChange(of: designName) { refocusesAfterRejectedSubmit = false }
         .onChange(of: isNameFocused) { _, focused in
-            if !focused {
-                onCommitName()
+            guard !focused else { return }
+            guard refocusesAfterRejectedSubmit else {
+                onNameFocusLost()
+                return
             }
+            refocusesAfterRejectedSubmit = false
+            isNameFocused = true
         }
+    }
+
+    /// A tap on the canvas or the transport row drops the name's focus, giving D8's focus-loss
+    /// commit-or-revert a tap path on iPhone (Sebastian, 2026-10-27). Simultaneous, so the
+    /// canvas's recognisers and the button still take the same tap; a no-op when unfocused.
+    private var tapOutOfName: some Gesture {
+        TapGesture().onEnded { isNameFocused = false }
+    }
+
+    /// A rejected Return keeps the text, the error and focus (D8). The flag is armed before
+    /// the resignation that follows, which `onChange` above then turns back into focus.
+    private func submitName() {
+        guard !onSubmitName() else { return }
+        refocusesAfterRejectedSubmit = true
     }
 }
 
@@ -325,7 +367,8 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             nameValidation: DesignName.validating(""),
             onPlay: {},
             onStop: {},
-            onCommitName: {}
+            onSubmitName: { true },
+            onNameFocusLost: {}
         )
     }
 }
@@ -346,7 +389,8 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
             nameValidation: DesignName.validating("OctagonRosette"),
             onPlay: {},
             onStop: {},
-            onCommitName: {}
+            onSubmitName: { true },
+            onNameFocusLost: {}
         )
     }
 }

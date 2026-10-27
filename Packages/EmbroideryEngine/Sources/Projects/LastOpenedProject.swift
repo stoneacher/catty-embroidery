@@ -28,4 +28,11 @@ public final class LastOpenedProject {
             }
         }
     }
+
+    /// Stops remembering `id`, if it is the one remembered (a deleted project, D9).
+    func forget(_ id: ProjectID) {
+        if self.id == id {
+            self.id = nil
+        }
+    }
 }

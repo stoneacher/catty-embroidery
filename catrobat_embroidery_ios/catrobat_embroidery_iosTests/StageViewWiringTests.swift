@@ -64,7 +64,8 @@ struct StageViewWiringTests {
             nameValidation: DesignName.validating("OctagonRosette"),
             onPlay: {},
             onStop: {},
-            onCommitName: {}
+            onSubmitName: { true },
+            onNameFocusLost: {}
         )
     }
 

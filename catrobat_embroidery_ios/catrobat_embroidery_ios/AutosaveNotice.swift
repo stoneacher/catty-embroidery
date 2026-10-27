@@ -1,5 +1,6 @@
 import EditorCore
 import Foundation
+import ProgramModel
 import Projects
 
 /// What the window says about the saved program (US-406): the launch refusal's alert and the
@@ -31,9 +32,10 @@ enum AutosaveNotice {
     /// deliberately does not — a nesting depth means nothing to the young users this is for.
     static func cause(of reason: ProgramLoadError) -> Cause {
         switch reason {
-        case .document(.unsupportedVersion):
+        // Only a version above the app's own is "newer"; 0 or below is damage (slice 2 note).
+        case let .document(.unsupportedVersion(version)) where version > Program.currentFormatVersion:
             .newerApp
-        case .document(.corrupt), .document(.encodingFailed), .unreadable:
+        case .document(.unsupportedVersion), .document(.corrupt), .document(.encodingFailed), .unreadable:
             .damaged
         case .document(.unbalancedScript), .document(.formulaTooDeep):
             .blocksDontFit
@@ -44,10 +46,10 @@ enum AutosaveNotice {
         .autosaveRefusalTitle
     }
 
-    /// Every message also says a blank design was opened, which is wrong when launch opened the
-    /// last opened project instead (a known gap: the copy for that case comes with slice 7's
-    /// D11 wording). A refused project file is never moved or overwritten (brief D11), so it is
-    /// always "kept"; the three "paused" messages went with M4's set-aside.
+    /// No message says which design is open now, since launch may have opened a blank one or the
+    /// last opened (slice 7's D11 wording). A refused project file is never moved or overwritten
+    /// (brief D11), so it is always "kept" and stays in the list. The three "paused" messages
+    /// went with M4's set-aside; their catalog entries were retired in slice 10.
     static func message(for refusal: ProgramRefusal) -> LocalizedStringResource {
         switch cause(of: refusal.reason) {
         case .newerApp: .autosaveRefusalMessageNewerKept

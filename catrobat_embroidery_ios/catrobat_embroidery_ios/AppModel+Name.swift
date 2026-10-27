@@ -20,8 +20,8 @@ extension AppModel {
     /// stores it), and the field shows it; an invalid one is abandoned and the field returns to
     /// the committed name. Returns whether the draft was valid.
     ///
-    /// Called on submit and on focus loss, **never per keystroke**: each rename is an edit and
-    /// re-prepares the export. Keeping focus on an invalid submit is the field's (slice 9).
+    /// Reached through `submitName()` and `nameFieldLostFocus()`, **never per keystroke**: each
+    /// rename is an edit and re-prepares the export.
     @discardableResult
     func commitName() -> Bool {
         guard case let .success(name) = nameDraftValidation else {
@@ -33,6 +33,21 @@ extension AppModel {
         }
         syncName()
         return true
+    }
+
+    /// Return in the stage's field (slice 9, D8): a valid draft is committed; an invalid one
+    /// stays as typed, so the field can keep focus and show the error. Returns whether it was
+    /// committed.
+    @discardableResult
+    func submitName() -> Bool {
+        guard case .success = nameDraftValidation else { return false }
+        return commitName()
+    }
+
+    /// Focus left the stage's field (D8): a valid draft is committed, an invalid one gives way
+    /// to the committed name.
+    func nameFieldLostFocus() {
+        commitName()
     }
 
     /// One name (brief D4): the export's name and the stage's title are the program's, and the
