@@ -118,4 +118,20 @@ struct LegacyListingTests {
         #expect(library.files.map(\.id) == [Self.migrated])
         #expect(library.failure(for: Self.migrated) == .refusedDocument)
     }
+
+    /// The alone-flag must follow the row: once a real fixed-ID file is found, its delete must
+    /// reach the store (Codex, PR 2 round 2).
+    @Test("a fixed-ID project found after the legacy row was listed alone is deleted from the store")
+    func aLaterProjectFileIsDeleted() throws {
+        let launch = Launch(legacy: Self.refusedLegacy(.document(.corrupt)))
+        let library = Self.library(over: launch)
+        library.migrateLegacyIfNeeded(defaultName: LegacyMigrationTests.defaultName)
+        launch.projects.entries[Self.migrated] = .program(LegacyMigrationTests.coil)
+        #expect(library.open(Self.migrated) == .opened(LegacyMigrationTests.coil))
+
+        try library.delete(Self.migrated)
+
+        #expect(launch.projects.deletes == [Self.migrated])
+        #expect(launch.projects.program(Self.migrated) == nil)
+    }
 }

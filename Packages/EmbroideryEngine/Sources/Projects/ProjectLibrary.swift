@@ -285,9 +285,7 @@ public final class ProjectLibrary {
         tombstones.insert(id)
         // The tombstone makes launch skip this ID before it could find it missing and clear it
         // (Codex, slice 5), so the delete clears it.
-        if lastOpened.id == id {
-            lastOpened.id = nil
-        }
+        lastOpened.forget(id)
         files.removeAll { $0.id == id }
         blocked.remove(id)
         setFailure(nil, for: id)
@@ -389,7 +387,9 @@ public final class ProjectLibrary {
         }
     }
 
+    /// A real summary for the fixed ID means a project file stands behind it now (Codex round 2).
     private func upsert(_ file: ProjectFile) {
+        legacyListedAlone = legacyListedAlone && file.id != .legacyWorkingProgram
         if let index = files.firstIndex(where: { $0.id == file.id }) {
             files[index] = file
         } else {
