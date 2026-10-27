@@ -145,7 +145,10 @@ struct RootView: View {
             // round 2 had already moved it.
             onPlay: { model.play() },
             onStop: { model.runner.stop() },
-            onCommitName: { model.commitName() }
+            // Split since slice 9 (brief D8): Return keeps an invalid draft for the user to fix,
+            // focus loss abandons it. Both commit through `AppModel.commitName()`.
+            onSubmitName: { model.submitName() },
+            onNameFocusLost: { model.nameFieldLostFocus() }
         )
     }
 }

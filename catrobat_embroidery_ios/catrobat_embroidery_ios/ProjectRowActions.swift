@@ -7,9 +7,11 @@ import SwiftUI
 /// come from there, where they are tested. `.open` is not here because it is the row's tap.
 ///
 /// Delete only *asks* (`AppModel.requestDeletion(of:)`); the one confirmation dialog lives on
-/// `ProjectListView`, so nothing is removed from a menu or a swipe alone (D9).
+/// `ProjectListView`, so nothing is removed from a menu or a swipe alone (D9). Rename likewise
+/// only opens `RenameSheet` (slice 9, D8), which `ProjectListView` presents once for the list.
 struct ProjectRowActions: ViewModifier {
     let states: [ProjectActionState]
+    let onRename: () -> Void
     let onDuplicate: () -> Void
     let onDelete: () -> Void
 
@@ -17,9 +19,7 @@ struct ProjectRowActions: ViewModifier {
         content
             .contextMenu {
                 if let rename = state(of: .rename) {
-                    // Slice 9: the rename sheet. Until then the item is shown with its D7 state,
-                    // so the menu's shape and its disabled reason are already what ships.
-                    button(rename, title: .projectActionRename, systemImage: "pencil") {}
+                    button(rename, title: .projectActionRename, systemImage: "pencil", action: onRename)
                 }
                 if let duplicate = state(of: .duplicate) {
                     button(duplicate, title: .projectActionDuplicate, systemImage: "plus.square.on.square",
@@ -80,9 +80,10 @@ struct ProjectRowActions: ViewModifier {
 extension View {
     func projectRowActions(
         _ states: [ProjectActionState],
+        onRename: @escaping () -> Void,
         onDuplicate: @escaping () -> Void,
         onDelete: @escaping () -> Void
     ) -> some View {
-        modifier(ProjectRowActions(states: states, onDuplicate: onDuplicate, onDelete: onDelete))
+        modifier(ProjectRowActions(states: states, onRename: onRename, onDuplicate: onDuplicate, onDelete: onDelete))
     }
 }

@@ -101,6 +101,21 @@ struct ProjectListView: View {
             actions: { _ in },
             message: { Text($0.message) }
         )
+        // One sheet for the list, on the same terms as the dialog above: the session lives in
+        // `listState`, so a container swap re-presents it with the typed text. Save and Cancel
+        // clear the session themselves; the setter is for a swipe down, which is a Cancel.
+        .sheet(
+            item: Binding(
+                get: { model.listState.rename },
+                set: {
+                    if $0 == nil {
+                        model.cancelRename()
+                    }
+                }
+            )
+        ) { _ in
+            RenameSheet(model: model)
+        }
     }
 
     /// "My Designs": the project rows, or the empty state *inside* the section, so the
@@ -131,6 +146,7 @@ struct ProjectListView: View {
                     }
                     .projectRowActions(
                         ProjectActions.states(for: row, heldElsewhere: heldElsewhere),
+                        onRename: { model.beginRename(of: row) },
                         onDuplicate: { model.duplicate(row.id) },
                         onDelete: { model.requestDeletion(of: row) }
                     )
