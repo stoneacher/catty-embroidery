@@ -3989,3 +3989,15 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 ## 2026-10-28 — The drift check's finding is filed as US-331
 
 - Sebastian agreed to a backlog entry for the homeless format-freeze trigger recorded in the previous entry. It is **US-331**, which proposes a release checklist with a home (the TestFlight checkpoint or a `/release` command), the frozen-v1 census test, and an ADR-037 amendment naming the trigger. The roadmap's M5 paragraph links to it.
+
+## 2026-10-28 — PR #82 Codex round 1: the close claimed more coverage than it had
+
+- **Highest severity: Medium. The round changed the branch.** It produced three findings, all valid.
+- **Medium, fixed: "M5 closed" overstated coverage.** The first drift-check entry above admits that the M4 extraction skimmed its stories. AGENTS.md defined the step as a graph "over the whole corpus", and the journal exclusion was recorded only in that entry. Three fixes:
+  - **Full re-read:** the 15 M4 stories were re-extracted with every line read (1,179 lines, 145 nodes against the skim's 77; 161,199 tokens) and merged. The rebuilt graph has 6,854 nodes, 18,388 edges and 290 communities, and the health check is clean.
+  - **Triage:** the re-read added five `semantically_similar_to` edges, for 48 in total. All five pair rules that ADRs own, and each story cites them: ADR-032 invariant 2 (US-402, US-404 and US-411 cite it), ADR-036/037 (coalescing session and save revision) and ADR-044 (the two stage transients). The result holds: 48 edges, none a reinvented invariant.
+  - **ADR-041 amendment (2026-10-28):** it names the corpus (the repository minus `.graphifyignore`), widens the triage to every similarity edge with a document endpoint, and makes coverage part of the result, so an agent that skims is re-run. AGENTS.md and CLAUDE.md now say the same.
+- **Correction to the first drift-check entry above:** it called the journal "not a source of rules". That is too strong. The journal does record decisions (e.g. "the roadmap's features table owns the order", 2026-10-27). The accurate claim, now in ADR-041, is that a rule stated only in the journal binds nothing until it reaches an ADR, the roadmap, a brief or the backlog. Those are what the check reads.
+- **Low, fixed: the two agent-guidance files disagreed.** AGENTS.md still required the whole corpus while CLAUDE.md described the exclusion. Both now carry the amendment's wording.
+- **Low, fixed: the amendment date.** The ADR-037 amendment behind US-331 is dated 2026-10-18; 2026-10-17 is the date of Sebastian's decision. US-331 now gives both. The first drift-check entry's "2026-10-17 amendment" means the same 2026-10-18 amendment.
+- **What Codex saw that I did not:** I had written the skim down as an acceptable caveat. Codex read it as what it was: a gap in exactly the place the check is meant to look. Fixing it cost 161k tokens, and the triage result did not change. The value is that the close is now supported by its own record.

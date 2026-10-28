@@ -313,7 +313,7 @@ does. Worth re-checking against the US-309 capture notes before deciding priorit
 
 **Found**: 2026-10-28, by M5's knowledge-graph drift check (a `semantically_similar_to` edge between project management D10 and brick backend D8).
 - **The commitment:** project management D10 says ADR-037's format freeze "becomes a release-checklist step, with a frozen-v1 vocabulary census test added at that step".
-- **The gap:** there is no release checklist: none in the roadmap, this backlog, any ADR or `.claude/commands/`. ADR-037's 2026-10-17 amendment records the three admission operations (content-derived stamp, `≤ current` decode, refuse content newer than its stamp) "so the freeze cannot happen without it", but nothing triggers it.
+- **The gap:** there is no release checklist: none in the roadmap, this backlog, any ADR or `.claude/commands/`. ADR-037's 2026-10-18 amendment (Sebastian's decision of 2026-10-17) records the three admission operations (content-derived stamp, `≤ current` decode, refuse content newer than its stamp) "so the freeze cannot happen without it", but nothing triggers it.
 - **Why it matters:** the freeze has to happen before the first build reaches anyone else. Missing it is silent: every test stays green, and the first vocabulary change after distribution ships under v1. An older build then reads that file as `.corrupt` instead of `.unsupportedVersion`.
 
 **What taking it would involve.**
