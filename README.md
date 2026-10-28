@@ -50,9 +50,8 @@ sign-off. Like all Catrobat projects it is licensed under [AGPL-3.0](LICENSE).
 - **Universal.** iPhone first, with an adaptive layout on iPad. All user-facing
   strings are in String Catalogs, ready for Catrobat's translations.
 
-**Next up:** a smoother stage at 60 fps (US-316), then a runner for the
-[Catrobat Language Tests](docs/ROADMAP.md#features-from-2026-10-09). The runner
-needs a first, partial `.catrobat` importer.
+**Next up:** see the [features table in the roadmap](docs/ROADMAP.md#features-from-2026-10-09),
+which is the one place the order is kept.
 
 ## Architecture
 

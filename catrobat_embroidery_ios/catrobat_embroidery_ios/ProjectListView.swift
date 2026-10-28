@@ -86,7 +86,10 @@ struct ProjectListView: View {
             Text(.projectDeleteMessage)
         }
         .alert(
-            Text(model.listState.notice?.title ?? ""),
+            // No literal fallback: a `""` here is a localized literal, which Xcode extracts into the
+            // String Catalog as an empty key (found after PR #80 merged). The alert is shown only
+            // with a notice, so the empty `String` value is never on screen.
+            model.listState.notice.map { Text($0.title) } ?? Text(String()),
             isPresented: Binding(
                 get: { model.listState.notice != nil },
                 set: {
