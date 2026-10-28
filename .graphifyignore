@@ -1,0 +1,14 @@
+# Knowledge-graph drift check (ADR-041): the question is whether new work
+# reinvented an invariant an ADR owns, so the graph covers the rule-bearing docs.
+
+# The journal is an append-only narrative record, not a source of rules, and
+# whole-file --update re-reads it at ever-growing cost.
+docs/workflow-journal.md
+
+# Images and asset catalogs carry no invariants.
+docs/screenshots/
+docs/android_refs/*.png
+catrobat_embroidery_ios/catrobat_embroidery_ios/Assets.xcassets/
+
+# Sample and fixture data, guarded by tests rather than prose.
+Packages/EmbroideryEngine/Sources/Samples/Resources/*.json

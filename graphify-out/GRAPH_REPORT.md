@@ -1,917 +1,1278 @@
-# Graph Report - catty-embroidery  (2026-09-18)
+# Graph Report - catty-embroidery  (2026-10-28)
 
 ## Corpus Check
-- 130 files · ~788,577 words
+- 309 files · ~652,523 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3549 nodes · 9196 edges · 196 communities (153 shown, 43 thin omitted)
-- Extraction: 74% EXTRACTED · 26% INFERRED · 0% AMBIGUOUS · INFERRED: 2380 edges (avg confidence: 0.8)
-- Token cost: 568,020 input · 0 output
+- 6787 nodes · 18278 edges · 300 communities (219 shown, 81 thin omitted)
+- Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 3471 edges (avg confidence: 0.8)
+- Token cost: 743,674 input · 0 output
 
 ## Community Hubs (Navigation)
-- Preview Run State & Batches
-- Stitch Display List & Summary
-- Stage Render Transform & Layers
-- Frame Time Recorder
-- Stage Interaction Transitions
-- Interpreter & Program Model
-- Embroidery Stream & Points
-- Stage Manipulation Channels
-- Frame Time Statistics
-- Script & Paired Control
-- M3 Performance Story Specs
-- Interpreter Driver & Budgets
-- M2 Story Specs
-- Stitch Draw Plan
-- Package Products & Golden Glue
-- Stage Canvas & Pan Directions
-- Draw Plan Coarsening
-- Stage Transform Test Glue
-- Bake Scheduling & Timing
-- Stage Transform Core
-- Stage Transform Math
-- Stage & Manipulation ADRs
-- DST Semantics ADRs
-- Zigzag Stitch Pattern
-- Formula & Variable Scope
-- Stage Box & Fit Targets
-- Interpreter Events & Runs
-- Repo Process & Review Docs
-- Canvas Stitch Strokes
-- Export View Model
-- Export Readiness & Control
-- Run View Model
-- Pattern Manager & Actors
-- Manipulation Catcher
-- Run State & Transport Row
-- SwiftUI Manipulation Wiring
-- Brick Enum & Defaults
-- App Model & Selection
-- Gesture Stubs & Recording
-- DST File Name Sanitisation
-- Preview Fixtures & Divergence
-- Stage Fitting & View Size
-- Target Layout ADRs
-- Arithmetic & Threshold ADRs
-- Stage Point & Traversal
-- DST File Assembly
-- DST Stitch Record Codec
-- Stage Accessibility Strings
-- Preview Stitch & Run Batch
-- Export & Lifecycle ADRs
-- Sample Programs & Budgets
-- Stepper Embroidery Runs
-- Golden Fixture Readers
-- Stage Zoom Bounds
-- DST Header & Field Errors
-- Running Stitch
-- Golden Program Oracle
-- Synthetic 50k Design
-- Design Name Validation
-- Recogniser Coordinator
-- Design Name Field Layout
-- Design Name Presentation
-- Frame Time Readout
-- Sample Library Wiring
-- Program Model Builders
-- Cross-Target Test Files
-- Manipulation Wiring Tests
-- DST Header Tests
-- Running Stitch Pattern
-- Sew-Up Bar Tack
-- Triple Stitch Pattern
-- Golden Program Consumption
-- Temporary DST File Writer
-- Object & Codable Model
-- DST Header Field Append
-- Accessibility Memoisation
-- Touch Tracking View
-- Stage View Composition
-- Needle Glyph Rendering
-- US-307 Stage Screenshots
-- Interpolation & Rounding
-- Thread Color Hex
-- Golden Square Byte Runs
-- DST Header Field Types
-- Golden Square Programs
-- Export & Formula Errors
-- Run Screen Screenshots
-- Script Compiler Runtime
-- Stitch Segment Style
-- CI Jobs & Lint Rules
-- Project Guidance Docs
-- Formula Evaluation Runtime
-- Interpolation Predicates
-- Sample Threshold Screening
-- Stage Toggle & Pan
-- App Target Test Files
-- Export Control Readiness
-- Interpreter Core Concepts
-- Virtual Needle Apply
-- Stitch Draw Metrics
-- Draw Plan Windowing
-- DST Round-Trip Decode
-- Pattern Manager Colour Tests
-- Golden Star Program Tests
-- Threshold Screening Probe
-- Sample Picker View
-- Stage Field View
-- DST File Writing Seam
-- Coarsening Corner Rule
-- Pattern Manager Layers
-- Virtual Needle Brick Tests
-- DST Design & Export Row
-- Export Eligibility Tests
-- UTType Declaration
-- US-306 Accessibility Screenshots
-- Square Coil Screenshots
-- Octagon Rosette Screenshots
-- iPad Sidebar Screenshots
-- Canvas Renderer Protocol
-- Stage Summary Invariants
-- M3 Close-Out ADR Notes
-- Export After Stop
-- Virtual Needle Tests
-- Gesture Stub Doubles
-- Dual-Driver Workflow Docs
-- US-306 Stage Screenshots
-- Run State Revision Model
-- Byte Diff Reporting
-- Golden Square Manual Path
-- Octagon Rosette Goldens
-- Binary Operator Enum
-- Gated Run Pacing
-- Dark Mode Screenshots
-- Display vs Export Model
-- Compensated Magnitude
-- Square Coil Goldens
-- Synthetic Design Builder
-- App Root & Window Scene
-- Run Session Async Stream
-- Stage Content State
-- App String Catalog Tests
-- Export Error Semantics
-- Frame Capture Instrument
-- DST Serialization Contract
-- Raster & Buffering Policy
-- Stage Gesture Value
-- Stepper Stitch Colors
-- Sample Library Tests
-- Stage View Wiring
-- Script Representation ADR
-- M3 Milestone Stories
-- Run Lifecycle Screenshots
-- Export Eligibility Reasons
-- Settling Phase Enum
-- Manipulation Channel Enum
-- DST Header Numeric Fields
-- Transform Interpolation
-- UI Definition of Done
-- Coarse Span Rules
-- Brick Codable Tests
-- SampleRunHarness.swift
-- bracketedWaitProgram()
-- StageRenderTransformTests
-- SampleLinkageTests
-- ADR-029 fallback ladder and the frame-
-- Mutation as the substitute for red whe
-- DoubleEquality.swift
-- StageZoomAdjustment.swift
-- SplitMix64
-- SampleDSTTests
-- The .success exit test — proving red a
-- ADR-028 amendment — one commit per man
-- GoldenSquareLiterals.swift
-- ADR-022 — Samples and StagePreview as 
-- Buildability check — every story's sym
-- Export gates on assembledStream().coun
-- The BakeKey settledCount hazard (liven
-- StageCommitCounter (#if DEBUG instrume
-- PackageDescription
+- Testing & EmbroideryEngine
+- ADR index & ADR-023 Local gate
+- ADR-028 Zoom/pan, fit-aware & ADR-029 50,000-stitch measurement
+- ADR-018 Interpreter tick & ADR-014 Pattern arithmetic
+- AppModel & .launch
+- ADR-012 DST semantics: & ADR-020 Engine coordinate
+- InterpreterEvent & recordPositions
+- UndoStack & .apply
+- ProgramModel & EditorCore
+- EmbroideryStream & EmbroideryPoint
+- Brick & BrickListDiff
+- String & .value
+- Script & ScriptValidationError
+- previewStitch & StitchDisplayList
+- PreviewRunState & .apply
+- Roadmap — Embroidery & Project management feature
+- catrobat_embroidery_ios & Samples
+- .save & ProjectLibraryTests
+- .window & App
+- Equatable & ProgramLoadError
+- Formula & FormulaTests
+- .apply & EditInsertAndDeleteTests
+- tagProfile & ForVariableFromToTests
+- ProjectID & InMemoryProjectStore
+- Foundation & DSTHeaderFieldReader
+- StageInteraction & .commit
+- driveToCompletion & RunBudget
+- EmbroideryEngine package README & ADR-050 One file
+- BrickKind & .template
+- ViewPoint & .gesture
+- PaletteInsertTests & HistoryAnnouncementTests
+- Program & PreviewFixtures
+- Milestone 2 — & US-201 Program model
+- Variable & .program
+- Sendable & ThreadColor
+- FrameTimeRecorder & .start
+- View & FormulaSlotEditor
+- RunViewModel & InterpreterDriver
+- RunningStitch & .perform
+- Launch & LegacyMigrationTests
+- DesignNameProblem & .validating
+- DSTHeader & DSTFieldWidthChokepointTests
+- StagePoint & ZigzagStitchPattern
+- .validating & DSTFileNameTests
+- inDisposableDirectory & DocumentsProgramStore
+- PaletteRowPresentation & IfBlockPresentationTests
+- ParameterSlot & ParameterValue
+- .displayList & .coarse
+- StageTransform & ViewSize
+- SampleLibrary & WorkingProgramTests
+- BinaryOperator & BinaryFunction
+- DocumentsProjectStore & DocumentsProjectStoreTests
+- ViewPoint & StageTransform
+- ArcInterpreterTests & AndroidReference
+- ADR-041 Unit of & CLAUDE.md
+- Interpreter & StepperLoopTests
+- SwiftUI & UIKit
+- Recording & .wired
+- FormulaTextTests & .text
+- SampleProgram & SampleID
+- .run & .interpreter
+- fastest & milliseconds
+- ProjectLibrary & ProjectFile
+- .title & .message
+- FormulaLogicTests & .value
+- ExportViewModel & ExportViewModelTests
+- ViewSize & .fitting
+- StageManipulation & StageFrozenFitTests
+- PaletteGroup & PalettePresentationTests
+- StitchDrawPlan & CanvasStitchStrokeTests
+- UnaryFunction & CaseIterable
+- BrickAddress & EditAction
+- FormulaFunctionTests & .value
+- Settled/live split with & InterpreterDriver
+- DSTFile & DSTFileTests
+- RunState & .appearance
+- String & .validate
+- .run & screen
+- IfExecutionTests & .profile
+- DesignName & RenameSession
+- .readiness & Readiness
+- NeedleUpdate & Scene
+- EditResult & ParameterTarget
+- AnchorView & UndoResponderAnchor
+- ParameterEditorKind & BrickParameterTests
+- EditRejection & AddressComponent
+- DSTStitchRecord & DSTStitchRecordTests
+- StageBox & .fitTarget
+- ScriptAddress & VariableMenu
+- ADR-040 Parameter editing, & ADR-043 Stage rendering
+- RowIdentitiesTests & RowIdentities
+- StagePanDirection & .panned
+- UndoBridgeTests & UndoManager
+- .planning & DotRun
+- StageManipulationCatcher & StageManipulationCatcherTests
+- Renderer & Level
+- Coordinator & .update
+- Run & .step
+- runAndSerialize & GoldenSquareBytesTests
+- BrickRowPresentationTests & .rows
+- .window & ProjectNameTests
+- ThreadSwatch & ThreadPaletteTests
+- BrickRowPresentation & .rows
+- EditorViewModel & .init
+- .apply & VirtualNeedle
+- AccessibilityMoveTests & .applied
+- IfBlockAccessibilityMoveTests & .applied
+- replayGoldenProgram & GoldenProgramOracle
+- .program & SyntheticDesignTests
+- FrameTimeStatistics & FrameTimeStatisticsTests
+- Image & ProjectBadge
+- ParameterEditingTests & .editor
+- StageManipulationWiringTests & .theRendererSeesLiveThenSettledAcrossAManipulation
+- ADR-027 Run lifecycle: & onProgramChanged void-the-run chokepoint
+- Instruction & .compile
+- interpreter & DisplayVersusExportModelTests
+- IfBlockEditingTests & .apply
+- ExportControlTests & .readiness
+- StageRenderTransform & StageRenderTransformTests
+- SampleLibrary.all & StagePreview target
+- .decode & ProgramDocumentAdmissionTests
+- TraversalPredicateTests & .requiresTraversal
+- .content & ProjectListPresentationTests
+- WindowRegistry & .register
+- ProjectActionState & ProjectRowAction
+- CanvasStitchLayers & BakeKey
+- .indent & .guideOffsets
+- StageView & .drawnStage
+- ProgramDocumentInspectionTests & .inspect
+- RunningStitchPattern & .update
+- TripleStitchPattern & .update
+- EditorCoreFixtures & .randomAction
+- ArcTests & .updates
+- GoThroughTests & .updates
+- AutosaveNotice & Cause
+- ComparisonOperator & ComparisonOperatorPicker
+- TemporaryDSTFileWriter & .inDisposableDirectory
+- .of & FrameCaptureVerdictTests
+- .parse & .text
+- HistoryTransitionTests & .window
+- .bricks & .matchingEnd
+- Field & .appendField
+- DSTHeaderField & dstHeaderTag
+- StageCanvas & .body
+- ProjectListActionsTests & .twoProjects
+- ProjectOpeningTests & .twoProjects
+- .outline & NeedleGlyphTests
+- .parse & FormulaLiteralTests
+- EditableComparison & ComparisonSide
+- ListEditingTests & .drag
+- InterpolationTests & EmbroideryStream
+- ExportError & ExportState
+- ScriptListView & .list
+- StageTouchTrackingView & .touchesBegan
+- EditorViewModelTests & .loopedEditor
+- ExportWiringTests & .immediateModel
+- .encode & ProgramDocumentRoundTripTests
+- .reducing & PreviewNeedle
+- .baseline & StageMagnificationLimitsTests
+- FormulaCase & FormulaCensusTests
+- IfBlockModelTests & .json
+- SampleRowView & PickerRowButtonStyle
+- .geometry & Geometry
+- .stage & .hosting
+- StageZoomBounds & StageZoomBoundsTests
+- .classifying & StitchSegmentStyleTests
+- ScriptSiblingJumpTests & .matchingOpenerIsNilWhereUnresolvable
+- StepperSensorTests & .finalPosition
+- DrainedRun & RunSession
+- .select & ProgramSelection
+- FormulaLogicTextTests & .text
+- RGB & StageFieldRenderingTests
+- .canAppend & .distanceInUnits
+- .beginToggle & StageToggleAndPanTests
+- WaitUntilTests & .tag
+- DesignNameField & .problemLine
+- .builtFromNothingRunsAndExports & .play
+- Edit & .text
+- .resolving & StageContentState
+- VirtualNeedle & EmbroideryPatternManager
+- Interpreter & ObjectRuntime
+- .threadWidth & StitchDrawMetricsTests
+- .live & StitchDrawPlanWindowTests
+- InsertionPointTests & .inserted
+- EmbroideryPatternManagerTests & .changesAndBoundarySumInCO
+- GoldenProgramStarTests & .run
+- VirtualNeedleBrickTests & .isClose
+- ProjectRow & .accessibilityLabel
+- StageNotices & .exportNoticeLine
+- post_bash_reminders.py & classify
+- EditorCore & ScriptEdit
+- StitchDrawPlanCoarseningRuleTests & .isCorner
+- .entire & StitchDrawPlanTests
+- EmbroideryPatternManagerLayerTests & .actorChangeAtNegativeHalfUnitGap
+- FormulaCodableShapeTests & .json
+- ArcFlowerTests & .usesTheNewVocabulary
+- SunburstTests & .radius
+- FrameCaptureVerdict & Bool
+- ProgramDocumentError & .depthLimitCoversEveryFormulaPosition
+- CompensatedMagnitudeTests & compensatedMagnitude
+- ExportEligibilityTests & .drive
+- .window & .openParameterEditor
+- UndoManagerBridge & HistoryDirection
+- PaletteInsetTests & .inset
+- StubPinch & CGPoint
+- UTTypeDeclarationTests & .claimsTheExtension
+- CanvasStitchRenderer & EmbroideryStream.requiresTraversal
+- .driveUntilStitched & ExportAfterStopTests
+- StageSummary & .theSummarySizeAgreesBetweenBothModels
+- Nesting & .functionChain
+- VirtualNeedleTests & .isClose
+- ArcBrickEditorTests & .init
+- firstByteDifference & ByteDiffTests
+- BrickLeadingView & .mark
+- .theStageBoxMapsToTheSameViewRectAsItsMappedCorners & .viewRect
+- .rows & BrickRowActionsTests
+- FormulaFunctionTextTests & .text
+- .running & .update
+- .interpreter & StepperStitchColorTests
+- .stitches & SyntheticDesign
+- .states & ProjectActionStateTests
+- ProgramDocument & .admit
+- Exported UTType org.catrobat.embroiderydesigner.dst & DSTSerializationError.fieldOverflow
+- ADR-025 — throwing & DesignName
+- StageGesture & .anchor
+- SampleLibraryTests & SampleProgram
+- FrameTimeReadout & .caption
+- StageExportRow
+- Channel & Bool
+- .program & .depthLimitCoversUnaryMinus
+- FrameTimeProxy & FrameTimeRecorder
+- StageCatcherFrozenFitTests & .frame
+- Flat script compiled & loopEnd pure marker
+- EditorCoreTargetIsolationTests & strippedAndNormalised
+- BrickTests & .nanFormulaPayloadReflexiveButNotEncodable
+- inDisposableDirectory & .body
+- StitchPattern protocol & RunningStitchPattern
+- SampleRunHarness & StageBounds
+- brick-dispatch-probe.sh & brick-dispatch-probe.sh script
+- Trait & HangGuard
+- coarseningStride — a & liveCoarseningThreshold = 4
+- The coarse-span rule & Coarsen, do not
+- Script & Script+IndentDepths
+- Double & .isSameValue
+- StageZoomAdjustment
+- StageCommitCounter & .record
+- No-hardcoded-strings SwiftLint rule & SwiftPM does not
+- .dstBytes & .endToEnd
+- StageDrawCounter
+- The .success exit & The already-green test
+- The mid-gesture fraying & StitchDrawPlan.isCorner — a
+- StageCommitCounter & The tail discriminator
+- The three recogniser & The touch-counting view
+- PackageDescription & Package
+- App
 - Binding
-- Never
+- Bool
+- SampleProgram
+- Program
+- RunUpdate
 - Task
+- Renderer
+- Renderer
+- SampleProgram
+- SampleProgram
+- CheckedContinuation
+- UIWindow
+- ClosedRange
 - Content
-- Backlog-at-discovery-time policy
-- Golden byte-identity with no re-blessi
-- Each row is a single VoiceOver element
-- Thread colours are design data, only c
+- drawn=251 animating signature
+- Display-link quantisation to
+- -US310FrameTimes launch argument
+- Golden byte-identity with
+- Each row is
+- Thread colours are
 - Press-play empty state
-- Temporary synchronous drain in AppMode
+- Temporary synchronous drain
 - Deferred thread-contrast casing
-- reset() as one assignment (value-type 
-- Abbreviated for the eye, wide for the 
+- reset as one
+- Abbreviated for the
+- Why the stride
+- No wall-clock ratio
+- The temporal seam
+- US-313's inherited invariant
+- AC13 A/B —
+- Deliberately not built:
+- Four camera-relative directional
+- Accessibility string memoisation
+- Package-only first stories
+- US-316 not taken
 - DragGesture
-- Gesture
 - MagnifyGesture
+- Never
+- StagePoint
+- SampleProgram
+- SampleSelection
+- Self
 - SimultaneousGesture
+- StageContentState
+- VirtualNeedle
 
 ## God Nodes (most connected - your core abstractions)
-1. `StagePoint` - 258 edges
-2. `EmbroideryEngine` - 129 edges
-3. `Testing` - 124 edges
-4. `StageInteraction` - 99 edges
-5. `Interpreter` - 88 edges
-6. `EmbroideryStream` - 83 edges
-7. `Script` - 81 edges
-8. `StagePreview` - 79 edges
-9. `Program` - 76 edges
-10. `PreviewRunState` - 76 edges
+1. `StagePoint` - 315 edges
+2. `Program` - 269 edges
+3. `Testing` - 240 edges
+4. `Brick` - 232 edges
+5. `ProgramModel` - 207 edges
+6. `EmbroideryEngine` - 170 edges
+7. `Formula` - 168 edges
+8. `AppModel` - 138 edges
+9. `Interpreter` - 130 edges
+10. `StageInteraction` - 117 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Fixed frame-time bar (p99 <= 16.67 ms, no frame > 33.3 ms)` --semantically_similar_to--> `ADR-012 is the arbiter where references disagree`  [INFERRED] [semantically similar]
-  docs/us-309-device-handoff.md → CLAUDE.md
-- `An ADR outranks any generated artifact (graph, index, summary)` --semantically_similar_to--> `ADR-012 is the arbiter where references disagree`  [INFERRED] [semantically similar]
-  AGENTS.md → CLAUDE.md
-- `Custom rule: hardcoded user-facing string` --semantically_similar_to--> `Local commit gate hook (a convenience, not an enforcement boundary)`  [INFERRED] [semantically similar]
-  .swiftlint.yml → CLAUDE.md
-- `Custom rule: hardcoded user-facing string` --semantically_similar_to--> `US-312 — Thread colours do not survive export`  [INFERRED] [semantically similar]
-  .swiftlint.yml → docs/user-stories/backlog.md
-- `Graph drift check is defined by its output, not its effort` --semantically_similar_to--> `Knowledge-graph drift check at milestone close`  [INFERRED] [semantically similar]
-  AGENTS.md → CLAUDE.md
+- `Sample builders are the single source of truth (no SHA-256)` --semantically_similar_to--> `ADR-012 is the arbiter between references`  [INFERRED] [semantically similar]
+  Packages/EmbroideryEngine/Sources/Samples/Resources/PROVENANCE.md → CLAUDE.md
+- `Brief Status: Done grep proof` --semantically_similar_to--> `Knowledge-graph drift check at milestone close`  [INFERRED] [semantically similar]
+  .claude/commands/finish.md → CLAUDE.md
+- `Sample trust verification in embroidery viewer` --semantically_similar_to--> `Manual Ink/Stitch verification callout`  [INFERRED] [semantically similar]
+  Packages/EmbroideryEngine/Sources/Samples/Resources/PROVENANCE.md → .claude/commands/finish.md
+- `Skipped job reports success (vacuous required check)` --semantically_similar_to--> `Never commit red / [red] escape hatch`  [INFERRED] [semantically similar]
+  .github/workflows/release-build.yml → CLAUDE.md
+- `Variable names pinned to English identifiers` --semantically_similar_to--> `localized_user_facing_strings rule`  [INFERRED] [semantically similar]
+  Packages/EmbroideryEngine/Sources/Samples/Resources/PROVENANCE.md → .swiftlint.yml
 
 ## Import Cycles
 - None detected.
 
 ## Hyperedges (group relationships)
-- **The DST byte-semantics arbitration chain** — docs_decisions_adr_005, docs_decisions_adr_012, docs_decisions_adr_013, docs_decisions_adr_015, docs_decisions_adr_020, docs_decisions_adr_025, docs_decisions_catroid_is_authoritative, docs_decisions_javaround [EXTRACTED 1.00]
-- **The M3 rendering and performance chain (ADR-009's bet to its measurement)** — docs_decisions_adr_009, docs_decisions_adr_021, docs_decisions_adr_024, docs_decisions_adr_027, docs_decisions_adr_028, docs_decisions_adr_029, docs_decisions_adr_030, docs_decisions_adr_031, docs_decisions_fallback_ladder [EXTRACTED 1.00]
-- **Package layering and what the fast gate protects** — docs_decisions_adr_002, docs_decisions_adr_006, docs_decisions_adr_016, docs_decisions_adr_022, docs_decisions_adr_023, docs_decisions_local_gate_vs_ci [INFERRED 0.85]
-- **The US-309 frame-time instrument** — docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_frametimerecorder, docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_frametimeproxy, docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_frametimestatistics, docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_framecaptureverdict, docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_stagedrawcounter [EXTRACTED 1.00]
-- **The coarse mid-gesture draw plan** — docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_segmentindexpair, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_coarsespanrule, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_perrundotstriding, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_coarseningstride, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_forframe, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_iscorner [EXTRACTED 1.00]
-- **The M3 60 fps criterion evidence chain** — docs_user_stories_milestone_3_readme_exitcriteria, docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_midgesturefailure, docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_fallbackladder, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan, docs_user_stories_milestone_3_readme_a15capture, docs_user_stories_milestone_3_readme_taildiscriminator [EXTRACTED 1.00]
-- **The DST export pipeline: gate → name → serialise → write → share** — docs_user_stories_milestone_3_us_308_design_name_and_dst_export_exporteligibility, docs_user_stories_milestone_3_us_308_design_name_and_dst_export_designname, docs_user_stories_milestone_3_us_308_design_name_and_dst_export_dstfilename, docs_user_stories_milestone_3_us_308_design_name_and_dst_export_eager_preparation, docs_user_stories_milestone_3_us_308_design_name_and_dst_export_dstfilewriting, docs_user_stories_milestone_3_us_308_design_name_and_dst_export_dstdesign, docs_user_stories_milestone_3_us_308_design_name_and_dst_export_uttype_dst [EXTRACTED 1.00]
+- **The DST contract (ADR-012/013/015/020/025)** — docs_decisions_adr_012, docs_decisions_adr_013, docs_decisions_adr_015, docs_decisions_adr_020, docs_decisions_adr_025 [EXTRACTED 1.00]
+- **Replacing Swift traps with guarded no-ops or typed errors** — docs_decisions_guarded_no_op, docs_decisions_embroidery_point_converting, docs_decisions_split_cap_1m, docs_decisions_lattice_guard, docs_decisions_dst_serialization_error [INFERRED 0.85]
+- **Two-layer LA name safety (DesignName, DSTFileName, sanitized backstop)** — docs_decisions_design_name, docs_decisions_dst_file_name, docs_decisions_sanitized_backstop, docs_decisions_unicode_scalars_rule [EXTRACTED 1.00]
+- **ADR-032 cross-cutting process invariants** — docs_decisions_invariant_no_reword, docs_decisions_invariant_test_cannot_fail, docs_decisions_invariant_correction_every_copy, docs_decisions_invariant_execute_premise [EXTRACTED 1.00]
+- **M4 program change pipeline (edit, undo, void run, autosave)** — docs_decisions_editor_view_model, docs_decisions_undostack, docs_decisions_editresult, docs_decisions_on_program_changed, docs_decisions_save_revision, docs_decisions_undomanager_bridge [INFERRED 0.85]
+- **ADR-009 rendering bet: measurement and fallback ladder** — docs_decisions_fallback_ladder, docs_decisions_settle_chunk, docs_decisions_coarse_span_rule, docs_decisions_live_segment_target, docs_decisions_metal_stitch_renderer, docs_decisions_fill_rate_hypothesis [INFERRED 0.85]
+- **Pinned divergences from Catroid numeric/execution semantics** — docs_decisions_floored_modulo_divergence, docs_decisions_arctan2_zero_divergence, docs_decisions_java_round_semantics, docs_decisions_decimal128_comparison_divergence, docs_decisions_degenerate_brick_guard, docs_decisions_compute_then_commit [INFERRED 0.85]
+- **Control-brick execution under ADR-018 tick model** — docs_decisions_if_lowering, docs_decisions_us_323_rule, docs_decisions_repeatuntil_execution, docs_decisions_waituntil_execution, docs_decisions_forvariablefromto_execution, docs_decisions_adr_018 [EXTRACTED 1.00]
+- **ADR-041 feature workflow quality safeguards** — docs_decisions_feature_unit_of_work, docs_decisions_codex_loop_cap_5, docs_decisions_pr_size_limit, docs_decisions_risky_slice_review, docs_decisions_mutation_check_every_slice, docs_decisions_brief_review [EXTRACTED 1.00]
+- **Variables control bricks executed under ADR-049** — docs_features_variables_if_execution, docs_features_variables_repeat_until, docs_features_variables_wait_until, docs_features_variables_for_variable_from_to, docs_features_variables_truthiness_per_brick [EXTRACTED 1.00]
+- **Per-project persistence pipeline (store, library, registry, refusal block, migration)** — docs_features_project_management_documents_project_store, docs_features_project_management_project_library, docs_features_project_management_window_registry, docs_features_project_management_refused_file_write_block, docs_features_project_management_legacy_migration, docs_features_project_management_one_file_per_project [EXTRACTED 1.00]
+- **Post-M4 features organised by ADR-041** — docs_features_editor_ui, docs_features_brick_backend, docs_features_variables, docs_features_project_management, docs_features_stage_60fps_tail, docs_roadmap_language_test_runner [EXTRACTED 1.00]
+- **M3 60 fps measurement chain (bar, recorder, hand-off, ladder)** — docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_frame_time_statistics, docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_cadisplaylink_recorder, docs_us_309_device_handoff_instruments_protocol, docs_us_309_device_handoff_fallback_ladder, docs_decisions_adr_029, docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_mid_gesture_failure [INFERRED 0.85]
+- **Cross-cutting process invariants no ADR owns** — criterion_non_rewording, test_that_cannot_fail, docs_user_stories_milestone_3_us_309_fifty_thousand_stitch_exit_criterion_guard_input_rule, docs_user_stories_milestone_3_readme_kg_drift_check_m3 [INFERRED 0.75]
+- **Stage manipulation layer (ADR-028/031, StageManipulation, gesture input)** — docs_decisions_adr_028, docs_decisions_adr_031, docs_user_stories_milestone_3_us_313a_manipulation_as_a_package_value_stage_manipulation, docs_user_stories_milestone_3_us_313a_manipulation_as_a_package_value_centroid_pan_derivation, docs_user_stories_milestone_3_us_313a_manipulation_as_a_package_value_bakekey_live_gating, docs_user_stories_milestone_3_us_313a_manipulation_as_a_package_value_uiviewrepresentable_choice [EXTRACTED 1.00]
+- **M4 edit pipeline: apply → undo → autosave → void run** — docs_user_stories_milestone_4_us_402_edit_action_and_apply_apply_funnel, docs_user_stories_milestone_4_us_403_undo_stack_undostack, docs_user_stories_milestone_4_us_406_autosave_autosave, docs_user_stories_milestone_4_readme_applied_edit_voids_run, docs_user_stories_milestone_4_us_405_working_program_working_program [INFERRED 0.85]
+- **Loop pair semantics (ADR-035) consumers** — docs_decisions_adr_035, docs_user_stories_milestone_4_us_402_edit_action_and_apply_apply_funnel, docs_user_stories_milestone_4_us_409_palette_tap_to_add_brick_palette, docs_user_stories_milestone_4_readme_onmove_destination_conversion, docs_user_stories_milestone_4_us_408_reorder_and_delete_move_into_loop_actions [INFERRED 0.85]
+- **Stage transient defects carried into M4** — docs_user_stories_milestone_4_us_314_frozen_manipulation_baseline_frozen_manipulation_baseline, docs_user_stories_milestone_4_us_315_keyboard_transform_transient_hoop_field_in_stitch_canvas, docs_user_stories_milestone_4_us_315_keyboard_transform_transient_transient_invisible_to_stills, docs_decisions_adr_028 [INFERRED 0.75]
+- **Required status checks gating merge to main (ADR-023)** — _github_workflows_ci_engine_tests, _github_workflows_ci_app_build_and_test, _github_workflows_ci_lint, _github_workflows_release_build_release_device_compile, docs_decisions_adr_023 [EXTRACTED 0.95]
+- **Feature handover process: slice gates, Codex loop, close-out** — _claude_commands_codex_review_codex_review_loop, _claude_commands_codex_review_convergence_stop_condition, _claude_commands_finish_session_checklist, _claude_commands_finish_slice_quality_gates, agents_two_layer_review, _claude_commands_finish_status_done_proof [INFERRED 0.85]
+- **Stitch generation to DST export pipeline** — packages_embroideryengine_readme_stitchpattern, packages_embroideryengine_readme_embroiderypatternmanager, packages_embroideryengine_readme_embroiderystream, packages_embroideryengine_readme_dstfile, packages_embroideryengine_readme_dstheader, packages_embroideryengine_readme_dststitchrecord [EXTRACTED 0.95]
 - **What keeps the DST header's fixed-width fields safe** — docs_user_stories_milestone_3_us_211_dst_field_width_chokepoint_dstserializationerror, docs_user_stories_milestone_3_us_211_dst_field_width_chokepoint_dstheader_field, docs_user_stories_milestone_3_us_211_dst_field_width_chokepoint_emission_order_contract, docs_user_stories_milestone_3_us_211_dst_field_width_chokepoint_reachability_asymmetry, docs_user_stories_milestone_3_us_211_dst_field_width_chokepoint_cap_stays, docs_user_stories_milestone_3_us_308_design_name_and_dst_export_dstheader_sanitized [EXTRACTED 1.00]
-- **Two-finger manipulation: recognisers → tracker → one commit → bake** — docs_user_stories_milestone_3_us_313b_two_fingers_reach_the_stage_catcher, docs_user_stories_milestone_3_us_313b_two_fingers_reach_the_stage_lifecycle_rules, docs_user_stories_milestone_3_us_313b_two_fingers_reach_the_stage_touch_counting_view, docs_user_stories_milestone_3_us_313a_manipulation_as_a_package_value_stagemanipulation, docs_user_stories_milestone_3_us_313a_manipulation_as_a_package_value_centroid_derivation, docs_user_stories_milestone_3_us_313a_manipulation_as_a_package_value_adr_028_amendment, docs_user_stories_milestone_3_us_313a_manipulation_as_a_package_value_bakekey_settledcount_hazard [EXTRACTED 1.00]
-- **Caveats that keep the frame-time instrument from flattering the renderer** — docs_us_309_device_handoff_no_draws_verdict, docs_us_309_device_handoff_drawn_frame_quantiles, docs_us_310_device_handoff_refresh_period_quantisation, docs_us_310_device_handoff_animating_signature, docs_us_309_device_handoff_frametimerecorder [INFERRED 0.85]
-- **Process rules mirrored between CLAUDE.md and AGENTS.md** — claude_project_guidance, agents_guidance, claude_adr012_arbiter, agents_adr_authority_over_generated_artifacts, claude_graphify_drift_check, agents_graph_drift_check_defined_by_output, claude_cross_vendor_review_loop, agents_two_layer_review [EXTRACTED 1.00]
-- **Transient stage-transform defects invisible to stills** — docs_user_stories_backlog_us314, docs_user_stories_backlog_us315, docs_user_stories_backlog_manipulation_baseline, docs_decisions_adr_028 [INFERRED 0.85]
-- **Two-layer cross-vendor review loop** — _claude_commands_codex_review_codex_review, _claude_commands_codex_review_stop_condition, _claude_commands_codex_review_verification_round, _claude_commands_codex_review_adr_arbiter_triage, agents_two_layer_review, _claude_commands_finish_finish [EXTRACTED 1.00]
 - **Golden fixture trust chain (external verification before trust)** — packages_embroideryengine_tests_embroideryenginetests_resources_embroideryreference_provenance_stitch_dst, packages_embroideryengine_tests_embroideryenginetests_resources_embroideryreference_provenance_color_change_dst, packages_embroideryengine_tests_interpretertests_resources_goldenprograms_provenance_square_dst, packages_embroideryengine_sources_samples_resources_provenance_octagonrosette, packages_embroideryengine_sources_samples_resources_provenance_squarecoil, packages_embroideryengine_tests_interpretertests_resources_goldenprograms_provenance_self_golden_trust_rule, docs_decisions_adr_012 [EXTRACTED 1.00]
 - **M1 DST export pipeline (model → records → header → interpolation → file)** — docs_user_stories_milestone_1_us_102_stitch_model_and_stream_us_102, docs_user_stories_milestone_1_us_103_dst_record_encoder_us_103, docs_user_stories_milestone_1_us_104_dst_header_writer_us_104, docs_user_stories_milestone_1_us_105_interpolation_and_jumps_us_105, docs_user_stories_milestone_1_us_106_dst_file_generator_golden_us_106 [EXTRACTED 1.00]
 - **Engine coordinate boundary chokepoint (five traps)** — docs_user_stories_milestone_2_us_210_coordinate_overflow_chokepoint_trigger_on_either, docs_user_stories_milestone_2_us_210_coordinate_overflow_chokepoint_embroiderypoint_converting, docs_user_stories_milestone_2_us_210_coordinate_overflow_chokepoint_split_cap, docs_user_stories_milestone_2_us_210_coordinate_overflow_chokepoint_lattice_step_guard, docs_user_stories_milestone_2_us_210_coordinate_overflow_chokepoint_canappend [EXTRACTED 1.00]
 - **Deterministic tick execution model** — docs_user_stories_milestone_2_us_205_stepper_core_interpreterclock, docs_user_stories_milestone_2_us_205_stepper_core_round_robin_one_brick_per_tick, docs_user_stories_milestone_2_us_205_stepper_core_compiled_instruction_array, docs_user_stories_milestone_2_us_205_stepper_core_batch_equivalence, docs_user_stories_milestone_2_readme_deterministic_time_catroid_faithful_ticks [EXTRACTED 1.00]
 - **Golden program verification chain (program → stream → bytes)** — docs_user_stories_milestone_2_us_207_golden_program_square_polygonprogram, docs_user_stories_milestone_2_us_207_golden_program_square_goldenprogramoracle, docs_user_stories_milestone_2_us_207_golden_program_square_goldensquareliterals, docs_user_stories_milestone_2_us_208_golden_program_star_goldenstaroracle, docs_user_stories_milestone_2_us_209_pattern_to_bytes_differential_square_dst [EXTRACTED 1.00]
 - **StagePreview's Foundation-only core meets the transform-math exit criterion** — docs_user_stories_milestone_3_us_302_preview_core_stagepreview, docs_user_stories_milestone_3_us_302_preview_core_stitchdisplaylist, docs_user_stories_milestone_3_us_302_preview_core_stagetransform, docs_user_stories_milestone_3_us_302_preview_core_stagegeometry [EXTRACTED 1.00]
+- **The coarse mid-gesture draw plan** — docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_segmentindexpair, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_coarsespanrule, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_perrundotstriding, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_coarseningstride, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_forframe, docs_user_stories_milestone_3_us_310_coarsen_mid_gesture_draw_plan_iscorner [EXTRACTED 1.00]
+- **Caveats that keep the frame-time instrument from flattering the renderer** — docs_us_310_device_handoff_refresh_period_quantisation, docs_us_310_device_handoff_animating_signature [INFERRED 0.85]
 - **M3 run data path: driver → batches → observable state → renderer** — docs_user_stories_milestone_3_us_306_run_lifecycle_interpreterdriver, docs_user_stories_milestone_3_us_306_run_lifecycle_runbatch, docs_user_stories_milestone_3_us_306_run_lifecycle_previewrunstate, docs_user_stories_milestone_3_us_305_canvas_stitch_renderer_stitchdrawplan, docs_user_stories_milestone_3_us_305_canvas_stitch_renderer_canvasstitchrenderer [INFERRED 0.85]
 - **Settled-raster strategy across renderer, run and gestures** — docs_user_stories_milestone_3_us_305_canvas_stitch_renderer_settled_live_split, docs_user_stories_milestone_3_us_305_canvas_stitch_renderer_bridging_segment, docs_user_stories_milestone_3_us_306_run_lifecycle_previewrunstate, docs_user_stories_milestone_3_us_307_zoom_pan_and_accessibility_mid_gesture_raster_policy [INFERRED 0.85]
 
-## Communities (196 total, 43 thin omitted)
+## Communities (300 total, 81 thin omitted)
 
-### Community 0 - "Preview Run State & Batches"
-Cohesion: 0.09
-Nodes (24): .exportEligibility, .isExportable, Bool, PreviewRunState, .state, .summary, .summaryRevision, .visibleNeedle (+16 more)
+### Community 0 - "Testing & EmbroideryEngine"
+Cohesion: 0.04
+Nodes (4): CoreGraphics, EmbroideryEngine, StagePreview, Testing
 
-### Community 1 - "Stitch Display List & Summary"
-Cohesion: 0.07
-Nodes (20): RunPhase, Sequence, StageSummary, Double, Int, ColorRun, StitchDisplayList, .count (+12 more)
-
-### Community 2 - "Stage Render Transform & Layers"
+### Community 1 - "ADR index & ADR-023 Local gate"
 Cohesion: 0.06
-Nodes (49): Baked, BakeKey, CanvasStitchLayers, .bakeKey, .travelOpacity, CanvasStitchRenderer, NeedleLayer, .body (+41 more)
+Nodes (101): Move Above/Below Loop and Move Into Loop accessibility actions, Accessibility moves reach exactly drag arrangements, ADR-003 Project format: native JSON first, .catrobat later, ADR-006 App architecture: @Observable MVVM, no TCA, ADR-008 Flat brick list with paired control bricks, ADR-010 Device family: universal, iPhone-first, ADR-016 ProgramModel and Interpreter as sibling targets (superseded), ADR-022 Samples and StagePreview as app-support targets (superseded) (+93 more)
 
-### Community 3 - "Frame Time Recorder"
-Cohesion: 0.11
-Nodes (15): CADisplayLink, .body, FrameTimeProxy, FrameTimeRecorder, .frameCount, .reservedCapacity, Bool, Double (+7 more)
+### Community 2 - "ADR-028 Zoom/pan, fit-aware & ADR-029 50,000-stitch measurement"
+Cohesion: 0.04
+Nodes (97): Never edit *.pbxproj, Criterion non-rewording rule (US-309 AC8), ADR-002 Stack: native Swift 6 / SwiftUI, engine as SPM package, ADR-004 Minimum iOS 17.0 (superseded), ADR-009 Stage rendering: SwiftUI Canvas with batched paths (superseded), ADR-024 Stage renderer: StitchDrawPlan batching and deviations from references (superseded), ADR-028 Zoom/pan, fit-aware floor (superseded), ADR-029 50,000-stitch measurement and performance bar (superseded) (+89 more)
 
-### Community 4 - "Stage Interaction Transitions"
-Cohesion: 0.12
-Nodes (12): StageInteraction, .isFollowingFit, .isSettling, .settlingProgress, Bool, Double, Int, StageInteractionTransitionTests (+4 more)
+### Community 3 - "ADR-018 Interpreter tick & ADR-014 Pattern arithmetic"
+Cohesion: 0.04
+Nodes (91): Android reference exports README, Android Embroidery Designer external goldens (2nd_run), Brick-backend D5 Arc/GoThrough feed rule, Degenerate arcs add no stitches, go_through stops one stitch short (geometry, not float), ADR-014 Pattern arithmetic is Double; 1e-9 tolerance; guarded no-ops, ADR-017 Formula arithmetic is native Double; decimal128 divergence pinned, ADR-018 Interpreter tick & clock semantics (+83 more)
 
-### Community 5 - "Interpreter & Program Model"
-Cohesion: 0.12
-Nodes (15): AppRunClock, Interpreter, NeedleUpdate, Double, StagePoint, InterpreterClock, Double, Program (+7 more)
+### Community 4 - "AppModel & .launch"
+Cohesion: 0.04
+Nodes (42): AppModel, .path, .projectID, DesignNameProblem, Result, .isPalettePresented, .paletteInsertion, Bool (+34 more)
 
-### Community 6 - "Embroidery Stream & Points"
-Cohesion: 0.10
-Nodes (15): Hashable, BoundingBox, EmbroideryStream, .boundingBox, .count, .firstStitchPosition, .lastStitchPosition, Int (+7 more)
+### Community 5 - "ADR-012 DST semantics: & ADR-020 Engine coordinate"
+Cohesion: 0.04
+Nodes (81): Delegation boundary (verification liberally, generation only against spec), ADR-005 DST semantics from Catroid, Catty fixtures as goldens (superseded), ADR-007 Stage coordinate space and physical units, ADR-011 Privacy: fully offline, no accounts, no tracking, ADR-012 DST semantics: Catroid authoritative, Catty bugs not ported (the DST arbiter), ADR-013 Colour-change flag placement follows Catroid; color_change golden transposed, ADR-015 Set Thread Color: silent start, invalid-hex no-op, clause-B black, ==121 tie-off, ADR-020 Engine coordinate boundary: encodable-delta interpolation, guarded no-ops (+73 more)
 
-### Community 7 - "Stage Manipulation Channels"
-Cohesion: 0.17
-Nodes (16): ViewPoint, StageManipulation, .hasActiveChannel, .isLive, Bool, ClosedRange, Double, StageGesture (+8 more)
-
-### Community 8 - "Frame Time Statistics"
-Cohesion: 0.07
-Nodes (20): FrameCaptureVerdict, drawsNotMeasured, interrupted, .isAboutTheRenderer, .label, measured, noDraws, nothingCaptured (+12 more)
-
-### Community 9 - "Script & Paired Control"
-Cohesion: 0.09
-Nodes (15): ClosedRange, ScriptMoveError, destinationOutOfBounds, sourceIsNotLoopOpener, sourceOutOfBounds, unbalancedPair, ScriptValidationError, unmatchedLoopEnd (+7 more)
-
-### Community 10 - "M3 Performance Story Specs"
+### Community 6 - "InterpreterEvent & recordPositions"
 Cohesion: 0.05
-Nodes (49): Milestone 3 — Walking skeleton app, The A15-class capture (outstanding), main had no branch protection — the Protect main ruleset was disabled since M1, Deviation — display list built from ops, export model from the replay (Clause B colour divergence), M3 exit criteria (end-to-end thread, 50k at 60 fps on A15, unit-tested transform math), Final verification deferred to milestone close, Knowledge-graph drift check at milestone close, The manual accessibility pass, run once over all M3 UI (+41 more)
+Nodes (41): Interpreter, Bool, Int, Interpreter, Bool, Int, Interpreter, Bool (+33 more)
 
-### Community 11 - "Interpreter Driver & Budgets"
-Cohesion: 0.08
-Nodes (19): Duration, FrameOutcome, InterpreterDriver, Bool, Int, RunBudget, Int, DisplayRunPacing (+11 more)
-
-### Community 12 - "M2 Story Specs"
-Cohesion: 0.06
-Nodes (46): ADR-001 — App scope: embroidery-focused block app, Milestone 2 — Interpreter MVP, Bricks are a closed indirect enum, Interpreter only calls the engine, never re-implements stream semantics, M2 exit criterion: incrementally consumable deterministic interpreter, Two sibling targets: ProgramModel and Interpreter, US-201 Program model value types and sibling targets, Interpreter target (+38 more)
-
-### Community 13 - "Stitch Draw Plan"
-Cohesion: 0.09
-Nodes (20): DotRun, .count, .dottedIndices, Range<Int>, Bool, Int, PreviewStitch, Range (+12 more)
-
-### Community 14 - "Package Products & Golden Glue"
-Cohesion: 0.06
-Nodes (3): EmbroideryEngine, InterpreterTargetIsolationTests, ProgramModel
-
-### Community 15 - "Stage Canvas & Pan Directions"
+### Community 7 - "UndoStack & .apply"
 Cohesion: 0.07
-Nodes (27): AccessibilityAdjustmentDirection, StageCanvas, .body, .commitRecorder, Double, PreviewNeedle, Renderer, RunState (+19 more)
+Nodes (30): Entry, CoalescingKey, Int, Entry, Bool, Int, UndoStack, .canRedo (+22 more)
 
-### Community 16 - "Draw Plan Coarsening"
+### Community 9 - "EmbroideryStream & EmbroideryPoint"
+Cohesion: 0.07
+Nodes (22): Hashable, BoundingBox, EmbroideryStream, .boundingBox, .count, .firstStitchPosition, .lastStitchPosition, Int (+14 more)
+
+### Community 10 - "Brick & BrickListDiff"
+Cohesion: 0.03
+Nodes (60): BrickListDiff, Bool, Int, Element, .parameters, .formulas, Brick, arc (+52 more)
+
+### Community 11 - "String & .value"
+Cohesion: 0.05
+Nodes (32): DesignNameFieldLayout, Int, StageAccessibility, Double, RunState, StageSummary, DescriptionKey, Spoken (+24 more)
+
+### Community 12 - "Script & ScriptValidationError"
+Cohesion: 0.05
+Nodes (29): Codable, Object, Double, Int, .blockRole, ScriptMoveError, destinationOutOfBounds, sourceIsNotLoopOpener (+21 more)
+
+### Community 13 - "previewStitch & StitchDisplayList"
+Cohesion: 0.08
+Nodes (19): ArraySlice, PreviewStitch, Sequence, ColorRun, StitchDisplayList, .count, .isEmpty, Bool (+11 more)
+
+### Community 14 - "PreviewRunState & .apply"
+Cohesion: 0.10
+Nodes (20): .exportEligibility, .isExportable, Bool, PreviewRunState, .state, .summary, .summaryRevision, .visibleNeedle (+12 more)
+
+### Community 15 - "Roadmap — Embroidery & Project management feature"
+Cohesion: 0.05
+Nodes (61): Editor UI feature, M4 exit criteria, Stable row identity, Undo surfaced via UndoManager bridge (US-411), Project management feature, Delete with confirmation, file removed first (D9), DesignName.uniqued(avoiding:), Program.differsOnlyInName / ProgramDocument.inspect (+53 more)
+
+### Community 16 - "catrobat_embroidery_ios & Samples"
+Cohesion: 0.05
+Nodes (3): catrobat_embroidery_ios, Projects, Samples
+
+### Community 17 - ".save & ProjectLibraryTests"
+Cohesion: 0.12
+Nodes (10): AnyObject, WindowToken, ObservationFlag, ProjectLibraryTests, Bool, Void, ProjectLibraryTests, InMemoryProjectStore (+2 more)
+
+### Community 18 - ".window & App"
+Cohesion: 0.10
+Nodes (8): ProjectRenameTests, RowMissing, Int, App, ProjectWiringTests, Bool, InMemoryProjectStore, Int
+
+### Community 19 - "Equatable & ProgramLoadError"
+Cohesion: 0.06
+Nodes (42): PaletteInsertion, PaletteState, Int, PendingDeletion, ProjectActionBlock, openInAnotherWindow, .reason, ProjectListNotice (+34 more)
+
+### Community 20 - "Formula & FormulaTests"
+Cohesion: 0.06
+Nodes (25): Float, Int, Scope, Formula, binary, binaryFunction, constant, logicalNot (+17 more)
+
+### Community 21 - ".apply & EditInsertAndDeleteTests"
+Cohesion: 0.06
+Nodes (10): EditBalanceInvariantTests, UInt64, Tally, EditDeclareVariableTests, EditInsertAndDeleteTests, EditMoveTests, Int, EditorCoreApplyTests (+2 more)
+
+### Community 22 - "tagProfile & ForVariableFromToTests"
+Cohesion: 0.09
+Nodes (11): expectApproximates(), expectExactlyEqual(), Double, Int, SourceLocation, tagProfile(), ForVariableFromToTests, Bool (+3 more)
+
+### Community 23 - "ProjectID & InMemoryProjectStore"
+Cohesion: 0.06
+Nodes (26): Bool, WindowProject, Entry, program, refused, unreadable, Failure, InMemoryProjectStore (+18 more)
+
+### Community 24 - "Foundation & DSTHeaderFieldReader"
+Cohesion: 0.04
+Nodes (9): DSTDesign, URL, .transferRepresentation, CoreTransferable, Foundation, Observation, Transferable, TransferRepresentation (+1 more)
+
+### Community 25 - "StageInteraction & .commit"
+Cohesion: 0.12
+Nodes (14): .settlingProgress, StageInteraction, .isFollowingFit, .isSettling, Bool, Double, Int, StageGesture (+6 more)
+
+### Community 26 - "driveToCompletion & RunBudget"
+Cohesion: 0.07
+Nodes (23): Duration, FrameOutcome, InterpreterDriver, Bool, Int, RunBudget, Int, DisplayRunPacing (+15 more)
+
+### Community 27 - "EmbroideryEngine package README & ADR-050 One file"
+Cohesion: 0.06
+Nodes (53): CI workflow (ci.yml), App build & test job, EditorCore/Projects evaluated-dependency pin (dump-package), Engine tests job, SwiftLint job, local_dependency_names, CI push trigger on main only, Xcode 27.1 toolchain pin (DEVELOPER_DIR) (+45 more)
+
+### Community 28 - "BrickKind & .template"
+Cohesion: 0.05
+Nodes (38): BrickKind, arc, changeVariableBy, changeXBy, changeYBy, elseBranch, forever, forVariableFromTo (+30 more)
+
+### Community 29 - "ViewPoint & .gesture"
+Cohesion: 0.16
+Nodes (15): ViewPoint, ClosedRange, Double, StageGesture, ViewPoint, ViewSize, StageManipulationLifecycleTests, StageGesture (+7 more)
+
+### Community 30 - "PaletteInsertTests & HistoryAnnouncementTests"
+Cohesion: 0.08
+Nodes (8): HistoryAnnouncementTests, Spoken, EditorViewModel, Announcements, PaletteInsertTests, EditorViewModel, Int, Sendable
+
+### Community 31 - "Program & PreviewFixtures"
+Cohesion: 0.06
+Nodes (22): Failure, InMemoryProgramStore, .blank, Program, Int, Scene, makeArcFlowerProgram(), makeOctagonRosetteProgram() (+14 more)
+
+### Community 32 - "Milestone 2 — & US-201 Program model"
+Cohesion: 0.05
+Nodes (51): ADR-001 App scope: embroidery-focused block app, Per-arity Formula cases (D1), Catrobat Language Tests (215 .catrobat programs in Catroid), code.xml → Program importer, Stretch epic (freehand, .catrobat import, SVG), Language-test runner feature, Milestone 2 — Interpreter MVP, Bricks are a closed indirect enum (+43 more)
+
+### Community 33 - "Variable & .program"
+Cohesion: 0.08
+Nodes (12): ComparisonEditingTests, EditorViewModel, ParameterSessionIntegrityTests, Bool, Int, Announcements, ParameterVariableTests, EditorViewModel (+4 more)
+
+### Community 34 - "Sendable & ThreadColor"
+Cohesion: 0.11
+Nodes (19): Color, ActorID, ColorState, EmbroideryPatternManager, .hasEmittedOps, .hasValidPattern, EmittedPoint, LastCommand (+11 more)
+
+### Community 35 - "FrameTimeRecorder & .start"
+Cohesion: 0.16
+Nodes (10): .body, FrameTimeRecorder, .frameCount, .reservedCapacity, Bool, Double, Int, FrameTimeDrawAccountingTests (+2 more)
+
+### Community 36 - "View & FormulaSlotEditor"
+Cohesion: 0.08
+Nodes (40): PaletteRowView, PaletteView, .body, ParameterEditorView, .body, ArcDirectionPicker, .body, .direction (+32 more)
+
+### Community 37 - "RunViewModel & InterpreterDriver"
+Cohesion: 0.10
+Nodes (18): RunViewModel, EmbroideryStream, Never, Void, GatedPacing, NotificationCounter, RunViewModelTests, Bool (+10 more)
+
+### Community 38 - "RunningStitch & .perform"
+Cohesion: 0.12
+Nodes (8): RunningStitch, SewUp, Double, StitchPattern, RunningStitchTests, Double, SewUpTests, Double
+
+### Community 39 - "Launch & LegacyMigrationTests"
+Cohesion: 0.14
+Nodes (9): LegacyListingTests, InMemoryProgramStore, InMemoryProjectStore, Launch, LegacyMigrationTests, InMemoryProgramStore, InMemoryProjectStore, Failure (+1 more)
+
+### Community 40 - "DesignNameProblem & .validating"
+Cohesion: 0.08
+Nodes (16): Axis, .message, Character, LocalizedStringResource, DesignNamePresentationTests, DynamicTypeSize, DesignNameProblem, empty (+8 more)
+
+### Community 41 - "DSTHeader & DSTFieldWidthChokepointTests"
+Cohesion: 0.11
+Nodes (13): .header, DSTHeader, DSTSerializationError, fieldOverflow, Int, DSTFieldWidthChokepointTests, UInt8, DSTHeaderTests (+5 more)
+
+### Community 42 - "StagePoint & ZigzagStitchPattern"
+Cohesion: 0.14
+Nodes (32): GoldenRow, StagePoint, Double, ZigzagStitchPattern, accumulation(), astronomicalStitchCount(), degenerateLengths(), diagonalLine() (+24 more)
+
+### Community 43 - ".validating & DSTFileNameTests"
+Cohesion: 0.08
+Nodes (17): DSTFileWriting, Failure, URL, ThrowingDSTFileWriter, Write, DSTFileName, .value, DSTFileNameProblem (+9 more)
+
+### Community 44 - "inDisposableDirectory & DocumentsProgramStore"
+Cohesion: 0.11
+Nodes (15): DocumentsProgramStore, .workingURL, URL, DocumentsProgramStoreTests, Int, URL, inDisposableDirectory(), RefusedDocument (+7 more)
+
+### Community 45 - "PaletteRowPresentation & IfBlockPresentationTests"
+Cohesion: 0.06
+Nodes (10): PaletteRowPresentation, ThreadColor, ArcBrickPresentationTests, ForVariableFromToPresentationTests, GoThroughBrickPresentationTests, IfBlockPresentationTests, Int, RepeatUntilPresentationTests (+2 more)
+
+### Community 46 - "ParameterSlot & ParameterValue"
+Cohesion: 0.07
+Nodes (32): BrickParameter, ParameterSlot, condition, degrees, direction, fileName, from, hex (+24 more)
+
+### Community 47 - ".displayList & .coarse"
 Cohesion: 0.13
 Nodes (11): Int, StitchDisplayList, StitchDrawPlanCoarseningCoverageTests, Bool, Int, StitchDisplayList, StitchDrawPlanCoarseningTests, Int (+3 more)
 
-### Community 18 - "Bake Scheduling & Timing"
+### Community 48 - "StageTransform & ViewSize"
+Cohesion: 0.08
+Nodes (23): Snapshot, Double, StageTransform, .affine, CGSize, ViewSize, CGAffineTransform, Phase (+15 more)
+
+### Community 49 - "SampleLibrary & WorkingProgramTests"
+Cohesion: 0.09
+Nodes (11): Bool, Int, RecordingDSTFileWriter, WorkingProgramTests, SampleLibrary, OctagonRosetteGoldenTests, .measured, SampleRun (+3 more)
+
+### Community 50 - "BinaryOperator & BinaryFunction"
+Cohesion: 0.08
+Nodes (25): Int64, BinaryFunction, arctan2, max, min, mod, power, BinaryOperator (+17 more)
+
+### Community 51 - "DocumentsProjectStore & DocumentsProjectStoreTests"
+Cohesion: 0.15
+Nodes (7): DocumentsProjectStore, URL, DocumentsProjectStoreTests, Int, URL, ProjectLibraryDateTests, Date
+
+### Community 52 - "ViewPoint & StageTransform"
+Cohesion: 0.12
+Nodes (7): StageTransform, Bool, Double, ViewPoint, TransformInterpolationTests, RepresentableScaleTests, Double
+
+### Community 53 - "ArcInterpreterTests & AndroidReference"
+Cohesion: 0.12
+Nodes (21): AndroidReference, bit(), decodeRecordPositions(), deltaX(), deltaY(), DSTHeaderSummary, DSTRecordPosition, .description (+13 more)
+
+### Community 54 - "ADR-041 Unit of & CLAUDE.md"
+Cohesion: 0.09
+Nodes (36): /codex-review command, Codex brief review for unpinned semantics, codex exec stdin hang trap (< /dev/null), Codex cross-vendor review loop, Convergence-first stop condition (no code changes or two severity decreases, cap 5), Codex slice review of risky slices, US-302 eight-round review history, Codex verification round (+28 more)
+
+### Community 55 - "Interpreter & StepperLoopTests"
+Cohesion: 0.10
+Nodes (8): AppRunClock, Interpreter, stepToCompletion(), RepeatDeferralTests, Double, StepperLoopTests, Int, StepperVariableTests
+
+### Community 56 - "SwiftUI & UIKit"
+Cohesion: 0.06
+Nodes (5): StageChrome, Double, CGFloat, SwiftUI, UIKit
+
+### Community 57 - "Recording & .wired"
+Cohesion: 0.15
+Nodes (17): StageManipulationCatcher, CGPoint, .isDrawable, Bool, StageCatcherInputTests, StageCatcherLifecycleTests, CatcherHarness, .fit (+9 more)
+
+### Community 58 - "FormulaTextTests & .text"
+Cohesion: 0.12
+Nodes (7): FormulaTextTests, Double, Int, DepthCase, ScriptIndentDepthsTests, Int, Script
+
+### Community 59 - "SampleProgram & SampleID"
+Cohesion: 0.06
+Nodes (23): SampleRowAccessibilityTests, Hasher, SampleID, arcFlower, octagonRosette, .resourceName, .shipping, squareCoil (+15 more)
+
+### Community 60 - ".run & .interpreter"
+Cohesion: 0.15
+Nodes (5): Int, stitchPositions(), GoldenProgramSquareTests, Bool, StepperEmbroideryTests
+
+### Community 61 - "fastest & milliseconds"
 Cohesion: 0.12
 Nodes (19): Any, BakeSchedulingTests, Duration, Int, StitchDisplayList, fastest(), milliseconds(), seconds() (+11 more)
 
-### Community 19 - "Stage Transform Core"
-Cohesion: 0.11
-Nodes (18): Snapshot, Double, StageTransform, .affine, ViewSize, CGAffineTransform, CoreGraphics, StageGesture (+10 more)
-
-### Community 20 - "Stage Transform Math"
-Cohesion: 0.13
-Nodes (7): StageTransform, Bool, Double, ViewPoint, .center, RepresentableScaleTests, Double
-
-### Community 21 - "Stage & Manipulation ADRs"
-Cohesion: 0.08
-Nodes (36): Excluding build/ (measurement builds leave generated sources in the repo), Never edit *.pbxproj (synchronized folder groups), ADR-004 — Minimum iOS version: 17.0, ADR-028 — Zoom and pan: one commit per gesture, a fit-aware floor, and a summary only a transition may write, ADR-029 — The 50 000-stitch measurement: what was proved headlessly, what needs a device, and the fallback ladder, ADR-030 — Coarsening the mid-gesture plan: continuity over dashing, and two constants instead of one, ADR-031 — The manipulation layer: a recogniser pair over a pure tracker, and the terminal signal neither story had, coarseningStride, liveCoarseningThreshold and liveSegmentTarget (+28 more)
-
-### Community 22 - "DST Semantics ADRs"
-Cohesion: 0.11
-Nodes (35): ADR-005 — DST semantics ported from Catroid, verified against Catty fixtures, ADR-007 — Stage coordinate space and physical units, ADR-012 — DST semantics: Catroid is authoritative; known Catty divergences are not ported, ADR-013 — Color-change flag placement follows Catroid; the golden is compared through a documented flag transposition, ADR-020 — The engine's coordinate boundary: encodable-delta trigger, guarded no-ops, Catroid-is-authoritative arbitration rule, EmbroideryStream, ±121-unit interpolation split rule (+27 more)
-
-### Community 23 - "Zigzag Stitch Pattern"
-Cohesion: 0.15
-Nodes (27): GoldenRow, Double, ZigzagStitchPattern, accumulation(), astronomicalStitchCount(), degenerateLengths(), diagonalLine(), directionPersists() (+19 more)
-
-### Community 24 - "Formula & Variable Scope"
+### Community 62 - "ProjectLibrary & ProjectFile"
 Cohesion: 0.10
-Nodes (11): Formula, binary, number, unaryMinus, variable, Double, Double, VariableScope (+3 more)
+Nodes (17): CatrobatEmbroideryApp, .body, Scene, .preview, LastOpenedProject, .id, ProgramStoring, ProjectLibrary (+9 more)
 
-### Community 25 - "Stage Box & Fit Targets"
-Cohesion: 0.11
-Nodes (11): StageBox, .center, .height, .width, StageExtent, Double, StageGeometry, Double (+3 more)
+### Community 63 - ".title & .message"
+Cohesion: 0.08
+Nodes (20): ParameterEditorText, Locale, LocalizedStringResource, FormulaLiteralError, empty, malformed, nonFinite, ReadOnlyFormulaReason (+12 more)
 
-### Community 26 - "Interpreter Events & Runs"
+### Community 64 - "FormulaLogicTests & .value"
+Cohesion: 0.09
+Nodes (13): CustomTestStringConvertible, ArithmeticRow, .testDescription, CatroidLogicTable, PowerRow, .testDescription, Double, FormulaLogicTests (+5 more)
+
+### Community 65 - "ExportViewModel & ExportViewModelTests"
+Cohesion: 0.16
+Nodes (11): ExportViewModel, .name, DesignNameProblem, EmbroideryStream, ExportState, Result, RecordingDSTFileWriter, ExportViewModelTests (+3 more)
+
+### Community 66 - "ViewSize & .fitting"
 Cohesion: 0.12
-Nodes (21): Interpreter, Bool, Double, Int, Bool, Double, InterpreterEvent, colorArmed (+13 more)
+Nodes (9): StageTransformDrawabilityTests, Double, ViewSize, .center, StageFitBeyondGestureLimitTests, .fit, StageTransformFinitenessTests, StageTransformTests (+1 more)
 
-### Community 27 - "Repo Process & Review Docs"
+### Community 67 - "StageManipulation & StageFrozenFitTests"
+Cohesion: 0.13
+Nodes (16): ClosedRange, Double, StageGesture, StageTransform, ViewSize, StageManipulation, .hasActiveChannel, .isLive (+8 more)
+
+### Community 68 - "PaletteGroup & PalettePresentationTests"
 Cohesion: 0.08
-Nodes (33): ADR-as-arbiter finding triage, /codex-review — cross-vendor Codex review, codex exec stdin hang trap, Severity-trend stop condition, Codex verification round, /finish — session close-out checklist, Manual Ink/Stitch verification callout, Story close-out must be proved by grep (+25 more)
+Nodes (14): PaletteSection, resolve(), Locale, LocalizedStringResource, PalettePresentationTests, .rows, .sections, .description (+6 more)
 
-### Community 28 - "Canvas Stitch Strokes"
+### Community 69 - "StitchDrawPlan & CanvasStitchStrokeTests"
 Cohesion: 0.15
-Nodes (15): AnyHashable, .body, CanvasStitchStroke, Bool, CGSize, Double, Path, PreviewStitch (+7 more)
+Nodes (14): AnyHashable, CanvasStitchStroke, Bool, CGSize, Double, Path, PreviewStitch, StagePoint (+6 more)
 
-### Community 29 - "Export View Model"
-Cohesion: 0.18
-Nodes (9): DSTFileWriting, ExportViewModel, .name, EmbroideryStream, Result, RecordingDSTFileWriter, ExportViewModelTests, Data (+1 more)
+### Community 70 - "UnaryFunction & CaseIterable"
+Cohesion: 0.07
+Nodes (29): CaseIterable, FirstChannel, pan, pinch, FormulaConstant, `false`, pi, `true` (+21 more)
 
-### Community 30 - "Export Readiness & Control"
-Cohesion: 0.08
-Nodes (27): ExportControl, .hint, .isEnabled, .notice, .reasonsOwingAHint, .shareURL, Readiness, failed (+19 more)
-
-### Community 31 - "Run View Model"
+### Community 71 - "BrickAddress & EditAction"
 Cohesion: 0.14
-Nodes (12): RunViewModel, EmbroideryStream, Program, RunUpdate, Void, NotificationCounter, RunViewModelTests, Double (+4 more)
+Nodes (17): .canMoveRows, ParameterSession, Bool, EditAction, declareVariable, delete, insert, move (+9 more)
 
-### Community 32 - "Pattern Manager & Actors"
-Cohesion: 0.18
-Nodes (14): ActorID, ColorState, EmbroideryPatternManager, .hasEmittedOps, .hasValidPattern, EmittedPoint, LastCommand, LayerWorkspace (+6 more)
-
-### Community 33 - "Manipulation Catcher"
+### Community 72 - "FormulaFunctionTests & .value"
 Cohesion: 0.11
-Nodes (15): Animatable, SettlingProgress, .animatableData, .body, Content, StageManipulationCatcher, Void, Hosted (+7 more)
+Nodes (8): CatroidFunctionTable, FormulaFunctionTests, SplitMix, Double, Int, SourceLocation, UInt64, RandomNumberGenerator
 
-### Community 34 - "Run State & Transport Row"
+### Community 73 - "Settled/live split with & InterpreterDriver"
+Cohesion: 0.07
+Nodes (33): Bridging-segment rule at the watermark, Fit target union(stageRect, contentBounds), hoop unclipped, Hoop-overflow notice, Catroid PenActor FrameBuffer stamp, Settled/live split with cached raster and settledCount watermark, Atomic tick batch (no global event bound), Catty teardown-before-share hazard, Catroid deltaActionTimeDivisor anti-throttle (do not port) (+25 more)
+
+### Community 74 - "DSTFile & DSTFileTests"
+Cohesion: 0.10
+Nodes (15): DSTFile, Data, EmbroideryStream, UInt8, URL, DSTFileTests, Data, Double (+7 more)
+
+### Community 75 - "RunState & .appearance"
 Cohesion: 0.08
 Nodes (20): Animation, Appearance, RunControl, Bool, Double, LocalizedStringResource, StageMotion, Bool (+12 more)
 
-### Community 35 - "SwiftUI Manipulation Wiring"
-Cohesion: 0.08
-Nodes (6): StageChrome, Double, StagePreviewRenderer, CGFloat, SwiftUI, UIKit
+### Community 76 - "String & .validate"
+Cohesion: 0.12
+Nodes (8): AppStringsTests, String, .trimmingWhitespace, Result, FormulaVocabularyDocumentTests, .validText, Malformed, VariableNameTests
 
-### Community 36 - "Brick Enum & Defaults"
-Cohesion: 0.07
-Nodes (29): Brick, changeVariableBy, changeXBy, changeYBy, forever, loopEnd, moveNSteps, placeAt (+21 more)
-
-### Community 37 - "App Model & Selection"
-Cohesion: 0.14
-Nodes (12): AppModel, .samples, Bool, SampleProgram, .stage, StageDestination, stage, previewModelWithASelection() (+4 more)
-
-### Community 38 - "Gesture Stubs & Recording"
-Cohesion: 0.18
-Nodes (13): CGPoint, .isDrawable, Bool, StageCatcherInputTests, StageCatcherLifecycleTests, CatcherHarness, .fit, Recording (+5 more)
-
-### Community 39 - "DST File Name Sanitisation"
-Cohesion: 0.13
-Nodes (8): DSTFileNameProblem, empty, prohibitedCharacter, tooLongForFilesystem, Character, Int, Result, DSTFileNameTests
-
-### Community 40 - "Preview Fixtures & Divergence"
-Cohesion: 0.13
-Nodes (16): DisplayVersusExportModelTests, interpreter(), PreviewColor, serializedTwoObjectProgram(), Int, tickBatches(), twoActorsOnOneLayerProgram(), twoLayersProgram() (+8 more)
-
-### Community 41 - "Stage Fitting & View Size"
-Cohesion: 0.17
-Nodes (7): StageTransformDrawabilityTests, Double, ViewSize, StageFitBeyondGestureLimitTests, .fit, StageTransformTests, Double
-
-### Community 42 - "Target Layout ADRs"
+### Community 77 - ".run & screen"
 Cohesion: 0.11
-Nodes (28): ADR-002 — Stack: native Swift 6 / SwiftUI, engine as SPM package, ADR-006 — App-layer architecture: @Observable MVVM, no TCA, ADR-010 — Device family: universal, iPhone-first, ADR-016 — M2 target layout: ProgramModel and Interpreter as two sibling targets, ADR-022 — M3 target layout: Samples and StagePreview as app-support targets in the engine package, ADR-023 — What runs where: the local gate protects engine semantics, the app target's protection is CI's, Sample 2 — square coil (triple stitch, two colours), SampleLibrary.all (+20 more)
+Nodes (19): Object, SampleThresholdTests, Double, Int, BoundaryProbe, .alongIsBoundedByDistance, .distanceIsExactlyOnBoundary, .isDecidedByLibm (+11 more)
 
-### Community 43 - "Arithmetic & Threshold ADRs"
-Cohesion: 0.09
-Nodes (28): ADR-014 — Pattern-layer arithmetic is Double; sub-resolution divergence from Catroid's float accepted, ADR-017 — Formula arithmetic is native Double; decimal128 divergence and non-finite-literal semantics pinned, ADR-018 — Interpreter tick & clock semantics: one-action-per-tick round-robin, zero-tick loop bookkeeping, accumulating logical clock, ADR-019 — Structure-determining threshold crossings are a distinct class from coordinate tolerance, ADR-025 — Header field widths are a serialization error, not a trap; field emission order is a contract, DesignName and DSTFileName — two name types, DST header fixed-width fields and emission order, The ulp-distance screening rule for goldens (+20 more)
-
-### Community 44 - "Stage Point & Traversal"
-Cohesion: 0.14
-Nodes (6): StagePoint, CoordinateConversionTests, Double, Int, TraversalPredicateTests, StageGeometryTests
-
-### Community 45 - "DST File Assembly"
-Cohesion: 0.13
-Nodes (12): DSTFile, Data, UInt8, URL, DSTFileTests, Data, Double, EmbroideryStream (+4 more)
-
-### Community 46 - "DST Stitch Record Codec"
-Cohesion: 0.11
-Nodes (13): DSTStitchRecord, Bool, Int, UInt16, UInt8, BitContribution, DecodedRecord, Bool (+5 more)
-
-### Community 47 - "Stage Accessibility Strings"
+### Community 78 - "IfExecutionTests & .profile"
 Cohesion: 0.15
-Nodes (5): StageAccessibility, Double, RunState, StageSummary, StageAccessibilityTests
+Nodes (10): Branch, neither, otherwise, then, IfExecutionTests, Bool, Double, SourceLocation (+2 more)
 
-### Community 48 - "Preview Stitch & Run Batch"
-Cohesion: 0.13
-Nodes (9): ArraySlice, PreviewStitch, PreviewNeedle, .liveTail, foldBatches(), FoldedRun, RunBatchTests, .stitches (+1 more)
+### Community 79 - "DesignName & RenameSession"
+Cohesion: 0.10
+Nodes (14): .defaultName, .nameDraftValidation, .validatedName, RenameSession, .canSave, .validation, DesignNameProblem, Result (+6 more)
 
-### Community 49 - "Export & Lifecycle ADRs"
-Cohesion: 0.11
-Nodes (25): ADR-009 — Stage rendering: SwiftUI Canvas with batched paths, ADR-011 — Privacy: fully offline, no accounts, no tracking, ADR-015 — Set Thread Color emission: silent start, invalid-hex no-op, clause-B black, ==121 tie-off, ADR-021 — M3 preview data path: colour-resolved stitch events into an append-only display list, ADR-024 — The stage renderer: batching hoisted out of the renderer, and the deviations from both references, ADR-026 — DST export: the gate, the two name types, eager preparation, and the exported UTType, ADR-027 — The run lifecycle: two tasks, a terminal that cannot be forgotten, and three budget axes, Display list traces the program; export model traces the machine (+17 more)
-
-### Community 50 - "Sample Programs & Budgets"
-Cohesion: 0.11
-Nodes (16): Hasher, Identifiable, SampleProgram, .descriptionKey, .displayName, .nameKey, .programJSONURL, .summary (+8 more)
-
-### Community 51 - "Stepper Embroidery Runs"
-Cohesion: 0.26
-Nodes (3): Int, stitchPositions(), StepperEmbroideryTests
-
-### Community 52 - "Golden Fixture Readers"
+### Community 80 - ".readiness & Readiness"
 Cohesion: 0.09
-Nodes (4): CoreTransferable, Foundation, SewUp, UniformTypeIdentifiers
+Nodes (26): .hint, .isEnabled, .notice, .reasonsOwingAHint, .shareURL, .threadColorNote, Readiness, failed (+18 more)
 
-### Community 53 - "Stage Zoom Bounds"
+### Community 81 - "NeedleUpdate & Scene"
+Cohesion: 0.15
+Nodes (8): SampleLinkageTests, NeedleUpdate, Double, InterpreterClock, Double, Scene, StepperSchedulingTests, StepperWaitTests
+
+### Community 82 - "EditResult & ParameterTarget"
+Cohesion: 0.15
+Nodes (14): EditorViewModel, .canEditSelectedBrick, .editedBrick, EntryAnchor, Bool, Double, Int, EditResult (+6 more)
+
+### Community 83 - "AnchorView & UndoResponderAnchor"
+Cohesion: 0.10
+Nodes (14): .body, AnchorView, .canBecomeFirstResponder, .undoManager, FirstResponder, Bool, CGRect, UIResponder (+6 more)
+
+### Community 84 - "ParameterEditorKind & BrickParameterTests"
+Cohesion: 0.08
+Nodes (12): ParameterEditorKind, arcDirection, comparison, fileName, number, readOnlyFormula, threadColor, variableName (+4 more)
+
+### Community 85 - "EditRejection & AddressComponent"
+Cohesion: 0.08
+Nodes (19): AddressComponent, brick, object, scene, script, EditRejection, addressOutOfBounds, cannotChangeBrickKind (+11 more)
+
+### Community 86 - "DSTStitchRecord & DSTStitchRecordTests"
+Cohesion: 0.11
+Nodes (14): DSTStitchRecord, Bool, Int, UInt16, UInt8, BitContribution, DecodedRecord, DSTRecordDecoder (+6 more)
+
+### Community 87 - "StageBox & .fitTarget"
 Cohesion: 0.13
-Nodes (7): CGSize, ClosedRange, Double, StageGesture, StageZoomBounds, Double, StageZoomBoundsTests
+Nodes (10): StageBox, .center, .height, .width, StageExtent, Double, StageGeometry, Double (+2 more)
 
-### Community 54 - "DST Header & Field Errors"
-Cohesion: 0.17
-Nodes (7): DSTHeader, DSTSerializationError, fieldOverflow, Int, DSTFieldWidthChokepointTests, UInt8, Sequence
+### Community 88 - "ScriptAddress & VariableMenu"
+Cohesion: 0.11
+Nodes (10): .variableMenu, ScriptAddress, Int, Scope, object, project, VariableMenu, .names (+2 more)
 
-### Community 55 - "Running Stitch"
+### Community 89 - "ADR-040 Parameter editing, & ADR-043 Stage rendering"
+Cohesion: 0.08
+Nodes (28): ADR-040 Parameter editing, comparison editor, 14-colour palette, ADR-043 Stage rendering rules and performance bar, ADR-044 Stage manipulation: UIKit recognisers, pure tracker, Arc/GoThrough samples i=1…100 in one tick, Baked settled-prefix raster keyed by BakeKey, live tail stroked, Brick.replacing(_:with:) parameter edit builder, Editor change pipeline (EditorViewModel only writer → onProgramChanged → AppModel.programChanged), Comparison editor and ParameterTarget (.slot / .operand) (+20 more)
+
+### Community 90 - "RowIdentitiesTests & RowIdentities"
+Cohesion: 0.15
+Nodes (3): RowIdentities, Int, RowIdentitiesTests
+
+### Community 91 - "StagePanDirection & .panned"
+Cohesion: 0.11
+Nodes (15): StagePanAction, .accessibilityActionName, Content, Double, LocalizedStringResource, View, ViewPoint, StagePanDirection (+7 more)
+
+### Community 92 - "UndoBridgeTests & UndoManager"
+Cohesion: 0.23
+Nodes (5): UndoManager, CountingUndoManager, EditorViewModel, Int, UndoBridgeTests
+
+### Community 93 - ".planning & DotRun"
+Cohesion: 0.13
+Nodes (17): DotRun, .count, .dottedIndices, Range<Int>, Bool, Int, PreviewStitch, Range (+9 more)
+
+### Community 94 - "StageManipulationCatcher & StageManipulationCatcherTests"
+Cohesion: 0.14
+Nodes (13): Animatable, SettlingProgress, .animatableData, .body, Content, StageManipulationCatcher, Void, Hosted (+5 more)
+
+### Community 95 - "Renderer & Level"
+Cohesion: 0.12
+Nodes (16): FormulaText, Level, additive, comparison, leaf, logicalAnd, logicalOr, multiplicative (+8 more)
+
+### Community 96 - "Coordinator & .update"
+Cohesion: 0.14
+Nodes (14): Coordinator, Binding, Bool, Int, StageTouchTrackingView, UIGestureRecognizer, UIPanGestureRecognizer, UIPinchGestureRecognizer (+6 more)
+
+### Community 97 - "Run & .step"
+Cohesion: 0.23
+Nodes (8): Generator, PairInvariantSoakTests, Run, Bool, EditorViewModel, Int, UInt64, Tally
+
+### Community 98 - "runAndSerialize & GoldenSquareBytesTests"
+Cohesion: 0.14
+Nodes (13): InterpreterClock, finalizedDesignName(), GoldenProgramRun, goldenSquareFixture(), runAndSerialize(), Data, EmbroideryStream, InterpreterEvent (+5 more)
+
+### Community 100 - ".window & ProjectNameTests"
+Cohesion: 0.18
+Nodes (6): ProjectNameTests, Bool, InMemoryProjectStore, Int, RecordingDSTFileWriter, Window
+
+### Community 101 - "ThreadSwatch & ThreadPaletteTests"
+Cohesion: 0.09
+Nodes (17): ThreadSwatch, amber, black, brown, green, grey, .hex, navy (+9 more)
+
+### Community 102 - "BrickRowPresentation & .rows"
 Cohesion: 0.21
-Nodes (4): RunningStitch, StitchPattern, RunningStitchTests, Double
+Nodes (10): BrickRowPresentation, Moves, NamedMove, Sentence, Bool, Int, Locale, LocalizedStringResource (+2 more)
 
-### Community 56 - "Golden Program Oracle"
+### Community 103 - "EditorViewModel & .init"
+Cohesion: 0.15
+Nodes (11): EditorViewModel, .canRedo, .canUndo, .program, .rowIDs, .selectedRowID, .systemUndoManager, .undoStack (+3 more)
+
+### Community 104 - ".apply & VirtualNeedle"
+Cohesion: 0.18
+Nodes (9): Double, VirtualNeedle, Double, Scope, VirtualNeedle, Double, VirtualNeedle, .catroidDirection (+1 more)
+
+### Community 105 - "AccessibilityMoveTests & .applied"
+Cohesion: 0.19
+Nodes (4): AccessibilityMoveTests, Int, Script, Set
+
+### Community 106 - "IfBlockAccessibilityMoveTests & .applied"
+Cohesion: 0.19
+Nodes (5): Crossing, IfBlockAccessibilityMoveTests, Int, Script, Set
+
+### Community 107 - "replayGoldenProgram & GoldenProgramOracle"
 Cohesion: 0.17
 Nodes (23): actionBrickCount(), GoldenOp, activate, finalize, move, setColor, sewUp, turn (+15 more)
 
-### Community 57 - "Synthetic 50k Design"
+### Community 108 - ".program & SyntheticDesignTests"
 Cohesion: 0.11
 Nodes (9): Brick, makeUS309SyntheticProgram(), rowPair(), Program, Program, Double, Int, StageBox (+1 more)
 
-### Community 58 - "Design Name Validation"
+### Community 109 - "FrameTimeStatistics & FrameTimeStatisticsTests"
 Cohesion: 0.15
-Nodes (4): .validatedName, Result, DesignNameTests, Character
+Nodes (7): FrameTimeStatistics, .isLongEnoughToQuote, .meetsSixtyFps, Bool, Double, Int, FrameTimeStatisticsTests
 
-### Community 59 - "Recogniser Coordinator"
-Cohesion: 0.15
-Nodes (11): Coordinator, Binding, Bool, Int, UIGestureRecognizer, UIPanGestureRecognizer, UIPinchGestureRecognizer, UITapGestureRecognizer (+3 more)
-
-### Community 60 - "Design Name Field Layout"
+### Community 110 - "Image & ProjectBadge"
 Cohesion: 0.11
-Nodes (16): AnyLayout, Axis, DesignNameField, .arrangement, .body, .counter, .field, .title (+8 more)
+Nodes (20): ProjectBadge, damaged, .label, needsNewerApp, LocalizedStringResource, .systemImage, ProjectBadgeView, .body (+12 more)
 
-### Community 61 - "Design Name Presentation"
-Cohesion: 0.12
-Nodes (12): .message, Character, LocalizedStringResource, DesignNamePresentationTests, DesignName, DesignNameProblem, empty, tooLong (+4 more)
-
-### Community 62 - "Frame Time Readout"
-Cohesion: 0.12
-Nodes (14): FrameTimeReadout, .caption, .nominal, Double, .frameTimeReadout, String, .asComment, Comment (+6 more)
-
-### Community 63 - "Sample Library Wiring"
-Cohesion: 0.21
-Nodes (7): ExportWiringTests, Bool, EmbroideryStream, Int, InterpreterDriver, SampleLibrary, SampleProgram
-
-### Community 64 - "Program Model Builders"
-Cohesion: 0.13
-Nodes (7): Double, Variable, makeOctagonRosetteProgram(), coilLoop(), makeSquareCoilProgram(), Int, ProgramModelTests
-
-### Community 66 - "Manipulation Wiring Tests"
+### Community 111 - "ParameterEditingTests & .editor"
 Cohesion: 0.19
-Nodes (13): Harness, Hosted, StageManipulationWiringTests, StubPinch, .state, StubTap, CGSize, StitchDisplayList (+5 more)
+Nodes (4): Announcements, ParameterEditingTests, EditorViewModel, Int
 
-### Community 67 - "DST Header Tests"
-Cohesion: 0.25
-Nodes (6): .header, DSTHeaderTests, Double, EmbroideryStream, Int, UInt8
+### Community 112 - "StageManipulationWiringTests & .theRendererSeesLiveThenSettledAcrossAManipulation"
+Cohesion: 0.19
+Nodes (15): Harness, Hosted, StageManipulationWiringTests, StubPinch, .state, StubTap, CGPoint, CGSize (+7 more)
 
-### Community 68 - "Running Stitch Pattern"
+### Community 113 - "ADR-027 Run lifecycle: & onProgramChanged void-the-run chokepoint"
+Cohesion: 0.11
+Nodes (23): ADR-027 Run lifecycle: producer/consumer tasks, stop cancels producer, Catroid StageListener.render anti-throttle (up to 50 act() per frame), Catty Stage.stopProject teardown-before-share bug, Coalescing session via CoalescingKey (never a timer), Completion precedence: completion > cancellation > cap, DocumentsProgramStore / ProgramStoring set-aside of refused files, Invariant 3: a correction is not finished until every copy is gone, NeedleGlyph two-ink needle (core #7f1d1d + white halo) (+15 more)
+
+### Community 114 - "Instruction & .compile"
+Cohesion: 0.13
+Nodes (18): OpenBlock, Instruction, brick, forBegin, foreverBegin, ifBegin, ifEnd, jump (+10 more)
+
+### Community 115 - "interpreter & DisplayVersusExportModelTests"
+Cohesion: 0.13
+Nodes (13): ExportEligibility, nothingEmbroiderable, nothingStitched, notRun, ready, singleStitch, DisplayVersusExportModelTests, interpreter() (+5 more)
+
+### Community 116 - "IfBlockEditingTests & .apply"
+Cohesion: 0.21
+Nodes (3): IfBlockEditingTests, StrayDelete, Int
+
+### Community 117 - "ExportControlTests & .readiness"
+Cohesion: 0.13
+Nodes (6): ExportControl, ExportControlTests, Bool, ExportEligibility, ExportState, RunState
+
+### Community 118 - "StageRenderTransform & StageRenderTransformTests"
+Cohesion: 0.12
+Nodes (15): RecordingRenderer, StageRenderInvocation, StageRenderRecording, PreviewNeedle, StitchDisplayList, EmptyView, StageRenderTransform, .bake (+7 more)
+
+### Community 119 - "SampleLibrary.all & StagePreview target"
+Cohesion: 0.10
+Nodes (22): Android is not a byte-identical oracle, Catroid DefaultExampleProject.java, theRosetteDependsOnLibmRoundingOfHypot (ADR-019 tripwire), Sources/Samples/Resources/PROVENANCE.md, Sample 1 — rosette (verbatim DefaultExampleProject), Sample 2 — square coil (triple stitch, two colours), SampleLibrary.all, SampleProgram (+14 more)
+
+### Community 121 - "TraversalPredicateTests & .requiresTraversal"
+Cohesion: 0.14
+Nodes (5): SplitMix64, Double, Int, TraversalPredicateTests, UInt64
+
+### Community 122 - ".content & ProjectListPresentationTests"
+Cohesion: 0.27
+Nodes (3): ProjectListPresentationTests, Double, Int
+
+### Community 123 - "WindowRegistry & .register"
+Cohesion: 0.12
+Nodes (11): Registration, AnyObject, Bool, Set, WindowRegistry, .draftNames, .hasDeadEntries, PruningFlag (+3 more)
+
+### Community 124 - "ProjectActionState & ProjectRowAction"
+Cohesion: 0.15
+Nodes (15): ButtonRole, ProjectActionState, .isEnabled, Bool, ProjectRowAction, delete, duplicate, open (+7 more)
+
+### Community 125 - "CanvasStitchLayers & BakeKey"
+Cohesion: 0.17
+Nodes (17): Baked, BakeKey, CanvasStitchLayers, .bakeKey, .travelOpacity, NeedleLayer, .body, Bool (+9 more)
+
+### Community 126 - ".indent & .guideOffsets"
+Cohesion: 0.19
+Nodes (10): ScriptRowLayout, Bool, CGFloat, Int, ScriptRowView, .body, Bool, ScriptRowLayoutTests (+2 more)
+
+### Community 127 - "StageView & .drawnStage"
+Cohesion: 0.10
+Nodes (19): StageView, .canvasSlot, .drawnStage, .emptyStage, .frameTimeReadout, .leavesTheHoop, .state, .tapOutOfName (+11 more)
+
+### Community 128 - "ProgramDocumentInspectionTests & .inspect"
+Cohesion: 0.17
+Nodes (8): DocumentInspection, openable, refused, Data, ProgramDocumentInspectionTests, Data, Result, Script
+
+### Community 129 - "RunningStitchPattern & .update"
 Cohesion: 0.24
 Nodes (4): RunningStitchPattern, Double, RunningStitchPatternTests, Double
 
-### Community 69 - "Sew-Up Bar Tack"
-Cohesion: 0.26
-Nodes (3): Double, SewUpTests, Double
-
-### Community 70 - "Triple Stitch Pattern"
+### Community 130 - "TripleStitchPattern & .update"
 Cohesion: 0.24
 Nodes (4): Double, TripleStitchPattern, Double, TripleStitchPatternTests
 
-### Community 71 - "Golden Program Consumption"
-Cohesion: 0.21
-Nodes (4): eventTags(), recordPositions(), GoldenProgramSquareConsumptionTests, GoldenProgramStarConsumptionTests
+### Community 131 - "EditorCoreFixtures & .randomAction"
+Cohesion: 0.16
+Nodes (7): EditorCoreFixtures, .script, SplitMix64, Double, Int, Script, UInt64
 
-### Community 72 - "Temporary DST File Writer"
+### Community 132 - "ArcTests & .updates"
+Cohesion: 0.31
+Nodes (4): ArcTests, Bool, Double, VirtualNeedle
+
+### Community 133 - "GoThroughTests & .updates"
+Cohesion: 0.28
+Nodes (5): GoThroughTests, Bool, Double, Int, VirtualNeedle
+
+### Community 134 - "AutosaveNotice & Cause"
+Cohesion: 0.15
+Nodes (10): AutosaveBanner, .body, AutosaveNotice, .refusalTitle, Cause, blocksDontFit, damaged, newerApp (+2 more)
+
+### Community 135 - "ComparisonOperator & ComparisonOperatorPicker"
+Cohesion: 0.14
+Nodes (15): ComparisonEditor, .body, ComparisonOperatorPicker, .body, .comparison, Binding, EditorViewModel, ComparisonOperator (+7 more)
+
+### Community 136 - "TemporaryDSTFileWriter & .inDisposableDirectory"
 Cohesion: 0.27
 Nodes (6): URL, TemporaryDSTFileWriter, EmbroideryStream, URL, Void, TemporaryDSTFileWriterTests
 
-### Community 73 - "Object & Codable Model"
-Cohesion: 0.12
-Nodes (13): SampleSelection, .program, Int, Codable, Equatable, StepOutcome, finished, ticked (+5 more)
+### Community 138 - ".parse & .text"
+Cohesion: 0.15
+Nodes (7): NumberFieldText, Double, NumberFieldTextTests, Double, NumberEntry, Result, NumberEntryTests
 
-### Community 74 - "DST Header Field Append"
+### Community 139 - "HistoryTransitionTests & .window"
+Cohesion: 0.27
+Nodes (9): HistorySurface, system, toolbar, HistoryTransitionTests, Bool, InMemoryProjectStore, Int, RecordingDSTFileWriter (+1 more)
+
+### Community 140 - ".bricks & .matchingEnd"
+Cohesion: 0.19
+Nodes (8): Script, Int, Script, Bool, Int, Script, ClosedRange, Int
+
+### Community 141 - "Field & .appendField"
 Cohesion: 0.11
 Nodes (18): Field, colorBlocks, endOffsetX, endOffsetY, extentMinusX, extentMinusY, extentPlusX, extentPlusY (+10 more)
 
-### Community 75 - "Accessibility Memoisation"
-Cohesion: 0.21
-Nodes (11): DescriptionKey, Spoken, StageAccessibilityMemo, Double, RunState, StageSummary, Reading, StageAccessibilityMemoTests (+3 more)
-
-### Community 76 - "Touch Tracking View"
-Cohesion: 0.21
-Nodes (9): StageTouchTrackingView, CGRect, Int, Set, Void, NSCoder, UIEvent, UITouch (+1 more)
-
-### Community 77 - "Stage View Composition"
+### Community 142 - "DSTHeaderField & dstHeaderTag"
 Cohesion: 0.12
-Nodes (17): StageView, .canvasSlot, .emptyStage, .leavesTheHoop, .state, .unavailableView, Bool, PreviewNeedle (+9 more)
+Nodes (18): asciiField(), DSTHeaderField, colorBlocks, endOffsetX, endOffsetY, extentMinusX, extentMinusY, extentPlusX (+10 more)
 
-### Community 78 - "Needle Glyph Rendering"
+### Community 143 - "StageCanvas & .body"
+Cohesion: 0.17
+Nodes (15): AccessibilityAdjustmentDirection, StageCanvas, .body, .commitRecorder, Double, PreviewNeedle, RunState, StageSummary (+7 more)
+
+### Community 145 - "ProjectOpeningTests & .twoProjects"
+Cohesion: 0.27
+Nodes (5): ProjectOpeningTests, Switch, newDesign, openProject, pickSample
+
+### Community 146 - ".outline & NeedleGlyphTests"
 Cohesion: 0.20
 Nodes (6): Darwin, Glibc, NeedleGlyph, Double, NeedleGlyphTests, Double
 
-### Community 79 - "US-307 Stage Screenshots"
+### Community 147 - ".parse & FormulaLiteralTests"
 Cohesion: 0.17
-Nodes (18): Circular Back Button, Hoop Boundary Rectangle, Hoop Size Caption 100 mm x 100 mm, Navigation Title: Octagon Rosette, US-307 Screenshot: Mid-Drag Pan, Design Title Header (Octagon Rosette), Octagon Rosette Stitch Design, Pan (Drag) Gesture In Progress (+10 more)
+Nodes (6): FormulaLiteral, Bool, Result, UInt8, FormulaLiteralTests, Double
 
-### Community 80 - "Interpolation & Rounding"
+### Community 148 - "EditableComparison & ComparisonSide"
+Cohesion: 0.18
+Nodes (7): ComparisonSide, first, second, EditableComparison, .formula, Bool, Self
+
+### Community 150 - "InterpolationTests & EmbroideryStream"
 Cohesion: 0.22
 Nodes (3): InterpolationTests, EmbroideryStream, UInt8
 
-### Community 81 - "Thread Color Hex"
-Cohesion: 0.21
-Nodes (5): Color, UInt16, UInt8, ThreadColor, ThreadColorHexTests
-
-### Community 82 - "Golden Square Byte Runs"
-Cohesion: 0.20
-Nodes (8): InterpreterClock, finalizedDesignName(), GoldenProgramRun, runAndSerialize(), EmbroideryStream, InterpreterEvent, Program, GoldenSquareBytesTests
-
-### Community 83 - "DST Header Field Types"
-Cohesion: 0.14
-Nodes (17): asciiField(), DSTHeaderField, colorBlocks, endOffsetX, endOffsetY, extentMinusX, extentMinusY, extentPlusX (+9 more)
-
-### Community 84 - "Golden Square Programs"
-Cohesion: 0.19
-Nodes (5): polygonProgram(), GoldenProgramSquareTests, Bool, .displacedProgram, Bool
-
-### Community 85 - "Export & Formula Errors"
-Cohesion: 0.16
-Nodes (9): ExportError, .message, serialization, writeFailed, Int, LocalizedStringResource, Error, FormulaError (+1 more)
-
-### Community 86 - "Run Screen Screenshots"
-Cohesion: 0.18
-Nodes (16): Hoop Frame Outline (100 mm x 100 mm), Play Again Button, Fit-to-Content Zoom State, Hoop Bounds Rectangle (100 mm x 100 mm), Hoop Size Caption Label, US-307 Fit-to-Content Screenshot, Embroidery Stage / Run Screen, Terminal (Finished) Run State (+8 more)
-
-### Community 87 - "Script Compiler Runtime"
+### Community 151 - "ExportError & ExportState"
 Cohesion: 0.15
-Nodes (14): Instruction, brick, foreverBegin, loopEnd, repeatBegin, ScriptCompiler, Int, .isFinished (+6 more)
+Nodes (11): ExportError, .message, serialization, writeFailed, ExportState, failed, idle, ready (+3 more)
 
-### Community 88 - "Stitch Segment Style"
+### Community 152 - "ScriptListView & .list"
+Cohesion: 0.15
+Nodes (13): Placement, column, stack, ScriptListView, .addButton, .emptyStateDescription, .emptyStateTitle, .title (+5 more)
+
+### Community 153 - "StageTouchTrackingView & .touchesBegan"
+Cohesion: 0.23
+Nodes (8): StageTouchTrackingView, CGRect, Int, Set, Void, NSCoder, UIEvent, UITouch
+
+### Community 154 - "EditorViewModelTests & .loopedEditor"
+Cohesion: 0.23
+Nodes (3): Announcements, EditorViewModelTests, EditorViewModel
+
+### Community 155 - "ExportWiringTests & .immediateModel"
+Cohesion: 0.30
+Nodes (5): ExportWiringTests, Bool, EmbroideryStream, Int, RecordingDSTFileWriter
+
+### Community 156 - ".encode & ProgramDocumentRoundTripTests"
+Cohesion: 0.22
+Nodes (4): Bool, Data, ProgramDocumentRoundTripTests, Double
+
+### Community 157 - ".reducing & PreviewNeedle"
+Cohesion: 0.21
+Nodes (4): PreviewNeedle, foldBatches(), FoldedRun, RunBatchTests
+
+### Community 158 - ".baseline & StageMagnificationLimitsTests"
+Cohesion: 0.21
+Nodes (8): Double, StageGesture, StageRenderTransform, StageTransform, ViewSize, StageMagnificationLimitsTests, .fit, StageTransform
+
+### Community 159 - "FormulaCase & FormulaCensusTests"
+Cohesion: 0.15
+Nodes (11): FormulaCase, binary, binaryFunction, constant, logicalNot, number, sensor, unaryFunction (+3 more)
+
+### Community 161 - "SampleRowView & PickerRowButtonStyle"
+Cohesion: 0.15
+Nodes (12): ButtonStyle, .examples, .rowBody, PickerRowButtonStyle, PickerRowLayout, SampleRowView, .body, Bool (+4 more)
+
+### Community 162 - ".geometry & Geometry"
+Cohesion: 0.17
+Nodes (11): .body, Geometry, StageField, Bool, CGRect, CGSize, Double, StageTransform (+3 more)
+
+### Community 163 - ".stage & .hosting"
+Cohesion: 0.35
+Nodes (8): StageViewWiringTests, Binding, CGSize, PreviewNeedle, RecordingRenderer, RunState, StitchDisplayList, View
+
+### Community 164 - "StageZoomBounds & StageZoomBoundsTests"
+Cohesion: 0.21
+Nodes (3): StageZoomBounds, Double, StageZoomBoundsTests
+
+### Community 165 - ".classifying & StitchSegmentStyleTests"
 Cohesion: 0.18
 Nodes (6): StitchSegmentStyle, suppressed, thread, traversal, Self, StitchSegmentStyleTests
 
-### Community 89 - "CI Jobs & Lint Rules"
-Cohesion: 0.16
-Nodes (15): app-build-and-test job (xcodebuild), CI workflow, engine-tests job (swift test), Explicit -project and OS=latest destination, SwiftLint job, Shared-scheme precondition check, Pinned DEVELOPER_DIR toolchain, SwiftLint configuration (+7 more)
+### Community 167 - "StepperSensorTests & .finalPosition"
+Cohesion: 0.24
+Nodes (3): StepperSensorTests, Double, Int
 
-### Community 90 - "Project Guidance Docs"
-Cohesion: 0.14
-Nodes (15): Excluding .claude/worktrees (agent checkouts inside the repo), An ADR outranks any generated artifact (graph, index, summary), Graph drift check is defined by its output, not its effort, AGENTS.md — mirrored guidance for non-Claude agents, Journal append-only rule (AGENTS.md mirror), Two-layer review before handover, ADR-012 is the arbiter where references disagree, Cross-vendor review loop and its stop condition (+7 more)
+### Community 168 - "DrainedRun & RunSession"
+Cohesion: 0.17
+Nodes (12): AsyncStream, RunSession, Never, Task, Void, .liveTail, drain(), DrainedRun (+4 more)
 
-### Community 91 - "Formula Evaluation Runtime"
-Cohesion: 0.22
-Nodes (6): Float, Double, VirtualNeedle, Double, Int, Scope
+### Community 169 - ".select & ProgramSelection"
+Cohesion: 0.21
+Nodes (4): ProgramSelection, Int, LocalizedStringResource, AppModelTests
 
-### Community 92 - "Interpolation Predicates"
+### Community 171 - "RGB & StageFieldRenderingTests"
+Cohesion: 0.30
+Nodes (8): Frame, RGB, StageFieldRenderingTests, Bool, Int, StitchDisplayList, UInt8, CustomStringConvertible
+
+### Community 172 - ".canAppend & .distanceInUnits"
 Cohesion: 0.22
 Nodes (5): Bool, Double, javaRound(), Double, Int
 
-### Community 93 - "Sample Threshold Screening"
-Cohesion: 0.16
-Nodes (9): SampleID, octagonRosette, .resourceName, .shipping, squareCoil, us309Synthetic, SampleThresholdTests, Double (+1 more)
-
-### Community 94 - "Stage Toggle & Pan"
-Cohesion: 0.26
+### Community 173 - ".beginToggle & StageToggleAndPanTests"
+Cohesion: 0.25
 Nodes (3): StageToggleAndPanTests, Bool, Int
 
-### Community 96 - "Export Control Readiness"
-Cohesion: 0.22
-Nodes (3): ExportControlTests, Bool, RunState
+### Community 175 - "DesignNameField & .problemLine"
+Cohesion: 0.19
+Nodes (13): AnyLayout, DesignNameField, .arrangement, .body, .counter, .field, .title, DesignNameFieldPreview (+5 more)
 
-### Community 97 - "Interpreter Core Concepts"
+### Community 176 - ".builtFromNothingRunsAndExports & .play"
+Cohesion: 0.20
+Nodes (7): Bool, CanvasStitchRenderer, .stage, StagePreviewRenderer, ExitCriteriaTests, Bool, Int
+
+### Community 177 - "Edit & .text"
+Cohesion: 0.19
+Nodes (10): Edit, adding, changing, deleting, moving, other, renaming, HistoryAnnouncement (+2 more)
+
+### Community 178 - ".resolving & StageContentState"
+Cohesion: 0.19
+Nodes (7): StageContentState, drawn, noSelection, notRun, Bool, Self, StageContentStateTests
+
+### Community 179 - "VirtualNeedle & EmbroideryPatternManager"
 Cohesion: 0.14
 Nodes (14): Deterministic time, Catroid-faithful ticks, The needle is the object, NeedleUpdate (one per executed motion brick), VirtualNeedle (position, heading), Catroid ThreadScheduler (one act per sequence per tick), Interpreter value type (step/run/isFinished), InterpreterClock (injected logical tickDelta), InterpreterEvent enum (+6 more)
 
-### Community 99 - "Stitch Draw Metrics"
+### Community 180 - "Interpreter & ObjectRuntime"
+Cohesion: 0.24
+Nodes (12): Interpreter, .isFinished, Bool, Double, ForLoopState, ObjectRuntime, ScriptThread, ActorID (+4 more)
+
+### Community 181 - ".threadWidth & StitchDrawMetricsTests"
 Cohesion: 0.24
 Nodes (5): StitchDrawMetrics, Double, Double, StitchDrawMetricsTests, Bool
 
-### Community 100 - "Draw Plan Windowing"
+### Community 182 - ".live & StitchDrawPlanWindowTests"
 Cohesion: 0.32
 Nodes (3): StitchDrawPlanWindowTests, Int, StitchDisplayList
 
-### Community 101 - "DST Round-Trip Decode"
-Cohesion: 0.24
-Nodes (7): DecodedDSTFile, DSTFileReader, Data, Int, UInt8, DSTRecordDecoder, DSTRoundTripTests
-
-### Community 103 - "Golden Star Program Tests"
+### Community 185 - "GoldenProgramStarTests & .run"
 Cohesion: 0.24
 Nodes (3): GoldenProgramStarTests, EmbroideryStream, InterpreterEvent
 
-### Community 104 - "Threshold Screening Probe"
+### Community 186 - "VirtualNeedleBrickTests & .isClose"
 Cohesion: 0.25
-Nodes (13): BoundaryProbe, .distanceIsExactlyOnBoundary, .isDecidedByLibm, emissionCountsPerMove(), needleMove(), screen(), Screening, .atRisk (+5 more)
+Nodes (3): Bool, Double, VirtualNeedleBrickTests
 
-### Community 105 - "Sample Picker View"
+### Community 187 - "ProjectRow & .accessibilityLabel"
 Cohesion: 0.21
-Nodes (9): ButtonStyle, PickerRowButtonStyle, SamplePickerView, .body, SampleRowView, .body, Bool, SampleRowAccessibilityTests (+1 more)
+Nodes (9): ProjectListContent, empty, rows, ProjectListPresentation, ProjectRow, .actions, Bool, Date (+1 more)
 
-### Community 106 - "Stage Field View"
-Cohesion: 0.17
-Nodes (9): StageFieldView, .body, CGRect, StageBox, Double, StageTransformCoreGraphicsTests, Bool, CGRect (+1 more)
+### Community 188 - "StageNotices & .exportNoticeLine"
+Cohesion: 0.18
+Nodes (12): StageNotices, .body, .hoopSizeDescription, .limitNotice, .nameFieldBlock, .outsideHoopNotice, .reachedStitchLimit, Bool (+4 more)
 
-### Community 107 - "DST File Writing Seam"
-Cohesion: 0.21
-Nodes (8): Failure, URL, ThrowingDSTFileWriter, Write, DSTFileName, .value, Set, Unicode
+### Community 189 - "post_bash_reminders.py & classify"
+Cohesion: 0.23
+Nodes (12): classify(), flag_is_set(), git_subcommand(), main(), Whether a boolean flag is on: bare (`-d`), or with a value (`--draft=true`,…, The set of events the command contains, in a stable order., Drops every heredoc body, so text fed to `cat <<EOF` is never read as a command., The command split into simple commands, quotes respected. (+4 more)
 
-### Community 108 - "Coarsening Corner Rule"
+### Community 190 - "EditorCore & ScriptEdit"
+Cohesion: 0.33
+Nodes (6): EditorCore, ScriptEdit, edited, refused, Int, Script
+
+### Community 191 - "StitchDrawPlanCoarseningRuleTests & .isCorner"
 Cohesion: 0.19
 Nodes (5): Bool, PreviewStitch, StitchDrawPlanCoarseningRuleTests, Int, StitchDisplayList
 
-### Community 110 - "Virtual Needle Brick Tests"
-Cohesion: 0.22
-Nodes (3): Bool, Double, VirtualNeedleBrickTests
+### Community 195 - "ArcFlowerTests & .usesTheNewVocabulary"
+Cohesion: 0.15
+Nodes (6): ArcFlowerTests, .bricks, .measured, .sample, Bool, SampleRun
 
-### Community 111 - "DST Design & Export Row"
+### Community 196 - "SunburstTests & .radius"
+Cohesion: 0.19
+Nodes (6): SunburstTests, .bricks, .sample, .stitches, Double, ThreadColor
+
+### Community 197 - "FrameCaptureVerdict & Bool"
 Cohesion: 0.17
-Nodes (10): DSTDesign, URL, .transferRepresentation, StageExportRow, .body, .control, .title, .body (+2 more)
+Nodes (11): FrameCaptureVerdict, drawsNotMeasured, interrupted, .isAboutTheRenderer, .label, measured, noDraws, nothingCaptured (+3 more)
 
-### Community 114 - "US-306 Accessibility Screenshots"
-Cohesion: 0.24
-Nodes (11): US-306 Screenshot: Stage at AX5 Dynamic Type, AX5 Accessibility Dynamic Type Setting, Hoop Size Label "Hoop 100 mm x 100 mm", Hoop Boundary Outline (100 mm x 100 mm), Manual Accessibility Pass Evidence (Dynamic Type), Play Again Button (Terminal Run State), Design Decision: Stage Keeps Its Area While Controls Grow, Embroidery Stage Screen (Square Coil) (+3 more)
+### Community 198 - "ProgramDocumentError & .depthLimitCoversEveryFormulaPosition"
+Cohesion: 0.17
+Nodes (7): ProgramDocumentError, corrupt, encodingFailed, formulaTooDeep, unbalancedScript, unsupportedVersion, Int
 
-### Community 115 - "Square Coil Screenshots"
-Cohesion: 0.24
-Nodes (11): Stitch Preview Canvas, US-306 Post-Run Stage Screenshot, Back Navigation Control, Program Title Header, Square Coil Spiral Design, Stage Screen (Square Coil), Run Lifecycle Terminal State (finished run), Two-Color Thread Change (orange / blue) (+3 more)
+### Community 199 - "CompensatedMagnitudeTests & compensatedMagnitude"
+Cohesion: 0.23
+Nodes (4): CompensatedMagnitudeTests, Double, Int, compensatedMagnitude()
 
-### Community 116 - "Octagon Rosette Screenshots"
-Cohesion: 0.22
-Nodes (11): Hoop Frame Outline, US-307 Screenshot ax5 — Stage at Accessibility Dynamic Type, Back Navigation Button, Completed Run Terminal State, Design Run Screen (Octagon Rosette), Accessibility Dynamic Type Size (AX5), Fit-to-Hoop Zoom Framing, Hoop Boundary Frame in Stage (+3 more)
+### Community 202 - "UndoManagerBridge & HistoryDirection"
+Cohesion: 0.29
+Nodes (6): HistoryDirection, redo, undo, Bool, Int, UndoManagerBridge
 
-### Community 117 - "iPad Sidebar Screenshots"
-Cohesion: 0.22
-Nodes (11): US-307 iPad Regular Size Class Screenshot, Octagon Rosette Example Design, Play Again Primary Action Button, Regular Size Class Adaptive Layout, Selected Design Checkmark Row, Example Designs Sidebar, Sidebar Toggle Toolbar Button, NavigationSplitView Two-Column Layout (+3 more)
+### Community 203 - "PaletteInsetTests & .inset"
+Cohesion: 0.44
+Nodes (3): PaletteInsetTests, CGFloat, CGRect
 
-### Community 118 - "Canvas Renderer Protocol"
+### Community 204 - "StubPinch & CGPoint"
+Cohesion: 0.25
+Nodes (8): StubPinch, .state, StubTap, CGPoint, UIGestureRecognizer, UIView, UIPinchGestureRecognizer, UITapGestureRecognizer
+
+### Community 206 - "CanvasStitchRenderer & EmbroideryStream.requiresTraversal"
 Cohesion: 0.18
 Nodes (11): CanvasStitchRenderer, Catty two-SKShapeNodes-per-stitch anti-goal, MetalStitchRenderer escape hatch, Per-colour-run path batching rule (≤ 2 stroked paths + 1 dot path), PreviewStitch, EmbroideryStream.requiresTraversal, StagePreviewRenderer protocol, StageView (generic over renderer) (+3 more)
 
-### Community 119 - "Stage Summary Invariants"
-Cohesion: 0.20
-Nodes (11): Fit target union(stageRect, contentBounds), hoop unclipped, Hoop-overflow notice, Catty teardown-before-share hazard, Greenfield needle indicator, Producer-only cancellation (RunSession.stop), Terminal batch always carries assembledStream(), accessibilityAdjustableAction zoom + named Fit to Hoop action, Manual verification pass (pinch, VoiceOver, Reduce Motion, fit animation) (+3 more)
-
-### Community 120 - "M3 Close-Out ADR Notes"
-Cohesion: 0.20
-Nodes (11): ADR-026 — DST export close-out, ExportEligibility — the exportModel.count > 1 gate, Per-session temp directory policy, Info.plist wiring canary (failable UTType lookup), Exported UTType org.catrobat.embroiderydesigner.dst, ADR-031 — the manipulation layer, The centroid-pan derivation (frozen start anchor is correct), StageManipulation (two-channel tracker value type) (+3 more)
-
-### Community 121 - "Export After Stop"
+### Community 207 - ".driveUntilStitched & ExportAfterStopTests"
 Cohesion: 0.25
 Nodes (6): DrainedRun, ExportAfterStopTests, Data, EmbroideryStream, Int, Program
 
-### Community 122 - "Virtual Needle Tests"
+### Community 208 - "StageSummary & .theSummarySizeAgreesBetweenBothModels"
+Cohesion: 0.27
+Nodes (4): RunPhase, StageSummary, Double, Int
+
+### Community 209 - "Nesting & .functionChain"
+Cohesion: 0.27
+Nodes (7): Nesting, firstArgument, logicalNot, secondArgument, unary, ProgramDocumentFunctionDepthTests, Int
+
+### Community 210 - "VirtualNeedleTests & .isClose"
 Cohesion: 0.29
 Nodes (3): Bool, Double, VirtualNeedleTests
 
-### Community 123 - "Gesture Stub Doubles"
-Cohesion: 0.20
-Nodes (7): StubPinch, .state, StubTap, UIGestureRecognizer, UIView, UIPinchGestureRecognizer, UITapGestureRecognizer
-
-### Community 124 - "Dual-Driver Workflow Docs"
-Cohesion: 0.27
-Nodes (10): AGENTS.md / CLAUDE.md parity rule, Codex CLI primitives (.codex/config.toml hooks, .codex/agents, .agents/skills), Dual-driver workflow plan (Claude Code / Codex CLI interchangeable), Shared hook scripts (scripts/hooks, scripts/review), Agent roster mapped to workflow phases; delegation boundary, Append-only journal rule, Codex cross-vendor review loop (/codex-review), Review-loop convergence stop rule (cap became a convergence test) (+2 more)
-
-### Community 125 - "US-306 Stage Screenshots"
-Cohesion: 0.22
-Nodes (10): US-306 Stage Screen Screenshot (Dark Mode), Dark Mode Appearance State, Light Fabric Stage Kept Constant in Dark Mode, Play Again Primary Button, Program Title Header "Square Coil", Run Finished Terminal State, Square Coil Sample Program, Stage / Run Screen (+2 more)
-
-### Community 126 - "Run State Revision Model"
-Cohesion: 0.20
-Nodes (10): Atomic tick batch (no global event bound), Catroid deltaActionTimeDivisor anti-throttle (do not port), InterpreterDriver, PreviewRunState (revision, settleChunk, visibleNeedle), RunBatch, RunBudget (ticksPerFrame, maxStitchesPerFrame, maxStitchesPerRun), RunPacing (Display / Immediate / gated doubles), RunState (idle | running | finished(reason)) (+2 more)
-
-### Community 127 - "Byte Diff Reporting"
+### Community 212 - "firstByteDifference & ByteDiffTests"
 Cohesion: 0.29
 Nodes (3): firstByteDifference(), UInt8, ByteDiffTests
 
-### Community 128 - "Golden Square Manual Path"
-Cohesion: 0.36
-Nodes (5): goldenSquareFixture(), Data, GoldenSquareManualPathTests, Double, EmbroideryStream
+### Community 213 - "BrickLeadingView & .mark"
+Cohesion: 0.28
+Nodes (7): BrickLeadingView, .body, .mark, CGFloat, ThreadColor, .body, Color
 
-### Community 129 - "Octagon Rosette Goldens"
-Cohesion: 0.20
-Nodes (3): OctagonRosetteGoldenTests, .measured, SampleRun
-
-### Community 130 - "Binary Operator Enum"
-Cohesion: 0.22
-Nodes (7): CaseIterable, BinaryOperator, divide, minus, mult, plus, pow
-
-### Community 131 - "Gated Run Pacing"
-Cohesion: 0.31
-Nodes (5): GatedPacing, Bool, CheckedContinuation, Never, Void
-
-### Community 132 - "Dark Mode Screenshots"
+### Community 214 - ".theStageBoxMapsToTheSameViewRectAsItsMappedCorners & .viewRect"
 Cohesion: 0.25
-Nodes (9): US-307 Dark Mode Stage Screenshot, Dark Mode Appearance, Fabric-Neutral Stage in Dark Chrome, Fit-to-Hoop Zoom Baseline, Hoop Boundary 100 mm x 100 mm, Octagon Rosette Design, Embroidery Run/Preview Screen, Stitch Preview Stage Canvas (+1 more)
+Nodes (5): CGRect, StageBox, Double, StageTransformCoreGraphicsTests, Bool
 
-### Community 133 - "Display vs Export Model"
-Cohesion: 0.25
-Nodes (9): Display model ≠ export model (the normative rule), Catroid EmbroideryExportIsolationTest.kt, PreviewStitch, RunBatch.reducing(_:from:), StageGeometry (ADR-007's 500×500 stage in code), StagePreview target (Foundation-only library product), StageTransform, StitchDisplayList (+1 more)
+### Community 218 - ".interpreter & StepperStitchColorTests"
+Cohesion: 0.47
+Nodes (3): stitchColors(), ThreadColor, StepperStitchColorTests
 
-### Community 134 - "Compensated Magnitude"
-Cohesion: 0.31
-Nodes (4): CompensatedMagnitudeTests, Double, Int, compensatedMagnitude()
-
-### Community 135 - "Square Coil Goldens"
-Cohesion: 0.22
-Nodes (3): SquareCoilTests, .measured, SampleRun
-
-### Community 136 - "Synthetic Design Builder"
+### Community 219 - ".stitches & SyntheticDesign"
 Cohesion: 0.28
 Nodes (7): Double, Int, PreviewStitch, ThreadColor, SyntheticDesign, .halfHeight, .halfWidth
 
-### Community 137 - "App Root & Window Scene"
-Cohesion: 0.29
-Nodes (7): App, CatrobatEmbroideryApp, .body, WindowRootView, .body, RootView, .body
+### Community 221 - "ProgramDocument & .admit"
+Cohesion: 0.36
+Nodes (6): Decodable, NameProbe, ProgramDocument, Bool, Int, VersionProbe
 
-### Community 138 - "Run Session Async Stream"
-Cohesion: 0.39
-Nodes (5): AsyncStream, RunSession, Never, Task, Void
-
-### Community 139 - "Stage Content State"
+### Community 222 - "Exported UTType org.catrobat.embroiderydesigner.dst & DSTSerializationError.fieldOverflow"
 Cohesion: 0.25
-Nodes (6): StageContentState, drawn, noSelection, notRun, Bool, Self
+Nodes (8): Exported UTType org.catrobat.embroiderydesigner.dst, appendField's precondition (deleted), DSTHeader.Field (the width table), DSTSerializationError.fieldOverflow(field:value:limit:), ADR-026 — DST export close-out, ExportEligibility — the exportModel.count > 1 gate, Per-session temp directory policy, Info.plist wiring canary (failable UTType lookup)
 
-### Community 141 - "Export Error Semantics"
-Cohesion: 0.25
-Nodes (8): Run lifecycle enum correction — failed has no producer, appendField's precondition (deleted), DSTHeader.Field (the width table), DSTSerializationError.fieldOverflow(field:value:limit:), DSTDesign: Transferable + ShareLink, DSTFileWriting — the injected I/O seam, Eager preparation (ExportViewModel.prepare), ExportState (idle | ready(URL) | failed)
-
-### Community 142 - "Frame Capture Instrument"
-Cohesion: 0.29
-Nodes (8): Quantiles over drawn frames only, FrameTimeRecorder readout capsule, Instruments Animation Hitches trace (required, not a cross-check), NO DRAWS verdict (measures the display, not the renderer), StitchDrawPlanScalingTests (headless per-draw independence proof), drawn=251 animating signature (mixed-capture detector), Display-link quantisation to multiples of the refresh period, -US310FrameTimes launch argument
-
-### Community 143 - "DST Serialization Contract"
+### Community 223 - "ADR-025 — throwing & DesignName"
 Cohesion: 0.25
 Nodes (8): ADR-025 — throwing DST serialization, ADR-020's 1 000 000 interpolation cap stays, Field emission order is a contract, The fit-clamp inheritance and its correction, The reachability asymmetry of the header fields, DesignName (rejecting validator, printable ASCII, ≤15), DSTFileName (file-name sanitisation, independent of the header label), DSTHeader.sanitized(_:) — the mangling backstop
 
-### Community 144 - "Raster & Buffering Policy"
-Cohesion: 0.29
-Nodes (8): Bridging-segment rule at the watermark, Catroid PenActor FrameBuffer stamp, Settled/live split with cached raster and settledCount watermark, Discarded run's buffered frames landing in the next run (Critical), Unbounded AsyncStream buffering, Simultaneous MagnifyGesture + DragGesture, committed once in onEnded, Mid-gesture raster policy (bake once per gesture, re-stroke per frame), StageRenderTransform (bake + current)
-
-### Community 145 - "Stage Gesture Value"
+### Community 224 - "StageGesture & .anchor"
 Cohesion: 0.29
 Nodes (5): StageGesture, .isIdentity, .pan, Bool, Double
 
-### Community 149 - "Script Representation ADR"
-Cohesion: 0.38
-Nodes (7): ADR-008 — Script representation: flat brick list with paired control bricks, Flat scripts with paired control bricks, loopEnd pure marker retained in the model, matchingEnd / range(ofPairAt:) pair resolution, Move-a-pair-as-a-unit model primitive, Catty CBBackend (flatten-to-instructions precedent), Flat script compiled to linear instruction array with jump offsets
+### Community 226 - "FrameTimeReadout & .caption"
+Cohesion: 0.43
+Nodes (4): FrameTimeReadout, .caption, .nominal, Double
 
-### Community 150 - "M3 Milestone Stories"
-Cohesion: 0.52
-Nodes (7): E4 Stage & preview, E7 Export & sharing, M3 — Walking skeleton app (E4 + E7, thin E6), US-211 — DST serialization field-width chokepoint, US-308 — Design name, DST export via share sheet, exported UTType, gating, US-313a — The manipulation is a package value, US-313b — Two fingers reach the stage
-
-### Community 151 - "Run Lifecycle Screenshots"
+### Community 227 - "StageExportRow"
 Cohesion: 0.29
-Nodes (7): US-306 Mid-Run Screenshot (Square Coil), Incremental Live Stitch Growth, Needle Position Cursor, Run Control Affordance (Run/Stop Toggle), Run Lifecycle State: Running, Square Spiral Stitch Path (Blue Thread), Primary Stop Button
+Nodes (6): StageExportRow, .body, .button, .control, .title, .body
 
-### Community 152 - "Export Eligibility Reasons"
+### Community 228 - "Channel & Bool"
 Cohesion: 0.29
-Nodes (6): ExportEligibility, nothingEmbroiderable, nothingStitched, notRun, ready, singleStitch
+Nodes (7): Channel, absent, active, ended, .hasBegun, .isActive, Bool
 
-### Community 153 - "Settling Phase Enum"
+### Community 230 - "FrameTimeProxy & FrameTimeRecorder"
 Cohesion: 0.33
-Nodes (6): Phase, idle, settling, Bool, Double, Int
+Nodes (3): CADisplayLink, FrameTimeProxy, QuartzCore
 
-### Community 154 - "Manipulation Channel Enum"
-Cohesion: 0.33
-Nodes (6): Channel, absent, active, ended, .hasBegun, .isActive
-
-### Community 155 - "DST Header Numeric Fields"
-Cohesion: 0.60
-Nodes (5): coField(), numericField(), stField(), Int, UInt8
-
-### Community 157 - "UI Definition of Done"
+### Community 231 - "StageCatcherFrozenFitTests & .frame"
 Cohesion: 0.40
-Nodes (5): Definition of done for every UI story (M3+), DesignNameFieldLayout.axis(for:) — the AX1 counter rule, panned(by:) and the double-tap fit ↔ 2× toggle, Four camera-relative directional pan accessibility actions, US-315 — canvas and hoop drift while the keyboard animates
+Nodes (4): StageCatcherFrozenFitTests, .grown, StageRenderTransform, StageTransform
 
-### Community 158 - "Coarse Span Rules"
+### Community 232 - "Flat script compiled & loopEnd pure marker"
 Cohesion: 0.40
-Nodes (5): Deviation — jump traversals drawn distinctly from thread, Coarsen, do not dash, The coarse-span rule — thread only if every spanned unit segment is thread and both endpoints lie in one colour run, Per-run dot striding anchored at each colour run's own lowerBound, StitchDrawPlan.Segment — a drawn segment as an explicit index pair
+Nodes (6): Flat scripts with paired control bricks, loopEnd pure marker retained in the model, matchingEnd / range(ofPairAt:) pair resolution, Move-a-pair-as-a-unit model primitive, Catty CBBackend (flatten-to-instructions precedent), Flat script compiled to linear instruction array with jump offsets
 
-### Community 160 - "SampleRunHarness.swift"
+### Community 233 - "EditorCoreTargetIsolationTests & strippedAndNormalised"
+Cohesion: 0.53
+Nodes (5): dependsOnProgramModelOnly(), sourcesImportNothingAboveFoundation(), strippedAndNormalised(), theDocumentBoundaryIsPackageTypes(), undoSourcesImportNoFoundation()
+
+### Community 235 - "inDisposableDirectory & .body"
+Cohesion: 0.40
+Nodes (4): inDisposableDirectory(), T, URL, .body
+
+### Community 236 - "StitchPattern protocol & RunningStitchPattern"
+Cohesion: 0.40
+Nodes (5): RunningStitchPattern, SewUp, StitchPattern protocol, TripleStitchPattern, ZigzagStitchPattern
+
+### Community 237 - "SampleRunHarness & StageBounds"
 Cohesion: 0.50
 Nodes (4): extentInMillimetres(), StageBounds, .extreme, Double
 
-### Community 161 - "bracketedWaitProgram()"
-Cohesion: 0.40
-Nodes (5): bracketedWaitProgram(), oversizeProgram(), singleObjectProgram(), Double, waitProgram()
+### Community 238 - "brick-dispatch-probe.sh & brick-dispatch-probe.sh script"
+Cohesion: 0.60
+Nodes (3): check(), insert_after(), brick-dispatch-probe.sh script
 
-### Community 164 - "ADR-029 fallback ladder and the frame-"
+### Community 239 - "Trait & HangGuard"
 Cohesion: 0.50
-Nodes (4): ADR-029 fallback ladder and the frame-time measurement, liveSegmentTarget = 2000, AC13 A/B — the segment count is not the mid-gesture cost, Accessibility string memoisation on (summary, state, roundedPercent)
+Nodes (3): Self, Trait, .hangGuard
 
-### Community 165 - "Mutation as the substitute for red whe"
+### Community 240 - "coarseningStride — a & liveCoarseningThreshold = 4"
+Cohesion: 0.67
+Nodes (4): coarseningStride(forStitchCount:target:) — a public pure stride function, StitchDrawPlan.forFrame(of:at:compositingRaster:budget:) — the window choice as a package function, liveCoarseningThreshold = 4 000 (decides whether), liveSegmentTarget = 1 000 (decides how much)
+
+### Community 241 - "The coarse-span rule & Coarsen, do not"
 Cohesion: 0.50
-Nodes (4): Mutation as the substitute for red when every red is a compile failure, Wall-clock ratio bounds refuted by CI — ratios establish shape, not absolute cost, StitchDisplayListThroughputTests (16x step, k^1.5 bound), No wall-clock ratio written for coarse against entire
+Nodes (4): Coarsen, do not dash, The coarse-span rule — thread only if every spanned unit segment is thread and both endpoints lie in one colour run, Per-run dot striding anchored at each colour run's own lowerBound, StitchDrawPlan.Segment — a drawn segment as an explicit index pair
 
-### Community 167 - "StageZoomAdjustment.swift"
+### Community 242 - "Script & Script+IndentDepths"
+Cohesion: 0.50
+Nodes (3): Script, .indentDepths, Int
+
+### Community 244 - "StageZoomAdjustment"
 Cohesion: 0.50
 Nodes (3): StageZoomAdjustment, zoomIn, zoomOut
 
-### Community 170 - "The .success exit test — proving red a"
-Cohesion: 0.67
-Nodes (3): The .success exit test — proving red against a trap, The already-green test item check, The restating-not-observing test risk
-
-### Community 171 - "ADR-028 amendment — one commit per man"
-Cohesion: 0.67
-Nodes (3): ADR-028 amendment — one commit per manipulation, not per onEnded, The three recogniser lifecycle rules, The touch-counting view (missing terminal signal)
+### Community 246 - "No-hardcoded-strings SwiftLint rule & SwiftPM does not"
+Cohesion: 1.00
+Nodes (3): SwiftPM does not compile String Catalogs, Localizable.xcstrings (app String Catalog), No-hardcoded-strings SwiftLint rule
 
 ## Ambiguous Edges - Review These
-- `Circular Back Button` → `Run Lifecycle State: Running`  [AMBIGUOUS]
-  docs/screenshots/us-306/midrun.png · relation: conceptually_related_to
-- `Hoop Boundary Rectangle` → `Pan (Drag) Gesture In Progress`  [AMBIGUOUS]
-  docs/screenshots/us-307/mid-drag.png · relation: conceptually_related_to
-- `Play Again Primary Action Button` → `Stage VoiceOver Run-State Summary`  [AMBIGUOUS]
-  docs/screenshots/us-307/ipad-regular.png · relation: conceptually_related_to
-- `Embroidery Stage Screen (iPad)` → `Stage VoiceOver Run-State Summary`  [AMBIGUOUS]
-  docs/screenshots/us-307/ipad-regular.png · relation: conceptually_related_to
-- `Embroidery Stage Screen (Square Coil)` → `Two-Color Stitch Rendering (Orange / Blue Thread Change)`  [AMBIGUOUS]
-  docs/screenshots/us-306/ax5_real.png · relation: conceptually_related_to
-- `Stitch Preview Canvas` → `Run Lifecycle Terminal State (finished run)`  [AMBIGUOUS]
-  docs/screenshots/us-306/postrun.png · relation: conceptually_related_to
-- `Hoop 100 mm x 100 mm Label` → `Stitch Preview Stage`  [AMBIGUOUS]
-  docs/screenshots/us-307/ax5.png · relation: shares_data_with
-- `Play Again Button` → `Octagon Rosette Design`  [AMBIGUOUS]
-  docs/screenshots/us-307/dark.png · relation: shares_data_with
-- `Run-In-Progress Stage State` → `VoiceOver Run-State Summary`  [AMBIGUOUS]
-  docs/screenshots/us-307/midrun.png · relation: conceptually_related_to
-- `Embroidery Stage / Run Screen` → `Terminal (Finished) Run State`  [AMBIGUOUS]
-  docs/screenshots/us-307/fit.png · relation: conceptually_related_to
+- `ADR-042 Package layout: seven targets, five products` → `Projects target`  [AMBIGUOUS]
+  Packages/EmbroideryEngine/README.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **332 isolated node(s):** `StagePreviewRenderer`, `.description`, `.hasEmittedOps`, `.hasValidPattern`, `finished` (+327 more)
+- **703 isolated node(s):** `.exportEligibility`, `.isExportable`, `.state`, `.summary`, `.summaryRevision` (+698 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **43 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **81 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **What is the exact relationship between `Circular Back Button` and `Run Lifecycle State: Running`?**
+- **What is the exact relationship between `ADR-042 Package layout: seven targets, five products` and `Projects target`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `Hoop Boundary Rectangle` and `Pan (Drag) Gesture In Progress`?**
-  _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `Play Again Primary Action Button` and `Stage VoiceOver Run-State Summary`?**
-  _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `Embroidery Stage Screen (iPad)` and `Stage VoiceOver Run-State Summary`?**
-  _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `Embroidery Stage Screen (Square Coil)` and `Two-Color Stitch Rendering (Orange / Blue Thread Change)`?**
-  _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `Stitch Preview Canvas` and `Run Lifecycle Terminal State (finished run)`?**
-  _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `Hoop 100 mm x 100 mm Label` and `Stitch Preview Stage`?**
-  _Edge tagged AMBIGUOUS (relation: shares_data_with) - confidence is low._
+- **Why does `Program` connect `Program & PreviewFixtures` to `ProgramDocumentInspectionTests & .inspect`, `EditorCoreFixtures & .randomAction`, `GoThroughTests & .updates`, `UndoStack & .apply`, `HistoryTransitionTests & .window`, `Script & ScriptValidationError`, `ProjectListActionsTests & .twoProjects`, `.save & ProjectLibraryTests`, `Equatable & ProgramLoadError`, `Formula & FormulaTests`, `.apply & EditInsertAndDeleteTests`, `ListEditingTests & .drag`, `ProjectID & InMemoryProjectStore`, `tagProfile & ForVariableFromToTests`, `EditorViewModelTests & .loopedEditor`, `driveToCompletion & RunBudget`, `.encode & ProgramDocumentRoundTripTests`, `PaletteInsertTests & HistoryAnnouncementTests`, `Variable & .program`, `Sendable & ThreadColor`, `RunViewModel & InterpreterDriver`, `Launch & LegacyMigrationTests`, `inDisposableDirectory & DocumentsProgramStore`, `PaletteRowPresentation & IfBlockPresentationTests`, `WaitUntilTests & .tag`, `.builtFromNothingRunsAndExports & .play`, `Edit & .text`, `DocumentsProjectStore & DocumentsProjectStoreTests`, `Interpreter & ObjectRuntime`, `ArcInterpreterTests & AndroidReference`, `InsertionPointTests & .inserted`, `Interpreter & StepperLoopTests`, `SampleProgram & SampleID`, `.run & .interpreter`, `ProjectLibrary & ProjectFile`, `EditorCore & ScriptEdit`, `ExportViewModel & ExportViewModelTests`, `PaletteGroup & PalettePresentationTests`, `ProgramDocumentError & .depthLimitCoversEveryFormulaPosition`, `String & .validate`, `.run & screen`, `IfExecutionTests & .profile`, `NeedleUpdate & Scene`, `EditResult & ParameterTarget`, `Nesting & .functionChain`, `ParameterEditorKind & BrickParameterTests`, `EditRejection & AddressComponent`, `.rows & BrickRowActionsTests`, `ScriptAddress & VariableMenu`, `RowIdentitiesTests & RowIdentities`, `.interpreter & StepperStitchColorTests`, `UndoBridgeTests & UndoManager`, `ProgramDocument & .admit`, `BrickRowPresentationTests & .rows`, `.program & .depthLimitCoversUnaryMinus`, `BrickRowPresentation & .rows`, `EditorViewModel & .init`, `AccessibilityMoveTests & .applied`, `EditorCoreTargetIsolationTests & strippedAndNormalised`, `IfBlockAccessibilityMoveTests & .applied`, `replayGoldenProgram & GoldenProgramOracle`, `BrickTests & .nanFormulaPayloadReflexiveButNotEncodable`, `ParameterEditingTests & .editor`, `interpreter & DisplayVersusExportModelTests`, `IfBlockEditingTests & .apply`, `.dstBytes & .endToEnd`, `.decode & ProgramDocumentAdmissionTests`, `.content & ProjectListPresentationTests`?**
+  _High betweenness centrality (0.104) - this node is a cross-community bridge._
+- **Why does `String` connect `String & .validate` to `ProgramDocumentInspectionTests & .inspect`, `EditorCoreFixtures & .randomAction`, `AppModel & .launch`, `AutosaveNotice & Cause`, `ComparisonOperator & ComparisonOperatorPicker`, `InterpreterEvent & recordPositions`, `.parse & .text`, `Brick & BrickListDiff`, `StageCanvas & .body`, `ProjectListActionsTests & .twoProjects`, `.save & ProjectLibraryTests`, `Equatable & ProgramLoadError`, `.parse & FormulaLiteralTests`, `Formula & FormulaTests`, `.apply & EditInsertAndDeleteTests`, `ProjectID & InMemoryProjectStore`, `ScriptListView & .list`, `tagProfile & ForVariableFromToTests`, `PaletteInsertTests & HistoryAnnouncementTests`, `Program & PreviewFixtures`, `IfBlockModelTests & .json`, `SampleRowView & PickerRowButtonStyle`, `Variable & .program`, `View & FormulaSlotEditor`, `Launch & LegacyMigrationTests`, `FormulaLogicTextTests & .text`, `RGB & StageFieldRenderingTests`, `PaletteRowPresentation & IfBlockPresentationTests`, `ParameterSlot & ParameterValue`, `DesignNameField & .problemLine`, `WaitUntilTests & .tag`, `Edit & .text`, `BinaryOperator & BinaryFunction`, `DocumentsProjectStore & DocumentsProjectStoreTests`, `Interpreter & ObjectRuntime`, `ArcInterpreterTests & AndroidReference`, `FormulaTextTests & .text`, `ProjectRow & .accessibilityLabel`, `StageNotices & .exportNoticeLine`, `SampleProgram & SampleID`, `.title & .message`, `FormulaLogicTests & .value`, `FormulaCodableShapeTests & .json`, `PaletteGroup & PalettePresentationTests`, `UnaryFunction & CaseIterable`, `BrickAddress & EditAction`, `IfExecutionTests & .profile`, `DesignName & RenameSession`, `EditResult & ParameterTarget`, `ParameterEditorKind & BrickParameterTests`, `BrickLeadingView & .mark`, `EditRejection & AddressComponent`, `FormulaFunctionTextTests & .text`, `ScriptAddress & VariableMenu`, `UndoBridgeTests & UndoManager`, `ProgramDocument & .admit`, `Renderer & Level`, `BrickRowPresentationTests & .rows`, `.window & ProjectNameTests`, `ThreadSwatch & ThreadPaletteTests`, `BrickRowPresentation & .rows`, `EditorViewModel & .init`, `AccessibilityMoveTests & .applied`, `EditorCoreTargetIsolationTests & strippedAndNormalised`, `IfBlockAccessibilityMoveTests & .applied`, `Image & ProjectBadge`, `ParameterEditingTests & .editor`, `Instruction & .compile`, `ExportControlTests & .readiness`, `.decode & ProgramDocumentAdmissionTests`, `.content & ProjectListPresentationTests`, `WindowRegistry & .register`, `ProjectActionState & ProjectRowAction`, `StageView & .drawnStage`?**
+  _High betweenness centrality (0.100) - this node is a cross-community bridge._
+- **Why does `Brick` connect `Brick & BrickListDiff` to `EditorCoreFixtures & .randomAction`, `ArcTests & .updates`, `GoThroughTests & .updates`, `InterpreterEvent & recordPositions`, `.bricks & .matchingEnd`, `Script & ScriptValidationError`, `catrobat_embroidery_ios & Samples`, `Equatable & ProgramLoadError`, `EditableComparison & ComparisonSide`, `Formula & FormulaTests`, `.apply & EditInsertAndDeleteTests`, `tagProfile & ForVariableFromToTests`, `Foundation & DSTHeaderFieldReader`, `BrickKind & .template`, `.encode & ProgramDocumentRoundTripTests`, `PaletteInsertTests & HistoryAnnouncementTests`, `Program & PreviewFixtures`, `IfBlockModelTests & .json`, `Variable & .program`, `Sendable & ThreadColor`, `StepperSensorTests & .finalPosition`, `PaletteRowPresentation & IfBlockPresentationTests`, `ParameterSlot & ParameterValue`, `WaitUntilTests & .tag`, `.builtFromNothingRunsAndExports & .play`, `Edit & .text`, `ArcInterpreterTests & AndroidReference`, `Interpreter & StepperLoopTests`, `.run & .interpreter`, `EditorCore & ScriptEdit`, `ArcFlowerTests & .usesTheNewVocabulary`, `SunburstTests & .radius`, `ProgramDocumentError & .depthLimitCoversEveryFormulaPosition`, `BrickAddress & EditAction`, `String & .validate`, `IfExecutionTests & .profile`, `EditResult & ParameterTarget`, `ArcBrickEditorTests & .init`, `ParameterEditorKind & BrickParameterTests`, `.rows & BrickRowActionsTests`, `ScriptAddress & VariableMenu`, `RowIdentitiesTests & RowIdentities`, `.interpreter & StepperStitchColorTests`, `Run & .step`, `BrickRowPresentationTests & .rows`, `ThreadSwatch & ThreadPaletteTests`, `BrickRowPresentation & .rows`, `EditorViewModel & .init`, `.apply & VirtualNeedle`, `AccessibilityMoveTests & .applied`, `IfBlockAccessibilityMoveTests & .applied`, `replayGoldenProgram & GoldenProgramOracle`, `BrickTests & .nanFormulaPayloadReflexiveButNotEncodable`, `ParameterEditingTests & .editor`, `Instruction & .compile`, `IfBlockEditingTests & .apply`, `.decode & ProgramDocumentAdmissionTests`?**
+  _High betweenness centrality (0.072) - this node is a cross-community bridge._
+- **Are the 125 inferred relationships involving `StagePoint` (e.g. with `.threeStitchStream()` and `.display()`) actually correct?**
+  _`StagePoint` has 125 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 101 inferred relationships involving `Program` (e.g. with `.directionEdit()` and `.rows()`) actually correct?**
+  _`Program` has 101 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 5 inferred relationships involving `Brick` (e.g. with `.init()` and `.inserted()`) actually correct?**
+  _`Brick` has 5 INFERRED edges - model-reasoned connections that need verification._
