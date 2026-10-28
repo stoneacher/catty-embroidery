@@ -1,12 +1,16 @@
 # Knowledge-graph drift check (ADR-041): the question is whether new work
 # reinvented an invariant an ADR owns, so the graph covers the rule-bearing docs.
 
-# The journal is an append-only narrative record, not a source of rules, and
-# whole-file --update re-reads it at ever-growing cost.
+# The journal records how decisions were reached; a rule stated only there binds
+# nothing until it reaches an ADR, the roadmap, a brief or the backlog (ADR-041,
+# 2026-10-28 amendment). Whole-file --update would re-read it at ever-growing cost.
 docs/workflow-journal.md
 
-# Images and asset catalogs carry no invariants.
-docs/screenshots/
+# Images, captured accessibility trees and asset catalogs carry no invariants.
+# The screenshot folders' READMEs and capture tooling stay in.
+docs/screenshots/**/*.png
+docs/screenshots/**/*.jpg
+docs/screenshots/**/*.json
 docs/android_refs/*.png
 catrobat_embroidery_ios/catrobat_embroidery_ios/Assets.xcassets/
 
