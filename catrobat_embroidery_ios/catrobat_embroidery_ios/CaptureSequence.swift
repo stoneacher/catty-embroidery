@@ -50,6 +50,11 @@
             case arming(until: Double)
             case recording(since: Double)
             case stilling(until: Double)
+            /// `A0-run` only: recording has started and Play follows once it is armed.
+            case armingRun(until: Double)
+            /// `A0-run` only: the run is the window.
+            case recordingRun
+            case stillingRun(until: Double)
             case done
         }
 
@@ -84,6 +89,12 @@
         mutating func launched(at now: Double = 0) -> [Action] {
             guard phase == .launching else { return [] }
             launchedAt = now
+            if scenario.condition == .animating {
+                // The run is what is measured, so recording starts first and is armed before
+                // Play, as a gesture is armed before it begins.
+                phase = .armingRun(until: now + Self.armingSeconds)
+                return [.selectAndShowStage(scenario.condition.sample), .startRecording]
+            }
             phase = .running
             return [.selectAndShowStage(scenario.condition.sample), .play]
         }
@@ -97,6 +108,10 @@
         /// Taken once: the session reports a finished run on every tick while it stays
         /// finished, and only the first may start the settle.
         mutating func runFinished(at now: Double) -> [Action] {
+            if phase == .recordingRun {
+                phase = .stillingRun(until: now + Self.armingSeconds)
+                return []
+            }
             guard phase == .running else { return [] }
             phase = .settling(until: now + Self.settleSeconds)
             return []
@@ -115,7 +130,7 @@
                 case .running: return abandon(in: "running")
                 case .settling: return abandon(in: "settling")
                 case .zoomSettling: return abandon(in: "zoomSettling")
-                case .arming, .recording, .stilling, .done: break
+                case .arming, .recording, .stilling, .armingRun, .recordingRun, .stillingRun, .done: break
                 }
             }
             switch phase {
@@ -142,7 +157,14 @@
             case let .stilling(until) where now >= until:
                 phase = .done
                 return [.stopRecording, .endGesture, .report, .exit]
-            case .launching, .running, .settling, .zoomSettling, .arming, .stilling, .done:
+            case let .armingRun(until) where now >= until:
+                phase = .recordingRun
+                return [.play]
+            case let .stillingRun(until) where now >= until:
+                phase = .done
+                return [.stopRecording, .report, .exit]
+            case .launching, .running, .settling, .zoomSettling, .arming, .stilling, .armingRun, .recordingRun,
+                 .stillingRun, .done:
                 return []
             }
         }

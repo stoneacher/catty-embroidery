@@ -51,6 +51,9 @@
         case noThread = "E"
         /// The supplementary mixed pinch-and-pan run on the baseline (D6).
         case baselineMixed = "A0-mixed"
+        /// The baseline's **animating** path: the run itself is recorded, with no gesture
+        /// (US-322's re-capture, brief slice 6).
+        case animating = "A0-run"
 
         /// The design the run selects.
         var sample: SampleID {
@@ -65,7 +68,7 @@
             switch self {
             case .noDots: .noDots
             case .noThread: .noThread
-            case .baseline, .compact, .zoomedOut, .baselineMixed: .none
+            case .baseline, .compact, .zoomedOut, .baselineMixed, .animating: .none
             }
         }
 

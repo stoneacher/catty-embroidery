@@ -198,4 +198,29 @@ struct CaptureSequenceTests {
         _ = sequence.tick(at: 22.125)
         #expect(sequence.tick(at: 130) == [.advanceGesture(107.875)])
     }
+
+    /// `A0-run` records the **animating** path (US-322's re-capture, brief slice 6): recording
+    /// starts before Play, the run itself is the window, and it stops a tenth of a second after
+    /// the run finishes. No gesture, so no stage is needed to record.
+    @Test("the animating condition records the run itself")
+    func animatingRun() {
+        var sequence = CaptureSequence(scenario: Self.scenario(.animating))
+        #expect(sequence.launched(at: 0) == [.selectAndShowStage(.us309Synthetic), .startRecording])
+        #expect(sequence.tick(at: 0.0625).isEmpty)
+        #expect(sequence.tick(at: 0.125) == [.play])
+        #expect(sequence.tick(at: 10).isEmpty)
+        _ = sequence.runFinished(at: 17)
+        #expect(sequence.tick(at: 17.0625).isEmpty)
+        #expect(sequence.tick(at: 17.125) == [.stopRecording, .report, .exit])
+        #expect(sequence.isDone)
+    }
+
+    /// The run is long (about 17 s at 50k), but it is recording, so the watchdog leaves it be.
+    @Test("an animating run is not aborted by the watchdog while it records")
+    func animatingRunNotAborted() {
+        var sequence = CaptureSequence(scenario: Self.scenario(.animating))
+        _ = sequence.launched(at: 0)
+        _ = sequence.tick(at: 0.125)
+        #expect(sequence.tick(at: 130).isEmpty)
+    }
 }
