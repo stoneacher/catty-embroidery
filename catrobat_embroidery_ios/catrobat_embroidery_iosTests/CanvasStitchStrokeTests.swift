@@ -344,6 +344,20 @@ struct CanvasStitchStrokeTests {
         ))
     }
 
+    /// SwiftUI snaps a view's **edges** to pixels, so at a fractional origin the `Canvas` can
+    /// be handed a size `pixelAligned` did not predict (Codex, PR #84 round 1). The raster is
+    /// never stretched either way; this is how the cache recovers: a drawn size that differs
+    /// from the bake size is recorded, and the next bake uses it.
+    @Test("a Canvas drawn at an unpredicted size corrects the bake size; a matching one does not")
+    func drawnSizeCorrectsTheBakeSize() {
+        let predicted = CGSize(width: 100, height: 100)
+        #expect(CanvasStitchStroke.correctedBakeSize(drawn: CGSize(width: 100.5, height: 100), baked: predicted)
+            == CGSize(width: 100.5, height: 100))
+        #expect(CanvasStitchStroke.correctedBakeSize(drawn: predicted, baked: predicted) == nil)
+        // An empty draw (not laid out yet) teaches nothing.
+        #expect(CanvasStitchStroke.correctedBakeSize(drawn: .zero, baked: predicted) == nil)
+    }
+
     private func displayListOfShortMoves(count: Int) -> StitchDisplayList {
         var list = StitchDisplayList()
         list.append(contentsOf: (0 ..< count).map {

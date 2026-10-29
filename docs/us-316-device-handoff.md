@@ -208,8 +208,11 @@ window covered.
 | after 3 | 251, 16.670, PASS | 34 | 18 | 66.678 |
 
 The simulator dry run reads `canvas=370.00x257.00 viewport=370.00x256.83 raster=yes` after the fix
-(`raster=no` before). On the device run the report's scale/canvas/raster fields read `n/a`:
-`A0-run` records from launch, before the stage has drawn a settled frame, so they describe nothing
-— the gate's effect shows in the hitch counts instead. Reading and decision: ADR-043's US-322
+(`raster=no` before). On these device runs the report's canvas/raster fields read `n/a` (`A0-run`
+records from before the stage has drawn a settled frame), and its `scale=1.000 width=3.150` was a
+default, not a measurement — since fixed to print `n/a` (Codex, PR #84 round 1). The gate's effect
+shows in the hitch counts instead. Since PR #84's round 1, `A0-run` also waits a second after
+selecting before it records, so Play cannot precede the stage; these six runs predate that, and
+each drew all 251 frames. Reading and decision: ADR-043's US-322
 amendment; the longer worst hitch is backlog US-332.
 

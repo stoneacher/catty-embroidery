@@ -190,6 +190,15 @@ enum CanvasStitchStroke {
     /// the comparison in `compositingRaster` is still exact.
     ///
     /// The `1e-6` keeps "half rounds up" true when `770.5 / 3 × 3` comes back as `770.4999…`.
+    /// The size the next bake should use, when the `Canvas` was drawn at a size other than the
+    /// one baked: `pixelAligned` predicts from the viewport's size alone, while SwiftUI snaps a
+    /// view's **edges**, so at a fractional origin the drawn size can differ (Codex, PR #84
+    /// round 1). `nil` when nothing needs correcting, or when the draw has no size yet.
+    static func correctedBakeSize(drawn: CGSize, baked: CGSize) -> CGSize? {
+        guard drawn.width > 0, drawn.height > 0, drawn != baked else { return nil }
+        return drawn
+    }
+
     static func pixelAligned(_ viewport: ViewSize, scale: CGFloat) -> CGSize {
         guard scale > 0 else { return CGSize(width: viewport.width, height: viewport.height) }
         func aligned(_ points: Double) -> Double {

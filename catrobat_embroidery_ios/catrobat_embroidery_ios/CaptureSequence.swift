@@ -50,6 +50,8 @@
             case arming(until: Double)
             case recording(since: Double)
             case stilling(until: Double)
+            /// `A0-run` only: the stage is being shown; nothing is recorded until it has settled.
+            case preparingRun(until: Double)
             /// `A0-run` only: recording has started and Play follows once it is armed.
             case armingRun(until: Double)
             /// `A0-run` only: the run is the window.
@@ -66,6 +68,10 @@
         /// not enough on device — a newly added display link's first callback can come a frame
         /// late, and the draw in between was timed by nothing (`DRAWS NOT MEASURED (1)`).
         static let armingSeconds = 0.1
+
+        /// How long `A0-run` waits after selecting before it records: the stage's appearance and
+        /// its navigation transition, outside the window.
+        static let preparingSeconds = 1.0
 
         private let scenario: CaptureScenario
         private var phase = Phase.launching
@@ -90,10 +96,13 @@
             guard phase == .launching else { return [] }
             launchedAt = now
             if scenario.condition == .animating {
-                // The run is what is measured, so recording starts first and is armed before
-                // Play, as a gesture is armed before it begins.
-                phase = .armingRun(until: now + Self.armingSeconds)
-                return [.selectAndShowStage(scenario.condition.sample), .startRecording]
+                // The run is what is measured, so recording starts before Play and is armed, as a
+                // gesture is armed before it begins — but only after a second for the stage to
+                // appear and the navigation to finish, so Play cannot precede the stage and the
+                // window holds no navigation work (Codex, PR #84 round 1). The coordinator cannot
+                // be awaited: it exists only once a design has drawn.
+                phase = .preparingRun(until: now + Self.preparingSeconds)
+                return [.selectAndShowStage(scenario.condition.sample)]
             }
             phase = .running
             return [.selectAndShowStage(scenario.condition.sample), .play]
@@ -130,7 +139,12 @@
                 case .running: return abandon(in: "running")
                 case .settling: return abandon(in: "settling")
                 case .zoomSettling: return abandon(in: "zoomSettling")
-                case .arming, .recording, .stilling, .armingRun, .recordingRun, .stillingRun, .done: break
+                case .preparingRun: return abandon(in: "preparingRun")
+                case .armingRun: return abandon(in: "armingRun")
+                // A run takes about 17 s; one still running at the deadline is stuck, and an
+                // unattended `xctrace` would wait for it forever (Codex, PR #84 round 1).
+                case .recordingRun: return abandon(in: "recordingRun")
+                case .arming, .recording, .stilling, .stillingRun, .done: break
                 }
             }
             switch phase {
@@ -157,14 +171,17 @@
             case let .stilling(until) where now >= until:
                 phase = .done
                 return [.stopRecording, .endGesture, .report, .exit]
+            case let .preparingRun(until) where now >= until:
+                phase = .armingRun(until: now + Self.armingSeconds)
+                return [.startRecording]
             case let .armingRun(until) where now >= until:
                 phase = .recordingRun
                 return [.play]
             case let .stillingRun(until) where now >= until:
                 phase = .done
                 return [.stopRecording, .report, .exit]
-            case .launching, .running, .settling, .zoomSettling, .arming, .stilling, .armingRun, .recordingRun,
-                 .stillingRun, .done:
+            case .launching, .running, .settling, .zoomSettling, .arming, .stilling, .preparingRun, .armingRun,
+                 .recordingRun, .stillingRun, .done:
                 return []
             }
         }

@@ -123,10 +123,26 @@ private struct CanvasStitchLayers: View {
 
     @State private var baked: Baked?
 
-    /// The size the raster is baked at and compared with: the viewport on the device-pixel
-    /// grid, which is the size the `Canvas` is laid out at (US-322).
+    /// A `Canvas` size that differed from the prediction, with the viewport and scale it was
+    /// drawn at, so it is used only while they still hold.
+    private struct MeasuredSize: Equatable {
+        let viewport: ViewSize
+        let scale: CGFloat
+        let size: CGSize
+    }
+
+    @State private var measured: MeasuredSize?
+
+    /// The size the raster is baked at and compared with: the size the `Canvas` was last
+    /// **drawn** at for this viewport and scale, else the viewport on the device-pixel grid,
+    /// which is that size wherever the view's origin is on the grid (US-322). The comparison is
+    /// exact either way, so the raster is never stretched; the measurement only rescues the
+    /// cache where SwiftUI's edge snapping gave a size the prediction missed.
     private var bakedSize: CGSize {
-        CanvasStitchStroke.pixelAligned(viewport, scale: displayScale)
+        if let measured, measured.viewport == viewport, measured.scale == displayScale {
+            return measured.size
+        }
+        return CanvasStitchStroke.pixelAligned(viewport, scale: displayScale)
     }
 
     /// Travel at full opacity under Increase Contrast, per ADR-024.
@@ -257,6 +273,13 @@ private struct CanvasStitchLayers: View {
             // and would have paid the same fidelity cost for nothing. `forFrame` asks
             // `canUseRaster` for the second question and takes this conjunction only as the
             // answer to the first, and it does so where `swift test` can see it (ADR-023).
+            if let corrected = CanvasStitchStroke.correctedBakeSize(drawn: size, baked: bakedSize) {
+                // Not during the draw: recorded on the next turn, which changes the bake key and
+                // re-bakes at the size the `Canvas` actually has. Equal sizes record nothing, so
+                // this settles after one correction.
+                let correction = MeasuredSize(viewport: viewport, scale: displayScale, size: corrected)
+                Task { @MainActor in measured = correction }
+            }
             let compositingRaster = CanvasStitchStroke.compositingRaster(
                 canUseRaster: transform.canUseRaster,
                 bakedKey: baked?.key,

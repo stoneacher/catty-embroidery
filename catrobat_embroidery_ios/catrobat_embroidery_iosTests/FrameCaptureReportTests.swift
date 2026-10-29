@@ -104,6 +104,17 @@ struct FrameCaptureReportTests {
             .hasPrefix("US316 condition=none hand n=4 "))
     }
 
+    /// A run that measured no scale (`A0-run` records before any gesture) says so, rather than
+    /// printing a default that looks like a measurement (Codex, PR #84 round 1).
+    @Test("an unmeasured scale prints as n/a")
+    func unmeasuredScale() {
+        let context = FrameCaptureReport.Context(
+            condition: .animating, thermalAtStart: .nominal, thermalAtEnd: .nominal,
+            scale: nil, threadWidth: nil, canvasSize: nil, viewport: nil, raster: .unobserved
+        )
+        #expect(Self.failing.consoleLine(context).contains(" scale=n/a width=n/a "))
+    }
+
     @Test("a capture with no frames still prints a line")
     func emptyCapture() {
         let report = FrameCaptureReport(

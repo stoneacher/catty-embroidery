@@ -347,10 +347,11 @@ in the same spirit as US-211's and US-313's above.
 - **US-322 — the settled raster is never composited in iPhone 17's default layout** → fixed in
   Stage 60 fps tail PR 2 (#84): the raster is baked at the pixel-aligned viewport. The entry's
   three options held; the honest one (the `Canvas`'s own size) turned out to be predictable from
-  the viewport and the screen scale. What it could not know: before the fix the raster's bakes
-  never rendered at all (`Image(size:renderer:)` is lazy), so the fix also made their cost real —
-  about 70 % fewer hitches on the animating run, but a longer worst one (50.0 → 66.7 ms). That
-  cost is US-332.
+  the viewport and the screen scale (and is now measured back from the draw where SwiftUI's edge
+  snapping makes the prediction miss). Measured on the animating run: about 70 % fewer hitches,
+  but a longer worst one (50.0 → 66.7 ms). *Hypothesis, not measured:* `Image(size:renderer:)` is
+  lazy, so before the fix the bakes may never have rendered, and the 66.7 ms frames may be their
+  first renders. US-332 tests that and owns the cost.
 
 **Left in this file at M4 planning: US-316 only** — it has since left too (see its bullet above; the entry itself is in git history before PR #83).
 **Added since**: US-317 (2026-09-20), US-318 (2026-09-23), US-319 and US-321–US-326 (from M4 and
@@ -363,14 +364,15 @@ US-316, US-320, US-322, US-327 and US-329 have left again (above). US-332 was ad
 ## US-332 — A new raster renders on the frame it is first composited
 
 **Found**: 2026-10-29, US-322's before/after measurement (ADR-043's US-322 amendment). **Severity:
-performance — the animating path's worst hitch.** With the raster finally composited, every
-`settleChunk` (1 000 stitches) brings a new bake, and `Image(size:renderer:)` renders it lazily
-on the first frame that draws it: the whole settled prefix, on the main thread, on a frame. On
-the 50k animating run the worst hitch rose from 50.0 to 66.7 ms in all three runs while hitches
-overall fell by about 70 %.
+performance — the animating path's worst hitch.** **Measured:** on the 50k animating run the
+worst hitch rose from 50.0 to 66.7 ms in all three runs while hitches overall fell by about 70 %.
+**Hypothesis, reasoned from the code and not yet measured:** with the raster finally composited,
+every `settleChunk` (1 000 stitches) brings a new bake, and `Image(size:renderer:)` renders it
+lazily on the first frame that draws it — the whole settled prefix, on the main thread, on one
+frame — so the 66.7 ms frames would be those renders.
 
-**Not yet measured, only reasoned**: that the 66.7 ms frames are the bake renders. The first step
-is a `-US316FrameSignposts` run with an interval around the raster's first draw, to confirm it.
+**The first step is to test that**: a `-US316FrameSignposts` run with an interval around the
+raster's first draw, to see whether the long frames are the bake renders.
 
 **What taking it would involve** (ADR-043 ladder rung 1, the bake schedule):
 - render the raster eagerly off the frame it is composited (e.g. into a `CGImage` on a background

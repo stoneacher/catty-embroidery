@@ -23,9 +23,10 @@
             let condition: CaptureCondition
             let thermalAtStart: ProcessInfo.ThermalState
             let thermalAtEnd: ProcessInfo.ThermalState
-            /// The stage scale the gesture began at, and the thread width it drew.
-            let scale: Double
-            let threadWidth: Double
+            /// The stage scale the gesture began at, and the thread width it drew; `nil` when the
+            /// run measured none (`A0-run` records before any gesture).
+            let scale: Double?
+            let threadWidth: Double?
             /// The last settled frame's `Canvas` size and viewport, and whether it composited
             /// the raster (US-322); `nil` or `.unobserved` when nothing recorded them.
             let canvasSize: CGSize?
@@ -87,8 +88,8 @@
             return "US316 condition=\(context.condition.rawValue) \(caption ?? verdict.label)"
                 + " | over33=[\(over)]"
                 + " thermal=\(Self.name(context.thermalAtStart))>\(Self.name(context.thermalAtEnd))"
-                + " scale=\(String(format: "%.3f", context.scale))"
-                + " width=\(String(format: "%.3f", context.threadWidth))"
+                + " scale=\(Self.decimal(context.scale))"
+                + " width=\(Self.decimal(context.threadWidth))"
                 + " canvas=\(Self.size(context.canvasSize)) viewport=\(Self.size(context.viewport))"
                 + " raster=\(raster)"
         }
@@ -123,6 +124,10 @@
         /// history for the capture that could not be read at one).
         private static func ms(_ value: Double) -> String {
             String(format: "%.3f", value)
+        }
+
+        private static func decimal(_ value: Double?) -> String {
+            value.map { String(format: "%.3f", $0) } ?? "n/a"
         }
 
         private static func size(_ size: CGSize?) -> String {

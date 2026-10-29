@@ -35,7 +35,8 @@
         private var driver: GestureDriver?
         private let recorder = FrameTimeRecorder()
         private var thermalAtStart = ProcessInfo.ThermalState.nominal
-        private var scaleAtStart = 1.0
+        /// `nil` until a gesture begins: `A0-run` never begins one, and reports `n/a`.
+        private var scaleAtStart: Double?
         private var settledAtStart: StageDrawRecord?
         private var captureInterval: OSSignpostIntervalState?
         private var exitCode: Int32 = 0
@@ -117,7 +118,7 @@
                 captureInterval = StageSignposts.begin("capture")
                 recorder.start(ownsLink: false)
             case .beginGesture:
-                scaleAtStart = currentScale ?? 1
+                scaleAtStart = currentScale
                 guard let driver = makeDriver() else {
                     // The stage went away after it appeared: recording a stage nobody moves
                     // would be a capture of nothing.
@@ -171,7 +172,7 @@
                 thermalAtStart: thermalAtStart,
                 thermalAtEnd: ProcessInfo.processInfo.thermalState,
                 scale: scaleAtStart,
-                threadWidth: StitchDrawMetrics.threadWidth(atScale: scaleAtStart),
+                threadWidth: scaleAtStart.map { StitchDrawMetrics.threadWidth(atScale: $0) },
                 canvasSize: settledAtStart?.canvasSize,
                 viewport: settledAtStart?.viewportSize,
                 raster: settledAtStart?.raster ?? .unobserved

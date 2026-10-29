@@ -205,22 +205,29 @@ struct CaptureSequenceTests {
     @Test("the animating condition records the run itself")
     func animatingRun() {
         var sequence = CaptureSequence(scenario: Self.scenario(.animating))
-        #expect(sequence.launched(at: 0) == [.selectAndShowStage(.us309Synthetic), .startRecording])
-        #expect(sequence.tick(at: 0.0625).isEmpty)
-        #expect(sequence.tick(at: 0.125) == [.play])
+        #expect(sequence.launched(at: 0) == [.selectAndShowStage(.us309Synthetic)])
+        // A second for the stage to appear and the navigation to finish before anything is
+        // recorded (Codex, PR #84 round 1: Play could precede the stage).
+        #expect(sequence.tick(at: 0.9375).isEmpty)
+        #expect(sequence.tick(at: 1) == [.startRecording])
+        #expect(sequence.tick(at: 1.0625).isEmpty)
+        #expect(sequence.tick(at: 1.125) == [.play])
         #expect(sequence.tick(at: 10).isEmpty)
-        _ = sequence.runFinished(at: 17)
-        #expect(sequence.tick(at: 17.0625).isEmpty)
-        #expect(sequence.tick(at: 17.125) == [.stopRecording, .report, .exit])
+        _ = sequence.runFinished(at: 18)
+        #expect(sequence.tick(at: 18.0625).isEmpty)
+        #expect(sequence.tick(at: 18.125) == [.stopRecording, .report, .exit])
         #expect(sequence.isDone)
     }
 
-    /// The run is long (about 17 s at 50k), but it is recording, so the watchdog leaves it be.
-    @Test("an animating run is not aborted by the watchdog while it records")
-    func animatingRunNotAborted() {
+    /// The run takes about 17 s; one that has not finished by the deadline is stuck, and must
+    /// end with a line rather than hang `xctrace` (Codex, PR #84 round 1).
+    @Test("an animating run that never finishes is aborted")
+    func animatingRunAborts() {
         var sequence = CaptureSequence(scenario: Self.scenario(.animating))
         _ = sequence.launched(at: 0)
-        _ = sequence.tick(at: 0.125)
-        #expect(sequence.tick(at: 130).isEmpty)
+        _ = sequence.tick(at: 1)
+        _ = sequence.tick(at: 1.125)
+        #expect(sequence.tick(at: 60).isEmpty)
+        #expect(sequence.tick(at: 120) == [.abort("recordingRun"), .exit])
     }
 }

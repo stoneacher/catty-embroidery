@@ -4178,3 +4178,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Sebastian kept the fix and accepted the trade** (ADR-043's US-322 amendment); the worst case is US-332.
   - *My first mutation round missed one thing:* a test with no measurement noise couldn't tell whether the rounding epsilon mattered. A second round added a noise test, and the epsilon mutant now dies.
 - **The before/after method is reusable.** A temporary worktree reverts one commit, both binaries are built from the same tree, and the runs alternate on the device. Holding everything but the one change constant is what made "the worst hitch rose in every run" a result rather than noise.
+
+## 2026-10-29 (Stage 60 fps tail, PR #84 handover, Codex round 1) — correction to the entry "fixing a cache made its cost real"
+
+- **That entry states as fact a cause that is only a hypothesis.** It says the bakes "never rendered" before the fix, and that the fix "made them render on the frame each is first composited". What was measured: fewer hitches and a longer worst hitch, in all three pairs. Lazy rendering is the code-derived explanation, and US-332's first step is to test it. ADR-043's amendment had it right ("reasoned from the code, not yet measured"); the journal and the backlog didn't. The backlog is corrected in place; this entry corrects the journal, which is append-only. Codex caught it.
+- **The same round's other findings, all taken:**
+  - The pixel-aligned prediction ignores SwiftUI's edge snapping at fractional origins. The `Canvas` now reports a size the prediction missed, and the next bake uses it, so the raster is never stretched and the cache recovers.
+  - `A0-run` could press Play before the stage appeared.
+  - `A0-run` was exempt from the watchdog.
+  - `A0-run` printed a default scale as if it were measured.
