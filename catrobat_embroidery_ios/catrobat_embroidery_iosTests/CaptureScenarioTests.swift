@@ -75,4 +75,16 @@ struct CaptureScenarioTests {
         #expect(CaptureScenario.parse(["app", "-US316Capture", "D"])?.isByHand == false)
         #expect(LiveDrawControl.from(arguments: ["app", "-US316Capture", "E", "-US316Hand"]) == .noThread)
     }
+
+    /// A hand run ends the app a second after Stop, so `xctrace --launch` stops recording right
+    /// behind the window. The recorder keeps a trailing window of what it records; in a hand run
+    /// that went on recording for a minute after Stop, the whole capture had fallen out of the
+    /// trace (2026-10-29). A plain launch and a scripted run (which exits on its own) do not.
+    @Test("only a hand run exits after the capsule's Stop")
+    func handRunExitsAfterStop() {
+        #expect(CaptureScenario.exitsAfterHandStop(arguments: ["app", "-US316Capture", "A0", "-US316Hand"]))
+        #expect(!CaptureScenario.exitsAfterHandStop(arguments: ["app", "-US316Capture", "A0"]))
+        #expect(!CaptureScenario.exitsAfterHandStop(arguments: ["app"]))
+        #expect(!CaptureScenario.exitsAfterHandStop(arguments: ["app", "-US310FrameTimes"]))
+    }
 }

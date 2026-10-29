@@ -90,6 +90,14 @@ def summarise(trace):
     else:
         return {"trace": trace, "error": f"{len(captures)} capture windows"}
 
+    # The recorder keeps a trailing window of what it records (2026-10-29): in a long
+    # recording, the oldest data — signposts *and* display events — falls out. The earliest
+    # vsync in the trace is where its continuous display data begins; a capture window that
+    # starts before it is not covered, and its "0 hitches" would mean nothing.
+    vsyncs = [number(r.get("timestamp")) for r in rows(export(trace, "display-vsyncs-interval"))]
+    coverage_start = min(v for v in vsyncs if v is not None) if vsyncs else None
+    covered = coverage_start is not None and coverage_start <= start
+
     inside = []
     for hitch in rows(export(trace, "hitches")):
         at = number(hitch["start"])
@@ -113,6 +121,9 @@ def summarise(trace):
         "result": lines[0][1] if lines else None,
         "window_s": round((end - start) / 1e9, 3),
         "window_source": window_source,
+        "window_start_s": round(start / 1e9, 3),
+        "display_data_from_s": round(coverage_start / 1e9, 3) if coverage_start is not None else None,
+        "window_covered": covered,
         "hitches": len(inside),
         "hitches_over_33ms": sum(1 for d in inside if d > DROPPED_FRAME_NS),
         "worst_hitch_ms": round(max(inside) / 1e6, 3) if inside else 0,

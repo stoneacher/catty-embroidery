@@ -58,6 +58,11 @@
 
         /// The condition a hand run was launched under (`-US316Capture X -US316Hand`), read once.
         private static let launchCondition = CaptureScenario.parse(ProcessInfo.processInfo.arguments)?.condition
+
+        /// A hand run (`-US316Hand`) ends the app after Stop; read once.
+        private static let exitsAfterStop = CaptureScenario.exitsAfterHandStop(
+            arguments: ProcessInfo.processInfo.arguments
+        )
         @Environment(\.scenePhase) private var scenePhase
 
         var body: some View {
@@ -79,6 +84,11 @@
                         // The trace lost a hand run's result event once (2026-10-29); the file
                         // in the app's container is the copy that does not depend on it.
                         try? CaptureResultLog.append(line)
+                        if Self.exitsAfterStop {
+                            // A second for the line to be flushed and the trace to take the
+                            // window's End; then the recording ends with the app.
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { exit(0) }
+                        }
                     } else {
                         // The scene's *state*, not a transition: a capture begun while the
                         // app is not active must know that from the outset. See
