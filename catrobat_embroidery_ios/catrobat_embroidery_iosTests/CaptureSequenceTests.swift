@@ -52,7 +52,35 @@ struct CaptureSequenceTests {
         _ = sequence.stageAppeared()
         _ = sequence.runFinished(at: 20)
         #expect(sequence.tick(at: 21.9).isEmpty)
-        #expect(sequence.tick(at: 22) == [.startRecording, .beginGesture])
+        #expect(sequence.tick(at: 22) == [.startRecording])
+        #expect(sequence.tick(at: 22.25) == [.beginGesture])
+    }
+
+    /// The gesture waits a tenth of a second after the recorder starts, not one tick: a newly
+    /// added display link's first callback can come a frame late, and on device one tick left a
+    /// draw untimed (`DRAWS NOT MEASURED (1)`, 2026-10-29).
+    @Test("the gesture waits a tenth of a second after recording starts")
+    func armsForATenth() {
+        var sequence = CaptureSequence(scenario: Self.scenario(.baseline))
+        _ = sequence.launched()
+        _ = sequence.stageAppeared()
+        _ = sequence.runFinished(at: 20)
+        #expect(sequence.tick(at: 22) == [.startRecording])
+        #expect(sequence.tick(at: 22.0625).isEmpty)
+        #expect(sequence.tick(at: 22.125) == [.beginGesture])
+    }
+
+    /// **The recorder starts a tick before the gesture.** Its first callback only sets a
+    /// baseline, so a draw before it lands in no timed interval and the verdict reads
+    /// `DRAWS NOT MEASURED`, withholding a pass — which the first device capture did, with
+    /// recording and the gesture begun in the same tick.
+    @Test("recording starts before the gesture begins, with nothing in between")
+    func recordsBeforeTheGesture() {
+        let actions = Self.run(Self.scenario(.baseline))
+        let start = actions.firstIndex(of: .startRecording)
+        let begin = actions.firstIndex(of: .beginGesture)
+        #expect(start != nil && begin != nil)
+        #expect((begin ?? 0) == (start ?? 0) + 1)
     }
 
     /// Condition C zooms once, then settles again so the re-bake is outside the window.
@@ -64,7 +92,8 @@ struct CaptureSequenceTests {
         _ = sequence.runFinished(at: 20)
         #expect(sequence.tick(at: 22) == [.zoom(0.3)])
         #expect(sequence.tick(at: 23.9).isEmpty)
-        #expect(sequence.tick(at: 24) == [.startRecording, .beginGesture])
+        #expect(sequence.tick(at: 24) == [.startRecording])
+        #expect(sequence.tick(at: 24.25) == [.beginGesture])
     }
 
     /// The gesture is advanced by the time since recording began, and the hold is the
@@ -76,9 +105,15 @@ struct CaptureSequenceTests {
         _ = sequence.stageAppeared()
         _ = sequence.runFinished(at: 20)
         _ = sequence.tick(at: 22)
-        #expect(sequence.tick(at: 22.5) == [.advanceGesture(0.5)])
-        #expect(sequence.tick(at: 31.75) == [.advanceGesture(9.75)])
-        #expect(sequence.tick(at: 32) == [.stopRecording, .endGesture, .report, .exit])
+        _ = sequence.tick(at: 22.25)
+        #expect(sequence.tick(at: 22.75) == [.advanceGesture(0.5)])
+        #expect(sequence.tick(at: 32) == [.advanceGesture(9.75)])
+        // At the hold the gesture stays down but stops moving, so nothing draws; only then is
+        // recording stopped. Stopping while it still moved left the last draw untimed on
+        // device (`DRAWS NOT MEASURED (1)`, 2026-10-29).
+        #expect(sequence.tick(at: 32.25).isEmpty)
+        #expect(sequence.tick(at: 32.3125).isEmpty)
+        #expect(sequence.tick(at: 32.375) == [.stopRecording, .endGesture, .report, .exit])
         #expect(sequence.isDone)
         #expect(sequence.tick(at: 40).isEmpty)
     }
@@ -103,7 +138,7 @@ struct CaptureSequenceTests {
         _ = sequence.runFinished(at: 20)
         #expect(sequence.tick(at: 30).isEmpty)
         _ = sequence.stageAppeared()
-        #expect(sequence.tick(at: 30.5) == [.startRecording, .beginGesture])
+        #expect(sequence.tick(at: 30.5) == [.startRecording])
     }
 
     @Test("ticks before the run finishes do nothing")

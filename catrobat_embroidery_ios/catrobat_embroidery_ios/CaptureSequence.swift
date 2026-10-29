@@ -13,6 +13,16 @@
     /// before playing deadlocked (found by the slice's simulator dry run). The coordinator is
     /// instead a precondition for leaving the settle.
     ///
+    /// **Recording starts a tenth of a second before the gesture begins**: the recorder's first
+    /// callback only sets a baseline, so a draw before it is timed by nothing and the verdict
+    /// reads `DRAWS NOT MEASURED` — which the first device captures did, with both in one tick
+    /// and then one tick apart.
+    ///
+    /// **At the end the gesture stays down but stops moving for the same tenth of a second**, so
+    /// nothing draws, and only then is recording stopped: the recorder times a draw by its
+    /// *next* callback, so a draw after its last one is untimed — which stopping mid-motion did
+    /// on device.
+    ///
     /// **Recording stops before the gesture ends**: ending commits and re-bakes, and D6's run is
     /// a gesture never released inside the window. Times are seconds on one monotonic clock
     /// (the display link's), supplied by the caller, so the whole sequence is a value test.
@@ -35,12 +45,20 @@
             case running
             case settling(until: Double)
             case zoomSettling(until: Double)
+            case arming(until: Double)
             case recording(since: Double)
+            case stilling(until: Double)
             case done
         }
 
         /// How long the stage settles after the run, and again after a zoom, before recording.
         static let settleSeconds = 2.0
+
+        /// How long recording runs before the gesture begins, and how long the gesture stays
+        /// still before recording stops: six frames at 60 Hz. One tick was
+        /// not enough on device — a newly added display link's first callback can come a frame
+        /// late, and the draw in between was timed by nothing (`DRAWS NOT MEASURED (1)`).
+        static let armingSeconds = 0.1
 
         private let scenario: CaptureScenario
         private var phase = Phase.launching
@@ -79,17 +97,25 @@
                     phase = .zoomSettling(until: now + Self.settleSeconds)
                     return [.zoom(fraction)]
                 }
-                phase = .recording(since: now)
-                return [.startRecording, .beginGesture]
+                phase = .arming(until: now + Self.armingSeconds)
+                return [.startRecording]
             case let .zoomSettling(until) where now >= until:
+                phase = .arming(until: now + Self.armingSeconds)
+                return [.startRecording]
+            case let .arming(until) where now >= until:
+                // The recorder's first callback has set its baseline by now, so every draw of
+                // the gesture lands in a timed interval.
                 phase = .recording(since: now)
-                return [.startRecording, .beginGesture]
+                return [.beginGesture]
             case let .recording(since):
                 let elapsed = now - since
                 guard elapsed >= scenario.holdSeconds else { return [.advanceGesture(elapsed)] }
+                phase = .stilling(until: now + Self.armingSeconds)
+                return []
+            case let .stilling(until) where now >= until:
                 phase = .done
                 return [.stopRecording, .endGesture, .report, .exit]
-            case .launching, .running, .settling, .zoomSettling, .done:
+            case .launching, .running, .settling, .zoomSettling, .arming, .stilling, .done:
                 return []
             }
         }
