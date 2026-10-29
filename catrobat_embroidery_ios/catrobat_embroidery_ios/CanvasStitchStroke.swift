@@ -52,6 +52,15 @@ enum CanvasStitchStroke {
         style: (travelOpacity: Double, layers: Layers),
         into context: inout GraphicsContext
     ) {
+        // **The shipping path, kept direct** (Codex, PR #83 round 1): every frame of a build
+        // without US-316's DEBUG controls, and every bake, draws both halves — the thread, then
+        // the dots — with no operation list built per frame. The list below only serves the
+        // controls, and `operations(for: .all)` is pinned to this same order.
+        if style.layers == .all {
+            strokeThread(plan, of: points, transform: transform, travelOpacity: style.travelOpacity, into: &context)
+            fillDots(plan, of: points, transform: transform, into: &context)
+            return
+        }
         for operation in operations(for: style.layers) {
             switch operation {
             case .thread:

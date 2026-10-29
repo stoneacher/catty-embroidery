@@ -94,9 +94,14 @@
         }
 
         /// A hand run's line (D7), emitted when the capsule's Stop is tapped: the driver's tag and
-        /// caption, marked `hand`, under the launch's condition (`none` for a plain launch).
-        func handLine(condition: CaptureCondition?) -> String {
+        /// caption, marked `hand`, under the launch's condition (`none` for a plain launch), with
+        /// the thermal state at Record and at Stop so D6's discard rule applies to it too.
+        func handLine(
+            condition: CaptureCondition?,
+            thermal: (start: ProcessInfo.ThermalState, end: ProcessInfo.ThermalState)
+        ) -> String {
             "US316 condition=\(condition?.rawValue ?? "none") hand \(caption ?? verdict.label)"
+                + " | thermal=\(Self.name(thermal.start))>\(Self.name(thermal.end))"
         }
 
         /// The display's actual rate, or nothing if no callback has reported one.
