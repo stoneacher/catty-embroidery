@@ -66,8 +66,8 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     case us316Compact
     #endif
 
-    /// The cases that ship — every case in a Release build, and everything but
-    /// US-309's fixture in a debug one.
+    /// The cases that ship — every case in a Release build, and everything but the
+    /// measurement fixtures (US-309's and US-316's) in a debug one.
     ///
     /// **Not `allCases`, and the difference is the point.** `allCases` answers
     /// "what can this enum be"; this answers "what is in the library", which is

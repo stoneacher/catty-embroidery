@@ -61,6 +61,18 @@ struct CompactSyntheticDesignTests {
 
     /// An out-of-hoop design makes the fit depend on the bounds (`SyntheticDesignTests`), and
     /// then the two fixtures would be drawn under different transforms.
+    /// The geometry D1 says is **not** held, as a measured number: how many distinct heights
+    /// each fixture's stitches land on (rows and the diagonal transitions between them).
+    /// Rounding to whole points folds the compact fixture's onto 26, about ten rows to a
+    /// height, which is the coincidence the device comparison has to read B through.
+    @Test("the rows fold onto fewer heights in the compact fixture")
+    func rowsFold() {
+        let original = Set(Self.original.stitches.map(\.position.y)).count
+        let compact = Set(Self.compact.stitches.map(\.position.y)).count
+        #expect(original == 375)
+        #expect(compact == 26)
+    }
+
     @Test("the compact fixture stays inside ADR-007's stage")
     func staysInsideTheStage() throws {
         let bounds = try #require(Self.compact.bounds)
@@ -71,9 +83,14 @@ struct CompactSyntheticDesignTests {
     /// The live plan's shape for both fixtures, side by side. The dots depend only on the
     /// count, the stride and the runs, so they must be equal. The thread segments and corners
     /// depend on the geometry, which D1 says is not held; measured, they come out equal too
-    /// (the rounding moves rows onto one `y` but keeps every turn a corner), and both are
-    /// pinned so a change to either fixture names itself. Equal counts are not equal
-    /// geometry: the coincident rows and the transition segments still differ.
+    /// (the rounding moves rows onto one `y` but keeps every turn a corner). **Equal counts
+    /// are not equal geometry**, and these literals do not discriminate it: a compact fixture
+    /// with uneven spacing keeps the same shape (`swift-code-reviewer`, slice 1). The
+    /// geometry is pinned by the height and fold tests instead.
+    ///
+    /// The corner count walks plain consecutive triples rather than `isCorner`'s "last
+    /// non-zero direction" contract; the two agree here because neither list has consecutive
+    /// duplicate stitches.
     @Test("the live plans are pinned for both fixtures")
     func livePlansArePinned() {
         let original = PlanShape(of: Self.original)
@@ -99,7 +116,15 @@ struct CompactSyntheticDesignTests {
         }
 
         init(of list: StitchDisplayList) {
-            let plan = StitchDrawPlan.coarse(of: list)
+            // Through `forFrame` at a live transform, the call a live frame makes, and with a
+            // raster offered: liveness must win over it (Codex slice review, finding 1).
+            let fit = StageTransform.fitting(StageGeometry.box, in: ViewSize(width: 370, height: 257))
+            let panned = StageTransform(scale: fit.scale, translation: ViewPoint(x: 40, y: 20))
+            let plan = StitchDrawPlan.forFrame(
+                of: list,
+                at: .live(bake: fit, current: panned),
+                compositingRaster: true
+            )
             thread = plan.strokes.filter { $0.style == .thread }.flatMap(\.segments).count
             traversals = plan.strokes.filter { $0.style == .traversal }.flatMap(\.segments).count
             dots = plan.dots.reduce(0) { $0 + $1.count }

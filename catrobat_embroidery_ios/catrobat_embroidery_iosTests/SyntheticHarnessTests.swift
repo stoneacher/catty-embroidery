@@ -63,15 +63,15 @@ struct SyntheticHarnessTests {
 
     /// Selecting it must give the stage everything a shipping sample gives it — otherwise the
     /// screenshots this story owes are of a different screen from the one users see.
-    @Test("selecting the synthetic design configures the stage like any other")
-    func selectingTheSyntheticDesignConfiguresTheStageLikeAnyOther() throws {
+    @Test("selecting a measurement fixture configures the stage like any other",
+          arguments: [SampleID.us309Synthetic, .us316Compact])
+    func selectingAFixtureConfiguresTheStageLikeAnyOther(_ id: SampleID) throws {
         let model = AppModel(library: .inMemory())
-        let synthetic = try #require(model.samples.first { $0.id == .us309Synthetic })
+        let synthetic = try #require(model.samples.first { $0.id == id })
 
         model.select(synthetic)
 
-        #expect(model.selection?.provenance == .us309Synthetic)
-        #expect(model.selection?.provenance == synthetic.id)
+        #expect(model.selection?.provenance == id)
         // Its program's name, as for every sample (M5, one name), and valid — a name the field
         // rejected would leave the export gate shut in every screenshot.
         #expect(try model.exporter.validatedName.get().value == synthetic.program.name)
@@ -88,6 +88,11 @@ struct SyntheticHarnessTests {
     func eachFixtureTheAppLinksReachesFiftyThousandStitches(_ id: SampleID) throws {
         let model = AppModel(library: .inMemory())
         let synthetic = try #require(model.samples.first { $0.id == id })
+        // The builder for *this* id, not merely some 50k design: a compact entry wired to the
+        // original's builder would pass the count below and make condition B a second A0
+        // (`swift-code-reviewer`, slice 1).
+        let expected = id == .us316Compact ? makeUS316CompactProgram() : makeUS309SyntheticProgram()
+        #expect(synthetic.program == expected)
 
         var interpreter = Interpreter(program: synthetic.program, clock: InterpreterClock(tickDelta: 1.0 / 60.0))
         var stitches = 0
