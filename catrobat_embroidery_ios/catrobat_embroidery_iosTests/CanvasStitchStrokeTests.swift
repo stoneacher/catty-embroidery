@@ -271,33 +271,76 @@ struct CanvasStitchStrokeTests {
     /// branch this replaced conflated them.
     @Test("a raster is composited only when it is live-free, current and the right size")
     func aRasterIsCompositedOnlyWhenCurrentAndTheRightSize() {
-        let viewport = ViewSize(width: 390, height: 500)
         let size = CGSize(width: 390, height: 500)
 
         #expect(CanvasStitchStroke.compositingRaster(
-            canUseRaster: true, bakedKey: "key", expectedKey: "key", size: size, viewport: viewport
+            canUseRaster: true, bakedKey: "key", expectedKey: "key", size: size, bakedSize: size
         ))
         // Nothing baked yet: `Optional.none == .some(key)` is false, and the frame draws it all.
         #expect(!CanvasStitchStroke.compositingRaster(
-            canUseRaster: true, bakedKey: nil, expectedKey: "key", size: size, viewport: viewport
+            canUseRaster: true, bakedKey: nil, expectedKey: "key", size: size, bakedSize: size
         ))
         // A stale raster — the settled count, the transform or the contrast moved.
         #expect(!CanvasStitchStroke.compositingRaster(
-            canUseRaster: true, bakedKey: "old", expectedKey: "key", size: size, viewport: viewport
+            canUseRaster: true, bakedKey: "old", expectedKey: "key", size: size, bakedSize: size
         ))
         // A `Canvas` smaller than the raster's viewport would *stretch* the settled layer under an
         // unstretched tail: a visibly misplaced seam, so fall back rather than composite.
         #expect(!CanvasStitchStroke.compositingRaster(
             canUseRaster: true, bakedKey: "key", expectedKey: "key",
-            size: CGSize(width: 380, height: 500), viewport: viewport
+            size: CGSize(width: 380, height: 500), bakedSize: size
         ))
         #expect(!CanvasStitchStroke.compositingRaster(
             canUseRaster: true, bakedKey: "key", expectedKey: "key",
-            size: CGSize(width: 390, height: 499), viewport: viewport
+            size: CGSize(width: 390, height: 499), bakedSize: size
         ))
         // Live: the raster's pixels were baked at another transform.
         #expect(!CanvasStitchStroke.compositingRaster(
-            canUseRaster: false, bakedKey: "key", expectedKey: "key", size: size, viewport: viewport
+            canUseRaster: false, bakedKey: "key", expectedKey: "key", size: size, bakedSize: size
+        ))
+    }
+
+    /// **US-322.** The viewport `GeometryReader` measures can be fractional in device pixels —
+    /// 370 × 256.833 pt on iPhone 17 is 770.5 px tall — while the `Canvas` is laid out on the pixel
+    /// grid and handed 370 × 257.0. Comparing the two exactly refused the raster on every frame.
+    /// The raster is now baked at the viewport **aligned to the device-pixel grid**, which is the
+    /// size the `Canvas` draws into, so the exact comparison holds and nothing is stretched.
+    @Test("the raster is baked at the viewport aligned to the device-pixel grid")
+    func pixelAlignedViewport() {
+        // The measured US-322 case: 256.8333… pt × 3 = 770.5 px, laid out as 771 px = 257.0 pt.
+        let measured = CanvasStitchStroke.pixelAligned(ViewSize(width: 370, height: 770.5 / 3), scale: 3)
+        #expect(measured == CGSize(width: 370, height: 257))
+        // Already on the grid: unchanged, at any scale.
+        #expect(CanvasStitchStroke.pixelAligned(ViewSize(width: 370, height: 770.0 / 3), scale: 3)
+            == CGSize(width: 370, height: 770.0 / 3))
+        #expect(CanvasStitchStroke.pixelAligned(ViewSize(width: 390, height: 500), scale: 2)
+            == CGSize(width: 390, height: 500))
+        // Below half a pixel rounds down, above rounds up.
+        #expect(CanvasStitchStroke.pixelAligned(ViewSize(width: 100.1, height: 100.2), scale: 2)
+            == CGSize(width: 100, height: 100))
+        #expect(CanvasStitchStroke.pixelAligned(ViewSize(width: 100.3, height: 100.4), scale: 2)
+            == CGSize(width: 100.5, height: 100.5))
+        // A measured half pixel a hair short of x.5 — `GeometryReader` arithmetic can land at
+        // 770.4999… px — still lays out as the next pixel, as SwiftUI did for US-322.
+        #expect(CanvasStitchStroke.pixelAligned(ViewSize(width: 370, height: 770.5 / 3 - 1e-12), scale: 3)
+            == CGSize(width: 370, height: 257))
+        // A degenerate scale leaves the size as measured rather than dividing by zero.
+        #expect(CanvasStitchStroke.pixelAligned(ViewSize(width: 10.3, height: 7), scale: 0)
+            == CGSize(width: 10.3, height: 7))
+    }
+
+    /// US-322 end to end at the gate: the iPhone 17 layout now composites, and a `Canvas` that
+    /// still differs from the baked size — the case the guard exists for — still does not.
+    @Test("the iPhone 17 default layout composites the raster")
+    func fractionalViewportComposites() {
+        let baked = CanvasStitchStroke.pixelAligned(ViewSize(width: 370, height: 770.5 / 3), scale: 3)
+        #expect(CanvasStitchStroke.compositingRaster(
+            canUseRaster: true, bakedKey: "key", expectedKey: "key",
+            size: CGSize(width: 370, height: 257), bakedSize: baked
+        ))
+        #expect(!CanvasStitchStroke.compositingRaster(
+            canUseRaster: true, bakedKey: "key", expectedKey: "key",
+            size: CGSize(width: 370, height: 256), bakedSize: baked
         ))
     }
 

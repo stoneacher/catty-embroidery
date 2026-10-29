@@ -152,19 +152,41 @@ enum CanvasStitchStroke {
     /// as an input and asks `canUseRaster` itself.
     ///
     /// `baked == nil` fails on `Optional.none == .some(key)`; a stale key and a `Canvas` sized
-    /// differently from the raster's viewport each fail on their own clause. In all three the
-    /// frame draws the whole design and no raster, which is what the branch this replaced did.
+    /// differently from the size the raster was baked at each fail on their own clause. In all
+    /// three the frame draws the whole design and no raster, which is what the branch this
+    /// replaced did.
+    ///
+    /// **`bakedSize`, not the viewport** (US-322). The comparison stays exact, so the raster is
+    /// never stretched; what changed is what it is compared with — the viewport aligned to the
+    /// device-pixel grid (`pixelAligned`), which is the size the `Canvas` is laid out at.
     static func compositingRaster(
         canUseRaster: Bool,
         bakedKey: AnyHashable?,
         expectedKey: AnyHashable,
         size: CGSize,
-        viewport: ViewSize
+        bakedSize: CGSize
     ) -> Bool {
         canUseRaster
             && bakedKey == expectedKey
-            && size.width == viewport.width
-            && size.height == viewport.height
+            && size == bakedSize
+    }
+
+    /// The viewport as the `Canvas` will be laid out: each dimension rounded to the nearest
+    /// device pixel, half a pixel rounding up (US-322).
+    ///
+    /// `GeometryReader` can measure a fractional pixel count — 370 × 256.833 pt is 770.5 px tall
+    /// on a 3× screen — while the `Canvas` inside it is handed whole pixels, 257.0 pt. Baking at
+    /// this size and comparing with it exactly is what lets the raster composite there without
+    /// being stretched. A misprediction costs the cache on that layout, never a stretched frame:
+    /// the comparison in `compositingRaster` is still exact.
+    ///
+    /// The `1e-6` keeps "half rounds up" true when `770.5 / 3 × 3` comes back as `770.4999…`.
+    static func pixelAligned(_ viewport: ViewSize, scale: CGFloat) -> CGSize {
+        guard scale > 0 else { return CGSize(width: viewport.width, height: viewport.height) }
+        func aligned(_ points: Double) -> Double {
+            (points * scale + 0.5 + 1e-6).rounded(.down) / scale
+        }
+        return CGSize(width: aligned(viewport.width), height: aligned(viewport.height))
     }
 
     /// **One** `Path` holding one colour run's penetration dots.

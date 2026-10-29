@@ -118,7 +118,16 @@ private struct CanvasStitchLayers: View {
     /// has to be part of the bake key.
     @Environment(\.colorSchemeContrast) private var contrast
 
+    /// The screen's scale, for the size the raster is baked at (US-322, `pixelAligned`).
+    @Environment(\.displayScale) private var displayScale
+
     @State private var baked: Baked?
+
+    /// The size the raster is baked at and compared with: the viewport on the device-pixel
+    /// grid, which is the size the `Canvas` is laid out at (US-322).
+    private var bakedSize: CGSize {
+        CanvasStitchStroke.pixelAligned(viewport, scale: displayScale)
+    }
 
     /// Travel at full opacity under Increase Contrast, per ADR-024.
     ///
@@ -188,8 +197,10 @@ private struct CanvasStitchLayers: View {
             // not fire. Keying on `current` would rebuild the raster every frame — strictly
             // worse than having no cache at all.
             transform: transform.bake,
-            width: viewport.width,
-            height: viewport.height,
+            // The aligned size, not the viewport: two viewports that lay out at the same pixel
+            // size bake the same raster (US-322).
+            width: bakedSize.width,
+            height: bakedSize.height,
             increasedContrast: contrast == .increased,
             isLive: !transform.canUseRaster
         )
@@ -223,14 +234,15 @@ private struct CanvasStitchLayers: View {
                 ),
                 into: &context
             )
-            // The raster was rendered at `viewport` and is blitted into `size`, so a
+            // The raster was rendered at `bakedSize` and is blitted into `size`, so a
             // mismatch would *stretch* the settled layer while the live tail stays
-            // unstretched — a visibly misplaced seam. **They are not always equal, and this
-            // comment used to say they were.** US-315's probe measured a viewport of
-            // 370 × 256.83 against a `size` of 370 × 257.0 in iPhone 17's default layout, so
-            // the exact comparison never passes there and the raster is never used — backlog
-            // US-322. Falling back to `.entire` keeps the frame correct, which is the
-            // guard's job (`swift-code-reviewer`, US-305); what it costs is the cache.
+            // unstretched — a visibly misplaced seam. **The viewport is not that size**:
+            // US-315's probe measured 370 × 256.83 against a `size` of 370 × 257.0 in iPhone
+            // 17's default layout, and while the raster was baked at the viewport the exact
+            // comparison never passed there and the cache was never used (US-322). It is now
+            // baked at the viewport aligned to the device-pixel grid, which is `size`; if that
+            // prediction is ever wrong, falling back to `.entire` keeps the frame correct, which
+            // is the guard's job (`swift-code-reviewer`, US-305), at the cost of the cache.
             // `canUseRaster` is false while a gesture or the fit animation is in flight: the
             // raster's pixels were baked at `bake`, so compositing them under a tail stroked
             // at `current` would misplace them. Stroking everything is correct at any
@@ -250,7 +262,7 @@ private struct CanvasStitchLayers: View {
                 bakedKey: baked?.key,
                 expectedKey: bakeKey,
                 size: size,
-                viewport: viewport
+                bakedSize: bakedSize
             )
             if compositingRaster, let baked {
                 context.draw(baked.image, in: CGRect(origin: .zero, size: size))
@@ -279,11 +291,6 @@ private struct CanvasStitchLayers: View {
             )
         }
         .onChange(of: bakeKey, initial: true) { rebakeIfWorthwhile() }
-    }
-
-    /// Whether the `Canvas`'s own size is the viewport the raster was rendered at.
-    private static func matches(_ size: CGSize, _ viewport: ViewSize) -> Bool {
-        size.width == viewport.width && size.height == viewport.height
     }
 
     /// Bakes the settled prefix, or throws the raster away if there is not enough of it
@@ -319,7 +326,7 @@ private struct CanvasStitchLayers: View {
         // the more expensive one.
         let settledPoints = Array(display.stitches[..<settled])
         let travelOpacity = travelOpacity
-        let size = CGSize(width: viewport.width, height: viewport.height)
+        let size = bakedSize
 
         baked = Baked(
             key: bakeKey,
