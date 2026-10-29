@@ -270,15 +270,13 @@ private struct CanvasStitchLayers: View {
             let plan = StageSignposts.interval("plan") {
                 StitchDrawPlan.forFrame(of: display, at: transform, compositingRaster: compositingRaster)
             }
-            if layers.thread {
-                CanvasStitchStroke.strokeThread(
-                    plan, of: display.stitches, transform: transform.current,
-                    travelOpacity: travelOpacity, into: &context
-                )
-            }
-            if layers.dots {
-                CanvasStitchStroke.fillDots(plan, of: display.stitches, transform: transform.current, into: &context)
-            }
+            CanvasStitchStroke.draw(
+                plan,
+                of: display.stitches,
+                transform: transform.current,
+                style: (travelOpacity, layers),
+                into: &context
+            )
         }
         .onChange(of: bakeKey, initial: true) { rebakeIfWorthwhile() }
     }

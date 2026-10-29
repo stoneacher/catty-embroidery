@@ -24,6 +24,44 @@ enum CanvasStitchStroke {
         static let all = Layers(thread: true, dots: true)
     }
 
+    /// One half of a frame, in the order it is drawn.
+    enum Operation: Equatable {
+        case thread
+        case dots
+    }
+
+    /// What a frame draws, **in order**: the thread, then the dots — so dots sit on top of every
+    /// stroke — minus whatever `layers` leaves out. `stroke` and the live `Canvas` both draw
+    /// through this, so the order has one definition.
+    static func operations(for layers: Layers) -> [Operation] {
+        var operations: [Operation] = []
+        if layers.thread {
+            operations.append(.thread)
+        }
+        if layers.dots {
+            operations.append(.dots)
+        }
+        return operations
+    }
+
+    /// Draws the operations `layers` allows, in `operations(for:)` order.
+    static func draw(
+        _ plan: StitchDrawPlan,
+        of points: [PreviewStitch],
+        transform: StageTransform,
+        style: (travelOpacity: Double, layers: Layers),
+        into context: inout GraphicsContext
+    ) {
+        for operation in operations(for: style.layers) {
+            switch operation {
+            case .thread:
+                strokeThread(plan, of: points, transform: transform, travelOpacity: style.travelOpacity, into: &context)
+            case .dots:
+                fillDots(plan, of: points, transform: transform, into: &context)
+            }
+        }
+    }
+
     /// **One stroking function for both layers, and that is the point.**
     ///
     /// `Image(size:renderer:)` (iOS 16+) and `Canvas` both hand out an
@@ -41,8 +79,7 @@ enum CanvasStitchStroke {
         travelOpacity: Double,
         into context: inout GraphicsContext
     ) {
-        strokeThread(plan, of: points, transform: transform, travelOpacity: travelOpacity, into: &context)
-        fillDots(plan, of: points, transform: transform, into: &context)
+        draw(plan, of: points, transform: transform, style: (travelOpacity, .all), into: &context)
     }
 
     /// The plan's dots, as one fill per colour run.
@@ -57,10 +94,11 @@ enum CanvasStitchStroke {
         transform: StageTransform,
         into context: inout GraphicsContext
     ) {
-        StageSignposts.interval("dots") {
-            for run in plan.dots {
-                context.fill(dotPath(run, of: points, transform: transform), with: .color(Color(run.color)))
-            }
+        // Building the path and submitting it are separate intervals, so a trace can tell CPU
+        // path construction (rung 4's question) from the fill call (D9; Codex slice-4 review).
+        for run in plan.dots {
+            let path = StageSignposts.interval("dotPath") { dotPath(run, of: points, transform: transform) }
+            StageSignposts.interval("fill") { context.fill(path, with: .color(Color(run.color))) }
         }
     }
 
@@ -72,34 +110,33 @@ enum CanvasStitchStroke {
         travelOpacity: Double,
         into context: inout GraphicsContext
     ) {
-        StageSignposts.interval("thread") {
-            for stroke in plan.strokes {
-                let path = segmentPath(stroke.segments, of: points, transform: transform)
-                switch stroke.style {
-                case .thread:
-                    context.stroke(
-                        path,
-                        with: .color(Color(stroke.color)),
-                        style: StrokeStyle(
-                            lineWidth: StitchDrawMetrics.threadWidth(atScale: transform.scale),
-                            lineCap: .round,
-                            lineJoin: .round
-                        )
-                    )
-                case .traversal:
-                    context.stroke(
-                        path,
-                        with: .color(StageChrome.travelLine.opacity(travelOpacity)),
-                        style: StrokeStyle(
-                            lineWidth: StitchDrawMetrics.traversalWidthInViewPoints,
-                            lineCap: .butt,
-                            dash: StageChrome.travelDash
-                        )
-                    )
-                case .suppressed:
-                    continue // never planned; the switch is exhaustive so a new style is a compile error
-                }
+        // Path construction and the stroke call are separate intervals (D9; Codex slice-4
+        // review): CPU path building is rung 4's question, submission is not.
+        for stroke in plan.strokes {
+            let path = StageSignposts.interval("segmentPath") {
+                segmentPath(stroke.segments, of: points, transform: transform)
             }
+            let style: StrokeStyle
+            let shading: GraphicsContext.Shading
+            switch stroke.style {
+            case .thread:
+                shading = .color(Color(stroke.color))
+                style = StrokeStyle(
+                    lineWidth: StitchDrawMetrics.threadWidth(atScale: transform.scale),
+                    lineCap: .round,
+                    lineJoin: .round
+                )
+            case .traversal:
+                shading = .color(StageChrome.travelLine.opacity(travelOpacity))
+                style = StrokeStyle(
+                    lineWidth: StitchDrawMetrics.traversalWidthInViewPoints,
+                    lineCap: .butt,
+                    dash: StageChrome.travelDash
+                )
+            case .suppressed:
+                continue // never planned; the switch is exhaustive so a new style is a compile error
+            }
+            StageSignposts.interval("stroke") { context.stroke(path, with: shading, style: style) }
         }
     }
 

@@ -37,6 +37,11 @@
 
         /// The last frame drawn while the stage was settled (US-316, US-322). `nil` until one
         /// has been drawn.
+        ///
+        /// **Process-wide, so it describes the capture's stage only while there is one stage.**
+        /// Captures run on an iPhone, where the app has a single window; on an iPad with two
+        /// windows, another window's settled frame could overwrite it during the settle (Codex
+        /// slice-4 review). Do not run `-US316Capture` with more than one window open.
         private(set) static var lastSettled: StageDrawRecord?
 
         static func recordSettled(_ record: StageDrawRecord) {

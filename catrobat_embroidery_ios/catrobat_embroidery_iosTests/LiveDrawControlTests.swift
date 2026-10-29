@@ -28,6 +28,17 @@ struct LiveDrawControlTests {
         #expect(LiveDrawControl.noThread.layers(isLive: false) == .all)
     }
 
+    /// The order a frame draws its halves in, as the `Canvas` body runs it: **the thread, then
+    /// the dots, always** — dots sit on top of every stroke (ADR-043) — and a control removes
+    /// its half without reordering the other (Codex slice-4 review, finding 3).
+    @Test("a frame draws the thread before the dots, and a control only removes its half")
+    func drawOrder() {
+        #expect(CanvasStitchStroke.operations(for: .all) == [.thread, .dots])
+        #expect(CanvasStitchStroke.operations(for: LiveDrawControl.noDots.layers(isLive: true)) == [.thread])
+        #expect(CanvasStitchStroke.operations(for: LiveDrawControl.noThread.layers(isLive: true)) == [.dots])
+        #expect(CanvasStitchStroke.operations(for: LiveDrawControl.noThread.layers(isLive: false)) == [.thread, .dots])
+    }
+
     /// The process's control comes from its launch argument, and an ordinary launch has none.
     @Test("the control is read from the launch arguments")
     func fromArguments() {
