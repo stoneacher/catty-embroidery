@@ -43,10 +43,13 @@ struct CaptureScenarioTests {
         #expect(CaptureScenario.parse(["app", "-US316Capture"]) == nil)
     }
 
-    @Test("the hold can be lengthened, never below the bar's ten seconds")
+    @Test("the hold can be lengthened, never to a window shorter than the bar's ten seconds")
     func hold() {
         #expect(CaptureScenario.parse(["app", "-US316Capture", "B", "-US316Hold", "15"])?.holdSeconds == 15)
-        #expect(CaptureScenario.parse(["app", "-US316Capture", "B", "-US316Hold", "10"])?.holdSeconds == 10)
+        #expect(CaptureScenario.parse(["app", "-US316Capture", "B", "-US316Hold", "10.5"])?.holdSeconds == 10.5)
+        // Exactly ten is refused: the recorder's first callback times nothing, so a 10 s hold
+        // records a 9.9 s window, which the bar cannot quote (the slice's simulator dry run).
+        #expect(CaptureScenario.parse(["app", "-US316Capture", "B", "-US316Hold", "10"]) == nil)
         #expect(CaptureScenario.parse(["app", "-US316Capture", "B", "-US316Hold", "9.9"]) == nil)
         #expect(CaptureScenario.parse(["app", "-US316Capture", "B", "-US316Hold", "5"]) == nil)
         #expect(CaptureScenario.parse(["app", "-US316Capture", "B", "-US316Hold", "long"]) == nil)

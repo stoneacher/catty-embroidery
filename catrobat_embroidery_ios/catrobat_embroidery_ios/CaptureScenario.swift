@@ -65,9 +65,11 @@
         static let captureFlag = "-US316Capture"
         static let holdFlag = "-US316Hold"
 
-        /// ADR-043's bar is over a capture of at least ten seconds; a shorter hold could never
-        /// be quoted against it.
-        static let minimumHoldSeconds = 10.0
+        /// ADR-043's bar is over a capture of **at least ten seconds**, and the recorded window is a
+        /// little shorter than the hold: the recorder's first callback times nothing, so a 10 s hold
+        /// records 9.9 s and reads `(short)` (the slice's simulator dry run). Half a second of margin
+        /// makes every accepted hold quotable.
+        static let minimumHoldSeconds = 10.5
 
         let condition: CaptureCondition
 
