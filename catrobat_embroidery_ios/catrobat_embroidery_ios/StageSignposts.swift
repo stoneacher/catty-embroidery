@@ -28,6 +28,13 @@ enum StageSignposts {
         static func end(_ name: StaticString, _ state: OSSignpostIntervalState) {
             signposter.endInterval(name, state)
         }
+
+        /// A Points-of-Interest event carrying a capture's result line, so a run recorded under
+        /// `xctrace` holds its own line beside its hitches (the Hitches template records no
+        /// unified log; the `os-log` table came back empty).
+        static func result(_ line: String) {
+            signposter.emitEvent("result", "\(line, privacy: .public)")
+        }
     #else
         @inline(__always)
         static func interval<Result>(_: StaticString, _ body: () -> Result) -> Result {

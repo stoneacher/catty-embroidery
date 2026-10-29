@@ -93,6 +93,12 @@
                 + " raster=\(raster)"
         }
 
+        /// A hand run's line (D7), emitted when the capsule's Stop is tapped: the driver's tag and
+        /// caption, marked `hand`, under the launch's condition (`none` for a plain launch).
+        func handLine(condition: CaptureCondition?) -> String {
+            "US316 condition=\(condition?.rawValue ?? "none") hand \(caption ?? verdict.label)"
+        }
+
         /// The display's actual rate, or nothing if no callback has reported one.
         ///
         /// On the row because a 30 Hz link makes every interval ~33.3 ms and so fails both

@@ -179,15 +179,13 @@
             emit(FrameCaptureReport(recorder: recorder).consoleLine(context))
         }
 
-        /// One result line, to the console **and** to the unified log, so a run under `xctrace`
-        /// carries its own line inside the trace (`os-log` table) beside its hitches.
+        /// One result line, to the console **and** as a Points-of-Interest event, so a run under
+        /// `xctrace` carries its own line inside the trace beside its hitches.
         private func emit(_ line: String) {
             print(line)
             // `stdout` is block-buffered when it is not a terminal, and `exit` follows.
             fflush(stdout)
-            Self.log.notice("\(line, privacy: .public)")
+            StageSignposts.result(line)
         }
-
-        private static let log = Logger(subsystem: "org.catrobat.embroiderydesigner", category: "US316")
     }
 #endif

@@ -1,4 +1,5 @@
 #if DEBUG
+    import os
     import SwiftUI
 
     /// US-309's readout: start a capture, stop it, read the four numbers off the screen.
@@ -52,6 +53,10 @@
             .contains("-US310FrameTimes")
 
         @State private var recorder = FrameTimeRecorder()
+        @State private var captureInterval: OSSignpostIntervalState?
+
+        /// The condition a hand run was launched under (`-US316Capture X -US316Hand`), read once.
+        private static let launchCondition = CaptureScenario.parse(ProcessInfo.processInfo.arguments)?.condition
         @Environment(\.scenePhase) private var scenePhase
 
         var body: some View {
@@ -59,10 +64,20 @@
                 Button(recorder.isRecording ? "Stop" : "Record") {
                     if recorder.isRecording {
                         recorder.stop()
+                        // US-316's hand runs (D7): the same window and result line a driver run
+                        // leaves in its trace, so the two are read by one summary.
+                        if let captureInterval {
+                            StageSignposts.end("capture", captureInterval)
+                            self.captureInterval = nil
+                        }
+                        StageSignposts.result(
+                            FrameCaptureReport(recorder: recorder).handLine(condition: Self.launchCondition)
+                        )
                     } else {
                         // The scene's *state*, not a transition: a capture begun while the
                         // app is not active must know that from the outset. See
                         // `start(isActive:)`.
+                        captureInterval = StageSignposts.begin("capture")
                         recorder.start(isActive: scenePhase == .active)
                     }
                 }
