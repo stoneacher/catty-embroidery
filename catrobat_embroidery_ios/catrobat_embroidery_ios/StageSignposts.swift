@@ -1,3 +1,4 @@
+import Foundation
 import os
 
 /// Points-of-Interest intervals around the stage's per-frame work (US-316, brief D9), so an
@@ -14,7 +15,21 @@ enum StageSignposts {
             subsystem: "org.catrobat.embroiderydesigner", category: .pointsOfInterest
         )
 
+        /// Whether a launch asks for the per-frame intervals (`-US316FrameSignposts`). Off by
+        /// default: about 21 a frame at 60 Hz overflowed the recorder's signpost buffer in a
+        /// 2-minute hand run, which then kept only its last 0.7 s of intervals and lost its
+        /// `capture` window's Begin (2026-10-29). D6's runs need only the window and the result;
+        /// D9's attribution runs turn these on.
+        static func recordsFrames(arguments: [String]) -> Bool {
+            arguments.contains("-US316FrameSignposts")
+        }
+
+        /// Read once: `ProcessInfo.arguments` cannot change, and this is asked on every frame.
+        private static let framesEnabled = recordsFrames(arguments: ProcessInfo.processInfo.arguments)
+
+        /// A per-frame interval, recorded only when the launch asked for them.
         static func interval<Result>(_ name: StaticString, _ body: () -> Result) -> Result {
+            guard framesEnabled else { return body() }
             let state = signposter.beginInterval(name)
             defer { signposter.endInterval(name, state) }
             return body()

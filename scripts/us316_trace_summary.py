@@ -14,6 +14,7 @@ durations. Every element is resolved through the id table here.
 """
 
 import json
+import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -65,10 +66,29 @@ def number(cell):
 def summarise(trace):
     intervals = list(rows(export(trace, "OSSignpostIntervals")))
     captures = [r for r in intervals if r.get("name", ("",))[0] == "capture"]
-    if len(captures) != 1:
+    events = list(rows(export(trace, "PointsOfInterestEvents")))
+    lines = [
+        (number(event.get("time") or event.get("start")), cell[0])
+        for event in events for cell in event.values()
+        if cell and cell[0] and cell[0].startswith("US316 ")
+    ]
+    window_source = "capture interval"
+    if len(captures) == 1:
+        start = number(captures[0]["start"])
+        end = start + number(captures[0]["duration"])
+    elif not captures and lines:
+        # Fallback, seen on a hand run (2026-10-29): only the interval's End reached the trace.
+        # The result event is emitted at the Stop, right after that End, and the result line
+        # carries the recorder's own window length (one decimal), so the window is
+        # [result − window, result]. Marked in the output, never silent.
+        end = lines[0][0]
+        seconds = re.search(r" · ([0-9.]+) s · ", lines[0][1])
+        if end is None or seconds is None:
+            return {"trace": trace, "error": "no capture window and no usable result line"}
+        start = end - int(float(seconds.group(1)) * 1e9)
+        window_source = "result line (capture Begin missing)"
+    else:
         return {"trace": trace, "error": f"{len(captures)} capture windows"}
-    start = number(captures[0]["start"])
-    end = start + number(captures[0]["duration"])
 
     inside = []
     for hitch in rows(export(trace, "hitches")):
@@ -88,15 +108,11 @@ def summarise(trace):
             "max_ms": round(max(durations) / 1e6, 3) if durations else 0,
         }
 
-    events = list(rows(export(trace, "PointsOfInterestEvents")))
-    lines = [
-        cell[0] for event in events for cell in event.values()
-        if cell and cell[0] and cell[0].startswith("US316 ")
-    ]
     return {
         "trace": trace,
-        "result": lines[0] if lines else None,
+        "result": lines[0][1] if lines else None,
         "window_s": round((end - start) / 1e9, 3),
+        "window_source": window_source,
         "hitches": len(inside),
         "hitches_over_33ms": sum(1 for d in inside if d > DROPPED_FRAME_NS),
         "worst_hitch_ms": round(max(inside) / 1e6, 3) if inside else 0,
