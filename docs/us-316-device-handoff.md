@@ -153,8 +153,9 @@ recording right behind the window.
 | mixed 4 | `us316-mixed-4` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
 | mixed 5 | `us316-mixed-5` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
 
-Clean by D6 (0 of 5 over). **Which hand runs carry the trace evidence:** hand 2 and hand 3, whose
-`capture` windows are intact (0 hitches inside); hand 1's window is reconstructed (†).
+Clean by D6 (0 of 5 over). **Which hand runs carry the trace evidence:** among the calibration
+runs, hand 2 and hand 3, whose `capture` windows are intact (0 hitches inside); hand 1's window
+is reconstructed (†). **Hand 8 (above) is the one run that carries both clauses of the bar.**
 
 **Not counted, and why**
 
@@ -169,7 +170,9 @@ Clean by D6 (0 of 5 over). **Which hand runs carry the trace evidence:** hand 2 
 | `us316-hand-7` | the recording ran a minute past Stop and the recorder dropped its old signposts: no window, no result event | capsule `PASS`, every draw timed; a 66.7 ms hitch at 59.2 s, after the pre-roll, that cannot be placed inside or outside the window |
 | `us316-calib-driver-1`, `us316-calib-hand-1` | earlier build, per-frame signposts on; the hand trace kept only its last 0.7 s of signposts (buffer overflow) | both clean, 0 hitches over 33.3 ms |
 
-**Reading.** D7 accepts the driver (same class, ≤ 1 of 3 over, for both). But **A0 did not tail,
+**Reading.** D7 accepts the driver (same class, ≤ 1 of 3 over, for both) — provisionally, because
+the calibration's hand runs predate thermal logging, so D6's thermal discard rule could not be
+checked for them. But **A0 did not tail,
 by hand or by driver, panning or (scripted) pinching and panning**, so D1's table cannot apply and
 the D6 matrix was not run. Sebastian decided
 on 2026-10-29 to stop the measurement here: recorded in ADR-043's 2026-10-29 amendment as *met on

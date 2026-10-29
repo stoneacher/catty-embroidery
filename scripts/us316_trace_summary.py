@@ -94,9 +94,16 @@ def summarise(trace):
     # recording, the oldest data — signposts *and* display events — falls out. The earliest
     # vsync in the trace is where its continuous display data begins; a capture window that
     # starts before it is not covered, and its "0 hitches" would mean nothing.
-    vsyncs = [number(r.get("timestamp")) for r in rows(export(trace, "display-vsyncs-interval"))]
-    coverage_start = min(v for v in vsyncs if v is not None) if vsyncs else None
-    covered = coverage_start is not None and coverage_start <= start
+    # Both ends: display data must reach from before the window's start to past its end
+    # (Codex, PR #83 round 3), and rows whose times do not parse are ignored, not fatal.
+    spans = []
+    for row in rows(export(trace, "display-vsyncs-interval")):
+        at = number(row.get("timestamp"))
+        if at is not None:
+            spans.append((at, at + (number(row.get("duration")) or 0)))
+    coverage_start = min(s for s, _ in spans) if spans else None
+    coverage_end = max(e for _, e in spans) if spans else None
+    covered = coverage_start is not None and coverage_start <= start and coverage_end >= end
 
     inside = []
     for hitch in rows(export(trace, "hitches")):
@@ -123,6 +130,8 @@ def summarise(trace):
         "window_source": window_source,
         "window_start_s": round(start / 1e9, 3),
         "display_data_from_s": round(coverage_start / 1e9, 3) if coverage_start is not None else None,
+        "display_data_to_s": round(coverage_end / 1e9, 3) if coverage_end is not None else None,
+        "window_end_s": round(end / 1e9, 3),
         "window_covered": covered,
         "hitches": len(inside),
         "hitches_over_33ms": sum(1 for d in inside if d > DROPPED_FRAME_NS),
