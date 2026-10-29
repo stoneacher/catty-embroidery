@@ -1,5 +1,6 @@
 #if DEBUG
     import Foundation
+    import os
     import Samples
     import StagePreview
     import UIKit
@@ -34,6 +35,8 @@
         private let recorder = FrameTimeRecorder()
         private var thermalAtStart = ProcessInfo.ThermalState.nominal
         private var scaleAtStart = 1.0
+        private var settledAtStart: StageDrawRecord?
+        private var captureInterval: OSSignpostIntervalState?
 
         private init(scenario: CaptureScenario) {
             self.scenario = scenario
@@ -85,6 +88,10 @@
                 makeDriver()?.zoom(to: fraction)
             case .startRecording:
                 thermalAtStart = ProcessInfo.processInfo.thermalState
+                // The settled frame US-322's fields describe is the last one before recording:
+                // read it now, before the gesture makes every frame live.
+                settledAtStart = StageDrawCounter.lastSettled
+                captureInterval = StageSignposts.begin("capture")
                 recorder.start()
             case .beginGesture:
                 scaleAtStart = currentScale ?? 1
@@ -94,6 +101,9 @@
                 driver?.advance(to: seconds)
             case .stopRecording:
                 recorder.stop()
+                if let captureInterval {
+                    StageSignposts.end("capture", captureInterval)
+                }
             case .endGesture:
                 driver?.end()
             case .report:
@@ -130,9 +140,9 @@
                 thermalAtEnd: ProcessInfo.processInfo.thermalState,
                 scale: scaleAtStart,
                 threadWidth: StitchDrawMetrics.threadWidth(atScale: scaleAtStart),
-                canvasSize: nil,
-                viewport: nil,
-                raster: .unobserved
+                canvasSize: settledAtStart?.canvasSize,
+                viewport: settledAtStart?.viewportSize,
+                raster: settledAtStart?.raster ?? .unobserved
             )
             print(FrameCaptureReport(recorder: recorder).consoleLine(context))
             // `stdout` is block-buffered when it is not a terminal, and `exit` follows.

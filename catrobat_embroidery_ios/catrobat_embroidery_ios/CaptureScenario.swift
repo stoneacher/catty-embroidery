@@ -1,4 +1,5 @@
 #if DEBUG
+    import Foundation
     import Samples
 
     /// What a frame-time capture draws while live, for US-316's renderer controls (brief D1).
@@ -10,6 +11,29 @@
         case none
         case noDots
         case noThread
+
+        /// Which halves of a frame are drawn — the renderer's own type.
+        typealias Layers = CanvasStitchStroke.Layers
+
+        /// What a frame draws under this control: a live frame loses its suppressed half, a
+        /// settled one is always whole.
+        func layers(isLive: Bool) -> Layers {
+            guard isLive else { return .all }
+            switch self {
+            case .none: return .all
+            case .noDots: return Layers(thread: true, dots: false)
+            case .noThread: return Layers(thread: false, dots: true)
+            }
+        }
+
+        /// The control a launch asks for: its capture condition's, or none.
+        static func from(arguments: [String]) -> LiveDrawControl {
+            CaptureScenario.parse(arguments)?.condition.liveControl ?? .none
+        }
+
+        /// This process's control, read once: `ProcessInfo.arguments` cannot change, and the
+        /// renderer asks on every frame.
+        static let forProcess = from(arguments: ProcessInfo.processInfo.arguments)
     }
 
     /// One of US-316's capture conditions (brief D1), named by the token the launch argument

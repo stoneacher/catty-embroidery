@@ -15,6 +15,15 @@ import SwiftUI
 /// anything else in the app module, and internal rather than `private` because the type that
 /// used to hold them is itself `private` to its file.
 enum CanvasStitchStroke {
+    /// Which halves of a frame are drawn: the thread (and travel), the dots, or both. Always
+    /// both, except under US-316's DEBUG live controls (`LiveDrawControl`).
+    struct Layers: Equatable {
+        let thread: Bool
+        let dots: Bool
+
+        static let all = Layers(thread: true, dots: true)
+    }
+
     /// **One stroking function for both layers, and that is the point.**
     ///
     /// `Image(size:renderer:)` (iOS 16+) and `Canvas` both hand out an
@@ -32,39 +41,65 @@ enum CanvasStitchStroke {
         travelOpacity: Double,
         into context: inout GraphicsContext
     ) {
-        for stroke in plan.strokes {
-            let path = segmentPath(stroke.segments, of: points, transform: transform)
-            switch stroke.style {
-            case .thread:
-                context.stroke(
-                    path,
-                    with: .color(Color(stroke.color)),
-                    style: StrokeStyle(
-                        lineWidth: StitchDrawMetrics.threadWidth(atScale: transform.scale),
-                        lineCap: .round,
-                        lineJoin: .round
-                    )
-                )
-            case .traversal:
-                context.stroke(
-                    path,
-                    with: .color(StageChrome.travelLine.opacity(travelOpacity)),
-                    style: StrokeStyle(
-                        lineWidth: StitchDrawMetrics.traversalWidthInViewPoints,
-                        lineCap: .butt,
-                        dash: StageChrome.travelDash
-                    )
-                )
-            case .suppressed:
-                continue // never planned; the switch is exhaustive so a new style is a compile error
+        strokeThread(plan, of: points, transform: transform, travelOpacity: travelOpacity, into: &context)
+        fillDots(plan, of: points, transform: transform, into: &context)
+    }
+
+    /// The plan's dots, as one fill per colour run.
+    ///
+    /// After every stroke, so dots always sit on top — a deviation from Catroid, which
+    /// interleaves them in stitch order and lets a later run cover an earlier run's penetration
+    /// points. Separate from `strokeThread` so US-316's DEBUG live controls can draw one half
+    /// (`Layers`); `stroke` draws both, in this order.
+    static func fillDots(
+        _ plan: StitchDrawPlan,
+        of points: [PreviewStitch],
+        transform: StageTransform,
+        into context: inout GraphicsContext
+    ) {
+        StageSignposts.interval("dots") {
+            for run in plan.dots {
+                context.fill(dotPath(run, of: points, transform: transform), with: .color(Color(run.color)))
             }
         }
+    }
 
-        // After every stroke, so dots always sit on top — a deviation from Catroid,
-        // which interleaves them in stitch order and lets a later run cover an earlier
-        // run's penetration points.
-        for run in plan.dots {
-            context.fill(dotPath(run, of: points, transform: transform), with: .color(Color(run.color)))
+    /// The plan's thread and travel strokes. See `fillDots` for why the halves are separate.
+    static func strokeThread(
+        _ plan: StitchDrawPlan,
+        of points: [PreviewStitch],
+        transform: StageTransform,
+        travelOpacity: Double,
+        into context: inout GraphicsContext
+    ) {
+        StageSignposts.interval("thread") {
+            for stroke in plan.strokes {
+                let path = segmentPath(stroke.segments, of: points, transform: transform)
+                switch stroke.style {
+                case .thread:
+                    context.stroke(
+                        path,
+                        with: .color(Color(stroke.color)),
+                        style: StrokeStyle(
+                            lineWidth: StitchDrawMetrics.threadWidth(atScale: transform.scale),
+                            lineCap: .round,
+                            lineJoin: .round
+                        )
+                    )
+                case .traversal:
+                    context.stroke(
+                        path,
+                        with: .color(StageChrome.travelLine.opacity(travelOpacity)),
+                        style: StrokeStyle(
+                            lineWidth: StitchDrawMetrics.traversalWidthInViewPoints,
+                            lineCap: .butt,
+                            dash: StageChrome.travelDash
+                        )
+                    )
+                case .suppressed:
+                    continue // never planned; the switch is exhaustive so a new style is a compile error
+                }
+            }
         }
     }
 
