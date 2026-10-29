@@ -3958,3 +3958,106 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **One finding, Medium, valid; docs only.** The cleanup had written "M5 closed 2026-10-27" while the same paragraph deferred the knowledge-graph drift check. ADR-041's 2026-10-17 amendment and CLAUDE.md make that check part of closing a milestone, and a decision recorded only in the journal does not amend an ADR. Sebastian's deferral was explicitly "for now", so the ADR stays as it is. The roadmap now says M5's work is done and that the milestone counts as closed once the check has run and its edges are triaged.
 - **Everything else held:** dates, PR numbers, the three resolved backlog items, the ADR-043 citation (corrected from ADR-029 before the round), the link anchors, the source-of-truth rule against ADR-041, and the alert-title fallback, which is never on screen and creates no catalog entry.
 - **The loop ends on its first condition:** the round produced documentation changes only.
+
+## 2026-10-28 — M5 close: the drift check, a local-model trial that lost, and one commitment with no home
+
+- **The check ran and M5 is closed.** `/graphify . --update` re-extracted the 39 docs that had changed since the M3 graph (2026-09-18), plus 270 Swift files structurally. The result is 6,787 nodes, 18,278 edges and 300 communities. The health check was clean: no dangling, missing, self-loop or collapsed edges. **46 `semantically_similar_to` edges were triaged, and none is a reinvented invariant.**
+- **The journal is out of the graph.** The 2026-10-17 amendment left one question open for this run: can graphify exclude the journal? It can. A new `.graphifyignore` (gitignore syntax) excludes `docs/workflow-journal.md`, both screenshot folders, the asset catalog and the sample JSONs. The journal is a narrative record, not a source of rules, and whole-file `--update` would re-read it at a cost that grows forever. The images would each have needed a vision subagent, for content that carries no invariant. 130 stale nodes from those 15 sources (12 now ignored, 3 deleted Swift files) were pruned explicitly, because graphify drops newly ignored files from the manifest but leaves their nodes in the graph.
+- **Tried first: semantic extraction on a local model (Sebastian's suggestion, 48 GB M4 Pro), rejected after a three-doc trial.** graphify 0.9.46 supports `--backend ollama`. It needed the `[ollama]` extra and `ollama serve` started by hand, because `brew services` failed with exit 78.
+  - **Run 1, `qwen3:30b-a3b`:** its thinking mode spent 17k tokens reasoning, filled the 32k context and hit the 10-minute timeout without producing JSON.
+  - **Run 2, `qwen3:30b-a3b-instruct-2507`:** it fell into a repetition loop, generating 54k tokens with context shifting until the 30-minute timeout. graphify's 16k `max_tokens` was evidently not enforced by Ollama's OpenAI-compatible endpoint.
+  - **Run 3, the same model with a Modelfile cap** (`num_predict 8192`, `repeat_penalty 1.1`, `temperature 0.2`): it succeeded, with 109 nodes and 134 edges in 13.6 minutes, against Claude's cached 26 nodes and 47 edges for the same files. It found real invariants, but also produced noise nodes ("Sebastian", "Zero compiler warnings") and invented relation names outside the schema. It produced **zero `semantically_similar_to` edges**, which are the only edges this check reads.
+  - **Projection:** about 3–3.5 hours unattended for the 250k-token update, with a graph mixing two extractors.
+  - **The deciding argument:** a weak extractor fails toward a false "none found", the one outcome the check exists to rule out. Sebastian chose Claude subagents.
+- **Cost:** 7 subagents, 743,674 tokens in total (`cost.json` records them as input, since the harness reports no split). `DECISIONS.md` (70k words) was split across three subagents by ADR range. The split mis-described two boundaries: ADR-026 and ADR-038 each sat one ADR away from where the brief said. Each agent reported this itself, and no ADR was missed.
+- **Coverage caveat:** the milestone-4 agent skimmed its 15 stories, reading the first ~2.5 KB of each plus the headings and ADR references, and said so. The M3 agent covered US-309's review rounds only at summary level. I accepted both without re-running. Those stories are closed, and their rules live in ADR-033…040, which the `DECISIONS.md` agents read in full. A reinvention confined to an M4 story's acceptance criteria would be the gap.
+- **The triage.** I checked each edge against the ADR text, not the graph's labels.
+  - **Pinned by one owning ADR, so not reinvention:**
+    - ADR-023 (local gate vs CI, and the "skipped job reports success" rule in its 2026-09-27 amendment): edges 1, 5, 24, 25.
+    - ADR-032 invariant 2 (and the instances it was written from): edges 8, 11, 26, 27, 37, 39.
+    - ADR-041 (drift check and brief review; the `/finish` Status proof): edges 16, 23.
+    - ADR-046 (the pinned Catroid divergences): edges 15, 17, 28.
+    - ADR-037, whose 2026-10-17 amendment both briefs cite (format freeze vs additive v1): edge 44.
+    - ADR-037's consequences, which separate US-324 from the D11 write block explicitly: edge 20.
+    - ADR-040 (condition editor vs locked formulas): edge 45.
+    - ADR-018/020's never-halt family: edges 29, 30.
+  - **Analogies between distinct rules:** edges 32–36 recur across ADRs as patterns: a monotonic token rejecting stale results (generation guard, `SaveRevision`), a single chokepoint for a state change (`RunPhase`, `onProgramChanged`), and one commit or undo entry per interaction. Each instance is owned and consistent with its ADR. A pattern applied independently and correctly is not a homeless invariant, so I did not propose an ADR. The remaining edges pair analogous mechanisms in different domains, or are speculative (edge 14 at 0.55, edge 21).
+  - **The one edge marked AMBIGUOUS (not a similarity edge):** the engine README cites ADR-050 for the `Projects` target, while CLAUDE.md and `ci.yml` cite ADR-042. This is not a conflict: ADR-042's 2026-10-26 amendment owns the target's placement, ADR-050 owns its semantics, and the README lists both.
+- **Finding: one commitment with no home.** Project-management D10 makes ADR-037's format freeze "a release-checklist step, with a frozen-v1 vocabulary census test added at that step". **No release checklist exists**: none in the roadmap, the backlog, any ADR or the commands. ADR-037 records the freeze rule "so the freeze cannot happen without it", but nothing triggers it, and the next distributed build would be the moment it is silently skipped. This is the same shape as M3's result: not a reinvented rule but a rule with nowhere to live. It is recorded in the M5 paragraph for release planning, before TestFlight.
+- **Observation for the next run:** the strict filter (cross-community, with a doc endpoint) kept only 6 of the 46 edges, because with 300 communities most doc pairs cluster together. The filter "cross the `docs/` communities" in CLAUDE.md would have hidden 40 edges, including the finding's edge 44. I triaged all 46. The next run should do the same.
+
+## 2026-10-28 — The drift check's finding is filed as US-331
+
+- Sebastian agreed to a backlog entry for the homeless format-freeze trigger recorded in the previous entry. It is **US-331**, which proposes a release checklist with a home (the TestFlight checkpoint or a `/release` command), the frozen-v1 census test, and an ADR-037 amendment naming the trigger. The roadmap's M5 paragraph links to it.
+
+## 2026-10-28 — PR #82 Codex round 1: the close claimed more coverage than it had
+
+- **Highest severity: Medium. The round changed the branch.** It produced three findings, all valid.
+- **Medium, fixed: "M5 closed" overstated coverage.** The first drift-check entry above admits that the M4 extraction skimmed its stories. AGENTS.md defined the step as a graph "over the whole corpus", and the journal exclusion was recorded only in that entry. Three fixes:
+  - **Full re-read:** the 15 M4 stories were re-extracted with every line read (1,179 lines, 145 nodes against the skim's 77; 161,199 tokens) and merged. The rebuilt graph has 6,854 nodes, 18,388 edges and 290 communities, and the health check is clean.
+  - **Triage:** the re-read added five `semantically_similar_to` edges, for 48 in total. All five pair rules that ADRs own, and each story cites them: ADR-032 invariant 2 (US-402, US-404 and US-411 cite it), ADR-036/037 (coalescing session and save revision) and ADR-044 (the two stage transients). The result holds: 48 edges, none a reinvented invariant.
+  - **ADR-041 amendment (2026-10-28):** it names the corpus (the repository minus `.graphifyignore`), widens the triage to every similarity edge with a document endpoint, and makes coverage part of the result, so an agent that skims is re-run. AGENTS.md and CLAUDE.md now say the same.
+- **Correction to the first drift-check entry above:** it called the journal "not a source of rules". That is too strong. The journal does record decisions (e.g. "the roadmap's features table owns the order", 2026-10-27). The accurate claim, now in ADR-041, is that a rule stated only in the journal binds nothing until it reaches an ADR, the roadmap, a brief or the backlog. Those are what the check reads.
+- **Low, fixed: the two agent-guidance files disagreed.** AGENTS.md still required the whole corpus while CLAUDE.md described the exclusion. Both now carry the amendment's wording.
+- **Low, fixed: the amendment date.** The ADR-037 amendment behind US-331 is dated 2026-10-18; 2026-10-17 is the date of Sebastian's decision. US-331 now gives both. The first drift-check entry's "2026-10-17 amendment" means the same 2026-10-18 amendment.
+- **What Codex saw that I did not:** I had written the skim down as an acceptable caveat. Codex read it as what it was: a gap in exactly the place the check is meant to look. Fixing it cost 161k tokens, and the triage result did not change. The value is that the close is now supported by its own record.
+
+## 2026-10-28 — PR #82 Codex round 2: the coverage rule applied to its own run
+
+- **Highest severity: Medium (flat from round 1). The round changed the branch, so the loop continues.** It produced three findings, all valid.
+- **Medium, fixed: the M3 extraction had also summarised.** The first drift-check entry records that the M3 agent covered US-309's review rounds only at summary level. The coverage rule this PR added to ADR-041 says such an agent is re-run, and round 1 had re-run only the M4 stories. The M3 chunk was re-extracted with every line read: 1,497 lines over five files, 292 nodes against 65, and 215,126 tokens. US-309's five Codex rounds and US-313a's sixteen criteria are now extracted individually.
+  - **Six new similarity edges, 52 in total.** All are owned or internal to one doc: ADR-032 invariants 1 and 3, ADR-029 and its amendment, and ADR-030's `liveSegmentTarget` (stated in two files, both 2,000). The result holds: 52 edges, none a reinvented invariant.
+  - **The rebuilt graph:** 7,085 nodes, 18,835 edges and 297 communities, with a clean health check. Total cost of the check: 1,119,999 tokens.
+- **Low, fixed: `.graphifyignore` excluded more than images.** `docs/screenshots/` also holds `us-315/README.md` (the keyboard-transient defect and its fix) and capture tooling. The patterns now exclude only `*.png`, `*.jpg` and the captured accessibility-tree `*.json`. The README was extracted, the four tooling files went through the AST pass, and ADR-041's amendment wording was narrowed to match.
+- **Low, fixed: the amendment overclaimed approval.** Sebastian approved excluding the journal as part of the run's plan. The triage scope and the coverage rule came from this PR's Codex rounds and take effect with his merge. The amendment now says exactly that.
+- **Disclosed, not a gap:** five docs this PR itself edits (AGENTS.md, CLAUDE.md, DECISIONS.md, ROADMAP.md, backlog.md) are left unstamped in graphify's manifest. Their graph extraction is from earlier today, before this PR's edits, which are the drift check's own record and were reviewed directly by these Codex rounds. The next `--update` re-extracts them.
+
+## 2026-10-28 — PR #82 Codex round 3: re-reading the edited docs found the check's first real drift
+
+- **Highest severity: Medium (flat for the third round). The round changed the branch.** It produced three findings, all valid.
+- **Medium, fixed: the docs this PR edits were in the graph in their pre-edit versions.** I had disclosed this in round 2 as "not a gap". Under the coverage rule this PR wrote into ADR-041, it is one. Loosening that rule to get past the finding would be the "lowering the standard" failure that `codex-review.md`'s US-302 history warns about, so I re-extracted instead.
+  - **What was re-read:** AGENTS.md, CLAUDE.md, ROADMAP.md, backlog.md and US-310 in full. In `DECISIONS.md`, only the index and ADR-041 had changed, so only those were re-read. The rest of the file keeps this morning's full read, merged with the new parts. Cost: 184,781 tokens.
+  - **A merge defect it exposed:** graphify's replace-on-re-extract had left 49 nodes from the old reads of these files, apparently because edges from other files still pointed at them. That is why the superseded `liveSegmentTarget = 1 000` label survived. They were pruned explicitly.
+- **The re-read produced the run's first drift finding.** A new edge paired backlog US-323 with ADR-049. Checking it showed that **ADR-046** (`DECISIONS.md`, the sensors section) and the brick-backend brief's slice log still called the early-read repeat "tracked as US-323". US-323 was fixed on 2026-10-20 by ADR-018's amendment (Variables slice 4).
+  - **Classification:** this is not a reinvented invariant. It is a correction that never reached two of its copies, which is exactly ADR-032 invariant 3.
+  - **The fix:** both lines are annotated inline, the way US-326's dispute is marked in ADR-018. ADR-046 and the brief were then re-extracted (75,254 tokens).
+  - **Why the original 46 edges missed it:** the first extraction ran before this branch's own edits and read the backlog without making that pairing. The finding came from the round that re-read the docs.
+- **Triage of the new edges:**
+  - **The 12 edges from the edited docs:** AGENTS.md and CLAUDE.md mirror each other by design. ADR-041's amendment, ADR-032 (five cited applications) and the roadmap's backlog policy own the rest. US-310's `addRect` alternative and US-316's fill-rate hypothesis are a consistent precursor and successor. The capture principle against US-315 is weak (0.65). The US-323 pairing is the finding above.
+  - **The 3 edges from ADR-046:** they pair its own pinned divergences with each other.
+  - **Result:** 62 edges, none a reinvented invariant, one stale claim corrected.
+- **Low, fixed: "6 of 46" was the pre-re-read count.** ADR-041 and CLAUDE.md now state the point in a form that survives a rebuild. The community filter hid most edges, including the one behind the finding.
+- **Low, fixed: the report revived `liveSegmentTarget = 1 000`.** US-310's own text records the value US-310 shipped, which US-313a later raised to 2,000. Both places in US-310 are now annotated (ADR-032 invariant 3), and the stale node is gone.
+- **Final graph:** 7,173 nodes, 19,157 edges and 310 communities. The health check shows no dangling, missing or self-loop edges, and 11 collapsed duplicate edges where the earlier and the new ADR-046 reads stated the same link. Graphify's manifest now has nothing pending. Total cost: 1,380,034 tokens.
+- **Observation:** each review round on this PR has made the check more complete, and the one real finding came from the round whose premise was "your graph is stale on the files you edited". On a drift-check PR, the PR's own edits are part of the corpus being checked.
+
+## 2026-10-29 — PR #82, before round 4: the graph now matches every file in the corpus
+
+- **Last edit, last re-read.** Recording round 3 meant editing the roadmap's M5 paragraph again, after it had been extracted. That is the staleness round 3 had just fixed. Two changes break the loop:
+  - **The paragraph no longer carries counts.** It points to these journal entries instead, and the journal is outside the graph, so recording a result no longer changes the corpus.
+  - **The roadmap was re-read once more,** in full (142 lines, 75,694 tokens), and 24 stale nodes from its earlier reads were pruned.
+- **Graphify's manifest has nothing pending.** Every file in the corpus is extracted at its committed content.
+- **Two new similarity edges, both owned:**
+  - US-309's display-link false positive and the mutation check fall under ADR-032 invariant 2.
+  - The human-prerequisite scheduling rule and the rule to write backlog entries at discovery are both roadmap policies, and consistent.
+- **Final drift-check result: 61 `semantically_similar_to` edges, none a reinvented invariant.**
+  - **One stale claim corrected:** US-323 was still called "tracked" in ADR-046 and the brick-backend brief.
+  - **One commitment with no home:** the format freeze, filed as US-331.
+- **Final graph:** 7,205 nodes, 19,239 edges and 305 communities. The health check is clean except for 10 collapsed duplicate edges, which come from the `DECISIONS.md` merge. Total extraction cost: 1,455,728 tokens.
+- **What this run cost against plan:** the first estimate was about 250k tokens of input. The full run spent 1.46M. The difference is the coverage the review rounds required: 712k on full re-reads, against 744k for the first pass.
+
+## 2026-10-29 — PR #82 Codex round 4, and a loop that ran three rounds past its own stop rule
+
+- **Round 4: highest severity Low.** It produced one finding, valid and docs-only. Severity fell from Medium for the first time.
+  - **The finding:** ADR-041's amendment still said "about one in five of the final 52", but the final graph has more edges. It now says, without counts, that the community filter hid most edges, including the one behind the run's first finding.
+  - **Everything else verified:** all 543 manifest entries match the current file hashes; both US-323 annotations agree with ADR-018 and the backlog, and no unannotated copy is left; both US-310 annotations agree with ADR-030 and ADR-043; the counts and token components sum exactly; the journal is append-only.
+- **The coverage rule kept, again.** The fix edits `DECISIONS.md`, so the index and ADR-041 were re-read once more (63,072 tokens).
+  - **Seven new similarity edges.** Three pair index rows that state one rule in two ADRs: the launch selection (ADR-039 and ADR-050), drafts that write nothing before their first change (ADR-045 and ADR-050), and the rename that re-prepares the export (ADR-038 and ADR-045). All three are ADR-050's 2026-10-26 amendments to ADR-038, 039 and 045, and each amendment names ADR-050. That is one decision recorded where it applies, not two owners. The other four are owned (ADR-042 and ADR-050 split placement from semantics; ADR-032 owns the coverage rule and ADR-019's discriminating tests) or are analogies (the append-only journal against the superseded-ADR policy).
+  - **A defect in my own merge, caught by the edge count.** The first merge of this re-read removed every `DECISIONS.md` edge touching an ADR node, not just the previous partial read's edges, and dropped about 400 links from the morning's full read. The count falling from 19,239 to 18,838 gave it away. The slice was rebuilt from graphify's semantic cache, which holds the last good combined state: 195 nodes and 542 edges from the full read, plus the new read's 78 and 129.
+- **Final result: 67 `semantically_similar_to` edges triaged, none a reinvented invariant.** One stale claim was corrected (US-323 in ADR-046 and the brick-backend brief), and one commitment with no home was filed (US-331).
+  - **Graph:** 7,213 nodes, 19,208 edges and 298 communities. No dangling, missing or self-loop edges. 88 collapsed duplicates, where the full read and the index re-read state the same index-to-ADR link.
+  - **Cost and manifest:** extraction cost 1,518,800 tokens in total, and graphify's manifest has nothing pending.
+- **The loop ends here, under condition 1: this round's triage produced no code changes.** Under that rule it should already have ended after round 1. Every round on this docs-only PR produced documentation changes only, and condition 1 counts those as ending the loop. I read rounds 1–3 as "the branch changed, so verify again", which is the rule for *starting* a verification round, not for *continuing* the loop.
+  - **What the extra rounds bought:** the full re-reads of the M3 and M4 docs, the staleness fix for the PR's own edits, and through that the run's only drift finding, the stale US-323 claim. Without them the check would have closed on a skim with a false "nothing found".
+  - **What they cost:** about 770k extraction tokens and three Codex rounds.
+  - **For the record:** on a drift-check PR, a "docs-only" fix can still change what the check found, because the docs are its corpus. Whether condition 1 should treat corpus changes as code changes in that case is a question for Sebastian, not something to settle here.

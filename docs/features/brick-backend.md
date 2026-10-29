@@ -68,7 +68,7 @@ Every slice touching the format, engine or interpreter is **risky** → `swift-c
    - The reviewer: a mutant skipping the normalize on sensor reads survived; a needle at +∞ now kills it.
    - Codex: three scheduling and coverage gaps (shared needle tick by tick, cross-object creation order, a sensor in `wait`). All covered.
    - Codex's Medium, Catroid's `float` direction round trip, is pinned in ADR-046 rather than emulated, because the needle is `Double` throughout (ADR-014).
-   - The reviewer found a pre-existing scheduling divergence: a `repeat` reached mid-tick reads its count a tick early. Sensors are a new route into it; tracked as US-323.
+   - The reviewer found a pre-existing scheduling divergence: a `repeat` reached mid-tick reads its count a tick early. Sensors are a new route into it; tracked as US-323 *[fixed 2026-10-20, Variables slice 4, ADR-018 amendment]*.
    - 3 further mutants killed.* (risky: yes; ADR-042, ADR-018) — red: `StepperSensorTests`: `setVariable(v, objectX)` after a move; `placeAt(x: objectY, y: objectX)` swaps (read before mutate); two objects read their own needles; two scripts on one object see each other's moves; direction after `turnRight(270)` is −90, after `turnLeft(180)` is 180, after `pointInDirection(540)` is 180; `VariableScope` returns 0. Mutations: unfolded heading; fold to [−180, 180); always object 0's needle; scope built after `apply`.
 4. **Arc** — *green 2026-10-18 on `feature/brick-backend-paths` (PR 2); ADR-047 written.
    - **Done end to end in this slice:** the new `Brick` case's exhaustive app switches forced the app arms (the sentences per side, the segmented direction picker, the catalog) into this slice, so slice 6 shrinks to GoThrough's fields, screenshots and UI review.

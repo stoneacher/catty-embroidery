@@ -153,7 +153,7 @@ and 201 both read the floor and are indistinguishable, so the transition lies an
 (13, 51]. What the data supports is "stride 51 gets the median under one period and 201 reads no
 better"; 1 000 is then preferred over 250 on fidelity grounds, which needs no knee.)* So the rule became **two** constants:
 `liveCoarseningThreshold = 4 000` decides *whether*, `liveSegmentTarget = 1 000` decides *how
-much*. The cost is a **discontinuity at the threshold** — a 4 000-stitch design draws every
+much* *[raised to 2 000 by US-313a; ADR-030's correction pins the shipped value]*. The cost is a **discontinuity at the threshold** — a 4 000-stitch design draws every
 stitch, a 4 001-stitch one strides by 5 — which is documented rather than hidden, because the
 alternative was a default that provably does not reach one frame period.
 
@@ -289,7 +289,7 @@ future reader would edit (P15).
 > **Measurement correction (2026-09-03, after implementation).** The single budget below is
 > *not what shipped*: it cannot be both the ≥ 3 194 floor this section relies on and the ≈ 1 000
 > target the sweep found. What shipped is `liveCoarseningThreshold = 4_000` plus
-> `liveSegmentTarget = 1_000`, and `coarseningStride(forStitchCount:target:)`. Everything else in
+> `liveSegmentTarget = 1_000` *[2 000 since US-313a, ADR-030]*, and `coarseningStride(forStitchCount:target:)`. Everything else in
 > this section — the pure function, the `k == 1` floor, the overflow spelling, the argument that
 > this is not the `settleChunk` trap — holds unchanged. See "What the measurement changed".
 
