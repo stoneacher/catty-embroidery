@@ -135,46 +135,6 @@ design call, so it gets a `swift-ui-design` look, and no test pins the symbol to
 
 ---
 
-## US-322 — The settled raster is never composited in the stage's default layout on iPhone 17
-
-**Found**: 2026-10-01, US-315's simulator probe. **Severity: performance, possibly large.** In the
-measured configuration it cancels ADR-009's cache and wastes the bake work on top.
-
-**What was measured.** On iPhone 17 (a 3× screen), with the export row showing:
-- The `GeometryReader` measures the stage viewport as **370 × 256.833…** pt.
-- The `Canvas` inside it is handed `size` **370 × 257.0**.
-- `CanvasStitchStroke.compositingRaster` (via `CanvasStitchLayers.matches`) compares the two for
-  exact equality, so the raster gate fails on **every** frame.
-- One full run of the 50k fixture: **251 of 251** stitch draws took the full-stroke path, and
-  `rebakeIfWorthwhile` baked **51 times**, every bake thrown away.
-- In the layout without the export row (309 pt, integral) the raster composites normally.
-
-That explains a curiosity in US-315's first probe pass: focusing the name field produced a re-bake
-with an unchanged viewport. It was the first frame in which the raster could be used at all.
-
-**Why it may matter beyond this configuration — unmeasured.** It is measured for one layout only:
-iPhone 17, default text size, export row showing. Whether other fractional viewports get a
-differently rounded `Canvas` size is **not established**; SwiftUI may round both the same way
-elsewhere. Measuring that is the first step of taking this story. ADR-029's device measurements may have been taken in a configuration that happened to be
-integral. If so, the numbers describe the cache working on a screen where, in practice, it rarely
-does. Worth re-checking against the US-309 capture notes before deciding priority.
-
-**What taking it would involve.**
-- Decide what the raster is keyed on:
-  - the `Canvas`'s own `size` (baking at the size the frame is drawn into), or
-  - a pixel-rounded viewport, or
-  - a tolerance in `matches` of less than one device pixel.
-
-  The first is the most honest, since the size check exists to stop a stretched blit. But `size`
-  is only known inside the `Canvas` closure, while the bake runs from `onChange`, so the key needs
-  a measured size.
-- A test first: `CanvasStitchStroke.compositingRaster` is already a pure function under
-  `CanvasStitchStrokeTests`, so a red case with a fractional viewport against a rounded `size` is
-  straightforward.
-- Then re-measure the 50k frame times on device (ADR-029's procedure) and record the difference.
-
----
-
 ## US-323 — A repeat reached mid-tick reads its count a tick before Catroid does
 
 **Found**: 2026-10-18, by `swift-code-reviewer` on Brick backend slice 3 (sensors), confirmed with a probe.
@@ -384,9 +344,37 @@ in the same spirit as US-211's and US-313's above.
   build command it inherited produced a coverage-instrumented binary, which may be what the earlier
   captures measured. Five scripted pinch-and-pan runs were clean as well. Still open from it: a hand
   pinch-and-pan run, and the A15-class capture.
+- **US-322 — the settled raster is never composited in iPhone 17's default layout** → fixed in
+  Stage 60 fps tail PR 2 (#84): the raster is baked at the pixel-aligned viewport. The entry's
+  three options held; the honest one (the `Canvas`'s own size) turned out to be predictable from
+  the viewport and the screen scale. What it could not know: before the fix the raster's bakes
+  never rendered at all (`Image(size:renderer:)` is lazy), so the fix also made their cost real —
+  about 70 % fewer hitches on the animating run, but a longer worst one (50.0 → 66.7 ms). That
+  cost is US-332.
 
 **Left in this file at M4 planning: US-316 only** — it has since left too (see its bullet above; the entry itself is in git history before PR #83).
 **Added since**: US-317 (2026-09-20), US-318 (2026-09-23), US-319 and US-321–US-326 (from M4 and
 the brick-backend and variables features), US-328 (2026-10-25), US-330 (2026-10-26) and US-331 (2026-10-28, M5 drift check).
-US-316, US-320, US-327 and US-329 have left again (above). US-322 (raster never composited in the
-default layout) was pulled into US-316's feature as its PR 2 and is still open.
+US-316, US-320, US-322, US-327 and US-329 have left again (above). US-332 was added on 2026-10-29
+(the bake render US-322's fix made real).
+
+---
+
+## US-332 — A new raster renders on the frame it is first composited
+
+**Found**: 2026-10-29, US-322's before/after measurement (ADR-043's US-322 amendment). **Severity:
+performance — the animating path's worst hitch.** With the raster finally composited, every
+`settleChunk` (1 000 stitches) brings a new bake, and `Image(size:renderer:)` renders it lazily
+on the first frame that draws it: the whole settled prefix, on the main thread, on a frame. On
+the 50k animating run the worst hitch rose from 50.0 to 66.7 ms in all three runs while hitches
+overall fell by about 70 %.
+
+**Not yet measured, only reasoned**: that the 66.7 ms frames are the bake renders. The first step
+is a `-US316FrameSignposts` run with an interval around the raster's first draw, to confirm it.
+
+**What taking it would involve** (ADR-043 ladder rung 1, the bake schedule):
+- render the raster eagerly off the frame it is composited (e.g. into a `CGImage` on a background
+  task, swapped in when ready, the old raster composited until then); or
+- bake incrementally — the new chunk drawn on top of the previous raster rather than the whole
+  prefix — which turns the Θ(n²/chunk) schedule into Θ(n);
+- either way, test-first against `BakeSchedulingTests` and re-measure with `A0-run`.

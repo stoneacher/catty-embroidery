@@ -52,7 +52,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 040 | Editor UI | Parameters editable where M4 has a control (function and sensor formulas locked with their own reasons); a condition that is one comparison of two plain values gets the comparison editor (`ParameterTarget` addresses a side); 14-colour thread palette; `VariableName` rules; live-apply that keeps no rejected prefix. | Active, amended |
 | 041 | Process | The unit of work is a feature; Codex cap 5; risky slices reviewed when green; every slice mutation-checked; manual accessibility at a pre-beta review and the graph drift check at milestone/release or ADR consolidation, not per feature (corpus minus `.graphifyignore`, every similarity edge with a doc endpoint triaged). | Active, amended |
 | 042 | Package layout | Seven targets, five products (`Projects` vended through `Samples` since US-329), dependencies pointing inward. | Active, amended |
-| 043 | Stage | Rendering rules, coarsening while live, the performance bar and the current fallback ladder. Mid-gesture pan and scripted pinch-and-pan meet the bar on the current build on an A19 (2026-10-29), cause unattributed; the A15 criterion stays open. | Active (amended 2026-10-29) |
+| 043 | Stage | Rendering rules, coarsening while live, the performance bar and the current fallback ladder. Mid-gesture pan and scripted pinch-and-pan meet the bar on the current build on an A19 (2026-10-29), cause unattributed; the A15 criterion stays open. The raster is baked at the pixel-aligned viewport (US-322). | Active (amended 2026-10-29, twice) |
 | 044 | Stage | Manipulation: UIKit recognisers, pure tracker, one commit per manipulation, bounds and accessibility. | Active |
 | 045 | Editor | Six verbs, the insertion rule, and the change pipeline (edit, undo or redo → void run, or re-prepare the export for a rename → autosave; a draft writes nothing before its first change); If blocks with else and end as markers, and a crossing pair for the else. | Active, amended |
 | 046 | Formula | Math functions, `pi` and object sensors as per-arity `Formula` cases; Catroid semantics with four pinned divergences; `rand` deferred; sensors read the acting object's needle before the brick moves it. | Active, corrected (048) |
@@ -1241,7 +1241,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 
 **Known gap — the needle is dwarfed past about 3×.** It is fixed in view points, so the thread stroke reaches its width at scale ≈ 2.86 and its length at ≈ 3.49 (`NeedleGlyph`). It is never occluded, only dwarfed. If it matters, the remedy is a size floor, not scaling with the design.
 
-**Known gap — the raster is never composited in iPhone 17's default layout** (backlog US-322). The viewport measures 370 × 256.83 against a `Canvas` size of 370 × 257.0, so the exact-size guard above never passes, every frame draws `.entire`, and the bake work is wasted on top. The guard is correct; the mismatch is the defect.
+**Known gap — the raster is never composited in iPhone 17's default layout** (backlog US-322). *(Closed by the US-322 amendment below, 2026-10-29.)* The viewport measures 370 × 256.83 against a `Canvas` size of 370 × 257.0, so the exact-size guard above never passes, every frame draws `.entire`, and the bake work is wasted on top. The guard is correct; the mismatch is the defect.
 
 **Consequences**: A design that changes colour on every stitch is not helped by coarsening; it belongs to rungs 4 and 5. Still open: the A15-class capture (it waits for US-316, so it confirms a real fix), the Instruments attribution between path construction and dot scan-conversion, and the offscreen-pass hitches seen outside the measured run.
 
@@ -1261,6 +1261,19 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - **if the tail recurs**, the first experiment is the coverage on/off pair above, and the instrument for it is in the app;
   - US-322 (raster never composited in the default layout) is unchanged and still needs its fix.
 - **Measurement hygiene, binding from now on:** device builds for timing pass `ENABLE_CODE_COVERAGE=NO CLANG_COVERAGE_MAPPING=NO`.
+
+**Amendment (2026-10-29, US-322, Stage 60 fps tail PR 2) — the raster is baked at the pixel-aligned viewport, and the trade that buys.** The "Known gap — the raster is never composited in iPhone 17's default layout" above is closed.
+- **Rule.** The raster is baked at, keyed on, and compared with the viewport **aligned to the device-pixel grid**: each dimension rounded to the nearest device pixel, half a pixel up (`CanvasStitchStroke.pixelAligned`). `GeometryReader` measured 370 × 256.833 pt, which is 770.5 px on a 3× screen, while the `Canvas` was laid out at 257.0 pt. The comparison in `compositingRaster` **stays exact**, so the raster is never stretched. A wrong prediction costs the cache on that layout, never a stretched frame. A tolerance was rejected because it allows a stretch; keying on the `Canvas`'s own size was rejected because the bake runs outside the closure where `size` exists.
+- **Measured** (iPhone 17 Pro, coverage-free, `-US316Capture A0-run`: the 50 001-stitch animating run, about 18 s, 251 drawn frames; three pairs alternating builds that differ only in this change; hand-off "US-322"):
+
+  | | hitches | over 33.3 ms | worst hitch |
+  |---|---|---|---|
+  | before | 117 / 131 / 131 | 47 / 53 / 43 | 50.0 ms × 3 |
+  | after | 35 / 44 / 34 | 21 / 20 / 18 | **66.7 ms × 3** |
+
+  About 70 % fewer hitches and about 60 % fewer over the bar, but a **longer worst hitch** in every run. One "after" capsule also caught a 33.3 ms main-thread frame (`FAIL`); the other five capsules read `PASS`. Neither build meets the bar's frame clause on the animating path, as this ADR already records.
+- **Why the worst case grew (reasoned from the code, not yet measured):** `Image(size:renderer:)` renders lazily, when first drawn. Before this change the raster was never composited, so the ~50 bakes of a run never actually rendered. Now each renders the whole settled prefix on the frame where it is first composited, once per `settleChunk`. That is the Θ(n²/chunk) bake cost US-309 predicted and that no run had paid until now.
+- **Decision** (Sebastian, 2026-10-29): keep the fix and accept the longer worst case. Moving the raster's render off the frame it is first composited is backlog **US-332** (rung 1 of the ladder, the bake schedule).
 
 ## ADR-044 — Stage manipulation: UIKit recognisers over a pure tracker, one commit per manipulation (2026-10-09)
 **Context**: Zoom, pan and the stage's accessibility were decided in ADR-028 and re-built in ADR-031. ADR-028's text still describes SwiftUI gestures the app no longer uses, and ADR-031 lists five corrections to it. This ADR states the current rules and supersedes both. ADR-031 stays the full reasoning for the input layer, and ADR-028 the record of the six-round rewrite that produced `StageInteraction`.

@@ -4169,3 +4169,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The code findings were small: a per-frame array in the shipping path, and two edge cases in the summary script.
 - **The reviewer's leverage was largest where the brief was most explicit.** "Always captured" and D8's "same run" were in the brief all along. Codex read them literally, and I had read past them while wrapping up a result that looked clean.
 - **One decision was taken along the way, outside PR #83:** Sebastian kept US-322's fix (PR #84) after its before/after measurement showed about 70% fewer hitches on the animating path but a longer worst hitch (50.0 → 66.7 ms). The likely cause is that the raster now really renders, lazily, on its first composite. Recorded in PR #84.
+
+## 2026-10-29 (Stage 60 fps tail, PR #84) — fixing a cache made its cost real
+
+- **US-322's fix was a one-line idea:** bake at the pixel-aligned viewport, so the exact size guard passes. Its measurement was the interesting part.
+  - Three before/after pairs of the 50k animating run, built from one commit and differing only in the change: about 70% fewer hitches and about 60% fewer over the bar, but the worst hitch rose from 50.0 to 66.7 ms in **every** "after" run.
+  - The likely reason, read from the code: `Image(size:renderer:)` is lazy. While the raster was never composited, its ~50 bakes per run never rendered. The fix made them render on the frame each is first composited. A bug had been hiding a cost, and fixing the bug exposed the cost. US-309 had predicted that cost (Θ(n²/chunk)), and no run had paid it since.
+- **Sebastian kept the fix and accepted the trade** (ADR-043's US-322 amendment); the worst case is US-332.
+  - *My first mutation round missed one thing:* a test with no measurement noise couldn't tell whether the rounding epsilon mattered. A second round added a noise test, and the epsilon mutant now dies.
+- **The before/after method is reusable.** A temporary worktree reverts one commit, both binaries are built from the same tree, and the runs alternate on the device. Holding everything but the one change constant is what made "the worst hitch rose in every run" a result rather than noise.

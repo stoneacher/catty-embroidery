@@ -189,3 +189,27 @@ the current build for the pan gesture, cause unattributed*, with the open items 
   after its `.trace` is saved.
 - A run with Xcode's Run (Cmd+R) installs a Debug build over the measurement build; reinstall
   before recording.
+
+## US-322 — the raster gate, before and after (PR 2, 2026-10-29)
+
+Two Release-with-`DEBUG`, coverage-free binaries built from one commit (`af70397`): **after** as
+committed, **before** with only the US-322 commit reverted in a temporary worktree (not committed).
+`-US316Capture A0-run` records the 50 001-stitch animating run itself (about 18 s, 251 drawn
+frames). Installed and run alternately, before then after, three times; every run traced, every
+window covered.
+
+| run | capsule (drawn, worst frame, verdict) | hitches | over 33.3 ms | worst hitch |
+|---|---|---|---|---|
+| before 1 | 251, 16.670, PASS | 117 | 47 | 50.008 |
+| after 1 | 251, 16.702, PASS | 35 | 21 | 66.678 |
+| before 2 | 251, 16.670, PASS | 131 | 53 | 50.008 |
+| after 2 | 251, 33.339, **FAIL** | 44 | 20 | 66.678 |
+| before 3 | 251, 25.004, PASS | 131 | 43 | 50.008 |
+| after 3 | 251, 16.670, PASS | 34 | 18 | 66.678 |
+
+The simulator dry run reads `canvas=370.00x257.00 viewport=370.00x256.83 raster=yes` after the fix
+(`raster=no` before). On the device run the report's scale/canvas/raster fields read `n/a`:
+`A0-run` records from launch, before the stage has drawn a settled frame, so they describe nothing
+— the gate's effect shows in the hitch counts instead. Reading and decision: ADR-043's US-322
+amendment; the longer worst hitch is backlog US-332.
+
