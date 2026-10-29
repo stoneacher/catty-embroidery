@@ -4030,3 +4030,18 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Low, fixed: the report revived `liveSegmentTarget = 1 000`.** US-310's own text records the value US-310 shipped, which US-313a later raised to 2,000. Both places in US-310 are now annotated (ADR-032 invariant 3), and the stale node is gone.
 - **Final graph:** 7,173 nodes, 19,157 edges and 310 communities. The health check shows no dangling, missing or self-loop edges, and 11 collapsed duplicate edges where the earlier and the new ADR-046 reads stated the same link. Graphify's manifest now has nothing pending. Total cost: 1,380,034 tokens.
 - **Observation:** each review round on this PR has made the check more complete, and the one real finding came from the round whose premise was "your graph is stale on the files you edited". On a drift-check PR, the PR's own edits are part of the corpus being checked.
+
+## 2026-10-29 — PR #82, before round 4: the graph now matches every file in the corpus
+
+- **Last edit, last re-read.** Recording round 3 meant editing the roadmap's M5 paragraph again, after it had been extracted. That is the staleness round 3 had just fixed. Two changes break the loop:
+  - **The paragraph no longer carries counts.** It points to these journal entries instead, and the journal is outside the graph, so recording a result no longer changes the corpus.
+  - **The roadmap was re-read once more,** in full (142 lines, 75,694 tokens), and 24 stale nodes from its earlier reads were pruned.
+- **Graphify's manifest has nothing pending.** Every file in the corpus is extracted at its committed content.
+- **Two new similarity edges, both owned:**
+  - US-309's display-link false positive and the mutation check fall under ADR-032 invariant 2.
+  - The human-prerequisite scheduling rule and the rule to write backlog entries at discovery are both roadmap policies, and consistent.
+- **Final drift-check result: 61 `semantically_similar_to` edges, none a reinvented invariant.**
+  - **One stale claim corrected:** US-323 was still called "tracked" in ADR-046 and the brick-backend brief.
+  - **One commitment with no home:** the format freeze, filed as US-331.
+- **Final graph:** 7,205 nodes, 19,239 edges and 305 communities. The health check is clean except for 10 collapsed duplicate edges, which come from the `DECISIONS.md` merge. Total extraction cost: 1,455,728 tokens.
+- **What this run cost against plan:** the first estimate was about 250k tokens of input. The full run spent 1.46M. The difference is the coverage the review rounds required: 712k on full re-reads, against 744k for the first pass.
