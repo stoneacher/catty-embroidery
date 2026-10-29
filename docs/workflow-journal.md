@@ -4141,3 +4141,22 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **PR 2 (US-322) was opened stacked on #83 (PR #84).** The raster is baked at, and compared with, the viewport aligned to the device-pixel grid.
   - The simulator now reads `canvas=370.00x257.00 viewport=370.00x256.83 raster=yes`.
   - Mutants: one survived *because the test never exercised the epsilon* (770.5 / 3 × 3 happened to be exact), and one of my mutants was equivalent to the original. A noise test and a real half-to-even mutant fixed both. Equivalent mutants are a trap of hand-written mutation: a survivor first needs checking for whether it changed behaviour at all.
+
+## 2026-10-29 (Stage 60 fps tail, PR #83 handover, Codex round 2) — five hand runs to get one complete one
+
+- **Codex round 2: 1 High, 1 Medium, both right.**
+  - *High:* my reason for declining a hand retake was unsound. A `DRAWS NOT MEASURED` capsule has a draw with no duration, and a clean Hitches trace doesn't prove that draw was fast. That's why the recorder withholds `PASS`. So no single hand run carried both halves of the bar.
+  - *Medium:* the counted hand runs predated thermal logging.
+  - **What I'd note:** I argued against the first reviewer's version of this point in round 1 and lost it in round 2. The instrument's own verdict rule already encoded the answer.
+- **It took five more hand runs to get one complete one (hand 8).** Each failure was the instrument's, not Sebastian's:
+  - **(4)** the result event never reached the trace, and a file copy of every result line was added;
+  - **(5)** the 75 s recording limit ended mid-gesture;
+  - **(6)** a run he discarded himself;
+  - **(7)** the recording ran on past Stop, and the recorder dropped its old signposts, window and result included. A 66.7 ms hitch at 59.2 s is left that can't be placed. The display data, checked afterwards, covers every trace from about 0.4 s, so only signposts are lost and earlier hitch counts stand.
+- **The fixes that made run 8 complete:**
+  - hold the finger still for a second before Stop, so every draw is timed;
+  - the app exits a second after a hand Stop, so the recording ends behind the window, as scripted runs always did;
+  - the result line also goes to a file in the app's container;
+  - the summary script checks that the trace's display data covers the window.
+- **Hand 8:** every one of 987 drawn frames timed, worst 20.856 ms, p99 16.670, `PASS`, thermal nominal; in the same run's trace, 1 hitch of 12.5 ms and none over 33.3 ms.
+- **The pattern across the session:** every scripted run worked first time once the instrument was right, and every hand run found a new way to lose data. The difference is that a scripted run ends itself. A human-driven run has an open-ended tail, so the recorder keeps going after the part that matters, which is where all the losses came from.
