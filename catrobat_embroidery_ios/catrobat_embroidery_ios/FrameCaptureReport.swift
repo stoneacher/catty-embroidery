@@ -6,8 +6,9 @@
     ///
     /// **One formatter for the capsule and the console**, so an unattended device capture prints
     /// exactly the text a screenshot of the capsule would show. The formatting moved here from
-    /// `FrameTimeReadout` unchanged; the reasons for each field are recorded there and in
-    /// `FrameTimeRecorder`.
+    /// `FrameTimeReadout` unchanged. The reasons for each field are in `FrameTimeRecorder`'s
+    /// property docs (`drawnStatistics`, `drawCount`, `commitCount`, `nominalFrameMilliseconds`)
+    /// and in `FrameCaptureVerdict`.
     struct FrameCaptureReport {
         let all: FrameTimeStatistics?
         let drawn: FrameTimeStatistics?

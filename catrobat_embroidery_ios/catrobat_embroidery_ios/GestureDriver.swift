@@ -10,11 +10,16 @@
     /// **A coordinator-path surrogate, not a finger.** From `panned(_:)`/`pinched(_:)` down
     /// everything is what a finger gets: the suppression gate, `beginManipulating`, the
     /// manipulation channels, the binding writes that invalidate the stage, the live render and
-    /// its coarse plan, and at the end `settleIfFinished` → one commit → the re-bake. What UIKit
-    /// does above the action methods — touch delivery, the recognisers' own state machines,
-    /// arbitration, the touch counting — is skipped, and the calibration (D7) is what says
-    /// whether that matters. With no real touch down, `activeTouchCount` is 0 throughout, so
-    /// the end commits exactly as the last finger lifting does.
+    /// its coarse plan, and at the end `settleIfFinished` → one commit. What UIKit does above the
+    /// action methods — touch delivery, the recognisers' own state machines, arbitration, the
+    /// touch counting — is skipped, and the calibration (D7) is what says whether that matters.
+    ///
+    /// **The commit arrives by a different route.** With no real touch down, `activeTouchCount`
+    /// is 0 throughout, so the last channel's `.ended` commits. A finger's recognisers usually
+    /// end while the view still counts the touch, and the commit then fires from
+    /// `touchCountChanged(to: 0)`. Same commit, same count, different caller — and outside the
+    /// recorded window either way, since a capture stops recording before the gesture ends
+    /// (and the app exits before that commit's re-bake renders).
     @MainActor
     final class GestureDriver {
         private let coordinator: StageManipulationCatcher.Coordinator

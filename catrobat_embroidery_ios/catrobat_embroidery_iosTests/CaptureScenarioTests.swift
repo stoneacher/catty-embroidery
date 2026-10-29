@@ -63,4 +63,16 @@ struct CaptureScenarioTests {
         #expect(factor > 0)
         #expect(factor * factor <= 0.1)
     }
+
+    /// D7's fallback takes the matrix by hand, D and E included, so the live control must be
+    /// reachable without the driver: `-US316Hand` keeps the condition's control and fixture but
+    /// asks for no unattended session (`swift-code-reviewer`, slices 2–4).
+    @Test("a hand run keeps its condition but asks for no session")
+    func handRun() throws {
+        let scenario = try #require(CaptureScenario.parse(["app", "-US316Capture", "D", "-US316Hand"]))
+        #expect(scenario.isByHand)
+        #expect(scenario.condition.liveControl == .noDots)
+        #expect(CaptureScenario.parse(["app", "-US316Capture", "D"])?.isByHand == false)
+        #expect(LiveDrawControl.from(arguments: ["app", "-US316Capture", "E", "-US316Hand"]) == .noThread)
+    }
 }

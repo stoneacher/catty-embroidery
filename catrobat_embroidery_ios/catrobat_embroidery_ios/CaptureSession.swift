@@ -23,7 +23,8 @@
         static let current = make(arguments: ProcessInfo.processInfo.arguments)
 
         static func make(arguments: [String]) -> CaptureSession? {
-            CaptureScenario.parse(arguments).map(CaptureSession.init)
+            guard let scenario = CaptureScenario.parse(arguments), !scenario.isByHand else { return nil }
+            return CaptureSession(scenario: scenario)
         }
 
         private let scenario: CaptureScenario
@@ -37,6 +38,7 @@
         private var scaleAtStart = 1.0
         private var settledAtStart: StageDrawRecord?
         private var captureInterval: OSSignpostIntervalState?
+        private var exitCode: Int32 = 0
 
         private init(scenario: CaptureScenario) {
             self.scenario = scenario
@@ -49,7 +51,16 @@
             self.model = model
             // A capture outlasts auto-lock, and a locked phone records nothing.
             UIApplication.shared.isIdleTimerDisabled = true
-            perform(sequence.launched())
+            // A run interrupted by a call or Control Center must read INTERRUPTED, not FAIL with
+            // the gap as one frame (`swift-code-reviewer`, slices 2–4).
+            let center = NotificationCenter.default
+            center.addObserver(
+                self, selector: #selector(resigned), name: UIApplication.willResignActiveNotification, object: nil
+            )
+            center.addObserver(
+                self, selector: #selector(resumed), name: UIApplication.didBecomeActiveNotification, object: nil
+            )
+            perform(sequence.launched(at: CACurrentMediaTime()))
             let link = CADisplayLink(target: self, selector: #selector(step(_:)))
             link.add(to: .main, forMode: .common)
             self.link = link
@@ -61,7 +72,19 @@
             perform(sequence.stageAppeared())
         }
 
+        @objc private func resigned() {
+            recorder.noteSuspended()
+        }
+
+        @objc private func resumed() {
+            recorder.noteResumed()
+        }
+
         @objc private func step(_ link: CADisplayLink) {
+            // **The recorder is fed from this link, before this frame's actions**, so a draw an
+            // action causes is attributed by the next callback in a fixed order, and there is
+            // no second display link on the main thread (D4's added cost; `swift-code-reviewer`).
+            recorder.record(timestamp: link.timestamp, frameDuration: link.targetTimestamp - link.timestamp)
             let now = link.targetTimestamp
             if case .finished = model?.runner.run.state {
                 perform(sequence.runFinished(at: now))
@@ -92,11 +115,17 @@
                 // read it now, before the gesture makes every frame live.
                 settledAtStart = StageDrawCounter.lastSettled
                 captureInterval = StageSignposts.begin("capture")
-                recorder.start()
+                recorder.start(ownsLink: false)
             case .beginGesture:
                 scaleAtStart = currentScale ?? 1
-                driver = makeDriver()
-                driver?.begin()
+                guard let driver = makeDriver() else {
+                    // The stage went away after it appeared: recording a stage nobody moves
+                    // would be a capture of nothing.
+                    perform(sequence.abandon(in: "noCoordinator"))
+                    return
+                }
+                self.driver = driver
+                driver.begin()
             case let .advanceGesture(seconds):
                 driver?.advance(to: seconds)
             case .stopRecording:
@@ -108,9 +137,12 @@
                 driver?.end()
             case .report:
                 report()
+            case let .abort(stuck):
+                emit("US316 condition=\(scenario.condition.rawValue) ABORTED \(stuck)")
+                exitCode = 1
             case .exit:
                 link?.invalidate()
-                exit(0)
+                exit(exitCode)
             }
         }
 
@@ -144,9 +176,18 @@
                 viewport: settledAtStart?.viewportSize,
                 raster: settledAtStart?.raster ?? .unobserved
             )
-            print(FrameCaptureReport(recorder: recorder).consoleLine(context))
+            emit(FrameCaptureReport(recorder: recorder).consoleLine(context))
+        }
+
+        /// One result line, to the console **and** to the unified log, so a run under `xctrace`
+        /// carries its own line inside the trace (`os-log` table) beside its hitches.
+        private func emit(_ line: String) {
+            print(line)
             // `stdout` is block-buffered when it is not a terminal, and `exit` follows.
             fflush(stdout)
+            Self.log.notice("\(line, privacy: .public)")
         }
+
+        private static let log = Logger(subsystem: "org.catrobat.embroiderydesigner", category: "US316")
     }
 #endif

@@ -1,5 +1,6 @@
 @testable import catrobat_embroidery_ios
 import CoreGraphics
+import EmbroideryEngine
 import StagePreview
 import Testing
 
@@ -78,5 +79,42 @@ struct GestureDriverTests {
             with: nil, fitting: CatcherHarness.fit, in: CatcherHarness.viewport
         )
         #expect(abs(settled.scale - CatcherHarness.fit.scale * 0.3) < 1e-9)
+    }
+
+    /// The mixed script pinches as it pans: the live gesture's magnification follows the
+    /// script's scale (`swift-code-reviewer`, slices 2–4: a pinch that never began, or froze at
+    /// 1, survived every test).
+    @Test("the mixed script's live gesture carries the script's pinch")
+    func mixedPinches() throws {
+        let recording = Recording()
+        let wiring = CatcherHarness.wired(recording)
+        let script = GestureScript(kind: .mixed)
+        let driver = GestureDriver(coordinator: wiring.coordinator, script: script, viewport: CatcherHarness.viewport)
+
+        driver.begin()
+        driver.advance(to: 0.75)
+        let gesture = try #require(recording.manipulation.gesture(in: CatcherHarness.viewport))
+        #expect(abs(gesture.magnification - Double(script.scale(at: 0.75))) < 1e-9)
+        #expect(gesture.magnification != 1)
+    }
+
+    /// The zoom pre-step pinches about the viewport's centre, so the stage point under the
+    /// centre stays there and the design shrinks where it already is.
+    @Test("the zoom keeps the stage point under the viewport's centre")
+    func zoomAboutTheCentre() {
+        let recording = Recording()
+        let wiring = CatcherHarness.wired(recording)
+        let driver = GestureDriver(
+            coordinator: wiring.coordinator, script: GestureScript(kind: .pan), viewport: CatcherHarness.viewport
+        )
+        let centre = ViewPoint(x: CatcherHarness.viewport.width / 2, y: CatcherHarness.viewport.height / 2)
+        let before = CatcherHarness.fit.stagePoint(of: centre)
+
+        driver.zoom(to: 0.3)
+
+        let after = recording.interaction.transform(with: nil, fitting: CatcherHarness.fit, in: CatcherHarness.viewport)
+        let moved = after.stagePoint(of: centre)
+        #expect(abs(moved.x - before.x) < 1e-6)
+        #expect(abs(moved.y - before.y) < 1e-6)
     }
 }

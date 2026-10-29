@@ -156,5 +156,46 @@ struct CaptureSequenceTests {
     func noSessionWithoutArgument() {
         #expect(CaptureSession.make(arguments: ["app"]) == nil)
         #expect(CaptureSession.make(arguments: ["app", "-US316Capture", "B"]) != nil)
+        // A hand run keeps its live control but must not be driven.
+        #expect(CaptureSession.make(arguments: ["app", "-US316Capture", "D", "-US316Hand"]) == nil)
+    }
+
+    /// The session reports a finished run on **every** tick while the run stays finished, so
+    /// the sequence must take only the first (`swift-code-reviewer`: without the guard the settle
+    /// moved forward forever).
+    @Test("a run reported finished again does not restart the settle or the recording")
+    func runFinishedIsIdempotent() {
+        var sequence = CaptureSequence(scenario: Self.scenario(.baseline, hold: 10.5))
+        _ = sequence.launched()
+        _ = sequence.stageAppeared()
+        _ = sequence.runFinished(at: 20)
+        _ = sequence.runFinished(at: 21)
+        #expect(sequence.tick(at: 22) == [.startRecording])
+        _ = sequence.runFinished(at: 22.125)
+        #expect(sequence.tick(at: 22.125) == [.beginGesture])
+        _ = sequence.runFinished(at: 23)
+        #expect(sequence.tick(at: 23.125) == [.advanceGesture(1)])
+    }
+
+    /// An unattended run that never reaches recording — a stage that never mounts, a run that
+    /// never finishes — must end with a line and an exit, not hang `xctrace` (`swift-code-reviewer`).
+    @Test("a run that has not started recording within the deadline aborts")
+    func watchdog() {
+        var sequence = CaptureSequence(scenario: Self.scenario(.baseline))
+        _ = sequence.launched(at: 0)
+        #expect(sequence.tick(at: 119).isEmpty)
+        #expect(sequence.tick(at: 120) == [.abort("running"), .exit])
+        #expect(sequence.isDone)
+    }
+
+    @Test("a run that started recording in time is not aborted")
+    func noWatchdogOnceRecording() {
+        var sequence = CaptureSequence(scenario: Self.scenario(.baseline, hold: 200))
+        _ = sequence.launched(at: 0)
+        _ = sequence.stageAppeared()
+        _ = sequence.runFinished(at: 20)
+        _ = sequence.tick(at: 22)
+        _ = sequence.tick(at: 22.125)
+        #expect(sequence.tick(at: 130) == [.advanceGesture(107.875)])
     }
 }

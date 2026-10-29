@@ -70,7 +70,8 @@
         }
 
         /// The scale, as a fraction of the fit, the run zooms to before it records; `nil` to
-        /// record at fit.
+        /// record at fit. Applied as a pinch on the committed scale, which is the fit because
+        /// selecting a design returns the stage to it.
         ///
         /// 0.3, so the covered view area is 0.09 of the fitted one, inside D3's tenth. Below
         /// the 0.75 pt width floor the thread stops thinning, which is why the console line
@@ -89,6 +90,11 @@
         static let captureFlag = "-US316Capture"
         static let holdFlag = "-US316Hold"
 
+        /// Marks a **hand** run: the condition's fixture and live control apply, but no
+        /// unattended session starts, so a person can take any condition (D7's fallback takes the
+        /// whole matrix by hand, D and E included).
+        static let handFlag = "-US316Hand"
+
         /// ADR-043's bar is over a capture of **at least ten seconds**, and the recorded window is a
         /// little shorter than the hold: the recorder's first callback times nothing, so a 10 s hold
         /// records 9.9 s and reads `(short)` (the slice's simulator dry run). Half a second of margin
@@ -100,6 +106,9 @@
         /// How long the gesture is held while recording. 12 s by default (D6), so the capture
         /// clears the bar's 10 s with the settle margin to spare.
         let holdSeconds: Double
+
+        /// Whether a person takes this run; then nothing drives it.
+        var isByHand = false
 
         static func parse(_ arguments: [String]) -> CaptureScenario? {
             guard let flag = arguments.firstIndex(of: captureFlag),
@@ -115,7 +124,9 @@
                 else { return nil }
                 hold = seconds
             }
-            return CaptureScenario(condition: condition, holdSeconds: hold)
+            return CaptureScenario(
+                condition: condition, holdSeconds: hold, isByHand: arguments.contains(handFlag)
+            )
         }
     }
 #endif

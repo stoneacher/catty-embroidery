@@ -37,6 +37,8 @@
             case stopRecording
             case endGesture
             case report
+            /// The run never reached recording; the payload names the phase it was stuck in.
+            case abort(String)
             case exit
         }
 
@@ -63,6 +65,13 @@
         private let scenario: CaptureScenario
         private var phase = Phase.launching
         private var hasStage = false
+        private var launchedAt = 0.0
+
+        /// How long a run may take to start recording before it is abandoned: the 50 001-stitch
+        /// pre-roll takes about 17 s, so two minutes means something is stuck — a stage that never
+        /// mounted, a run that never finished — and an unattended `xctrace` would otherwise wait
+        /// forever (`swift-code-reviewer`, slices 2–4).
+        static let deadlineSeconds = 120.0
 
         init(scenario: CaptureScenario) {
             self.scenario = scenario
@@ -72,8 +81,9 @@
             phase == .done
         }
 
-        mutating func launched() -> [Action] {
+        mutating func launched(at now: Double = 0) -> [Action] {
             guard phase == .launching else { return [] }
+            launchedAt = now
             phase = .running
             return [.selectAndShowStage(scenario.condition.sample), .play]
         }
@@ -84,13 +94,30 @@
             return []
         }
 
+        /// Taken once: the session reports a finished run on every tick while it stays
+        /// finished, and only the first may start the settle.
         mutating func runFinished(at now: Double) -> [Action] {
             guard phase == .running else { return [] }
             phase = .settling(until: now + Self.settleSeconds)
             return []
         }
 
+        /// The run is stuck before recording: abandon it with a line rather than hang.
+        mutating func abandon(in stuck: String) -> [Action] {
+            phase = .done
+            return [.abort(stuck), .exit]
+        }
+
         mutating func tick(at now: Double) -> [Action] {
+            if now - launchedAt >= Self.deadlineSeconds {
+                switch phase {
+                case .launching: return abandon(in: "launching")
+                case .running: return abandon(in: "running")
+                case .settling: return abandon(in: "settling")
+                case .zoomSettling: return abandon(in: "zoomSettling")
+                case .arming, .recording, .stilling, .done: break
+                }
+            }
             switch phase {
             case let .settling(until) where now >= until && hasStage:
                 if let fraction = scenario.condition.zoomRelativeToFit {

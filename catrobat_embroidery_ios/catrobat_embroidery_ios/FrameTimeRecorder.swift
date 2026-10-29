@@ -190,7 +190,10 @@
         /// `wasInterrupted` still `false`: an ordinary-looking FAIL rather than an
         /// `INTERRUPTED` one. Passing the phase in means the state cannot be mis-inferred
         /// from a transition that was never delivered.
-        func start(isActive: Bool = true) {
+        /// - Parameter ownsLink: `false` when the caller feeds `record(timestamp:frameDuration:)`
+        ///   from a display link of its own (US-316's `CaptureSession`), so two links on one run
+        ///   loop never race over which sees a draw first.
+        func start(isActive: Bool = true, ownsLink: Bool = true) {
             stopLink()
             intervals.removeAll(keepingCapacity: true)
             intervals.reserveCapacity(Self.capacity)
@@ -215,6 +218,7 @@
             drawsAtStart = StageDrawCounter.count
             isRecording = true
 
+            guard ownsLink else { return }
             let link = CADisplayLink(
                 target: FrameTimeProxy(recorder: self),
                 selector: #selector(FrameTimeProxy.tick(_:))

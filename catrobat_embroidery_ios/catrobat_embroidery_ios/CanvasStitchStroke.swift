@@ -68,7 +68,9 @@ enum CanvasStitchStroke {
     /// `inout GraphicsContext`, so the settled pixels and the live pixels can be
     /// produced by identical code. If they were not, the seam at the watermark would
     /// differ in cap shape, width rounding or alpha, and no unit test would notice — a
-    /// human would, on a screenshot, eventually.
+    /// human would, on a screenshot, eventually. The bake calls this; the live `Canvas` calls
+    /// `draw` directly so US-316's DEBUG controls can pass their `Layers`, and this is `draw`
+    /// with every layer — one code path either way.
     ///
     /// `points` is passed rather than read from the display list because the settled
     /// bake strokes a *copy* of the prefix; the plan's indices are valid against either.
