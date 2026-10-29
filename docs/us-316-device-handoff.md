@@ -132,6 +132,17 @@ was seen on hand runs only.
 ‡ One draw between the Record tap and the capsule recorder's first callback — the hand path still
 starts its own display link, the gap the scripted path closed. Not a frame over the bar.
 
+**The complete hand run (D8's same-run evidence), build `74e6545`, after Codex's round 2**
+
+| run | trace | window | drawn / n | p99 | worst frame | verdict | thermal | hitches (> 33.3 ms) |
+|---|---|---|---|---|---|---|---|---|
+| hand 8 | `us316-hand-8` | 17.8 s (capture interval, covered) | 987 / 1069 | 16.670 | 20.856 | PASS — every draw timed | nominal → nominal | 1 (0), worst 12.502 ms |
+
+The capsule line comes from `Library/Caches/US316-results.txt` (pulled with `devicectl`) and
+matches the trace's own `result` event. The finger was held still for a second before Stop,
+which is what lets every draw be timed, and the app exited a second after Stop, which ends the
+recording right behind the window.
+
 **Mixed pinch-and-pan (D6's supplementary condition), same build, run after Codex's round 1**
 
 | run | trace | window | drawn / n | p99 | worst frame | verdict | hitches (> 33.3 ms) |
@@ -142,8 +153,9 @@ starts its own display link, the gap the scripted path closed. Not a frame over 
 | mixed 4 | `us316-mixed-4` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
 | mixed 5 | `us316-mixed-5` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
 
-Clean by D6 (0 of 5 over). **Which hand runs carry the trace evidence:** hand 2 and hand 3, whose
-`capture` windows are intact (0 hitches inside); hand 1's window is reconstructed (†).
+Clean by D6 (0 of 5 over). **Which hand runs carry the trace evidence:** among the calibration
+runs, hand 2 and hand 3, whose `capture` windows are intact (0 hitches inside); hand 1's window
+is reconstructed (†). **Hand 8 (above) is the one run that carries both clauses of the bar.**
 
 **Not counted, and why**
 
@@ -152,15 +164,26 @@ Clean by D6 (0 of 5 over). **Which hand runs carry the trace evidence:** hand 2 
 | `us316-cal-final-hand-1` | Sebastian was not at the phone (reported) | — |
 | `us316-cal-final-hand-2` | misclick at Stop, reported **before** the numbers were seen | one 38.168 ms frame at 23.8 s of 24.6 s, one 37.5 ms hitch, both in the last 0.8 s; `commits=0` |
 | `us316-cal-final-hand-2b` | the trace could not be saved: the disk was full (40 GB of `instruments*.ktrace` left behind by earlier recordings) | — |
+| `us316-hand-4` | its `result` event never reached the trace; the 75 s limit also ended the recording mid-gesture | trace: 0 hitches in the part it kept |
+| `us316-hand-5` | the 75 s limit ended the recording 8.65 s into a 17.1 s gesture | capsule `PASS`, every draw timed, thermal nominal; trace: 0 hitches in the 8.65 s it kept |
+| `us316-hand-6` | discarded at Sebastian's request (no gesture made) | — |
+| `us316-hand-7` | the recording ran a minute past Stop and the recorder dropped its old signposts: no window, no result event | capsule `PASS`, every draw timed; a 66.7 ms hitch at 59.2 s, after the pre-roll, that cannot be placed inside or outside the window |
 | `us316-calib-driver-1`, `us316-calib-hand-1` | earlier build, per-frame signposts on; the hand trace kept only its last 0.7 s of signposts (buffer overflow) | both clean, 0 hitches over 33.3 ms |
 
-**Reading.** D7 accepts the driver (same class, ≤ 1 of 3 over, for both). But **A0 did not tail,
+**Reading.** D7 accepts the driver (same class, ≤ 1 of 3 over, for both) — provisionally, because
+the calibration's hand runs predate thermal logging, so D6's thermal discard rule could not be
+checked for them. But **A0 did not tail,
 by hand or by driver, panning or (scripted) pinching and panning**, so D1's table cannot apply and
 the D6 matrix was not run. Sebastian decided
 on 2026-10-29 to stop the measurement here: recorded in ADR-043's 2026-10-29 amendment as *met on
 the current build for the pan gesture, cause unattributed*, with the open items listed there.
 
-**Two recorder traps found in this session, for whoever records next:**
+**Recorder traps found in this session, for whoever records next:**
+- **The recorder drops old signposts in a long recording** (display data is kept: every trace's
+  vsyncs start at about 0.4 s). End the recording right behind the window: hand runs now exit a
+  second after Stop; scripted runs always did.
+- A hand run must hold the finger still for a second before Stop, or the last frame's draw is
+  untimed (`DRAWS NOT MEASURED (1)`).
 - `xctrace` leaves a raw `instruments*.ktrace` (2–6 GB) in the user temp folder
   (`/private/var/folders/…/T/`) for every recording; twelve of them filled the disk. Delete each
   after its `.trace` is saved.

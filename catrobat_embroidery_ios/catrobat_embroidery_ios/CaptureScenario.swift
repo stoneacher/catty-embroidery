@@ -113,6 +113,14 @@
         /// Whether a person takes this run; then nothing drives it.
         var isByHand = false
 
+        /// Whether the capsule's Stop should end the app a second later: in a hand run, so that
+        /// `xctrace --launch` stops recording right behind the window. The recorder keeps a
+        /// trailing window of what it records, and a hand run that went on for a minute after
+        /// Stop lost its whole capture from the trace (2026-10-29). Scripted runs exit on their own.
+        static func exitsAfterHandStop(arguments: [String]) -> Bool {
+            parse(arguments)?.isByHand ?? false
+        }
+
         static func parse(_ arguments: [String]) -> CaptureScenario? {
             guard let flag = arguments.firstIndex(of: captureFlag),
                   flag + 1 < arguments.count,

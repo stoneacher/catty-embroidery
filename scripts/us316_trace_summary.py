@@ -90,6 +90,24 @@ def summarise(trace):
     else:
         return {"trace": trace, "error": f"{len(captures)} capture windows"}
 
+    # The recorder keeps a trailing window of what it records (2026-10-29): in a long
+    # recording, the oldest data — signposts *and* display events — falls out. The earliest
+    # vsync in the trace is where its continuous display data begins; a capture window that
+    # starts before it is not covered, and its "0 hitches" would mean nothing.
+    # Both ends: display data must reach from before the window's start to past its end
+    # (Codex, PR #83 round 3), and rows whose times do not parse are ignored, not fatal.
+    spans = []
+    for row in rows(export(trace, "display-vsyncs-interval")):
+        at = number(row.get("timestamp"))
+        duration = number(row.get("duration"))
+        # A row counts only with both fields valid: a stray timestamp without a duration must
+        # not stretch the coverage (Codex, PR #83 round 4).
+        if at is not None and duration is not None:
+            spans.append((at, at + duration))
+    coverage_start = min(s for s, _ in spans) if spans else None
+    coverage_end = max(e for _, e in spans) if spans else None
+    covered = coverage_start is not None and coverage_start <= start and coverage_end >= end
+
     inside = []
     for hitch in rows(export(trace, "hitches")):
         at = number(hitch["start"])
@@ -113,6 +131,11 @@ def summarise(trace):
         "result": lines[0][1] if lines else None,
         "window_s": round((end - start) / 1e9, 3),
         "window_source": window_source,
+        "window_start_s": round(start / 1e9, 3),
+        "display_data_from_s": round(coverage_start / 1e9, 3) if coverage_start is not None else None,
+        "display_data_to_s": round(coverage_end / 1e9, 3) if coverage_end is not None else None,
+        "window_end_s": round(end / 1e9, 3),
+        "window_covered": covered,
         "hitches": len(inside),
         "hitches_over_33ms": sum(1 for d in inside if d > DROPPED_FRAME_NS),
         "worst_hitch_ms": round(max(inside) / 1e6, 3) if inside else 0,

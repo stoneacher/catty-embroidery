@@ -186,6 +186,8 @@
             // `stdout` is block-buffered when it is not a terminal, and `exit` follows.
             fflush(stdout)
             StageSignposts.result(line)
+            // The trace lost a result event once; the file is the copy that does not depend on it.
+            try? CaptureResultLog.append(line)
         }
     }
 #endif
