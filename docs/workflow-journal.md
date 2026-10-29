@@ -4076,3 +4076,34 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
     - "Done whatever the result" had no ending for an inconclusive result.
     - AC6 paraphrased ADR-043's bar ("no hitch" for "no frame", the p99 clause left out). It now quotes the bar word for word.
 - **Two things worth keeping.** Both the planner and I read "only `rowSpacing` changes" as "only the area changes". The rounding that breaks it sits three files away from the fixture, in the running-stitch pattern. The brief round cost one Codex run and caught it before any test pinned the false invariant as literals. A test written against that invariant would have pinned counts that happen to match, which is exactly the failure Codex named: equal counts do not imply equal geometry.
+
+## 2026-10-29 (Stage 60 fps tail, slices 1–4) — the instrument was debugged by running it, not by its tests
+
+- **Slices 1–4 built the measurement instrument for US-316** (PR #83, draft):
+  - the overlap-density fixture;
+  - a launch-argument capture scenario and console report;
+  - a scripted-gesture driver through the stage's real `Coordinator`;
+  - DEBUG live controls that drop the dots or the thread;
+  - a settled-frame record for US-322;
+  - signposts.
+
+  Every slice went red, then green, and was mutation-checked: 6 + 4 + 5 + 4 mutants in the slices, 9 more after the reviews, all killed.
+- **Five defects were found by running the thing, and no unit test could have found any of them.** Each was then pinned by a test written red first.
+  - *Simulator dry run 1:* playing waited for the stage's coordinator, which exists only once a design has drawn. That was a deadlock: the stage sat at "Ready to stitch". Fix: play at launch, and gate the settle on the coordinator.
+  - *Simulator dry run 1:* a 10 s hold recorded a 9.9 s window, because the recorder's first callback only sets a baseline. Fix: the minimum hold is now 10.5 s.
+  - *Device pilot p1:* `DRAWS NOT MEASURED (2)`, with recording and the gesture begun in one tick.
+  - *Device pilot p2:* still one unmeasured draw with the two a tick apart. Fix: wait 0.1 s between them.
+  - *Device pilot p4:* that wasn't enough, because the untimed draw was at the **end**. The recorder times a draw by its next callback, so stopping mid-motion leaves the last draw untimed. Fix: hold the gesture still for 0.1 s before stopping. Every draw is now timed.
+- **The coverage finding.** The device app logged `LLVM Profile Error: Failed to write file "default.profraw"`. That error only appears in an instrumented binary, and nobody was looking for instrumentation.
+  - Xcode's effective Release settings for this scheme include `ENABLE_CODE_COVERAGE = YES`. The binary had 7 `__llvm_prf` sections.
+  - The US-309 hand-off's build command has no override, so the US-309 and US-310 device numbers *may* have been taken on an instrumented binary. Whether they were can't be re-checked now.
+  - The US-316 build passes `ENABLE_CODE_COVERAGE=NO CLANG_COVERAGE_MAPPING=NO`, and the binary now has none.
+  - This is an open question about the old records, not a correction to them: they stay as written.
+- **Reviews.**
+  - *Slice 1:* Codex found 2 Medium, both taken. One: the plan-shape test bypassed `forFrame`. Two: the floor-margin test never proved its mirror matches the engine; once it did, it turned out the fixture has 1,000 needle updates, not 500, because the turns count too.
+  - *Slice 1:* `swift-code-reviewer` found 3 Important, all taken. Its best one: no app test checked that `.us316Compact` is wired to the compact builder. Miswired, condition B would have been a second A0, and D1's table would have read it as "not moved by pixel controls".
+  - *Slice 4:* Codex found 4 issues, Medium highest. Taken: a single definition of the thread-then-dots order, pinned by a test, and signposts that separate path building from submission. Documented: captures need a single window. Declined: closing the signpost on an interrupted run, which D6 discards anyway.
+  - **Delegation note:** the two reviewers' slice 1 findings overlapped on exactly one, the mirror proof. Each found something the other missed.
+- **What the pilots hint at, not data:** under the driver, A0's capsule showed no frame over 33.3 ms in four untraced pilots. Every hand capture since US-310 tailed. If the traced runs agree, the calibration (D7) is the decisive step: either the tail lives above the coordinator, in touch delivery, or the driver isn't a valid surrogate. The rule for telling those apart was fixed before any of these numbers existed.
+- **Device access:** the iPhone is paired over the local network, so `devicectl` installs and launches without a cable. Sebastian confirmed that agent-run device installs need no prior ask. `xctrace` still lists the phone as offline until Xcode's device-access prompt is approved, which is a human step.
+- **CI:** `5f7a34e`'s app job failed on `StageFieldRenderingTests.matIsDrawnAtCurrent`, with no failure message and the runner's simulator-hub errors in the log. That's the same signature as the flake recorded on 2026-10-25. Slice 4 does touch the renderer that test calls, so it was not waved off: it passed in every local full-suite run, and the next commit's CI decides.
