@@ -4061,3 +4061,18 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **What the extra rounds bought:** the full re-reads of the M3 and M4 docs, the staleness fix for the PR's own edits, and through that the run's only drift finding, the stale US-323 claim. Without them the check would have closed on a skim with a false "nothing found".
   - **What they cost:** about 770k extraction tokens and three Codex rounds.
   - **For the record:** on a drift-check PR, a "docs-only" fix can still change what the check found, because the docs are its corpus. Whether condition 1 should treat corpus changes as code changes in that case is a question for Sebastian, not something to settle here.
+
+## 2026-10-29 (Stage 60 fps tail) — the brief's discriminator could not exist as planned, and Codex found why
+
+- **Planning.** `swift-architect` drafted the brief for US-316 (`docs/features/stage-60fps-tail.md`). Sebastian accepted D1–D11 as drafted and pulled in US-322, with PR 2 on its own branch. The draft rested on a compact 50k fixture, changed only in `rowSpacing`, that would hold "every segment's view-space length and orientation" and vary only the covered area. It also planned a DEBUG scripted-gesture driver, so the device captures no longer need a person at the phone.
+- **Codex brief round (one round, ADR-041), 7 findings, 4 High and 3 Medium, all taken.**
+  - **The High that changed the experiment: the fixture's invariant is false, and more so than Codex said.** Codex pointed at the row transitions, where the next row starts diagonally from the last row's anchor. Checking it showed the larger reason: `RunningStitchPattern` rounds every stitch to whole stage points (`javaRound`), so at a spacing of 0.1 about ten rows land on the same `y`. No fixture can shrink the area while keeping the geometry. B was recast as an **overlap-density** condition with its uncontrolled differences listed. Two DEBUG renderer controls (live dots suppressed, live thread suppressed) now carry the dot-versus-thread question that the fixture could not.
+  - **The other three Highs:**
+    - The calibration compared one hand run with one driver run by class only. It is now 3 against 3, with a divergence limit fixed in advance, and a failed calibration means the full matrix by hand rather than a reduced one.
+    - The decision rule had a 2-of-5 branch with no terminal rule, and one Hitches trace chosen out of five runs. Now every run is traced, a run is "over" on either instrument, there is a 10-run rule, and "inconclusive" is an explicit ending.
+    - The Time Profiler was credited with settling path construction against ellipse scan conversion, which CPU sampling cannot see.
+  - **The Mediums:**
+    - A spacing of 0.25 cannot meet the ≥ 10× criterion (6×), and neither spacing inherits the original's half-stitch argument. Spacing 0.1 is now preselected, and the floor margin is pinned in ulps.
+    - "Done whatever the result" had no ending for an inconclusive result.
+    - AC6 paraphrased ADR-043's bar ("no hitch" for "no frame", the p99 clause left out). It now quotes the bar word for word.
+- **Two things worth keeping.** Both the planner and I read "only `rowSpacing` changes" as "only the area changes". The rounding that breaks it sits three files away from the fixture, in the running-stitch pattern. The brief round cost one Codex run and caught it before any test pinned the false invariant as literals. A test written against that invariant would have pinned counts that happen to match, which is exactly the failure Codex named: equal counts do not imply equal geometry.
