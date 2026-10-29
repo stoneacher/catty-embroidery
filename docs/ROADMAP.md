@@ -39,7 +39,7 @@ Work after M4 is organised by feature (ADR-041). The milestone sections below re
 | [Brick backend](features/brick-backend.md) | M6 brick parity set: Arc, GoThrough, formula functions and sensors | Done — 2026-10-19, PRs #71 and #72 |
 | [Variables](features/variables.md) | M6 control/data subset, beyond US-410's variable menu | Done — 2026-10-25, PRs #73–#76 |
 | [Project management](features/project-management.md) | M5 | Done — 2026-10-27, PRs #78–#80 |
-| Stage 60 fps tail | [US-316](user-stories/backlog.md): M3's unmet mid-gesture criterion (ADR-043's next experiment: overdraw and fill rate); its own feature, decided 2026-10-25 | Next, not briefed |
+| [Stage 60 fps tail](features/stage-60fps-tail.md) | [US-316](user-stories/backlog.md): M3's unmet mid-gesture criterion (ADR-043's next experiment: overdraw and fill rate); its own feature, decided 2026-10-25. Pulls in US-322 | In progress — briefed 2026-10-29 |
 | Language-test runner | Catrobat Language Tests (supervisor's suggestion, 2026-10-17); pulls a partial `.catrobat` (code.xml) import forward from S* | Not briefed |
 
 Editor UI is done (2026-10-17); Brick backend is done (2026-10-19, PRs #71 and #72); Variables is done (2026-10-25, PRs #73–#76); Project management is done (2026-10-27, PRs #78–#80). Next comes US-316 (the stage's 60 fps tail, its own feature, decided 2026-10-25), then the Language-test runner (order told to the supervisor on 2026-10-19). Backlog items ([`user-stories/backlog.md`](user-stories/backlog.md)) are pulled into whichever feature touches the same code, or become a feature of their own.
