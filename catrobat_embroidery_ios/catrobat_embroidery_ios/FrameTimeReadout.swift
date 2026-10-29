@@ -71,10 +71,14 @@
                             StageSignposts.end("capture", captureInterval)
                             self.captureInterval = nil
                         }
-                        StageSignposts.result(FrameCaptureReport(recorder: recorder).handLine(
+                        let line = FrameCaptureReport(recorder: recorder).handLine(
                             condition: Self.launchCondition,
                             thermal: (thermalAtRecord, ProcessInfo.processInfo.thermalState)
-                        ))
+                        )
+                        StageSignposts.result(line)
+                        // The trace lost a hand run's result event once (2026-10-29); the file
+                        // in the app's container is the copy that does not depend on it.
+                        try? CaptureResultLog.append(line)
                     } else {
                         // The scene's *state*, not a transition: a capture begun while the
                         // app is not active must know that from the outset. See
