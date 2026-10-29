@@ -132,6 +132,19 @@ was seen on hand runs only.
 ‡ One draw between the Record tap and the capsule recorder's first callback — the hand path still
 starts its own display link, the gap the scripted path closed. Not a frame over the bar.
 
+**Mixed pinch-and-pan (D6's supplementary condition), same build, run after Codex's round 1**
+
+| run | trace | window | drawn / n | p99 | worst frame | verdict | hitches (> 33.3 ms) |
+|---|---|---|---|---|---|---|---|
+| mixed 1 | `us316-mixed-1` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 2 (0), worst 16.669 ms |
+| mixed 2 | `us316-mixed-2` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
+| mixed 3 | `us316-mixed-3` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
+| mixed 4 | `us316-mixed-4` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
+| mixed 5 | `us316-mixed-5` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
+
+Clean by D6 (0 of 5 over). **Which hand runs carry the trace evidence:** hand 2 and hand 3, whose
+`capture` windows are intact (0 hitches inside); hand 1's window is reconstructed (†).
+
 **Not counted, and why**
 
 | run | what happened | numbers |
@@ -142,7 +155,8 @@ starts its own display link, the gap the scripted path closed. Not a frame over 
 | `us316-calib-driver-1`, `us316-calib-hand-1` | earlier build, per-frame signposts on; the hand trace kept only its last 0.7 s of signposts (buffer overflow) | both clean, 0 hitches over 33.3 ms |
 
 **Reading.** D7 accepts the driver (same class, ≤ 1 of 3 over, for both). But **A0 did not tail,
-by hand or by driver**, so D1's table cannot apply and the D6 matrix was not run. Sebastian decided
+by hand or by driver, panning or (scripted) pinching and panning**, so D1's table cannot apply and
+the D6 matrix was not run. Sebastian decided
 on 2026-10-29 to stop the measurement here: recorded in ADR-043's 2026-10-29 amendment as *met on
 the current build for the pan gesture, cause unattributed*, with the open items listed there.
 

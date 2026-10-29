@@ -4123,3 +4123,21 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   4. **Xcode's Cmd+R silently replaced the measurement build with a Debug build.**
   5. **One hand run had a misclick that Sebastian reported before either of us saw the numbers.** I proposed a retake on exactly that ground: a flag raised before the result is like D6's `INTERRUPTED`, while discarding a `FAIL` on a reason found afterwards is the move the rule exists to prevent. The run stays in the record with its 38 ms frame.
 - **The calibration was restarted once, on purpose.** The first pair ran on a build with per-frame signposts on, and the matrix would have used a build without them. Calibrating on one build and measuring on another is an easy objection to raise, so the pair was kept as a reported, uncounted run and the calibration redone.
+
+## 2026-10-29 (Stage 60 fps tail, PR #83 handover) — Codex round 1 caught the conclusion outrunning its evidence
+
+- **Codex handover round 1 on PR #83: 2 High, 3 Medium.** Both Highs were about the *record*, not the code, and both were right in substance.
+  - **High 1: the one hand run reading `PASS` had a reconstructed window.**
+    - *Taken as a precision fix:* the amendment now says which runs carry the trace evidence. That's hand runs 2 and 3, whose windows are intact with 0 hitches inside; their single untimed draw sits inside those windows.
+    - *Declined:* a retake. Its premise was that no fully valid hand run supports the bar. That holds for the `PASS` label, but not for the bar's two clauses, which runs 2 and 3 satisfy on both instruments.
+  - **High 2: D6's mixed pinch-and-pan condition, which the brief says is "always captured", had been skipped.** The amendment had also claimed M3's criterion was "no longer blocked", although the old failing captures pinched.
+    - Sebastian agreed to the 5 scripted mixed runs, unattended, about 5 minutes, on the calibration build. All five are clean.
+    - The amendment is narrowed: met on an A19 for pan (hand and driver) and scripted pinch-and-pan. M3's exit criterion, which names an A15, stays open.
+    - **This is the lesson:** when I wrote the amendment I had dropped a predeclared condition along with the declined coverage experiment, and the cross-vendor reviewer was the one who noticed that the brief said "always".
+  - **Mediums:**
+    - *Taken:* the shipping draw path no longer builds an operation array per frame (a direct thread-then-dots path for `.all`; a mutant swapping it is killed by `designIsOnTop`).
+    - *Taken:* hand runs record the thermal state at Record and Stop, so D6's discard rule applies to them.
+    - *Declined:* a pixel test of the D/E canvas wiring. The simulator screenshots show it, and a test-only injection would add plumbing to the shipping view.
+- **PR 2 (US-322) was opened stacked on #83 (PR #84).** The raster is baked at, and compared with, the viewport aligned to the device-pixel grid.
+  - The simulator now reads `canvas=370.00x257.00 viewport=370.00x256.83 raster=yes`.
+  - Mutants: one survived *because the test never exercised the epsilon* (770.5 / 3 × 3 happened to be exact), and one of my mutants was equivalent to the original. A noise test and a real half-to-even mutant fixed both. Equivalent mutants are a trap of hand-written mutation: a survivor first needs checking for whether it changed behaviour at all.

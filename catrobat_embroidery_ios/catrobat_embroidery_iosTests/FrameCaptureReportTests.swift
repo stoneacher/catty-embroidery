@@ -93,11 +93,15 @@ struct FrameCaptureReportTests {
 
     /// A hand run's line, emitted when the capsule's Stop is tapped: the same `US316` tag and
     /// caption as a driver run, marked `hand`, so the trace summary reads both the same way.
-    @Test("a hand run's line carries its condition, the hand mark and the caption")
+    /// …and the thermal state at Record and at Stop, like a driver run's line, so D6's rule
+    /// (a run at `.serious` or worse is discarded) can be applied to hand runs too (Codex,
+    /// PR #83 round 1).
+    @Test("a hand run's line carries its condition, the hand mark, the caption and the thermal state")
     func handLine() {
-        #expect(Self.failing.handLine(condition: .baseline)
-            == "US316 condition=A0 hand " + (Self.failing.caption ?? ""))
-        #expect(Self.failing.handLine(condition: nil).hasPrefix("US316 condition=none hand n=4 "))
+        #expect(Self.failing.handLine(condition: .baseline, thermal: (.nominal, .serious))
+            == "US316 condition=A0 hand " + (Self.failing.caption ?? "") + " | thermal=nominal>serious")
+        #expect(Self.failing.handLine(condition: nil, thermal: (.fair, .fair))
+            .hasPrefix("US316 condition=none hand n=4 "))
     }
 
     @Test("a capture with no frames still prints a line")

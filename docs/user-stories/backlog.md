@@ -382,7 +382,8 @@ in the same spirit as US-211's and US-313's above.
   needed a tail to discriminate, so it was not run, and Sebastian decided to record the
   mid-gesture pan as met with the cause unattributed. What the entry could not know: the device
   build command it inherited produced a coverage-instrumented binary, which may be what the earlier
-  captures measured. Still open from it: the pinch gesture, and the A15-class capture.
+  captures measured. Five scripted pinch-and-pan runs were clean as well. Still open from it: a hand
+  pinch-and-pan run, and the A15-class capture.
 
 **Left in this file at M4 planning: US-316 only** — it has since left too (see its bullet above; the entry itself is in git history before PR #83).
 **Added since**: US-317 (2026-09-20), US-318 (2026-09-23), US-319 and US-321–US-326 (from M4 and

@@ -54,6 +54,7 @@
 
         @State private var recorder = FrameTimeRecorder()
         @State private var captureInterval: OSSignpostIntervalState?
+        @State private var thermalAtRecord = ProcessInfo.ThermalState.nominal
 
         /// The condition a hand run was launched under (`-US316Capture X -US316Hand`), read once.
         private static let launchCondition = CaptureScenario.parse(ProcessInfo.processInfo.arguments)?.condition
@@ -70,14 +71,16 @@
                             StageSignposts.end("capture", captureInterval)
                             self.captureInterval = nil
                         }
-                        StageSignposts.result(
-                            FrameCaptureReport(recorder: recorder).handLine(condition: Self.launchCondition)
-                        )
+                        StageSignposts.result(FrameCaptureReport(recorder: recorder).handLine(
+                            condition: Self.launchCondition,
+                            thermal: (thermalAtRecord, ProcessInfo.processInfo.thermalState)
+                        ))
                     } else {
                         // The scene's *state*, not a transition: a capture begun while the
                         // app is not active must know that from the outset. See
                         // `start(isActive:)`.
                         captureInterval = StageSignposts.begin("capture")
+                        thermalAtRecord = ProcessInfo.processInfo.thermalState
                         recorder.start(isActive: scenePhase == .active)
                     }
                 }
