@@ -4160,3 +4160,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - the summary script checks that the trace's display data covers the window.
 - **Hand 8:** every one of 987 drawn frames timed, worst 20.856 ms, p99 16.670, `PASS`, thermal nominal; in the same run's trace, 1 hitch of 12.5 ms and none over 33.3 ms.
 - **The pattern across the session:** every scripted run worked first time once the instrument was right, and every hand run found a new way to lose data. The difference is that a scripted run ends itself. A human-driven run has an open-ended tail, so the recorder keeps going after the part that matters, which is where all the losses came from.
+
+## 2026-10-29 (Stage 60 fps tail, PR #83 handover) — the Codex loop ends at the cap, with severity falling
+
+- **Five rounds, High → High → Medium → Medium → none.** The loop ended on a clean round, which was also the cap.
+  - Rounds 1–3 were about the *record* far more than the code: an overclaimed conclusion, a skipped predeclared condition, evidence that didn't hold both halves of the bar in one run, missing thermal state, and coverage that wasn't checked.
+  - Every one of those would have shipped as a thesis claim stronger than its evidence.
+  - The code findings were small: a per-frame array in the shipping path, and two edge cases in the summary script.
+- **The reviewer's leverage was largest where the brief was most explicit.** "Always captured" and D8's "same run" were in the brief all along. Codex read them literally, and I had read past them while wrapping up a result that looked clean.
+- **One decision was taken along the way, outside PR #83:** Sebastian kept US-322's fix (PR #84) after its before/after measurement showed about 70% fewer hitches on the animating path but a longer worst hitch (50.0 → 66.7 ms). The likely cause is that the raster now really renders, lazily, on its first composite. Recorded in PR #84.
