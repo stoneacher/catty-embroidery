@@ -34,8 +34,9 @@
         /// **every** design rather than only for the measurement fixtures.
         ///
         /// US-310's premise check needs a mid-gesture capture at a *small* stitch count, and there
-        /// was no instrumented small design to take one on: the fixture this readout is otherwise
-        /// gated to is fixed at `us309SyntheticStitchCount` (50 001) with no smaller variant. One
+        /// was no instrumented small design to take one on: the fixture this readout was then
+        /// gated to is fixed at `us309SyntheticStitchCount` (50 001) with no smaller variant (as
+        /// is US-316's compact fixture, added since). One
         /// count cannot separate a cost proportional to the primitive count from a fixed per-frame
         /// cost — two counts on one instrument can.
         ///
@@ -105,60 +106,9 @@
                 // Constant while recording — no per-frame body evaluation. See the type doc.
                 return "capturing… hold ≥ 10 s, then Stop"
             }
-            guard let all = recorder.statistics else {
-                return "US-309 frame times"
-            }
-            let verdict = FrameCaptureVerdict.of(
-                all: all,
-                drawn: recorder.drawnStatistics,
-                totalDraws: recorder.drawCount ?? 0,
-                unmeasuredDraws: recorder.unmeasuredDrawCount,
-                wasInterrupted: recorder.wasInterrupted
-            )
-            // `commits=` rides beside `drawn=` rather than inside the verdict: a capture is
-            // not better or worse for containing gesture-ends, but the two numbers together
-            // are what separate a per-frame cost from a per-commit tail (ADR-029, US-313b).
-            let counts = "n=\(all.frameCount) drawn=\(recorder.drawnStatistics?.frameCount ?? 0)"
-                + " commits=\(recorder.commitCount ?? 0)\(nominal)"
-            let window = "\(seconds(all.totalMilliseconds)) s"
-            // **The quantiles shown are the drawn frames', not every frame's**, because those
-            // are the only ones the renderer had anything to do with. Falls back to the whole
-            // capture when nothing was drawn, so the row is never blank — the `NO DRAWS`
-            // label is what says not to read them.
-            let quoted = recorder.drawnStatistics ?? all
-            let quantiles = "med \(ms(quoted.median)) p95 \(ms(quoted.p95)) p99 \(ms(quoted.p99))"
-            let worstFrame = "max \(ms(quoted.worst))@\(seconds(quoted.worstAtMilliseconds))s"
-            return "\(counts) \(quantiles) \(worstFrame) · \(window) · \(verdict.label)"
-        }
-
-        /// The display's actual rate, or nothing if no callback has reported one.
-        ///
-        /// On screen because a 30 Hz link makes every interval ~33.3 ms and so fails both
-        /// halves of the bar for reasons that have nothing to do with the renderer — Low
-        /// Power Mode, a critical thermal state, or the "Limit Frame Rate" accessibility
-        /// setting are each enough (Codex round 1, finding 3). Seeing `30Hz` beside a `FAIL`
-        /// is the difference between checking the device and starting down the ladder.
-        private var nominal: String {
-            guard let interval = recorder.nominalFrameMilliseconds, interval > 0 else { return "" }
-            return " \(Int((1000 / interval).rounded()))Hz"
-        }
-
-        private func seconds(_ milliseconds: Double) -> String {
-            String(format: "%.1f", milliseconds / 1000)
-        }
-
-        /// Frame times to **three** decimals, and that is not fussiness.
-        ///
-        /// The bar is `p99 <= 16.67 ms` and a 60 Hz link's true period is 16.6667 ms, so a
-        /// passing capture and a failing one differ in the **third** decimal. At one decimal
-        /// both print `16.7`: the first device capture came back `med 16.7 p95 16.7 p99 16.7
-        /// max 16.7 · FAIL` and the readout could not say whether that was a renderer miss or
-        /// jitter a hundredth of a millisecond over the line. An instrument whose printed
-        /// precision is coarser than the threshold it reports against cannot be read.
-        ///
-        /// Durations stay at one decimal — nobody needs microseconds on a capture window.
-        private func ms(_ value: Double) -> String {
-            String(format: "%.3f", value)
+            // Formatted by `FrameCaptureReport`, which US-316's console line shares, so a
+            // screenshot of this row and an unattended device capture say the same thing.
+            return FrameCaptureReport(recorder: recorder).caption ?? "US-309 frame times"
         }
     }
 #endif
