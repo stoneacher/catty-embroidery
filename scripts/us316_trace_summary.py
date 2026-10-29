@@ -99,8 +99,11 @@ def summarise(trace):
     spans = []
     for row in rows(export(trace, "display-vsyncs-interval")):
         at = number(row.get("timestamp"))
-        if at is not None:
-            spans.append((at, at + (number(row.get("duration")) or 0)))
+        duration = number(row.get("duration"))
+        # A row counts only with both fields valid: a stray timestamp without a duration must
+        # not stretch the coverage (Codex, PR #83 round 4).
+        if at is not None and duration is not None:
+            spans.append((at, at + duration))
     coverage_start = min(s for s, _ in spans) if spans else None
     coverage_end = max(e for _, e in spans) if spans else None
     covered = coverage_start is not None and coverage_start <= start and coverage_end >= end
