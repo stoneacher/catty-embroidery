@@ -48,7 +48,7 @@ struct AppModelTests {
 
         #expect(!ids.isEmpty)
         #expect(ids.prefix(library.count) == ArraySlice(library))
-        #expect(ids.count <= library.count + 1, "the picker adds at most US-309's fixture")
+        #expect(ids.count <= library.count + 2, "the picker adds at most the two measurement fixtures")
         #expect(Set(ids).count == ids.count, "a sample appears twice: \(ids)")
     }
 

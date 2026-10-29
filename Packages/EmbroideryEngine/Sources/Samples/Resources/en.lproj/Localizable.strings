@@ -55,3 +55,12 @@
 /* DNT — do not translate. One-line description of the measurement fixture,
    shown under its name in the sample picker in debug builds only. */
 "sample.us309Synthetic.description" = "A 50 000-stitch hatch. Measures the stage, not a design.";
+
+/* DNT — do not translate. Name of US-316's measurement fixture, shown in the
+   sample picker in debug builds only, beside "Synthetic 50k". "Compact" means
+   the same fifty thousand stitches packed into a small area. */
+"sample.us316Compact.name" = "Compact 50k";
+
+/* DNT — do not translate. One-line description of the measurement fixture,
+   shown under its name in the sample picker in debug builds only. */
+"sample.us316Compact.description" = "The 50 000-stitch hatch, packed into a fifteenth of the area. Measures the stage, not a design.";

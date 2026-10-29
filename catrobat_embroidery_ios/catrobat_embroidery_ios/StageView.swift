@@ -188,7 +188,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .overlay(alignment: .bottom) { frameTimeReadout }
     }
 
-    /// Present only in debug builds, and only for the measurement fixture — **or for any
+    /// Present only in debug builds, and only for the measurement fixtures — **or for any
     /// design when the process was launched with `-US310FrameTimes`**.
     ///
     /// The launch argument exists because US-310's premise check needs a mid-gesture capture at

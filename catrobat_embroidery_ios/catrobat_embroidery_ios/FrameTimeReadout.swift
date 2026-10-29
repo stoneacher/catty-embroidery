@@ -26,11 +26,12 @@
     /// string; the ten-second window is timed by the tester and checked afterwards by
     /// `isLongEnoughToQuote`, which flags a short capture as `(short)`.
     ///
-    /// Shown only for `SampleID.us309Synthetic`, so no shipping design's screenshot acquires a
-    /// diagnostic overlay it did not have before this story.
+    /// Shown only for the measurement fixtures (`SampleID.us309Synthetic`, and since US-316
+    /// `us316Compact`), so no shipping design's screenshot acquires a diagnostic overlay it
+    /// did not have before this story.
     struct FrameTimeReadout: View {
         /// Whether this process was launched with `-US310FrameTimes`, which shows the readout for
-        /// **every** design rather than only for `SampleID.us309Synthetic`.
+        /// **every** design rather than only for the measurement fixtures.
         ///
         /// US-310's premise check needs a mid-gesture capture at a *small* stitch count, and there
         /// was no instrumented small design to take one on: the fixture this readout is otherwise
