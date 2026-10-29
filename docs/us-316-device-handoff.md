@@ -107,7 +107,48 @@ every hand capture since US-310 did (worst 38–50 ms). If the traced runs agree
 under the surrogate, and D7's calibration decides whether that means the tail lives above the
 coordinator (touch delivery) or that the driver is not a valid surrogate.
 
-## Results
+## Results — session of 2026-10-29
 
-*(Filled in by the device session: calibration, then the matrix, one row per run with the capsule
-line's fields and the trace's hitch count, hitches > 33.3 ms and worst hitch inside the window.)*
+iPhone 17 Pro (A19), iOS 27.2, over the local network; build `86a7d66` (Release, `DEBUG` defined,
+coverage off, per-frame signposts off); Synthetic 50k (A0), pan only. Every run under the
+Animation Hitches + Points of Interest recording; numbers from `scripts/us316_trace_summary.py`.
+"Hitches" are those inside the recorded window.
+
+**Calibration (D7), counted runs**
+
+| run | trace | window | drawn / n | p99 | worst frame | verdict | hitches (> 33.3 ms) |
+|---|---|---|---|---|---|---|---|
+| scripted 1 | `us316-cal-final-driver-1` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
+| hand 1 | `us316-cal-final-hand-1b` | 20.1 s † | 1187 / 1209 | 16.670 | 16.702 | PASS | 0 (0) |
+| scripted 2 | `us316-cal-final-driver-2` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
+| hand 2 | `us316-cal-final-hand-2c` | 18.8 s | 1115 / 1129 | 16.670 | 16.702 | DRAWS NOT MEASURED (1) ‡ | 0 (0) |
+| scripted 3 | `us316-cal-final-driver-3` | 12.2 s | 720 / 731 | 16.670 | 16.670 | PASS | 0 (0) |
+| hand 3 | `us316-cal-final-hand-3` | 17.3 s | 1027 / 1036 | 16.670 | 16.702 | DRAWS NOT MEASURED (1) ‡ | 0 (0) |
+
+† The `capture` interval's Begin is missing from this trace; the window is recovered as
+[result − window, result] and the summary marks it. The cause is not established (it also
+happened with per-frame signposts off, so the buffer explanation below does not cover it), and it
+was seen on hand runs only.
+‡ One draw between the Record tap and the capsule recorder's first callback — the hand path still
+starts its own display link, the gap the scripted path closed. Not a frame over the bar.
+
+**Not counted, and why**
+
+| run | what happened | numbers |
+|---|---|---|
+| `us316-cal-final-hand-1` | Sebastian was not at the phone (reported) | — |
+| `us316-cal-final-hand-2` | misclick at Stop, reported **before** the numbers were seen | one 38.168 ms frame at 23.8 s of 24.6 s, one 37.5 ms hitch, both in the last 0.8 s; `commits=0` |
+| `us316-cal-final-hand-2b` | the trace could not be saved: the disk was full (40 GB of `instruments*.ktrace` left behind by earlier recordings) | — |
+| `us316-calib-driver-1`, `us316-calib-hand-1` | earlier build, per-frame signposts on; the hand trace kept only its last 0.7 s of signposts (buffer overflow) | both clean, 0 hitches over 33.3 ms |
+
+**Reading.** D7 accepts the driver (same class, ≤ 1 of 3 over, for both). But **A0 did not tail,
+by hand or by driver**, so D1's table cannot apply and the D6 matrix was not run. Sebastian decided
+on 2026-10-29 to stop the measurement here: recorded in ADR-043's 2026-10-29 amendment as *met on
+the current build for the pan gesture, cause unattributed*, with the open items listed there.
+
+**Two recorder traps found in this session, for whoever records next:**
+- `xctrace` leaves a raw `instruments*.ktrace` (2–6 GB) in the user temp folder
+  (`/private/var/folders/…/T/`) for every recording; twelve of them filled the disk. Delete each
+  after its `.trace` is saved.
+- A run with Xcode's Run (Cmd+R) installs a Debug build over the measurement build; reinstall
+  before recording.

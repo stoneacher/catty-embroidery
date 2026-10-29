@@ -52,7 +52,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 040 | Editor UI | Parameters editable where M4 has a control (function and sensor formulas locked with their own reasons); a condition that is one comparison of two plain values gets the comparison editor (`ParameterTarget` addresses a side); 14-colour thread palette; `VariableName` rules; live-apply that keeps no rejected prefix. | Active, amended |
 | 041 | Process | The unit of work is a feature; Codex cap 5; risky slices reviewed when green; every slice mutation-checked; manual accessibility at a pre-beta review and the graph drift check at milestone/release or ADR consolidation, not per feature (corpus minus `.graphifyignore`, every similarity edge with a doc endpoint triaged). | Active, amended |
 | 042 | Package layout | Seven targets, five products (`Projects` vended through `Samples` since US-329), dependencies pointing inward. | Active, amended |
-| 043 | Stage | Rendering rules, coarsening while live, the performance bar and the current fallback ladder. | Active |
+| 043 | Stage | Rendering rules, coarsening while live, the performance bar and the current fallback ladder. Mid-gesture pan meets the bar on the current build (2026-10-29), cause unattributed. | Active (amended 2026-10-29) |
 | 044 | Stage | Manipulation: UIKit recognisers, pure tracker, one commit per manipulation, bounds and accessibility. | Active |
 | 045 | Editor | Six verbs, the insertion rule, and the change pipeline (edit, undo or redo → void run, or re-prepare the export for a rename → autosave; a draft writes nothing before its first change); If blocks with else and end as markers, and a crossing pair for the else. | Active, amended |
 | 046 | Formula | Math functions, `pi` and object sensors as per-arity `Formula` cases; Catroid semantics with four pinned divergences; `rand` deferred; sensors read the acting object's needle before the brick moves it. | Active, corrected (048) |
@@ -1226,7 +1226,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - **Over a capture of at least 10 s: p99 ≤ 16.67 ms and no frame > 33.3 ms, over drawn frames only.** The bar is never reworded (ADR-032 invariant 1).
   - At 60 Hz the p99 clause does not discriminate.
   - The display-link capsule cannot see GPU- or compositor-side misses, so **a capsule `PASS` is never on its own sufficient evidence for the 33.3 ms clause.** An Animation Hitches trace is.
-- **Where it stands** (M3 close): met on the animating path as the capsule measures it, and **unmet on the mid-gesture tail**, worst frame 38.076 ms. US-313b showed that the mid-gesture cost in this range is not the segment count.
+- **Where it stands** (M3 close): met on the animating path as the capsule measures it, and **unmet on the mid-gesture tail**, worst frame 38.076 ms. US-313b showed that the mid-gesture cost in this range is not the segment count. *(Updated by the 2026-10-29 amendment below: the mid-gesture pan now meets the bar on device; the cause is unattributed.)*
 
 *Fallback ladder, current order*
 1. `settleChunk` governs baking, and therefore the commit tail.
@@ -1244,6 +1244,21 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 **Known gap — the raster is never composited in iPhone 17's default layout** (backlog US-322). The viewport measures 370 × 256.83 against a `Canvas` size of 370 × 257.0, so the exact-size guard above never passes, every frame draws `.entire`, and the bake work is wasted on top. The guard is correct; the mismatch is the defect.
 
 **Consequences**: A design that changes colour on every stitch is not helped by coarsening; it belongs to rungs 4 and 5. Still open: the A15-class capture (it waits for US-316, so it confirms a real fix), the Instruments attribution between path construction and dot scan-conversion, and the offscreen-pass hitches seen outside the measured run.
+
+**Amendment (2026-10-29, US-316, Stage 60 fps tail) — the mid-gesture pan meets the bar on the current build; why the tail is gone is not known.** The bar, unchanged: *"Over a capture of at least 10 s: p99 ≤ 16.67 ms and no frame > 33.3 ms, over drawn frames only."*
+- **What was measured** (iPhone 17 Pro, A19, iOS 27.2; Release with `DEBUG` defined and **code coverage off**; Synthetic 50k, pan only, the gesture never released inside the window; every run under an Animation Hitches trace; protocol and raw values in `docs/us-316-device-handoff.md`):
+  - **3 scripted runs** (the US-316 coordinator-path driver): 12.2 s windows, drawn-frame p99 16.670 ms, worst frame 16.670 ms, **0 hitches** in each window. Capsule verdict `PASS` on all three.
+  - **3 hand runs** (Sebastian): 17.3–20.1 s windows, p99 16.670 ms, worst frame 16.702 ms, **0 hitches** in each window. One of them reads `PASS`; two read `DRAWS NOT MEASURED (1)` — one draw between the Record tap and the capsule recorder's first callback, the hand-path form of a timing gap fixed for scripted runs, and not a frame over the bar.
+  - Not counted: one hand run with a protocol slip Sebastian reported **before** its numbers were seen (a misclick at Stop); it holds one 38.168 ms frame and one 37.5 ms hitch, both in its last 0.8 s. A pair taken on an earlier build with per-frame signposts on, also clean, is reported in the hand-off and not counted.
+- **Reading.** By D7 of the brief the driver is an accepted stand-in for a finger (same class, ≤ 1 of 3 runs over, for both). But the brief's experiment needs A0 to tail, and it no longer does — by hand or by driver — so conditions B–E were **not run**: they could only have compared clean with clean. Every hand capture from US-310 to M3 close had a worst frame of 38–50 ms; these have none above 16.702 ms.
+- **The cause is unattributed.** Candidates, none tested: (1) **coverage instrumentation** — Xcode's effective Release settings for this scheme default `ENABLE_CODE_COVERAGE` to YES, so the earlier device build command produced an instrumented binary (7 `__llvm_prf` sections), with counters in exactly the per-frame code, and the earlier records may have measured that; (2) **the gesture** — the failing US-310 captures alternated pinch and pan, these are pan only; (3) **everything since M3** — M4/M5 app code, iOS 27.2. A discriminating experiment (3 scripted runs with coverage on, 3 with the mixed pinch-and-pan script) was proposed and **not run, by decision**.
+- **Decision** (Sebastian, 2026-10-29): the measurement stops here. The mid-gesture tail is recorded as **met on the current build for the pan gesture**, and the fallback ladder's rungs 3–5 are not pursued. M3's 60 fps criterion is no longer blocked by the mid-gesture tail.
+- **Still open, stated so nobody mistakes this for more than it is:**
+  - the **pinch** gesture under the same protocol (the scripted mixed run exists: `-US316Capture A0-mixed`);
+  - the **A15-class** capture — this ADR made it wait for a fix; there is none, so it now confirms the *build*, not a fix;
+  - **if the tail recurs**, the first experiment is the coverage on/off pair above, and the instrument for it is in the app;
+  - US-322 (raster never composited in the default layout) is unchanged and still needs its fix.
+- **Measurement hygiene, binding from now on:** device builds for timing pass `ENABLE_CODE_COVERAGE=NO CLANG_COVERAGE_MAPPING=NO`.
 
 ## ADR-044 — Stage manipulation: UIKit recognisers over a pure tracker, one commit per manipulation (2026-10-09)
 **Context**: Zoom, pan and the stage's accessibility were decided in ADR-028 and re-built in ADR-031. ADR-028's text still describes SwiftUI gestures the app no longer uses, and ADR-031 lists five corrections to it. This ADR states the current rules and supersedes both. ADR-031 stays the full reasoning for the input layer, and ADR-028 the record of the six-round rewrite that produced `StageInteraction`.
