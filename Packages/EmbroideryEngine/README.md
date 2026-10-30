@@ -751,11 +751,13 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     case squareCoil
     case arcFlower
     case sunburst
-    // A DEBUG-only measurement case (us309Synthetic) is not in SampleLibrary.all.
+    // DEBUG-only measurement cases (us309Synthetic, us316Compact) are not in SampleLibrary.all.
 }
 ```
 
-The raw values are persistence tokens (M5 keys a copied sample by them), so a case may be added but a raw value is never renamed. A decoder should fall back to a shipping sample for an unknown token rather than throw, because a debug-only case can write one a Release build cannot read.
+Two DEBUG-only measurement cases sit outside `SampleLibrary.all` and `SampleID.shipping`. `us309Synthetic` is a 50 000-stitch hatch. `us316Compact` is the same hatch with its rows 0.1 apart instead of 1.5, a fifteenth of the spacing, so the same stitches cover far less area. It exists to measure the stage against the original; what was measured with it is in the 2026-10-29 amendments to [ADR-043](../../docs/DECISIONS.md).
+
+The raw values are stable identities: a case may be added, but a raw value is never renamed. No sample id is persisted (M5, [ADR-050](../../docs/DECISIONS.md)): a sample opens as a draft holding a copy of its program, and a project file records the program, never the sample it came from. Should an id ever be stored, decode it defensively, because a debug-only case can write a token a Release build cannot read.
 
 ## Bundled Samples
 
