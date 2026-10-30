@@ -4200,3 +4200,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Codex round 2 found no implementation defect, only documentation that let the old numbers read as the new design's.** They're now labelled: the before/after was measured on the pixel-aligned variant. The device re-take of the overscan design failed because the phone was locked overnight and couldn't mount its developer disk image. It's open, and folded into US-332's first step.
 - **The loop ends on round 2** under condition 1, since its fixes were documentation only. Severity history: Medium → Medium.
 - **A tooling gotcha worth keeping:** `#expect(cgFloat == double)` failed on equal values (`371.0` vs `371.0`) in Swift Testing. Declaring the expected values as `CGFloat` fixed it. The failure detail only appeared through `xcresulttool`, not in `xcodebuild`'s output.
+
+## 2026-10-30 (Stage 60 fps tail, PR #84) — the final design measured on device, and the trade changed shape
+
+- **The re-take ran on the final overscan build:** three pairs alternating it with a US-322-reverted build.
+  - Hitches fell by about two thirds (118/126/114 → 44/38/41), and those over 33.3 ms by about 60%.
+  - **The worst trace hitch is no longer reliably longer.** The "before" build also reached 66.7 ms in one run, so the earlier "66.7 ms in every after run" was partly the luck of three runs.
+  - The capsule now carries the trade instead: a main-thread frame over 33.3 ms in **every** "after" run (35–44 ms), against one of three "before". That points the same way as the US-332 hypothesis (a lazy raster render on the main thread), still unmeasured.
+- **Lesson:** a three-run comparison can't distinguish "worse in every run" from "worse in these runs". Taking it a second time, on the code that ships, is what showed the difference. Both measurements stay in the hand-off, and the ADR names the final one as authoritative.
+- **Sebastian ruled the scripted pinch-and-pan sufficient** (no hand pinch run owed). The ADR's open list is now just the A15 capture and US-332.

@@ -192,11 +192,24 @@ the current build for the pan gesture, cause unattributed*, with the open items 
 
 ## US-322 — the raster gate, before and after (PR 2, 2026-10-29)
 
-**These numbers measure the earlier pixel-aligned variant**, which baked at the viewport rounded to
-the pixel grid and compared sizes exactly. It was replaced after this measurement by the overscan
-design (ADR-043's revised US-322 rule), which composites in the same layout on the simulator
-(`raster=yes`) but **has not been measured on device**: the re-take on the final build failed
-because the phone could not mount its developer disk image while locked, and is open.
+**The final overscan build, measured 2026-10-30** (build `4b15152`, alternated with a build that
+has only US-322 reverted; every window covered):
+
+| run | capsule (drawn, worst frame, verdict, raster) | hitches | over 33.3 ms | worst hitch |
+|---|---|---|---|---|
+| before 1 | 251, 50.464, FAIL, — | 118 | 46 | 50.009 |
+| final 1 | 251, 43.977, FAIL, yes | 44 | 21 | 50.008 |
+| before 2 | 251, 16.702, PASS, — | 126 | 48 | 66.678 |
+| final 2 | 251, 35.429, FAIL, yes | 38 | 19 | 50.008 |
+| before 3 | 251, 16.670, PASS, — | 114 | 48 | 54.176 |
+| final 3 | 251, 42.530, FAIL, yes | 41 | 17 | 66.678 |
+
+("—": the "before" build predates the report's raster field for `A0-run`.) Reading: ADR-043's US-322
+amendment. The first attempt at this re-take (2026-10-30 morning) failed because the phone was
+locked (CoreDevice error 4000, developer disk image not mounted); its empty traces are not used.
+
+**The earlier pixel-aligned variant, measured 2026-10-29** (superseded by the table above as the
+measurement of the shipping code; kept because it is what the first decision was taken on):
 
 Two Release-with-`DEBUG`, coverage-free binaries built from one commit (`af70397`): **after** as
 committed, **before** with only the US-322 commit reverted in a temporary worktree (not committed).

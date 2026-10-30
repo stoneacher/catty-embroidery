@@ -342,16 +342,16 @@ in the same spirit as US-211's and US-313's above.
   needed a tail to discriminate, so it was not run, and Sebastian decided to record the
   mid-gesture pan as met with the cause unattributed. What the entry could not know: the device
   build command it inherited produced a coverage-instrumented binary, which may be what the earlier
-  captures measured. Five scripted pinch-and-pan runs were clean as well. Still open from it: a hand
-  pinch-and-pan run, and the A15-class capture.
+  captures measured. Five scripted pinch-and-pan runs were clean as well, which Sebastian ruled
+  sufficient (2026-10-30). Still open from it: the A15-class capture.
 - **US-322 — the settled raster is never composited in iPhone 17's default layout** → fixed in
   Stage 60 fps tail PR 2 (#84): the raster is baked with a device pixel of overscan, drawn at its own
   size and clipped to the `Canvas` (a first, pixel-aligned version was refuted by a hosted probe
   of SwiftUI's edge snapping). The entry's
   three options all assumed one exact size to match, and none survived SwiftUI's edge snapping:
   the `Canvas` size depends on where it sits on the pixel grid. Overscan sidesteps the matching
-  altogether. Measured on the animating run (with the earlier pixel-aligned variant): about 70 %
-  fewer hitches, but a longer worst one (50.0 → 66.7 ms). *Hypothesis, not measured:* `Image(size:renderer:)` is
+  altogether. Measured on the animating run with the final build: about two thirds fewer hitches,
+  but a main-thread frame over 33.3 ms in every run (35–44 ms). *Hypothesis, not measured:* `Image(size:renderer:)` is
   lazy, so before the fix the bakes may never have rendered, and the 66.7 ms frames may be their
   first renders. US-332 tests that and owns the cost.
 
@@ -366,17 +366,15 @@ US-316, US-320, US-322, US-327 and US-329 have left again (above). US-332 was ad
 ## US-332 — A new raster renders on the frame it is first composited
 
 **Found**: 2026-10-29, US-322's before/after measurement (ADR-043's US-322 amendment). **Severity:
-performance — the animating path's worst hitch.** **Measured:** on the 50k animating run the
-worst hitch rose from 50.0 to 66.7 ms in all three runs while hitches overall fell by about 70 %.
-**Hypothesis, reasoned from the code and not yet measured:** with the raster finally composited,
-every `settleChunk` (1 000 stitches) brings a new bake, and `Image(size:renderer:)` renders it
-lazily on the first frame that draws it — the whole settled prefix, on the main thread, on one
-frame — so the 66.7 ms frames would be those renders.
+performance — a main-thread long frame on the animating path.** **Measured** on the final build
+(2026-10-30): hitches fell by about two thirds, but the capsule caught a main-thread frame over
+33.3 ms in every run (35–44 ms), against one of three before the fix. **Hypothesis, reasoned from
+the code and not yet measured:** with the raster finally composited, every `settleChunk` (1 000
+stitches) brings a new bake, and `Image(size:renderer:)` renders it lazily on the first frame that
+draws it — the whole settled prefix, on the main thread, on one frame.
 
-**The first step is to test that**: a `-US316FrameSignposts` run with an interval around the
-raster's first draw, to see whether the long frames are the bake renders. The before/after numbers
-above were taken on US-322's earlier pixel-aligned variant; re-measure on the final overscan build
-(`A0-run`) as part of the same step.
+**The first step is to test that**: a `-US316FrameSignposts` `A0-run` with an interval around the
+raster's first draw, to see whether the long main-thread frames are the bake renders.
 
 **What taking it would involve** (ADR-043 ladder rung 1, the bake schedule):
 - render the raster eagerly off the frame it is composited (e.g. into a `CGImage` on a background
