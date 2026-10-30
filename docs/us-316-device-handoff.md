@@ -233,5 +233,7 @@ default, not a measurement — since fixed to print `n/a` (Codex, PR #84 round 1
 shows in the hitch counts instead. Since PR #84's round 1, `A0-run` also waits a second after
 selecting before it records, so Play cannot precede the stage; these six runs predate that, and
 each drew all 251 frames. Reading and decision: ADR-043's US-322
-amendment; the longer worst hitch is backlog US-332.
+amendment. This longer worst hitch is the evidence that originally opened US-332; the final
+measurement above did not repeat it, and US-332 now rests on the final build's main-thread frames
+over the bar.
 

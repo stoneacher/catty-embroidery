@@ -1258,7 +1258,7 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 - **Still open, stated so nobody mistakes this for more than it is:**
   - the **A15-class** capture — this ADR made it wait for a fix; there is none, so it now confirms the *build*, not a fix;
   - **if the tail recurs**, the first experiment is the coverage on/off pair above, and the instrument for it is in the app;
-  - US-322 (raster never composited in the default layout) is unchanged and still needs its fix.
+  - US-322 (raster never composited in the default layout) was still open when this was written; the US-322 amendment below closes it.
 - **Measurement hygiene, binding from now on:** device builds for timing pass `ENABLE_CODE_COVERAGE=NO CLANG_COVERAGE_MAPPING=NO`.
 
 **Amendment (2026-10-29, US-322, Stage 60 fps tail PR 2) — the raster is baked with overscan and drawn at its own size, and the trade that buys.** The "Known gap — the raster is never composited in iPhone 17's default layout" above is closed.

@@ -352,8 +352,8 @@ in the same spirit as US-211's and US-313's above.
   the `Canvas` size depends on where it sits on the pixel grid. Overscan sidesteps the matching
   altogether. Measured on the animating run with the final build: about two thirds fewer hitches,
   but a main-thread frame over 33.3 ms in every run (35–44 ms). *Hypothesis, not measured:* `Image(size:renderer:)` is
-  lazy, so before the fix the bakes may never have rendered, and the 66.7 ms frames may be their
-  first renders. US-332 tests that and owns the cost.
+  lazy, so before the fix the bakes may never have rendered, and the 35–44 ms main-thread frames may
+  be their first renders. US-332 tests that and owns the cost.
 
 **Left in this file at M4 planning: US-316 only** — it has since left too (see its bullet above; the entry itself is in git history before PR #83).
 **Added since**: US-317 (2026-09-20), US-318 (2026-09-23), US-319 and US-321–US-326 (from M4 and
