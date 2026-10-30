@@ -15,11 +15,12 @@ public enum SampleLibrary {
     /// The sample with this id.
     ///
     /// **Total over `SampleID.shipping`, which in Release is every case and in DEBUG is
-    /// not.** US-309 added `SampleID.us309Synthetic` behind `#if DEBUG`; it is built by
-    /// `AppModel` and deliberately absent from `all`, so in a debug build this subscript is
-    /// partial and the `preconditionFailure` below is reachable in principle. It is not
-    /// reachable today — no call site passes the synthetic id here — but the comment that
-    /// called it unreachable by construction was the trap, not the code.
+    /// not.** US-309 added `SampleID.us309Synthetic` behind `#if DEBUG`, and US-316
+    /// `us316Compact`; both are built by `AppModel` and deliberately absent from `all`, so in
+    /// a debug build this subscript is partial and the `preconditionFailure` below is
+    /// reachable in principle. It is not reachable today — no call site passes a fixture id
+    /// here — but the comment that called it unreachable by construction was the trap, not
+    /// the code.
     public static subscript(id: SampleID) -> SampleProgram {
         guard let sample = all.first(where: { $0.id == id }) else {
             preconditionFailure(

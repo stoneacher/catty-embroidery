@@ -1,4 +1,7 @@
 #if DEBUG
+    import CoreGraphics
+    import StagePreview
+
     /// Counts `CanvasStitchLayers` draw passes, so a frame-time capture can say whether the
     /// renderer ran at all during it.
     ///
@@ -30,6 +33,34 @@
         /// US-309's readout was already caught in once (I3).
         static func record() {
             count += 1
+        }
+
+        /// The last frame drawn while the stage was settled (US-316, US-322). `nil` until one
+        /// has been drawn.
+        ///
+        /// **Process-wide, so it describes the capture's stage only while there is one stage.**
+        /// Captures run on an iPhone, where the app has a single window; on an iPad with two
+        /// windows, another window's settled frame could overwrite it during the settle (Codex
+        /// slice-4 review). Do not run `-US316Capture` with more than one window open.
+        private(set) static var lastSettled: StageDrawRecord?
+
+        static func recordSettled(_ record: StageDrawRecord) {
+            lastSettled = record
+        }
+    }
+
+    /// One settled frame, as US-322 needs it reported: the `Canvas`'s own size and the
+    /// viewport **separately**, because the raster is composited only when they are equal, and
+    /// whether it was.
+    struct StageDrawRecord: Equatable {
+        let canvasSize: CGSize
+        let viewportSize: CGSize
+        let raster: FrameCaptureReport.RasterObservation
+
+        init(canvasSize: CGSize, viewport: ViewSize, rasterComposited: Bool) {
+            self.canvasSize = canvasSize
+            viewportSize = CGSize(width: viewport.width, height: viewport.height)
+            raster = rasterComposited ? .composited : .notComposited
         }
     }
 #endif

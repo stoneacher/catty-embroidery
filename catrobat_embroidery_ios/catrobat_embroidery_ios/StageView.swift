@@ -188,12 +188,12 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .overlay(alignment: .bottom) { frameTimeReadout }
     }
 
-    /// Present only in debug builds, and only for the measurement fixture — **or for any
+    /// Present only in debug builds, and only for the measurement fixtures — **or for any
     /// design when the process was launched with `-US310FrameTimes`**.
     ///
     /// The launch argument exists because US-310's premise check needs a mid-gesture capture at
-    /// a *small* stitch count, and there was no instrumented small design to take one on: the
-    /// only fixture this readout was shown for is `us309Synthetic`, which is fixed at
+    /// a *small* stitch count, and there was no instrumented small design to take one on: at
+    /// the time the only fixture this readout was shown for was `us309Synthetic`, fixed at
     /// `us309SyntheticStitchCount` (50 001) with no smaller variant. Without a second count the
     /// 69.1 ms mid-gesture median cannot be attributed — a cost proportional to the primitive
     /// count and a fixed per-frame cost are indistinguishable from one measurement.

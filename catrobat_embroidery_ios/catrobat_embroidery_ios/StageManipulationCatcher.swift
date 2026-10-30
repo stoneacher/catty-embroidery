@@ -74,6 +74,11 @@ struct StageManipulationCatcher: UIViewRepresentable {
         let view = StageTouchTrackingView()
         context.coordinator.install(on: view)
         apply(to: context.coordinator)
+        #if DEBUG
+            // US-316: only a process launched with `-US316Capture` has a session to register
+            // with; otherwise `current` is nil and this is a no-op.
+            CaptureSession.current?.register(context.coordinator)
+        #endif
         return view
     }
 

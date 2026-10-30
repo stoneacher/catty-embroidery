@@ -74,6 +74,14 @@ public let us309SyntheticColorRunCount = 5
 /// A boustrophedon hatch that fills ADR-007's stage in five colour bands and stitches 50 001
 /// times over roughly seventeen seconds at ADR-018's one tick per displayed frame.
 public func makeUS309SyntheticProgram() -> Program {
+    makeSyntheticHatch(name: "US309 Synthetic", rowSpacing: rowSpacing)
+}
+
+/// The hatch both measurement fixtures share, differing only in the spacing between rows.
+///
+/// Internal so that `makeUS316CompactProgram` is the same builder at a different spacing, not a
+/// copy that could drift from this one.
+func makeSyntheticHatch(name: String, rowSpacing spacing: Double) -> Program {
     var bricks: [Brick] = [.runningStitch(length: .number(stitchLength))]
 
     // One `repeatLoop` per band, each preceded by its colour — the US-208 shape. Setting the
@@ -82,16 +90,16 @@ public func makeUS309SyntheticProgram() -> Program {
     for hex in bandColors {
         bricks.append(.setThreadColor(hex: hex))
         bricks.append(.repeatLoop(times: .number(Double(rowPairs / bandColors.count))))
-        bricks += rowPair()
+        bricks += rowPair(spacing: spacing)
         bricks.append(.loopEnd)
     }
 
     return Program(
-        name: "US309 Synthetic",
+        name: name,
         scenes: [Scene(objects: [Object(
             name: "Needle",
             startX: -rowWidth / 2,
-            startY: -Double(rowPairs) * rowSpacing,
+            startY: -Double(rowPairs) * spacing,
             // ADR-007: 0 degrees is up, so 90 faces the first row along +x.
             startHeading: 90,
             zIndex: 0,
@@ -102,15 +110,15 @@ public func makeUS309SyntheticProgram() -> Program {
 
 /// Two rows and the two spacing moves between them, so one iteration leaves the needle facing
 /// the way it started and the hatch stays a hatch rather than drifting into a spiral.
-private func rowPair() -> [Brick] {
+private func rowPair(spacing: Double) -> [Brick] {
     [
         .moveNSteps(.number(rowWidth)),
         .turnLeft(.number(90)),
-        .moveNSteps(.number(rowSpacing)),
+        .moveNSteps(.number(spacing)),
         .turnLeft(.number(90)),
         .moveNSteps(.number(rowWidth)),
         .turnRight(.number(90)),
-        .moveNSteps(.number(rowSpacing)),
+        .moveNSteps(.number(spacing)),
         .turnRight(.number(90))
     ]
 }

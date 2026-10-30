@@ -73,6 +73,19 @@ struct FrameTimeStatistics: Equatable {
     /// frames. Found on the running app while verifying the drawn-frame split.
     let worstAtMilliseconds: Double
 
+    /// One frame over the bar's dropped-frame limit, and where it started.
+    struct DroppedFrame: Equatable {
+        let startMilliseconds: Double
+        let milliseconds: Double
+    }
+
+    /// Every frame **strictly over** `droppedFrameMilliseconds`, in arrival order (US-316).
+    ///
+    /// The bar reads "no frame > 33.3 ms", so a capture fails its second clause exactly when
+    /// this is non-empty; listing them, with their offsets, is what lets a capture say whether
+    /// its tail is one frame or a pattern. Offsets follow the same rule as `worstAtMilliseconds`.
+    let droppedFrames: [DroppedFrame]
+
     /// **Optional, and that is a correctness decision rather than fastidiousness.** A zeroed
     /// `FrameTimeStatistics` would report `meetsSixtyFps == true` for a capture that never
     /// rendered a frame — the most flattering possible answer to the criterion, produced by
@@ -112,6 +125,16 @@ struct FrameTimeStatistics: Equatable {
             elapsed += duration
         }
         worstAtMilliseconds = worstAt
+
+        var dropped: [DroppedFrame] = []
+        var start = 0.0
+        for (index, duration) in durations.enumerated() {
+            if duration > Self.droppedFrameMilliseconds {
+                dropped.append(DroppedFrame(startMilliseconds: offsets?[index] ?? start, milliseconds: duration))
+            }
+            start += duration
+        }
+        droppedFrames = dropped
     }
 
     /// AC3's bar, in one place: **p99 ≤ one frame, and no frame past two.**

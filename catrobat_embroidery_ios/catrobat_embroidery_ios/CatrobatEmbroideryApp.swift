@@ -110,6 +110,10 @@ struct WindowRootView: View {
                 model.launch(sceneID: ProjectID(uuidString: storedProjectID))
             }
             storedProjectID = model.projectID.uuidString
+            #if DEBUG
+                // US-316: an unattended capture starts once the window's model has launched.
+                CaptureSession.current?.attach(model: model)
+            #endif
         }
         .onDisappear {
             model.close()

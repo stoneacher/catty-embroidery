@@ -198,4 +198,25 @@ struct FrameTimeStatisticsTests {
         let stats = try #require(FrameTimeStatistics(millisecondsPerFrame: [16.0, 40.0, 16.0, 40.0]))
         #expect(abs(stats.worstAtMilliseconds - 16) < 0.001)
     }
+
+    /// US-316: every frame over the bar's 33.3 ms, with where it started. **Strictly over**,
+    /// as the bar reads ("no frame > 33.3 ms"), so a frame of exactly 33.3 is not listed.
+    @Test("frames over the dropped-frame limit are listed with their start offsets")
+    func droppedFramesAreListed() throws {
+        // Exactly representable durations, so the running offsets are exact.
+        let stats = try #require(FrameTimeStatistics(millisecondsPerFrame: [16.5, 16.5, 33.5, 16.5, 50.0]))
+        #expect(stats.droppedFrames == [
+            .init(startMilliseconds: 33.0, milliseconds: 33.5),
+            .init(startMilliseconds: 83.0, milliseconds: 50.0)
+        ])
+    }
+
+    @Test("dropped frames use the supplied offsets, and a frame of exactly 33.3 is not one")
+    func droppedFramesUseOffsets() throws {
+        let stats = try #require(FrameTimeStatistics(
+            millisecondsPerFrame: [33.3, 40.0, 16.7],
+            startOffsetsMilliseconds: [1_000, 2_000, 3_000]
+        ))
+        #expect(stats.droppedFrames == [.init(startMilliseconds: 2_000, milliseconds: 40.0)])
+    }
 }

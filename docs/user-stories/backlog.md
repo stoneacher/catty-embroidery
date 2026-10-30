@@ -12,61 +12,6 @@ ADR and journal references keep resolving.
 
 ---
 
-## US-316 — The mid-gesture tail survives both rungs of the ladder, and the next experiment is named
-
-*Decided 2026-10-25 (Sebastian), M5 planning: not pulled into Project management, which shares no code with it; scheduled as **its own feature right after M5**, before any device or TestFlight capture. This is the reason the entry below asks for before a third deferral.*
-
-**Considered at M4 planning (2026-09-19) and not taken.** It stays here, and the cost is stated
-rather than glossed: M3's 60 fps exit criterion remains **unmet with no scheduled work against
-it**, and the A15-class capture — open since 2026-09-02, and already re-deferred once at M3 close
-on the explicit grounds that US-316 must precede it — stays blocked for a second milestone. The
-risk being accepted is this file's own preamble: the ±121 trap was deferred once and then
-mis-scoped twice by review. It is accepted knowingly. M4's value is the editor, and US-316 is an
-open-ended measurement story whose first half is building a fixture that may refute ADR-009's bet
-rather than tune it — which is not work that sits comfortably beside a milestone with a
-feature-shaped exit criterion. **Whoever plans M5 should read the next two paragraphs before
-deferring it a third time**, because what it would buy has already changed once (see the
-2026-09-19 journal entry on re-reading an open item against what has been learned since).
-
-**Epic**: E4 Stage & preview | **Estimate**: unknown until the fixture exists — the measurement
-*is* the story | **Discovered**: 2026-09-17, US-313b's AC12/AC13 controls; carried out of M3 at
-its close on 2026-09-19 as the one thing standing between the milestone and its own 60 fps exit
-criterion.
-
-**Problem**: every mid-gesture capture at 50 001 stitches still reads FAIL on the bar, and on the
-tail alone — worst frame **50.008 ms** in US-310's device session and **38.076 ms** in the cleanest
-capture to date (2026-09-18), against a bar of 33.3 ms. Median and p95 are both at one refresh
-period, so this is a tail, not a throughput problem.
-
-**Both standing explanations are refuted by measurement, which is what makes this a story rather
-than a rung.** ADR-029's ladder has now been re-pointed twice. Rung 1 (the bake schedule) cannot
-touch a path that never bakes — US-309's device session. Rung 2 (draw fewer segments) landed in
-US-310, moved the median from 69.1 ms to 16.670 ms on device, and **did not move the tail at any of
-four stride values**; doubling the target left the worst frame *identical* at 50.008 ms. US-313b's
-two control criteria then closed the door from the other side: a 3 194-stitch design drawing *more*
-uncoarsened segments than the coarsened 50 001-stitch one runs at exactly one refresh period, while
-halving the coarsened count changes nothing. **The mid-gesture frame cost is not the number of
-segments drawn**, and the gesture-end commit — the suspect ADR-030 named — is not it either, since
-the tail is present in a capture holding a single gesture that is never released.
-
-**The named experiment, recorded in ADR-029 as a hypothesis rather than acted on**: the two designs
-differ in *area covered* far more than in geometry, so fill rate and overdraw are the candidate. A
-**50 000-stitch fixture covering a small area** discriminates — if it sits at the floor, area is the
-variable and the tail is a rasterisation cost rather than a planning one. This repo has no such
-fixture, and building it is the story's first half.
-
-**Open at planning, nothing decided**: whether the discriminator is a new `Samples` design or a
-test-only synthetic (they answer different questions — only a sample can be captured on device with
-the shipping instrument); whether a positive result implicates `Canvas` blending or the dot
-ellipses specifically; and whether the answer touches **ADR-009's bet itself** rather than its
-constants, which is the outcome that would matter most and the one no evidence yet supports.
-
-**Blocks** the A15-class capture M3 carried out alongside it: confirming a fix on A15 requires
-there to be a fix. Read ADR-029's 2026-09-18 amendment before taking any capture for this story — a
-capsule `PASS` is not on its own sufficient evidence for the bar's dropped-frame clause.
-
----
-
 ## US-317 — A Linux engine-test job, so target isolation is structural rather than textual
 
 **Raised by US-401's review loop (2026-09-20), not scheduled.** `EditorCoreTargetIsolationTests`
@@ -429,9 +374,19 @@ in the same spirit as US-211's and US-313's above.
   the `Projects` package target, vended through `Samples` (ADR-042 and ADR-050 amendments). The
   entry's measurement (60–110 s per app mutant) was the case for it, and it held: package mutants
   then ran in about 2.4 s.
+- **US-316 — the mid-gesture tail** → taken on 2026-10-29 as its own feature,
+  [Stage 60 fps tail](../features/stage-60fps-tail.md) (PR #83). The entry's named experiment was
+  built (an overlap-density fixture, live dot/thread controls, an unattended scripted-gesture
+  driver), but its premise did not survive the first traced session: **A0 no longer tails**, by
+  hand or by driver, on a coverage-free build (ADR-043's 2026-10-29 amendment). The experiment
+  needed a tail to discriminate, so it was not run, and Sebastian decided to record the
+  mid-gesture pan as met with the cause unattributed. What the entry could not know: the device
+  build command it inherited produced a coverage-instrumented binary, which may be what the earlier
+  captures measured. Five scripted pinch-and-pan runs were clean as well. Still open from it: a hand
+  pinch-and-pan run, and the A15-class capture.
 
-**Left in this file at M4 planning: US-316 only** — see above for why, and for what it costs.
+**Left in this file at M4 planning: US-316 only** — it has since left too (see its bullet above; the entry itself is in git history before PR #83).
 **Added since**: US-317 (2026-09-20), US-318 (2026-09-23), US-319 and US-321–US-326 (from M4 and
 the brick-backend and variables features), US-328 (2026-10-25), US-330 (2026-10-26) and US-331 (2026-10-28, M5 drift check).
-US-320, US-327 and US-329 have left again (above). Next to be taken: US-316, as its own feature
-(Sebastian, 2026-10-25; [`ROADMAP.md`](../ROADMAP.md#features-from-2026-10-09)).
+US-316, US-320, US-327 and US-329 have left again (above). US-322 (raster never composited in the
+default layout) was pulled into US-316's feature as its PR 2 and is still open.

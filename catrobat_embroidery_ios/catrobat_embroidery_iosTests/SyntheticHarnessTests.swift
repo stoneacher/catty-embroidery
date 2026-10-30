@@ -28,34 +28,50 @@ struct SyntheticHarnessTests {
         #expect(AppModel(library: .inMemory()).samples.map(\.id).contains(.us309Synthetic))
     }
 
-    /// It is **last**, so it can never displace a shipping sample from the top of the picker
-    /// and every existing screenshot and index-based expectation keeps its meaning.
-    @Test("the synthetic design is last in the picker")
-    func theSyntheticDesignIsLastInThePicker() {
+    /// The measurement fixtures are **last**, US-309's then US-316's, so they can never
+    /// displace a shipping sample from the top of the picker and every existing screenshot
+    /// and index-based expectation keeps its meaning.
+    @Test("the measurement fixtures are last in the picker, in order")
+    func theMeasurementFixturesAreLastInThePicker() {
         let ids = AppModel(library: .inMemory()).samples.map(\.id)
-        #expect(ids.last == .us309Synthetic)
-        #expect(ids.dropLast() == SampleLibrary.all.map(\.id))
+        #expect(Array(ids.suffix(2)) == [.us309Synthetic, .us316Compact])
+        #expect(Array(ids.dropLast(2)) == SampleLibrary.all.map(\.id))
+    }
+
+    /// Both fixtures exist to be captured, so both show the frame-time capsule; a shipping
+    /// sample does not.
+    @Test("both measurement fixtures show the frame-time readout, and no shipping sample does")
+    func bothFixturesShowTheReadout() throws {
+        let model = AppModel(library: .inMemory())
+        for id in [SampleID.us309Synthetic, .us316Compact] {
+            try model.select(#require(model.samples.first { $0.id == id }))
+            #expect(model.showsFrameTimeReadout, "\(id) hides the readout")
+        }
+        try model.select(#require(model.samples.first))
+        #expect(!model.showsFrameTimeReadout)
     }
 
     /// The guard that keeps ROADMAP M3's "not test shapes" rule true, and that keeps the five
     /// `SamplesTests` suites off this design.
     @Test("the synthetic design is not in the shipping library")
     func theSyntheticDesignIsNotInTheShippingLibrary() {
-        #expect(!SampleLibrary.all.map(\.id).contains(.us309Synthetic))
-        #expect(!SampleID.shipping.contains(.us309Synthetic))
+        for id in [SampleID.us309Synthetic, .us316Compact] {
+            #expect(!SampleLibrary.all.map(\.id).contains(id))
+            #expect(!SampleID.shipping.contains(id))
+        }
     }
 
     /// Selecting it must give the stage everything a shipping sample gives it — otherwise the
     /// screenshots this story owes are of a different screen from the one users see.
-    @Test("selecting the synthetic design configures the stage like any other")
-    func selectingTheSyntheticDesignConfiguresTheStageLikeAnyOther() throws {
+    @Test("selecting a measurement fixture configures the stage like any other",
+          arguments: [SampleID.us309Synthetic, .us316Compact])
+    func selectingAFixtureConfiguresTheStageLikeAnyOther(_ id: SampleID) throws {
         let model = AppModel(library: .inMemory())
-        let synthetic = try #require(model.samples.last)
+        let synthetic = try #require(model.samples.first { $0.id == id })
 
         model.select(synthetic)
 
-        #expect(model.selection?.provenance == .us309Synthetic)
-        #expect(model.selection?.provenance == synthetic.id)
+        #expect(model.selection?.provenance == id)
         // Its program's name, as for every sample (M5, one name), and valid — a name the field
         // rejected would leave the export gate shut in every screenshot.
         #expect(try model.exporter.validatedName.get().value == synthetic.program.name)
@@ -67,10 +83,16 @@ struct SyntheticHarnessTests {
     /// package pins what the *builder* produces, and this pins that the builder the **app
     /// links** is that one. A harness wired to the wrong program would pass every test in
     /// `SyntheticDesignTests` and still capture a 3 000-stitch design.
-    @Test("the synthetic design the app links reaches fifty thousand stitches")
-    func theSyntheticDesignTheAppLinksReachesFiftyThousandStitches() throws {
+    @Test("each fixture the app links reaches fifty thousand stitches",
+          arguments: [SampleID.us309Synthetic, .us316Compact])
+    func eachFixtureTheAppLinksReachesFiftyThousandStitches(_ id: SampleID) throws {
         let model = AppModel(library: .inMemory())
-        let synthetic = try #require(model.samples.last)
+        let synthetic = try #require(model.samples.first { $0.id == id })
+        // The builder for *this* id, not merely some 50k design: a compact entry wired to the
+        // original's builder would pass the count below and make condition B a second A0
+        // (`swift-code-reviewer`, slice 1).
+        let expected = id == .us316Compact ? makeUS316CompactProgram() : makeUS309SyntheticProgram()
+        #expect(synthetic.program == expected)
 
         var interpreter = Interpreter(program: synthetic.program, clock: InterpreterClock(tickDelta: 1.0 / 60.0))
         var stitches = 0

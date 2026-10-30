@@ -6,8 +6,8 @@ import Samples
 /// limit; `samples` followed in M5 for the same reason. `isSelected(_:)` went in project
 /// management slice 10: a picked sample is a draft, not a row, so no view asked it any more.
 extension AppModel {
-    /// Whether the stage draws US-309's frame-time readout: only for the measurement fixture,
-    /// and only while it is still that fixture.
+    /// Whether the stage draws US-309's frame-time readout: only for the two measurement
+    /// fixtures (US-309's and US-316's), and only while the selection is still one of them.
     ///
     /// Here rather than at `RootView`'s call site because `SampleID.us309Synthetic` exists only
     /// under `#if DEBUG` — comparing against it unguarded broke the Release build, which
@@ -15,7 +15,7 @@ extension AppModel {
     /// `provenance` and so hides the readout; it is a measurement harness, not a design.
     var showsFrameTimeReadout: Bool {
         #if DEBUG
-            selection?.provenance == .us309Synthetic
+            selection?.provenance == .us309Synthetic || selection?.provenance == .us316Compact
         #else
             false
         #endif
@@ -45,8 +45,12 @@ extension AppModel {
         //
         // Last, so it can never displace a shipping sample from the top of the list and
         // every existing screenshot keeps its meaning (`SyntheticHarnessTests`).
+        //
+        // US-316's overlap-density fixture follows it, for the same reasons: it is captured on
+        // device beside US-309's, so both must be reachable in the real app.
         private static let listedSamples = SampleLibrary.all + [
-            SampleProgram(id: .us309Synthetic, program: makeUS309SyntheticProgram())
+            SampleProgram(id: .us309Synthetic, program: makeUS309SyntheticProgram()),
+            SampleProgram(id: .us316Compact, program: makeUS316CompactProgram())
         ]
     #else
         private static let listedSamples = SampleLibrary.all

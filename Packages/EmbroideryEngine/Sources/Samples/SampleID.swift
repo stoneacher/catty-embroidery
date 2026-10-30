@@ -59,10 +59,15 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     /// throwing. *(Corrected 2026-10-26: this comment used to rest the safety on
     /// "the app persists nothing", which M5 made false.)*
     case us309Synthetic
+
+    /// US-316's overlap-density fixture: US-309's hatch with its rows fifteen times closer,
+    /// so the same stitches cover a fifteenth of the area. Listed after `us309Synthetic`, and
+    /// kept out of `shipping` and `SampleLibrary.all` for the same reasons.
+    case us316Compact
     #endif
 
-    /// The cases that ship — every case in a Release build, and everything but
-    /// US-309's fixture in a debug one.
+    /// The cases that ship — every case in a Release build, and everything but the
+    /// measurement fixtures (US-309's and US-316's) in a debug one.
     ///
     /// **Not `allCases`, and the difference is the point.** `allCases` answers
     /// "what can this enum be"; this answers "what is in the library", which is
@@ -70,7 +75,7 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
     /// this existed they used `allCases` and were the same question by accident.
     public static var shipping: [SampleID] {
         #if DEBUG
-        allCases.filter { $0 != .us309Synthetic }
+        allCases.filter { $0 != .us309Synthetic && $0 != .us316Compact }
         #else
         allCases
         #endif
@@ -90,6 +95,8 @@ public enum SampleID: String, Sendable, Hashable, CaseIterable, Codable {
         // seeded export name is valid and the export gate opens in the
         // screenshots this story owes.
         case .us309Synthetic: "US309Synthetic"
+        // 12 ASCII characters, inside the `LA` field's 15, like the case above.
+        case .us316Compact: "US316Compact"
         #endif
         }
     }

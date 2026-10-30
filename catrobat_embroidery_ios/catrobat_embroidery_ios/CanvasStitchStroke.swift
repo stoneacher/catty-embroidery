@@ -15,13 +15,71 @@ import SwiftUI
 /// anything else in the app module, and internal rather than `private` because the type that
 /// used to hold them is itself `private` to its file.
 enum CanvasStitchStroke {
+    /// Which halves of a frame are drawn: the thread (and travel), the dots, or both. Always
+    /// both, except under US-316's DEBUG live controls (`LiveDrawControl`).
+    struct Layers: Equatable {
+        let thread: Bool
+        let dots: Bool
+
+        static let all = Layers(thread: true, dots: true)
+    }
+
+    /// One half of a frame, in the order it is drawn.
+    enum Operation: Equatable {
+        case thread
+        case dots
+    }
+
+    /// What a frame draws, **in order**: the thread, then the dots — so dots sit on top of every
+    /// stroke — minus whatever `layers` leaves out. `stroke` and the live `Canvas` both draw
+    /// through this, so the order has one definition.
+    static func operations(for layers: Layers) -> [Operation] {
+        var operations: [Operation] = []
+        if layers.thread {
+            operations.append(.thread)
+        }
+        if layers.dots {
+            operations.append(.dots)
+        }
+        return operations
+    }
+
+    /// Draws the operations `layers` allows, in `operations(for:)` order.
+    static func draw(
+        _ plan: StitchDrawPlan,
+        of points: [PreviewStitch],
+        transform: StageTransform,
+        style: (travelOpacity: Double, layers: Layers),
+        into context: inout GraphicsContext
+    ) {
+        // **The shipping path, kept direct** (Codex, PR #83 round 1): every frame of a build
+        // without US-316's DEBUG controls, and every bake, draws both halves — the thread, then
+        // the dots — with no operation list built per frame. The list below only serves the
+        // controls, and `operations(for: .all)` is pinned to this same order.
+        if style.layers == .all {
+            strokeThread(plan, of: points, transform: transform, travelOpacity: style.travelOpacity, into: &context)
+            fillDots(plan, of: points, transform: transform, into: &context)
+            return
+        }
+        for operation in operations(for: style.layers) {
+            switch operation {
+            case .thread:
+                strokeThread(plan, of: points, transform: transform, travelOpacity: style.travelOpacity, into: &context)
+            case .dots:
+                fillDots(plan, of: points, transform: transform, into: &context)
+            }
+        }
+    }
+
     /// **One stroking function for both layers, and that is the point.**
     ///
     /// `Image(size:renderer:)` (iOS 16+) and `Canvas` both hand out an
     /// `inout GraphicsContext`, so the settled pixels and the live pixels can be
     /// produced by identical code. If they were not, the seam at the watermark would
     /// differ in cap shape, width rounding or alpha, and no unit test would notice — a
-    /// human would, on a screenshot, eventually.
+    /// human would, on a screenshot, eventually. The bake calls this; the live `Canvas` calls
+    /// `draw` directly so US-316's DEBUG controls can pass their `Layers`, and this is `draw`
+    /// with every layer — one code path either way.
     ///
     /// `points` is passed rather than read from the display list because the settled
     /// bake strokes a *copy* of the prefix; the plan's indices are valid against either.
@@ -32,39 +90,64 @@ enum CanvasStitchStroke {
         travelOpacity: Double,
         into context: inout GraphicsContext
     ) {
+        draw(plan, of: points, transform: transform, style: (travelOpacity, .all), into: &context)
+    }
+
+    /// The plan's dots, as one fill per colour run.
+    ///
+    /// After every stroke, so dots always sit on top — a deviation from Catroid, which
+    /// interleaves them in stitch order and lets a later run cover an earlier run's penetration
+    /// points. Separate from `strokeThread` so US-316's DEBUG live controls can draw one half
+    /// (`Layers`); `stroke` draws both, in this order.
+    static func fillDots(
+        _ plan: StitchDrawPlan,
+        of points: [PreviewStitch],
+        transform: StageTransform,
+        into context: inout GraphicsContext
+    ) {
+        // Building the path and submitting it are separate intervals, so a trace can tell CPU
+        // path construction (rung 4's question) from the fill call (D9; Codex slice-4 review).
+        for run in plan.dots {
+            let path = StageSignposts.interval("dotPath") { dotPath(run, of: points, transform: transform) }
+            StageSignposts.interval("fill") { context.fill(path, with: .color(Color(run.color))) }
+        }
+    }
+
+    /// The plan's thread and travel strokes. See `fillDots` for why the halves are separate.
+    static func strokeThread(
+        _ plan: StitchDrawPlan,
+        of points: [PreviewStitch],
+        transform: StageTransform,
+        travelOpacity: Double,
+        into context: inout GraphicsContext
+    ) {
+        // Path construction and the stroke call are separate intervals (D9; Codex slice-4
+        // review): CPU path building is rung 4's question, submission is not.
         for stroke in plan.strokes {
-            let path = segmentPath(stroke.segments, of: points, transform: transform)
+            let path = StageSignposts.interval("segmentPath") {
+                segmentPath(stroke.segments, of: points, transform: transform)
+            }
+            let style: StrokeStyle
+            let shading: GraphicsContext.Shading
             switch stroke.style {
             case .thread:
-                context.stroke(
-                    path,
-                    with: .color(Color(stroke.color)),
-                    style: StrokeStyle(
-                        lineWidth: StitchDrawMetrics.threadWidth(atScale: transform.scale),
-                        lineCap: .round,
-                        lineJoin: .round
-                    )
+                shading = .color(Color(stroke.color))
+                style = StrokeStyle(
+                    lineWidth: StitchDrawMetrics.threadWidth(atScale: transform.scale),
+                    lineCap: .round,
+                    lineJoin: .round
                 )
             case .traversal:
-                context.stroke(
-                    path,
-                    with: .color(StageChrome.travelLine.opacity(travelOpacity)),
-                    style: StrokeStyle(
-                        lineWidth: StitchDrawMetrics.traversalWidthInViewPoints,
-                        lineCap: .butt,
-                        dash: StageChrome.travelDash
-                    )
+                shading = .color(StageChrome.travelLine.opacity(travelOpacity))
+                style = StrokeStyle(
+                    lineWidth: StitchDrawMetrics.traversalWidthInViewPoints,
+                    lineCap: .butt,
+                    dash: StageChrome.travelDash
                 )
             case .suppressed:
                 continue // never planned; the switch is exhaustive so a new style is a compile error
             }
-        }
-
-        // After every stroke, so dots always sit on top — a deviation from Catroid,
-        // which interleaves them in stitch order and lets a later run cover an earlier
-        // run's penetration points.
-        for run in plan.dots {
-            context.fill(dotPath(run, of: points, transform: transform), with: .color(Color(run.color)))
+            StageSignposts.interval("stroke") { context.stroke(path, with: shading, style: style) }
         }
     }
 

@@ -255,11 +255,26 @@ private struct CanvasStitchLayers: View {
             if compositingRaster, let baked {
                 context.draw(baked.image, in: CGRect(origin: .zero, size: size))
             }
-            CanvasStitchStroke.stroke(
-                .forFrame(of: display, at: transform, compositingRaster: compositingRaster),
+            #if DEBUG
+                // US-316: the live controls of conditions D and E, and US-322's record of the
+                // settled frame — the `Canvas`'s own `size` beside the viewport, not one for both.
+                let layers = LiveDrawControl.forProcess.layers(isLive: !transform.canUseRaster)
+                if transform.canUseRaster {
+                    StageDrawCounter.recordSettled(StageDrawRecord(
+                        canvasSize: size, viewport: viewport, rasterComposited: compositingRaster
+                    ))
+                }
+            #else
+                let layers = CanvasStitchStroke.Layers.all
+            #endif
+            let plan = StageSignposts.interval("plan") {
+                StitchDrawPlan.forFrame(of: display, at: transform, compositingRaster: compositingRaster)
+            }
+            CanvasStitchStroke.draw(
+                plan,
                 of: display.stitches,
                 transform: transform.current,
-                travelOpacity: travelOpacity,
+                style: (travelOpacity, layers),
                 into: &context
             )
         }

@@ -4061,3 +4061,111 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **What the extra rounds bought:** the full re-reads of the M3 and M4 docs, the staleness fix for the PR's own edits, and through that the run's only drift finding, the stale US-323 claim. Without them the check would have closed on a skim with a false "nothing found".
   - **What they cost:** about 770k extraction tokens and three Codex rounds.
   - **For the record:** on a drift-check PR, a "docs-only" fix can still change what the check found, because the docs are its corpus. Whether condition 1 should treat corpus changes as code changes in that case is a question for Sebastian, not something to settle here.
+
+## 2026-10-29 (Stage 60 fps tail) — the brief's discriminator could not exist as planned, and Codex found why
+
+- **Planning.** `swift-architect` drafted the brief for US-316 (`docs/features/stage-60fps-tail.md`). Sebastian accepted D1–D11 as drafted and pulled in US-322, with PR 2 on its own branch. The draft rested on a compact 50k fixture, changed only in `rowSpacing`, that would hold "every segment's view-space length and orientation" and vary only the covered area. It also planned a DEBUG scripted-gesture driver, so the device captures no longer need a person at the phone.
+- **Codex brief round (one round, ADR-041), 7 findings, 4 High and 3 Medium, all taken.**
+  - **The High that changed the experiment: the fixture's invariant is false, and more so than Codex said.** Codex pointed at the row transitions, where the next row starts diagonally from the last row's anchor. Checking it showed the larger reason: `RunningStitchPattern` rounds every stitch to whole stage points (`javaRound`), so at a spacing of 0.1 about ten rows land on the same `y`. No fixture can shrink the area while keeping the geometry. B was recast as an **overlap-density** condition with its uncontrolled differences listed. Two DEBUG renderer controls (live dots suppressed, live thread suppressed) now carry the dot-versus-thread question that the fixture could not.
+  - **The other three Highs:**
+    - The calibration compared one hand run with one driver run by class only. It is now 3 against 3, with a divergence limit fixed in advance, and a failed calibration means the full matrix by hand rather than a reduced one.
+    - The decision rule had a 2-of-5 branch with no terminal rule, and one Hitches trace chosen out of five runs. Now every run is traced, a run is "over" on either instrument, there is a 10-run rule, and "inconclusive" is an explicit ending.
+    - The Time Profiler was credited with settling path construction against ellipse scan conversion, which CPU sampling cannot see.
+  - **The Mediums:**
+    - A spacing of 0.25 cannot meet the ≥ 10× criterion (6×), and neither spacing inherits the original's half-stitch argument. Spacing 0.1 is now preselected, and the floor margin is pinned in ulps.
+    - "Done whatever the result" had no ending for an inconclusive result.
+    - AC6 paraphrased ADR-043's bar ("no hitch" for "no frame", the p99 clause left out). It now quotes the bar word for word.
+- **Two things worth keeping.** Both the planner and I read "only `rowSpacing` changes" as "only the area changes". The rounding that breaks it sits three files away from the fixture, in the running-stitch pattern. The brief round cost one Codex run and caught it before any test pinned the false invariant as literals. A test written against that invariant would have pinned counts that happen to match, which is exactly the failure Codex named: equal counts do not imply equal geometry.
+
+## 2026-10-29 (Stage 60 fps tail, slices 1–4) — the instrument was debugged by running it, not by its tests
+
+- **Slices 1–4 built the measurement instrument for US-316** (PR #83, draft):
+  - the overlap-density fixture;
+  - a launch-argument capture scenario and console report;
+  - a scripted-gesture driver through the stage's real `Coordinator`;
+  - DEBUG live controls that drop the dots or the thread;
+  - a settled-frame record for US-322;
+  - signposts.
+
+  Every slice went red, then green, and was mutation-checked: 6 + 4 + 5 + 4 mutants in the slices, 9 more after the reviews, all killed.
+- **Five defects were found by running the thing, and no unit test could have found any of them.** Each was then pinned by a test written red first.
+  - *Simulator dry run 1:* playing waited for the stage's coordinator, which exists only once a design has drawn. That was a deadlock: the stage sat at "Ready to stitch". Fix: play at launch, and gate the settle on the coordinator.
+  - *Simulator dry run 1:* a 10 s hold recorded a 9.9 s window, because the recorder's first callback only sets a baseline. Fix: the minimum hold is now 10.5 s.
+  - *Device pilot p1:* `DRAWS NOT MEASURED (2)`, with recording and the gesture begun in one tick.
+  - *Device pilot p2:* still one unmeasured draw with the two a tick apart. Fix: wait 0.1 s between them.
+  - *Device pilot p4:* that wasn't enough, because the untimed draw was at the **end**. The recorder times a draw by its next callback, so stopping mid-motion leaves the last draw untimed. Fix: hold the gesture still for 0.1 s before stopping. Every draw is now timed.
+- **The coverage finding.** The device app logged `LLVM Profile Error: Failed to write file "default.profraw"`. That error only appears in an instrumented binary, and nobody was looking for instrumentation.
+  - Xcode's effective Release settings for this scheme include `ENABLE_CODE_COVERAGE = YES`. The binary had 7 `__llvm_prf` sections.
+  - The US-309 hand-off's build command has no override, so the US-309 and US-310 device numbers *may* have been taken on an instrumented binary. Whether they were can't be re-checked now.
+  - The US-316 build passes `ENABLE_CODE_COVERAGE=NO CLANG_COVERAGE_MAPPING=NO`, and the binary now has none.
+  - This is an open question about the old records, not a correction to them: they stay as written.
+- **Reviews.**
+  - *Slice 1:* Codex found 2 Medium, both taken. One: the plan-shape test bypassed `forFrame`. Two: the floor-margin test never proved its mirror matches the engine; once it did, it turned out the fixture has 1,000 needle updates, not 500, because the turns count too.
+  - *Slice 1:* `swift-code-reviewer` found 3 Important, all taken. Its best one: no app test checked that `.us316Compact` is wired to the compact builder. Miswired, condition B would have been a second A0, and D1's table would have read it as "not moved by pixel controls".
+  - *Slice 4:* Codex found 4 issues, Medium highest. Taken: a single definition of the thread-then-dots order, pinned by a test, and signposts that separate path building from submission. Documented: captures need a single window. Declined: closing the signpost on an interrupted run, which D6 discards anyway.
+  - **Delegation note:** the two reviewers' slice 1 findings overlapped on exactly one, the mirror proof. Each found something the other missed.
+- **What the pilots hint at, not data:** under the driver, A0's capsule showed no frame over 33.3 ms in four untraced pilots. Every hand capture since US-310 tailed. If the traced runs agree, the calibration (D7) is the decisive step: either the tail lives above the coordinator, in touch delivery, or the driver isn't a valid surrogate. The rule for telling those apart was fixed before any of these numbers existed.
+- **Device access:** the iPhone is paired over the local network, so `devicectl` installs and launches without a cable. Sebastian confirmed that agent-run device installs need no prior ask. `xctrace` still lists the phone as offline until Xcode's device-access prompt is approved, which is a human step.
+- **CI:** `5f7a34e`'s app job failed on `StageFieldRenderingTests.matIsDrawnAtCurrent`, with no failure message and the runner's simulator-hub errors in the log. That's the same signature as the flake recorded on 2026-10-25. Slice 4 does touch the renderer that test calls, so it was not waved off: it passed in every local full-suite run, and the next commit's CI decides.
+
+## 2026-10-29 (Stage 60 fps tail, slice 5) — the experiment's premise was gone, and the decision was the human's
+
+- **The device session ran on Sebastian's iPhone 17 Pro over Wi-Fi.** `devicectl` and, after Xcode had prepared the phone, `xctrace` both work without a cable. No access prompt appeared, unlike US-309's notes. Opening Window → Devices and Simulators was the step that moved the phone from "Devices Offline" to "Devices".
+- **The result: A0 no longer tails.** D7's calibration paired 3 scripted runs with 3 hand runs on the final build, every run traced. All six had no frame over 33.3 ms and 0 hitches inside the window. Worst frames were 16.670 ms (scripted) and 16.702 ms (hand). Every hand capture from US-310 to M3 close had a worst frame of 38–50 ms.
+  - The brief's experiment (D1) needs A0 to tail before conditions B–E can discriminate anything, so the matrix was not run.
+  - The brief had no ending for "the baseline tail is gone". Its three D8 endings all assume a tail. That gap is worth noting: the planning, the Codex brief round and the review never asked "what if the thing we measure is no longer there?", although the pilots had hinted at it hours earlier.
+- **I proposed one discriminating experiment and Sebastian declined it.** The proposal: coverage on versus off, and pinch versus pan, 6 scripted runs, about 10 minutes. His reasoning: worst frames at one refresh period are good enough. It's his call as the owner of the bar's verdict. ADR-043's amendment records "met on the current build for the pan gesture, cause unattributed", lists the candidates (coverage instrumentation in the old build command, the gesture, everything since M3) and the open items (pinch, A15), and makes coverage-off device builds binding.
+  - **I corrected one number in the moment:** he read the worst frames as "~15 ms". They were 16.70 ms, which is one refresh period. The decision didn't change.
+- **The session's operational failures, each recorded in the hand-off for the next recorder:**
+  1. **`xctrace` leaves a 2–6 GB raw `instruments*.ktrace` in the user temp folder after every recording.** Twelve of them, about 40 GB, filled the disk mid-calibration, and a hand run was lost when its trace could not be saved. Sebastian deleted them and authorised deleting each run's leftover after the session.
+  2. **Per-frame signposts overflow the recorder's buffer** in a 2-minute recording, at about 21 intervals per frame. A hand trace kept only its last 0.7 s of intervals. They became opt-in (`-US316FrameSignposts`).
+  3. **A hand run's `capture` Begin went missing twice, once with signposts off.** The cause is unknown, and the summary script recovers the window from the result line and marks it.
+  4. **Xcode's Cmd+R silently replaced the measurement build with a Debug build.**
+  5. **One hand run had a misclick that Sebastian reported before either of us saw the numbers.** I proposed a retake on exactly that ground: a flag raised before the result is like D6's `INTERRUPTED`, while discarding a `FAIL` on a reason found afterwards is the move the rule exists to prevent. The run stays in the record with its 38 ms frame.
+- **The calibration was restarted once, on purpose.** The first pair ran on a build with per-frame signposts on, and the matrix would have used a build without them. Calibrating on one build and measuring on another is an easy objection to raise, so the pair was kept as a reported, uncounted run and the calibration redone.
+
+## 2026-10-29 (Stage 60 fps tail, PR #83 handover) — Codex round 1 caught the conclusion outrunning its evidence
+
+- **Codex handover round 1 on PR #83: 2 High, 3 Medium.** Both Highs were about the *record*, not the code, and both were right in substance.
+  - **High 1: the one hand run reading `PASS` had a reconstructed window.**
+    - *Taken as a precision fix:* the amendment now says which runs carry the trace evidence. That's hand runs 2 and 3, whose windows are intact with 0 hitches inside; their single untimed draw sits inside those windows.
+    - *Declined:* a retake. Its premise was that no fully valid hand run supports the bar. That holds for the `PASS` label, but not for the bar's two clauses, which runs 2 and 3 satisfy on both instruments.
+  - **High 2: D6's mixed pinch-and-pan condition, which the brief says is "always captured", had been skipped.** The amendment had also claimed M3's criterion was "no longer blocked", although the old failing captures pinched.
+    - Sebastian agreed to the 5 scripted mixed runs, unattended, about 5 minutes, on the calibration build. All five are clean.
+    - The amendment is narrowed: met on an A19 for pan (hand and driver) and scripted pinch-and-pan. M3's exit criterion, which names an A15, stays open.
+    - **This is the lesson:** when I wrote the amendment I had dropped a predeclared condition along with the declined coverage experiment, and the cross-vendor reviewer was the one who noticed that the brief said "always".
+  - **Mediums:**
+    - *Taken:* the shipping draw path no longer builds an operation array per frame (a direct thread-then-dots path for `.all`; a mutant swapping it is killed by `designIsOnTop`).
+    - *Taken:* hand runs record the thermal state at Record and Stop, so D6's discard rule applies to them.
+    - *Declined:* a pixel test of the D/E canvas wiring. The simulator screenshots show it, and a test-only injection would add plumbing to the shipping view.
+- **PR 2 (US-322) was opened stacked on #83 (PR #84).** The raster is baked at, and compared with, the viewport aligned to the device-pixel grid.
+  - The simulator now reads `canvas=370.00x257.00 viewport=370.00x256.83 raster=yes`.
+  - Mutants: one survived *because the test never exercised the epsilon* (770.5 / 3 × 3 happened to be exact), and one of my mutants was equivalent to the original. A noise test and a real half-to-even mutant fixed both. Equivalent mutants are a trap of hand-written mutation: a survivor first needs checking for whether it changed behaviour at all.
+
+## 2026-10-29 (Stage 60 fps tail, PR #83 handover, Codex round 2) — five hand runs to get one complete one
+
+- **Codex round 2: 1 High, 1 Medium, both right.**
+  - *High:* my reason for declining a hand retake was unsound. A `DRAWS NOT MEASURED` capsule has a draw with no duration, and a clean Hitches trace doesn't prove that draw was fast. That's why the recorder withholds `PASS`. So no single hand run carried both halves of the bar.
+  - *Medium:* the counted hand runs predated thermal logging.
+  - **What I'd note:** I argued against the first reviewer's version of this point in round 1 and lost it in round 2. The instrument's own verdict rule already encoded the answer.
+- **It took five more hand runs to get one complete one (hand 8).** Each failure was the instrument's, not Sebastian's:
+  - **(4)** the result event never reached the trace, and a file copy of every result line was added;
+  - **(5)** the 75 s recording limit ended mid-gesture;
+  - **(6)** a run he discarded himself;
+  - **(7)** the recording ran on past Stop, and the recorder dropped its old signposts, window and result included. A 66.7 ms hitch at 59.2 s is left that can't be placed. The display data, checked afterwards, covers every trace from about 0.4 s, so only signposts are lost and earlier hitch counts stand.
+- **The fixes that made run 8 complete:**
+  - hold the finger still for a second before Stop, so every draw is timed;
+  - the app exits a second after a hand Stop, so the recording ends behind the window, as scripted runs always did;
+  - the result line also goes to a file in the app's container;
+  - the summary script checks that the trace's display data covers the window.
+- **Hand 8:** every one of 987 drawn frames timed, worst 20.856 ms, p99 16.670, `PASS`, thermal nominal; in the same run's trace, 1 hitch of 12.5 ms and none over 33.3 ms.
+- **The pattern across the session:** every scripted run worked first time once the instrument was right, and every hand run found a new way to lose data. The difference is that a scripted run ends itself. A human-driven run has an open-ended tail, so the recorder keeps going after the part that matters, which is where all the losses came from.
+
+## 2026-10-29 (Stage 60 fps tail, PR #83 handover) — the Codex loop ends at the cap, with severity falling
+
+- **Five rounds, High → High → Medium → Medium → none.** The loop ended on a clean round, which was also the cap.
+  - Rounds 1–3 were about the *record* far more than the code: an overclaimed conclusion, a skipped predeclared condition, evidence that didn't hold both halves of the bar in one run, missing thermal state, and coverage that wasn't checked.
+  - Every one of those would have shipped as a thesis claim stronger than its evidence.
+  - The code findings were small: a per-frame array in the shipping path, and two edge cases in the summary script.
+- **The reviewer's leverage was largest where the brief was most explicit.** "Always captured" and D8's "same run" were in the brief all along. Codex read them literally, and I had read past them while wrapping up a result that looked clean.
+- **One decision was taken along the way, outside PR #83:** Sebastian kept US-322's fix (PR #84) after its before/after measurement showed about 70% fewer hitches on the animating path but a longer worst hitch (50.0 → 66.7 ms). The likely cause is that the raster now really renders, lazily, on its first composite. Recorded in PR #84.
