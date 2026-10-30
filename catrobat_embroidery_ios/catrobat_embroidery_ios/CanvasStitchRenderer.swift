@@ -118,31 +118,15 @@ private struct CanvasStitchLayers: View {
     /// has to be part of the bake key.
     @Environment(\.colorSchemeContrast) private var contrast
 
-    /// The screen's scale, for the size the raster is baked at (US-322, `pixelAligned`).
+    /// The screen's scale, for the raster's size (US-322, `RasterGeometry`).
     @Environment(\.displayScale) private var displayScale
 
     @State private var baked: Baked?
 
-    /// A `Canvas` size that differed from the prediction, with the viewport and scale it was
-    /// drawn at, so it is used only while they still hold.
-    private struct MeasuredSize: Equatable {
-        let viewport: ViewSize
-        let scale: CGFloat
-        let size: CGSize
-    }
-
-    @State private var measured: MeasuredSize?
-
-    /// The size the raster is baked at and compared with: the size the `Canvas` was last
-    /// **drawn** at for this viewport and scale, else the viewport on the device-pixel grid,
-    /// which is that size wherever the view's origin is on the grid (US-322). The comparison is
-    /// exact either way, so the raster is never stretched; the measurement only rescues the
-    /// cache where SwiftUI's edge snapping gave a size the prediction missed.
-    private var bakedSize: CGSize {
-        if let measured, measured.viewport == viewport, measured.scale == displayScale {
-            return measured.size
-        }
-        return CanvasStitchStroke.pixelAligned(viewport, scale: displayScale)
+    /// Where the raster is baked and drawn, and when a frame may use it — one value read by the
+    /// bake, its key, the guard and the draw (US-322; PR #84 review).
+    private var raster: RasterGeometry {
+        RasterGeometry(viewport: viewport, scale: displayScale)
     }
 
     /// Travel at full opacity under Increase Contrast, per ADR-024.
@@ -174,8 +158,11 @@ private struct CanvasStitchLayers: View {
         let resetCount: Int
 
         let transform: StageTransform
+        /// The raster's own size and the scale it was rendered at (US-322): a scale change
+        /// alone re-renders it, even where the overscanned size happens not to change.
         let width: Double
         let height: Double
+        let scale: Double
 
         /// The colour **scheme** is deliberately absent — nothing inside the canvas adapts
         /// to it, which is a real payoff of the dark-mode rule. Increase Contrast is a
@@ -213,10 +200,9 @@ private struct CanvasStitchLayers: View {
             // not fire. Keying on `current` would rebuild the raster every frame — strictly
             // worse than having no cache at all.
             transform: transform.bake,
-            // The aligned size, not the viewport: two viewports that lay out at the same pixel
-            // size bake the same raster (US-322).
-            width: bakedSize.width,
-            height: bakedSize.height,
+            width: raster.bakeSize.width,
+            height: raster.bakeSize.height,
+            scale: displayScale,
             increasedContrast: contrast == .increased,
             isLive: !transform.canUseRaster
         )
@@ -252,13 +238,14 @@ private struct CanvasStitchLayers: View {
             )
             // The raster was rendered at `bakedSize` and is blitted into `size`, so a
             // mismatch would *stretch* the settled layer while the live tail stays
-            // unstretched — a visibly misplaced seam. **The viewport is not that size**:
-            // US-315's probe measured 370 × 256.83 against a `size` of 370 × 257.0 in iPhone
-            // 17's default layout, and while the raster was baked at the viewport the exact
-            // comparison never passed there and the cache was never used (US-322). It is now
-            // baked at the viewport aligned to the device-pixel grid, which is `size`; if that
-            // prediction is ever wrong, falling back to `.entire` keeps the frame correct, which
-            // is the guard's job (`swift-code-reviewer`, US-305), at the cost of the cache.
+            // unstretched — a visibly misplaced seam. **So it is never blitted into `size`**: it
+            // is drawn at its own size from the origin, and the `Canvas` clips the overhang. It
+            // used to be baked at the viewport and compared with `size` exactly, and SwiftUI lays
+            // the `Canvas` out on the pixel grid — 370 × 257.0 against a viewport of 370 × 256.83
+            // in iPhone 17's default layout — so the cache was never used there (US-322). The
+            // raster is now baked with a pixel of overscan and used whenever it covers `size`
+            // (`RasterGeometry`); a `Canvas` it does not cover falls back to `.entire`, which keeps
+            // the frame correct (`swift-code-reviewer`, US-305), at the cost of the cache.
             // `canUseRaster` is false while a gesture or the fit animation is in flight: the
             // raster's pixels were baked at `bake`, so compositing them under a tail stroked
             // at `current` would misplace them. Stroking everything is correct at any
@@ -273,22 +260,18 @@ private struct CanvasStitchLayers: View {
             // and would have paid the same fidelity cost for nothing. `forFrame` asks
             // `canUseRaster` for the second question and takes this conjunction only as the
             // answer to the first, and it does so where `swift test` can see it (ADR-023).
-            if let corrected = CanvasStitchStroke.correctedBakeSize(drawn: size, baked: bakedSize) {
-                // Not during the draw: recorded on the next turn, which changes the bake key and
-                // re-bakes at the size the `Canvas` actually has. Equal sizes record nothing, so
-                // this settles after one correction.
-                let correction = MeasuredSize(viewport: viewport, scale: displayScale, size: corrected)
-                Task { @MainActor in measured = correction }
-            }
-            let compositingRaster = CanvasStitchStroke.compositingRaster(
+            let compositingRaster = raster.composites(
                 canUseRaster: transform.canUseRaster,
                 bakedKey: baked?.key,
                 expectedKey: bakeKey,
-                size: size,
-                bakedSize: bakedSize
+                canvas: size
             )
             if compositingRaster, let baked {
-                context.draw(baked.image, in: CGRect(origin: .zero, size: size))
+                // A copy of the context, clipped to the `Canvas`, so the overscan never draws
+                // outside it and the clip does not outlive the raster.
+                var rasterContext = context
+                rasterContext.clip(to: Path(CGRect(origin: .zero, size: size)))
+                rasterContext.draw(baked.image, in: raster.drawRect)
             }
             #if DEBUG
                 // US-316: the live controls of conditions D and E, and US-322's record of the
@@ -349,7 +332,7 @@ private struct CanvasStitchLayers: View {
         // the more expensive one.
         let settledPoints = Array(display.stitches[..<settled])
         let travelOpacity = travelOpacity
-        let size = bakedSize
+        let size = raster.bakeSize
 
         baked = Baked(
             key: bakeKey,

@@ -131,6 +131,12 @@
                 driver?.advance(to: seconds)
             case .stopRecording:
                 recorder.stop()
+                if scenario.condition == .animating {
+                    // `A0-run` starts recording before the stage has drawn a settled frame, so
+                    // the record worth reporting is the run's last one: whether the raster was
+                    // composited during the window it measured (PR #84 review).
+                    settledAtStart = StageDrawCounter.lastSettled
+                }
                 if let captureInterval {
                     StageSignposts.end("capture", captureInterval)
                 }
