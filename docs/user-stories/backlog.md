@@ -345,11 +345,13 @@ in the same spirit as US-211's and US-313's above.
   captures measured. Five scripted pinch-and-pan runs were clean as well. Still open from it: a hand
   pinch-and-pan run, and the A15-class capture.
 - **US-322 — the settled raster is never composited in iPhone 17's default layout** → fixed in
-  Stage 60 fps tail PR 2 (#84): the raster is baked at the pixel-aligned viewport. The entry's
-  three options held; the honest one (the `Canvas`'s own size) turned out to be predictable from
-  the viewport and the screen scale (and is now measured back from the draw where SwiftUI's edge
-  snapping makes the prediction miss). Measured on the animating run: about 70 % fewer hitches,
-  but a longer worst one (50.0 → 66.7 ms). *Hypothesis, not measured:* `Image(size:renderer:)` is
+  Stage 60 fps tail PR 2 (#84): the raster is baked with a device pixel of overscan, drawn at its own
+  size and clipped to the `Canvas` (a first, pixel-aligned version was refuted by a hosted probe
+  of SwiftUI's edge snapping). The entry's
+  three options all assumed one exact size to match, and none survived SwiftUI's edge snapping:
+  the `Canvas` size depends on where it sits on the pixel grid. Overscan sidesteps the matching
+  altogether. Measured on the animating run (with the earlier pixel-aligned variant): about 70 %
+  fewer hitches, but a longer worst one (50.0 → 66.7 ms). *Hypothesis, not measured:* `Image(size:renderer:)` is
   lazy, so before the fix the bakes may never have rendered, and the 66.7 ms frames may be their
   first renders. US-332 tests that and owns the cost.
 
@@ -372,7 +374,9 @@ lazily on the first frame that draws it — the whole settled prefix, on the mai
 frame — so the 66.7 ms frames would be those renders.
 
 **The first step is to test that**: a `-US316FrameSignposts` run with an interval around the
-raster's first draw, to see whether the long frames are the bake renders.
+raster's first draw, to see whether the long frames are the bake renders. The before/after numbers
+above were taken on US-322's earlier pixel-aligned variant; re-measure on the final overscan build
+(`A0-run`) as part of the same step.
 
 **What taking it would involve** (ADR-043 ladder rung 1, the bake schedule):
 - render the raster eagerly off the frame it is composited (e.g. into a `CGImage` on a background

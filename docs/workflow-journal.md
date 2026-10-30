@@ -4187,3 +4187,16 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - `A0-run` could press Play before the stage appeared.
   - `A0-run` was exempt from the watchdog.
   - `A0-run` printed a default scale as if it were measured.
+
+## 2026-10-30 (Stage 60 fps tail, PR #84 handover) — a hosted probe beat three rounds of reasoning about one number
+
+- **US-322's fix was rewritten after review, and the reviewer's evidence is what made the difference.**
+  - The first fix predicted the `Canvas` size from the viewport (round to the pixel grid, half up) and compared exactly.
+  - Codex round 1 *argued* that SwiftUI snaps edges, citing a WWDC session. I answered with a measured-size feedback loop.
+  - `swift-code-reviewer` then *hosted* a `Canvas` at chosen pixel offsets and printed what SwiftUI handed it: the same 770.5 px viewport became 770 px at one offset and 771 px at another, and `769.9999999999999` px rather than 770. The "half rounds up" rule I had written into code, tests and the ADR was not SwiftUI's rule, only where the measured layouts happened to land.
+  - Its suggestion replaced the prediction altogether: overscan by a device pixel, draw the raster at its own size from the origin, clip to the `Canvas`, and composite whenever it covers. No prediction is needed, and a raster that's never resampled can't be stretched.
+  - **What I take from it:** an argument about framework behaviour invites a patch; a measurement of it shows what to design for. The probe cost one temporary test.
+- **The same review found that the two mutants which undo the fix both survived:** nothing tied the bake size, key, guard and draw rect to one value. `RasterGeometry` is now that one value, and four mutants of it are killed.
+- **Codex round 2 found no implementation defect, only documentation that let the old numbers read as the new design's.** They're now labelled: the before/after was measured on the pixel-aligned variant. The device re-take of the overscan design failed because the phone was locked overnight and couldn't mount its developer disk image. It's open, and folded into US-332's first step.
+- **The loop ends on round 2** under condition 1, since its fixes were documentation only. Severity history: Medium → Medium.
+- **A tooling gotcha worth keeping:** `#expect(cgFloat == double)` failed on equal values (`371.0` vs `371.0`) in Swift Testing. Declaring the expected values as `CGFloat` fixed it. The failure detail only appeared through `xcresulttool`, not in `xcodebuild`'s output.

@@ -192,6 +192,12 @@ the current build for the pan gesture, cause unattributed*, with the open items 
 
 ## US-322 — the raster gate, before and after (PR 2, 2026-10-29)
 
+**These numbers measure the earlier pixel-aligned variant**, which baked at the viewport rounded to
+the pixel grid and compared sizes exactly. It was replaced after this measurement by the overscan
+design (ADR-043's revised US-322 rule), which composites in the same layout on the simulator
+(`raster=yes`) but **has not been measured on device**: the re-take on the final build failed
+because the phone could not mount its developer disk image while locked, and is open.
+
 Two Release-with-`DEBUG`, coverage-free binaries built from one commit (`af70397`): **after** as
 committed, **before** with only the US-322 commit reverted in a temporary worktree (not committed).
 `-US316Capture A0-run` records the 50 001-stitch animating run itself (about 18 s, 251 drawn
