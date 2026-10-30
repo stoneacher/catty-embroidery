@@ -212,6 +212,7 @@ design call, so it gets a `swift-ui-design` look, and no test pins the symbol to
 **Found**: 2026-10-26, Project management PR 1 (twice in one day), after one occurrence on 2026-10-24. `StageFieldRenderingTests.designIsOnTop` and `.matIsDrawnAtCurrent` failed on CI with no change near the stage, and passed on the next commit; locally they pass. The 2026-10-24 result bundle showed an all-black `ImageRenderer` pixel, the same family as US-327's main-actor saturation.
 - **Options:** render off the main actor or with a retry on an all-black frame; serialise the suite (`.serialized`) so it never renders while the soak tests run; or assert on the draw plan rather than on pixels where a pixel adds nothing.
 - Each occurrence costs a re-run (about 8 min) and a triage.
+- **Recurred three times in Stage 60 fps tail (2026-10-29/30)**: `matIsDrawnAtCurrent` (`5f7a34e`), `fieldIsDrawnAtCurrent` (`a64fa2d`, a docs-only commit) and both together on PR #85 (docs-only, i.e. `main` as merged); each slow (8–29 s) with no failure message, each green on the next run or a re-run. The suite now renders through US-322's overscan raster path, so the frequency is worth watching; nothing so far points at that path rather than runner load.
 
 
 ## US-331 — The format freeze is handed to a release checklist that does not exist
