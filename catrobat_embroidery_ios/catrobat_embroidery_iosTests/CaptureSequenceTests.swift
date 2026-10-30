@@ -198,4 +198,36 @@ struct CaptureSequenceTests {
         _ = sequence.tick(at: 22.125)
         #expect(sequence.tick(at: 130) == [.advanceGesture(107.875)])
     }
+
+    /// `A0-run` records the **animating** path (US-322's re-capture, brief slice 6): recording
+    /// starts before Play, the run itself is the window, and it stops a tenth of a second after
+    /// the run finishes. No gesture, so no stage is needed to record.
+    @Test("the animating condition records the run itself")
+    func animatingRun() {
+        var sequence = CaptureSequence(scenario: Self.scenario(.animating))
+        #expect(sequence.launched(at: 0) == [.selectAndShowStage(.us309Synthetic)])
+        // A second for the stage to appear and the navigation to finish before anything is
+        // recorded (Codex, PR #84 round 1: Play could precede the stage).
+        #expect(sequence.tick(at: 0.9375).isEmpty)
+        #expect(sequence.tick(at: 1) == [.startRecording])
+        #expect(sequence.tick(at: 1.0625).isEmpty)
+        #expect(sequence.tick(at: 1.125) == [.play])
+        #expect(sequence.tick(at: 10).isEmpty)
+        _ = sequence.runFinished(at: 18)
+        #expect(sequence.tick(at: 18.0625).isEmpty)
+        #expect(sequence.tick(at: 18.125) == [.stopRecording, .report, .exit])
+        #expect(sequence.isDone)
+    }
+
+    /// The run takes about 17 s; one that has not finished by the deadline is stuck, and must
+    /// end with a line rather than hang `xctrace` (Codex, PR #84 round 1).
+    @Test("an animating run that never finishes is aborted")
+    func animatingRunAborts() {
+        var sequence = CaptureSequence(scenario: Self.scenario(.animating))
+        _ = sequence.launched(at: 0)
+        _ = sequence.tick(at: 1)
+        _ = sequence.tick(at: 1.125)
+        #expect(sequence.tick(at: 60).isEmpty)
+        #expect(sequence.tick(at: 120) == [.abort("recordingRun"), .exit])
+    }
 }

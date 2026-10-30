@@ -21,7 +21,8 @@ struct CaptureScenarioTests {
               ("C", .us309Synthetic, .pan, .none, true),
               ("D", .us309Synthetic, .pan, .noDots, false),
               ("E", .us309Synthetic, .pan, .noThread, false),
-              ("A0-mixed", .us309Synthetic, .mixed, .none, false)
+              ("A0-mixed", .us309Synthetic, .mixed, .none, false),
+              ("A0-run", .us309Synthetic, .pan, .none, false)
           ])
     func conditions(
         _ token: String, _ sample: SampleID, _ gesture: GestureScript.Kind,

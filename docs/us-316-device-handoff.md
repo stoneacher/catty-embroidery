@@ -189,3 +189,51 @@ the current build for the pan gesture, cause unattributed*, with the open items 
   after its `.trace` is saved.
 - A run with Xcode's Run (Cmd+R) installs a Debug build over the measurement build; reinstall
   before recording.
+
+## US-322 — the raster gate, before and after (PR 2, 2026-10-29)
+
+**The final overscan build, measured 2026-10-30** (build `4b15152`, alternated with a build that
+has only US-322 reverted; every window covered):
+
+| run | capsule (drawn, worst frame, verdict, raster) | hitches | over 33.3 ms | worst hitch |
+|---|---|---|---|---|
+| before 1 | 251, 50.464, FAIL, — | 118 | 46 | 50.009 |
+| final 1 | 251, 43.977, FAIL, yes | 44 | 21 | 50.008 |
+| before 2 | 251, 16.702, PASS, — | 126 | 48 | 66.678 |
+| final 2 | 251, 35.429, FAIL, yes | 38 | 19 | 50.008 |
+| before 3 | 251, 16.670, PASS, — | 114 | 48 | 54.176 |
+| final 3 | 251, 42.530, FAIL, yes | 41 | 17 | 66.678 |
+
+("—": the "before" build predates the report's raster field for `A0-run`.) Reading: ADR-043's US-322
+amendment. The first attempt at this re-take (2026-10-30 morning) failed because the phone was
+locked (CoreDevice error 4000, developer disk image not mounted); its empty traces are not used.
+
+**The earlier pixel-aligned variant, measured 2026-10-29** (superseded by the table above as the
+measurement of the shipping code; kept because it is what the first decision was taken on):
+
+Two Release-with-`DEBUG`, coverage-free binaries built from one commit (`af70397`): **after** as
+committed, **before** with only the US-322 commit reverted in a temporary worktree (not committed).
+`-US316Capture A0-run` records the 50 001-stitch animating run itself (about 18 s, 251 drawn
+frames). Installed and run alternately, before then after, three times; every run traced, every
+window covered.
+
+| run | capsule (drawn, worst frame, verdict) | hitches | over 33.3 ms | worst hitch |
+|---|---|---|---|---|
+| before 1 | 251, 16.670, PASS | 117 | 47 | 50.008 |
+| after 1 | 251, 16.702, PASS | 35 | 21 | 66.678 |
+| before 2 | 251, 16.670, PASS | 131 | 53 | 50.008 |
+| after 2 | 251, 33.339, **FAIL** | 44 | 20 | 66.678 |
+| before 3 | 251, 25.004, PASS | 131 | 43 | 50.008 |
+| after 3 | 251, 16.670, PASS | 34 | 18 | 66.678 |
+
+The simulator dry run reads `canvas=370.00x257.00 viewport=370.00x256.83 raster=yes` after the fix
+(`raster=no` before). On these device runs the report's canvas/raster fields read `n/a` (`A0-run`
+records from before the stage has drawn a settled frame), and its `scale=1.000 width=3.150` was a
+default, not a measurement — since fixed to print `n/a` (Codex, PR #84 round 1). The gate's effect
+shows in the hitch counts instead. Since PR #84's round 1, `A0-run` also waits a second after
+selecting before it records, so Play cannot precede the stage; these six runs predate that, and
+each drew all 251 frames. Reading and decision: ADR-043's US-322
+amendment. This longer worst hitch is the evidence that originally opened US-332; the final
+measurement above did not repeat it, and US-332 now rests on the final build's main-thread frames
+over the bar.
+

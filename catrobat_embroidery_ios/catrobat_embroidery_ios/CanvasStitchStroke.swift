@@ -151,31 +151,6 @@ enum CanvasStitchStroke {
         }
     }
 
-    /// Whether this frame may composite the cached raster underneath the plan it draws.
-    ///
-    /// **Extracted so it can be tested at all** (`/codex-review` round 1, finding 3). It lives in
-    /// a `private` view whose `Canvas` closure only runs when hosted *and* drawn, so passing a
-    /// constant here — or asking for the wrong window — left every package `forFrame` test green
-    /// while a live frame went back to the measured 69.1 ms route. Three of its four clauses are
-    /// about *staleness* rather than about liveness, which is exactly why `forFrame` takes this
-    /// as an input and asks `canUseRaster` itself.
-    ///
-    /// `baked == nil` fails on `Optional.none == .some(key)`; a stale key and a `Canvas` sized
-    /// differently from the raster's viewport each fail on their own clause. In all three the
-    /// frame draws the whole design and no raster, which is what the branch this replaced did.
-    static func compositingRaster(
-        canUseRaster: Bool,
-        bakedKey: AnyHashable?,
-        expectedKey: AnyHashable,
-        size: CGSize,
-        viewport: ViewSize
-    ) -> Bool {
-        canUseRaster
-            && bakedKey == expectedKey
-            && size.width == viewport.width
-            && size.height == viewport.height
-    }
-
     /// **One** `Path` holding one colour run's penetration dots.
     ///
     /// A separate function purely so it can be *tested* (`/codex-review` round 1, finding 2):

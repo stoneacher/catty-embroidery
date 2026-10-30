@@ -4169,3 +4169,43 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The code findings were small: a per-frame array in the shipping path, and two edge cases in the summary script.
 - **The reviewer's leverage was largest where the brief was most explicit.** "Always captured" and D8's "same run" were in the brief all along. Codex read them literally, and I had read past them while wrapping up a result that looked clean.
 - **One decision was taken along the way, outside PR #83:** Sebastian kept US-322's fix (PR #84) after its before/after measurement showed about 70% fewer hitches on the animating path but a longer worst hitch (50.0 → 66.7 ms). The likely cause is that the raster now really renders, lazily, on its first composite. Recorded in PR #84.
+
+## 2026-10-29 (Stage 60 fps tail, PR #84) — fixing a cache made its cost real
+
+- **US-322's fix was a one-line idea:** bake at the pixel-aligned viewport, so the exact size guard passes. Its measurement was the interesting part.
+  - Three before/after pairs of the 50k animating run, built from one commit and differing only in the change: about 70% fewer hitches and about 60% fewer over the bar, but the worst hitch rose from 50.0 to 66.7 ms in **every** "after" run.
+  - The likely reason, read from the code: `Image(size:renderer:)` is lazy. While the raster was never composited, its ~50 bakes per run never rendered. The fix made them render on the frame each is first composited. A bug had been hiding a cost, and fixing the bug exposed the cost. US-309 had predicted that cost (Θ(n²/chunk)), and no run had paid it since.
+- **Sebastian kept the fix and accepted the trade** (ADR-043's US-322 amendment); the worst case is US-332.
+  - *My first mutation round missed one thing:* a test with no measurement noise couldn't tell whether the rounding epsilon mattered. A second round added a noise test, and the epsilon mutant now dies.
+- **The before/after method is reusable.** A temporary worktree reverts one commit, both binaries are built from the same tree, and the runs alternate on the device. Holding everything but the one change constant is what made "the worst hitch rose in every run" a result rather than noise.
+
+## 2026-10-29 (Stage 60 fps tail, PR #84 handover, Codex round 1) — correction to the entry "fixing a cache made its cost real"
+
+- **That entry states as fact a cause that is only a hypothesis.** It says the bakes "never rendered" before the fix, and that the fix "made them render on the frame each is first composited". What was measured: fewer hitches and a longer worst hitch, in all three pairs. Lazy rendering is the code-derived explanation, and US-332's first step is to test it. ADR-043's amendment had it right ("reasoned from the code, not yet measured"); the journal and the backlog didn't. The backlog is corrected in place; this entry corrects the journal, which is append-only. Codex caught it.
+- **The same round's other findings, all taken:**
+  - The pixel-aligned prediction ignores SwiftUI's edge snapping at fractional origins. The `Canvas` now reports a size the prediction missed, and the next bake uses it, so the raster is never stretched and the cache recovers.
+  - `A0-run` could press Play before the stage appeared.
+  - `A0-run` was exempt from the watchdog.
+  - `A0-run` printed a default scale as if it were measured.
+
+## 2026-10-30 (Stage 60 fps tail, PR #84 handover) — a hosted probe beat three rounds of reasoning about one number
+
+- **US-322's fix was rewritten after review, and the reviewer's evidence is what made the difference.**
+  - The first fix predicted the `Canvas` size from the viewport (round to the pixel grid, half up) and compared exactly.
+  - Codex round 1 *argued* that SwiftUI snaps edges, citing a WWDC session. I answered with a measured-size feedback loop.
+  - `swift-code-reviewer` then *hosted* a `Canvas` at chosen pixel offsets and printed what SwiftUI handed it: the same 770.5 px viewport became 770 px at one offset and 771 px at another, and `769.9999999999999` px rather than 770. The "half rounds up" rule I had written into code, tests and the ADR was not SwiftUI's rule, only where the measured layouts happened to land.
+  - Its suggestion replaced the prediction altogether: overscan by a device pixel, draw the raster at its own size from the origin, clip to the `Canvas`, and composite whenever it covers. No prediction is needed, and a raster that's never resampled can't be stretched.
+  - **What I take from it:** an argument about framework behaviour invites a patch; a measurement of it shows what to design for. The probe cost one temporary test.
+- **The same review found that the two mutants which undo the fix both survived:** nothing tied the bake size, key, guard and draw rect to one value. `RasterGeometry` is now that one value, and four mutants of it are killed.
+- **Codex round 2 found no implementation defect, only documentation that let the old numbers read as the new design's.** They're now labelled: the before/after was measured on the pixel-aligned variant. The device re-take of the overscan design failed because the phone was locked overnight and couldn't mount its developer disk image. It's open, and folded into US-332's first step.
+- **The loop ends on round 2** under condition 1, since its fixes were documentation only. Severity history: Medium → Medium.
+- **A tooling gotcha worth keeping:** `#expect(cgFloat == double)` failed on equal values (`371.0` vs `371.0`) in Swift Testing. Declaring the expected values as `CGFloat` fixed it. The failure detail only appeared through `xcresulttool`, not in `xcodebuild`'s output.
+
+## 2026-10-30 (Stage 60 fps tail, PR #84) — the final design measured on device, and the trade changed shape
+
+- **The re-take ran on the final overscan build:** three pairs alternating it with a US-322-reverted build.
+  - Hitches fell by about two thirds (118/126/114 → 44/38/41), and those over 33.3 ms by about 60%.
+  - **The worst trace hitch is no longer reliably longer.** The "before" build also reached 66.7 ms in one run, so the earlier "66.7 ms in every after run" was partly the luck of three runs.
+  - The capsule now carries the trade instead: a main-thread frame over 33.3 ms in **every** "after" run (35–44 ms), against one of three "before". That points the same way as the US-332 hypothesis (a lazy raster render on the main thread), still unmeasured.
+- **Lesson:** a three-run comparison can't distinguish "worse in every run" from "worse in these runs". Taking it a second time, on the code that ships, is what showed the difference. Both measurements stay in the hand-off, and the ADR names the final one as authoritative.
+- **Sebastian ruled the scripted pinch-and-pan sufficient** (no hand pinch run owed). The ADR's open list is now just the A15 capture and US-332.
