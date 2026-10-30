@@ -4209,3 +4209,10 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The capsule now carries the trade instead: a main-thread frame over 33.3 ms in **every** "after" run (35–44 ms), against one of three "before". That points the same way as the US-332 hypothesis (a lazy raster render on the main thread), still unmeasured.
 - **Lesson:** a three-run comparison can't distinguish "worse in every run" from "worse in these runs". Taking it a second time, on the code that ships, is what showed the difference. Both measurements stay in the hand-off, and the ADR names the final one as authoritative.
 - **Sebastian ruled the scripted pinch-and-pan sufficient** (no hand pinch run owed). The ADR's open list is now just the A15 capture and US-332.
+
+## 2026-10-30 (Stage 60 fps tail, close-out) — merged, and the pixel-test flake recurred on main
+
+- **PRs #83 and #84 were merged by Sebastian.** The close-out PR #85 marks the feature `Done — 2026-10-30` in the brief and the roadmap (one Codex round, no findings).
+- **#85's app job failed on `StageFieldRenderingTests`, with nothing changed but two status lines.** That makes it a run of `main` as merged. A re-run passed.
+  - It's the third occurrence of US-330 in this feature, and the first with two of the suite's tests failing together.
+  - The backlog entry now lists all three and notes that the suite renders through the new overscan raster path. Nothing points at that path rather than runner load, but the frequency is now recorded where the next backlog prioritisation will see it.
