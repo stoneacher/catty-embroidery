@@ -7,7 +7,9 @@ struct BrickReader {
     let element: XMLTree.Element
     let type: String
     private(set) var blockers: [ImportBlocker] = []
-    private var refused = false
+    private var unknown = false
+    /// The categories read so far; any other in the `formulaList` is refused.
+    private var read: Set<String> = []
 
     init(element: XMLTree.Element, type: String) {
         self.element = element
@@ -15,8 +17,21 @@ struct BrickReader {
     }
 
     /// The `<formula category="…">` of the brick's `formulaList`.
-    func formulaElement(_ category: String) -> XMLTree.Element? {
-        element.child("formulaList")?.children.first { $0.name == "formula" && $0.attributes["category"] == category }
+    mutating func formulaElement(_ category: String) -> XMLTree.Element? {
+        read.insert(category)
+        return element.child("formulaList")?.children.first {
+            $0.name == "formula" && $0.attributes["category"] == category
+        }
+    }
+
+    /// Catroid fails to load a category that is no `BrickField`
+    /// (`XStreamConcurrentFormulaHashMapConverter.java:75`); a category the brick
+    /// never reads is refused with it (Codex slice 4, finding 4). An unsupported
+    /// brick is already named, so nothing is added for it.
+    mutating func refuseUnreadCategories() {
+        guard !unknown else { return }
+        let categories = element.child("formulaList")?.children.compactMap { $0.attributes["category"] } ?? []
+        if categories.contains(where: { !read.contains($0) }) { refuse() }
     }
 
     mutating func formula(_ category: String, slot: FormulaSlot = .number) -> Formula? {
@@ -37,10 +52,29 @@ struct BrickReader {
         return text
     }
 
+    /// The brick lacks a part it needs or has one it cannot map. Repeats collapse:
+    /// the import reports a set.
     mutating func refuse() {
-        guard !refused else { return }
-        refused = true
         blockers.append(.brickShape(type))
+    }
+
+    private static let common: Set = ["brickId", "commentedOut", "formulaList"]
+
+    /// The child elements each brick may carry beyond `common`.
+    private static let extraChildren: [String: Set<String>] = [
+        "RepeatBrick": ["loopBricks"], "ForeverBrick": ["loopBricks"], "RepeatUntilBrick": ["loopBricks"],
+        "ForVariableFromToBrick": ["loopBricks", "userVariable"],
+        "IfLogicBeginBrick": ["ifBranchBricks", "elseBranchBricks"], "IfThenLogicBeginBrick": ["ifBranchBricks"],
+        "SetVariableBrick": ["userVariable"], "ChangeVariableBrick": ["userVariable"],
+        "ArcBrick": ["direction"]
+    ]
+
+    /// A child the brick has no use for is refused rather than dropped, so a
+    /// nested list only some bricks read cannot lose its bricks silently.
+    mutating func refuseUnknownChildren() {
+        guard !unknown else { return }
+        let allowed = Self.common.union(Self.extraChildren[type] ?? [])
+        if element.children.contains(where: { !allowed.contains($0.name) }) { refuse() }
     }
 
     /// Bricks without nested lists. Each formula is read even when an earlier one
@@ -89,6 +123,7 @@ struct BrickReader {
         case "SetThreadColorBrick": return text("THREAD_COLOR").map { .setThreadColor(hex: $0) }
         case "WriteEmbroideryToFileBrick": return text("WRITE_FILENAME").map { .writeEmbroideryToFile(name: $0) }
         default:
+            unknown = true
             blockers.append(.brick(type))
             return nil
         }

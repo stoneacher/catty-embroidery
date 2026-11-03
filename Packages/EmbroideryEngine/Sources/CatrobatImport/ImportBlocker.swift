@@ -35,8 +35,11 @@ package enum ImportBlocker: Error, Hashable, Sendable {
     case element(String)
     /// A supported brick missing a part it needs, or with one it cannot map.
     case brickShape(String)
-    /// A name declared by an object and by the project (brief D7).
+    /// A name two variables visible to one object share: Catroid writes by
+    /// identity and reads by name, first declaration first (brief D7).
     case variableShadowing(String)
+    /// A brick's variable that no declaration visible to its object holds.
+    case undeclaredVariable(String)
     /// A variable a SetVariable stores as a Boolean or string, and that is then
     /// changed or looped over (brief D4).
     case variableStorage(String)

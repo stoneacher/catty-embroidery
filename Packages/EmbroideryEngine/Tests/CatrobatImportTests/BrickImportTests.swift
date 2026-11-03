@@ -83,11 +83,11 @@ struct BrickImportTests: ProgramImportTesting {
     /// Every `Brick` case a Catroid brick produces appears above or among the
     /// structural cases, so a case added to `ProgramModel` must be placed here.
     @Test func censusEveryBrickKindIsReachable() {
-        let mapped = Set(Self.mappings.map { "\($0.1)".prefix { $0 != "(" } })
-        let structural: Set = ["repeatLoop", "forever", "repeatUntil", "forVariableFromTo", "loopEnd",
-                               "ifThen", "ifElse", "elseBranch", "ifEnd"]
-        let all = Set(BrickKind.allCases.map { "\($0)" })
-        #expect(mapped.union(structural.map { Substring($0) }) == Set(all.map { Substring($0) }))
+        let mapped = Set(Self.mappings.map { BrickKind(of: $0.1) })
+        let structural: Set<BrickKind> = [
+            .repeatLoop, .forever, .repeatUntil, .forVariableFromTo, .loopEnd, .ifThen, .ifElse, .elseBranch, .ifEnd
+        ]
+        #expect(mapped.union(structural) == Set(BrickKind.allCases))
     }
 
     /// A string-taking brick reads its formula as text, so only a literal fits
@@ -98,6 +98,38 @@ struct BrickImportTests: ProgramImportTesting {
             == [.brickShape("SetThreadColorBrick")])
         #expect(blockers(XML.run([XML.brick("WriteEmbroideryToFileBrick", formulas: [("WRITE_FILENAME", sum)])]))
             == [.brickShape("WriteEmbroideryToFileBrick")])
+    }
+
+    /// Catroid fails to load a formula whose category is no `BrickField`
+    /// (`XStreamConcurrentFormulaHashMapConverter.java:75`); a category the brick
+    /// does not read is refused too (Codex slice 4, finding 4).
+    @Test func aFormulaCategoryTheBrickDoesNotReadIsRefused() {
+        let extra = XML.brick("MoveNStepsBrick", formulas: [("STEPS", Self.one), ("NOT_A_BRICK_FIELD", Self.two)])
+        #expect(blockers(XML.run([extra])) == [.brickShape("MoveNStepsBrick")])
+        let onStitch = XML.brick("StitchBrick", formulas: [("STEPS", Self.one)])
+        #expect(blockers(XML.run([onStitch])) == [.brickShape("StitchBrick")])
+    }
+
+    /// A child the brick has no use for is a shape error, never dropped: a nested
+    /// list only some bricks read would otherwise lose its bricks silently
+    /// (review, slice 4).
+    @Test func aChildTheBrickDoesNotReadIsRefused() {
+        let move = XML.brick("MoveNStepsBrick", formulas: [("STEPS", Self.one)])
+        let ifThen = XML.brick("IfThenLogicBeginBrick", formulas: [("IF_CONDITION", Self.one)],
+                               lists: [("ifBranchBricks", []), ("elseBranchBricks", [move])])
+        #expect(blockers(XML.run([ifThen])) == [.brickShape("IfThenLogicBeginBrick")])
+        let leafWithList = XML.brick("MoveNStepsBrick", formulas: [("STEPS", Self.one)],
+                                     lists: [("loopBricks", [move])])
+        #expect(blockers(XML.run([leafWithList])) == [.brickShape("MoveNStepsBrick")])
+        let stray = XML.brick("FinishStageBrick", extra: "<spinnerSelection>1</spinnerSelection>")
+        #expect(blockers(XML.run([stray])) == [.brickShape("FinishStageBrick")])
+    }
+
+    /// An unresolved reference is the cause; the brick's shape is not reported on top.
+    @Test func anUnresolvedVariableIsReportedOnce() {
+        let nowhere = XML.reference("../nowhere")
+        let set = XML.brick("SetVariableBrick", formulas: [("VARIABLE", Self.one)], variable: nowhere)
+        #expect(blockers(XML.run([set])) == [.unresolvedReference("../nowhere")])
     }
 
     @Test func missingPartsAreShapeErrors() {

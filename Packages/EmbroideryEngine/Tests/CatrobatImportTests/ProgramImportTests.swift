@@ -168,6 +168,62 @@ struct ProgramImportTests: ProgramImportTesting {
         #expect(blockers(xml) == [.variableShadowing("x")])
     }
 
+    /// Catroid binds a brick's variable by identity, but a formula reads a
+    /// variable by name, and the first declaration with that name wins
+    /// (`UserDataWrapper.java:40`, `Project.java:247`). Two declarations a name
+    /// cannot tell apart are refused, in one list as across lists (Codex slice 4,
+    /// finding 1).
+    @Test func twoVariablesANameCannotTellApartAreRefused() {
+        let twiceInProject = XML.program(variables: [XML.variable("x"), XML.variable("x")],
+                                         objects: [XML.object(scripts: [])])
+        #expect(blockers(twiceInProject) == [.variableShadowing("x")])
+        let twice = [XML.variable("y"), XML.variable("y")]
+        let twiceInObject = XML.program(objects: [XML.object(variables: twice, scripts: [])])
+        #expect(blockers(twiceInObject) == [.variableShadowing("y")])
+    }
+
+    /// Two objects may each declare `x`: those are separate scopes.
+    @Test func theSameNameInTwoObjectsIsFine() throws {
+        _ = try imported(XML.program(objects: [
+            XML.object("A", variables: [XML.variable("x")], scripts: []),
+            XML.object("B", variables: [XML.variable("x")], scripts: [])
+        ]))
+    }
+
+    /// A brick whose variable no declaration visible to its object holds writes a
+    /// `UserVariable` no name lookup reaches in Catroid; ours would declare it on
+    /// use, so it is refused.
+    @Test func aBricksUndeclaredVariableIsRefused() {
+        let one = [("VARIABLE", FormulaXML.number("1"))]
+        let set = XML.brick("SetVariableBrick", formulas: one, variable: XML.variable("u"))
+        let alone = XML.program(objects: [XML.object(scripts: [XML.script([set])])])
+        #expect(blockers(alone) == [.undeclaredVariable("u")])
+        // A declared name, but another variable: the brick's own inline `x` is not
+        // the object's `x`, so Catroid's write and read would miss each other.
+        let ownX = XML.brick("SetVariableBrick", formulas: one, variable: XML.variable("x"))
+        let declaredX = XML.object(variables: [XML.variable("x")], scripts: [XML.script([ownX])])
+        #expect(blockers(XML.program(objects: [declaredX]))
+            == [.undeclaredVariable("x")])
+        // Declared by another object, which precedes it: resolvable, not visible here.
+        let other = XML.object("Other", variables: [XML.variable("u")], scripts: [])
+        let setOther = XML.brick("SetVariableBrick", formulas: [("VARIABLE", FormulaXML.number("1"))],
+                                 variable: XML.reference("../../../../../../object/userVariables/userVariable"))
+        #expect(blockers(XML.program(objects: [other, XML.object(scripts: [XML.script([setOther])])]))
+            == [.undeclaredVariable("u")])
+    }
+
+    /// Catroid's XStream reads `commentedOut` with its Boolean converter, which
+    /// ignores case (Codex slice 4, finding 3).
+    @Test func commentedOutIgnoresCase() throws {
+        let hidden = XML.brick("BroadcastBrick")
+            .replacingOccurrences(of: "<commentedOut>false", with: "<commentedOut>TRUE")
+        let script = XML.script([hidden, XML.finish()])
+        let hiddenScript = XML.script("WhenScript", [Self.move])
+            .replacingOccurrences(of: "<commentedOut>false", with: "<commentedOut>True")
+        let program = try imported(XML.program(objects: [XML.object(scripts: [script, hiddenScript])]))
+        #expect(program.objects[0].scripts.map(\.steps) == [[.finishStage]])
+    }
+
     // MARK: - What a SetVariable stores (D4, Codex slice 3 review)
 
     private static func set(_ name: String, _ value: String) -> String {
@@ -191,6 +247,15 @@ struct ProgramImportTests: ProgramImportTesting {
     /// (`ChangeVariableAction.kt:41`) and ForVariableFromTo exits on one
     /// (`ForVariableFromToAction.java:60`), so a variable stored as a Boolean or a
     /// string and then changed or looped over is refused, by name.
+    /// The storage rule follows identity: object A's `x` stored as a Boolean says
+    /// nothing about object B's `x` (Codex slice 4, finding 2).
+    @Test func theStorageRuleKeepsObjectsApart() throws {
+        _ = try imported(XML.declaringUses(XML.program(objects: [
+            XML.object("A", scripts: [XML.script([Self.set("x", Self.comparison)])]),
+            XML.object("B", scripts: [XML.script([Self.change("x")])])
+        ])))
+    }
+
     @Test func aVariableStoredAsBooleanOrStringAndChangedIsRefused() {
         #expect(blockers(XML.run([Self.set("b", Self.comparison), Self.change("b")])) == [.variableStorage("b")])
         #expect(blockers(XML.run([Self.set("s", FormulaXML.string("2")), Self.loop(over: "s")])) ==

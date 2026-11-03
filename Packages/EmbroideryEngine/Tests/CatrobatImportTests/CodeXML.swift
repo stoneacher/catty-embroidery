@@ -91,7 +91,86 @@ enum CodeXML {
 
     /// A one-object, one-script program around `bricks`.
     static func run(_ bricks: [String], variables: [String] = [], objectVariables: [String] = []) -> String {
-        program(variables: variables, objects: [object(variables: objectVariables, scripts: [script(bricks)])])
+        let only = object(variables: objectVariables, scripts: [script(bricks)])
+        return declaringUses(program(variables: variables, objects: [only]))
+    }
+
+    /// Writes variables the way Catroid does: inline at a variable's first use,
+    /// every later use a reference back to it, and the object's `userVariables`
+    /// referencing the first use (a forward reference is invalid). Uses of a
+    /// name some list already declares are left alone.
+    static func declaringUses(_ xml: String) -> String {
+        guard let tree = try? XMLTree(parsing: Data(xml.utf8)) else { return xml }
+        let declared = Set(tree.addresses { $0.name == "programVariableList" || $0.name == "userVariables" }
+            .flatMap { list in (tree[list]?.children.indices ?? 0 ..< 0).map { list.path + [$0] } }
+            .compactMap { try? tree.dereference(XMLTree.Address(path: $0)) }
+            .compactMap { name(of: $0, in: tree) })
+        var result = xml
+        var cursor = result.startIndex
+        for object in tree.addresses(where: { $0.name == "object" && $0.attributes["reference"] == nil }) {
+            guard let element = tree[object],
+                  let listIndex = element.children.firstIndex(where: { $0.name == "userVariables" }),
+                  let scripts = element.children.firstIndex(where: { $0.name == "scriptList" })
+            else { continue }
+            let existing = element.children[listIndex].children.count
+            var first: [String: [Int]] = [:]
+            var order: [String] = []
+            let uses = tree.addresses { use in use.name == "userVariable" && use.attributes["reference"] == nil }
+                .filter { $0.path.starts(with: object.path + [scripts]) && isBrickChild($0, in: tree) }
+            for use in uses {
+                guard let name = name(of: use, in: tree), !declared.contains(name),
+                      let use0 = tree[use]
+                else { continue }
+                let text = use0.children.isEmpty ? "<userVariable>\(name)</userVariable>" : variable(name)
+                guard let range = result.range(of: text, range: cursor ..< result.endIndex) else { continue }
+                if let target = first[name] {
+                    let path = relativePath(from: use.path, to: target, in: tree)
+                    let reference = "<userVariable reference=\"\(path)\"/>"
+                    result.replaceSubrange(range, with: reference)
+                    cursor = result.index(range.lowerBound, offsetBy: reference.count)
+                } else {
+                    first[name] = use.path
+                    order.append(name)
+                    cursor = range.upperBound
+                }
+            }
+            var references = ""
+            for (offset, name) in order.enumerated() {
+                let source = object.path + [listIndex, existing + offset]
+                references += "<userVariable reference=\"\(relativePath(from: source, to: first[name]!, in: tree))\"/>"
+            }
+            guard let close = result.range(of: "</userVariables>", range: cursor ..< result.endIndex) else { break }
+            result.replaceSubrange(close, with: references + "</userVariables>")
+            cursor = result.index(close.lowerBound, offsetBy: references.count + "</userVariables>".count)
+        }
+        return result
+    }
+
+    private static func isBrickChild(_ address: XMLTree.Address, in tree: XMLTree) -> Bool {
+        guard let parent = tree[XMLTree.Address(path: Array(address.path.dropLast()))] else { return false }
+        return parent.name == "brick" || parent.name.hasSuffix("Brick")
+    }
+
+    private static func name(of address: XMLTree.Address, in tree: XMLTree) -> String? {
+        guard let element = tree[address] else { return nil }
+        if element.children.isEmpty { return element.text }
+        let inner = element.children.first { $0.name == "userVariable" } ?? element
+        return inner.children.first { $0.name == "default" }?.children.first { $0.name == "name" }?.text
+    }
+
+    /// XStream's relative path from `source` to `target`: `..` up to the common
+    /// ancestor, then `name[n]` down, n counting same-named siblings from 1.
+    private static func relativePath(from source: [Int], to target: [Int], in tree: XMLTree) -> String {
+        var common = 0
+        while common < min(source.count, target.count), source[common] == target[common] { common += 1 }
+        var segments = Array(repeating: "..", count: source.count - common)
+        for depth in common ..< target.count {
+            guard let parent = tree[XMLTree.Address(path: Array(target[..<depth]))] else { break }
+            let child = parent.children[target[depth]]
+            let ordinal = parent.children[..<target[depth]].filter { $0.name == child.name }.count + 1
+            segments.append(ordinal == 1 ? child.name : "\(child.name)[\(ordinal)]")
+        }
+        return segments.joined(separator: "/")
     }
 }
 
