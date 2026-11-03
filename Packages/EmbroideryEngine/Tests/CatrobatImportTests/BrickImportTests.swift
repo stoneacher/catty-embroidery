@@ -95,9 +95,9 @@ struct BrickImportTests: ProgramImportTesting {
     @Test func stringParametersMustBeLiterals() {
         let sum = FormulaXML.op("PLUS", FormulaXML.number("1"), FormulaXML.number("2"))
         #expect(blockers(XML.run([XML.brick("SetThreadColorBrick", formulas: [("THREAD_COLOR", sum)])]))
-            == [.brickShape("SetThreadColorBrick")])
+            == [.stringValue(.text)])
         #expect(blockers(XML.run([XML.brick("WriteEmbroideryToFileBrick", formulas: [("WRITE_FILENAME", sum)])]))
-            == [.brickShape("WriteEmbroideryToFileBrick")])
+            == [.stringValue(.text)])
     }
 
     /// Catroid fails to load a formula whose category is no `BrickField`

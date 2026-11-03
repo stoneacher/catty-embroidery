@@ -28,12 +28,11 @@ struct XMLTreeTests {
         #expect(tree.root.children[1].text == "x <y> z")
     }
 
-    /// Whitespace between child elements is kept raw; trimming is the importer's
-    /// decision, per field, so the tree stays a faithful reading of the file.
-    @Test func keepsTextRawAndOffersATrimmedView() throws {
+    /// Text, whitespace between child elements included, is kept raw: Catroid's
+    /// lookups are exact, so the tree is a faithful reading of the file.
+    @Test func keepsTextRaw() throws {
         let tree = try tree("<a>\n  <b>  7 </b>\n</a>")
         #expect(tree.root.children[0].text == "  7 ")
-        #expect(tree.root.children[0].trimmedText == "7")
         #expect(tree.root.text == "\n  \n")
     }
 

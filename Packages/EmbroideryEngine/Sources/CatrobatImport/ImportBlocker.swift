@@ -56,4 +56,55 @@ package enum StringContext: Hashable, Sendable {
     case assertOperand
     /// The value a SetVariable stores.
     case variableValue
+    /// A brick parameter Catroid interprets as text (SetThreadColor's colour,
+    /// WriteEmbroideryToFile's name), which only a literal carries into a `String`.
+    case text
+}
+
+extension ImportBlocker {
+    /// A blocker without its payload: the runner's histogram key (brief D12).
+    package enum Kind: String, CaseIterable, Sendable {
+        case malformed, unresolvedReference, elementType, function, sensor, operatorName, stringValue
+        case nonFiniteLiteral, formulaShape, formulaTooDeep, version, multipleScenes, brick, script
+        case element, brickShape, variableShadowing, undeclaredVariable, variableStorage, harnessStep
+    }
+
+    package var kind: Kind {
+        switch self {
+        case .malformed: .malformed
+        case .unresolvedReference: .unresolvedReference
+        case .elementType: .elementType
+        case .function: .function
+        case .sensor: .sensor
+        case .operatorName: .operatorName
+        case .stringValue: .stringValue
+        case .nonFiniteLiteral: .nonFiniteLiteral
+        case .formulaShape: .formulaShape
+        case .formulaTooDeep: .formulaTooDeep
+        case .version: .version
+        case .multipleScenes: .multipleScenes
+        case .brick: .brick
+        case .script: .script
+        case .element: .element
+        case .brickShape: .brickShape
+        case .variableShadowing: .variableShadowing
+        case .undeclaredVariable: .undeclaredVariable
+        case .variableStorage: .variableStorage
+        case .harnessStep: .harnessStep
+        }
+    }
+
+    /// `kind(payload)`, or the kind alone, e.g. `function(JOIN)`.
+    package var label: String {
+        let payload: String? = switch self {
+        case let .unresolvedReference(text), let .elementType(text), let .function(text), let .sensor(text),
+             let .operatorName(text), let .nonFiniteLiteral(text), let .formulaShape(text), let .version(text),
+             let .brick(text), let .script(text), let .element(text), let .brickShape(text),
+             let .variableShadowing(text), let .undeclaredVariable(text), let .variableStorage(text):
+            text
+        case let .stringValue(context): "\(context)"
+        case .malformed, .formulaTooDeep, .multipleScenes, .harnessStep: nil
+        }
+        return payload.map { "\(kind.rawValue)(\($0))" } ?? kind.rawValue
+    }
 }

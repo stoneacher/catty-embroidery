@@ -122,7 +122,10 @@ enum CodeXML {
                       let use0 = tree[use]
                 else { continue }
                 let text = use0.children.isEmpty ? "<userVariable>\(name)</userVariable>" : variable(name)
-                guard let range = result.range(of: text, range: cursor ..< result.endIndex) else { continue }
+                guard let range = result.range(of: text, range: cursor ..< result.endIndex) else {
+                    Issue.record("declaringUses: no `\(text)` after the cursor; the fixture was not built by CodeXML")
+                    continue
+                }
                 if let target = first[name] {
                     let path = relativePath(from: use.path, to: target, in: tree)
                     let reference = "<userVariable reference=\"\(path)\"/>"
@@ -181,12 +184,12 @@ protocol ProgramImportTesting {}
 
 extension ProgramImportTesting {
     func imported(_ xml: String) throws -> ImportedProgram {
-        try CatrobatImport.program(fromCodeXML: Data(xml.utf8))
+        try ProgramImport.program(fromCodeXML: Data(xml.utf8))
     }
 
     func blockers(_ xml: String) -> Set<ImportBlocker> {
         do {
-            _ = try CatrobatImport.program(fromCodeXML: Data(xml.utf8))
+            _ = try ProgramImport.program(fromCodeXML: Data(xml.utf8))
             Issue.record("expected the import to be refused")
             return []
         } catch {

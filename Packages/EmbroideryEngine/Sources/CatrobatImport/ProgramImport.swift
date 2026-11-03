@@ -2,7 +2,7 @@ import Foundation
 import ProgramModel
 
 /// Catroid `code.xml` to `ImportedProgram` (language-test runner brief, slice 4).
-package enum CatrobatImport {
+package enum ProgramImport {
     /// Brief D1: the 1.14 shape, which every version from 0.99995 on shares for
     /// the supported bricks.
     package static let supportedVersions: ClosedRange<Double> = 0.99995 ... 1.14
@@ -84,7 +84,7 @@ struct ProgramImporter {
 
     private mutating func checkVersion() {
         let text = tree.root.child("header")?.child("catrobatLanguageVersion")?.text ?? ""
-        guard let version = Double(text), CatrobatImport.supportedVersions.contains(version) else {
+        guard let version = Double(text), ProgramImport.supportedVersions.contains(version) else {
             blockers.append(.version(text))
             return
         }

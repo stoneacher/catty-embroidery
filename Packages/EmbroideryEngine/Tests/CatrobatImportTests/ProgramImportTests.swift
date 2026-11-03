@@ -88,7 +88,7 @@ struct ProgramImportTests: ProgramImportTesting {
     @Test(arguments: ["0.99995", "0.999999999", "1.03", "1.12", "1.13", "1.14"])
     func aVersionInsideTheWindowIsAccepted(version: String) throws {
         _ = try imported(XML.program(version: version, objects: [XML.object(scripts: [])]))
-        #expect(CatrobatImport.supportedVersions == 0.99995 ... 1.14)
+        #expect(ProgramImport.supportedVersions == 0.99995 ... 1.14)
     }
 
     @Test(arguments: ["0.9999", "0.99994", "1.15", "2", "", "one"])

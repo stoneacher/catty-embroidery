@@ -7,6 +7,9 @@ import Foundation
 /// brief, D10), so the importer can resolve XStream references by position
 /// before it decides what to keep.
 ///
+/// `package` for the tests; the import's consumer API is `ProgramImport.program(fromCodeXML:)`,
+/// the `Imported*` types, `ImportBlocker` and `CatrobatImportError`.
+///
 /// Foundation's `XMLDocument` is macOS-only, so the tree is built from an
 /// `XMLParser` SAX pass. Text is kept exactly as parsed, entities and CDATA
 /// decoded; trimming is a per-field decision left to the importer.
@@ -16,10 +19,6 @@ package struct XMLTree: Sendable, Equatable {
         package var attributes: [String: String]
         package var children: [Element]
         package var text: String
-
-        package var trimmedText: String {
-            text.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
     }
 
     /// An element's position as child indices from the root; `[]` is the root.

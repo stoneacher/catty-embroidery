@@ -25,6 +25,11 @@ package struct ImportedScript: Sendable, Equatable {
 }
 
 package struct ImportedObject: Sendable, Equatable {
+    /// Where Catroid starts every look: (0, 0) facing 90 (`content/Look.java:88`).
+    package static let startX = 0.0
+    package static let startY = 0.0
+    package static let startHeading = 90.0
+
     package var name: String
     package var variables: [Variable]
     package var scripts: [ImportedScript]
@@ -57,7 +62,8 @@ package struct ImportedProgram: Sendable, Equatable {
         var harness = false
         let objects = objects.enumerated().map { index, object in
             Object(
-                name: object.name, startX: 0, startY: 0, startHeading: 90, zIndex: index,
+                name: object.name, startX: ImportedObject.startX, startY: ImportedObject.startY,
+                startHeading: ImportedObject.startHeading, zIndex: index,
                 variables: object.variables,
                 scripts: object.scripts.map { script in
                     Script(header: .whenStarted, bricks: script.steps.compactMap { step in

@@ -22,6 +22,9 @@ package enum FormulaSlot: Sendable {
 /// (ADR-048). Every blocker is collected, not just the first, across every
 /// supported node; nothing below an unsupported function or element type is
 /// visited, since that node already names what the formula needs.
+///
+/// `package` for the tests; the import's consumer API is `ProgramImport.program(fromCodeXML:)`,
+/// the `Imported*` types, `ImportBlocker` and `CatrobatImportError`.
 package enum FormulaImport {
     /// ADR-037's cap, in produced `Formula` nodes on the longest path (a literal is 1).
     package static let maximumDepth = 128

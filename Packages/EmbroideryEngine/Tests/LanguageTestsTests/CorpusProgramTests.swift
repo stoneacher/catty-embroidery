@@ -9,7 +9,7 @@ struct CorpusProgramTests {
     static func outcome(of entry: LanguageTestManifest.Entry) throws -> Result<ImportedProgram, CatrobatImportError> {
         let data = try LanguageTestCatalog.codeXML(for: entry.path)
         do {
-            return try .success(CatrobatImport.program(fromCodeXML: data))
+            return try .success(ProgramImport.program(fromCodeXML: data))
         } catch {
             return .failure(error)
         }
@@ -71,13 +71,12 @@ struct CorpusProgramTests {
         var kinds: [String: Int] = [:]
         for entry in try LanguageTestCatalog.manifest().tests {
             guard case let .failure(error) = try Self.outcome(of: entry) else { continue }
-            for kind in Set(error.blockers.map { CorpusFormulaTests.kind(of: $0).prefix { $0 != "(" } }) {
-                kinds[String(kind), default: 0] += 1
+            for kind in Set(error.blockers.map(\.kind.rawValue)) {
+                kinds[kind, default: 0] += 1
             }
         }
         #expect(kinds == [
             "brick": 153,
-            "brickShape": 2,
             "elementType": 26,
             "function": 54,
             "multipleScenes": 10,

@@ -1,6 +1,7 @@
 #if canImport(CryptoKit)
     import CryptoKit
 #endif
+import CatrobatImport
 import Foundation
 import Testing
 
@@ -64,12 +65,11 @@ struct FixtureProvenanceTests {
     /// Brief D1: the importer accepts 0.99995 ≤ version ≤ 1.14. Today every test in
     /// the corpus lies inside it (0.99995 … 1.13), so none is unsupported for its
     /// version alone. A re-extraction that brings in an older test turns this red
-    /// rather than surfacing later as an unexplained refusal. Slice 4 points this
-    /// at the importer's own constants.
+    /// rather than surfacing later as an unexplained refusal.
     @Test(arguments: LanguageTestCatalog.entries)
     func fixtureVersionIsInsideTheImportWindow(_ entry: LanguageTestManifest.Entry) throws {
         let version = try #require(Double(entry.languageVersion), "\(entry.languageVersion) is not a number")
-        #expect((0.99995 ... 1.14).contains(version))
+        #expect(ProgramImport.supportedVersions.contains(version))
     }
 
     @Test(arguments: LanguageTestCatalog.entries)

@@ -29,31 +29,41 @@ if [[ ! -d "$catroid/$assets_rel" ]]; then
     echo "error: $catroid/$assets_rel not found; is this a Catroid checkout?" >&2
     exit 66
 fi
-if [[ -n "$(git -C "$catroid" status --porcelain -- "$assets_rel")" ]]; then
+# Resolve the provenance before anything is written: a copy that is not a git
+# checkout must fail here, not after the fixtures have been overwritten.
+# (Assignments propagate a failing command substitution under `set -e`.)
+# --show-toplevel must be the directory itself: a copy inside another repository
+# would otherwise report that repository's commit.
+if ! toplevel="$(git -C "$catroid" rev-parse --show-toplevel 2>/dev/null)" \
+    || [[ "$(cd "$toplevel" && pwd -P)" != "$(cd "$catroid" && pwd -P)" ]]; then
+    echo "error: $catroid is not the top of a git checkout; the manifest needs its commit" >&2
+    exit 66
+fi
+catroid_commit="$(git -C "$catroid" rev-parse HEAD)"
+assets_commit="$(git -C "$catroid" log -1 --format=%H -- "$assets_rel")"
+status="$(git -C "$catroid" status --porcelain -- "$assets_rel")"
+if [[ -n "$status" ]]; then
     echo "error: $assets_rel has local changes; extract from a clean checkout" >&2
     exit 65
 fi
 
-python3 -I - "$catroid" "$assets_rel" "$out" <<'PY'
+python3 -I - "$catroid" "$assets_rel" "$out" "$catroid_commit" "$assets_commit" <<'PY'
 import hashlib
 import json
 import pathlib
 import re
-import shutil
-import subprocess
 import sys
 import zipfile
 
 catroid, assets_rel, out = pathlib.Path(sys.argv[1]), sys.argv[2], pathlib.Path(sys.argv[3])
+catroid_commit, assets_commit = sys.argv[4], sys.argv[5]
 assets = catroid / assets_rel
-
-def git(*args):
-    return subprocess.run(["git", "-C", str(catroid), *args], check=True,
-                          capture_output=True, text=True).stdout.strip()
 
 version_pattern = re.compile(rb"<catrobatLanguageVersion>([^<]*)</catrobatLanguageVersion>")
 entries = []
-for archive in sorted(assets.rglob("*.catrobat")):
+# Sorted by the path string, the order FixtureProvenanceTests checks, not by
+# path components (they disagree where "-" or "." sorts against "/").
+for archive in sorted(assets.rglob("*.catrobat"), key=lambda a: a.relative_to(assets).as_posix()):
     rel = archive.relative_to(assets).as_posix()
     path = rel.removesuffix(".catrobat")
     with zipfile.ZipFile(archive) as zf:
@@ -82,8 +92,8 @@ for directory in sorted((p for p in out.rglob("*") if p.is_dir()), reverse=True)
         directory.rmdir()
 
 manifest = {
-    "catroidCommit": git("rev-parse", "HEAD"),
-    "assetsLastCommit": git("log", "-1", "--format=%H", "--", assets_rel),
+    "catroidCommit": catroid_commit,
+    "assetsLastCommit": assets_commit,
     "assetsPath": assets_rel,
     "tests": entries,
 }

@@ -4283,3 +4283,22 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **The test builder had to become Catroid.** Once identity mattered, the builder's habit of writing a variable inline at every use became the very shape the importer refuses. `declaringUses` now writes first use inline and later uses as backward references, as Catroid's serializer does. Test fixtures that are convenient rather than faithful hid an entire class of input until the importer got strict enough to reject them.
 - **CI:** US-330's pixel flake recurred on an engine-only commit (fifth occurrence, all three tests), recorded in its backlog entry.
 - **Mutation totals for slice 4:** 31 before review, 13 after, all killed in the end. One survivor in each round exposed a test gap (a SetVariable context test; a declared name with a different identity).
+
+## 2026-11-03 — Language-test runner PR 1: the feature review found a commit that never compiled
+
+- **The whole-PR `swift-code-reviewer` pass's top finding was red CI on the PR head.** `a195018` added an `ImportBlocker` case, and its switch in `CorpusFormulaTests.swift` was updated in the working tree but never staged. Three things each let this through:
+  - **My staging.** I listed paths explicitly (as the git memory note asks) and simply omitted one.
+  - **The pre-commit gate** ran `swift test` on the working tree, which had the fix. This is ADR-023's documented limit ("a convenience, not an enforcement boundary"), met for the first time as a real miss rather than a hypothetical.
+  - **My own verification** counted `✘` lines and crash signals in the test output. A compile error prints neither, so "0" meant "nothing I was looking for" rather than "passed".
+- **Fixes to the method.**
+  - Verification now checks the exit codes of `swift build --build-tests` and `swift test`, not grepped output.
+  - Before a commit, `git status` is checked for unstaged changes under the paths touched.
+  - The missing file was committed alone (`0641757`), verified with everything else stashed.
+- **The rest of the feature review (8 findings, all valid, none rejected), and why it was worth a separate pass after four slice reviews.** Every finding sat *across* slices, not in one:
+  - The blocker-kind vocabulary lived in a test file and had drifted from the case names. It is now `ImportBlocker.kind`/`label` in the module.
+  - The enum `CatrobatImport` shadowed its own module. It is renamed `ProgramImport`.
+  - The start pose was stated in one function. It is now constants slice 5 can share.
+  - A computed text parameter was refused as `brickShape`, where D4's vocabulary says `stringValue(.text)`.
+  - The extraction script could overwrite all 215 fixtures before failing to find a commit. It now resolves provenance first, and requires the checkout's own top level, a hole I found while fixing that one.
+  - Dead `trimmedText`; a builder that skipped misbuilt uses silently; stale brief and test comments.
+- **Mutants for the changes:** 4, all killed (label payloads, the `text` refusal, the start heading).

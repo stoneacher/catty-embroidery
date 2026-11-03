@@ -27,36 +27,11 @@ struct CorpusFormulaTests {
                 var blockers: [ImportBlocker] = []
                 let formula = FormulaImport.formula(from: element, slot: slot, blockers: &blockers)
                 #expect((formula == nil) == !blockers.isEmpty, "\(entry.path)")
-                let kinds = Set(blockers.map(kind(of:)))
+                let kinds = Set(blockers.map(\.label))
                 outcomes[kinds.isEmpty ? "ok" : kinds.sorted().joined(separator: "+"), default: 0] += 1
             }
         }
         return outcomes
-    }
-
-    static func kind(of blocker: ImportBlocker) -> String {
-        switch blocker {
-        case .malformed: "malformed"
-        case .unresolvedReference: "unresolvedReference"
-        case let .elementType(type): "elementType(\(type))"
-        case let .function(name): "function(\(name))"
-        case let .sensor(name): "sensor(\(name))"
-        case let .operatorName(name): "operator(\(name))"
-        case let .stringValue(context): "stringValue(\(context))"
-        case let .nonFiniteLiteral(text): "nonFinite(\(text))"
-        case let .formulaShape(shape): "shape(\(shape))"
-        case .formulaTooDeep: "tooDeep"
-        case let .version(text): "version(\(text))"
-        case .multipleScenes: "multipleScenes"
-        case let .brick(name): "brick(\(name))"
-        case let .script(name): "script(\(name))"
-        case let .element(name): "element(\(name))"
-        case let .brickShape(name): "brickShape(\(name))"
-        case let .variableShadowing(name): "variableShadowing(\(name))"
-        case let .variableStorage(name): "variableStorage(\(name))"
-        case let .undeclaredVariable(name): "undeclaredVariable(\(name))"
-        case .harnessStep: "harnessStep"
-        }
     }
 
     /// The outcome of every formula in the corpus, pinned. It is the formula

@@ -45,8 +45,12 @@ struct BrickReader {
     /// A formula Catroid interprets as text (`interpretString`), which only a
     /// literal can carry into a `String` payload.
     mutating func text(_ category: String) -> String? {
-        guard let formula = formulaElement(category), let text = FormulaImport.literalText(of: formula) else {
+        guard let formula = formulaElement(category) else {
             refuse()
+            return nil
+        }
+        guard let text = FormulaImport.literalText(of: formula) else {
+            blockers.append(.stringValue(.text))
             return nil
         }
         return text
