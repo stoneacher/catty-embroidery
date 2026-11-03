@@ -5,11 +5,30 @@ import ProgramModel
 /// palette or the saved format.
 package enum ScriptStep: Sendable, Equatable {
     case brick(Brick)
+    case harness(HarnessStep)
+
+    package static func assertEquals(actual: Formula, expected: Formula) -> Self {
+        .harness(.assertEquals(actual: actual, expected: expected))
+    }
+
+    package static let finishStage = Self.harness(.finishStage)
+    package static let exitStage = Self.harness(.exitStage)
+}
+
+/// A language-test harness brick: an action like a brick (D6), compiled to
+/// `Instruction.harness`.
+package enum HarnessStep: Sendable, Equatable {
+    /// Catroid `AssertEqualsBrick`; compared by `isSameValue` (D2).
     case assertEquals(actual: Formula, expected: Formula)
+    /// Catroid `FinishStageBrick`: the test passed.
     case finishStage
+    /// Catroid `ExitStageBrick`: the stage ends without a result (D5).
     case exitStage
 }
 
+/// An object for `Interpreter.init(harness:)`: its pose and variables, and its
+/// scripts as steps. `object.scripts` is ignored; build it with `scripts: []`. The
+/// list given to the interpreter is already flat, in ADR-018's object order.
 package struct HarnessObject: Sendable {
     package var object: Object
     package var scripts: [[ScriptStep]]
@@ -47,6 +66,12 @@ package struct HarnessRun: Sendable, Equatable {
     package var outcome: HarnessOutcome
     package var ticks: Int
     package var events: [InterpreterEvent]
+
+    package init(outcome: HarnessOutcome, ticks: Int, events: [InterpreterEvent] = []) {
+        self.outcome = outcome
+        self.ticks = ticks
+        self.events = events
+    }
 }
 
 /// How a language test's run ended (brief D5, D6).
@@ -82,7 +107,7 @@ extension Interpreter {
     /// An interpreter over language-test scripts: each object's pose and variables,
     /// and its scripts as steps (its own `scripts` are ignored).
     package init(harness objects: [HarnessObject], clock: InterpreterClock, variables: [Variable] = []) {
-        self.init(objects: objects.map { ($0.object, $0.scripts) }, variables: variables, clock: clock)
+        self.init(objects: objects, variables: variables, clock: clock)
     }
 
     /// Runs until the first ending's tick finishes, every thread has ended, or the
@@ -105,7 +130,7 @@ extension Interpreter {
     /// A harness step is one action (D6): deferred when the thread already acted
     /// this tick, like any brick. A failing assert latches its failure and keeps
     /// its thread where it is (`AssertEqualsAction.kt:38`: `act` returns false).
-    mutating func performHarness(_ index: Int, _ step: ScriptStep, acted: inout Bool) -> Bool {
+    mutating func performHarness(_ index: Int, _ step: HarnessStep, acted: inout Bool) -> Bool {
         if acted {
             return false
         }
@@ -127,8 +152,6 @@ extension Interpreter {
             latch(.result(.passed))
         case .exitStage:
             latch(.exited)
-        case .brick:
-            break // compiled to `.brick`, never `.harness`
         }
         threads[index].instructionPointer += 1
         return true

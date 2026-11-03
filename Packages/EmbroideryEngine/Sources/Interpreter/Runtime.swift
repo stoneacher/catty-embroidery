@@ -20,7 +20,9 @@ struct ObjectRuntime: Sendable {
 /// needle and variables it reads and writes live on the shared `ObjectRuntime`.
 struct ScriptThread: Sendable {
     let objectIndex: Int
-    /// The script's index among its object's scripts, for a harness report.
+    /// The script's index among the scripts the object was given: its whenStarted
+    /// scripts on the `init(program:)` path, its step lists on the harness path.
+    /// Only a harness report reads it.
     let scriptIndex: Int
     let instructions: [Instruction]
     var instructionPointer = 0

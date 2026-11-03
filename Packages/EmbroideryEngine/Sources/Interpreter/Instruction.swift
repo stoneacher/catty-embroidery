@@ -53,7 +53,7 @@ enum Instruction: Sendable {
     case ifEnd
     /// A language-test harness step (AssertEquals, FinishStage, ExitStage): an
     /// action like a brick, never a `Brick` case (brief D3, D6).
-    case harness(ScriptStep)
+    case harness(HarnessStep)
 }
 
 /// Compiles a `Script` once into its linear instruction array with a single-pass
@@ -85,9 +85,13 @@ enum ScriptCompiler {
         var open: [OpenBlock] = []
 
         for step in steps {
-            guard case let .brick(brick) = step else {
-                instructions.append(.harness(step))
+            let brick: Brick
+            switch step {
+            case let .harness(harness):
+                instructions.append(.harness(harness))
                 continue
+            case let .brick(stepBrick):
+                brick = stepBrick
             }
             switch brick {
             case let .repeatLoop(times):

@@ -4323,3 +4323,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Codex read Catroid's *deserialiser*, finding inputs the corpus never contains.
   - The reviewer read *our* code across files, finding silent losses, the trap and the API.
   - CI read the *commit*, finding what local runs on the working tree cannot see.
+
+## 2026-11-03 — Language-test runner slice 5 (harness in the interpreter): two reviews converge on one test
+
+- **PR 2 opened as draft #87**, on `feature/language-test-runner-harness` from `main` after #86's merge.
+- **Slice 5:** AssertEquals, FinishStage and ExitStage are interpreter steps, one action each. The first ending is latched, its tick finishes for every thread, then the run stops. `runHarness` reports the outcome, ticks and events inside the 600-tick budget. `init(program:)` and `init(harness:)` share one construction path; the public API, `InterpreterEvent` and every existing test and golden are unchanged.
+- **The latch rule was read from Catroid, not assumed.** `StageActivity.finishStage` and `finishTestWithResult` both act only while the stage isn't finishing, so an ExitStage and a result compete as equals. The brief had treated ExitStage only as "ends without a result".
+- **Reviews.** One Codex slice round (Low) and `swift-code-reviewer`, with no production defect between them. Both independently found the *same* coverage gap: exit against result across threads in one tick. The reviewer demonstrated it with a surviving mutant; Codex named the two unkillable replacements. When two vendors converge on a missing test rather than a bug, the test plan had been written from the code's structure (one script, sequential steps), while the rule lives *between* threads.
+- **Process note, from an edit that failed silently:** an edit script without asserts missed its anchor after SwiftFormat had inserted a blank line, and the build caught it. Every scripted edit now asserts its anchor count.
+- **Mutants:** 17 in the slice (one test gap closed, one equivalent over its domain: a failed assert advancing its thread, unobservable once the run stops at the tick's end), 4 after review. All killed except the recorded equivalent.

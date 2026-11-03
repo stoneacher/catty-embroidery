@@ -29,14 +29,15 @@ public struct Interpreter: Sendable {
         // object index (ADR-018). One thread per whenStarted script, object order
         // then script order.
         let objects = program.scenes.flatMap(\.objects).map { object in
-            (object, object.scripts.filter { $0.header == .whenStarted }.map { $0.bricks.map(ScriptStep.brick) })
+            HarnessObject(object, scripts: object.scripts.filter { $0.header == .whenStarted }
+                .map { $0.bricks.map(ScriptStep.brick) })
         }
         self.init(objects: objects, variables: program.variables, clock: clock)
     }
 
-    /// The one construction path: each object with its scripts as step lists.
-    /// `program`'s own scripts are ignored here; the steps given replace them.
-    init(objects programObjects: [(Object, [[ScriptStep]])], variables: [Variable], clock: InterpreterClock) {
+    /// The one construction path: each object with its scripts as step lists;
+    /// an `Object`'s own `scripts` are ignored here, the steps replace them.
+    init(objects programObjects: [HarnessObject], variables: [Variable], clock: InterpreterClock) {
         self.clock = clock
 
         var objects: [ObjectRuntime] = []
@@ -49,7 +50,8 @@ public struct Interpreter: Sendable {
             projectVariables[variable.name] = variable.value
         }
 
-        for (objectIndex, (object, scripts)) in programObjects.enumerated() {
+        for (objectIndex, harnessObject) in programObjects.enumerated() {
+            let object = harnessObject.object
             var objectVariables: [String: Double] = [:]
             for variable in object.variables where objectVariables[variable.name] == nil {
                 objectVariables[variable.name] = variable.value
@@ -63,7 +65,7 @@ public struct Interpreter: Sendable {
                 actorID: ActorID(objectIndex),
                 layer: object.zIndex
             ))
-            for (scriptIndex, steps) in scripts.enumerated() {
+            for (scriptIndex, steps) in harnessObject.scripts.enumerated() {
                 threads.append(ScriptThread(
                     objectIndex: objectIndex,
                     scriptIndex: scriptIndex,

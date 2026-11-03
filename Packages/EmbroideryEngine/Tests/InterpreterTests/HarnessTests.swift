@@ -65,7 +65,17 @@ struct HarnessTests {
     ])
     func assertEqualsComparesBySameValue(actual: Formula, expected: Formula, passes: Bool) {
         let result = run([Self.object([[Self.assertEquals(actual, expected), .finishStage]])])
-        #expect((result.outcome == .passed) == passes)
+        if passes {
+            #expect(result.outcome == .passed)
+        } else {
+            // A false case must be the assert's own failure, not any other non-pass
+            // (review, slice 5).
+            guard case let .assertionFailed(failure) = result.outcome else {
+                Issue.record("expected an assertion failure, got \(result.outcome)")
+                return
+            }
+            #expect(failure.stepIndex == 0)
+        }
     }
 
     @Test func aFailureNamesItsPositionAndValues() {
@@ -106,6 +116,31 @@ struct HarnessTests {
         #expect(moves(result) == 1)
     }
 
+    /// The first ending wins whatever its kind: an ExitStage before a result in the
+    /// same tick ends the run without one, and a result before an ExitStage stands
+    /// (`StageActivity.java:482-497`; Codex and review, slice 5).
+    @Test func theFirstEndingWinsWhateverItsKind() {
+        #expect(run([Self.object([[.exitStage], [.finishStage]])]).outcome == .endedWithoutResult)
+        #expect(run([Self.object([[.finishStage], [.exitStage]])]).outcome == .passed)
+        let failing = [Self.assertEquals(.number(1), .number(2))]
+        #expect(run([Self.object([[.exitStage], failing])]).outcome == .endedWithoutResult)
+    }
+
+    /// A failure's step index is its position in the step list: every step
+    /// compiles to exactly one instruction, markers included (review, slice 5).
+    @Test func aFailuresStepIndexCountsBlockMarkers() {
+        let steps: [ScriptStep] = [
+            .brick(.ifElse(condition: .number(1))), Self.move, .brick(.elseBranch), Self.move, .brick(.ifEnd),
+            .brick(.repeatLoop(times: .number(1))), Self.move, .brick(.loopEnd),
+            Self.assertEquals(.number(1), .number(2))
+        ]
+        guard case let .assertionFailed(failure) = run([Self.object([steps])]).outcome else {
+            Issue.record("expected an assertion failure")
+            return
+        }
+        #expect(failure.stepIndex == 8)
+    }
+
     @Test func theFirstResultWinsWithinOneTick() {
         let failing = [Self.assertEquals(.number(1), .number(2))]
         #expect(run([Self.object([[.finishStage], failing])]).outcome == .passed)
@@ -132,6 +167,7 @@ struct HarnessTests {
 
     @Test func aHarnessStepAfterAnActionWaitsForTheNextTick() {
         let result = run([Self.object([[Self.move, Self.assertEquals(.number(1), .number(1)), .finishStage]])])
+        #expect(result.outcome == .passed)
         #expect(result.ticks == 3)
     }
 
