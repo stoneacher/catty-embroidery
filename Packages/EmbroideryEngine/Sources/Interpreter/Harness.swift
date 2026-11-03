@@ -13,6 +13,7 @@ package enum ScriptStep: Sendable, Equatable {
 
     package static let finishStage = Self.harness(.finishStage)
     package static let exitStage = Self.harness(.exitStage)
+    package static let waitTillIdle = Self.harness(.waitTillIdle)
 }
 
 /// A language-test harness brick: an action like a brick (D6), compiled to
@@ -24,6 +25,9 @@ package enum HarnessStep: Sendable, Equatable {
     case finishStage
     /// Catroid `ExitStageBrick`: the stage ends without a result (D5).
     case exitStage
+    /// Catroid `WaitTillIdleBrick` (D8): one poll per tick, released once every
+    /// other script has ended.
+    case waitTillIdle
 }
 
 /// An object for `Interpreter.init(harness:)`: its pose and variables, and its
@@ -152,6 +156,15 @@ extension Interpreter {
             latch(.result(.passed))
         case .exitStage:
             latch(.exited)
+        case .waitTillIdle:
+            // Catroid: true iff every actor runs no script, or only the one holding
+            // this action (`WaitTillIdleAction.java:35-58`); here, iff this is the
+            // only thread not yet finished. Read live, at this point of the pass: a
+            // thread earlier in the pass has already finished or not this tick, as
+            // libgdx drops a finished sequence while acting actors in order. A second
+            // waiter is unfinished, so two waiters never release each other.
+            let idle = threads.indices.allSatisfy { $0 == index || threads[$0].finished }
+            guard idle else { return false }
         }
         threads[index].instructionPointer += 1
         return true
