@@ -4332,3 +4332,16 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Reviews.** One Codex slice round (Low) and `swift-code-reviewer`, with no production defect between them. Both independently found the *same* coverage gap: exit against result across threads in one tick. The reviewer demonstrated it with a surviving mutant; Codex named the two unkillable replacements. When two vendors converge on a missing test rather than a bug, the test plan had been written from the code's structure (one script, sequential steps), while the rule lives *between* threads.
 - **Process note, from an edit that failed silently:** an edit script without asserts missed its anchor after SwiftFormat had inserted a blank line, and the build caught it. Every scripted edit now asserts its anchor count.
 - **Mutants:** 17 in the slice (one test gap closed, one equivalent over its domain: a failed assert advancing its thread, unobservable once the run stops at the tick's end), 4 after review. All killed except the recorded equivalent.
+
+## 2026-11-03 — Language-test runner slices 6 and 7: Codex overturned a reviewer's "holds", and the runner found a divergence
+
+- **Slice 6 (WaitTillIdle).** Codex's High showed that my implementation, my test and the reviewer's confirmation all rested on one wrong premise. We had reasoned from libgdx's `Actor.act`, which drops a finished action while acting. Catroid's `Look.act` overrides it with `ThreadScheduler.tick`, which acts all of an actor's scripts and only then removes the finished ones. So a same-object worker ending earlier in the tick is still listed when the waiter polls.
+  - The test `aWorkerVisitedEarlierReleasesInTheSameTick` had pinned the wrong answer as the specification. The reviewer re-derived the tick counts by hand and called it correct, because the derivation used the same premise.
+  - **Lesson:** a hand re-derivation checks arithmetic, not premises. Only reading the actual scheduler did.
+  - Both reviewers independently found that a nested waiter never releases in Catroid (its `contains` is not recursive); that is now mirrored.
+- **Slice 7 (the runner): 32 of 215 Catrobat language tests pass** on this engine, with 4 expected failures and 179 unsupported. All 215 are pinned.
+- **The runner's first real result is a divergence planning had not predicted.** `testArccosineFunction` and `testArcsinusFunction` fail because Darwin's correctly rounded `acos(0.5)`/`asin(0.5)` differ by one ulp from Java's fdlibm (probed under JDK 17), and the tests `floor` the degrees.
+  - ADR-046 pins four divergences, and this is not one of them.
+  - Filed as US-333 (port fdlibm, or accept), pinned meanwhile as expected failures owned by it.
+  - This is the feature's justification in miniature: an implementation-independent suite found a formula-level difference that 1500+ hand-written engine tests had not, because those tests were written against Darwin's libm.
+- **The ratchet's premise was executed, not assumed** (ADR-032 invariant 4): a mutant that never records the known issue is red, so `withKnownIssue(isIntermittent: false)` does fail when an expected failure starts passing. One mutant is equivalent by design: the outside outcome check is redundant with the strict matcher, and it is kept for its message.
