@@ -165,7 +165,8 @@ extension Interpreter {
             // of this object's that finished in this tick is still in its action list,
             // since `ThreadScheduler.tick` removes them only after the object's whole
             // pass (`ThreadScheduler.java:59-90`; Codex slice 6, finding 1). A second
-            // waiter is unfinished, so two waiters never release each other.
+            // waiter is unfinished, so two waiters that have both started never release
+            // each other (in tick 1 a later object's waiter has not started; see below).
             // A waiter inside a loop or If is never one of its script's top-level
             // children, so Catroid never finds it idle.
             guard !nestedInBlock else { return false }
