@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>signedRelease</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.2.0</applicationVersion>
+    <catrobatLanguageVersion>1.11</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Pixel 4a</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>32</platformVersion>
+    <programLicense></programLicense>
+    <programName>testWaitUntil</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2160</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="NoteBrick">
+                  <brickId>c8e71546-dddb-4f37-93cc-c86ddb7570fd</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>Test no wait</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ResetTimerBrick">
+                  <brickId>6cd2e4c4-d0a0-4ece-8f9c-23f5545c5037</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="WaitUntilBrick">
+                  <brickId>6dd4c8b1-e7bb-4fed-ad8d-d83a8673baaf</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>6b43f7ae-61fa-4afc-b4fa-b78f77b38261</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>TIMER</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>0</initialIndex>
+                        <deviceValueKey>f8ec8d0c-56c5-415b-bc2b-eba5a502fa5e</deviceValueKey>
+                        <name>waitDuration</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>1a5f79ef-8bfc-4ebd-bb42-7ea8b76c0530</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>0.1</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>waitDuration</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>GREATER_OR_EQUAL</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="NoteBrick">
+                  <brickId>ca8568e2-fc05-4344-8427-d15bac0c72e9</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>Test wait until for 1 sec</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ResetTimerBrick">
+                  <brickId>25c39b70-5544-41a3-abf4-0134fa8cc77b</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="WaitUntilBrick">
+                  <brickId>0e2beb2e-4dcd-44ad-8fb2-3778707f8f6a</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>SENSOR</type>
+                        <value>TIMER</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>1</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>GREATER_OR_EQUAL</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>39d88e7c-77f4-468c-b785-f8cfa165c7c7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>TIMER</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[4]/userVariable"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>59f0e05a-923d-4ea4-8892-e83976cc2110</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0.9</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>waitDuration</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1.1</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>waitDuration</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>f9051196-2f49-4adb-876a-748d21ccd412</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="ExitStageBrick">
+                  <brickId>e93299ba-b735-4942-b965-504d1c99eca5</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>ad6a82ea-adde-4472-ab93-628548e0ea11</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[4]/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

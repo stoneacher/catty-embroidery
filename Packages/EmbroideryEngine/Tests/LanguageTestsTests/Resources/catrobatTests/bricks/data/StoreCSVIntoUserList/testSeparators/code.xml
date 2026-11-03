@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.69</applicationVersion>
+    <catrobatLanguageVersion>0.99999</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Android SDK built for x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense></programLicense>
+    <programName>testSeparators</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1794</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value>These tests show that colon and semicolon are equal separators and that the first one that is detected, which is not enclosed in quotes, will be used</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick type="StoreCSVIntoUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="STORE_CSV_INTO_USERLIST_CSV">
+                      <type>STRING</type>
+                      <value>&quot;1,2&quot;;&quot;3&quot;
+&quot;1;1&quot;;&quot;4&quot;
+2,2;5</value>
+                    </formula>
+                    <formula category="STORE_CSV_INTO_USERLIST_COLUMN">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>91aed44e-60b6-4bb1-b89f-29d85f56f35e</deviceListKey>
+                    <name>List 1</name>
+                  </userList>
+                </org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick>
+                <org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick type="StoreCSVIntoUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="STORE_CSV_INTO_USERLIST_CSV">
+                      <type>STRING</type>
+                      <value>&quot;1,2&quot;,3
+1;1,4
+&quot;2,2&quot;,5</value>
+                    </formula>
+                    <formula category="STORE_CSV_INTO_USERLIST_COLUMN">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>e0c6525f-0e71-401d-ab8c-ceb9b5ce7df4</deviceListKey>
+                    <name>List 2</name>
+                  </userList>
+                </org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_LIST</type>
+                        <value>List 1</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_LIST</type>
+                        <value>List 2</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>0568fefa-935b-404a-a293-e2c51cfcda95</deviceValueKey>
+                        <name>Test1</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick type="StoreCSVIntoUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="STORE_CSV_INTO_USERLIST_CSV">
+                      <type>STRING</type>
+                      <value>1,2;1,3
+2,2;2,3
+3;3,2,3</value>
+                    </formula>
+                    <formula category="STORE_CSV_INTO_USERLIST_COLUMN">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick/userList"/>
+                </org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick>
+                <org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick type="StoreCSVIntoUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="STORE_CSV_INTO_USERLIST_CSV">
+                      <type>STRING</type>
+                      <value>&quot;1&quot;,&quot;2;1&quot;,&quot;3&quot;
+&quot;2&quot;,&quot;2;2&quot;,&quot;3&quot;
+&quot;3;3&quot;,&quot;2&quot;,&quot;3&quot;</value>
+                    </formula>
+                    <formula category="STORE_CSV_INTO_USERLIST_COLUMN">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick[2]/userList"/>
+                </org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_LIST</type>
+                        <value>List 1</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_LIST</type>
+                        <value>List 2</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>828c2a4f-d04c-4475-853e-15058874667f</deviceValueKey>
+                        <name>Test2</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>Test1</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>Test2</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[3]/userVariable"/>
+  </programVariableList>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick/userList"/>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick[2]/userList"/>
+  </programListOfLists>
+</program>

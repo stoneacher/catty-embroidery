@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.75</applicationVersion>
+    <catrobatLanguageVersion>0.999999999</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Android SDK built for x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>23</platformVersion>
+    <programLicense></programLicense>
+    <programName>testReportBrick</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1184</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>768</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="UserDefinedBrick">
+                  <brickId>17c64384-be0b-4555-9072-f70cbaf0b58f</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <isCallingBrick>true</isCallingBrick>
+                  <userDefinedBrickDataList>
+                    <userDefinedBrickLabel>
+                      <type>LABEL</type>
+                      <label>example</label>
+                    </userDefinedBrickLabel>
+                  </userDefinedBrickDataList>
+                  <userDefinedBrickID>9dff0700-0fca-4950-850d-678cb686562b</userDefinedBrickID>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>672a7911-d838-4f09-9e3e-34dda2c961ff</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>beforeReportVariable</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>fe256cfd-98f4-486d-89ca-dce359d5226f</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>afterReportVariable</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="UserDefinedBrick">
+                  <brickId>3a1ea116-5012-4cc7-9c1c-7c64c6a6911e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <isCallingBrick>true</isCallingBrick>
+                  <userDefinedBrickDataList>
+                    <userDefinedBrickLabel>
+                      <type>LABEL</type>
+                      <label>branchExample</label>
+                    </userDefinedBrickLabel>
+                  </userDefinedBrickDataList>
+                  <userDefinedBrickID>245f6606-c46a-44d2-bd63-caa4103d9d8c</userDefinedBrickID>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>808fedbd-7f76-4fd3-aec1-d878565f16e0</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>branchVariable</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>fbfadc6e-61fc-4420-89f8-09069f954fc3</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>060f265b-dbf5-41b2-8f48-006f90c1b884</scriptId>
+            </script>
+            <script type="UserDefinedScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <brickId>7259842e-ad6f-42c2-9457-2d46815a58c6</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>51db833d-89f9-4599-bf3c-85334d7d1b50</deviceValueKey>
+                        <name>beforeReportVariable</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="ReportBrick">
+                  <brickId>1c0dc868-ab0f-466f-8eab-42271e38646c</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPORT_BRICK">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>a2b741a2-b0ef-4919-848e-cbfedb63ae4e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>54801e93-aea1-4d0f-af43-7b59769d73dd</deviceValueKey>
+                        <name>afterReportVariable</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>37f05a41-77d4-447b-818f-1078e5d2ebb4</scriptId>
+              <userDefinedBrickID>9dff0700-0fca-4950-850d-678cb686562b</userDefinedBrickID>
+            </script>
+            <script type="UserDefinedScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="IfLogicBeginBrick">
+                  <brickId>b0bb2879-6f74-4759-8dd5-563c6625318b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>FALSE</value>
+                    </formula>
+                  </formulaList>
+                  <elseBranchBricks>
+                    <brick type="SetVariableBrick">
+                      <brickId>65768e91-0bd3-4e69-819e-c78151d9cda6</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>2</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <deviceValueKey>bc7abeb7-a8de-4277-b38d-a6a68c3373be</deviceValueKey>
+                            <name>branchVariable</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                    </brick>
+                    <brick type="ReportBrick">
+                      <brickId>bc080e81-a750-43f6-b7aa-574f984fd0e0</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="REPORT_BRICK">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </elseBranchBricks>
+                  <ifBranchBricks>
+                    <brick type="SetVariableBrick">
+                      <brickId>a22c9e17-6cec-43f0-b250-689fafc16811</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1.0</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../elseBranchBricks/brick/userVariable"/>
+                    </brick>
+                    <brick type="ReportBrick">
+                      <brickId>263ff420-6886-462b-a362-fc88880a7c39</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="REPORT_BRICK">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>30cd1185-8b25-45be-836a-ce1f868277d6</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/elseBranchBricks/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>dd6ed99a-b867-47e9-aa32-6f011c90e33f</scriptId>
+              <userDefinedBrickID>245f6606-c46a-44d2-bd63-caa4103d9d8c</userDefinedBrickID>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList>
+            <brick type="UserDefinedBrick">
+              <brickId>dfdd6e44-99d9-4344-ac71-5804b550eabb</brickId>
+              <commentedOut>false</commentedOut>
+              <formulaList/>
+              <isCallingBrick>false</isCallingBrick>
+              <userDefinedBrickDataList>
+                <userDefinedBrickLabel>
+                  <type>LABEL</type>
+                  <label>example</label>
+                </userDefinedBrickLabel>
+              </userDefinedBrickDataList>
+              <userDefinedBrickID>9dff0700-0fca-4950-850d-678cb686562b</userDefinedBrickID>
+            </brick>
+            <brick type="UserDefinedBrick">
+              <brickId>9ae9abd3-0bd0-4e9b-932b-0b9c8d1bf57f</brickId>
+              <commentedOut>false</commentedOut>
+              <formulaList/>
+              <isCallingBrick>false</isCallingBrick>
+              <userDefinedBrickDataList>
+                <userDefinedBrickLabel>
+                  <type>LABEL</type>
+                  <label>branchExample</label>
+                </userDefinedBrickLabel>
+              </userDefinedBrickDataList>
+              <userDefinedBrickID>245f6606-c46a-44d2-bd63-caa4103d9d8c</userDefinedBrickID>
+            </brick>
+          </userDefinedBrickList>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[2]/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[2]/brickList/brick[3]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[3]/brickList/brick/elseBranchBricks/brick/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

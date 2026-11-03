@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.2.4</applicationVersion>
+    <catrobatLanguageVersion>1.12</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>ONEPLUS A6003</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>33</platformVersion>
+    <programLicense></programLicense>
+    <programName>testReplaceItemInList</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2146</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Szene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>204a3984-f18b-46d0-b110-f30e1d372aaf</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>4c2070c8-234d-471a-a02a-a4e4de2a566a</deviceListKey>
+                    <initialIndex>-1</initialIndex>
+                    <name>expectedList</name>
+                  </userList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>3f976df8-f8d0-4212-9dd2-e78fd43a7a9f</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.5</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>7c59c3aa-6ec2-4ca6-a013-9c69dd19bc56</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>555</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>1e3d1a92-7f48-4f86-91b8-99c4c0030187</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>This is text</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>fa94581d-0711-49a5-99fe-aeb7ccabdf14</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>333</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>145688e4-9545-41d3-8d27-33f21ec28ef4</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>c4d3a41f-c799-4682-ad68-9377b4af3cb7</deviceListKey>
+                    <initialIndex>-1</initialIndex>
+                    <name>listToCheck</name>
+                  </userList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>130362fe-6aab-4994-8c75-2087d3343080</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>a7538498-f930-44f6-a882-86a891b99ebe</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>42643d2a-3029-4bea-8848-1ffd3ebd3496</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>b9c5c450-ef9c-4100-aaa4-4b219a4a9d43</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>3e98f88e-7761-418e-9175-f13d661bdb2b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>d6f381f0-61c9-41f5-a35f-d07919c982d7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.5</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>d22213f4-7d37-42d0-b2c4-32e5c3768a8f</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>555</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>7ca38852-bfa5-4604-8b91-add30ea658e9</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>4</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>This is text</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>1b11c61f-ab02-4ad1-84e8-e00e29f1c9a2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5.5</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>333</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>f4445003-6fcc-4f65-8f33-24b6de91930e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>100</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.5</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>3095726f-b60f-460f-8fdf-a1b7e685ab28</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>77777</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>c1915ea2-f900-4007-b71c-ba4b0be3558f</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>3</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>77777</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[6]/userList"/>
+                </brick>
+                <brick type="AssertUserListsBrick">
+                  <brickId>686efc9a-4360-4279-916b-08dd93751ce9</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userDataList>
+                    <userData category="ASSERT_LISTS_ACTUAL" reference="../../../brick[6]/userList"/>
+                    <userData category="ASSERT_LISTS_EXPECTED" reference="../../../brick/userList"/>
+                  </userDataList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>7bce4546-d56e-4443-a33a-2b6241a5dc7b</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>5b8d9beb-66c4-4454-b766-e6a481c01cc4</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[6]/userList"/>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userList"/>
+    <userList>
+      <deviceListKey>fac0dcfc-f3a4-438f-b9ff-f2a0e955b243</deviceListKey>
+      <initialIndex>-1</initialIndex>
+      <name>InnerList</name>
+    </userList>
+    <userList>
+      <deviceListKey>038a6430-02a5-450e-9c50-844b0f177a83</deviceListKey>
+      <initialIndex>-1</initialIndex>
+      <name>innerList</name>
+    </userList>
+  </programListOfLists>
+  <programMultiplayerVariableList/>
+</program>

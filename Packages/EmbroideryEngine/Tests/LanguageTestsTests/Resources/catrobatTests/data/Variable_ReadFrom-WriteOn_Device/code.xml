@@ -1,0 +1,3641 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.61</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>XT1052</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>25</platformVersion>
+    <programLicense></programLicense>
+    <programName>Variable_ReadFrom-WriteOn_Device</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1280</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>main scene with test suite and Assert collecting all test results</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="test suite with Assert">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>variables that were read but never written are all = 0</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>read variables have the last value written</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>special values (Arabic, Emoji, empty text, ...) can be written and read fine</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>variables with special characters in their names (Arabic, Emoji, ...) can be written and read fine</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>local variables with the same name of different objects are written and read independently</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>fast parallel written variables can be read correctly</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>local variables of clones of one object are shared w.r.t. read and write</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>global variables are shared between scenes w.r.t. read and write</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>local variables of objects with the same name but in different scenes are not shared w.r.t. read and write</broadcastMessage>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <leftChild>
+                              <leftChild>
+                                <leftChild>
+                                  <leftChild>
+                                    <leftChild>
+                                      <type>USER_VARIABLE</type>
+                                      <value>variables that were read but never written are all = 0</value>
+                                    </leftChild>
+                                    <rightChild>
+                                      <type>USER_VARIABLE</type>
+                                      <value>read variables have the last value written</value>
+                                    </rightChild>
+                                    <type>OPERATOR</type>
+                                    <value>LOGICAL_AND</value>
+                                  </leftChild>
+                                  <rightChild>
+                                    <type>USER_VARIABLE</type>
+                                    <value>special values (Arabic, Emoji, empty text, ...) can be written and read fine</value>
+                                  </rightChild>
+                                  <type>OPERATOR</type>
+                                  <value>LOGICAL_AND</value>
+                                </leftChild>
+                                <rightChild>
+                                  <type>USER_VARIABLE</type>
+                                  <value>variables with special characters in their names (Arabic, Emoji, ...) can be written and read fine</value>
+                                </rightChild>
+                                <type>OPERATOR</type>
+                                <value>LOGICAL_AND</value>
+                              </leftChild>
+                              <rightChild>
+                                <type>USER_VARIABLE</type>
+                                <value>local variables with the same name of different objects are written and read independently</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>LOGICAL_AND</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>USER_VARIABLE</type>
+                              <value>fast parallel written variables can be read correctly</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>LOGICAL_AND</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>USER_VARIABLE</type>
+                            <value>local variables of clones of one object are shared w.r.t. read and write</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>USER_VARIABLE</type>
+                          <value>global variables are shared between scenes w.r.t. read and write</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>local variables of objects with the same name but in different scenes are not shared w.r.t. read and write</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="SingleSprite" name="variables that were read but never written are all = 0">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>436a31ec-7854-48f3-ac5d-32f5262a05d9</deviceValueKey>
+                        <name>global variable that is read but was never set nor written</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>c830b1db-42d5-4422-bc8d-2cf60957bc2d</deviceValueKey>
+                        <name>local variable that is read but was never set nor written</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>92079b47-d2bb-41c3-8a82-2ff0cb2a1a4c</deviceValueKey>
+                        <name>global variable that is read and was set but never written</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick[5]/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>e3066280-b85b-4357-8614-0e4cc30de315</deviceValueKey>
+                        <name>local variable that is read and was set but never written</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick[8]/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <leftChild>
+                              <type>USER_VARIABLE</type>
+                              <value>global variable that is read but was never set nor written</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>0</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <leftChild>
+                              <type>USER_VARIABLE</type>
+                              <value>global variable that is read and was set but never written</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>0</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>EQUAL</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </leftChild>
+                        <rightChild>
+                          <leftChild>
+                            <type>USER_VARIABLE</type>
+                            <value>local variable that is read but was never set nor written</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>0</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>local variable that is read and was set but never written</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>b47a26e0-21d5-47dd-9374-91fd38a556f8</deviceValueKey>
+                        <name>variables that were read but never written are all = 0</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>variables that were read but never written are all = 0</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick[3]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[8]/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="read variables have the last value written">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>first value written</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>980c8c4d-415b-499e-b3a0-7e0b47364b42</deviceValueKey>
+                        <name>global variable</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>second value written</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>some other value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>STRING</type>
+                        <value>second value written</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>c25a2e8b-4980-40a4-99bc-81abfbbf0935</deviceValueKey>
+                        <name>read variables have the last value written</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read variables have the last value written</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="SingleSprite" name="special values (Arabic, Emoji, empty text, ...) can be written and read fine">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>123.45678901234567890123456789</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>54745270-0a0a-401c-a318-4f5e01266ff0</deviceValueKey>
+                        <name>NUMERIC TEST VALUE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>NUMERIC TEST VALUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>NUMERIC TEST VALUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>cdd0b1b0-cc35-4ffb-ac60-45a46b65b71e</deviceValueKey>
+                        <name>global variable can write on and read from device a numeric value</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>0aa75417-4b54-48ce-97a4-c8f6e8a753eb</deviceValueKey>
+                        <name>LATIN TEST VALUE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>LATIN TEST VALUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>LATIN TEST VALUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>231e30dd-57a7-4bfe-87db-4dd817386a68</deviceValueKey>
+                        <name>global variable can write on and read from device a Latin text</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>خيار يطول وفي أن. به، الحكومة المتحدة من, وصافرات ليتسنّى عل لكل, بلاده بالرّد انتصارهم ثم لها. بـ يكن وقام بخطوط شواطيء, بال واُسدل سليمان، المتاخمة ثم. من قبل كنقطة معاملة الوراء, وسوء أوراقهم أما عل.&#xd;</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>0975106e-e11e-4c09-a4ac-89ccaeb73086</deviceValueKey>
+                        <name>ARABIC TEST VALUE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>ARABIC TEST VALUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>ARABIC TEST VALUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>fdd01d52-015d-4202-aa72-6ee279b7e977</deviceValueKey>
+                        <name>global variable can write on and read from device an Arabic text</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>Lorem ipsum是指一篇用于网页设计、排印、布局和印刷的伪拉丁文章，其用于代替英语去强调设计元素而不是内容。它也被称为占位符文（或填充文）。它是一个很便利的模板工具。它用于帮助编排文章或演示文稿的视觉元素，如排印，字体，或布局。Lorem ipsum 大多是由古典作家和哲学家西塞罗创作的拉丁文的一部分。它的单词和字母由于添加或去移除而被改变了，所以故意使其内容荒谬；它不是真实的，正确的，再也不是可理解的拉丁语。虽然lorem ipsum看起来仍像古典拉丁语，但实际上它没有任何意义。因为西塞罗的文本不包含K，W，Z 这几个有异于拉丁文的字母，所以这几个字母和其他一些字母常常被随机插入去模拟欧洲语言的排印样式，这些字在原文中其实并没有。&#xd;
+&#xd;
+在专业化的使用语境中，经常发生的是私人或公司客户需要制作出版物，而实际的内容还没有准备好。试想如果在一篇新闻博客中填充进一整天每小时的新闻内容，出版复核人员往往会分心阅读其中可读的内容，例如从报纸或互联网上复制来的一段随机文本。他们会专注到文本内容，不再去关注布局及其元素。此外，随机文字内容可能无意中比较幽默或是有冒犯到别人，这在企业环境中将是不可接受的风险。Lorem ipsum和它的许多变体自从1960年代早期就被使用，而且很有可能是从十六世纪就已使用。</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>c6592c3e-1c76-49fc-b3b3-8a2184c8baa0</deviceValueKey>
+                        <name>CHINESE TEST VALUE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>CHINESE TEST VALUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>CHINESE TEST VALUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>4e329e49-ba8d-4284-aec7-30fa4d152e62</deviceValueKey>
+                        <name>global variable can write on and read from device a Chinese text</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>b5be29b4-d9d4-43e1-989d-8889c019130d</deviceValueKey>
+                        <name>EMPTY TEXT TEST VALUE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>EMPTY TEXT TEST VALUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>EMPTY TEXT TEST VALUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>abac20a6-8013-472b-9d64-5ba214b55ea8</deviceValueKey>
+                        <name>global variable can write on and read from device an empty text</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>\\&apos;&quot;&lt;&gt;&gt;%$$&amp;~||#__</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>444270b8-d3b0-45b0-8917-c4c8fdc5a15b</deviceValueKey>
+                        <name>SPECIAL CHARACTERS TEST VALUE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>SPECIAL CHARACTERS TEST VALUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>SPECIAL CHARACTERS TEST VALUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>e3145331-e7e0-411f-adcf-811c48d5d915</deviceValueKey>
+                        <name>global variable can write on and read from device a text with special characters</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。&#xd;文略のろ区産チコホヲ写9手金へべら国格ゆらげむ回万べ立失損ち討済ぼせ勲金ざぼあよ便電テオイ水文概骨拍せずも。入るぎじ文音シヤレラ兆牲製ノカ何載でこぽて報批れ融乗メテク万評くひ者単モセヱ推細ぎ得訴50率徳仕足レぐざぶ。道そスゅれ減選同ソケ省50三ヒ説回びス津年イキ愛部エケフカ真朝アエセオ那独ゅあ本伴ノネウヘ受探ドれてぶ断7確岡確平森さゆっ。</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>bceba303-eaca-417c-baaa-f28cfcaa18e6</deviceValueKey>
+                        <name>LONG TEXT TEST VALUE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>LONG TEXT TEST VALUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>LONG TEXT TEST VALUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>e677c824-2b01-4f05-ac9a-572fb00617c6</deviceValueKey>
+                        <name>global variable can write on and read from device a long text</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>😀😉🕸</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>17dc30c5-0568-413d-8407-06b23134ae04</deviceValueKey>
+                        <name>EMOJI TEST VALUE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>EMOJI TEST VALUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>EMOJI TEST VALUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>970bc20d-7030-47b0-bb3b-05cf4ed3ea21</deviceValueKey>
+                        <name>global variable can write on and read from device a text with Emojis</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>FUNCTION</type>
+                        <value>TRUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>2372ab94-cc79-42bf-be66-0c6a573d1ae3</deviceValueKey>
+                        <name>global variable can write on and read from device the value TRUE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>FUNCTION</type>
+                      <value>FALSE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another, unrelated value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>FUNCTION</type>
+                        <value>FALSE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>90a5d7e4-847d-4621-9487-00af4fa4ec3a</deviceValueKey>
+                        <name>global variable can write on and read from device the value FALSE</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <leftChild>
+                              <leftChild>
+                                <leftChild>
+                                  <leftChild>
+                                    <leftChild>
+                                      <leftChild>
+                                        <type>USER_VARIABLE</type>
+                                        <value>global variable can write on and read from device a numeric value</value>
+                                      </leftChild>
+                                      <rightChild>
+                                        <type>USER_VARIABLE</type>
+                                        <value>global variable can write on and read from device a Latin text</value>
+                                      </rightChild>
+                                      <type>OPERATOR</type>
+                                      <value>LOGICAL_AND</value>
+                                    </leftChild>
+                                    <rightChild>
+                                      <type>USER_VARIABLE</type>
+                                      <value>global variable can write on and read from device an Arabic text</value>
+                                    </rightChild>
+                                    <type>OPERATOR</type>
+                                    <value>LOGICAL_AND</value>
+                                  </leftChild>
+                                  <rightChild>
+                                    <type>USER_VARIABLE</type>
+                                    <value>global variable can write on and read from device a Chinese text</value>
+                                  </rightChild>
+                                  <type>OPERATOR</type>
+                                  <value>LOGICAL_AND</value>
+                                </leftChild>
+                                <rightChild>
+                                  <type>USER_VARIABLE</type>
+                                  <value>global variable can write on and read from device an empty text</value>
+                                </rightChild>
+                                <type>OPERATOR</type>
+                                <value>LOGICAL_AND</value>
+                              </leftChild>
+                              <rightChild>
+                                <type>USER_VARIABLE</type>
+                                <value>global variable can write on and read from device a text with special characters</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>LOGICAL_AND</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>USER_VARIABLE</type>
+                              <value>global variable can write on and read from device a long text</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>LOGICAL_AND</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>USER_VARIABLE</type>
+                            <value>global variable can write on and read from device a text with Emojis</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>USER_VARIABLE</type>
+                          <value>global variable can write on and read from device the value TRUE</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable can write on and read from device the value FALSE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>63136601-d2d1-4101-ae0e-dd5c09d038de</deviceValueKey>
+                        <name>special values (Arabic, Emoji, empty text, ...) can be written and read fine</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>special values (Arabic, Emoji, empty text, ...) can be written and read fine</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick[6]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[13]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[20]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[27]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[34]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[41]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[55]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[48]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[8]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[15]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[22]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[29]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[36]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[43]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[50]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[61]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[67]/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+        <object type="SingleSprite" name="variables with special characters in their names (Arabic, Emoji, ...) can be written and read fine">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>d71a75b6-458e-413b-9b03-51769a2099fe</deviceValueKey>
+                        <name>Variable with 😇 in name</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>FUNCTION</type>
+                      <value>FALSE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>91d0f9af-5233-4f20-b916-d6aaafde3518</deviceValueKey>
+                        <name>اسم المتغير العربي</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick[6]/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>FUNCTION</type>
+                      <value>FALSE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[6]/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick[6]/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>1e541fcb-a643-40bf-83c1-5a1bf830cef3</deviceValueKey>
+                        <name>\\&apos;&quot;&lt;&gt;&gt;%$$&amp;~||#__</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick[11]/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>FUNCTION</type>
+                      <value>FALSE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[11]/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick[11]/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>Variable with 😇 in name</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>USER_VARIABLE</type>
+                          <value>اسم المتغير العربي</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>\\&apos;&quot;&lt;&gt;&gt;%$$&amp;~||#__</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>2b9b2097-b58f-4f58-8637-5ffb02cad030</deviceValueKey>
+                        <name>variables with special characters in their names (Arabic, Emoji, ...) can be written and read fine</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>variables with special characters in their names (Arabic, Emoji, ...) can be written and read fine</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[6]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[11]/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+        <object type="SingleSprite" name="object 1 with local variables">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>write local variables with the same name in different objects</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>read local variables with the same name in different objects</broadcastMessage>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>local variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>123</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>value from local variable with same name of second object</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value>local variable value from second object</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>cdf13fcb-c952-4097-91a4-f7e847715407</deviceValueKey>
+                        <name>local variables with the same name of different objects are written and read independently</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>local variables with the same name of different objects are written and read independently</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>123</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>fbd85e38-516c-4cdc-9b50-a9b17781bce2</deviceValueKey>
+                        <name>local variable</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>something else</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write local variables with the same name in different objects</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[2]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read local variables with the same name in different objects</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script[2]/brickList/brick/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+        <object type="SingleSprite" name="object 2 with local variables">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>local variable value from second object</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>fff121f5-cd1d-42f2-be16-a6f019350521</deviceValueKey>
+                        <name>local variable</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>something else</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write local variables with the same name in different objects</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>local variable</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>d5fbbbd6-1db6-44eb-8dc7-e3b4a70b2a90</deviceValueKey>
+                        <name>value from local variable with same name of second object</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read local variables with the same name in different objects</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+        <object type="SingleSprite" name="fast parallel written variables can be read correctly">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>write many variables at the same time!</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>read many variables at the same time!</broadcastMessage>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <leftChild>
+                              <leftChild>
+                                <leftChild>
+                                  <leftChild>
+                                    <leftChild>
+                                      <leftChild>
+                                        <leftChild>
+                                          <leftChild>
+                                            <leftChild>
+                                              <leftChild>
+                                                <leftChild>
+                                                  <leftChild>
+                                                    <leftChild>
+                                                      <type>USER_VARIABLE</type>
+                                                      <value>variable 16</value>
+                                                    </leftChild>
+                                                    <rightChild>
+                                                      <type>NUMBER</type>
+                                                      <value>16</value>
+                                                    </rightChild>
+                                                    <type>OPERATOR</type>
+                                                    <value>EQUAL</value>
+                                                  </leftChild>
+                                                  <rightChild>
+                                                    <leftChild>
+                                                      <type>USER_VARIABLE</type>
+                                                      <value>variable 1</value>
+                                                    </leftChild>
+                                                    <rightChild>
+                                                      <type>NUMBER</type>
+                                                      <value>1</value>
+                                                    </rightChild>
+                                                    <type>OPERATOR</type>
+                                                    <value>EQUAL</value>
+                                                  </rightChild>
+                                                  <type>OPERATOR</type>
+                                                  <value>LOGICAL_AND</value>
+                                                </leftChild>
+                                                <rightChild>
+                                                  <leftChild>
+                                                    <type>USER_VARIABLE</type>
+                                                    <value>variable 2</value>
+                                                  </leftChild>
+                                                  <rightChild>
+                                                    <type>NUMBER</type>
+                                                    <value>2</value>
+                                                  </rightChild>
+                                                  <type>OPERATOR</type>
+                                                  <value>EQUAL</value>
+                                                </rightChild>
+                                                <type>OPERATOR</type>
+                                                <value>LOGICAL_AND</value>
+                                              </leftChild>
+                                              <rightChild>
+                                                <leftChild>
+                                                  <type>USER_VARIABLE</type>
+                                                  <value>variable 3</value>
+                                                </leftChild>
+                                                <rightChild>
+                                                  <type>NUMBER</type>
+                                                  <value>3</value>
+                                                </rightChild>
+                                                <type>OPERATOR</type>
+                                                <value>EQUAL</value>
+                                              </rightChild>
+                                              <type>OPERATOR</type>
+                                              <value>LOGICAL_AND</value>
+                                            </leftChild>
+                                            <rightChild>
+                                              <leftChild>
+                                                <type>USER_VARIABLE</type>
+                                                <value>variable 4</value>
+                                              </leftChild>
+                                              <rightChild>
+                                                <type>NUMBER</type>
+                                                <value>4</value>
+                                              </rightChild>
+                                              <type>OPERATOR</type>
+                                              <value>EQUAL</value>
+                                            </rightChild>
+                                            <type>OPERATOR</type>
+                                            <value>LOGICAL_AND</value>
+                                          </leftChild>
+                                          <rightChild>
+                                            <leftChild>
+                                              <type>USER_VARIABLE</type>
+                                              <value>variable 5</value>
+                                            </leftChild>
+                                            <rightChild>
+                                              <type>NUMBER</type>
+                                              <value>5</value>
+                                            </rightChild>
+                                            <type>OPERATOR</type>
+                                            <value>EQUAL</value>
+                                          </rightChild>
+                                          <type>OPERATOR</type>
+                                          <value>LOGICAL_AND</value>
+                                        </leftChild>
+                                        <rightChild>
+                                          <leftChild>
+                                            <type>USER_VARIABLE</type>
+                                            <value>variable 6</value>
+                                          </leftChild>
+                                          <rightChild>
+                                            <type>NUMBER</type>
+                                            <value>6</value>
+                                          </rightChild>
+                                          <type>OPERATOR</type>
+                                          <value>EQUAL</value>
+                                        </rightChild>
+                                        <type>OPERATOR</type>
+                                        <value>LOGICAL_AND</value>
+                                      </leftChild>
+                                      <rightChild>
+                                        <leftChild>
+                                          <type>USER_VARIABLE</type>
+                                          <value>variable 7</value>
+                                        </leftChild>
+                                        <rightChild>
+                                          <type>NUMBER</type>
+                                          <value>7</value>
+                                        </rightChild>
+                                        <type>OPERATOR</type>
+                                        <value>EQUAL</value>
+                                      </rightChild>
+                                      <type>OPERATOR</type>
+                                      <value>LOGICAL_AND</value>
+                                    </leftChild>
+                                    <rightChild>
+                                      <leftChild>
+                                        <type>USER_VARIABLE</type>
+                                        <value>variable 8</value>
+                                      </leftChild>
+                                      <rightChild>
+                                        <type>NUMBER</type>
+                                        <value>8</value>
+                                      </rightChild>
+                                      <type>OPERATOR</type>
+                                      <value>EQUAL</value>
+                                    </rightChild>
+                                    <type>OPERATOR</type>
+                                    <value>LOGICAL_AND</value>
+                                  </leftChild>
+                                  <rightChild>
+                                    <leftChild>
+                                      <type>USER_VARIABLE</type>
+                                      <value>variable 9</value>
+                                    </leftChild>
+                                    <rightChild>
+                                      <type>NUMBER</type>
+                                      <value>9</value>
+                                    </rightChild>
+                                    <type>OPERATOR</type>
+                                    <value>EQUAL</value>
+                                  </rightChild>
+                                  <type>OPERATOR</type>
+                                  <value>LOGICAL_AND</value>
+                                </leftChild>
+                                <rightChild>
+                                  <leftChild>
+                                    <type>USER_VARIABLE</type>
+                                    <value>variable 10</value>
+                                  </leftChild>
+                                  <rightChild>
+                                    <type>NUMBER</type>
+                                    <value>10</value>
+                                  </rightChild>
+                                  <type>OPERATOR</type>
+                                  <value>EQUAL</value>
+                                </rightChild>
+                                <type>OPERATOR</type>
+                                <value>LOGICAL_AND</value>
+                              </leftChild>
+                              <rightChild>
+                                <leftChild>
+                                  <type>USER_VARIABLE</type>
+                                  <value>variable 11</value>
+                                </leftChild>
+                                <rightChild>
+                                  <type>NUMBER</type>
+                                  <value>11</value>
+                                </rightChild>
+                                <type>OPERATOR</type>
+                                <value>EQUAL</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>LOGICAL_AND</value>
+                            </leftChild>
+                            <rightChild>
+                              <leftChild>
+                                <type>USER_VARIABLE</type>
+                                <value>variable 12</value>
+                              </leftChild>
+                              <rightChild>
+                                <type>NUMBER</type>
+                                <value>12</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>EQUAL</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>LOGICAL_AND</value>
+                          </leftChild>
+                          <rightChild>
+                            <leftChild>
+                              <type>USER_VARIABLE</type>
+                              <value>variable 13</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>13</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>EQUAL</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </leftChild>
+                        <rightChild>
+                          <leftChild>
+                            <type>USER_VARIABLE</type>
+                            <value>variable 14</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>14</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>variable 15</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>15</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>d5793a5d-db3e-4ced-91a6-0fda672698cb</deviceValueKey>
+                        <name>fast parallel written variables can be read correctly</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>fast parallel written variables can be read correctly</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>d65832f5-1b8b-46e1-9f58-657323e17eb8</deviceValueKey>
+                        <name>variable 1</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>dd3085d2-035a-4f28-82b3-aa5d7e062f66</deviceValueKey>
+                        <name>variable 2</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>990ac5e8-847d-477d-82c5-05e7a2feb6f3</deviceValueKey>
+                        <name>variable 3</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>4</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>af84a076-7142-4c0f-bb1a-702805d3e160</deviceValueKey>
+                        <name>variable 4</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>85c40f4f-7121-4ecf-8b7b-509e04c6d653</deviceValueKey>
+                        <name>variable 5</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>6</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>304664c2-9959-4973-b372-617470e141ac</deviceValueKey>
+                        <name>variable 6</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>7</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>fab32b42-534e-4e3f-b8f5-05453794bb27</deviceValueKey>
+                        <name>variable 7</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>8</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>579f46c9-9921-4072-8fa1-c94bd66d8e3d</deviceValueKey>
+                        <name>variable 8</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>9</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>90e2e984-547d-4e49-ae68-ab7d8bd628f9</deviceValueKey>
+                        <name>variable 9</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>3a5bc989-b1a2-4a41-aedc-600cdda17f2e</deviceValueKey>
+                        <name>variable 10</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>11</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>ef8bc6f0-cb21-41a5-a25f-bf94c8e26900</deviceValueKey>
+                        <name>variable 11</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>12</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>03123e66-4739-48c6-bc24-cc18aedea8b9</deviceValueKey>
+                        <name>variable 12</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>13</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>bd8866e2-69a7-4532-9d4a-06b7f89e414a</deviceValueKey>
+                        <name>variable 13</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>14</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>59ec6df0-3d57-4f12-a451-b128c24d3417</deviceValueKey>
+                        <name>variable 14</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>15</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>4c00ab43-59b3-4d61-ad51-5cb70aa0b9f1</deviceValueKey>
+                        <name>variable 15</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>16</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>69800ad8-2eda-44c6-9223-bfa433d082c7</deviceValueKey>
+                        <name>variable 16</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[2]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[3]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[4]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[5]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[6]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[7]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[8]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[9]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[10]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[11]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[12]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[13]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[14]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[15]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[16]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../script[17]/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read many variables at the same time!</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script[2]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[3]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[4]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[5]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[6]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[7]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[8]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[9]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[10]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[11]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[12]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[13]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[14]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[15]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[16]/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script[17]/brickList/brick/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="local variables of clones of one object are shared w.r.t. read and write">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>c433414f-dc90-4c1b-b107-d78a5ac33241</deviceValueKey>
+                        <name>id of instance</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="CloneBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="CloneBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="WaitUntilBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>STRING</type>
+                        <value>second clone has set and written the local variable</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>606bf7e2-0e03-40ce-bcfb-593702d52210</deviceValueKey>
+                        <name>local variable</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>local variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>2</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>local variables of clones of one object are shared w.r.t. read and write</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>03b5db09-a9bd-496c-9675-dbfd411a99fb</deviceValueKey>
+                        <name>local variables of clones of one object are shared w.r.t. read and write</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[7]/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick[7]/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>3.1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[7]/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>original object has set and written the local variable</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WaitUntilBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>STRING</type>
+                        <value>first clone has read and compared the local variable</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick[7]/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>local variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>3</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>local variables of clones of one object are shared w.r.t. read and write</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[8]/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>local variables of clones of one object are shared w.r.t. read and write</receivedMessage>
+            </script>
+            <script type="WhenClonedScript">
+              <brickList>
+                <brick type="IfLogicBeginBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>id of instance</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>1</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <elseBranchBricks>
+                    <brick type="WaitUntilBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="IF_CONDITION">
+                          <leftChild>
+                            <type>USER_VARIABLE</type>
+                            <value>global variable</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>STRING</type>
+                            <value>first clone has set and written the local variable</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="ReadVariableFromDeviceBrick">
+                      <commentedOut>false</commentedOut>
+                      <userVariable reference="../../../../../../script/brickList/brick[7]/userVariable"/>
+                    </brick>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <leftChild>
+                            <type>USER_VARIABLE</type>
+                            <value>local variable</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>1</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../script/brickList/brick[8]/userVariable"/>
+                    </brick>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <type>NUMBER</type>
+                          <value>2</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../script/brickList/brick[7]/userVariable"/>
+                    </brick>
+                    <brick type="WriteVariableOnDeviceBrick">
+                      <commentedOut>false</commentedOut>
+                      <userVariable reference="../../../../../../script/brickList/brick[7]/userVariable"/>
+                    </brick>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <type>STRING</type>
+                          <value>second clone has set and written the local variable</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                    </brick>
+                    <brick type="WaitUntilBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="IF_CONDITION">
+                          <leftChild>
+                            <type>USER_VARIABLE</type>
+                            <value>global variable</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>STRING</type>
+                            <value>first clone has read and compared the local variable</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="ReadVariableFromDeviceBrick">
+                      <commentedOut>false</commentedOut>
+                      <userVariable reference="../../../../../../script/brickList/brick[7]/userVariable"/>
+                    </brick>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <leftChild>
+                            <leftChild>
+                              <type>USER_VARIABLE</type>
+                              <value>local variable</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>3</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>USER_VARIABLE</type>
+                            <value>local variables of clones of one object are shared w.r.t. read and write</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../script/brickList/brick[8]/userVariable"/>
+                    </brick>
+                  </elseBranchBricks>
+                  <ifBranchBricks>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <type>NUMBER</type>
+                          <value>1.0</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../script/brickList/brick[7]/userVariable"/>
+                    </brick>
+                    <brick type="WriteVariableOnDeviceBrick">
+                      <commentedOut>false</commentedOut>
+                      <userVariable reference="../../../../../../script/brickList/brick[7]/userVariable"/>
+                    </brick>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <type>NUMBER</type>
+                          <value>1.1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../script/brickList/brick[7]/userVariable"/>
+                    </brick>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <type>STRING</type>
+                          <value>first clone has set and written the local variable</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                    </brick>
+                    <brick type="WaitUntilBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="IF_CONDITION">
+                          <leftChild>
+                            <type>USER_VARIABLE</type>
+                            <value>global variable</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>STRING</type>
+                            <value>original object has set and written the local variable</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="ReadVariableFromDeviceBrick">
+                      <commentedOut>false</commentedOut>
+                      <userVariable reference="../../../../../../script/brickList/brick[7]/userVariable"/>
+                    </brick>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <leftChild>
+                            <leftChild>
+                              <type>USER_VARIABLE</type>
+                              <value>local variable</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>3</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>USER_VARIABLE</type>
+                            <value>local variables of clones of one object are shared w.r.t. read and write</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../script/brickList/brick[8]/userVariable"/>
+                    </brick>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <type>STRING</type>
+                          <value>first clone has read and compared the local variable</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[7]/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="global variables are shared between scenes w.r.t. read and write">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>can the written value of a global variable be read by another scene?</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>another value of the global variable that was NOT written on the device</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SceneStartBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneToStart>scene that checks values set and written of global variable, rewrites them, and then returns to the main scene</sceneToStart>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variables are shared between scenes w.r.t. read and write</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>global variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value>unwritten value, set in second scene just before returning to main scene</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>497c502f-8f78-47ab-96e1-4709d1ad3b30</deviceValueKey>
+                        <name>global variables are shared between scenes w.r.t. read and write</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variables are shared between scenes w.r.t. read and write</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>global variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value>value written in second scene</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[5]/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>global variables are shared between scenes w.r.t. read and write</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="local variables of objects with the same name but in different scenes are not shared w.r.t. read and write">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>local variable value written in main scene</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>0705660d-3ee2-4735-b087-5661f35c3e53</deviceValueKey>
+                        <name>local variable</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>local variable value set in main scene after having written another value</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SceneStartBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneToStart>scene that checks values set and written of local variable in main scene, then writes and sets its own values for the local variable, and then returns to the main scene</sceneToStart>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>local variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value>local variable value written in the second scene</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>NOT_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>local variables of objects with the same name but in different scenes are not shared w.r.t. read and write</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>302364de-afdd-49e6-abd7-1e30bd0d69b9</deviceValueKey>
+                        <name>local variables of objects with the same name but in different scenes are not shared w.r.t. read and write</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>local variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value>local variable value written in main scene</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>local variables of objects with the same name but in different scenes are not shared w.r.t. read and write</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[6]/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>local variables of objects with the same name but in different scenes are not shared w.r.t. read and write</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+    <scene>
+      <name>scene that checks values set and written of global variable, rewrites them, and then returns to the main scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="object that checks values set and written of global variable, rewrites them, and then returns to the main scene">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>STRING</type>
+                        <value>another value of the global variable that was NOT written on the device</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../../../scene/objectList/object[11]/scriptList/script/brickList/brick[5]/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../../../scene/objectList/object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>global variables are shared between scenes w.r.t. read and write</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>global variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value>can the written value of a global variable be read by another scene?</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../../../scene/objectList/object[11]/scriptList/script/brickList/brick[5]/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>value written in second scene</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../../../scene/objectList/object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../../../../../../../scene/objectList/object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>unwritten value, set in second scene just before returning to main scene</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../../../scene/objectList/object[4]/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+                <brick type="SceneTransitionBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneForTransition>main scene with test suite and Assert collecting all test results</sceneForTransition>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+    <scene>
+      <name>scene that checks values set and written of local variable in main scene, then writes and sets its own values for the local variable, and then returns to the main scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="local variables of objects with the same name but in different scenes are not shared w.r.t. read and write">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>local variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>0</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../../../scene/objectList/object[12]/scriptList/script/brickList/brick[6]/userVariable"/>
+                </brick>
+                <brick type="ReadVariableFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>5b9518df-b255-44f8-bf83-e0fabaa3f555</deviceValueKey>
+                        <name>local variable</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>local variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value>local variable value written in main scene</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>NOT_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>local variables of objects with the same name but in different scenes are not shared w.r.t. read and write</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../../../scene/objectList/object[12]/scriptList/script/brickList/brick[6]/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>STRING</type>
+                      <value>local variable value written in the second scene</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[2]/userVariable"/>
+                </brick>
+                <brick type="WriteVariableOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <userVariable reference="../../brick[2]/userVariable"/>
+                </brick>
+                <brick type="SceneTransitionBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneForTransition>main scene with test suite and Assert collecting all test results</sceneForTransition>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick[2]/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object[5]/scriptList/script/brickList/brick[69]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[6]/scriptList/script/brickList/brick[16]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script/brickList/brick[11]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script/brickList/brick[5]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[4]/scriptList/script/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[9]/scriptList/script/brickList/brick[3]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[7]/scriptList/script/brickList/brick[3]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[8]/scriptList/script[2]/brickList/brick[2]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[4]/scriptList/script/brickList/brick[7]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[10]/scriptList/script/brickList/brick[8]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[11]/scriptList/script/brickList/brick[5]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[12]/scriptList/script/brickList/brick[6]/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+</program>

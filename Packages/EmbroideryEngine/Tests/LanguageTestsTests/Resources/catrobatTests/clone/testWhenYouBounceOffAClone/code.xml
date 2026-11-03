@@ -1,0 +1,600 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.62</applicationVersion>
+    <catrobatLanguageVersion>0.99999</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>XT1052</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>25</platformVersion>
+    <programLicense></programLicense>
+    <programName>testWhenYouBounceOffAClone</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1280</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Szene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="WaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIME_TO_WAIT_IN_SECONDS">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <leftChild>
+                              <leftChild>
+                                <leftChild>
+                                  <type>USER_VARIABLE</type>
+                                  <value>Original object 1 bounced off clone of object 2</value>
+                                </leftChild>
+                                <rightChild>
+                                  <type>NUMBER</type>
+                                  <value>0</value>
+                                </rightChild>
+                                <type>OPERATOR</type>
+                                <value>GREATER_THAN</value>
+                              </leftChild>
+                              <rightChild>
+                                <leftChild>
+                                  <type>USER_VARIABLE</type>
+                                  <value>Clone of object 2 bounced off original object 1</value>
+                                </leftChild>
+                                <rightChild>
+                                  <type>NUMBER</type>
+                                  <value>0</value>
+                                </rightChild>
+                                <type>OPERATOR</type>
+                                <value>GREATER_THAN</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>LOGICAL_AND</value>
+                            </leftChild>
+                            <rightChild>
+                              <leftChild>
+                                <type>USER_VARIABLE</type>
+                                <value>Clone of object 3 bounced off clone of object 2</value>
+                              </leftChild>
+                              <rightChild>
+                                <type>NUMBER</type>
+                                <value>0</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>GREATER_THAN</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>LOGICAL_AND</value>
+                          </leftChild>
+                          <rightChild>
+                            <leftChild>
+                              <type>USER_VARIABLE</type>
+                              <value>Clone of object 2 bounced off clone of object 3</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>0</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>GREATER_THAN</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </leftChild>
+                        <rightChild>
+                          <leftChild>
+                            <type>USER_VARIABLE</type>
+                            <value>Clone 1 of object 2 bounced off its original or clone 2</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>0</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>GREATER_THAN</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>Original of object 2 bounced off one of its clones</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_THAN</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="Original object 1">
+          <lookList>
+            <look fileName="Meine Figur oder mein Objekt.png" name="1"/>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="PlaceAtBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <type>NUMBER</type>
+                      <value>230</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <type>NUMBER</type>
+                      <value>140</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetPhysicsObjectTypeBrick">
+                  <commentedOut>false</commentedOut>
+                  <type>DYNAMIC</type>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="WhenBounceOffScript">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>745bf291-ba0b-45a2-a020-bc3de5ae8cbe</deviceValueKey>
+                        <name>Original object 1 bounced off clone of object 2</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="SingleSprite" name="Original and clones of object 2">
+          <lookList>
+            <look fileName="Meine Figur oder mein Objekt_#0.png" name="2"/>
+            <look fileName="Meine Figur oder mein Objekt_#2.png" name="2&apos;s clone"/>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="WhenClonedScript">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>75ba5c11-6b70-4c7f-b4bb-1f0ba9fb3de0</deviceValueKey>
+                        <name>Clone counter</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>USER_VARIABLE</type>
+                      <value>Clone counter</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>06410196-3846-48bc-839a-45df6e4207b8</deviceValueKey>
+                        <name>clone ID</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>d2673efc-1a85-4e5d-a61a-8f6406712cf6</deviceValueKey>
+                        <name>clone</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetLookBrick">
+                  <commentedOut>false</commentedOut>
+                  <look reference="../../../../../lookList/look[2]"/>
+                </brick>
+                <brick type="IfLogicBeginBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>clone ID</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>1</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <elseBranchBricks>
+                    <brick type="PlaceAtBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="Y_POSITION">
+                          <type>NUMBER</type>
+                          <value>150</value>
+                        </formula>
+                        <formula category="X_POSITION">
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>10</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="SetPhysicsObjectTypeBrick">
+                      <commentedOut>false</commentedOut>
+                      <type>DYNAMIC</type>
+                    </brick>
+                  </elseBranchBricks>
+                  <ifBranchBricks>
+                    <brick type="SetPhysicsObjectTypeBrick">
+                      <commentedOut>false</commentedOut>
+                      <type>FIXED</type>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="StartScript">
+              <brickList>
+                <brick type="CloneBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="SetSizeToBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="SIZE">
+                      <type>NUMBER</type>
+                      <value>20</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="CloneBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="PlaceAtBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <type>NUMBER</type>
+                      <value>150</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetPhysicsObjectTypeBrick">
+                  <commentedOut>false</commentedOut>
+                  <type>DYNAMIC</type>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="WhenBounceOffScript">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>f11343f8-e9cf-4574-b083-12331b5ec970</deviceValueKey>
+                        <name>Clone of object 2 bounced off original object 1</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <spriteToBounceOffName>Original object 1</spriteToBounceOffName>
+            </script>
+            <script type="WhenBounceOffScript">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>ec63e65f-037c-4e9c-81b5-f62d3e4ef3cf</deviceValueKey>
+                        <name>Clone of object 2 bounced off clone of object 3</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <spriteToBounceOffName>Clone of object 3</spriteToBounceOffName>
+            </script>
+            <script type="WhenBounceOffScript">
+              <brickList>
+                <brick type="IfLogicBeginBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <type>USER_VARIABLE</type>
+                      <value>clone</value>
+                    </formula>
+                  </formulaList>
+                  <elseBranchBricks>
+                    <brick type="ChangeVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <deviceValueKey>b58b9d21-12b8-44bc-9124-a98fdd820989</deviceValueKey>
+                            <name>Original of object 2 bounced off one of its clones</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                    </brick>
+                  </elseBranchBricks>
+                  <ifBranchBricks>
+                    <brick type="IfLogicBeginBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="IF_CONDITION">
+                          <leftChild>
+                            <type>USER_VARIABLE</type>
+                            <value>clone ID</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>1</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </formula>
+                      </formulaList>
+                      <elseBranchBricks>
+                        <brick type="ChangeVariableBrick">
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE_CHANGE">
+                              <type>NUMBER</type>
+                              <value>1</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable type="UserVariable" serialization="custom">
+                            <userVariable>
+                              <default>
+                                <deviceValueKey>2ddf83d2-46f0-4698-b4ee-c2c085fcd80f</deviceValueKey>
+                                <name>Clone 2 of object 2 bounced off clone 1 of object 2</name>
+                              </default>
+                            </userVariable>
+                          </userVariable>
+                        </brick>
+                      </elseBranchBricks>
+                      <ifBranchBricks>
+                        <brick type="ChangeVariableBrick">
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE_CHANGE">
+                              <type>NUMBER</type>
+                              <value>1</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable type="UserVariable" serialization="custom">
+                            <userVariable>
+                              <default>
+                                <deviceValueKey>2c8d0144-6c09-434d-8c0f-7c26ddde7921</deviceValueKey>
+                                <name>Clone 1 of object 2 bounced off its original or clone 2</name>
+                              </default>
+                            </userVariable>
+                          </userVariable>
+                        </brick>
+                      </ifBranchBricks>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <spriteToBounceOffName>Original and clones of object 2</spriteToBounceOffName>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick[3]/userVariable"/>
+            <userVariable reference="../../scriptList/script/brickList/brick[2]/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+        <object type="SingleSprite" name="Clone of object 3">
+          <lookList>
+            <look fileName="Meine Figur oder mein Objekt_#1.png" name="3"/>
+            <look fileName="Meine Figur oder mein Objekt_#3.png" name="3&apos;s clone"/>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="WhenClonedScript">
+              <brickList>
+                <brick type="SetLookBrick">
+                  <commentedOut>false</commentedOut>
+                  <look reference="../../../../../lookList/look[2]"/>
+                </brick>
+                <brick type="PlaceAtBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <type>NUMBER</type>
+                      <value>230</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>140</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetPhysicsObjectTypeBrick">
+                  <commentedOut>false</commentedOut>
+                  <type>DYNAMIC</type>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="StartScript">
+              <brickList>
+                <brick type="CloneBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="HideBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="WhenBounceOffScript">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>8c395fd6-1289-4788-bbc7-bd14c6d84041</deviceValueKey>
+                        <name>Clone of object 3 bounced off clone of object 2</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object[2]/scriptList/script[2]/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script[3]/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[4]/scriptList/script[3]/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script[4]/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script[5]/brickList/brick/ifBranchBricks/brick/ifBranchBricks/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script[5]/brickList/brick/elseBranchBricks/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script[5]/brickList/brick/ifBranchBricks/brick/elseBranchBricks/brick/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+</program>

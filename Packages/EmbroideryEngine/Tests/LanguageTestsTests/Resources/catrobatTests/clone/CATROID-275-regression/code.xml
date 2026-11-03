@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.60</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>SM-N950F</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>CATROID-275-regression</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1480</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="My actor or object">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="CloneBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="WhenClonedScript">
+              <brickList>
+                <brick type="IfThenLogicBeginBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <type>NUMBER</type>
+                          <value>1.0</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <deviceValueKey>ad2e3793-3daa-480b-90d8-01a11ca6574a</deviceValueKey>
+                            <name>Local variable</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                    </brick>
+                    <brick type="AddItemToUserListBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="LIST_ADD_ITEM">
+                          <type>NUMBER</type>
+                          <value>2</value>
+                        </formula>
+                      </formulaList>
+                      <userList>
+                        <name>Local list</name>
+                      </userList>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_VARIABLE</type>
+                          <value>Local variable</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>1</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>USER_LIST</type>
+                            <value>Local list</value>
+                          </rightChild>
+                          <type>FUNCTION</type>
+                          <value>LIST_ITEM</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>2</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="SayBubbleBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="STRING">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>Local variable</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>STRING</type>
+                          <value> &amp; </value>
+                        </leftChild>
+                        <rightChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>1</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>USER_LIST</type>
+                            <value>Local list</value>
+                          </rightChild>
+                          <type>FUNCTION</type>
+                          <value>LIST_ITEM</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>JOIN</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>JOIN</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script[2]/brickList/brick/ifBranchBricks/brick/userVariable"/>
+          </userVariables>
+          <userLists>
+            <userList reference="../../scriptList/script[2]/brickList/brick/ifBranchBricks/brick[2]/userList"/>
+          </userLists>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+  </programVariableList>
+  <programListOfLists/>
+</program>

@@ -1,0 +1,1512 @@
+{
+  "assetsLastCommit": "e993a6a529228f988d77cfba5618212a4741e9e4",
+  "assetsPath": "catroid/src/androidTest/assets/catrobatTests",
+  "catroidCommit": "9035dc7cbd0b708e46733e4a66c515a25951c945",
+  "tests": [
+    {
+      "codeXMLSHA256": "225ed379545b903df8a01667e2aaf80d8fe967e2079dbf9a833c1e7014feb0fa",
+      "languageVersion": "1.01",
+      "path": "UserDefinedScript/testInputValuesInUserDefinedBricks",
+      "zip": "UserDefinedScript/testInputValuesInUserDefinedBricks.catrobat",
+      "zipSHA256": "ac63bdf73987f982eaa493316e0189ca511ad5de9f63e4680d5755b70b297683"
+    },
+    {
+      "codeXMLSHA256": "624a20e550b50b27646e3b05fed1c742382d5dfbde504a963d9040fb3a88e628",
+      "languageVersion": "0.99999997",
+      "path": "UserDefinedScript/testUserBricksFunctionality",
+      "zip": "UserDefinedScript/testUserBricksFunctionality.catrobat",
+      "zipSHA256": "a93534a5af13bde0726d7a54073513f63ac1da1b440bd17156a1cd793944366e"
+    },
+    {
+      "codeXMLSHA256": "182fbc63b237508179a95db66f98db2f11519e9571e8ddc4a52af9a604a8d7f9",
+      "languageVersion": "0.999999994",
+      "path": "UserDefinedScript/testUserDefinedBrick",
+      "zip": "UserDefinedScript/testUserDefinedBrick.catrobat",
+      "zipSHA256": "f89a981284e61bb4437446dc793e97fa1ad14a4b00a99c70c3de6a08447bfce0"
+    },
+    {
+      "codeXMLSHA256": "ffab2d1ffa0bd88639b9e15215b36b0bb63babeb762bcb98e0f6b0534d62bca2",
+      "languageVersion": "0.99995",
+      "path": "brick/testDisabledBrickInLoopRegression",
+      "zip": "brick/testDisabledBrickInLoopRegression.catrobat",
+      "zipSHA256": "bb36d0f78a557a2ab5aa618f98c9fd84851e1bc63fded461ac776c1c91c52134"
+    },
+    {
+      "codeXMLSHA256": "511f07df4a0011bc4e07bdc441258002a6ec801ef99615e59c08d2335b1c3676",
+      "languageVersion": "0.999999993",
+      "path": "brick/testRepeatBrick",
+      "zip": "brick/testRepeatBrick.catrobat",
+      "zipSHA256": "bd0f1979d25f2e525d5aa039ab23d2641b867dbbcf0417f1560f42b705ef908c"
+    },
+    {
+      "codeXMLSHA256": "893c82573d8e229571d8a4a0702659515a92e9d9d77232d523a49e8b5628c952",
+      "languageVersion": "1.1",
+      "path": "bricks/control/testFastUserDefinedBrick",
+      "zip": "bricks/control/testFastUserDefinedBrick.catrobat",
+      "zipSHA256": "2b9e5373bade71f1ab33c8753ba1afddb2cad6c2229819d7d7e5e347794e36a6"
+    },
+    {
+      "codeXMLSHA256": "e60c891d3c053d10ed890f6bcf50f5da22c161162cb3cc1d5da8fd0b451d57cb",
+      "languageVersion": "1.12",
+      "path": "bricks/control/testForEachBrick",
+      "zip": "bricks/control/testForEachBrick.catrobat",
+      "zipSHA256": "29435be182cb096ab58d30dba2f71a59d3f2b928b7a6ad86b83f0a3132483d7c"
+    },
+    {
+      "codeXMLSHA256": "da6b602941166d1e0cacc4e6b1db63ded2e42d0d4ab346c016389af0b1b3f75d",
+      "languageVersion": "1.12",
+      "path": "bricks/control/testForEachInBrick",
+      "zip": "bricks/control/testForEachInBrick.catrobat",
+      "zipSHA256": "d9400b9cef4c4aa1a99b2c8083c3e218598642609c3a705b1706dbde9fec8f29"
+    },
+    {
+      "codeXMLSHA256": "2205fe977bcdf25fd6d54a7904469c70959163e5d78ac4725c7c947a4156e786",
+      "languageVersion": "1.12",
+      "path": "bricks/control/testForLoopWithChangeVariableBrick",
+      "zip": "bricks/control/testForLoopWithChangeVariableBrick.catrobat",
+      "zipSHA256": "434b8f16e9e7375a6d1723271dc8f132dd7999bbe8ce729df94602b10a0fc6d1"
+    },
+    {
+      "codeXMLSHA256": "beaf8f777e3af3bfe235237149ef3e9e620bf87301d07aa90c054c8c6f91f307",
+      "languageVersion": "1.12",
+      "path": "bricks/control/testForVariableFromToBrick",
+      "zip": "bricks/control/testForVariableFromToBrick.catrobat",
+      "zipSHA256": "bec92940467d5d59b46a219915ac2cd302da929e7c7e9ac6caedd9fd68b21e97"
+    },
+    {
+      "codeXMLSHA256": "21715c7e971ffca4e4af194d30d2ce3ee5c618ba88a6958994c9c0e3f1115f3e",
+      "languageVersion": "1.09",
+      "path": "bricks/control/testIfElse",
+      "zip": "bricks/control/testIfElse.catrobat",
+      "zipSHA256": "e22ab68a6b3f768d7529ce117334b9e58e25af3d6a08a300395baf208da6c901"
+    },
+    {
+      "codeXMLSHA256": "06dbe3b0b2721af14f82406ebfedbe2057268a2a086ab250b508d21b82c3ef4a",
+      "languageVersion": "1.09",
+      "path": "bricks/control/testIfThenBrick",
+      "zip": "bricks/control/testIfThenBrick.catrobat",
+      "zipSHA256": "734d017edc00df3de134cafce81168003a7d0b18dc911262b0d6fb7f28a46bdb"
+    },
+    {
+      "codeXMLSHA256": "1fc7bb5bf471dbe8d8d55896065ecdf0df74ac01e7298f048ba4541d2bf26f32",
+      "languageVersion": "1.09",
+      "path": "bricks/control/testIfThenElseBrick",
+      "zip": "bricks/control/testIfThenElseBrick.catrobat",
+      "zipSHA256": "d81d1cbc7f1c5254a9bb21b2f87790b8f1243dc7edb0b74a85728d1fd43f4b92"
+    },
+    {
+      "codeXMLSHA256": "f82a42f0671ab48458a465dc7fff4bdcce8c1cf7b593e9e822b5d5eae6cddd16",
+      "languageVersion": "0.999999999",
+      "path": "bricks/control/testLoopDelay",
+      "zip": "bricks/control/testLoopDelay.catrobat",
+      "zipSHA256": "07f87a019b828fb06be0c44e1faa61130bb62888cb3c6318551aefe15ae8bdbc"
+    },
+    {
+      "codeXMLSHA256": "6c618acb79f3edf462f665dad19d6f301918b8c8cfc21b4326a146b8d7fd89cb",
+      "languageVersion": "1.01",
+      "path": "bricks/control/testLoopingList",
+      "zip": "bricks/control/testLoopingList.catrobat",
+      "zipSHA256": "504552ff508b97ed9c34e3aaa62eadef53e5a59ffc0a2102d4fc14b2d4e8ae2d"
+    },
+    {
+      "codeXMLSHA256": "8b6e2b16f67602f05a03b3a472e9383e3e9af1550523fdc3eae8777fccba670e",
+      "languageVersion": "1.12",
+      "path": "bricks/control/testRepeat",
+      "zip": "bricks/control/testRepeat.catrobat",
+      "zipSHA256": "22dd353db51ce27e7410d1d7ea715f5c32369c5a6851acba3637b54c598dbdb4"
+    },
+    {
+      "codeXMLSHA256": "28ea45ae2a2701df578b3393226dbdf30ea2c9072044e4e3d66f718dd2438881",
+      "languageVersion": "1.12",
+      "path": "bricks/control/testRepeatUntil",
+      "zip": "bricks/control/testRepeatUntil.catrobat",
+      "zipSHA256": "15d6417009b75d9b9cd7596d7f5cf20af0c8a2c1f69a9db40968274abf245dbf"
+    },
+    {
+      "codeXMLSHA256": "ea6276b74a6ca39d4dbb5e817cacff866eecd17935bcc22b143140d5adaae4c8",
+      "languageVersion": "1.11",
+      "path": "bricks/control/testRepeatUntilBrick",
+      "zip": "bricks/control/testRepeatUntilBrick.catrobat",
+      "zipSHA256": "839a4127b6eb366bc6a5078b024b6238806a03f882713dbd55ec1d24cd93ebce"
+    },
+    {
+      "codeXMLSHA256": "112bbc0d53232a8177c844db50eeb7709039302a43af1685bf7576bdf4ab86bf",
+      "languageVersion": "1.05",
+      "path": "bricks/control/testSoundBricksSlowDownFastLoops",
+      "zip": "bricks/control/testSoundBricksSlowDownFastLoops.catrobat",
+      "zipSHA256": "b286108f928dae9b3ccac4f366180c4fead2707b8d205ca645081315516841e9"
+    },
+    {
+      "codeXMLSHA256": "ba0dc3d9fb6161aaf847ca647c6c9656e18f58f15235878ca6892a7f57153b6e",
+      "languageVersion": "0.999999999",
+      "path": "bricks/control/testWait",
+      "zip": "bricks/control/testWait.catrobat",
+      "zipSHA256": "8a8c548734ec7a661fc5a264c2edc139a3e8a04fc721150b4c0f98caf337aee8"
+    },
+    {
+      "codeXMLSHA256": "f60dd5ad9847a586a2e41eb373891b4fb0f5a098e837444e04fe6785d833d155",
+      "languageVersion": "1.11",
+      "path": "bricks/control/testWaitUntil",
+      "zip": "bricks/control/testWaitUntil.catrobat",
+      "zipSHA256": "5ba8edb49c086e9cc93173e5fe9b8eee5a464a8aeb219362911a4b8ab5b5e161"
+    },
+    {
+      "codeXMLSHA256": "0b3005b4d2b7fe12e9915d6503a25426d83597fa5fb2ca2fbd5c64b2cd35de19",
+      "languageVersion": "1.12",
+      "path": "bricks/control/testWaitUntilAllOtherScriptsHaveStopped",
+      "zip": "bricks/control/testWaitUntilAllOtherScriptsHaveStopped.catrobat",
+      "zipSHA256": "df40df79e1b318fbad1bb850efda40572926f32243e782c08589f14d87b48dd6"
+    },
+    {
+      "codeXMLSHA256": "2e538d11d2fa381840161692ed5000c2ecff5f1f0194a4d919aed2f86c05db55",
+      "languageVersion": "0.99999",
+      "path": "bricks/data/StoreCSVIntoUserList/testEmptyLists",
+      "zip": "bricks/data/StoreCSVIntoUserList/testEmptyLists.catrobat",
+      "zipSHA256": "e5d7af84630d4c4cf97b2fa2afd7b450e17da1b33ced3c7ef0bcfcdc25354bd7"
+    },
+    {
+      "codeXMLSHA256": "515c659f28fcfc74a6228d75999210c0e51f33f1efda2f9495bf3c2a0158209f",
+      "languageVersion": "0.99999",
+      "path": "bricks/data/StoreCSVIntoUserList/testIncompleteRows",
+      "zip": "bricks/data/StoreCSVIntoUserList/testIncompleteRows.catrobat",
+      "zipSHA256": "1b42f5db8984a66d78be1e53d0b843208a91ea129534e0d484023cccba6eea12"
+    },
+    {
+      "codeXMLSHA256": "b97a1aa2cbf49f5c3cd2a5eab949b6b9de4a55bd06b56aec2e8fd97b025243b0",
+      "languageVersion": "0.99999",
+      "path": "bricks/data/StoreCSVIntoUserList/testMultiplications",
+      "zip": "bricks/data/StoreCSVIntoUserList/testMultiplications.catrobat",
+      "zipSHA256": "0684134a7bd1ce8e9bcd124a3e413e5849a3ae56b05758ab4c80eac2b068f52d"
+    },
+    {
+      "codeXMLSHA256": "126eb0d0d13658550a02bcbb62c06b1b19fed7671723125ef25ab7bf0202b65b",
+      "languageVersion": "0.99999",
+      "path": "bricks/data/StoreCSVIntoUserList/testSeparators",
+      "zip": "bricks/data/StoreCSVIntoUserList/testSeparators.catrobat",
+      "zipSHA256": "292a7bdd493d64fb948ff818757aa6adb58432432158ffb21af71677b7699138"
+    },
+    {
+      "codeXMLSHA256": "b75127eefdf368ff1f35e0cad37c9613b5cb6ce120dac76a94c68dffb3d64147",
+      "languageVersion": "0.99999",
+      "path": "bricks/data/StoreCSVIntoUserList/testStringOperations",
+      "zip": "bricks/data/StoreCSVIntoUserList/testStringOperations.catrobat",
+      "zipSHA256": "60b5c78df1d74f1f31b2c8fa2a0ccc9e3b38416bfdd38563c636a90bcb73560a"
+    },
+    {
+      "codeXMLSHA256": "564cd8654f82fe1776fe2bd52d66f6408c421dfd861ed79a3beb0fce6deec075",
+      "languageVersion": "1.12",
+      "path": "bricks/data/testReplaceItemInList",
+      "zip": "bricks/data/testReplaceItemInList.catrobat",
+      "zipSHA256": "9724606407784631081a25129bfd859e7a684ee5b11c6d38fe2d681db8c6b43b"
+    },
+    {
+      "codeXMLSHA256": "087ce541582e9fb8baffefcb9137f1bf3753a9b9788b8934f477971f88c76c77",
+      "languageVersion": "0.999999999",
+      "path": "bricks/data/testSeveralLineWebRequest",
+      "zip": "bricks/data/testSeveralLineWebRequest.catrobat",
+      "zipSHA256": "c6a0aab0c5d2a6c817efb949ee3e37082c132ecb5cff2a03fccfa215138f6cc1"
+    },
+    {
+      "codeXMLSHA256": "b254d196498b8179217484ac805550066c02bcbf52967136550b8ea216d46f91",
+      "languageVersion": "0.999999994",
+      "path": "bricks/device/testResetTimer",
+      "zip": "bricks/device/testResetTimer.catrobat",
+      "zipSHA256": "37816d2055595ad5ddd1800c5e05d209c80f0f2b3d3ed374b5a5a8caa33eb4a2"
+    },
+    {
+      "codeXMLSHA256": "10f0b1428a67460690aee268588f1abe1edde2d0449ac7d8a99b8ee4c5ff9540",
+      "languageVersion": "1.11",
+      "path": "bricks/embroidery/WriteEmbroideryToFile/testEmbroiderySaved",
+      "zip": "bricks/embroidery/WriteEmbroideryToFile/testEmbroiderySaved.catrobat",
+      "zipSHA256": "185ae218a66f507ec0b4d753476cd8684fb4eaedd5a6e22e9b32dcb8ab28b4f9"
+    },
+    {
+      "codeXMLSHA256": "5f37fd86d50bb5da9d9526f09796e5fddf3138c47a4cd09479f5d0a5cd7f441b",
+      "languageVersion": "0.9999992",
+      "path": "bricks/embroidery/WriteEmbroideryToFile/testNoEmbroiderySaved",
+      "zip": "bricks/embroidery/WriteEmbroideryToFile/testNoEmbroiderySaved.catrobat",
+      "zipSHA256": "cbc8e5ade9ae873e02d1edf9fa8ad4f969771544f42a897535c502c1d8f6a299"
+    },
+    {
+      "codeXMLSHA256": "5c7e4c866bca851a22ec91cc6a2d289f0cc1bee6faaa938689c0a26ec37c9316",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/Broadcast/testBroadcastBrickStage",
+      "zip": "bricks/events/Broadcast/testBroadcastBrickStage.catrobat",
+      "zipSHA256": "3b1bf0cf17d1a26c223bf9cc0bc2692e07a48e40e271aaca5184d2054210f1b5"
+    },
+    {
+      "codeXMLSHA256": "b4dcabdc4986620370a8cf680ac5c366831c0d45575ef3c2167616c8a8e5b18a",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/Broadcast/testBroadcastSpeed",
+      "zip": "bricks/events/Broadcast/testBroadcastSpeed.catrobat",
+      "zipSHA256": "e216617fa7d19cca77a62f491b8fbce65aba1312a2bc21e36503b6119e534868"
+    },
+    {
+      "codeXMLSHA256": "e04d8d884c60a50c2349c4cb5b9a0fc31c40998571a163bdb756d0b284750daf",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastReceiver/testMultipleBroadcastReceivers",
+      "zip": "bricks/events/BroadcastReceiver/testMultipleBroadcastReceivers.catrobat",
+      "zipSHA256": "658c12efdf36040cb6134fed1999636e30e4704dab7d0ea29097d5a1fe351dcb"
+    },
+    {
+      "codeXMLSHA256": "3278e3875c2fd11a7a5bcb27f9632826204d5b7841ea562dcfa6de9fdafbd15a",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastWait/testBroadcastAndWaitAndScenes",
+      "zip": "bricks/events/BroadcastWait/testBroadcastAndWaitAndScenes.catrobat",
+      "zipSHA256": "19d5670b4f51b7ef023853721d33c039c09870af66d1c15b68a179fff05516a3"
+    },
+    {
+      "codeXMLSHA256": "e68de39b230fc30cddae9af8b6c2aafd95f278998a6f9fec1838a4a5345379d2",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastWait/testIgnoreMessagesFromOtherScene",
+      "zip": "bricks/events/BroadcastWait/testIgnoreMessagesFromOtherScene.catrobat",
+      "zipSHA256": "e8a9512d91f21c9c6abcc081cfc81fc9fe799d3985eac93ff460834986e0aded"
+    },
+    {
+      "codeXMLSHA256": "bbf84ed644f9a04074c398206409508bddd524fdddddacbbc6b1cc46fd6909d9",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastWait/testInterruptedByBroadcast",
+      "zip": "bricks/events/BroadcastWait/testInterruptedByBroadcast.catrobat",
+      "zipSHA256": "c5a3aba908a4ed15ef4f00727704936675299acdf4dc81f259d0b784961220eb"
+    },
+    {
+      "codeXMLSHA256": "fd53ed450ae2be1def76ec9355210fb158ee988f6ce6c360c7135a5dc3a8c4d6",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastWait/testInterruptedByBroadcastAndWait",
+      "zip": "bricks/events/BroadcastWait/testInterruptedByBroadcastAndWait.catrobat",
+      "zipSHA256": "06755d45face4f36c317ee18c280cbe185143449efe8482c5c824c1623a4d5db"
+    },
+    {
+      "codeXMLSHA256": "694072625afc03c4455c79d647dff44a5ee1bc8f86ac67ccad2c955a97b20c40",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastWait/testLoopedReceiver",
+      "zip": "bricks/events/BroadcastWait/testLoopedReceiver.catrobat",
+      "zipSHA256": "29ba7b3a87b213699135188ee13da323687557966d89286a00da076081098a7f"
+    },
+    {
+      "codeXMLSHA256": "f43242201acfd62d3d795be1d7b529d22293a5544de3ad59125a059d862d149d",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastWait/testNoReceiver",
+      "zip": "bricks/events/BroadcastWait/testNoReceiver.catrobat",
+      "zipSHA256": "f4c3ecd67a84bd8d249547080e1d6bad29b3b8cc1359cea746b40d8017c37ec0"
+    },
+    {
+      "codeXMLSHA256": "b551043ad2078c0f9997e8d230a9f8cbd8dd9d8be3f1bb84e6ca966aaa852137",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastWait/testReceiverInObjects",
+      "zip": "bricks/events/BroadcastWait/testReceiverInObjects.catrobat",
+      "zipSHA256": "10c0aa1b6f188d346eae074f5ee3ece13c5a2515872bfae01e5239cbc4c8d1f2"
+    },
+    {
+      "codeXMLSHA256": "cb21defe942c44e88ab66d83ff000c065ee37b6897902b7a29c21123cb0cbfdd",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastWait/testRightToLeftBroadcastMessage",
+      "zip": "bricks/events/BroadcastWait/testRightToLeftBroadcastMessage.catrobat",
+      "zipSHA256": "93053cd1ec12a2855262d151e972c9e95a02c2f0a98efe1ef7a73175aaf82231"
+    },
+    {
+      "codeXMLSHA256": "1c798e86306ab58e8111cb76810318f8c5e869b18b02cc63244524754ffa7956",
+      "languageVersion": "0.99995",
+      "path": "bricks/events/BroadcastWait/testWaitForReceiver",
+      "zip": "bricks/events/BroadcastWait/testWaitForReceiver.catrobat",
+      "zipSHA256": "d641f91aeccd9b55f42f3a713b7409181405ae2ad3da6b4bd2025b51de3b8054"
+    },
+    {
+      "codeXMLSHA256": "c97082802359c2503945fb2fd6e3dba14c80d951d376a4e46b8e4839a4a9a45b",
+      "languageVersion": "0.99999991",
+      "path": "bricks/events/BroadcastWait/testWaitForSeveralReceivers",
+      "zip": "bricks/events/BroadcastWait/testWaitForSeveralReceivers.catrobat",
+      "zipSHA256": "cb89c76e74232486fc136c7f0dfbad54311b6c5bf509d1c3edf6686bbcb8a4dc"
+    },
+    {
+      "codeXMLSHA256": "fdb110431512ce0ee542a59e19deacdfa155df11392ac51bef55c7c52487f73a",
+      "languageVersion": "0.999999995",
+      "path": "bricks/events/testEmptyEvent",
+      "zip": "bricks/events/testEmptyEvent.catrobat",
+      "zipSHA256": "d12b4a34e916e9b79ba693abedb3a0d0a541302bc6a24b1dff2471f92ec0d0c2"
+    },
+    {
+      "codeXMLSHA256": "4c9bcdd70476607c5418e00815e637dbdd56305d03ab664914ff3c7a7e85a9d7",
+      "languageVersion": "1.12",
+      "path": "bricks/looks/testBackgroundBrightness",
+      "zip": "bricks/looks/testBackgroundBrightness.catrobat",
+      "zipSHA256": "73e5e473782489b4acb63373d10d9504d3a902497931448a6a2b2542ddd9b877"
+    },
+    {
+      "codeXMLSHA256": "823ca3c62c7d124d66500b8bb29f0a369e134ba6a2767c0ab803de7fa889cd3c",
+      "languageVersion": "1.12",
+      "path": "bricks/looks/testChangeSize",
+      "zip": "bricks/looks/testChangeSize.catrobat",
+      "zipSHA256": "877da75cba575dc66a8e6ae6fdc36ade6b08be0a032fd156d5660fa36508a73c"
+    },
+    {
+      "codeXMLSHA256": "788ca5c97d6d1bc2e773d19f7295ecec3013e9eb9eb9b84231f7f7c07b46a60d",
+      "languageVersion": "1.03",
+      "path": "bricks/looks/testDeleteWebLook",
+      "zip": "bricks/looks/testDeleteWebLook.catrobat",
+      "zipSHA256": "2c8d4646f9bed64f11ecc9a5e09646a8f92e04d8791ff329e030c2a4c754c8a2"
+    },
+    {
+      "codeXMLSHA256": "6aa746e4d6fd9d7a8853a1ee83a6b827d8880e4c8c21efde98b2b0b05c6c84ef",
+      "languageVersion": "1.11",
+      "path": "bricks/looks/testLookNameAndNumberOfLooks",
+      "zip": "bricks/looks/testLookNameAndNumberOfLooks.catrobat",
+      "zipSHA256": "e6e2813049a7463c4c785fa661ac4b5f989d573486b1d819be960ef11340ec92"
+    },
+    {
+      "codeXMLSHA256": "87bb05c95592200b2369264a93d7c0de8d1ed76afbcceb48516eff40436f62b0",
+      "languageVersion": "1.05",
+      "path": "bricks/looks/testNextBackgroundMultiple",
+      "zip": "bricks/looks/testNextBackgroundMultiple.catrobat",
+      "zipSHA256": "0482bf33bc8e54a5d02e99566f57e8f74e845ab9ae45cce54ed63186c3dd5426"
+    },
+    {
+      "codeXMLSHA256": "c486a8ea98d2161ac3e11cffaba16199fcf00398f51b671a2ea1625fda417284",
+      "languageVersion": "1.05",
+      "path": "bricks/looks/testNextBackgroundNone",
+      "zip": "bricks/looks/testNextBackgroundNone.catrobat",
+      "zipSHA256": "4b7c708b751a1e6ce3c338940b77292be55f5ac5154db600199528eb862e58c7"
+    },
+    {
+      "codeXMLSHA256": "3cd03caac76413f0104f9df227c6c2d85ea2fc114050a73f8ada9ba4a8c3766f",
+      "languageVersion": "1.05",
+      "path": "bricks/looks/testNextBackgroundOne",
+      "zip": "bricks/looks/testNextBackgroundOne.catrobat",
+      "zipSHA256": "0df1a5850ab6f3fd0c1cc1c9b5ec814e20bf370adb474b951c3cd6306097b08f"
+    },
+    {
+      "codeXMLSHA256": "7400b7c9f481bd29ec185735a378ff08ca7525e41f1232ee28a788a4cad5b3f2",
+      "languageVersion": "1.12",
+      "path": "bricks/looks/testObjectBrightness",
+      "zip": "bricks/looks/testObjectBrightness.catrobat",
+      "zipSHA256": "3fcada7859bd9c3fc34284e340f14b9b17e0f6a59846d0bf691a7f45863ec9d7"
+    },
+    {
+      "codeXMLSHA256": "d03f79871349d62bb0ebc389324f1ed0a6ac30f2c61eac643813851e91f832b4",
+      "languageVersion": "1.13",
+      "path": "bricks/looks/testSetBackgroundBrick",
+      "zip": "bricks/looks/testSetBackgroundBrick.catrobat",
+      "zipSHA256": "5288a0e7219042a8f3f108c9bb3d5b1ce1d126538f11c7e7641812a9fe944c12"
+    },
+    {
+      "codeXMLSHA256": "8643676ab81f3a257ac71eb7e288a99716c601169746c157d5bee4a50992f88e",
+      "languageVersion": "1.11",
+      "path": "bricks/looks/testSetSize",
+      "zip": "bricks/looks/testSetSize.catrobat",
+      "zipSHA256": "f00b51a85d03e1b4eecaa7dac0b2676627a8ee38250a6dc330a1248d041ea322"
+    },
+    {
+      "codeXMLSHA256": "ef8d57fb93ab6e0844c6ba39d407c528f9c4dc3a560f867510b26c867154a003",
+      "languageVersion": "1.12",
+      "path": "bricks/looks/testSetTransparency",
+      "zip": "bricks/looks/testSetTransparency.catrobat",
+      "zipSHA256": "2fd1825b7a3490501fb2ecb3c2f42d4e2beb7be1efd7e53775561fae0e3502f9"
+    },
+    {
+      "codeXMLSHA256": "15c0d724ad7acd5a552d4c75c7c42f5a0b0b477d23254cfbfab0db05c74b2541",
+      "languageVersion": "0.999999",
+      "path": "bricks/motion/Vibration/testVibrationBrick",
+      "zip": "bricks/motion/Vibration/testVibrationBrick.catrobat",
+      "zipSHA256": "b3622fd04301a4f573e5f1366b0842c55800f57faa79d8ff6f429fb860650ef0"
+    },
+    {
+      "codeXMLSHA256": "4768ad469edac29c47220d3b6671d2d662e08e06b8ceae6923aca3f06d4f33a0",
+      "languageVersion": "1.11",
+      "path": "bricks/motion/testChangeXby",
+      "zip": "bricks/motion/testChangeXby.catrobat",
+      "zipSHA256": "ebd84ffea7ddb6a9d5ac1cc9f99f2264ec57f9cc394431def437f6fbd8b65268"
+    },
+    {
+      "codeXMLSHA256": "6818e41efc13fbcc39beed43cb5616f1f7d42f0136a6e2fb3333216d6c80aadb",
+      "languageVersion": "1.11",
+      "path": "bricks/motion/testPlaceAtXY",
+      "zip": "bricks/motion/testPlaceAtXY.catrobat",
+      "zipSHA256": "d12f52732f14582f2e78d8df8ee461db3e6289b548f93ddba67b083faf583bdb"
+    },
+    {
+      "codeXMLSHA256": "03ddf4db6fbad55f5246b07c20f2093843d3b5cf01e5cd0e0346b99045a9f26d",
+      "languageVersion": "0.999999999",
+      "path": "bricks/user/testReportBrick",
+      "zip": "bricks/user/testReportBrick.catrobat",
+      "zipSHA256": "eac45c694e2fb114c21eaca1fa5ed94fcf3177bdc79df03a8f0691503355bd70"
+    },
+    {
+      "codeXMLSHA256": "22a09a81cb32da3cca8f1055f2d22c54d5b0478e5d4f85d18df2e7af8bb5b2ed",
+      "languageVersion": "0.99995",
+      "path": "clone/CATROID-275-regression",
+      "zip": "clone/CATROID-275-regression.catrobat",
+      "zipSHA256": "2a55cd6d2bf8c4dbe58544aae4cf099264b31ba73fcde59f8da48c7359a214d5"
+    },
+    {
+      "codeXMLSHA256": "cf729e9bcd30c1a410d691b6cc3e52b2fc13c54736874bff5a8bb96f71fd85da",
+      "languageVersion": "0.99995",
+      "path": "clone/testBrickInWhenStartAsCloneCommentedOutRegression",
+      "zip": "clone/testBrickInWhenStartAsCloneCommentedOutRegression.catrobat",
+      "zipSHA256": "b2cf62c429f8901d2673c4d8921094b639df26040f057ad0ecc6422394826fad"
+    },
+    {
+      "codeXMLSHA256": "1c54476d64e18add5626f2a2e6589a33ab3971915651590feeb3f2a441784552",
+      "languageVersion": "0.99995",
+      "path": "clone/testCloneBroadcastListenerOtherSprite",
+      "zip": "clone/testCloneBroadcastListenerOtherSprite.catrobat",
+      "zipSHA256": "831ab795a042af26a10e1a454da75030d2cee22acc465174d76c8a2b7f617f42"
+    },
+    {
+      "codeXMLSHA256": "4e73657e82ad1e60454443c3647b1502d63d01db24d98f7bb7627c09593aaa2b",
+      "languageVersion": "0.99995",
+      "path": "clone/testCloneBroadcastListenerSameSprite",
+      "zip": "clone/testCloneBroadcastListenerSameSprite.catrobat",
+      "zipSHA256": "f18b8982006e02e1fe79996bed06e5741c13e97090deaf3595aacb670869d88d"
+    },
+    {
+      "codeXMLSHA256": "10ef4ec62882f6663493491150c21a323702e34910fe5eb01bc652bad687a4eb",
+      "languageVersion": "0.99995",
+      "path": "clone/testCloneSameLookAsClonerRegression",
+      "zip": "clone/testCloneSameLookAsClonerRegression.catrobat",
+      "zipSHA256": "ebb8407b17e746fda983dd3247e18b80889310a603326b556717872b2aa8bcc5"
+    },
+    {
+      "codeXMLSHA256": "dcd978e49ee7e5401c8dc33a73f350f2cd959a0d3679948aa2420cfb9956a963",
+      "languageVersion": "0.99995",
+      "path": "clone/testCloneTouchesOtherCloneOfSameObject",
+      "zip": "clone/testCloneTouchesOtherCloneOfSameObject.catrobat",
+      "zipSHA256": "9fbd67de46d33b8e05e2482770dae7e5f9ccfd2a45d184673d4d2d639f001dbf"
+    },
+    {
+      "codeXMLSHA256": "1b0fbec80b93d9e6d93f09895674ade9ae7f58aaa858a58761c909219ceaa2ff",
+      "languageVersion": "0.99995",
+      "path": "clone/testClonesNotRemovedOnContinueScene",
+      "zip": "clone/testClonesNotRemovedOnContinueScene.catrobat",
+      "zipSHA256": "4804a152ec3d7f9dc060421d0ac404dfdec7f88b1d513917988aca5d396cf30b"
+    },
+    {
+      "codeXMLSHA256": "6a259c6262497bf8d9d97e25cf00fc8c48c82c9e39c167ec463b59b7816c0024",
+      "languageVersion": "0.99995",
+      "path": "clone/testClonesRemovedOnReStartScene",
+      "zip": "clone/testClonesRemovedOnReStartScene.catrobat",
+      "zipSHA256": "4c9c7f0b3759499edee0acc5a905261adc892ca81f46e383a405a4fe80751d2b"
+    },
+    {
+      "codeXMLSHA256": "2d0c61b184bee298337258a8ed770c8b16c4c403257d737b5cdfc5b1fe2a041e",
+      "languageVersion": "0.99995",
+      "path": "clone/testDeleteCloneBroadcastListenerOtherSpriteRemoved",
+      "zip": "clone/testDeleteCloneBroadcastListenerOtherSpriteRemoved.catrobat",
+      "zipSHA256": "6522df95d522352f721bf4367132ceae681c66018bf450793632a881d0c8eda6"
+    },
+    {
+      "codeXMLSHA256": "4fe9d23b6b9c7aa58e5fcfb278b9c017a985ef1b6703871b139c0a433706cdb6",
+      "languageVersion": "0.99995",
+      "path": "clone/testDeleteCloneBroadcastListenerRemoved",
+      "zip": "clone/testDeleteCloneBroadcastListenerRemoved.catrobat",
+      "zipSHA256": "23c57802f4143dca09d49bced7e7fbb1620e65ea09d74a307c6a7907704589a4"
+    },
+    {
+      "codeXMLSHA256": "6a1279188ab5ca4523fbcfa20e6ce40f21a148cd8215b185efe8eb5b19b08a49",
+      "languageVersion": "1.03",
+      "path": "clone/testDeleteCloneInBroadcastAndWait",
+      "zip": "clone/testDeleteCloneInBroadcastAndWait.catrobat",
+      "zipSHA256": "74dfeae48a872d464e0902c1ebd0c54de2c335f7cdae87daf73085c160c9dfbb"
+    },
+    {
+      "codeXMLSHA256": "768514d374f56fad125f55a9e87a6b043942384a3ee61586e76f040bd2567e91",
+      "languageVersion": "0.99995",
+      "path": "clone/testDeleteCloneInParentSpriteDoesNothing",
+      "zip": "clone/testDeleteCloneInParentSpriteDoesNothing.catrobat",
+      "zipSHA256": "1845f8b184d114413254449fb90c8727c46e3138c05b8472dc15988e008a6e4a"
+    },
+    {
+      "codeXMLSHA256": "b33178582535dc3d96e3312a59ff8fbf681a619461a9d04b91bf2b813d768c05",
+      "languageVersion": "0.99995",
+      "path": "clone/testDeleteCloneScriptStopped",
+      "zip": "clone/testDeleteCloneScriptStopped.catrobat",
+      "zipSHA256": "bfa6670699ce21aa235deeb84319f8a757cc3fb746ae1c7f79c59f3a5b0d9c71"
+    },
+    {
+      "codeXMLSHA256": "ed2603a8cd11a3473190b5bed963463f536b12e0197c40872e79e78e1436da34",
+      "languageVersion": "1.05",
+      "path": "clone/testDeleteLookInOriginalAndClone",
+      "zip": "clone/testDeleteLookInOriginalAndClone.catrobat",
+      "zipSHA256": "114cef36ad85be7d7ddf5bee48e775f61cc233b09d1eaebeaafc64cc5c28bdeb"
+    },
+    {
+      "codeXMLSHA256": "4c2d082022cdd62a59f0d8dfdbb87598f275c5af28a76108f00562d4f7d4448f",
+      "languageVersion": "0.99995",
+      "path": "clone/testObjectTouchesItsClone",
+      "zip": "clone/testObjectTouchesItsClone.catrobat",
+      "zipSHA256": "ed16f27beb972f7f7c2e7ed68c030a56e654b32d65db545b40d9347df2812b28"
+    },
+    {
+      "codeXMLSHA256": "690adbe21a4a4c558ba5c1e2eec573cc19052a41803f29b838f05ae2806df5b4",
+      "languageVersion": "0.99995",
+      "path": "clone/testTouchesObjectActorClone",
+      "zip": "clone/testTouchesObjectActorClone.catrobat",
+      "zipSHA256": "631913b1277fffe0674f31ffe94f1f9a842c524b6e8d1e19582999b08fce0add"
+    },
+    {
+      "codeXMLSHA256": "0c320cb5c3670bc7a613d6053777a22e57194cdfa3fd13dd64517fa506cce5cc",
+      "languageVersion": "0.99995",
+      "path": "clone/testWhenStartAsCloneMultiple",
+      "zip": "clone/testWhenStartAsCloneMultiple.catrobat",
+      "zipSHA256": "0fe9a7a128054ed8c7513b2b6553adc883cdd4a0a9d07aae37517497802dad59"
+    },
+    {
+      "codeXMLSHA256": "b87eb8cb62b416dcf292444a38febb95a1873e3332f1765d272922570b36cf60",
+      "languageVersion": "0.99995",
+      "path": "clone/testWhenStartAsCloneOnlyCalledByClone",
+      "zip": "clone/testWhenStartAsCloneOnlyCalledByClone.catrobat",
+      "zipSHA256": "9fa9f7166819a20202735a9f4379ca87bb02939e225f6aa2a15c3d827657beea"
+    },
+    {
+      "codeXMLSHA256": "c1cb6d9c614e091d797837f5aebdeb6071ea7f7100487cb1f26436f5fc159f10",
+      "languageVersion": "0.99995",
+      "path": "clone/testWhenStartAsCloneOtherSpriteMultiple",
+      "zip": "clone/testWhenStartAsCloneOtherSpriteMultiple.catrobat",
+      "zipSHA256": "da3d9721ebc9936e9d67bc26cdc9e6dc5072caca97bdb71c6e4a0f250a72d67f"
+    },
+    {
+      "codeXMLSHA256": "2e598b07334e6a5ec0f72c924de209afec59b59b6d00aacd3062dc9352397739",
+      "languageVersion": "0.99995",
+      "path": "clone/testWhenStartAsCloneOtherSpriteSingle",
+      "zip": "clone/testWhenStartAsCloneOtherSpriteSingle.catrobat",
+      "zipSHA256": "0b3f6556ec4767a2ac6d9a69731d48bdd2384d3536016bde0e8c9360a640749f"
+    },
+    {
+      "codeXMLSHA256": "592bd40ebd30d90812862307ae7e1d2ed4268a513ec02a810be48cf93fe22f4b",
+      "languageVersion": "0.99995",
+      "path": "clone/testWhenStartAsCloneSingle",
+      "zip": "clone/testWhenStartAsCloneSingle.catrobat",
+      "zipSHA256": "1b5aae0d1097391edceee593fa2d65138d43ff5886e256b2eca28296216bfb15"
+    },
+    {
+      "codeXMLSHA256": "e8f3c57b08f1bf0084bf318fc9631916c8c551abffa9b7e0a412c9a33d0fdc74",
+      "languageVersion": "0.99999",
+      "path": "clone/testWhenYouBounceOffAClone",
+      "zip": "clone/testWhenYouBounceOffAClone.catrobat",
+      "zipSHA256": "e0ce15ae294c1b93d94fd28216d6e6013bea64c0eace0a2b80feef05bb6a2dfb"
+    },
+    {
+      "codeXMLSHA256": "7fed80324b1120a3cd3d1310ad490e4b9eb24a7f021802f741d0c91b359fb6d3",
+      "languageVersion": "0.999999998",
+      "path": "colorAtXY/testColorAtXY",
+      "zip": "colorAtXY/testColorAtXY.catrobat",
+      "zipSHA256": "62ab3d103832f1b7c2fe93b93e725647ef2c1f9ec9aa194b1020146f82e16a60"
+    },
+    {
+      "codeXMLSHA256": "cd071a51328690034703f6d65a0dd3bd57a5378802639c562cdafa601beda1c2",
+      "languageVersion": "0.999999994",
+      "path": "colorAtXY/testColorAtXYInvalidParameters",
+      "zip": "colorAtXY/testColorAtXYInvalidParameters.catrobat",
+      "zipSHA256": "56e32b12da8f505146a8d887e41d907f9a2d151fdcbbba417b12057b328cb035"
+    },
+    {
+      "codeXMLSHA256": "c7276beeb54684ecca6e38f4e8e509eddea52f73bea9c1ce0ac2ef95ab0ebf11",
+      "languageVersion": "0.999999998",
+      "path": "colorAtXY/testColorAtXYNextLook",
+      "zip": "colorAtXY/testColorAtXYNextLook.catrobat",
+      "zipSHA256": "fb19ea9bdca27c4f50d62be93905e0ae884fd90602ec20077a96a04480ddaa92"
+    },
+    {
+      "codeXMLSHA256": "60cc7321030240f30ccc6c71b783d36def99be5bd29e685ed10993e2acb8ed9e",
+      "languageVersion": "0.999999998",
+      "path": "colorAtXY/testColorAtXYOfClone",
+      "zip": "colorAtXY/testColorAtXYOfClone.catrobat",
+      "zipSHA256": "685f847f43a6d042e2037160adce1d09157af762da41ab030e6dce23383c7f7b"
+    },
+    {
+      "codeXMLSHA256": "6a62bfabcf800b787f49cd4ffefae05c3702d763724cb29cc785e04e128f9f27",
+      "languageVersion": "0.999999994",
+      "path": "colorAtXY/testColorAtXYOutsideStage",
+      "zip": "colorAtXY/testColorAtXYOutsideStage.catrobat",
+      "zipSHA256": "bf293a333a48524f0c07f696a9cc93003acfebd5a6746fc3d3e7c642e4d67272"
+    },
+    {
+      "codeXMLSHA256": "f75d0fe1238d1bc882a8c146ba18c0fa93e2501df9d4c5716d5e7aa3300f0a38",
+      "languageVersion": "0.999999994",
+      "path": "colorAtXY/testColorAtXYRoundFloat",
+      "zip": "colorAtXY/testColorAtXYRoundFloat.catrobat",
+      "zipSHA256": "89baec57aa9b6862bbe7b36234a3b392811456a3b2f83846f6cc033842407d14"
+    },
+    {
+      "codeXMLSHA256": "176064444f6ef87e2beacd98bdc88b4c1670b206bd779e2a406c0f9c20ee6351",
+      "languageVersion": "0.999999998",
+      "path": "colorAtXY/testColorAtXYValidParameters",
+      "zip": "colorAtXY/testColorAtXYValidParameters.catrobat",
+      "zipSHA256": "aaa5168bb49b68cabbb4de7c7f810beacac6c3202f4cd1a2b56e8c06a67d8cf5"
+    },
+    {
+      "codeXMLSHA256": "531cfd079d448ae181c022a7199e870c2892e6f7569bded0670a166f34bfeadb",
+      "languageVersion": "0.999999998",
+      "path": "colorAtXY/testColorAtXYWithoutLooks",
+      "zip": "colorAtXY/testColorAtXYWithoutLooks.catrobat",
+      "zipSHA256": "7f52fb1e676ece2790508accd33d4cc94937e34076d32716d1c662dbfa25ecd3"
+    },
+    {
+      "codeXMLSHA256": "5b9b1a33ad7ced88787b025ca88f9d2c68f850c7c5b3e479b48d2418c87052b2",
+      "languageVersion": "0.999999997",
+      "path": "colorEqualsColor/testColorEqualsColorWithTolerance",
+      "zip": "colorEqualsColor/testColorEqualsColorWithTolerance.catrobat",
+      "zipSHA256": "66ba04f206ad8533596c38669feacec61eb0cf8965891dda923c572af993f484"
+    },
+    {
+      "codeXMLSHA256": "38877a8fdc47b9876cd4688f5c1016a43546c9c324e241bf0adbf2990a119bd6",
+      "languageVersion": "0.999999997",
+      "path": "colorEqualsColor/testColorEqualsColorWithToleranceInvalidParameters",
+      "zip": "colorEqualsColor/testColorEqualsColorWithToleranceInvalidParameters.catrobat",
+      "zipSHA256": "f6195711857f1fdf505544ec4e6eacf235329a54be0095fd340ad791aa689309"
+    },
+    {
+      "codeXMLSHA256": "5cc9f0d3f642f68e5980b5ca60f7945192aa2ef621d4b8902f2e2bdbf9271996",
+      "languageVersion": "0.99995",
+      "path": "data/Variable_ReadFrom-WriteOn_Device",
+      "zip": "data/Variable_ReadFrom-WriteOn_Device.catrobat",
+      "zipSHA256": "67d40b9dd13dadfc74f7ea0a20b21e19cd1a16ec5666eb099000acd36ae6cb93"
+    },
+    {
+      "codeXMLSHA256": "8630917ca9adfdf77da6595c8e9efac86a38dff49768db84deab90f07e8782b3",
+      "languageVersion": "1.12",
+      "path": "data/testDeleteAllElementsFromList",
+      "zip": "data/testDeleteAllElementsFromList.catrobat",
+      "zipSHA256": "28edd7817e867bc08e13a1383764941ccf3a9e51d7c6fc71e8d61dda3ab1ba64"
+    },
+    {
+      "codeXMLSHA256": "e87c886b654954b830dddb5da2d925521e4048107940e229d92f988281f3b9ff",
+      "languageVersion": "0.999999993",
+      "path": "data/testDeleteItemOfUserList",
+      "zip": "data/testDeleteItemOfUserList.catrobat",
+      "zipSHA256": "b635f0791bc234a349eb4b20e74499b3f59844e25ea28dee9d7c95ad01a566fe"
+    },
+    {
+      "codeXMLSHA256": "c896f4e8be7abbb9b389b6509b04a7c99aeb1d9e3ec4b213ed565ec806389651",
+      "languageVersion": "0.99995",
+      "path": "data/testGlobalListsThatAreSharedBetweenScenes",
+      "zip": "data/testGlobalListsThatAreSharedBetweenScenes.catrobat",
+      "zipSHA256": "51fe8d3807010c4378e7e35053def2ef02f46e881e995c3c96eb46a674563804"
+    },
+    {
+      "codeXMLSHA256": "6f512cfad37cafb31e7d4a61e3db14b0b88175ee28b2c115fa267f3b77fe6b42",
+      "languageVersion": "0.99999994",
+      "path": "data/testInsertIntoList",
+      "zip": "data/testInsertIntoList.catrobat",
+      "zipSHA256": "fe0430b8c4fbca7291f81f0774a3f9601b6276c98057efc31ce12ec24bd8d87e"
+    },
+    {
+      "codeXMLSHA256": "d9c721d88d32c43adfc09c73b9c07d48bd82210707d1d97ad02305bd888c40cf",
+      "languageVersion": "0.99995",
+      "path": "data/testListReadWriteWithComplexItems",
+      "zip": "data/testListReadWriteWithComplexItems.catrobat",
+      "zipSHA256": "250d97cbdd126208f2a96defe6b9567ead47364f3c0b4e7cacd8162125392346"
+    },
+    {
+      "codeXMLSHA256": "78919c637f1e928e88930b84302adb58de640f2da00dc1b0978af75cfb6f6513",
+      "languageVersion": "0.99995",
+      "path": "data/testListReadWriteWithComplexListNames",
+      "zip": "data/testListReadWriteWithComplexListNames.catrobat",
+      "zipSHA256": "e71fc51be1d7b3dbc6ef5a90f1b7f068c25bdd7f3c79f81a478fd601003c89d7"
+    },
+    {
+      "codeXMLSHA256": "f54cfe4bff0770b61b80f805abcd01736b5c4ca6e518a4879a56b77d3278cf4e",
+      "languageVersion": "0.99995",
+      "path": "data/testListsThatWereReadButNeverWrittenAreEmpty",
+      "zip": "data/testListsThatWereReadButNeverWrittenAreEmpty.catrobat",
+      "zipSHA256": "806bb31c5d503ad82d7b92df7c5bca4ae6b7b8e9414b55e4f97c06ef7937e7d4"
+    },
+    {
+      "codeXMLSHA256": "819390a42ccf54ce643edd923390ba0745b09f064868e66b5da70cd323287cc4",
+      "languageVersion": "0.99995",
+      "path": "data/testLocalListsWithSameNameOfDifferentObjects",
+      "zip": "data/testLocalListsWithSameNameOfDifferentObjects.catrobat",
+      "zipSHA256": "8014e27e918d24494c578976fbd1c855523f668903e8cd01ecd5be07110b48d5"
+    },
+    {
+      "codeXMLSHA256": "af070387d9e9d2cf7a84294487b4e02ce417a552ab4aa4e41d0d053ac6f6a042",
+      "languageVersion": "0.99995",
+      "path": "data/testParallelWrittenListsCanBeReadCorrectly",
+      "zip": "data/testParallelWrittenListsCanBeReadCorrectly.catrobat",
+      "zipSHA256": "a46ef4ec16c9e8b6a1faf07975abab752741d5d048479562868c8eff3a19942d"
+    },
+    {
+      "codeXMLSHA256": "c8bfbb514130f7b4e2d203919389bab4b41cea552880f659bb0e137f890bac50",
+      "languageVersion": "0.99995",
+      "path": "data/testReadLastValueWrittenToListOnDevice",
+      "zip": "data/testReadLastValueWrittenToListOnDevice.catrobat",
+      "zipSHA256": "f12d3b5e532602a110db584f310a73a6cf4897fa5f11c40ee9952217f405d6a7"
+    },
+    {
+      "codeXMLSHA256": "2839ffffde13b9d66d4c2a7fa50751af92b6d09794ad0c021007a8fd45511c24",
+      "languageVersion": "1.12",
+      "path": "data/testSetAddVar",
+      "zip": "data/testSetAddVar.catrobat",
+      "zipSHA256": "aa0fc5cfbcaf95f8f01a74349b0a027410b64402e8ab538f70318fbeb95d2d96"
+    },
+    {
+      "codeXMLSHA256": "6e046a22fac7b0b0df88fddbfdc0e4c676a5d971a2dfd4032278b9445576e469",
+      "languageVersion": "1.01",
+      "path": "data/testStageIsTouched",
+      "zip": "data/testStageIsTouched.catrobat",
+      "zipSHA256": "69a2efaa9835a1324c82197c7d03b8091c416b9b1f65f39bcbf3e00b38513ff8"
+    },
+    {
+      "codeXMLSHA256": "1ba633f35b77749ff003745e9f767319f5326b2012f168b4b91e4358f1cc3f66",
+      "languageVersion": "0.99995",
+      "path": "data/testWrittenLocalListsInObjectsWithSameNameInDifferentScenesAreReadSeparately",
+      "zip": "data/testWrittenLocalListsInObjectsWithSameNameInDifferentScenesAreReadSeparately.catrobat",
+      "zipSHA256": "7ba01f69d068a72b0a0bc3bae4bb7a9a42b7e6a42c9584bb9bc12ae3a68a1075"
+    },
+    {
+      "codeXMLSHA256": "5d60acd37a993c770509005786ce747d04c340fc6bb60a08b6b4a15ab841ebe0",
+      "languageVersion": "0.999999995",
+      "path": "direction/testDirectionLeftRightRotation",
+      "zip": "direction/testDirectionLeftRightRotation.catrobat",
+      "zipSHA256": "6e184b4642266ba7e997c2cc400c335e5c5324e78ac6dd9ac3212aacf93e4fa3"
+    },
+    {
+      "codeXMLSHA256": "97b16158d96306d6cf1b822d631e78c04f2727447e051f48abf02f496ef3f979",
+      "languageVersion": "0.999999995",
+      "path": "direction/testDirectionNoRotation",
+      "zip": "direction/testDirectionNoRotation.catrobat",
+      "zipSHA256": "211520e308416cf358238fc1f32599bde8ebf254643b2d962f5902b78f797080"
+    },
+    {
+      "codeXMLSHA256": "93056467dc537320d4405968d6e04316ea3eeb0b5b2c9b994d9fd00e32e92d68",
+      "languageVersion": "0.999999995",
+      "path": "direction/testDirectionWithRotation",
+      "zip": "direction/testDirectionWithRotation.catrobat",
+      "zipSHA256": "340d499b82d2775560a9acd91ab3d0727df8059d50c606b664008f3f07f0df7a"
+    },
+    {
+      "codeXMLSHA256": "ad24f1e4e09c3153a21ed4533b8dc9160523f9353b54254ee20e563b3732af63",
+      "languageVersion": "0.999999995",
+      "path": "direction/testPhysicalDirectionLeftRightRotation",
+      "zip": "direction/testPhysicalDirectionLeftRightRotation.catrobat",
+      "zipSHA256": "97ec2d0f2e5199f344ffc6c0c2bf3909747745d3ee3952257d3a7c9bf0b4f2da"
+    },
+    {
+      "codeXMLSHA256": "d119737b2b836f5ed5862dddb4aedef015417704bb6b711575c877c4708d5b25",
+      "languageVersion": "0.999999995",
+      "path": "direction/testPhysicalDirectionNoRotation",
+      "zip": "direction/testPhysicalDirectionNoRotation.catrobat",
+      "zipSHA256": "786c203441f37d8adadc316dba95cb2ef9c82803104b5a45071fcafb82e2362b"
+    },
+    {
+      "codeXMLSHA256": "d62c2660c9eb31f98f2ec548f23c184483cd6adf6cb85242076eac4809227a36",
+      "languageVersion": "0.999999995",
+      "path": "direction/testPhysicalDirectionWithRotation",
+      "zip": "direction/testPhysicalDirectionWithRotation.catrobat",
+      "zipSHA256": "2c2867331f91eb6f970a52a6d975c5d548582e3148e9db4e1b3fedd25f01bb2d"
+    },
+    {
+      "codeXMLSHA256": "2f2251a1bdafcdb70ce40444d027e0ec2c1b2030ecac889ced07ca23982cca80",
+      "languageVersion": "0.99995",
+      "path": "formula/testAbsolutValueFunction",
+      "zip": "formula/testAbsolutValueFunction.catrobat",
+      "zipSHA256": "bfd266aff20e020263851b65d7602eeb25a8c6029f682b0fb4b8ef150f9fb443"
+    },
+    {
+      "codeXMLSHA256": "9178570e6ca25ba5d4a7be85b910b50ce665e5b6514bfb9aea23b986ee57749c",
+      "languageVersion": "0.999998",
+      "path": "formula/testArccosineFunction",
+      "zip": "formula/testArccosineFunction.catrobat",
+      "zipSHA256": "67cba8e5ce7f8b598f745109e4bf17659e1689f7dfd4effd483e1deb0125a026"
+    },
+    {
+      "codeXMLSHA256": "c9417c8e4f8b1e034be56062652e2ff209c413dac28a77a29672ded398fd697c",
+      "languageVersion": "0.99999",
+      "path": "formula/testArcsinusFunction",
+      "zip": "formula/testArcsinusFunction.catrobat",
+      "zipSHA256": "82156183110f70873d1e6b787bcf44eab5e6f313d80aed68280e1967ea326cfa"
+    },
+    {
+      "codeXMLSHA256": "a7d2fde6102132e3d7787ed6116daf77f5c4f3a7b3ffe7d1de623597b1a1d47c",
+      "languageVersion": "0.99995",
+      "path": "formula/testArctangent2FunctionNormalParameters",
+      "zip": "formula/testArctangent2FunctionNormalParameters.catrobat",
+      "zipSHA256": "53e478829f4b57d4e9b5cca7e608cd30b4b921f542529271cc129212948eb787"
+    },
+    {
+      "codeXMLSHA256": "785c7b660d9a4d0c65fce708180fc46dfb34ff9ddbe1ec8fd5e3e2dddc5fcb66",
+      "languageVersion": "0.99995",
+      "path": "formula/testArctangent2FunctionZeroParameters",
+      "zip": "formula/testArctangent2FunctionZeroParameters.catrobat",
+      "zipSHA256": "124d6bcab8290edc7b9a16e3811afca3427379af60aad37d08f57311b9fb2a0e"
+    },
+    {
+      "codeXMLSHA256": "6184399c1d7907e1652a037104e1f7bb9c7b744ea7560d9d7adf037fccee643a",
+      "languageVersion": "0.99999",
+      "path": "formula/testCeilingFunction",
+      "zip": "formula/testCeilingFunction.catrobat",
+      "zipSHA256": "80f8fe9427fc70713f6db11abc6285b543a83fd9154b43474140e86b6925d156"
+    },
+    {
+      "codeXMLSHA256": "50aea5e54134fdab2199d9cf1fb2bca1a4634d9fab88469dc48f71e919b68c40",
+      "languageVersion": "1.1",
+      "path": "formula/testContainsFunction",
+      "zip": "formula/testContainsFunction.catrobat",
+      "zipSHA256": "77b6dae61f83c52ef4f760acebf3c4a863a3fd768380b8f0f76e580debb70196"
+    },
+    {
+      "codeXMLSHA256": "1de36005eb2e85476676e1957fe18a4428160269dd3540208b59b1f86a42312e",
+      "languageVersion": "0.999999997",
+      "path": "formula/testCorrectStringConversion",
+      "zip": "formula/testCorrectStringConversion.catrobat",
+      "zipSHA256": "55d966688268283b57f8c1449efd334884b23c19dfe3555a020368d0c8cda5c6"
+    },
+    {
+      "codeXMLSHA256": "6a6d01c199091d8b005f533fcefc9a524923560dfab29c16999c09f306d62fb3",
+      "languageVersion": "0.99999",
+      "path": "formula/testCosinusFunction",
+      "zip": "formula/testCosinusFunction.catrobat",
+      "zipSHA256": "9a1922157f5563889d47bc58490ee330ca719ae4190d71b7e5f3583a797759b7"
+    },
+    {
+      "codeXMLSHA256": "6b9fe1a9e4e46151f900aabbc1a174d692aadf2e8c7f4868fc74068707953b37",
+      "languageVersion": "0.999999994",
+      "path": "formula/testCurrentIndexOfTouch",
+      "zip": "formula/testCurrentIndexOfTouch.catrobat",
+      "zipSHA256": "e3b9905136e47bb510c5ab9e15934355596df9c7e6931a26705f17b6556b6531"
+    },
+    {
+      "codeXMLSHA256": "f7ce7debd4c9452b2d583b0641b8ac716b33ba82435b69c83aed4171f1237218",
+      "languageVersion": "0.99999993",
+      "path": "formula/testCurrentNumberOfTouches",
+      "zip": "formula/testCurrentNumberOfTouches.catrobat",
+      "zipSHA256": "425ffbe0632c31154db687d560123f76e433316c802d043fc65b88fcbc8e7302"
+    },
+    {
+      "codeXMLSHA256": "2fbbb2390627364869c72bd4c0dc9aee79e79f06613d04a3624f05b81acb0c8f",
+      "languageVersion": "0.99999",
+      "path": "formula/testDecimalLogarithmFunction",
+      "zip": "formula/testDecimalLogarithmFunction.catrobat",
+      "zipSHA256": "784c8cad04cd8d0a4d441c9ac6e3a40b3eb4a6bf20bb063888ddf78dff68dcd2"
+    },
+    {
+      "codeXMLSHA256": "20f3acdf931fde0b816247947e2c840023deb80c5113f83ce3f24fe6c7361826",
+      "languageVersion": "0.99999991",
+      "path": "formula/testExponentFunction",
+      "zip": "formula/testExponentFunction.catrobat",
+      "zipSHA256": "31af7538905892021c70145c8499d1fe2af73f5262471f0ce67917edb8566ebe"
+    },
+    {
+      "codeXMLSHA256": "82051acb5cb459e785db281d4c79644242d21265a7d8bf1df29e8da87df04a67",
+      "languageVersion": "0.999999997",
+      "path": "formula/testFlattenFunction",
+      "zip": "formula/testFlattenFunction.catrobat",
+      "zipSHA256": "b28d35e79b80e2f0c4c15ffd250bb0bc769ccbf570520de7141b1aa5d32bf503"
+    },
+    {
+      "codeXMLSHA256": "2a67241b4831a94ecf687da09d19d0bf643994015fad5eb701745c8621fc1c1e",
+      "languageVersion": "0.99999991",
+      "path": "formula/testFloatingPointArithmetic",
+      "zip": "formula/testFloatingPointArithmetic.catrobat",
+      "zipSHA256": "fac9771b0c63bd3a8f4737c59992c7ac318a25d847f76cec3a495b8aa6447f71"
+    },
+    {
+      "codeXMLSHA256": "da5f72fa9d25efa4e3dab8f3d367b7832a1ba51e37f455b4160ee7d80ddd300a",
+      "languageVersion": "0.99998",
+      "path": "formula/testFloorFunction",
+      "zip": "formula/testFloorFunction.catrobat",
+      "zipSHA256": "9c350fbd6bb1f399fc9c6fbab247116a1676e05efe9cf2a35d1209a7331adc17"
+    },
+    {
+      "codeXMLSHA256": "f8c56a4c02c7a9c99c906ec2456be038f7c1b22f4702ba182bef20533a960cb4",
+      "languageVersion": "1.03",
+      "path": "formula/testIfThenElseFunction",
+      "zip": "formula/testIfThenElseFunction.catrobat",
+      "zipSHA256": "2bf3602d5a0be87392fac06d5d231eff3abdf316233e4b1683dd9deace0582bf"
+    },
+    {
+      "codeXMLSHA256": "a2375997cbf09b24c9691b1a617e56d35c14170198c873338231047b760b61bf",
+      "languageVersion": "1.11",
+      "path": "formula/testItemsIndexFunction",
+      "zip": "formula/testItemsIndexFunction.catrobat",
+      "zipSHA256": "57ed7c815ffe20b3234d8f0c7aba2a9bd0300315dc70fb5ab2206eb6575cc121"
+    },
+    {
+      "codeXMLSHA256": "fab93a31e905fafe9c7fd19eb0e2f97a6248b55704f8fc03d2df2a788cbef14b",
+      "languageVersion": "1.03",
+      "path": "formula/testJoinFunction",
+      "zip": "formula/testJoinFunction.catrobat",
+      "zipSHA256": "c4f93132807f0941b075e682befcd2c88979b273bf0e1c658833f27317934050"
+    },
+    {
+      "codeXMLSHA256": "26239ed9d566b4fe2f7a2d974a3f592021ba4f7a2fd694825a3ce05d7cbbde32",
+      "languageVersion": "1.12",
+      "path": "formula/testLengthFunction",
+      "zip": "formula/testLengthFunction.catrobat",
+      "zipSHA256": "8ab98c60b787c9d7038e8309e7a3b73cfbcd1ba87e9ba2c916a43da93a0a1f9a"
+    },
+    {
+      "codeXMLSHA256": "dfb5fd0e476ef593e0c263c83f30ae94d8d974659cda239e63056f1361aa2a22",
+      "languageVersion": "1.03",
+      "path": "formula/testLetterFunction",
+      "zip": "formula/testLetterFunction.catrobat",
+      "zipSHA256": "229f44ba6a2d20097355a2bf70ca8b82065f5049079a73a6ff7c58e2a944a4d2"
+    },
+    {
+      "codeXMLSHA256": "151095a0f47a6bf9c76dbc484be5e29ea86df6c25841661515619430f9d20c57",
+      "languageVersion": "0.99995",
+      "path": "formula/testMaximumOfFunction",
+      "zip": "formula/testMaximumOfFunction.catrobat",
+      "zipSHA256": "e0bc0249e212a1df480e5bc90b4ffc0bfb7f85356cfd2c18dd35f54e09088363"
+    },
+    {
+      "codeXMLSHA256": "dd9024779307e1ceb6882ebb1661c28904ddb143d9857fbcf796e412962a85ff",
+      "languageVersion": "0.99995",
+      "path": "formula/testMinimumOfFunction",
+      "zip": "formula/testMinimumOfFunction.catrobat",
+      "zipSHA256": "0d12aed1902e0b88f586833b041e674b3af8086c2518ac782bd7a1cf844a161e"
+    },
+    {
+      "codeXMLSHA256": "d3fc809cad38cccae77e8cb7ee79e54e26f6d4e37fac2fc6475b8ca875b48370",
+      "languageVersion": "0.99995",
+      "path": "formula/testModuloFunction",
+      "zip": "formula/testModuloFunction.catrobat",
+      "zipSHA256": "d1c73207de5f4db3906c626349ad1de6a7d06c2191f233ebcf65f006e2b777c1"
+    },
+    {
+      "codeXMLSHA256": "6b3af97015b02d3d96cb1a6dff6c8bec71c9ddd98fd0481211a3ed535f129699",
+      "languageVersion": "0.999991",
+      "path": "formula/testNaturalLogarithmFunction",
+      "zip": "formula/testNaturalLogarithmFunction.catrobat",
+      "zipSHA256": "43856a952963d2e2510f601e6544679efe84ac108be4072451e3143a44692133"
+    },
+    {
+      "codeXMLSHA256": "1048ce89d3c47e7617eb739fda1175c40c47328207b0c619fea9b0086fdd060e",
+      "languageVersion": "1.12",
+      "path": "formula/testNumberOfItems",
+      "zip": "formula/testNumberOfItems.catrobat",
+      "zipSHA256": "ae647170dd36154f4454ce18ba56fef28aeb1ed92eb3a965f777da056f5ad978"
+    },
+    {
+      "codeXMLSHA256": "03c0ff3c01d681b236030bdaff40c855bed064a7f3102d03623a5fdd629a5712",
+      "languageVersion": "1.03",
+      "path": "formula/testNumberOfItemsFunction",
+      "zip": "formula/testNumberOfItemsFunction.catrobat",
+      "zipSHA256": "194a0c82ad910b1ad546859b71ea10b2d7448d0562d128626508bf3dbf1c879c"
+    },
+    {
+      "codeXMLSHA256": "5c57eec57f31554b5121fe2fd772e4d53cbcb05ac6c56502533651b502225632",
+      "languageVersion": "1.04",
+      "path": "formula/testNumberOfLooks",
+      "zip": "formula/testNumberOfLooks.catrobat",
+      "zipSHA256": "04f8c812c5ac4401613f414aa6e707c1bdca6c015cb5856aeea5a08a940476ee"
+    },
+    {
+      "codeXMLSHA256": "236510f3c9acd5738f8b10da7c0acd4aea75154f902fe418f73b3bdf7f32d602",
+      "languageVersion": "0.99995",
+      "path": "formula/testPowerFunction",
+      "zip": "formula/testPowerFunction.catrobat",
+      "zipSHA256": "c9770e03b1aef635abcd728812f2a60ca35f3ba0f3dbe937493a7d576ea06982"
+    },
+    {
+      "codeXMLSHA256": "97ec696a1fc467f6f03604b333d85572f99cd41c843c588b723b4a07d3284638",
+      "languageVersion": "1.03",
+      "path": "formula/testRandomFunction",
+      "zip": "formula/testRandomFunction.catrobat",
+      "zipSHA256": "51ec55024484035b99cf6a96e07a87417610c9616c6c7af7a70ff429cb309851"
+    },
+    {
+      "codeXMLSHA256": "d9c9de5ba1c810e53448fa7fdda7b2bf967fa2c4047da153a75b8c0043b17490",
+      "languageVersion": "0.99999994",
+      "path": "formula/testRegularExpressionFunction",
+      "zip": "formula/testRegularExpressionFunction.catrobat",
+      "zipSHA256": "e130b13039d549948cb2fbdf5567e6e4e06b620d202edb36f62fc6a2ed43a4d1"
+    },
+    {
+      "codeXMLSHA256": "fdc0302418acfbc7c2d830d28e97de1f88762c4c2be11db25301f7de24252c32",
+      "languageVersion": "0.99995",
+      "path": "formula/testRoundFunction",
+      "zip": "formula/testRoundFunction.catrobat",
+      "zipSHA256": "6e95522eeb31176a83f1e8096a4c331fd2f59f3119b589fabe26c3a919a524e1"
+    },
+    {
+      "codeXMLSHA256": "e097c2fa33bdf97cdc07483a1a43a35cbe8edb7a7c5dee60a86309243add6a1f",
+      "languageVersion": "0.9999995",
+      "path": "formula/testSineFunction",
+      "zip": "formula/testSineFunction.catrobat",
+      "zipSHA256": "eebd0955c9d707a16a1f0b115b8b8ff590021b08973651e414d527ffa5580e9d"
+    },
+    {
+      "codeXMLSHA256": "492ec681631e1f1cbff5858aa7afbda716d444c2676f68d6f5acf96eff49dba8",
+      "languageVersion": "0.99995",
+      "path": "formula/testSquareRootFunction",
+      "zip": "formula/testSquareRootFunction.catrobat",
+      "zipSHA256": "e0899f57da4b5201e91e4fe71f8d373f977957c18ab5a1a33ce7e186e194423e"
+    },
+    {
+      "codeXMLSHA256": "5c916b760843b69158380fb22b45dddf2c5dc6ba63ad2fe239ceb5707d0dca17",
+      "languageVersion": "0.99999",
+      "path": "formula/testTangentFunction",
+      "zip": "formula/testTangentFunction.catrobat",
+      "zipSHA256": "0756fc8d7b7adffc918c242c624ef3ecaf4656cc58b2026af5b9a5622c8e632f"
+    },
+    {
+      "codeXMLSHA256": "24566d991a68e1dc526fb18ed5639df2529162fac770dd406dd2c495bdc52c04",
+      "languageVersion": "1.03",
+      "path": "motion/testChangeXPosition",
+      "zip": "motion/testChangeXPosition.catrobat",
+      "zipSHA256": "d887d3712fc1cd2874e5cad63b9a05d599bbd136d5d689951fc1902607d6cdc4"
+    },
+    {
+      "codeXMLSHA256": "353e199004f00b0efc7335ce070df0d3ebdb5a7450e439de17d5f794af3fc6d6",
+      "languageVersion": "1.03",
+      "path": "motion/testChangeYPosition",
+      "zip": "motion/testChangeYPosition.catrobat",
+      "zipSHA256": "93c0c535f92ebf73ba3c6157a298aa52d31fec4bc180373ed9fa8cf5152484c4"
+    },
+    {
+      "codeXMLSHA256": "a9e0faa6b5e648af624f19191ead381078990b58ef02f24204a22ae81965e1c9",
+      "languageVersion": "0.99999",
+      "path": "motion/testIfOnEdgeBounceOnceRegression",
+      "zip": "motion/testIfOnEdgeBounceOnceRegression.catrobat",
+      "zipSHA256": "8dba6e3424be7809e38fb550a6b78dbdfbeef4474b05c4eaa83a1b8a47d2351b"
+    },
+    {
+      "codeXMLSHA256": "398eecb616f4a9c636b890bd7fed750f331d7ec82a6b7c7070af58aa04171668",
+      "languageVersion": "0.99999",
+      "path": "motion/testIfOnEdgeBouncePhysicsMoveStepsRegression",
+      "zip": "motion/testIfOnEdgeBouncePhysicsMoveStepsRegression.catrobat",
+      "zipSHA256": "05a694dd2169e5fc47b52704942e55c38f213768f5f5c7a07fd30a71283b6b83"
+    },
+    {
+      "codeXMLSHA256": "a467684537da1ca545cc52cad27ee5ede149491eaac39587a17dd587e1f8668f",
+      "languageVersion": "1.11",
+      "path": "motion/testMoveStepsBrick",
+      "zip": "motion/testMoveStepsBrick.catrobat",
+      "zipSHA256": "4793f92395affaa531ceff8332e692e30588529502ee55f36411543ed62a8cd2"
+    },
+    {
+      "codeXMLSHA256": "03c09616bb01bf1e9f500aa07b89470a4bf28f7f8134f7fdecfa88b0e506200e",
+      "languageVersion": "1.12",
+      "path": "motion/testMoveXStepsFunction",
+      "zip": "motion/testMoveXStepsFunction.catrobat",
+      "zipSHA256": "60baac8842ba304bb4d1e154206bb1bccbb28ff03aa19c9750c496a7cd72c167"
+    },
+    {
+      "codeXMLSHA256": "5b537766115cbb39a2a2befb344c08f4fce5e565198f43b00beaa23af2d90a2f",
+      "languageVersion": "1.12",
+      "path": "motion/testPointInDirectionDegrees",
+      "zip": "motion/testPointInDirectionDegrees.catrobat",
+      "zipSHA256": "f0e6aaf7b22c112d39606ee84b854e70d6f5fd905756bd3a077e0f64b71457e6"
+    },
+    {
+      "codeXMLSHA256": "f5f2c6bc8063a8aa96109d99dd6d8ee12c47353608d4b2ed3780ac3fc7d15f2b",
+      "languageVersion": "1.12",
+      "path": "motion/testSetMassAndBounceOfObject",
+      "zip": "motion/testSetMassAndBounceOfObject.catrobat",
+      "zipSHA256": "3449860942f2aec9911d602c2636d63f4d5539e4336fd92a796359084161f397"
+    },
+    {
+      "codeXMLSHA256": "0d137423431d744b5c6b3bbeea2e2ec0f2bc15b618679f70c7e1b588271fa346",
+      "languageVersion": "1.12",
+      "path": "motion/testSetX",
+      "zip": "motion/testSetX.catrobat",
+      "zipSHA256": "f3fab64d3bf22c7be9a6f174b8fb8f768020d1c85faac61af5dd9e2d284ca52c"
+    },
+    {
+      "codeXMLSHA256": "42719c0d0dac6eec47edf3530a701358ac2c8503d6260e96f27bb4640833c151",
+      "languageVersion": "1.11",
+      "path": "motion/testSetYPosition",
+      "zip": "motion/testSetYPosition.catrobat",
+      "zipSHA256": "7df26f021b45d5b48956ec4118d39e7e13a5ee1d8b3afbc4188be75beb3d27db"
+    },
+    {
+      "codeXMLSHA256": "ccae26519b2fe8d3c7f27741408bfbd95edd7596124b488b8f61fd5cd0c9b159",
+      "languageVersion": "1.11",
+      "path": "motion/testTurnXDegrees",
+      "zip": "motion/testTurnXDegrees.catrobat",
+      "zipSHA256": "6633abd47eb89e8c8026918a2963e69c86f95bae7f18cf5639d6b774102fba24"
+    },
+    {
+      "codeXMLSHA256": "94ceae4fd3fa85af815467894bcf7a9dbcf04b5f0b8a3940576a816b2e90eba0",
+      "languageVersion": "1.09",
+      "path": "physics/testCollisionWithGlideToBrick",
+      "zip": "physics/testCollisionWithGlideToBrick.catrobat",
+      "zipSHA256": "864c4688615c54fe8483d3f4a36bd6cdcd2815ff0b6a078917d986997330c7c2"
+    },
+    {
+      "codeXMLSHA256": "3b60208537b5b545f6b6b77c9c88df9bcf146a13b6580f4d2368879e96183f53",
+      "languageVersion": "1.11",
+      "path": "physics/testGlideToSpeedRangeAndDuration",
+      "zip": "physics/testGlideToSpeedRangeAndDuration.catrobat",
+      "zipSHA256": "b2210cdf8d5e5c91a05549905af5adad920805c7bbca828719e45ab06e88f7ce"
+    },
+    {
+      "codeXMLSHA256": "74bf4773dce1142d216ed07bf25348f156c13249da47f83d75e110da7a69c6e0",
+      "languageVersion": "1.09",
+      "path": "physics/testGlidingInPhysicalBouncingObject",
+      "zip": "physics/testGlidingInPhysicalBouncingObject.catrobat",
+      "zipSHA256": "751de77d7759baa084123cd54e97ba2faeb74d072930c16d2ee8be0c72406b9f"
+    },
+    {
+      "codeXMLSHA256": "bf1bbdd67a0eb31199d88145b08cd8c741cbd2101dbca647f02d24c2cb935887",
+      "languageVersion": "1.11",
+      "path": "physics/testGravityAndGliding",
+      "zip": "physics/testGravityAndGliding.catrobat",
+      "zipSHA256": "dc60f440cca41f61ccaa29fa3fbce1a57602268869cd121be922800cff942ef7"
+    },
+    {
+      "codeXMLSHA256": "665d097f9cc62d789e15520b4ecf307451db133f762a304bee2b4af215233229",
+      "languageVersion": "1.11",
+      "path": "physics/testRotationStyles",
+      "zip": "physics/testRotationStyles.catrobat",
+      "zipSHA256": "81b4b0c59f977d67f91c43322f83ee83912765bb8de54f55d2de8abf2ddc691c"
+    },
+    {
+      "codeXMLSHA256": "2350984e851e960dc2f13e612b0c414a45d26b7bd75538bdb7477243abcf1137",
+      "languageVersion": "0.99999998",
+      "path": "physics/testSetGravityForAllActorsAndObjects",
+      "zip": "physics/testSetGravityForAllActorsAndObjects.catrobat",
+      "zipSHA256": "6fc91ca218ec67cf473583447dfac2762c8c3448b10af760bf7814f1719aa7db"
+    },
+    {
+      "codeXMLSHA256": "f34582f46cc125b1ab1fe138271eb85a496f9018bd7096ebc0ad125ee69a12d4",
+      "languageVersion": "1.03",
+      "path": "physics/testSynchronousGlideToBricks",
+      "zip": "physics/testSynchronousGlideToBricks.catrobat",
+      "zipSHA256": "1c80bf970f088e2272075f3794f5b4570f04452c40bccad77d3ea9918a3320a9"
+    },
+    {
+      "codeXMLSHA256": "7b5f24f9c6ecd3c4901c13984106a7c220878ef29d4f64cbfdd16d695a33ad9f",
+      "languageVersion": "1.12",
+      "path": "physics/testTouchesActorOrObjectWithRotation",
+      "zip": "physics/testTouchesActorOrObjectWithRotation.catrobat",
+      "zipSHA256": "6620975820f25f683c1d773777f4a568d030104efaa3bee42040892351f0b4a6"
+    },
+    {
+      "codeXMLSHA256": "19e8c9020309cb4cde83e4441adc40db8acbf844843e2d22a359beb9ab29ff2f",
+      "languageVersion": "1.04",
+      "path": "physics/testVelocityWhileGliding",
+      "zip": "physics/testVelocityWhileGliding.catrobat",
+      "zipSHA256": "cf8e7175e329852ec33ce1ab3e70a805d34b33aa174292d9369232dea70732c6"
+    },
+    {
+      "codeXMLSHA256": "08bfffea2887761c261536f90d9e1b657744b561a6e229c82fe981f4155ce042",
+      "languageVersion": "0.99995",
+      "path": "physics/testXYVelocity",
+      "zip": "physics/testXYVelocity.catrobat",
+      "zipSHA256": "87f9bd1dbe128c39ca2894c64c952b8192ae3915d2f03f516f90ef9de5c7150f"
+    },
+    {
+      "codeXMLSHA256": "c89ea9dbd842951f3c23cd2de6cad6dbe64de0b057a9c005ef2c2d1d478bb83f",
+      "languageVersion": "0.99995",
+      "path": "physics/testXYVelocityWithGravity",
+      "zip": "physics/testXYVelocityWithGravity.catrobat",
+      "zipSHA256": "88aca051a1121dc5e13b69cf29864e71eb4ced9568a589c8a4cec0ac54a97302"
+    },
+    {
+      "codeXMLSHA256": "27d2a05490b9f42733157c975fe0ffc92315933a030c3052050575b6c705ea7a",
+      "languageVersion": "0.99995",
+      "path": "sceneTransition/continueSuspendedThreadsOnContinueScene",
+      "zip": "sceneTransition/continueSuspendedThreadsOnContinueScene.catrobat",
+      "zipSHA256": "a7cd9832da45abf97d6f0f7070bda68139f9a3e94e16594b55aa378ff1d65db6"
+    },
+    {
+      "codeXMLSHA256": "4fd3f0d869154da2826ccca606b2696b5b32cfe6fa8058825614fd80ce32c39e",
+      "languageVersion": "0.99995",
+      "path": "sceneTransition/discardSuspendedThreadsOnStartScene",
+      "zip": "sceneTransition/discardSuspendedThreadsOnStartScene.catrobat",
+      "zipSHA256": "1cd072060251a00546da5c511366e49b037904eedf3cd796c73f3a0bf679ba19"
+    },
+    {
+      "codeXMLSHA256": "370cabb11970d660f9ad99d9f2f3705bb383bd872f12d557c11ab00cdd447548",
+      "languageVersion": "0.99995",
+      "path": "sceneTransition/suspendAllThreadsOnSceneTransition",
+      "zip": "sceneTransition/suspendAllThreadsOnSceneTransition.catrobat",
+      "zipSHA256": "68dbe19556d78c0ebfd7265e92ab8bfe0a8d2f9724f253299995825506227864"
+    },
+    {
+      "codeXMLSHA256": "d3f3c9cf9b837d94a05540b3316d67dc3ca182acea4a2343d98cebed589232a1",
+      "languageVersion": "0.99999",
+      "path": "script/whenBounceOff/testWhenYouBounceOff",
+      "zip": "script/whenBounceOff/testWhenYouBounceOff.catrobat",
+      "zipSHA256": "339e075c5527c9ac38554e2d63edf076ce9f615f1c25c3a9801491f299b09345"
+    },
+    {
+      "codeXMLSHA256": "fae03d12ff7cdafda7da68a404d2348d5b92cac529ddebb4e4a45142e354aa46",
+      "languageVersion": "0.99995",
+      "path": "script/whenBounceOff/whenBounceOffAnyTriggeredByEdgeBounce",
+      "zip": "script/whenBounceOff/whenBounceOffAnyTriggeredByEdgeBounce.catrobat",
+      "zipSHA256": "55786c6a0396d0d8eb79f86bbb379a988e99c5e3acf95abed6ac14a87ff647c0"
+    },
+    {
+      "codeXMLSHA256": "e2c0845d6e4c7947c8c39a28e6a47b55517d703e50c8d989605c1ac5ca2197c7",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapHiddenSpriteDoesTapBackgroundInstead",
+      "zip": "script/whenTappedScript/testTapHiddenSpriteDoesTapBackgroundInstead.catrobat",
+      "zipSHA256": "e4ded2773839cd0e558f87cb13b76a338bec85d59c492a6b8d3e4cf8e84d1013"
+    },
+    {
+      "codeXMLSHA256": "e89731afa768d57bf88e56c46d7e037a6003960ec40119abbc0f2ee4765ae207",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapOnCenter",
+      "zip": "script/whenTappedScript/testTapOnCenter.catrobat",
+      "zipSHA256": "f26b72ce1f3945d90c20eb3836599240e66dab54c839304e43fdbdb166e5fbca"
+    },
+    {
+      "codeXMLSHA256": "e8b86c3f3bb22818ce18bb834af5660847ae2360f58c9d9d13280dac390f7de6",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapOnClone",
+      "zip": "script/whenTappedScript/testTapOnClone.catrobat",
+      "zipSHA256": "33978d38136dc29d8f9d0c7a22d6f456ca5bc45056f5c1d2be5c1ff00b7bd9eb"
+    },
+    {
+      "codeXMLSHA256": "df664770c5508ba5c8311f9a45924d46f77f19ada20fd11fa9f4ae201d10e3b2",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapOnRemovedCloneTapsBackground",
+      "zip": "script/whenTappedScript/testTapOnRemovedCloneTapsBackground.catrobat",
+      "zipSHA256": "b91c305795826c686e48529f4af8008690931fdf36700cc0a93337ecabdb6372"
+    },
+    {
+      "codeXMLSHA256": "e3a69b9877348b19f1097189084965169456c11d04ebc08810183de251b826cb",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapOnSpriteDoesNotTapOnBackground",
+      "zip": "script/whenTappedScript/testTapOnSpriteDoesNotTapOnBackground.catrobat",
+      "zipSHA256": "26f69dbde3cd71e5f839f0750a75894209d40a98a8359e66e62c07e47bf80462"
+    },
+    {
+      "codeXMLSHA256": "65ffd3326d71299d8361aeb2a4423a7eb6151e2d7da873488266fb9b31e4faeb",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapOnTransparentInsideLookArea",
+      "zip": "script/whenTappedScript/testTapOnTransparentInsideLookArea.catrobat",
+      "zipSHA256": "0a979a1d372f94f1bbddf1e214f4285f53ddfafe43a32c27f205736d712e0c56"
+    },
+    {
+      "codeXMLSHA256": "57e6ca8b04d2ee6a3dab8219b347626510eeeab9f1e1cd4e2c387e184e467d1e",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapOnTransparentLookArea",
+      "zip": "script/whenTappedScript/testTapOnTransparentLookArea.catrobat",
+      "zipSHA256": "6150811cf4e53e3a3a891c2ea3b36558c224bb143af38e85e86c4b66ae903dce"
+    },
+    {
+      "codeXMLSHA256": "d19f8e8698e74690ae5c5dd9309247df3a5d911f4e6a21ba3474a1b3429c29d2",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapOnlyTopSprite",
+      "zip": "script/whenTappedScript/testTapOnlyTopSprite.catrobat",
+      "zipSHA256": "ce96bccb3a904df6b0e9bb4a03d8f439dc73189d3b1df63a2cc9952aa46bd9b7"
+    },
+    {
+      "codeXMLSHA256": "1ea21b4bc58bb752f39840c1f5be69d166a99ef86eeeb9eb98db7c6069ac760a",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapOutsideSpriteDoesTapOnBackground",
+      "zip": "script/whenTappedScript/testTapOutsideSpriteDoesTapOnBackground.catrobat",
+      "zipSHA256": "a70ebfff9b28a1d24228dc4c835e061e2b5646b75b0d7c0c0ff5ceafb909fcad"
+    },
+    {
+      "codeXMLSHA256": "20fa291d67dba37747f274166f604959b04d2fd547073cf046a76a16a1c0ba98",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapSpriteshowAfterHideDoesTapSprite",
+      "zip": "script/whenTappedScript/testTapSpriteshowAfterHideDoesTapSprite.catrobat",
+      "zipSHA256": "fd0a4366d774b542c37d34e55565e90b864682d9028bff4e536d0fc5806176bb"
+    },
+    {
+      "codeXMLSHA256": "3b0e149fa632573acfcf7a726368e2730f1fbc5ce320d5532820b4922db2ead3",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapStageNegXPosY",
+      "zip": "script/whenTappedScript/testTapStageNegXPosY.catrobat",
+      "zipSHA256": "810726a49f35d1a6a79038968c0c576232b64b4fe46e37a884b9dc1ac821dfeb"
+    },
+    {
+      "codeXMLSHA256": "f68a7374f9246a4dcb93d675df38194fac8d4b3972d8a2d26c7ac3b26b571f06",
+      "languageVersion": "0.99995",
+      "path": "script/whenTappedScript/testTapStagePosXNegY",
+      "zip": "script/whenTappedScript/testTapStagePosXNegY.catrobat",
+      "zipSHA256": "8e7db75e4b7371ff99d7d7e2e28cfdff1afe8081c75899fe1ce892638994f91e"
+    },
+    {
+      "codeXMLSHA256": "856e8910c53fff6cc406e491d4a099f0b06b322d721bbd291749c1c062f3e027",
+      "languageVersion": "1.11",
+      "path": "sensor/testStageWidthStageHeightSensorPortrait1080x2050",
+      "zip": "sensor/testStageWidthStageHeightSensorPortrait1080x2050.catrobat",
+      "zipSHA256": "f12ca6227f384aa8ec79f1820ba9e5cd34f41e223bd61d079604735d8edd8e82"
+    },
+    {
+      "codeXMLSHA256": "e32de95b282cd9b864e45b9e71c5d981a2a6b381d794fc3e092de0ca8d62fd2e",
+      "languageVersion": "1.11",
+      "path": "sensor/testStageWidthStageHeightSensorsMaximized350x3000",
+      "zip": "sensor/testStageWidthStageHeightSensorsMaximized350x3000.catrobat",
+      "zipSHA256": "51d153daa98b964b820a9e945ca6b3f5a1eebbe62238f6075439f9e9c0d61050"
+    },
+    {
+      "codeXMLSHA256": "5e9d13aaf672079dc79f3f27444a21d1257f26774ae3b6c1d23cf2f9267cd093",
+      "languageVersion": "1.11",
+      "path": "sensor/testStageWidthStageHeightSensorsSquare1080x1080",
+      "zip": "sensor/testStageWidthStageHeightSensorsSquare1080x1080.catrobat",
+      "zipSHA256": "92766d17f49a8524191a22fd1f6259a96b10894b0e185d9f72a3a2da4cd788a6"
+    },
+    {
+      "codeXMLSHA256": "5b46a09bdf49bee915cb011a9812a1dea3d9c564b136b09398405bfaa0a499df",
+      "languageVersion": "0.999999999",
+      "path": "touchesActorOrObject/testTouchesActorOrObject",
+      "zip": "touchesActorOrObject/testTouchesActorOrObject.catrobat",
+      "zipSHA256": "e77babf9c9f998807ff9c2b0e35454c405f9e930bda53e37400258cc55516830"
+    },
+    {
+      "codeXMLSHA256": "c8759ec919c883df15ec0b3897340c8919376a8f7d8b4f168a64f5d7e33d8e2b",
+      "languageVersion": "1.01",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectBackground",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectBackground.catrobat",
+      "zipSHA256": "2afb3d9d78720ac7a2ff0037e6437a89712c570a501dc974268b3f29e2e89a7e"
+    },
+    {
+      "codeXMLSHA256": "68e2d54a6f6bec9c67de382972977ac4fc524e74643e95f610271dc2caa72cd8",
+      "languageVersion": "0.999999999",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectCloneSimilarName",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectCloneSimilarName.catrobat",
+      "zipSHA256": "478af64e9ecc3f6af505b78065bb98e6ca4958552229b4946e0b820a08fc5c32"
+    },
+    {
+      "codeXMLSHA256": "a0a03c368c7352b1955523f9f11579f7b9dabf1cb4fb0deddf661a01ae475cd9",
+      "languageVersion": "0.999999999",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectCloneSpecialCharacters",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectCloneSpecialCharacters.catrobat",
+      "zipSHA256": "09fa0b100a8b07352208c43fa33f6700d98f365aed10ba9005a0c6aea7685b0b"
+    },
+    {
+      "codeXMLSHA256": "1938ae876ebeb77ad8a64da74310b5c8b8fcf2bfb6980eb3678b24c2bbe3f0a8",
+      "languageVersion": "1.11",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectInitialValue",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectInitialValue.catrobat",
+      "zipSHA256": "676f7ed5be8c05beb4aa683856c1bb82d3a26139bdfadc435a96425a307f372e"
+    },
+    {
+      "codeXMLSHA256": "218025e825b6763d1bbff734d7dd0ea46a0b4e5e02dbf6ad1796928927bd99c6",
+      "languageVersion": "1.11",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectInitialValueIfLogicBeginBrick",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectInitialValueIfLogicBeginBrick.catrobat",
+      "zipSHA256": "2f8a22231fdaf4b8afd8ea0e9ca5a6d83e5dbc3424a7661254a00703f670820d"
+    },
+    {
+      "codeXMLSHA256": "c1930646c3ca1799edaa921b5f1e611ca8c8e4e8585eba06a594776644903daf",
+      "languageVersion": "1.11",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectInitialValueRestartSceneWithClones",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectInitialValueRestartSceneWithClones.catrobat",
+      "zipSHA256": "91f6f8fd5254e7bebde71ee00ca5459ef33e124e9e71b5f2632fae6a0d80ab99"
+    },
+    {
+      "codeXMLSHA256": "83407ff9e792c6e5982e3f392821e0b2c99d35f0e4eb094359976a146b3e42c7",
+      "languageVersion": "1.11",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectInitialValueSceneRestartContinued",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectInitialValueSceneRestartContinued.catrobat",
+      "zipSHA256": "68950deea7365a6433cd51eb174565fa8bb37fc3a559f2d436be5bfdf736dbcb"
+    },
+    {
+      "codeXMLSHA256": "1d42c2e4f882f4e9e089a761c1815e9bc64a01528c0be4be766d269d6d73b81c",
+      "languageVersion": "1.11",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectInitialValueWithClones",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectInitialValueWithClones.catrobat",
+      "zipSHA256": "2c150f551943205850a72abae91c8a3010308c4090ac618b324ab9816ecf3f20"
+    },
+    {
+      "codeXMLSHA256": "bdf350951b53c778661d24bfce9edfd82181f9707c1f01decc10b3df50ba8542",
+      "languageVersion": "1.11",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectInitialValueWithSeveralObjects",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectInitialValueWithSeveralObjects.catrobat",
+      "zipSHA256": "e4c9d1100b8692bb6b22ef7140d7a7f373a24b782ad569c236e3cf2d7004ce68"
+    },
+    {
+      "codeXMLSHA256": "6f37f70034cf829ce562c9647588fc5b03b362007958365e389c9594ba72a6ec",
+      "languageVersion": "1.11",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectSceneContinued",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectSceneContinued.catrobat",
+      "zipSHA256": "63734d976a79ec94d2331434f9cfd7921fe81d894138c1c427b76ffe311a205f"
+    },
+    {
+      "codeXMLSHA256": "c9dca88d57f1daca89722729756dbfc5cdc10fdf619cf31d3c39541333ad2b92",
+      "languageVersion": "1.0",
+      "path": "touchesActorOrObject/testTouchesActorOrObjectSpecialCharacters",
+      "zip": "touchesActorOrObject/testTouchesActorOrObjectSpecialCharacters.catrobat",
+      "zipSHA256": "588e04e9445071eace9471e892aa1f71cc11a912986486f42b1ea0a8c0e4f3ab"
+    },
+    {
+      "codeXMLSHA256": "fe572cc064743fc0c50b6049e749949400a1238a2393d6bce16531cddeb51960",
+      "languageVersion": "0.9999996",
+      "path": "touchesColor/testColorTouchesColor",
+      "zip": "touchesColor/testColorTouchesColor.catrobat",
+      "zipSHA256": "6e3d2eadccc3a84f4c09ebe2dc186320236dbb6809cd2610480595bce1d7d2c2"
+    },
+    {
+      "codeXMLSHA256": "ba6d27578fdd9d6c8fe5f6488d83ee21691a77cfa044102a80a29a136e6897d9",
+      "languageVersion": "0.9999996",
+      "path": "touchesColor/testColorTouchesColorEdge",
+      "zip": "touchesColor/testColorTouchesColorEdge.catrobat",
+      "zipSHA256": "0807dd42b66a521192c8bcf2b66660e1878b66220a473056151a25b992329546"
+    },
+    {
+      "codeXMLSHA256": "bb8cd162c8140c9aa9b75a884228a223ebea28bc6915b4f6cad98e2bb77130ce",
+      "languageVersion": "0.99999991",
+      "path": "touchesColor/testColorTouchesColorSetColor",
+      "zip": "touchesColor/testColorTouchesColorSetColor.catrobat",
+      "zipSHA256": "bca84c6e1c9c1325a6dc627f535f78db94632bd2c618158cd6041c13209db49f"
+    },
+    {
+      "codeXMLSHA256": "4c3cd730f945ae8f136caa8b13188628c918a64d83da6d469c31afdfd83df354",
+      "languageVersion": "0.99999991",
+      "path": "touchesColor/testColorTouchesColorSwitchLook",
+      "zip": "touchesColor/testColorTouchesColorSwitchLook.catrobat",
+      "zipSHA256": "8f25cb0a99a8cd90e94204abfa6dd1b14284fe3b4e53975a0c4287b84f16ec4d"
+    },
+    {
+      "codeXMLSHA256": "e2bdfc09bfa87bff7c8475d4defe1080b76a29bae03a4b4487dd72f1b3d1a22d",
+      "languageVersion": "0.9999996",
+      "path": "touchesColor/testTouchesColorEdge",
+      "zip": "touchesColor/testTouchesColorEdge.catrobat",
+      "zipSHA256": "c1ec25b94f5dbe8415e117b9dc8fe27196b7af0798ef76f92b2c38b37a4f9a82"
+    },
+    {
+      "codeXMLSHA256": "8e2068d44db855865cefffe267d9e39ef780dd9410ca2bdda9ac263d366c102a",
+      "languageVersion": "0.9999999",
+      "path": "touchesColor/testTouchesColorInvisibleSprite",
+      "zip": "touchesColor/testTouchesColorInvisibleSprite.catrobat",
+      "zipSHA256": "3c4790ba2ca6c03703520c31558c48317e4b2e3dec696bdb229b44b10011325a"
+    },
+    {
+      "codeXMLSHA256": "10acc5e92bc6d0307b8b7012b1fc44219f7973e25effc61617e701cb710234fc",
+      "languageVersion": "0.9999994",
+      "path": "touchesColor/testTouchesColorMultiplePolygons",
+      "zip": "touchesColor/testTouchesColorMultiplePolygons.catrobat",
+      "zipSHA256": "1a4dc9e5961f1a4afe47ab17cd0b2ef3533db1291101c6b89cf9fade7c418208"
+    },
+    {
+      "codeXMLSHA256": "06dff52f64eeca9620dfc21bfa17e0b5f3b61b97c085c609dd5779a3abcb5967",
+      "languageVersion": "0.9999999",
+      "path": "touchesColor/testTouchesColorNestedPolygon",
+      "zip": "touchesColor/testTouchesColorNestedPolygon.catrobat",
+      "zipSHA256": "9c20aeae318263bf8d8d1ecbd38e860408f9cc258abf52d1bc821fac7c3755ee"
+    },
+    {
+      "codeXMLSHA256": "58aa07b3b270d3d16b3108a008c8f33ca5eb425b693356d7318f2409ecf59347",
+      "languageVersion": "0.9999994",
+      "path": "touchesColor/testTouchesColorOfClone",
+      "zip": "touchesColor/testTouchesColorOfClone.catrobat",
+      "zipSHA256": "0387a7750cd0baf2b0c03a5920e633b0a714a92a7605f7f966b5054ad8b05e99"
+    },
+    {
+      "codeXMLSHA256": "c946a5fcb96244df074ddda9375f385b6b4899aa55532ba064113bcd4d2707e0",
+      "languageVersion": "0.9999994",
+      "path": "touchesColor/testTouchesColorResize",
+      "zip": "touchesColor/testTouchesColorResize.catrobat",
+      "zipSHA256": "72b92a5693eafdf1f9d5aad4bcec685a1ce459c0957f38933c6ea84ca5047054"
+    },
+    {
+      "codeXMLSHA256": "18735d7cdcdc1479824672cc5faa9a4d16b4c529e7796c9ff048de4c0caf708b",
+      "languageVersion": "0.9999994",
+      "path": "touchesColor/testTouchesColorRotate",
+      "zip": "touchesColor/testTouchesColorRotate.catrobat",
+      "zipSHA256": "474189490c403f1d3402595469f5e4f0d29a81f9eb1fe776275015ed73fcdb0f"
+    },
+    {
+      "codeXMLSHA256": "a9821c21e763780accd8ae04323edc9cee7890c71ec25f8e20913a2b61603479",
+      "languageVersion": "0.9999994",
+      "path": "touchesColor/testTouchesColorStashedSprites",
+      "zip": "touchesColor/testTouchesColorStashedSprites.catrobat",
+      "zipSHA256": "7503777cd868f1af54a1a57e7b9738882935a1aa548d7a43cb0c682b60642851"
+    },
+    {
+      "codeXMLSHA256": "244e7e859465795ea2c2f7eb65d2cc57c0b2a978e0c4d235f7237b03d6c3c788",
+      "languageVersion": "0.9999994",
+      "path": "touchesColor/testTouchesColorSwitchLook",
+      "zip": "touchesColor/testTouchesColorSwitchLook.catrobat",
+      "zipSHA256": "70dc3995895d8551b1e5d7f2e2a21829e6bd916216a8c892fe4d97a9b021c58f"
+    }
+  ]
+}

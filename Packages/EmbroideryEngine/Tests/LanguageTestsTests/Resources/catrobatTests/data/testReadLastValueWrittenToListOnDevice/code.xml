@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.64</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Pixel 2 XL</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense></programLicense>
+    <programName>testReadLastValueWrittenToListOnDevice</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2712</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1440</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>first value written</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>e643a388-6dad-4ac1-bf33-7b618304e482</deviceListKey>
+                    <name>list on device</name>
+                  </userList>
+                </brick>
+                <brick type="WriteListOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <type>STRING</type>
+                      <value>last value written</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="WriteListOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <type>STRING</type>
+                      <value>value in list that is not written to device</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="ReadListFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="BroadcastBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>read last list value written to device</broadcastMessage>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <type>USER_LIST</type>
+                      <value>list on device</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>STRING</type>
+                      <value>last value written</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>read last list value written to device</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists>
+            <userList reference="../../scriptList/script/brickList/brick/userList"/>
+          </userLists>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+  </programVariableList>
+  <programListOfLists/>
+</program>

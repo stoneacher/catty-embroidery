@@ -112,6 +112,14 @@ let package = Package(
             name: "ProjectsTests",
             dependencies: ["Projects", "EditorCore", "ProgramModel", "Samples", "EmbroideryEngine"]
         ),
+        // The Catrobat Language Tests runner (language-test-runner brief). The 215
+        // `code.xml` fixtures are Catroid's verbatim; .copy keeps them byte-identical,
+        // since FixtureProvenanceTests checks each one against its SHA-256 in the
+        // manifest, and keeps the `<category>/<test>/code.xml` tree intact.
+        .testTarget(
+            name: "LanguageTestsTests",
+            resources: [.copy("Resources")]
+        ),
         .testTarget(
             name: "StagePreviewTests",
             dependencies: [

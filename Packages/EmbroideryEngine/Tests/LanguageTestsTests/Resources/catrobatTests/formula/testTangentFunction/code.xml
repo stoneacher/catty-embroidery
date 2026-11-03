@@ -1,0 +1,635 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.69</applicationVersion>
+    <catrobatLanguageVersion>0.99999</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>AOSP on IA Emulator</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>testTangentFunction</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1794</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </leftChild>
+                        <type>FUNCTION</type>
+                        <value>TAN</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>0</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>6328cb90-4be6-485e-8d0b-6ee61450f6a1</deviceValueKey>
+                        <name>tangent of zero</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>45</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>0.999</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>45</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>1.001</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>6ff5336a-4ce6-493e-a0f3-9276ae0c67be</deviceValueKey>
+                        <name>tangent of 45</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>45</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>0.999</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>45</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>1.001</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>551cc307-c65b-4902-ad2d-fb7f475bf6b7</deviceValueKey>
+                        <name>tangent of -45</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>135</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>0.999</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>135</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>1.001</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>7f8f0cff-985b-47e3-b114-4f63bbef0740</deviceValueKey>
+                        <name>tangent of 135</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>135</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>0.999</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>135</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>1.001</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>cfa431a3-2e44-4e82-a262-91fbc2b2da14</deviceValueKey>
+                        <name>tangent of -135</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>180</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>0.001</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>180</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>0.001</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </rightChild>
+                          <type>BRACKET</type>
+                          <value></value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>d6a117bb-a96f-4b60-9809-949eb9682756</deviceValueKey>
+                        <name>tangent of 180</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>180</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>0.001</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>180</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>0.001</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </rightChild>
+                          <type>BRACKET</type>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>abf4358a-acee-4a8a-9b01-19bc23367224</deviceValueKey>
+                        <name>tangent of -180</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>225</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>0.999</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>NUMBER</type>
+                            <value>225</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>1.001</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>d46673b5-0f79-4a00-bab2-9c2594be8367</deviceValueKey>
+                        <name>tangent of 225</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>225</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>0.999</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>225</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>MINUS</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>TAN</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>1.001</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>79ece4ad-3e1b-4aab-8cbb-e763b22553de</deviceValueKey>
+                        <name>tangent of -225</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <leftChild>
+                              <leftChild>
+                                <leftChild>
+                                  <leftChild>
+                                    <leftChild>
+                                      <type>USER_VARIABLE</type>
+                                      <value>tangent of zero</value>
+                                    </leftChild>
+                                    <rightChild>
+                                      <type>USER_VARIABLE</type>
+                                      <value>tangent of 45</value>
+                                    </rightChild>
+                                    <type>OPERATOR</type>
+                                    <value>LOGICAL_AND</value>
+                                  </leftChild>
+                                  <rightChild>
+                                    <type>USER_VARIABLE</type>
+                                    <value>tangent of -45</value>
+                                  </rightChild>
+                                  <type>OPERATOR</type>
+                                  <value>LOGICAL_AND</value>
+                                </leftChild>
+                                <rightChild>
+                                  <type>USER_VARIABLE</type>
+                                  <value>tangent of 135</value>
+                                </rightChild>
+                                <type>OPERATOR</type>
+                                <value>LOGICAL_AND</value>
+                              </leftChild>
+                              <rightChild>
+                                <type>USER_VARIABLE</type>
+                                <value>tangent of -135</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>LOGICAL_AND</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>USER_VARIABLE</type>
+                              <value>tangent of 180</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>LOGICAL_AND</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>USER_VARIABLE</type>
+                            <value>tangent of -180</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>USER_VARIABLE</type>
+                          <value>tangent of 225</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>tangent of -225</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[6]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[3]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[7]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[4]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[5]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[8]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[9]/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+</program>

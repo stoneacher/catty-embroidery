@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.1.2</applicationVersion>
+    <catrobatLanguageVersion>1.12</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Android SDK built for x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense></programLicense>
+    <programName>testDeleteAllElementsFromList</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2148</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="RepeatBrick">
+                  <brickId>0ad7891f-ca20-4112-9ec5-ea2d5397cb46</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIMES_TO_REPEAT">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                  <loopBricks>
+                    <brick type="AddItemToUserListBrick">
+                      <brickId>a73b9915-af2a-486c-8c07-e43976049fc9</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="LIST_ADD_ITEM">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userList>
+                        <deviceListKey>b270fe48-6803-4ff0-aeb7-2917de858ea3</deviceListKey>
+                        <initialIndex>0</initialIndex>
+                        <name>List</name>
+                      </userList>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>b3613aeb-9398-4ca5-8221-aa874b5c0e76</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_LIST</type>
+                      <value>List</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>111</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ClearUserListBrick">
+                  <brickId>dad03618-6c81-4a55-8d42-51526517870e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/loopBricks/brick/userList"/>
+                </brick>
+                <brick type="AssertUserListsBrick">
+                  <brickId>4209eead-fb1d-44e4-a444-659c187fd243</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userDataList>
+                    <userData category="ASSERT_LISTS_EXPECTED">
+                      <deviceListKey>0de193ac-5626-4c23-b2ea-91282cdfc020</deviceListKey>
+                      <initialIndex>1</initialIndex>
+                      <name>ExpectedList</name>
+                    </userData>
+                    <userData category="ASSERT_LISTS_ACTUAL" reference="../../../brick/loopBricks/brick/userList"/>
+                  </userDataList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>c053928b-8f45-48c7-ad39-f46c0801d7a3</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>6a17e1a3-98f1-4337-a31f-3e0a1ec7e297</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/loopBricks/brick/userList"/>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[4]/userDataList/userData"/>
+  </programListOfLists>
+  <programMultiplayerVariableList/>
+</program>

@@ -1,0 +1,887 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.75</applicationVersion>
+    <catrobatLanguageVersion>0.999999999</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description>Test case for https://jira.catrob.at/browse/CATROID-760</description>
+    <deviceName>SM-G988B</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag>en-US</listeningLanguageTag>
+    <mediaLicense>https://developer.catrobat.org/ccbysa_v4</mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense>https://developer.catrobat.org/agpl_v3</programLicense>
+    <programName>testLoopDelay</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2200</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url>/pocketcode/project/12c02755-79e5-11eb-a92d-005056a36f47</url>
+    <userHandle>hej-wickie-hej</userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="NoteBrick">
+                  <brickId>314786d8-59e6-48fb-8ece-457060c2d0fc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>https://jira.catrob.at/browse/CATROID-760</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>770a40c4-ab2e-49cc-877a-033e085cd4e9</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0.5</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>469b4d0a-e9ea-4a92-859c-0bd6b7f5c0ea</deviceValueKey>
+                        <name>loop test duration</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WaitBrick">
+                  <brickId>7687c0e2-90e5-455b-909a-7d6c84d85a01</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIME_TO_WAIT_IN_SECONDS">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <brickId>9bc90988-c80c-414a-8ae7-73cd136d7f9e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>measure broadcast loop speed (hardware dependent)!</broadcastMessage>
+                </brick>
+                <brick type="BroadcastBrick">
+                  <brickId>09b300fe-c89c-464c-b2d3-93af24124936</brickId>
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>start test loops!</broadcastMessage>
+                </brick>
+                <brick type="WaitBrick">
+                  <brickId>26d99769-fbc6-4c0d-8ed8-3c3ccc6c2ca7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIME_TO_WAIT_IN_SECONDS">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>loop test duration</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="StopScriptBrick">
+                  <brickId>7d618ad2-b144-4887-ad96-6fdc2e3a696a</brickId>
+                  <commentedOut>false</commentedOut>
+                  <spinnerSelection>2</spinnerSelection>
+                </brick>
+                <brick type="RunningStitchBrick">
+                  <brickId>713a822d-4726-4370-bf13-53ccd2cd8b1d</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="EMBROIDERY_LENGTH">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="BroadcastBrick">
+                  <brickId>72aa724d-55d1-4eb0-84c8-14342636f6f1</brickId>
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>start stitching loop!</broadcastMessage>
+                </brick>
+                <brick type="WaitBrick">
+                  <brickId>190d997f-ad46-404a-992d-a4f43e2f2fbd</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIME_TO_WAIT_IN_SECONDS">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>loop test duration</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="StopScriptBrick">
+                  <brickId>372d023c-1224-4211-9eab-9e6e4ed85498</brickId>
+                  <commentedOut>false</commentedOut>
+                  <spinnerSelection>2</spinnerSelection>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>80f363db-ffe7-4211-879e-0e890cbd4d88</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>broadcast loop speed</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <type>USER_VARIABLE</type>
+                            <value>loop test duration</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>0.02</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>DIVIDE</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>15</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>MULT</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>GREATER_THAN</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>97f79df5-4c69-4d0c-aef7-5a97a2512611</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>slow counter 1</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>USER_VARIABLE</type>
+                              <value>loop test duration</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>0.02</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>DIVIDE</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>0.8</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MULT</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>slow counter 1</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>USER_VARIABLE</type>
+                              <value>loop test duration</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>0.02</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>DIVIDE</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>1.2</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MULT</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_OR_EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>17a63279-90c6-4c77-8573-eac1983f1d93</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>fast counter 1</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>broadcast loop speed</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>GREATER_OR_EQUAL</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>12c2b9c2-5fc7-4428-a884-70f6da75d2cc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>fast counter 2</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>broadcast loop speed</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>GREATER_OR_EQUAL</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>8a3267d8-8fe1-416d-a554-7cb6b6df95f7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>fast counter 3</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>broadcast loop speed</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0.75</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>MULT</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>GREATER_OR_EQUAL</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>14400cdd-15c4-4970-9990-3a3b69e8bb63</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>fast counter 4</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>broadcast loop speed</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>GREATER_OR_EQUAL</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>b28d3de2-56f5-469c-b640-41e98119e9fa</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>fast counter 5</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>broadcast loop speed</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>2</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>DIVIDE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>GREATER_OR_EQUAL</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>a30dc12f-cc49-448a-83bd-923a9ab60a81</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>32d81505-6097-472a-a806-6a096d7b9a60</scriptId>
+            </script>
+            <script type="BroadcastScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ForeverBrick">
+                  <brickId>1ab75058-77b9-4270-9e7c-188611ec9677</brickId>
+                  <commentedOut>false</commentedOut>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>4145b75b-a475-4826-b4c4-b28e170be11a</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <deviceValueKey>2efec85f-4bf9-4609-ac83-088e7c7afe9e</deviceValueKey>
+                            <name>slow counter 1</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                    </brick>
+                    <brick type="IfLogicBeginBrick">
+                      <brickId>55f9fa59-9742-46bb-82fb-df9cfd53d31d</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="IF_CONDITION">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>FALSE</value>
+                        </formula>
+                      </formulaList>
+                      <elseBranchBricks>
+                        <brick type="IfThenLogicBeginBrick">
+                          <brickId>1ae16f58-fd2c-4018-b408-66ea4d47ad2d</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="IF_CONDITION">
+                              <additionalChildren/>
+                              <type>FUNCTION</type>
+                              <value>TRUE</value>
+                            </formula>
+                          </formulaList>
+                          <ifBranchBricks>
+                            <brick type="SetXBrick">
+                              <brickId>a4f525b3-e7e2-4155-920c-9a0923b48759</brickId>
+                              <commentedOut>false</commentedOut>
+                              <formulaList>
+                                <formula category="X_POSITION">
+                                  <additionalChildren/>
+                                  <type>NUMBER</type>
+                                  <value>100</value>
+                                </formula>
+                              </formulaList>
+                            </brick>
+                          </ifBranchBricks>
+                        </brick>
+                      </elseBranchBricks>
+                      <ifBranchBricks/>
+                    </brick>
+                  </loopBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>fabe9ac3-8591-4213-81fb-563c7b34d649</scriptId>
+              <receivedMessage>start test loops!</receivedMessage>
+            </script>
+            <script type="BroadcastScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ForeverBrick">
+                  <brickId>e5ced525-2b3f-497b-8aa6-e3cf26435457</brickId>
+                  <commentedOut>false</commentedOut>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>32cd1e04-b981-459c-82ed-fc464f091ee3</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <deviceValueKey>58ff7083-cee9-4994-b283-780c6a2276de</deviceValueKey>
+                            <name>fast counter 1</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                    </brick>
+                  </loopBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>5a14c69c-7369-41e6-8208-1373ffa8d9a8</scriptId>
+              <receivedMessage>start test loops!</receivedMessage>
+            </script>
+            <script type="BroadcastScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ForeverBrick">
+                  <brickId>e90eec2b-5b9a-4afc-8aba-cb6df437b074</brickId>
+                  <commentedOut>false</commentedOut>
+                  <loopBricks>
+                    <brick type="SetXBrick">
+                      <brickId>e0d6cf08-9ce2-48f4-a4ef-a75e176bb3f3</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="X_POSITION">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>100</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="RepeatBrick">
+                      <brickId>69718b01-b627-4901-ac6c-807fe77586d0</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="TIMES_TO_REPEAT">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>10000</value>
+                        </formula>
+                      </formulaList>
+                      <loopBricks>
+                        <brick type="RepeatBrick">
+                          <brickId>6987b129-c37b-42c8-a6d9-75eb105cd31c</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="TIMES_TO_REPEAT">
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>10</value>
+                            </formula>
+                          </formulaList>
+                          <loopBricks>
+                            <brick type="IfThenLogicBeginBrick">
+                              <brickId>29cea47e-08aa-420f-9772-b9ed1c2d3077</brickId>
+                              <commentedOut>false</commentedOut>
+                              <formulaList>
+                                <formula category="IF_CONDITION">
+                                  <additionalChildren/>
+                                  <type>FUNCTION</type>
+                                  <value>TRUE</value>
+                                </formula>
+                              </formulaList>
+                              <ifBranchBricks>
+                                <brick type="ChangeVariableBrick">
+                                  <brickId>c2972437-d800-4322-8392-55f04b93a1ee</brickId>
+                                  <commentedOut>false</commentedOut>
+                                  <formulaList>
+                                    <formula category="VARIABLE_CHANGE">
+                                      <additionalChildren/>
+                                      <type>NUMBER</type>
+                                      <value>1</value>
+                                    </formula>
+                                  </formulaList>
+                                  <userVariable type="UserVariable" serialization="custom">
+                                    <userVariable>
+                                      <default>
+                                        <deviceValueKey>8c29f62a-8b10-4216-b1dd-640ba81599e1</deviceValueKey>
+                                        <name>fast counter 2</name>
+                                      </default>
+                                    </userVariable>
+                                  </userVariable>
+                                </brick>
+                              </ifBranchBricks>
+                            </brick>
+                          </loopBricks>
+                        </brick>
+                      </loopBricks>
+                    </brick>
+                  </loopBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>5a884e9e-2796-4d3f-8060-1419bf6cfe03</scriptId>
+              <receivedMessage>start test loops!</receivedMessage>
+            </script>
+            <script type="BroadcastScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ForeverBrick">
+                  <brickId>7d04e78f-d710-4d4e-a15c-3d43c2ba1337</brickId>
+                  <commentedOut>false</commentedOut>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>54f3462f-3479-471e-b64a-cfed1358c7da</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <deviceValueKey>1f5325e3-4e68-4ba9-85b1-d1027e84cbdf</deviceValueKey>
+                            <name>fast counter 3</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                    </brick>
+                    <brick type="BroadcastBrick">
+                      <brickId>699d0823-8911-4cfd-b137-7d29728b1a5c</brickId>
+                      <commentedOut>false</commentedOut>
+                      <broadcastMessage>move!</broadcastMessage>
+                    </brick>
+                  </loopBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>c33e4c70-95a4-4f74-812e-066e2a455280</scriptId>
+              <receivedMessage>start test loops!</receivedMessage>
+            </script>
+            <script type="BroadcastScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="SetXBrick">
+                  <brickId>8e5dadc3-e766-46b5-9f82-2031d972b36d</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="X_POSITION">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>100</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>9c9d4210-1a70-4ed1-ae0f-b4f95666fc14</scriptId>
+              <receivedMessage>move!</receivedMessage>
+            </script>
+            <script type="BroadcastScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ForeverBrick">
+                  <brickId>aee7de38-2ce8-428f-b60d-c0cd50070e6e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>e8d06ae6-ab57-410e-9d19-97627d6d3cb0</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <deviceValueKey>54b9ada2-b4c6-4af7-b120-f37b697f9348</deviceValueKey>
+                            <name>fast counter 4</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                    </brick>
+                    <brick type="SetXBrick">
+                      <brickId>ec107084-1080-438d-9f3b-05a5f378ea0b</brickId>
+                      <commentedOut>true</commentedOut>
+                      <formulaList>
+                        <formula category="X_POSITION">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>100</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </loopBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>b7214ad7-1925-4072-abc1-2046ad99b005</scriptId>
+              <receivedMessage>start test loops!</receivedMessage>
+            </script>
+            <script type="BroadcastScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ForeverBrick">
+                  <brickId>01ee6d97-a699-47d3-8e02-3773d673cb7b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>12c5fe8c-1da8-4ffb-aff1-6b0ba46f8bb5</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <deviceValueKey>38ad8163-4062-4197-b41c-dbe65379cd1b</deviceValueKey>
+                            <name>fast counter 5</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                    </brick>
+                    <brick type="SetXBrick">
+                      <brickId>1bd73f1c-2c55-48f9-a85a-c3ac4865bf21</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="X_POSITION">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>100</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </loopBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>d82b5b46-b879-4ab7-a41b-a0b96c73811b</scriptId>
+              <receivedMessage>start stitching loop!</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="hardware speed calibration">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <brickId>bce1ed0a-7288-43b6-b13f-17c4b9b0df03</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>de1aba39-8b3c-49a8-87c4-9e1cd1739d40</deviceValueKey>
+                        <name>continue broadcast loop</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="BroadcastBrick">
+                  <brickId>a462b3da-9729-4f11-ad19-fb14a3b52092</brickId>
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>loop via broadcast!</broadcastMessage>
+                </brick>
+                <brick type="WaitBrick">
+                  <brickId>a1377523-8aac-40f0-96a1-cf09840c672b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIME_TO_WAIT_IN_SECONDS">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>loop test duration</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>9e374eb6-9c3d-4333-b84a-c5c8d840aa39</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>FALSE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>b2fee383-abad-4359-b222-930334b366ce</scriptId>
+              <receivedMessage>measure broadcast loop speed (hardware dependent)!</receivedMessage>
+            </script>
+            <script type="BroadcastScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <brickId>0eaedd47-c2f3-4c91-b864-9f8c6d7a331e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>2935dcd0-1e74-4b6e-a364-819d26d23e18</deviceValueKey>
+                        <name>broadcast loop speed</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="IfThenLogicBeginBrick">
+                  <brickId>b85ed01f-1d00-4c8f-a5c7-529884a444bb</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>continue broadcast loop</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="BroadcastBrick">
+                      <brickId>eeaf02b9-62b8-43e3-a66b-061008842860</brickId>
+                      <commentedOut>false</commentedOut>
+                      <broadcastMessage>loop via broadcast!</broadcastMessage>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>ef2f10c9-201f-4fc2-988b-7d07c39ea899</scriptId>
+              <receivedMessage>loop via broadcast!</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick/userVariable"/>
+          </userVariables>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[3]/brickList/brick/loopBricks/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[4]/brickList/brick/loopBricks/brick[2]/loopBricks/brick/loopBricks/brick/ifBranchBricks/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[2]/brickList/brick/loopBricks/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[5]/brickList/brick/loopBricks/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[7]/brickList/brick/loopBricks/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[2]/scriptList/script[2]/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[8]/brickList/brick/loopBricks/brick/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

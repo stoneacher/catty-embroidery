@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.1.2</applicationVersion>
+    <catrobatLanguageVersion>1.12</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>sdk_gphone64_x86_64</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>34</platformVersion>
+    <programLicense></programLicense>
+    <programName>testForEachInBrick</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>432</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>240</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <brickId>be5083ff-ee43-417d-bf7c-a268f90e183e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>1</initialIndex>
+                        <deviceValueKey>7ef60ff0-463b-45cb-aade-2843e204e78c</deviceValueKey>
+                        <name>current_index</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="ForItemInUserListBrick">
+                  <brickId>311e1c16-5c8a-4ca4-831f-32f7962a58f2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userDataList>
+                    <userData category="FOR_ITEM_IN_USERLIST_VARIABLE" type="UserVariable" serialization="custom">
+                      <userVariable>
+                        <default>
+                          <initialIndex>0</initialIndex>
+                          <deviceValueKey>2c3e9229-855e-42c9-9b54-838c93128188</deviceValueKey>
+                          <name>current_element</name>
+                        </default>
+                      </userVariable>
+                    </userData>
+                    <userData category="FOR_ITEM_IN_USERLIST_LIST">
+                      <deviceListKey>f4a99b46-8e28-4ff6-80b4-024286968a1e</deviceListKey>
+                      <initialIndex>0</initialIndex>
+                      <name>List</name>
+                    </userData>
+                  </userDataList>
+                  <loopBricks>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>ab97cf0b-c958-463e-b182-b5f9ab858fd7</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>58f371f4-2a1c-4798-900d-14d9cb1682e0</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>b51b1e36-5b9f-4d4f-b387-4fdcdd1ec19e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[2]/userDataList/userData[2]"/>
+                </brick>
+                <brick type="ForItemInUserListBrick">
+                  <brickId>069dc175-67dc-455e-932c-ee9726bdf5a8</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userDataList>
+                    <userData category="FOR_ITEM_IN_USERLIST_VARIABLE" reference="../../../brick[2]/userDataList/userData"/>
+                    <userData category="FOR_ITEM_IN_USERLIST_LIST" reference="../../../brick[2]/userDataList/userData[2]"/>
+                  </userDataList>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>7be5a8a1-2826-47cc-ba7a-7e4ee20ea402</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1.0</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../brick/userVariable"/>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>1383e00c-1e1d-4d4f-9672-6b401fcb01f7</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <type>USER_VARIABLE</type>
+                            <value>current_index</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>USER_LIST</type>
+                            <value>List</value>
+                          </rightChild>
+                          <type>FUNCTION</type>
+                          <value>LIST_ITEM</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>current_index</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>6357031b-70f0-452d-8dd2-ad61d90d591b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>current_index</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>189bd104-d8c7-44c7-a611-4b3568ab9ca6</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>current_element</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>8c03c60e-78ea-46cb-8937-9cb78cd07c76</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>7b799b52-9274-4eb5-95f9-21982b68f3ae</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[2]/userDataList/userData[2]"/>
+                </brick>
+                <brick type="ForItemInUserListBrick">
+                  <brickId>b17c0089-d648-40e4-bff2-ca9b1c90e710</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userDataList>
+                    <userData category="FOR_ITEM_IN_USERLIST_VARIABLE" reference="../../../brick[2]/userDataList/userData"/>
+                    <userData category="FOR_ITEM_IN_USERLIST_LIST" reference="../../../brick[2]/userDataList/userData[2]"/>
+                  </userDataList>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>4202519d-ecf7-4593-9414-a99ed84f2020</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1.0</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../brick/userVariable"/>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>8ba5f4c4-b0a2-4c6f-adb4-c68bdde244ed</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <type>USER_VARIABLE</type>
+                            <value>current_index</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>USER_LIST</type>
+                            <value>List</value>
+                          </rightChild>
+                          <type>FUNCTION</type>
+                          <value>LIST_ITEM</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>current_index</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>76a41519-0b8c-4581-ae19-81deac5a5256</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>current_element</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>current_index</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>12229118-e170-465c-97ff-62314675af98</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>current_index</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>5a9e28b5-4cd5-48b4-a882-d339c7792065</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>44b4bd21-8543-448d-b5a9-a3c9bafc19d0</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[2]/userDataList/userData[2]"/>
+                </brick>
+                <brick type="ForItemInUserListBrick">
+                  <brickId>87aa07b7-bdf7-4c8e-bbfe-eed8016be243</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userDataList>
+                    <userData category="FOR_ITEM_IN_USERLIST_VARIABLE" reference="../../../brick[2]/userDataList/userData"/>
+                    <userData category="FOR_ITEM_IN_USERLIST_LIST" reference="../../../brick[2]/userDataList/userData[2]"/>
+                  </userDataList>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>c181de16-8a80-4afd-9fce-687b6c935282</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1.0</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../brick/userVariable"/>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>efc3a1f7-0794-4386-8f5a-d410d7020d86</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <type>USER_VARIABLE</type>
+                            <value>current_index</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>USER_LIST</type>
+                            <value>List</value>
+                          </rightChild>
+                          <type>FUNCTION</type>
+                          <value>LIST_ITEM</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>current_index</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>883d349e-2b6e-4521-a2ba-b0adb4fd09f7</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>current_element</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>current_index</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>8e4e0d27-c0e1-4777-95a1-e7377b88b6c2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>current_index</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>82af851c-1a4e-432a-95fe-cafe60a81fae</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>053efc98-946b-4136-8e66-541512912466</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userDataList/userData"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userVariable"/>
+  </programVariableList>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userDataList/userData[2]"/>
+  </programListOfLists>
+  <programMultiplayerVariableList/>
+</program>
