@@ -4374,3 +4374,10 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - `swift-code-reviewer`: three slice passes and one whole-PR pass.
   - None was rejected.
   - Codex's two Mediums and one High were all WaitTillIdle scheduling layers. The Low was the third copy of a claim already corrected in D8, which shows again how a corrected claim survives in its other copies (ADR-032 invariant 3).
+
+## 2026-11-03 — Language-test runner closed: Done, PRs #86 and #87
+
+- **Sebastian merged #86 and #87.** The brief is marked Done with every acceptance criterion ticked against named tests. The last criterion, "no existing engine or app test changes, and `BrickKind`, `ProgramDocument` and the sample JSONs are byte-identical", was checked as a git diff over the feature's whole span (`d99d446..61566d7`), and all of it came back empty.
+- **The ADRs the brief planned were only written at close-out:** ADR-051 (language tests: import, harness, ratchet) and ADR-042's eight-target amendment. The brief listed both from day one ("New ADR: ADR-051"), but no slice was the natural place to write them, and every slice entry deferred to the brief. `/finish`'s DECISIONS step is what caught it. A planned ADR needs an owner slice, or it waits until close-out.
+- **Result, for the thesis:** 32 of 215 Catrobat language tests pass on this engine, with 4 pinned expected failures and 179 refused (each with exact, pinned reasons). The feasibility census made at planning (34 runnable, 30 predicted to pass) was right on imports (36, after 2 refused for strings and 4 added) and pessimistic on passes (32): the unpredicted US-333 cost 2, the predicted ones 2.
+- **Cleanup:** all reviewer worktrees and their branches removed after each merge. 20 stale agent branches from earlier sessions were deleted first, each checked for unique commits beforehand; Sebastian then cleared 42 merged local branches with `gbda`.
