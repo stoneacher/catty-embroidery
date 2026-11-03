@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.1.2</applicationVersion>
+    <catrobatLanguageVersion>1.12</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Android SDK built for x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>30</platformVersion>
+    <programLicense></programLicense>
+    <programName>testForEachBrick</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2072</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="smile">
+          <lookList>
+            <look fileName="My actor or object.png" name="smile">
+              <isWebRequest>false</isWebRequest>
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="RepeatBrick">
+                  <brickId>aac894d5-a88d-4d0f-8b47-9bc1d5b9db89</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIMES_TO_REPEAT">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                  <loopBricks>
+                    <brick type="AddItemToUserListBrick">
+                      <brickId>4229b0c4-a5b9-4066-9d5c-580c1a3ecccc</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="LIST_ADD_ITEM">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1.0</value>
+                        </formula>
+                      </formulaList>
+                      <userList>
+                        <deviceListKey>42c09dda-a3b8-4b36-83e9-c2a9ad1df349</deviceListKey>
+                        <initialIndex>0</initialIndex>
+                        <name>List</name>
+                      </userList>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="ForItemInUserListBrick">
+                  <brickId>d2ceddcb-c32c-4b79-b250-2419da34555b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userDataList>
+                    <userData category="FOR_ITEM_IN_USERLIST_VARIABLE" type="UserVariable" serialization="custom">
+                      <userVariable>
+                        <default>
+                          <initialIndex>0</initialIndex>
+                          <deviceValueKey>858de0a0-c8c1-430b-9371-d1808e470a3d</deviceValueKey>
+                          <name>Element</name>
+                        </default>
+                      </userVariable>
+                    </userData>
+                    <userData category="FOR_ITEM_IN_USERLIST_LIST" reference="../../../brick/loopBricks/brick/userList"/>
+                  </userDataList>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>a887018f-517e-4e2d-b24a-123976b2f50e</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1.0</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <initialIndex>-1</initialIndex>
+                            <deviceValueKey>e1cce259-69fe-4f38-94e6-76b1f2adff21</deviceValueKey>
+                            <name>Counter</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>45595124-5924-4ac0-b3ec-861d6d23b891</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>Counter</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>2c03e6f0-97bc-4572-9d94-d25e9a5a2627</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>6d32a171-e6b0-4718-afb6-bfebbb13b6a8</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object[2]/scriptList/script/brickList/brick[2]/loopBricks/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[2]/scriptList/script/brickList/brick[2]/userDataList/userData"/>
+  </programVariableList>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object[2]/scriptList/script/brickList/brick/loopBricks/brick/userList"/>
+  </programListOfLists>
+  <programMultiplayerVariableList/>
+</program>

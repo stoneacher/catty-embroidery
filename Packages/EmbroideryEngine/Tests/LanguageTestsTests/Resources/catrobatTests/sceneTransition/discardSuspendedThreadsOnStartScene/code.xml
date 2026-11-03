@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.54</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>BLN-L21</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>24</platformVersion>
+    <programLicense></programLicense>
+    <programName>discardSuspendedThreadsOnStartScene</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1812</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Setup</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>8bbbbcab-36d0-4e9d-8fa1-eb1afaf1611a</deviceValueKey>
+                        <name>a</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>0d183e3e-ad33-48f0-8f3c-e9ad32576784</deviceValueKey>
+                        <name>b</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SceneStartBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneToStart>Szene 1</sceneToStart>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+    <scene>
+      <name>Szene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="SceneStartBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneToStart>Szene 2</sceneToStart>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../../../scene/objectList/object/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="StartScript">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../../../../../scene/objectList/object/scriptList/script/brickList/brick/userVariable"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+    <scene>
+      <name>Szene 2</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList>
+            <sound fileName="recording" name="recording"/>
+            <sound fileName="recording_#0" name="recording (1)"/>
+          </soundList>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="IfLogicBeginBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>b</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>0</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <elseBranchBricks>
+                    <brick type="AssertEqualsBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <type>USER_VARIABLE</type>
+                          <value>a</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="FinishStageBrick">
+                      <commentedOut>false</commentedOut>
+                    </brick>
+                  </elseBranchBricks>
+                  <ifBranchBricks>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <type>NUMBER</type>
+                          <value>1.0</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../../../../../scene/objectList/object/scriptList/script/brickList/brick[2]/userVariable"/>
+                    </brick>
+                    <brick type="SceneStartBrick">
+                      <commentedOut>false</commentedOut>
+                      <sceneToStart>Szene 1</sceneToStart>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+</program>

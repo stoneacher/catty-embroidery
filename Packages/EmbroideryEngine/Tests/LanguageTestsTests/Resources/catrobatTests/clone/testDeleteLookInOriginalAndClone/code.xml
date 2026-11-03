@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.0.3</applicationVersion>
+    <catrobatLanguageVersion>1.05</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>BE2029</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense></programLicense>
+    <programName>testDeleteLookInOriginalAndClone</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2165</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene (1)</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="WaitTillIdleBrick">
+                  <brickId>546a5d6f-dc49-4fb9-b918-d6beabb7a3c1</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>cba9bbb5-3bf8-4da1-b7ae-1ed5969ca5b6</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>675fc570-f528-48f7-a3f7-947d9bb47dc8</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="Penguin">
+          <lookList>
+            <look fileName="Penguin-5_#1.png" name="Copy of look (2)">
+              <isWebRequest>false</isWebRequest>
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="CopyLookBrick">
+                  <brickId>37e68936-a55f-4354-821d-5df5976ef4cc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LOOK_COPY">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>Copy of look</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>6f6a05bb-9917-4447-bdd6-24b3f7d05e27</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_NUMBER_OF_LOOKS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="CloneBrick">
+                  <brickId>1b934244-ab01-4079-a58e-96197e02b6ba</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="DeleteLookBrick">
+                  <brickId>789e8241-8683-4166-b934-33f42becc87d</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>fffd3e30-6d8e-4934-92f3-d8b7cf6302b7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_NUMBER_OF_LOOKS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>a64411fd-3f12-4934-ab87-3fb215f42688</scriptId>
+            </script>
+            <script type="WhenClonedScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="AssertEqualsBrick">
+                  <brickId>4f08b62e-41d1-4fbe-9cd1-48d6f05bb208</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_NUMBER_OF_LOOKS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="DeleteLookBrick">
+                  <brickId>919b5719-3d7b-404e-87b1-e0291c791c0f</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>f88b3bec-fba3-4b19-b065-f500a86ea228</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_NUMBER_OF_LOOKS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>e2c02ddd-7a4b-4cc5-a5b0-5d07dab6c042</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

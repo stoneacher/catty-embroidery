@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code BETA</applicationName>
+    <applicationVersion>1.0.0</applicationVersion>
+    <catrobatLanguageVersion>1.01</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>SM-N950F</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>testInputValuesInUserDefinedBricks</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1480</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene (1)</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="NoteBrick">
+                  <brickId>253ec3b8-d48f-4f13-b51c-21a75bcd1d06</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>Regression test</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="OpenUrlBrick">
+                  <brickId>b881480e-9d65-4ede-b268-6e5d46ac97a2</brickId>
+                  <commentedOut>true</commentedOut>
+                  <formulaList>
+                    <formula category="OPEN_URL">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>https://jira.catrob.at/browse/CATROID-1012</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="UserDefinedBrick">
+                  <brickId>1fa620a9-005b-450e-bdbe-b3825611ede3</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula input="input">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <isCallingBrick>true</isCallingBrick>
+                  <userDefinedBrickDataList>
+                    <userDefinedBrickInput>
+                      <type>INPUT</type>
+                      <input>
+                        <input>input</input>
+                      </input>
+                    </userDefinedBrickInput>
+                  </userDefinedBrickDataList>
+                  <userDefinedBrickID>9b79bf28-f063-417f-84b9-b8bb0f3b9b50</userDefinedBrickID>
+                </brick>
+                <brick type="UserDefinedBrick">
+                  <brickId>920c59a9-2ca3-4a3f-9ee2-3bd44205e553</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula input="input">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <isCallingBrick>true</isCallingBrick>
+                  <userDefinedBrickDataList reference="../../brick[3]/userDefinedBrickDataList"/>
+                  <userDefinedBrickID>9b79bf28-f063-417f-84b9-b8bb0f3b9b50</userDefinedBrickID>
+                </brick>
+                <brick type="UserDefinedBrick">
+                  <brickId>69258f3f-3c08-41e1-9ddd-4a9ae19ca754</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula input="input">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                  <isCallingBrick>true</isCallingBrick>
+                  <userDefinedBrickDataList reference="../../brick[3]/userDefinedBrickDataList"/>
+                  <userDefinedBrickID>9b79bf28-f063-417f-84b9-b8bb0f3b9b50</userDefinedBrickID>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>1466b3e9-7bb2-4f4f-ac5d-a37a21238d54</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>6</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>counter</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>e10d5de8-bbad-4f69-878b-70bc25e17d31</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>2cca009a-1482-4a3a-8c30-dc2a1814cca0</scriptId>
+            </script>
+            <script type="UserDefinedScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <brickId>9f81a590-44a4-4130-8848-3f0c739c0d6d</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <additionalChildren/>
+                      <type>USER_DEFINED_BRICK_INPUT</type>
+                      <value>input</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>0aa11e8e-8877-438c-a239-a2c25cc2b821</deviceValueKey>
+                        <name>counter</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>8d4a9930-f69a-4540-a130-34b9638c5de0</scriptId>
+              <userDefinedBrickID>9b79bf28-f063-417f-84b9-b8bb0f3b9b50</userDefinedBrickID>
+              <userDefinedBrickInputs>
+                <userVariable type="UserVariable" serialization="custom">
+                  <userVariable>
+                    <default>
+                      <deviceValueKey>66d2c476-50f8-4a6b-a8db-79f83bde7337</deviceValueKey>
+                      <name>input</name>
+                    </default>
+                  </userVariable>
+                </userVariable>
+              </userDefinedBrickInputs>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList>
+            <brick type="UserDefinedBrick">
+              <brickId>76b72c80-c65a-42fd-9095-9c11500b2597</brickId>
+              <commentedOut>false</commentedOut>
+              <formulaList/>
+              <isCallingBrick>false</isCallingBrick>
+              <userDefinedBrickDataList reference="../../../scriptList/script/brickList/brick[3]/userDefinedBrickDataList"/>
+              <userDefinedBrickID>9b79bf28-f063-417f-84b9-b8bb0f3b9b50</userDefinedBrickID>
+            </brick>
+          </userDefinedBrickList>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[2]/brickList/brick/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

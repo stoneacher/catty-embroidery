@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code for Arduino</applicationName>
+    <applicationVersion>0.9.68</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>AOSP on IA Emulator</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>testMaximumOfFunction</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1794</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>NUMBER</type>
+                          <value>500</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>499</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>MAX</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>500</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>9e984300-9df5-4b96-bf58-d508f4d472be</deviceValueKey>
+                        <name>positive first bigger</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>NUMBER</type>
+                          <value>499</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>500</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>MAX</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>500</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>56818c12-d163-461a-a7a3-b5b3a9c100d5</deviceValueKey>
+                        <name>positive second bigger</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>1</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>MAX</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>0</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>1049629c-17cd-458d-ae24-01b7cae9bc54</deviceValueKey>
+                        <name>first negative</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>1</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>MAX</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>0</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>85faafd6-d4a0-48dc-bc1d-07938efe2e58</deviceValueKey>
+                        <name>second negative</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>5</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </leftChild>
+                        <rightChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>6</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>MAX</value>
+                      </leftChild>
+                      <rightChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>5</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>MINUS</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>385dce7a-119e-4d36-aad4-587608370a73</deviceValueKey>
+                        <name>both negative</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>NUMBER</type>
+                          <value>4.9</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>5</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>MAX</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>5</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>191497ca-bce5-49f9-bdb3-d43fc11a72c3</deviceValueKey>
+                        <name>decimal number</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <type>NUMBER</type>
+                          <value>4.9</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>4</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>MAX</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>4.9</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>d0d2e683-d6e2-4f7c-9e69-56c57fde87cf</deviceValueKey>
+                        <name>decimal number is bigger</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <leftChild>
+                              <leftChild>
+                                <leftChild>
+                                  <type>USER_VARIABLE</type>
+                                  <value>positive first bigger</value>
+                                </leftChild>
+                                <rightChild>
+                                  <type>USER_VARIABLE</type>
+                                  <value>positive second bigger</value>
+                                </rightChild>
+                                <type>OPERATOR</type>
+                                <value>LOGICAL_AND</value>
+                              </leftChild>
+                              <rightChild>
+                                <type>USER_VARIABLE</type>
+                                <value>first negative</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>LOGICAL_AND</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>USER_VARIABLE</type>
+                              <value>second negative</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>LOGICAL_AND</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>USER_VARIABLE</type>
+                            <value>decimal number</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>USER_VARIABLE</type>
+                          <value>both negative</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>decimal number is bigger</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[3]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[4]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[6]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[5]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[7]/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+</program>

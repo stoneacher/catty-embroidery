@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.75</applicationVersion>
+    <catrobatLanguageVersion>0.999999998</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>MIX 2</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>testColorAtXYValidParameters</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2030</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <brickId>760f88d5-c5c2-46a8-a3f2-6fc1563d4e26</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>100</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>4834036a-dd99-4df6-a297-82eae0c4e245</deviceValueKey>
+                        <name>xCoordinate</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>91fe0380-871a-4d82-a128-0d1dbbe1174c</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>200</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>a7e8c332-71cf-4fdd-8624-7bec7d225e8e</deviceValueKey>
+                        <name>yCoordinate</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="WaitTillIdleBrick">
+                  <brickId>21f01232-8413-4df9-8719-243225a5bdbc</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>33e0abe5-c0fc-4529-bf6a-0bd1b22e4468</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren>
+                        <org.catrobat.catroid.formulaeditor.FormulaElement>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </org.catrobat.catroid.formulaeditor.FormulaElement>
+                      </additionalChildren>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>180</value>
+                            </leftChild>
+                            <type>FUNCTION</type>
+                            <value>COS</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>300</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MULT</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>90</value>
+                            </leftChild>
+                            <type>FUNCTION</type>
+                            <value>SIN</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>600</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MULT</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>COLOR_AT_XY</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>#ff0000</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>COLOR_EQUALS_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>c8877679-0f25-415e-9739-70cdf25ebdb2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren>
+                        <org.catrobat.catroid.formulaeditor.FormulaElement>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </org.catrobat.catroid.formulaeditor.FormulaElement>
+                      </additionalChildren>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>3</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>USER_VARIABLE</type>
+                            <value>xCoordinate</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MULT</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>3</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>USER_VARIABLE</type>
+                            <value>yCoordinate</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MULT</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>COLOR_AT_XY</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>#0000ff</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>COLOR_EQUALS_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>5ebae4b7-7773-496a-91ec-da4cececc630</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren>
+                        <org.catrobat.catroid.formulaeditor.FormulaElement>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </org.catrobat.catroid.formulaeditor.FormulaElement>
+                      </additionalChildren>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>300</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>600</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>COLOR_AT_XY</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>#ff0000</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>COLOR_EQUALS_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>df157f46-066e-45eb-a9e4-9e0d6806863b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren>
+                        <org.catrobat.catroid.formulaeditor.FormulaElement>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </org.catrobat.catroid.formulaeditor.FormulaElement>
+                      </additionalChildren>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>300</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>600</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>COLOR_AT_XY</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>#0000ff</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>COLOR_EQUALS_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>8f5c885a-dd8d-4c83-8b62-c7e4bf507fac</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren>
+                        <org.catrobat.catroid.formulaeditor.FormulaElement>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </org.catrobat.catroid.formulaeditor.FormulaElement>
+                      </additionalChildren>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>300.42</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>600.42</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>COLOR_AT_XY</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>#ff0000</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>COLOR_EQUALS_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>b64459ca-89a0-43a8-aa9e-6b277546d44e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren>
+                        <org.catrobat.catroid.formulaeditor.FormulaElement>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </org.catrobat.catroid.formulaeditor.FormulaElement>
+                      </additionalChildren>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>300.42</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>600.42</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>COLOR_AT_XY</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>#0000ff</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>COLOR_EQUALS_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>8df06ea7-4945-4139-a120-840ed42ae372</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>45ff8e28-c18a-478d-af9e-acc91bc03c4d</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="red">
+          <lookList>
+            <look fileName="image48.png" name="red">
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="PlaceAtBrick">
+                  <brickId>b9b97cd8-b310-462c-a056-d2be9340be0a</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>600</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>300</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetSizeToBrick">
+                  <brickId>475d4603-a267-49c8-925c-ec9f7a6f7933</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="SIZE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>ee2ad8cd-8f2c-41fe-9c8c-78aacc509bd0</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="blue">
+          <lookList>
+            <look fileName="image50.png" name="blue">
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="PlaceAtBrick">
+                  <brickId>09563a99-71b3-4388-97b8-e1cd7c4fe4aa</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>600</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>300</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetSizeToBrick">
+                  <brickId>06dc6fcc-7d91-4412-8881-fd6cc38b44a3</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="SIZE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>93467e58-7083-46da-b2c0-df14e01b41f5</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

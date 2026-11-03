@@ -1,0 +1,483 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.1.2</applicationVersion>
+    <catrobatLanguageVersion>1.12</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>sdk_gphone_x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>30</platformVersion>
+    <programLicense></programLicense>
+    <programName>testNumberOfItems</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2028</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList>
+            <look fileName="Violet hills.png" name="Violet hills">
+              <isWebRequest>false</isWebRequest>
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>76597808-e3d1-4c1f-b5b9-9d80bf82ecf8</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>e7efb4bc-f553-4204-9a9c-c738bef74f07</deviceListKey>
+                    <initialIndex>0</initialIndex>
+                    <name>List</name>
+                  </userList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>406cff83-add2-45a8-9836-1436de64c471</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>NUMBER_OF_ITEMS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>f80ada47-e0c9-48d6-9ee3-ad80103bc96a</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>9c77b3af-8402-4733-bea3-51c89afa5011</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>043dc5f3-4d07-4f26-b492-2a6a5df1cde4</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>ae6a1d05-ac95-472b-9157-5e906b5920b2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>4</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>NUMBER_OF_ITEMS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>acb1b20d-3193-4b8e-a555-58ec98639184</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>d7ddf1fa-3b15-4485-8d34-ada438caba4b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>NUMBER_OF_ITEMS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ClearUserListBrick">
+                  <brickId>c6b9d59b-9cb5-4c4b-a5ee-b07d94fac4eb</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>19eccd40-5f34-4430-abf0-19c28a831a79</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>NUMBER_OF_ITEMS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>38fc1eba-24c1-4269-8276-17fce0837082</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>10</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List (2)</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>LIST_ITEM</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>be613995-2097-4413-8a82-bebc72fc5c71</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>10</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List (2)</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>LIST_ITEM</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="InsertItemIntoUserListBrick">
+                  <brickId>5580fdc4-79e0-4c9f-98da-6c7c7d023d32</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="INSERT_ITEM_INTO_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>5</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="INSERT_ITEM_INTO_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>257b7801-e5c1-4cc9-8a12-228435496dd1</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>NUMBER_OF_ITEMS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="DeleteItemOfUserListBrick">
+                  <brickId>a35f9ed7-162a-40fc-acfd-40a7f0031885</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_DELETE_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>04b89a53-7b17-4ee6-a5a9-b30c8c697d68</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>NUMBER_OF_ITEMS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="DeleteItemOfUserListBrick">
+                  <brickId>3d26b54d-47dc-4365-a46b-76b7b4e97916</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_DELETE_ITEM">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>1</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>128d675d-4767-427f-b880-418e16955ed6</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>NUMBER_OF_ITEMS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="InsertItemIntoUserListBrick">
+                  <brickId>542e7bc6-65c5-4776-8164-93c27085f8fa</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="INSERT_ITEM_INTO_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="INSERT_ITEM_INTO_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>45595d8a-a8d1-4dc4-92d7-41efef0c1405</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>NUMBER_OF_ITEMS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>4a521613-a10b-484b-a304-2a17429fe4e4</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>7</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="ClearUserListBrick">
+                  <brickId>bff10219-2fdf-41a9-9e06-aad402dd7ee2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>493b888f-28f3-4af3-b5b0-37d094ddfaeb</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>List</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>NUMBER_OF_ITEMS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>b34000f5-f1e1-4d78-9c48-12bcf7e62cb7</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>48d1f04a-1285-44f0-84b9-0fd7d6fd2622</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <initialIndex>0</initialIndex>
+          <deviceValueKey>85aa5983-6682-43ef-a4d3-c4edfeb895cf</deviceValueKey>
+          <name>Variable</name>
+        </default>
+      </userVariable>
+    </userVariable>
+  </programVariableList>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userList"/>
+    <userList>
+      <deviceListKey>0a6db6f9-e7c9-4afb-8063-15a47947761e</deviceListKey>
+      <initialIndex>-1</initialIndex>
+      <name>List (1)</name>
+    </userList>
+    <userList>
+      <deviceListKey>532794de-7381-4181-bcb3-4fbf2f0e5fac</deviceListKey>
+      <initialIndex>-1</initialIndex>
+      <name>List (2)</name>
+    </userList>
+  </programListOfLists>
+  <programMultiplayerVariableList/>
+</program>

@@ -1,0 +1,1299 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.0.2</applicationVersion>
+    <catrobatLanguageVersion>1.11</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>ONEPLUS A6003</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense></programLicense>
+    <programName>testRotationStyles</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2075</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene (1)</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="ObjektLeftRightRotation">
+          <lookList>
+            <look fileName="My actor or object.png" name="Objekt ">
+              <isWebRequest>false</isWebRequest>
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="SetSizeToBrick">
+                  <brickId>a93728b4-c475-4d98-9f32-08ef910f7d6b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="SIZE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>50</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>3f2386f4-eb8d-41d4-858b-96c852e993f9</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>90</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>2</initialIndex>
+                        <deviceValueKey>6fd9bdbb-ae6b-4fc2-a939-3e1d3cca3fd6</deviceValueKey>
+                        <name>expected look direction left right only rotation</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>d681bf02-188e-42d4-a6aa-91914cf25194</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>0</initialIndex>
+                        <deviceValueKey>0dd83e9f-0a43-4ef0-b69c-a2168f4ff96f</deviceValueKey>
+                        <name>bounces left right only rotation</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetGravityBrick">
+                  <brickId>cb0b75d6-bb58-4f48-b1ad-57f526485cf6</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="PHYSICS_GRAVITY_X">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="PHYSICS_GRAVITY_Y">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="PlaceAtBrick">
+                  <brickId>8cc17cb5-bb45-4fdd-ba14-05c7cbe89545</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>737</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetRotationStyleBrick">
+                  <brickId>202b4a39-93ba-4ad5-982f-a3737e0098cc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <selection>0</selection>
+                </brick>
+                <brick type="SetPhysicsObjectTypeBrick">
+                  <brickId>6f9a032c-1c81-4540-9850-df5d359d6f96</brickId>
+                  <commentedOut>false</commentedOut>
+                  <type>DYNAMIC</type>
+                </brick>
+                <brick type="SetVelocityBrick">
+                  <brickId>15e69baf-84c4-4553-9820-1559f79f5dac</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="PHYSICS_VELOCITY_Y">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="PHYSICS_VELOCITY_X">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>750</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForeverBrick">
+                  <brickId>40910157-5cd1-411f-8faa-baa6b95ad271</brickId>
+                  <commentedOut>false</commentedOut>
+                  <loopBricks>
+                    <brick type="IfOnEdgeBounceBrick">
+                      <brickId>e2534dd8-6c12-4d8c-85c3-a1eec6a56c29</brickId>
+                      <commentedOut>false</commentedOut>
+                    </brick>
+                  </loopBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>9d4d1176-5b88-401a-be77-7ab567c8bfbf</scriptId>
+            </script>
+            <script type="WhenBounceOffScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <brickId>f1ef8ed3-c5fd-48f6-8f91-607eee1819ca</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../script/brickList/brick[3]/userVariable"/>
+                </brick>
+                <brick type="IfThenLogicBeginBrick">
+                  <brickId>fe7bac05-9063-4fd5-8612-b034ae1c8aed</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>bounces left right only rotation</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>1</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="WaitBrick">
+                      <brickId>8de3da01-a99c-4c67-a82a-2310b2c1ccef</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="TIME_TO_WAIT_IN_SECONDS">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0.3</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>58398ec1-85e6-4d53-b02d-a7452415d6d2</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>TRUE</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_X</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>NUMBER</type>
+                                <value>322</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>MINUS</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>GREATER_OR_EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_X</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>322</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>SMALLER_OR_EQUAL</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>ba3f401b-6b14-4a20-baf6-25b7a75af884</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>TRUE</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <rightChild>
+                              <additionalChildren/>
+                              <leftChild>
+                                <additionalChildren/>
+                                <rightChild>
+                                  <additionalChildren/>
+                                  <leftChild>
+                                    <additionalChildren/>
+                                    <type>SENSOR</type>
+                                    <value>LOOK_DIRECTION</value>
+                                  </leftChild>
+                                  <rightChild>
+                                    <additionalChildren/>
+                                    <type>NUMBER</type>
+                                    <value>1</value>
+                                  </rightChild>
+                                  <type>OPERATOR</type>
+                                  <value>PLUS</value>
+                                </rightChild>
+                                <type>BRACKET</type>
+                              </leftChild>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>USER_VARIABLE</type>
+                                <value>expected look direction dont rotate</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>GREATER_OR_EQUAL</value>
+                            </rightChild>
+                            <type>BRACKET</type>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <rightChild>
+                              <additionalChildren/>
+                              <leftChild>
+                                <additionalChildren/>
+                                <rightChild>
+                                  <additionalChildren/>
+                                  <leftChild>
+                                    <additionalChildren/>
+                                    <type>SENSOR</type>
+                                    <value>LOOK_DIRECTION</value>
+                                  </leftChild>
+                                  <rightChild>
+                                    <additionalChildren/>
+                                    <type>NUMBER</type>
+                                    <value>1</value>
+                                  </rightChild>
+                                  <type>OPERATOR</type>
+                                  <value>MINUS</value>
+                                </rightChild>
+                                <type>BRACKET</type>
+                              </leftChild>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>USER_VARIABLE</type>
+                                <value>expected look direction dont rotate</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>SMALLER_OR_EQUAL</value>
+                            </rightChild>
+                            <type>BRACKET</type>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_OR</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="PlaceAtBrick">
+                      <brickId>9e8d3080-33b7-4789-821b-7e04e13af8b6</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="Y_POSITION">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>720</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                        <formula category="X_POSITION">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>275</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="SetGravityBrick">
+                      <brickId>50fae6d6-2473-4ec1-bcde-755396525635</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="PHYSICS_GRAVITY_X">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </formula>
+                        <formula category="PHYSICS_GRAVITY_Y">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>10</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="SetVelocityBrick">
+                      <brickId>2d800652-61b1-483c-9d2e-112021d54e5e</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="PHYSICS_VELOCITY_Y">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>20</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                        <formula category="PHYSICS_VELOCITY_X">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0.0</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="SetVariableBrick">
+                      <brickId>6ddcbdc9-2289-451a-824b-bbe694b75b57</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>90</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../script/brickList/brick[2]/userVariable"/>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+                <brick type="IfThenLogicBeginBrick">
+                  <brickId>b8b5c82f-4932-410f-ac0f-34772228d61c</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>bounces left right only rotation</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>2</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>59b267f1-fc47-45a7-bfe6-e3e744c55e00</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>TRUE</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_Y</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>NUMBER</type>
+                                <value>822</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>MINUS</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>GREATER_OR_EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_Y</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>822</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>SMALLER_OR_EQUAL</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>f024d6bf-3a47-4afe-bb00-1e5b0c036f6a</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>expected look direction dont rotate</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <type>SENSOR</type>
+                          <value>LOOK_DIRECTION</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="WaitBrick">
+                      <brickId>61af034a-0d75-461e-8793-17c57457790f</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="TIME_TO_WAIT_IN_SECONDS">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0.1</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="HideBrick">
+                      <brickId>9e127678-6b4c-4a9f-916d-0d58a4c02363</brickId>
+                      <commentedOut>false</commentedOut>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>ec1c84ea-05e8-4831-b3e7-381634791a60</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick[3]/userVariable"/>
+          </userVariables>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="ObjektDontRotateAndAllAround">
+          <lookList>
+            <look fileName="My actor or object_#0.png" name="Objekt  (1)">
+              <isWebRequest>false</isWebRequest>
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="SetSizeToBrick">
+                  <brickId>f010d047-0f13-463c-a7d3-01b7f8886134</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="SIZE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>50</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>a01efb60-d27b-4373-913c-a8d60318d1fc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>90</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>0</initialIndex>
+                        <deviceValueKey>2bac3c11-219f-4194-8219-aac0a51cd003</deviceValueKey>
+                        <name>expected look direction dont rotate</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>ee6b8981-1a06-4ccd-99ff-105ef6238ddb</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>1</initialIndex>
+                        <deviceValueKey>f79e01e1-056f-4282-ae7a-0e0aa9e6b165</deviceValueKey>
+                        <name>bounces dont rotate</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetGravityBrick">
+                  <brickId>ec3fc0e1-1451-4207-8c52-a4a9afcfd7a1</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="PHYSICS_GRAVITY_X">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="PHYSICS_GRAVITY_Y">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="PlaceAtBrick">
+                  <brickId>0e26ea6d-816e-4ea9-ad37-a4bf38e7c02c</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>544</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetRotationStyleBrick">
+                  <brickId>78b936e2-8490-445d-a964-eaaf81c795d2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <selection>2</selection>
+                </brick>
+                <brick type="SetPhysicsObjectTypeBrick">
+                  <brickId>dc9427a7-e0f8-47c5-9211-b739391a15fc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <type>DYNAMIC</type>
+                </brick>
+                <brick type="SetVelocityBrick">
+                  <brickId>02c372e8-459d-47f7-b160-9e8b4c97fbd5</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="PHYSICS_VELOCITY_Y">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="PHYSICS_VELOCITY_X">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>750</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForeverBrick">
+                  <brickId>f06f834d-a3ac-49d1-b224-5894a5cee149</brickId>
+                  <commentedOut>false</commentedOut>
+                  <loopBricks>
+                    <brick type="IfOnEdgeBounceBrick">
+                      <brickId>124bfdb7-7d4a-471e-bba0-c3a15aec0837</brickId>
+                      <commentedOut>false</commentedOut>
+                    </brick>
+                  </loopBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>46e7a87d-9890-4a2c-b781-5b23b967cd79</scriptId>
+            </script>
+            <script type="WhenBounceOffScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="ChangeVariableBrick">
+                  <brickId>b429d81a-4a48-4ee1-a6e9-b62fec8b7138</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE_CHANGE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../script/brickList/brick[3]/userVariable"/>
+                </brick>
+                <brick type="IfThenLogicBeginBrick">
+                  <brickId>f6e94e3e-4722-4ce4-b28d-fae34a6ab2cd</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>bounces dont rotate</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>1</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="WaitBrick">
+                      <brickId>3fe4dae3-7304-4e63-9b8b-43c57144d055</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="TIME_TO_WAIT_IN_SECONDS">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0.3</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>710b5105-b047-4275-abe9-c1b30c0c91b0</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>TRUE</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_X</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>NUMBER</type>
+                                <value>322</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>MINUS</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>GREATER_OR_EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_X</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>322</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>SMALLER_OR_EQUAL</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>0d139b78-9c24-4278-a9c6-0c7b55846c2e</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>TRUE</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <rightChild>
+                              <additionalChildren/>
+                              <leftChild>
+                                <additionalChildren/>
+                                <rightChild>
+                                  <additionalChildren/>
+                                  <leftChild>
+                                    <additionalChildren/>
+                                    <type>SENSOR</type>
+                                    <value>LOOK_DIRECTION</value>
+                                  </leftChild>
+                                  <rightChild>
+                                    <additionalChildren/>
+                                    <type>NUMBER</type>
+                                    <value>1</value>
+                                  </rightChild>
+                                  <type>OPERATOR</type>
+                                  <value>PLUS</value>
+                                </rightChild>
+                                <type>BRACKET</type>
+                                <value></value>
+                              </leftChild>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>USER_VARIABLE</type>
+                                <value>expected look direction dont rotate</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>GREATER_OR_EQUAL</value>
+                            </rightChild>
+                            <type>BRACKET</type>
+                            <value></value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <rightChild>
+                              <additionalChildren/>
+                              <leftChild>
+                                <additionalChildren/>
+                                <rightChild>
+                                  <additionalChildren/>
+                                  <leftChild>
+                                    <additionalChildren/>
+                                    <type>SENSOR</type>
+                                    <value>LOOK_DIRECTION</value>
+                                  </leftChild>
+                                  <rightChild>
+                                    <additionalChildren/>
+                                    <type>NUMBER</type>
+                                    <value>1</value>
+                                  </rightChild>
+                                  <type>OPERATOR</type>
+                                  <value>MINUS</value>
+                                </rightChild>
+                                <type>BRACKET</type>
+                                <value></value>
+                              </leftChild>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>USER_VARIABLE</type>
+                                <value>expected look direction dont rotate</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>SMALLER_OR_EQUAL</value>
+                            </rightChild>
+                            <type>BRACKET</type>
+                            <value></value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_OR</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="PlaceAtBrick">
+                      <brickId>82aac14c-f8a9-4971-9659-34f043eaa407</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="Y_POSITION">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>720</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                        <formula category="X_POSITION">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>209</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="SetGravityBrick">
+                      <brickId>b5ec6340-7dbd-462e-875c-124612e5c23e</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="PHYSICS_GRAVITY_X">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </formula>
+                        <formula category="PHYSICS_GRAVITY_Y">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>10</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="SetVelocityBrick">
+                      <brickId>5fbcd23c-2cd8-4d6a-836f-582fa33d1d0c</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="PHYSICS_VELOCITY_Y">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>20</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                        <formula category="PHYSICS_VELOCITY_X">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0.0</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+                <brick type="IfThenLogicBeginBrick">
+                  <brickId>a6900df9-f8f3-41f3-9f03-4b2a77588bb2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>bounces dont rotate</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>2</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="WaitBrick">
+                      <brickId>ab2d798f-bf2e-4f04-bd5d-f434f5ccf520</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="TIME_TO_WAIT_IN_SECONDS">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>0.2</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>16e9b89b-23f4-4eb2-9d77-cdc4652a7bda</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>TRUE</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_Y</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>NUMBER</type>
+                                <value>822</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>MINUS</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>GREATER_OR_EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_Y</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>822</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>SMALLER_OR_EQUAL</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>455c189a-924a-44c6-a88d-0afb58ee6506</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>expected look direction dont rotate</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <type>SENSOR</type>
+                          <value>LOOK_DIRECTION</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="PlaceAtBrick">
+                      <brickId>7153b737-8aeb-442a-8ef1-6b34068ce05f</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="Y_POSITION">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>510</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                        <formula category="X_POSITION">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>184</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="SetRotationStyleBrick">
+                      <brickId>c6a56573-7e83-4375-bb9b-b1d418353c86</brickId>
+                      <commentedOut>false</commentedOut>
+                      <selection>1</selection>
+                    </brick>
+                    <brick type="SetVelocityBrick">
+                      <brickId>efd251ec-be3d-4ece-9b43-ff6c35ffa0e1</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="PHYSICS_VELOCITY_Y">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>30</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                        <formula category="PHYSICS_VELOCITY_X">
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>500</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+                <brick type="IfThenLogicBeginBrick">
+                  <brickId>f0c68056-5df0-4b55-a853-53c78f2bf64b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>bounces dont rotate</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>3</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>GREATER_OR_EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>USER_VARIABLE</type>
+                          <value>bounces dont rotate</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>5</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_THAN</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>f70b7ff3-9790-4780-baff-bd3d55043f74</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>TRUE</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_X</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>NUMBER</type>
+                                <value>530</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>MINUS</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>GREATER_OR_EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_X</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>530</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>SMALLER_OR_EQUAL</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="AssertEqualsBrick">
+                      <brickId>bc522ab1-12b9-42aa-bc5e-a0a6ef090ec8</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>TRUE</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_Y</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <rightChild>
+                                <additionalChildren/>
+                                <type>NUMBER</type>
+                                <value>1030</value>
+                              </rightChild>
+                              <type>OPERATOR</type>
+                              <value>MINUS</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>GREATER_OR_EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <leftChild>
+                              <additionalChildren/>
+                              <type>SENSOR</type>
+                              <value>OBJECT_Y</value>
+                            </leftChild>
+                            <rightChild>
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>1030</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>SMALLER_OR_EQUAL</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+                <brick type="IfThenLogicBeginBrick">
+                  <brickId>424326ef-5bf1-4f1b-aed8-ea4248ebab05</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>bounces dont rotate</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>5</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="FinishStageBrick">
+                      <brickId>990f9dd6-9c92-4aab-91a2-afc54c243ae5</brickId>
+                      <commentedOut>false</commentedOut>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>2bb89c9e-7f8d-439f-8de1-6a405a899488</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script/brickList/brick[2]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[3]/scriptList/script/brickList/brick[3]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object[2]/scriptList/script/brickList/brick[2]/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

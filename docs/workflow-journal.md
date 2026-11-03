@@ -4216,3 +4216,110 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **#85's app job failed on `StageFieldRenderingTests`, with nothing changed but two status lines.** That makes it a run of `main` as merged. A re-run passed.
   - It's the third occurrence of US-330 in this feature, and the first with two of the suite's tests failing together.
   - The backlog entry now lists all three and notes that the suite renders through the new overscan raster path. Nothing points at that path rather than runner load, but the frequency is now recorded where the next backlog prioritisation will see it.
+
+## 2026-11-03 — Language-test runner: planning against a fresh Catroid clone, then a Codex brief review (one round, 8 findings, all valid)
+
+- **Fresh reference first:** the local `../Catroid` checkout dated from 2026-05-27. The ROADMAP's feasibility table had already called it "may be stale". Sebastian re-cloned it before planning (`develop` at `9035dc7cb`, 2026-10-26).
+- **Planning (`swift-architect`, ~640 s, 58 tool calls):** it statically classified all 215 `code.xml` files.
+  - 34 tests are runnable with the importer plus AssertEquals and FinishStage; 30 are predicted to pass. ExitStage, EmptyScript and WaitTillIdle add 4 more.
+  - **It refuted a premise of the 2026-10-19 version decision:** none of the 215 tests is at 1.14, and for our bricks the format does not differ between 0.99995 and 1.14. Sebastian therefore replaced "re-save old tests through Catroid" with an accepted version window (D1).
+  - **Verified by hand before the decisions were put to Sebastian:** the version census and Catroid's assert rule (`AssertAction.kt:45-50`).
+  - **Sebastian's decisions:** the window (D1); refuse string values (D4, costs 2 runnable tests); all three small additions; all 215 fixtures committed.
+- **Why a brief round:** no ADR pins the import mapping, the harness steps or the run outcome (ADR-041). One round with `codex exec -m gpt-5.6-sol`, read-only, `--add-dir ../Catroid`. Verdict: **CHANGES REQUIRED**. 8 findings (2 High, 5 Medium, 1 Low), all checked against Catroid and all valid; the brief was changed, no ADR.
+  - **High, D4:** `=`/`≠` compare *strings* when either side doesn't parse (`FormulaElementOperations.kt:67-75`). The planned "operator operand → NaN" rule would have made `"a" = "b"` true through NaN = NaN. Both the architect and I had read the generic operator path and generalised it to equality. Fix: equality operands are their own refused context.
+  - **High, D12:** a plain `withKnownIssue` accepts every issue, so an expected failure could start failing for another reason, such as an importer refusal, and stay green. This is a test that cannot fail, in ADR-032's sense, sitting inside the ratchet meant to prevent exactly that. Fix: pin the exact outcome outside the known-issue block and use a restrictive matcher.
+  - **Medium, D5:** "a failure stops the run" was wrong. Catroid latches the first result, but `stage.act` finishes the pass. Fix: the tick finishes, then the run stops.
+  - **Medium, D8:** WaitTillIdle reads live thread state, so whether it releases in this tick or the next depends on round-robin order. Both orderings get tested.
+  - **Medium, D7:** a declaration is either inline or a reference, and one runnable test's reference points into a commented-out brick. Fix: resolve over the whole tree before filtering.
+  - **Medium, D9:** the only EmptyScript corpus test is also commented out, so it could not prove the EmptyScript rule. Fix: a synthetic test.
+  - **Medium, D6:** 600 ticks is not a translation of a wall-clock timeout with adaptive substeps. It is restated as a policy, with a pinned tick-600/601 boundary and a half-budget headroom check.
+  - **Low:** a third ExitStage test exists, `testWaitUntil`, but it needs `TIMER`, so the counts are unchanged.
+  - **Attack items Codex cleared:** D1's format claims (no `isCommentedOut` anywhere); boolean roots stringify as `"1.0"`, not `"true"`; no project/object variable name collision in the corpus; heading 90.
+- **What this says about the delegation:** the architect's static census was right everywhere Codex checked. Both Highs sat in *rules the plan derived* from that census, the string contexts and the ratchet, not in the census itself. Same shape as the Variables brief round (2026-10-19): the brief round pays for itself on derived semantics, not on fact-finding.
+- **Disposition:** a brief review is one round (skill §0), so there is no verification round. Slice reviews will check the changes against code.
+
+## 2026-11-03 — Language-test runner slices 1 and 2: fixtures, then the reference resolver and its two reviews
+
+- **Slice 1 (fixtures, not risky):** 215 `code.xml` files, a manifest and `FixtureProvenanceTests`. 7 mutants, all killed. The planned version-window check became a plain assertion, because all 215 versions turned out to lie inside D1's window. A broad `rm -rf` mutation loop was denied by the permission layer. Re-running the deterministic extraction script turned out to be the better restore: it also proves the script removes stray fixtures.
+- **Slice 2 (XML tree and reference resolver, risky):** `swift-code-reviewer` and one Codex slice round ran in parallel on `9786297..2f1f400`.
+  - **Both found the same trap**: `brick[-9223372036854775808]` overflows `ordinal - 1`.
+  - **I had introduced it myself during the mutation step.** The mutant "accept ordinal 0" survived, and I removed the `ordinal >= 1` guard as redundant, because `matches.indices.contains(ordinal - 1)` rejected every value I thought of. The equivalence held only for ordinals where `ordinal - 1` is representable. **Lesson:** a mutant may be called equivalent only after checking the whole input domain, boundaries included. "The tests I can think of agree" is not enough. The second equivalence claim in this slice, an 18-digit bound, was checked that way and held.
+- **Where the two reviewers differed:**
+  - **Codex** went to the reference semantics: XStream's name coder, `.` segments, and forward references, which XStream rejects because it resolves against what it has already unmarshalled. None of these occurs in the corpus, but all three are real XStream behaviour, so they are now mirrored.
+  - **The reviewer** went to the oracle. Only `userVariable` targets were kind-checked; a combined 0-based + all-siblings mutant survived; mixed content was unpinned.
+  - Neither found what the other found, apart from the trap and the `[01]` leniency. Codex also could not run `swift test` in its read-only sandbox (SwiftPM cache writes), so its findings were reasoning only. The reviewer ran its reproductions.
+- **A mutant survived because of a fixture flaw, not a missing test.** After the fixes, the "lenient ordinal" mutant survived. The broken-path fixture put the target *after* the reference, so the new forward-reference rule refused every path whether or not the grammar was lenient. The test passed for the wrong reason. This is the same class as US-308's "already green" items: a new rule can silently subsume an old test's discriminating power, and only re-running mutations after a fix shows it.
+- **Totals:** 9 mutants before review (one wrongly ruled equivalent), 19 after. 10 review findings in all (2 Critical/High duplicates, 3 Medium, the rest Low or suggestions), none rejected.
+
+## 2026-11-03 — Language-test runner slice 3 (formula import): two reviews, CI, and the stack
+
+- **Built test-first against Catroid's three string conversions.** A literal is read differently depending on where it sits:
+  - brick roots, operator operands and `=` operands go through `Double.valueOf`;
+  - function arguments go through `tryParseDouble`, which rejects anything containing `fFdD`; a null argument makes the whole call 0;
+  - SetVariable values, assert operands and `=` operands keep a value as a string when it doesn't parse.
+- **Corpus first.** Before the tests were written, a survey of all 215 files checked every assumption: 4037 empty and 66 non-empty `additionalChildren`, 185 empty `textBlockFunctionProvider`s, and every STRING literal in the runnable set listed with its context.
+  - That survey moved slice-4 work forward: `testEmptyEvent`'s skipped script compares two strings, so formulas of skipped bricks must never be imported.
+  - It also corrected the brief: ChangeVariable is a number slot, not a string context.
+- **The tests found a crash before any reviewer did.** A small change to `convert` made the existing 128-depth test die with SIGBUS. At ~4 KB per level in a debug build, ADR-037's own cap did not fit a 512 KB cooperative-pool stack.
+  - Fix: an iterative pre-check before any recursion, and a per-type split of the recursive path. The headroom was measured at ~1.9×: 240 levels pass, 250 overflow.
+  - ADR-037 had measured `JSONEncoder` at ~230 levels on such a thread. This is the second recursive consumer of the same cap to find its stack budget by accident; any future recursive walk over formulas should measure it.
+- **CI found what neither reviewer could.** `"0X.8P1"` parsed on the local toolchain and failed on CI's Xcode 27.1, so Swift's `Double(String)` accepts different spellings on different toolchains.
+  - The digit guard had been kept for exactly this kind of reason ("so Java's grammar doesn't depend on Swift's"), yet the validated text was still handed to Swift raw. It is now canonicalised to lowercase.
+  - The mutant that removes the canonicalisation cannot be killed locally; only CI's toolchain kills it. That is worth knowing about the mutation discipline: a local mutation check is only as strong as the toolchains it runs on.
+- **Reviews:** one Codex slice round (4 findings, highest High) and `swift-code-reviewer` (5), all valid, none rejected.
+  - **Codex** found what the brief had wrong about Catroid. SetVariable *stores* a root STRING as a string and a logical root as a `Boolean`. Reads normalise both, so the values were right, but ChangeVariable and ForVariableFromTo test for `Double`. A per-formula refusal would have cost 9 runnable tests, so the importer reports the storage kind and slice 4 refuses only variables that are both stored that way and changed or looped over. The brief's D4 refinement had claimed the opposite.
+  - **The reviewer** found an equality subtlety I had argued past. The plan's "NaN = NaN" for AssertEquals holds only through the *string* test, because Kotlin's `Double ==` is IEEE, so `-NaN` passed falsely. It also found a crash in slice 2's code that its own review had missed: freeing a 4000-deep XML tree.
+  - Both found the same shortcut flaw from different sides: Codex through `additionalChildren`, the reviewer through unknown child tags.
+- **Two equivalent mutants were kept on purpose and recorded.** A constant's blocked children, and `Argument.blocked`, are both also caught by the top-level "nil iff blockers" guard. They keep `convert`'s local contract, a different case from slice 2's redundant guard, which duplicated a check in the same function.
+- **One test crashed instead of failing under a mutant.** `#expect(throws:)` describes the returned value on failure, and describing a 513-deep tree recurses as deep as the tree. Discarding the value made the regression report as a failure.
+
+## 2026-11-03 — Language-test runner slice 4 (program and brick import): the prediction held; review found identity
+
+- **The planning census held to the test.** 36 of the 215 import, exactly the swift-architect prediction (34 runnable − 2 string tests + 4 additions), name for name. The prediction was made from static analysis before any importer existed. Three slices of decisions in between (string contexts, storage kinds, shape rules) moved no test across the line.
+- **Slice 3's review finding met its own test.** Corpus `testForLoopWithChangeVariableBrick`, whose stated purpose is that a loop ends when its control variable stops being a number, is refused for `variableStorage(controlVariable)`. A language test written by Catroid's authors independently confirmed a rule Codex derived from `SetVariableAction.kt`.
+- **Reviews:** one Codex slice round (4 findings, highest High) and `swift-code-reviewer` (8), all valid, none rejected. Two overlapped: identity, and the storage rule across objects.
+  - **Codex's High corrected the brief itself.** D7 said name binding and Catroid's identity binding "differ only" under object/project shadowing. They also differ for same-named declarations in one list, and for a brick variable no declaration holds. The brief round had cleared D7, and the claim survived three slices.
+  - **The reviewer found a silent loss**, the only kind slice 5 could never see: a nested list a brick doesn't read was dropped with no blocker. Every brick now has a child-element allowlist.
+- **The test builder had to become Catroid.** Once identity mattered, the builder's habit of writing a variable inline at every use became the very shape the importer refuses. `declaringUses` now writes first use inline and later uses as backward references, as Catroid's serializer does. Test fixtures that are convenient rather than faithful hid an entire class of input until the importer got strict enough to reject them.
+- **CI:** US-330's pixel flake recurred on an engine-only commit (fifth occurrence, all three tests), recorded in its backlog entry.
+- **Mutation totals for slice 4:** 31 before review, 13 after, all killed in the end. One survivor in each round exposed a test gap (a SetVariable context test; a declared name with a different identity).
+
+## 2026-11-03 — Language-test runner PR 1: the feature review found a commit that never compiled
+
+- **The whole-PR `swift-code-reviewer` pass's top finding was red CI on the PR head.** `a195018` added an `ImportBlocker` case, and its switch in `CorpusFormulaTests.swift` was updated in the working tree but never staged. Three things each let this through:
+  - **My staging.** I listed paths explicitly (as the git memory note asks) and simply omitted one.
+  - **The pre-commit gate** ran `swift test` on the working tree, which had the fix. This is ADR-023's documented limit ("a convenience, not an enforcement boundary"), met for the first time as a real miss rather than a hypothetical.
+  - **My own verification** counted `✘` lines and crash signals in the test output. A compile error prints neither, so "0" meant "nothing I was looking for" rather than "passed".
+- **Fixes to the method.**
+  - Verification now checks the exit codes of `swift build --build-tests` and `swift test`, not grepped output.
+  - Before a commit, `git status` is checked for unstaged changes under the paths touched.
+  - The missing file was committed alone (`0641757`), verified with everything else stashed.
+- **The rest of the feature review (8 findings, all valid, none rejected), and why it was worth a separate pass after four slice reviews.** Every finding sat *across* slices, not in one:
+  - The blocker-kind vocabulary lived in a test file and had drifted from the case names. It is now `ImportBlocker.kind`/`label` in the module.
+  - The enum `CatrobatImport` shadowed its own module. It is renamed `ProgramImport`.
+  - The start pose was stated in one function. It is now constants slice 5 can share.
+  - A computed text parameter was refused as `brickShape`, where D4's vocabulary says `stringValue(.text)`.
+  - The extraction script could overwrite all 215 fixtures before failing to find a commit. It now resolves provenance first, and requires the checkout's own top level, a hole I found while fixing that one.
+  - Dead `trimmedText`; a builder that skipped misbuilt uses silently; stale brief and test comments.
+- **Mutants for the changes:** 4, all killed (label payloads, the `text` refusal, the start heading).
+
+## 2026-11-03 — Language-test runner PR 1: Codex handover round 1 (highest Medium, 2 findings, both valid)
+
+- **Both findings were in input Catroid's serialiser never writes but its deserialiser accepts.** Codex found them by reading the converter, not the corpus. It confirmed that neither affects the 36 pinned tests.
+  - **A `formulaList` child that isn't a `<formula>` becomes `Formula(0)`** and, inserted with `putIfAbsent`, wins over a later real entry of the same category. One without a category is a user-defined brick's input. We ignored both and imported the real entry. Mirroring an insertion-order quirk for unwritten input was not worth it, so both are refused.
+  - **`interpretString` trims a numeric string's trailing zero** (`NumberFormats.trimTrailingCharacters`, a deliberately narrow pattern), so `WriteEmbroideryToFile("10.0")` names the file `10`. Mirrored exactly, with the pattern's non-matching cases (`1.500`, `1.05`, `01.0`) pinned as controls.
+- 6 mutants, all killed. Code changed, so round 2 is a verification round.
+
+## 2026-11-03 — Language-test runner PR 1: Codex handover round 2 clean; loop ends
+
+- **Round 2 (verification): no findings.** Codex confirmed both round-1 fixes correct and complete. The formula-entry refusal is deliberately conservative: it also rejects a stray entry *after* a real one, which Catroid would tolerate, and it doesn't touch the 36 pinned imports. The trimming port matches `NumberFormats` exactly. A full re-audit of importer, resolver, formulas, variable identity, ratchets, script, CI pin and brief found nothing.
+- **Stop condition 1** (a round with no code changes). The loop ran 2 rounds, highest severity Medium → none.
+- **PR 1 in review totals:**
+  - Codex: one brief round (8), four slice rounds (4, 4, 4, 4) and two handover rounds (2, 0).
+  - `swift-code-reviewer`: four slice passes (10, 5, 5, 8) and one whole-PR pass (8).
+  - CI found 2 more: the toolchain-dependent hex parse and the unstaged file.
+  - None was rejected.
+- **What the review layers found that the others didn't, in one line each:**
+  - Codex read Catroid's *deserialiser*, finding inputs the corpus never contains.
+  - The reviewer read *our* code across files, finding silent losses, the trap and the API.
+  - CI read the *commit*, finding what local runs on the working tree cannot see.

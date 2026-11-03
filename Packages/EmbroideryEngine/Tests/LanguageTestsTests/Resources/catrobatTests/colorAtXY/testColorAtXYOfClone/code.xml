@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.75</applicationVersion>
+    <catrobatLanguageVersion>0.999999998</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>BLN-L21</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>24</platformVersion>
+    <programLicense></programLicense>
+    <programName>testColorAtXYOfClone</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1812</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="Circle">
+          <lookList>
+            <look fileName="My actor or object.png" name="Circle">
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="CloneBrick">
+                  <brickId>ad20288d-f8b5-4b47-ba39-46026771b43a</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="PlaceAtBrick">
+                  <brickId>2e048cac-9306-40f4-8922-6d48df059293</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>200</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>100</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>f920eb91-f72a-4eb5-a3e5-275b7c2048b7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren>
+                        <org.catrobat.catroid.formulaeditor.FormulaElement>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </org.catrobat.catroid.formulaeditor.FormulaElement>
+                      </additionalChildren>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>100</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>200</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>COLOR_AT_XY</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>#ff0000</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>COLOR_EQUALS_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>8fa291da-f9d9-4e4e-acab-d32aa5637151</scriptId>
+            </script>
+            <script type="WhenClonedScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="PlaceAtBrick">
+                  <brickId>f770982f-4105-4948-a4fa-307a17064e4d</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>200</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>100</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>8d19feda-ecb1-4a29-a86c-02642cc1c452</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren>
+                        <org.catrobat.catroid.formulaeditor.FormulaElement>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </org.catrobat.catroid.formulaeditor.FormulaElement>
+                      </additionalChildren>
+                      <leftChild>
+                        <additionalChildren/>
+                        <leftChild>
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>100</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </leftChild>
+                        <rightChild>
+                          <additionalChildren/>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>200</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>MINUS</value>
+                        </rightChild>
+                        <type>FUNCTION</type>
+                        <value>COLOR_AT_XY</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>#ff0000</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>COLOR_EQUALS_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>3066d7dd-e302-490e-84c8-98708ce8f7f5</scriptId>
+            </script>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="WaitTillIdleBrick">
+                  <brickId>1ff1c8fd-97ca-4bdf-a0ca-800f7de34b42</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>ba45da6c-51f0-45f1-b9ca-4007ee2b00d2</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>edc94b85-3edb-4d55-be58-57424aaf3c84</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

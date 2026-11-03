@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.62</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Android SDK built for x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>testCloneTouchesOtherCloneOfSameObject</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1794</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="CloneTouchingClone">
+          <lookList>
+            <look fileName="My actor or object.png" name="look with large transparent border area"/>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>cd5a81af-37ee-4f3d-b5b8-d4b9286526b9</deviceValueKey>
+                        <name>id</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="CloneBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="PlaceAtBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <type>NUMBER</type>
+                      <value>300</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <type>NUMBER</type>
+                      <value>100</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="CloneBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="PlaceAtBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="Y_POSITION">
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>700</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="X_POSITION">
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>200</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>Wait for drawing</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>First clone touches other clone?</broadcastMessage>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="IfThenLogicBeginBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <leftChild>
+                        <type>USER_VARIABLE</type>
+                        <value>id</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>1</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="AssertEqualsBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="ASSERT_EQUALS_ACTUAL">
+                          <type>COLLISION_FORMULA</type>
+                          <value>CloneTouchingClone</value>
+                        </formula>
+                        <formula category="ASSERT_EQUALS_EXPECTED">
+                          <type>FUNCTION</type>
+                          <value>TRUE</value>
+                        </formula>
+                      </formulaList>
+                    </brick>
+                    <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                  </ifBranchBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>First clone touches other clone?</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="WaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIME_TO_WAIT_IN_SECONDS">
+                      <type>NUMBER</type>
+                      <value>0.5</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>Wait for drawing</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables>
+            <userVariable reference="../../scriptList/script/brickList/brick/userVariable"/>
+          </userVariables>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+  </programVariableList>
+  <programListOfLists/>
+</program>

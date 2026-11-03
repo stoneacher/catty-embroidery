@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.69</applicationVersion>
+    <catrobatLanguageVersion>0.99999</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Android SDK built for x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense></programLicense>
+    <programName>testIncompleteRows</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1794</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value>Empty or non-existing fields of a row are handled as I they were empty strings</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick type="StoreCSVIntoUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="STORE_CSV_INTO_USERLIST_CSV">
+                      <type>STRING</type>
+                      <value>a,b
+c,d,e
+f,g,h
+I,j
+,,</value>
+                    </formula>
+                    <formula category="STORE_CSV_INTO_USERLIST_COLUMN">
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>c56222f0-96c4-4426-95ef-193cff35bb76</deviceListKey>
+                    <name>List1</name>
+                  </userList>
+                </org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>451c6436-26ee-4c36-9de6-acafc58b5ce4</deviceListKey>
+                    <name>List2</name>
+                  </userList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>e</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[2]/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>h</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[2]/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[2]/userList"/>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[2]/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <rightChild>
+                          <leftChild>
+                            <type>USER_LIST</type>
+                            <value>List1</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>USER_LIST</type>
+                            <value>List2</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </rightChild>
+                        <type>BRACKET</type>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>USER_LIST</type>
+                            <value>List1</value>
+                          </leftChild>
+                          <type>FUNCTION</type>
+                          <value>NUMBER_OF_ITEMS</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>5</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/org.catrobat.catroid.content.bricks.StoreCSVIntoUserListBrick/userList"/>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userList"/>
+  </programListOfLists>
+</program>

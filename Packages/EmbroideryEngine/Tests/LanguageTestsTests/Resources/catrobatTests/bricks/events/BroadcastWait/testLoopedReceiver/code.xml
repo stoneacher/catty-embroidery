@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.67</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>LG-K420</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>23</platformVersion>
+    <programLicense></programLicense>
+    <programName>testLoopedReceiver</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1188</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Szene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value>A BroadcastAndWait brick waits until the receiver has finished. A Broadcast (without wait) brick does not wait until the receiver has finished.</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="WaitTillIdleBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>STRING</type>
+                      <value>abab-bba</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <type>USER_LIST</type>
+                      <value>result</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="StartScript">
+              <brickList>
+                <brick type="RepeatBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIMES_TO_REPEAT">
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <loopBricks>
+                    <brick type="BroadcastWaitBrick">
+                      <commentedOut>false</commentedOut>
+                      <broadcastMessage>print a</broadcastMessage>
+                    </brick>
+                    <brick type="AddItemToUserListBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="LIST_ADD_ITEM">
+                          <type>STRING</type>
+                          <value>b</value>
+                        </formula>
+                      </formulaList>
+                      <userList>
+                        <deviceListKey>07b85e78-eef3-4f4b-bbf8-4dda3027da40</deviceListKey>
+                        <name>result</name>
+                      </userList>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>-</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/loopBricks/brick[2]/userList"/>
+                </brick>
+                <brick type="RepeatBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIMES_TO_REPEAT">
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <loopBricks>
+                    <brick type="BroadcastBrick">
+                      <commentedOut>false</commentedOut>
+                      <broadcastMessage>print a</broadcastMessage>
+                    </brick>
+                    <brick type="AddItemToUserListBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="LIST_ADD_ITEM">
+                          <type>STRING</type>
+                          <value>b</value>
+                        </formula>
+                      </formulaList>
+                      <userList reference="../../../../brick/loopBricks/brick[2]/userList"/>
+                    </brick>
+                  </loopBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="WaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TIME_TO_WAIT_IN_SECONDS">
+                      <type>NUMBER</type>
+                      <value>0.1</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>a</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../script[2]/brickList/brick/loopBricks/brick[2]/userList"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>print a</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <deviceValueKey>5405361a-3aa4-4367-903a-459691450543</deviceValueKey>
+          <name>finished</name>
+        </default>
+      </userVariable>
+    </userVariable>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <deviceValueKey>920a22db-051f-44f6-8021-fcb700ba2fd2</deviceValueKey>
+          <name>a written</name>
+        </default>
+      </userVariable>
+    </userVariable>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <deviceValueKey>0171be56-91b2-45e7-8f8e-24bdd8966b05</deviceValueKey>
+          <name>wait interrupted</name>
+        </default>
+      </userVariable>
+    </userVariable>
+  </programVariableList>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script[2]/brickList/brick/loopBricks/brick[2]/userList"/>
+  </programListOfLists>
+</program>

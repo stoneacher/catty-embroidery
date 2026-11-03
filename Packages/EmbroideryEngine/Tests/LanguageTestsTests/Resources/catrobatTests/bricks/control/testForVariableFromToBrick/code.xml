@@ -1,0 +1,1200 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.75</applicationVersion>
+    <catrobatLanguageVersion>1.12</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>GM1901</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag>en-US</listeningLanguageTag>
+    <mediaLicense>https://developer.catrobat.org/ccbysa_v4</mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense>https://developer.catrobat.org/agpl_v3</programLicense>
+    <programName>testForVariableFromToBrick</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2134</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags>Experimental</tags>
+    <url>/pocketcode/project/a5e9533b-5c44-11eb-a92d-005056a36f47</url>
+    <userHandle>swap1204nil</userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <brickId>29621001-b328-468e-a057-10bad277d748</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>cabf7b23-c323-44fd-87c8-43141b29e5c8</deviceValueKey>
+                        <name>data</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <brickId>a4bc4cdf-58d2-48c0-88f3-016f09396e07</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>The regular loop with startVal&lt;endVal, both positive</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForVariableFromToBrick">
+                  <brickId>650b62b4-9098-4400-b7f9-c956a871247a</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="FOR_LOOP_TO">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                    <formula category="FOR_LOOP_FROM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>90866e6b-c415-4478-a26a-839bcfec6186</deviceValueKey>
+                        <name>x1</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>75d78878-d2c9-4292-bc0e-7eb846e54b05</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../brick/userVariable"/>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>0a55bcba-a8b3-48e0-a29e-c532097c098b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>data</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>a2684668-4c50-4bf4-afcf-ebc9768df7a1</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <brickId>0664f0a6-4e6c-4af4-a73f-c975bb5c74ee</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>The regular loop with startVal&lt;endVal, where startVal&lt;0 and endVal&gt;0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForVariableFromToBrick">
+                  <brickId>5530f313-16b7-4008-8c7d-a6972ac6f415</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="FOR_LOOP_TO">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                    <formula category="FOR_LOOP_FROM">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>5</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>34656893-7aad-4d45-9dd3-7f73fdfcd45d</deviceValueKey>
+                        <name>x2</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>9f1d4e9e-b873-4867-99f5-ed31e83ad34d</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../brick/userVariable"/>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>d2382b0f-b382-49c6-9082-1a64525b000a</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>11</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>data</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>e2033c63-3e5a-4e3e-befb-f8835695c31f</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <brickId>01d030a2-3bff-4f46-ae68-f1d4971b8031</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>The regular loop with startVal&gt;endVal, where startVal&lt;0 and endVal&lt;0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForVariableFromToBrick">
+                  <brickId>1816dcd9-9f76-46da-b2bf-e7d1c1dfbd09</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="FOR_LOOP_TO">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>10</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="FOR_LOOP_FROM">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>5</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>8c0ef014-49b2-4257-a5e0-e715226d0175</deviceValueKey>
+                        <name>x3</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>55ae5cb8-40b9-4c50-84c5-2a3db3d671ab</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../brick/userVariable"/>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>1cc3228e-5894-4109-8a87-a2e43928bf73</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>6</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>data</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>63d0b134-4c1e-40be-91e0-0742dc70be1a</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <brickId>79ea265a-788c-4f11-9e76-215a2b8cffcb</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>The regular loop with startVal&lt;endVal, but startVal and endVal not being integers. In such cases, the decimal part of each non-integral number is dropped, effectively converting the limits into integers</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForVariableFromToBrick">
+                  <brickId>b4c3ed1b-ac30-491e-84e4-fa1f9b70bbc0</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="FOR_LOOP_TO">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3.14</value>
+                    </formula>
+                    <formula category="FOR_LOOP_FROM">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>2.7</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>9af5bdd6-1ab4-4d50-a938-70c2d7e034c2</deviceValueKey>
+                        <name>x4</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>6cbc0d84-eb99-4b0b-9420-5cc50cb1ab95</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../brick/userVariable"/>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>5f049936-e40c-49e7-a5ed-3e67f35dc969</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>6</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>data</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>512857cf-4200-4ff6-857f-13456f3ce931</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>x4</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>105a3a56-5f56-450b-8a3e-cf0442a14fb9</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>2.7</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>2adfc7d6-17bf-4fc1-a519-9c7ff02611c7</deviceValueKey>
+                        <name>startVal</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>112192c4-0852-409c-b52f-d54d135a6055</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3.14</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>787f2db1-09ed-4815-aa31-c54df49aca98</deviceValueKey>
+                        <name>endVal</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>73cbe1c1-bf60-4ef9-b19b-b4766209529e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <brickId>3edb40e5-0994-4b0d-a3de-9f9b8411c1f7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>Identical to the above test case,the only difference being that the limits are constructed from pre-defined variables. Show that no modification(dropping of decimal part) takes place in these pre-defined variables.</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForVariableFromToBrick">
+                  <brickId>65235d73-6565-4d8d-aa2e-279e5ac94be0</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="FOR_LOOP_TO">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>endVal</value>
+                    </formula>
+                    <formula category="FOR_LOOP_FROM">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>startVal</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>4bccb64d-f243-4758-8c59-f4a7d0df3263</deviceValueKey>
+                        <name>x5</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                  <loopBricks>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>7e9906eb-46ac-4086-b36e-04a844212050</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../brick/userVariable"/>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>600ea77e-03c5-4f93-8193-c9332ab483fc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>6</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>data</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>39757c91-5a1a-4cad-8b94-286cf307f867</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>2.7</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>startVal</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>cc15a9fc-3d89-49d9-a401-e06ce5befb39</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3.14</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>endVal</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>4b34fc85-1634-49a7-8a64-a2398ecf2f9b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>6a4254cb-98f5-46a3-963f-0a1691c82b49</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[19]/userVariable"/>
+                </brick>
+                <brick type="NoteBrick">
+                  <brickId>da035d3f-ee1e-4f71-85e3-e31cc6c4f711</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>Show that changing the limit variable midway has no effect on the execution of the loop(as the limits are fixed at the start of the loop)</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForVariableFromToBrick">
+                  <brickId>72b3717e-cf4d-4396-a070-8c70622d6d47</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="FOR_LOOP_TO">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>endVal</value>
+                    </formula>
+                    <formula category="FOR_LOOP_FROM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>ffd077b7-dabe-4c27-a885-711bdf850987</deviceValueKey>
+                        <name>x6</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                  <loopBricks>
+                    <brick type="IfThenLogicBeginBrick">
+                      <brickId>c2b2b6ad-365b-4d73-9c67-234249e9c76f</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="IF_CONDITION">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <type>USER_VARIABLE</type>
+                            <value>x6</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>3</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </formula>
+                      </formulaList>
+                      <ifBranchBricks>
+                        <brick type="SetVariableBrick">
+                          <brickId>fe7fa493-993e-4b9d-a79d-753a44dac941</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE">
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>5</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable reference="../../../../../../brick[19]/userVariable"/>
+                        </brick>
+                      </ifBranchBricks>
+                    </brick>
+                    <brick type="ChangeVariableBrick">
+                      <brickId>acba9d70-cd3f-4450-81f5-54a72180a228</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE_CHANGE">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>1</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../brick/userVariable"/>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>b8022e71-93a3-49d1-aa61-e973bbf45989</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>data</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>42d06fc0-92d2-4d94-834d-d7af9a4d82df</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>endVal</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>a08342cb-105e-4e03-b692-828f78fea1fa</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>0e324460-1803-4e6c-8d71-9c316d7149cc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[18]/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>812f8f1c-2f4a-4da4-b627-33f3d52c7b22</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[19]/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>a98eb414-0a9f-4238-ad11-85220369d1b2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>771b2ec4-7a8b-4509-94e3-ae299784dc24</deviceValueKey>
+                        <name>counter</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <brickId>439335d3-f1f7-498f-8b0e-e677537217b7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>A regular loop with startVal&gt;endVal.
+Also,show that changing the limit variables midway has no effect on the execution of the loop(as the limits are fixed at the start of the loop)</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForVariableFromToBrick">
+                  <brickId>fdd58ef2-079a-4de9-ae91-5609cc23cb13</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="FOR_LOOP_TO">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>endVal</value>
+                    </formula>
+                    <formula category="FOR_LOOP_FROM">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>startVal</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>8faabf40-da15-4ef1-b969-12fcf66310bc</deviceValueKey>
+                        <name>x8</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                  <loopBricks>
+                    <brick type="IfThenLogicBeginBrick">
+                      <brickId>7393c396-33ac-40af-939b-e8a6fa47b828</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="IF_CONDITION">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <type>USER_VARIABLE</type>
+                            <value>x8</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>9</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </formula>
+                      </formulaList>
+                      <ifBranchBricks>
+                        <brick type="SetVariableBrick">
+                          <brickId>c14857a3-1382-4e84-87d6-e272a0588489</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE">
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>1</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable reference="../../../../../../brick[18]/userVariable"/>
+                        </brick>
+                        <brick type="SetVariableBrick">
+                          <brickId>e4088db8-c935-4241-bffd-e8cbfecb8b73</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE">
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>10</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable reference="../../../../../../brick[19]/userVariable"/>
+                        </brick>
+                      </ifBranchBricks>
+                    </brick>
+                    <brick type="IfThenLogicBeginBrick">
+                      <brickId>2d5cec22-8204-473c-bfea-68c8cd794a70</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="IF_CONDITION">
+                          <additionalChildren/>
+                          <leftChild>
+                            <additionalChildren/>
+                            <type>USER_VARIABLE</type>
+                            <value>counter</value>
+                          </leftChild>
+                          <rightChild>
+                            <additionalChildren/>
+                            <type>NUMBER</type>
+                            <value>5</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>SMALLER_OR_EQUAL</value>
+                        </formula>
+                      </formulaList>
+                      <ifBranchBricks>
+                        <brick type="ChangeVariableBrick">
+                          <brickId>63cb351d-15c5-4be1-a3b9-00394708ad84</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE_CHANGE">
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>1</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable reference="../../../../../../brick[35]/userVariable"/>
+                        </brick>
+                        <brick type="ChangeVariableBrick">
+                          <brickId>147ad52b-1314-44cd-a536-bd12f611eb05</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE_CHANGE">
+                              <additionalChildren/>
+                              <type>USER_VARIABLE</type>
+                              <value>x8</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable reference="../../../../../../brick/userVariable"/>
+                        </brick>
+                      </ifBranchBricks>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>7634552a-5502-423d-9970-d0816c0489a7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>40</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>data</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>1078cc64-f20c-49f5-9c51-dec5425ee49c</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>startVal</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>71af31aa-495b-4813-85d9-f6daaf5bcd8d</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>endVal</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>ea0ac2c1-0b94-4fb5-a5a5-4887985452ab</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>698855a5-ae20-4c72-8611-8c5babfd9e7c</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>6dd08ade-4403-4076-be70-3794f5724cf8</deviceValueKey>
+                        <name>sumA</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>3c8df4fe-8698-4741-8bef-d8f24b4d4479</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>80a7f807-a1d5-4789-bb11-1ee78b972638</deviceValueKey>
+                        <name>sumB</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="NoteBrick">
+                  <brickId>2c42ebe0-8a89-4c6e-9f3b-1af3e0f69930</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>Regular nested loop with different control variables.</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ForVariableFromToBrick">
+                  <brickId>0269455f-12c3-4b9b-98b0-2b5befcbf498</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="FOR_LOOP_TO">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>5</value>
+                    </formula>
+                    <formula category="FOR_LOOP_FROM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>978a30a7-b5bf-48da-92c8-036af6746bdd</deviceValueKey>
+                        <name>x9a</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                  <loopBricks>
+                    <brick type="ForVariableFromToBrick">
+                      <brickId>9e5564ca-1f6b-468c-b2cc-76dd8d55ff1c</brickId>
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="FOR_LOOP_TO">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>9</value>
+                        </formula>
+                        <formula category="FOR_LOOP_FROM">
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>7</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable type="UserVariable" serialization="custom">
+                        <userVariable>
+                          <default>
+                            <initialIndex>-1</initialIndex>
+                            <deviceValueKey>541a1716-d655-4aa9-9d75-092f36436da9</deviceValueKey>
+                            <name>x9b</name>
+                          </default>
+                        </userVariable>
+                      </userVariable>
+                      <loopBricks>
+                        <brick type="ChangeVariableBrick">
+                          <brickId>d6fb076d-2f73-4664-a425-ac96e85d25a5</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE_CHANGE">
+                              <additionalChildren/>
+                              <type>NUMBER</type>
+                              <value>1</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable reference="../../../../../../brick/userVariable"/>
+                        </brick>
+                        <brick type="ChangeVariableBrick">
+                          <brickId>92a0c975-2295-49a6-8f32-52e2351c5200</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE_CHANGE">
+                              <additionalChildren/>
+                              <type>USER_VARIABLE</type>
+                              <value>x9a</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable reference="../../../../../../brick[42]/userVariable"/>
+                        </brick>
+                        <brick type="ChangeVariableBrick">
+                          <brickId>06a38e36-0290-47f6-b541-2f0c2c455410</brickId>
+                          <commentedOut>false</commentedOut>
+                          <formulaList>
+                            <formula category="VARIABLE_CHANGE">
+                              <additionalChildren/>
+                              <type>USER_VARIABLE</type>
+                              <value>x9b</value>
+                            </formula>
+                          </formulaList>
+                          <userVariable reference="../../../../../../brick[43]/userVariable"/>
+                        </brick>
+                      </loopBricks>
+                    </brick>
+                  </loopBricks>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>49972cf7-5cb1-42a2-bb85-668cf6b17cc1</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>15</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>data</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>0b31242c-87bb-4ca0-9188-33e45d2b7989</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>45</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>sumA</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>6265af65-c382-414d-bf76-9f7484a334b3</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>120</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>sumB</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>d1c15429-e3d6-4313-b892-14b599690bd2</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>1b3d58ab-d8f4-4e7f-b371-6bb0eea2dff7</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[3]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[19]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[7]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[11]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[18]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[35]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[15]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[22]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[29]/userVariable"/>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <initialIndex>-1</initialIndex>
+          <deviceValueKey>fe7e36a1-414d-4543-8414-0e076fd1883c</deviceValueKey>
+          <name>x7</name>
+        </default>
+      </userVariable>
+    </userVariable>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[37]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[45]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[45]/loopBricks/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[42]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[43]/userVariable"/>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <initialIndex>-1</initialIndex>
+          <deviceValueKey>b04deb71-1c5d-41cd-8819-f8a3260b4188</deviceValueKey>
+          <name>x10</name>
+        </default>
+      </userVariable>
+    </userVariable>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <initialIndex>-1</initialIndex>
+          <deviceValueKey>9c62c972-ddf4-4f70-b135-0676e2cb2caf</deviceValueKey>
+          <name>sum</name>
+        </default>
+      </userVariable>
+    </userVariable>
+  </programVariableList>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

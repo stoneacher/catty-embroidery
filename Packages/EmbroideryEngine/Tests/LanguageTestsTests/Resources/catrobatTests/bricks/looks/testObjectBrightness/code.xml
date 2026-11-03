@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.1.2</applicationVersion>
+    <catrobatLanguageVersion>1.12</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Android SDK built for x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense></programLicense>
+    <programName>testObjectBrightness</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1794</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList>
+            <look fileName="Background.png" name="Background">
+              <isWebRequest>false</isWebRequest>
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="bird">
+          <lookList>
+            <look fileName="panda.png" name="panda">
+              <isWebRequest>false</isWebRequest>
+              <valid>true</valid>
+            </look>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="PlaceAtBrick">
+                  <brickId>f4099892-4ce7-4e25-b340-1c4b35c5d1e9</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="X_POSITION">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>32</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="Y_POSITION">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>150</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>e2fb4679-021b-463d-ac4e-354cde6bad29</scriptId>
+            </script>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="AssertEqualsBrick">
+                  <brickId>a0df6315-5e6a-4e35-93bb-e9aa69ccbf3f</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>100</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_BRIGHTNESS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetBrightnessBrick">
+                  <brickId>66498534-63b2-4951-9b89-f6af666356c9</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="BRIGHTNESS">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>50.0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>5a505cd6-0e04-4cd1-965d-9c41825c057a</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>50</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_BRIGHTNESS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetBrightnessBrick">
+                  <brickId>a5a5c295-9c32-42c3-a3f0-21ee1be46f97</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="BRIGHTNESS">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>a</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>7746a4ed-03ff-4fa0-848e-b94a8233c568</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>50</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_BRIGHTNESS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetBrightnessBrick">
+                  <brickId>424e0bf1-0de1-4630-9871-f4dc43ab2a05</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="BRIGHTNESS">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>#EB4618</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>88c6c4f7-d0dd-4ee8-add5-58afe5763e18</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>50</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_BRIGHTNESS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetBrightnessBrick">
+                  <brickId>09469d6f-3f34-4917-a77a-06e293b52ac1</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="BRIGHTNESS">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>100</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>29e2a40d-0581-40f9-95ab-3c8b630e169e</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_BRIGHTNESS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetBrightnessBrick">
+                  <brickId>1bcbb594-b889-4d6e-98a7-69ba40df26dc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="BRIGHTNESS">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>121</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>100d634e-0590-4b8e-836c-3941b898a00f</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>121</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>SENSOR</type>
+                      <value>OBJECT_BRIGHTNESS</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>30a5f557-bcab-42f5-be12-9f6f194416dd</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>26364a19-4e36-4a95-ac62-e4b11618fef5</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

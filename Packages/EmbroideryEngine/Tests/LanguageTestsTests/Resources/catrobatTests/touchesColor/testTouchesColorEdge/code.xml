@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.74</applicationVersion>
+    <catrobatLanguageVersion>0.9999996</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Android SDK built for x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>24</platformVersion>
+    <programLicense></programLicense>
+    <programName>testTouchesColorEdge</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1794</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Szene 1</name>
+      <objectList>
+        <object type="Sprite" name="Hintergrund">
+          <lookList>
+            <look fileName="Hintergrund.png" name="Hintergrund"/>
+          </lookList>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+        <object type="Sprite" name="e">
+          <lookList>
+            <look fileName="Meine Figur oder mein Objekt_#0.png" name="e"/>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="PlaceAtBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="X_POSITION">
+                      <type>NUMBER</type>
+                      <value>15</value>
+                    </formula>
+                    <formula category="Y_POSITION">
+                      <type>NUMBER</type>
+                      <value>110</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <type>STRING</type>
+                        <value>#ff0000</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>COLLIDES_WITH_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>FALSE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="TurnRightBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="TURN_RIGHT_DEGREES">
+                      <type>NUMBER</type>
+                      <value>90</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <type>STRING</type>
+                        <value>#ff0000</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>COLLIDES_WITH_COLOR</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

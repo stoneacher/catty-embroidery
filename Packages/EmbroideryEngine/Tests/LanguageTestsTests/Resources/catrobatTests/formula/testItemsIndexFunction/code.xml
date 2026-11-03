@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>signedRelease</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>1.2.4</applicationVersion>
+    <catrobatLanguageVersion>1.11</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Pixel 7 Pro</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>34</platformVersion>
+    <programLicense></programLicense>
+    <programName>testItemsIndexFunction</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2808</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1440</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="AssertEqualsBrick">
+                  <brickId>0cc4ad89-fa07-4c9f-9139-bccdd9651b26</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>123</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>9ad20d64-02ad-4510-b851-93b22c80b059</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>hello world</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <brickId>70a95a8b-7e03-4ba0-a117-886709e93966</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>123</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>9af547b1-8b9a-40b3-b7be-233e05c21f3d</deviceListKey>
+                    <initialIndex>0</initialIndex>
+                    <name>testList</name>
+                  </userList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>0a57fc5b-0267-4769-b4f0-39c8312f0ccd</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>123</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="InsertItemIntoUserListBrick">
+                  <brickId>d330fa3f-5fb3-46b3-ab23-c166f1cef350</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="INSERT_ITEM_INTO_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="INSERT_ITEM_INTO_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>world hello</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[3]/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>3fbcdd1b-44ce-4abd-bca6-2676d1b70310</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>hello world</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>e09f46ca-c0d8-4688-8067-4538f360849c</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>world hello</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <brickId>f7d827a1-a279-4232-b22e-811ce6bf9e6b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>hello world</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[3]/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>630b5d9c-4b47-48ea-a149-55c1bcde9260</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>hello world</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>28665a9c-9862-417f-aaed-1335ce959c99</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>world hello</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="InsertItemIntoUserListBrick">
+                  <brickId>6150d1da-a25f-477f-94d9-18e18bf8c759</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="INSERT_ITEM_INTO_USERLIST_INDEX">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="INSERT_ITEM_INTO_USERLIST_VALUE">
+                      <additionalChildren/>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>123</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[3]/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>640a7722-8e91-4934-8a2d-8e3ecfdb69a2</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>123</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>MINUS</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>e0602a86-963e-465a-af2a-3d2c8fac1ed8</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>123</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>539e84e1-e751-4514-a1c3-4ff2e4d68978</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>hello world</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ClearUserListBrick">
+                  <brickId>cecc27c1-80ec-4f32-b13c-68bb48993613</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick[3]/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>1cc7221f-02aa-4e2f-8d78-592a0c274602</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <rightChild>
+                          <additionalChildren/>
+                          <type>NUMBER</type>
+                          <value>123</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>MINUS</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>6769e526-74c7-4630-a9cd-5d264ef83217</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>123</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>74d488ad-3c59-4425-a881-1baa812c8a36</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>STRING</type>
+                        <value>hello world</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_LIST</type>
+                        <value>testList</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>INDEX_OF_ITEM</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>4b9a6521-21a7-46b1-b4a1-f5f1c7c7445d</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>69d8b65b-c3db-4f93-8e91-b4e65f171eb6</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <initialIndex>0</initialIndex>
+          <deviceValueKey>bb7dc347-dd1b-43b0-9a37-e9d7e8e12db6</deviceValueKey>
+          <name>TestString</name>
+        </default>
+      </userVariable>
+    </userVariable>
+  </programVariableList>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[3]/userList"/>
+  </programListOfLists>
+  <programMultiplayerVariableList/>
+</program>

@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.75</applicationVersion>
+    <catrobatLanguageVersion>0.99999997</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>AOSP on IA Emulator</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>testUserBricksFunctionality</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1794</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="UserDefinedBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <isCallingBrick>true</isCallingBrick>
+                  <userDefinedBrickDataList>
+                    <userDefinedBrickLabel>
+                      <type>LABEL</type>
+                      <label>Basic User Defined Script</label>
+                    </userDefinedBrickLabel>
+                  </userDefinedBrickDataList>
+                  <userDefinedBrickID>fd5f37e3-d316-4e92-b1e6-1927b8ecdb5f</userDefinedBrickID>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>script was called</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>3c6b286c-ca35-4a26-b14f-310b01f469fd</deviceValueKey>
+                        <name>first call</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>d4b0c6f4-fe64-4590-88b1-2096e2f4b30c</deviceValueKey>
+                        <name>script call counter</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="UserDefinedBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <isCallingBrick>true</isCallingBrick>
+                  <userDefinedBrickDataList>
+                    <userDefinedBrickLabel>
+                      <type>LABEL</type>
+                      <label>Recursive Call User Defined Script</label>
+                    </userDefinedBrickLabel>
+                  </userDefinedBrickDataList>
+                  <userDefinedBrickID>e7057367-eda9-46ac-80c5-dd66a76953df</userDefinedBrickID>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>script call counter</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>02</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="UserDefinedScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>script call counter</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>NUMBER</type>
+                        <value>1</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>PLUS</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../../../script/brickList/brick[4]/userVariable"/>
+                </brick>
+                <brick type="IfThenLogicBeginBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>first call</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>FUNCTION</type>
+                        <value>TRUE</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                  <ifBranchBricks>
+                    <brick type="SetVariableBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList>
+                        <formula category="VARIABLE">
+                          <additionalChildren/>
+                          <type>FUNCTION</type>
+                          <value>FALSE</value>
+                        </formula>
+                      </formulaList>
+                      <userVariable reference="../../../../../../script/brickList/brick[3]/userVariable"/>
+                    </brick>
+                    <brick type="UserDefinedBrick">
+                      <commentedOut>false</commentedOut>
+                      <formulaList/>
+                      <isCallingBrick>true</isCallingBrick>
+                      <userDefinedBrickDataList>
+                        <userDefinedBrickLabel>
+                          <type>LABEL</type>
+                          <label>Recursive Call User Defined Script</label>
+                        </userDefinedBrickLabel>
+                      </userDefinedBrickDataList>
+                      <userDefinedBrickID>e7057367-eda9-46ac-80c5-dd66a76953df</userDefinedBrickID>
+                    </brick>
+                  </ifBranchBricks>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <userDefinedBrickID>e7057367-eda9-46ac-80c5-dd66a76953df</userDefinedBrickID>
+            </script>
+            <script type="UserDefinedScript">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>8b866978-4640-4e3d-bc85-5f76e24c8d87</deviceValueKey>
+                        <name>script was called</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <userDefinedBrickID>fd5f37e3-d316-4e92-b1e6-1927b8ecdb5f</userDefinedBrickID>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList>
+            <brick type="UserDefinedBrick">
+              <commentedOut>false</commentedOut>
+              <formulaList/>
+              <isCallingBrick>false</isCallingBrick>
+              <userDefinedBrickDataList>
+                <userDefinedBrickLabel>
+                  <type>LABEL</type>
+                  <label>Basic User Defined Script</label>
+                </userDefinedBrickLabel>
+              </userDefinedBrickDataList>
+              <userDefinedBrickID>fd5f37e3-d316-4e92-b1e6-1927b8ecdb5f</userDefinedBrickID>
+            </brick>
+            <brick type="UserDefinedBrick">
+              <commentedOut>false</commentedOut>
+              <formulaList/>
+              <isCallingBrick>false</isCallingBrick>
+              <userDefinedBrickDataList>
+                <userDefinedBrickLabel>
+                  <type>LABEL</type>
+                  <label>Recursive Call User Defined Script</label>
+                </userDefinedBrickLabel>
+              </userDefinedBrickDataList>
+              <userDefinedBrickID>e7057367-eda9-46ac-80c5-dd66a76953df</userDefinedBrickID>
+            </brick>
+          </userDefinedBrickList>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script[3]/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[3]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[4]/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

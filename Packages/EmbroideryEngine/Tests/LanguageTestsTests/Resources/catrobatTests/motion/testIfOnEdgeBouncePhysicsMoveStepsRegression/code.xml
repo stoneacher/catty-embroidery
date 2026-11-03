@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.58</applicationVersion>
+    <catrobatLanguageVersion>0.99999</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>SM-N950F</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>testIfOnEdgeBouncePhysicsMoveStepsRegression</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1480</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="My actor or object">
+          <lookList>
+            <look fileName="My actor or object.png" name="My actor or object"/>
+          </lookList>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="PlaceAtBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="X_POSITION">
+                      <type>NUMBER</type>
+                      <value>200</value>
+                    </formula>
+                    <formula category="Y_POSITION">
+                      <type>NUMBER</type>
+                      <value>0</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetPhysicsObjectTypeBrick">
+                  <commentedOut>false</commentedOut>
+                  <type>DYNAMIC</type>
+                </brick>
+                <brick type="MoveNStepsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="STEPS">
+                      <type>NUMBER</type>
+                      <value>200</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="IfOnEdgeBounceBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <leftChild>
+                          <type>SENSOR</type>
+                          <value>OBJECT_X</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>300</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_THAN</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>SENSOR</type>
+                          <value>OBJECT_ROTATION</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>NUMBER</type>
+                          <value>0</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>SMALLER_THAN</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <deviceValueKey>9a380bbc-957d-4e49-bf29-ced4b16354e1</deviceValueKey>
+          <name>_ACTUAL</name>
+        </default>
+      </userVariable>
+    </userVariable>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <deviceValueKey>e070800b-6ff1-488d-bc54-8fcd9892abaa</deviceValueKey>
+          <name>_EXPECTED</name>
+        </default>
+      </userVariable>
+    </userVariable>
+    <userVariable type="UserVariable" serialization="custom">
+      <userVariable>
+        <default>
+          <deviceValueKey>292be117-3535-4770-be08-60dbdcd880c4</deviceValueKey>
+          <name>_READY</name>
+        </default>
+      </userVariable>
+    </userVariable>
+  </programVariableList>
+  <programListOfLists/>
+</program>

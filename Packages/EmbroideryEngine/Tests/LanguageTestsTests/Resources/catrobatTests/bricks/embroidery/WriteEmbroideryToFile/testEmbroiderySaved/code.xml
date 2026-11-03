@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.74</applicationVersion>
+    <catrobatLanguageVersion>1.11</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>AOSP on IA Emulator</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <notesAndCredits></notesAndCredits>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>testEmbroiderySaved</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1794</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1080</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="NoteBrick">
+                  <brickId>a6938ef9-3e64-4dc7-8d3c-49e83029aa28</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>Tests if the Embroidery File always has a header and that it always has the same size</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>d2665725-6de6-4e6f-b5c8-9b7aca9c5ac5</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>testEmbroiderySaved.dst</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>1</initialIndex>
+                        <deviceValueKey>771ca44f-759b-4fae-a6f2-cee109880990</deviceValueKey>
+                        <name>fileName</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>f053b118-0006-45c4-abab-5199427c5698</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value></value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>0</initialIndex>
+                        <deviceValueKey>559db48b-7a5f-41f2-ac1e-0824aee8f799</deviceValueKey>
+                        <name>readData</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>5a9a7130-64df-4a32-a1a6-9165784528b3</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <type>STRING</type>
+                      <value>LA:testEmbroideryS</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <initialIndex>-1</initialIndex>
+                        <deviceValueKey>996cc07e-5824-4f86-a202-f1381fa3c51b</deviceValueKey>
+                        <name>fileHeader</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="RunningStitchBrick">
+                  <brickId>c8fb7e66-031a-4543-bb0e-24f149844591</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="EMBROIDERY_LENGTH">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>10</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="MoveNStepsBrick">
+                  <brickId>57f482b3-32ce-4b91-87d4-850d672798e8</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="STEPS">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>100</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="StopRunningStitchBrick">
+                  <brickId>769c9d1c-bd3a-4939-9901-f6c6bf995f4e</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="WriteEmbroideryToFileBrick">
+                  <brickId>4f7c8fce-a374-4376-a0b4-e7c5bc65eabc</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="WRITE_FILENAME">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>fileName</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="ReadVariableFromFileBrick">
+                  <brickId>31f1df22-15ac-416a-ab9a-d2813b5263b7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="READ_FILENAME">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>fileName</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[3]/userVariable"/>
+                  <spinnerSelectionID>1</spinnerSelectionID>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>020ccdcf-ccd3-4633-ac8b-da0d0166a7e8</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>USER_VARIABLE</type>
+                      <value>fileHeader</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>fileHeader</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>readData</value>
+                      </rightChild>
+                      <type>FUNCTION</type>
+                      <value>REGEX</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>ec3d672d-a72e-4afb-a8fb-bae20fde27f7</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <type>NUMBER</type>
+                      <value>548</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <type>USER_VARIABLE</type>
+                        <value>readData</value>
+                      </leftChild>
+                      <type>FUNCTION</type>
+                      <value>LENGTH</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>48bd85ca-3bca-471d-95ff-38cc31fbbc98</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>960ff0ae-2be9-4d34-b5a1-7e92dbcff8cb</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[4]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[3]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userVariable"/>
+  </programVariableList>
+  <programListOfLists>
+    <userList>
+      <deviceListKey>c0131dc4-b19f-463a-8bd7-00a1ae6d54c3</deviceListKey>
+      <initialIndex>0</initialIndex>
+      <name>actual</name>
+    </userList>
+    <userList>
+      <deviceListKey>42c1819f-5e48-42b6-8782-e83a5d90bd0d</deviceListKey>
+      <initialIndex>1</initialIndex>
+      <name>expected</name>
+    </userList>
+  </programListOfLists>
+  <programMultiplayerVariableList/>
+</program>

@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.64</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Pixel 2 XL</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>29</platformVersion>
+    <programLicense></programLicense>
+    <programName>testGlobalListsThatAreSharedBetweenScenes</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>2712</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>1440</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>main scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="Global lists that are shared between scenes">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>can the written value of global list be read by another scene?</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>6d164c7c-f8dc-4ad4-8cbe-6c4c8fbcef69</deviceListKey>
+                    <name>global list</name>
+                  </userList>
+                </brick>
+                <brick type="WriteListOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <type>STRING</type>
+                      <value>value of global list that was not written on device</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="SceneStartBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneToStart>scene that checks values set and written of global lists and returns to the main scene</sceneToStart>
+                </brick>
+                <brick type="ReadListFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="ReadListFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList>
+                    <deviceListKey>18b2bfa4-7d80-452d-82fb-a5d3bd64d76f</deviceListKey>
+                    <name>global list that is shared between scenes</name>
+                  </userList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_LIST</type>
+                          <value>global list</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value>value of global list written in second scene</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>USER_LIST</type>
+                          <value>global list that is shared between scenes</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value>written value of second global list that is shared between scenes</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+    <scene>
+      <name>scene that checks values set and written of global lists and returns to the main scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList/>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="object that checks values of global list, rewrites them and returns to main scene">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>written value of second global list that is shared between scenes</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../../../../../scene/objectList/object[2]/scriptList/script/brickList/brick[6]/userList"/>
+                </brick>
+                <brick type="WriteListOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../../../../../../../scene/objectList/object[2]/scriptList/script/brickList/brick[6]/userList"/>
+                </brick>
+                <brick type="ReadListFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../../../../../../../scene/objectList/object[2]/scriptList/script/brickList/brick/userList"/>
+                </brick>
+                <brick type="ReplaceItemInUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_VALUE">
+                      <type>STRING</type>
+                      <value>value of global list written in second scene</value>
+                    </formula>
+                    <formula category="REPLACE_ITEM_IN_USERLIST_INDEX">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../../../../../scene/objectList/object[2]/scriptList/script/brickList/brick/userList"/>
+                </brick>
+                <brick type="WriteListOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../../../../../../../scene/objectList/object[2]/scriptList/script/brickList/brick/userList"/>
+                </brick>
+                <brick type="SceneTransitionBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneForTransition>main scene</sceneForTransition>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+  </programVariableList>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object[2]/scriptList/script/brickList/brick/userList"/>
+    <userList reference="../../scenes/scene/objectList/object[2]/scriptList/script/brickList/brick[6]/userList"/>
+  </programListOfLists>
+</program>

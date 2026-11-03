@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.67</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>LG-K420</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>23</platformVersion>
+    <programLicense></programLicense>
+    <programName>testIgnoreMessagesFromOtherScene</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1188</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>assert scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value>A BroadcastAndWait brick does not trigger receivers of a different scene, it does continue as expected when the scene changes and resumes later.</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="WaitTillIdleBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>STRING</type>
+                      <value>abcd</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <type>USER_LIST</type>
+                      <value>result</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="StartScript">
+              <brickList>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>broadcast to second scene</broadcastMessage>
+                </brick>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>broadcast in first scene</broadcastMessage>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>d</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>2839ea7e-3713-467c-9af5-746d4a4a552b</deviceListKey>
+                    <name>result</name>
+                  </userList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>a</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../script[2]/brickList/brick[3]/userList"/>
+                </brick>
+                <brick type="SceneStartBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneToStart>second scene</sceneToStart>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>c</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../script[2]/brickList/brick[3]/userList"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>broadcast in first scene</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+    <scene>
+      <name>second scene</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>write to result</broadcastMessage>
+                </brick>
+                <brick type="SceneTransitionBrick">
+                  <commentedOut>false</commentedOut>
+                  <sceneForTransition>assert scene</sceneForTransition>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>b</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../../../../../scene/objectList/object/scriptList/script[2]/brickList/brick[3]/userList"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>write to result</receivedMessage>
+            </script>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>This should not be triggered.</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../../../../../scene/objectList/object/scriptList/script[2]/brickList/brick[3]/userList"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>broadcast to second scene</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script[2]/brickList/brick[3]/userList"/>
+  </programListOfLists>
+</program>

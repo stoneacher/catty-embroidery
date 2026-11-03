@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<program>
+  <header>
+    <applicationBuildName/>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>signedRelease</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.75</applicationVersion>
+    <catrobatLanguageVersion>0.99999991</catrobatLanguageVersion>
+    <dateTimeUpload/>
+    <description/>
+    <deviceName>SM-N950F</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag>de-AT</listeningLanguageTag>
+    <mediaLicense>https://developer.catrobat.org/ccbysa_v4</mediaLicense>
+    <notesAndCredits/>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense>https://developer.catrobat.org/agpl_v3</programLicense>
+    <programName>testFloatingPointArithmetic</programName>
+    <remixOf/>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1480</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags/>
+    <url>/pocketcode/project/5bfc1783-3a67-11eb-a92d-005056a36f47</url>
+    <userHandle>hej-wickie-hej</userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value>See CATROID-5 why this was an issue. Also see "What every computer scientist should know about floating-point arithmetic", David Goldberg, Computing Surveys, March 1991.</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <type>NUMBER</type>
+                        <value>1.1</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>0.1</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>PLUS</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>NUMBER</type>
+                      <value>1.2</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <type>NUMBER</type>
+                        <value>15.3</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>3.2</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MINUS</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>NUMBER</type>
+                      <value>12.1</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <type>NUMBER</type>
+                        <value>3.5</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>3.2</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>MULT</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>NUMBER</type>
+                      <value>11.2</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <type>NUMBER</type>
+                        <value>1.1</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>5</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>DIVIDE</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>NUMBER</type>
+                      <value>0.22</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

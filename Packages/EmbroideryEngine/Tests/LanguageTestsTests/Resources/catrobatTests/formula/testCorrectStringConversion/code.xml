@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.75</applicationVersion>
+    <catrobatLanguageVersion>0.999999997</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>Android SDK built for x86</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <listeningLanguageTag></listeningLanguageTag>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>22</platformVersion>
+    <programLicense></programLicense>
+    <programName>testCorrectStringConversion</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1184</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>768</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript" posX="0.0" posY="0.0">
+              <brickList>
+                <brick type="SetVariableBrick">
+                  <brickId>7fa82299-c25b-49d7-a804-61e001787f30</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>STRING</type>
+                      <value>5f</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>7b961305-7304-41f4-b7dd-70f3a8d30090</deviceValueKey>
+                        <name>floatStringToConvert</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>edc5acf6-88aa-47bd-a723-005a00868991</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>USER_VARIABLE</type>
+                      <value>floatStringToConvert</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick/userVariable"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>d9445edf-4e5f-4c49-bfc9-c5ac96a72cf3</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>STRING</type>
+                      <value>f</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <textBlockFunctionProvider/>
+                        <type>STRING</type>
+                        <value>[fFdD]</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <textBlockFunctionProvider/>
+                        <type>USER_VARIABLE</type>
+                        <value>floatStringToConvert</value>
+                      </rightChild>
+                      <textBlockFunctionProvider/>
+                      <type>FUNCTION</type>
+                      <value>REGEX</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>7b6877dc-7987-4957-8131-013046e14d01</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>STRING</type>
+                      <value>13.856d</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>7d2f1d00-44fc-427e-ab5d-bcd81803660b</deviceValueKey>
+                        <name>doubleStringToConvert</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>7602578b-c0da-49a1-8f80-6c7628983f5c</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>USER_VARIABLE</type>
+                      <value>doubleStringToConvert</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[4]/userVariable"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>4d854fe2-e132-4067-b6fa-6fc6bf26ad0b</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>STRING</type>
+                      <value>d</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <textBlockFunctionProvider/>
+                        <type>STRING</type>
+                        <value>[fFdD]</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <textBlockFunctionProvider/>
+                        <type>USER_VARIABLE</type>
+                        <value>doubleStringToConvert</value>
+                      </rightChild>
+                      <textBlockFunctionProvider/>
+                      <type>FUNCTION</type>
+                      <value>REGEX</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>7f1ad301-91b4-431c-8d05-5382e548043d</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>STRING</type>
+                      <value>37.5D</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>fef130e7-23bf-451f-a56f-7bae13fd0d21</deviceValueKey>
+                        <name>UpperDoubleStringToConvert</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>e68c9e2a-6942-44ea-b24e-595eda81ba5d</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>USER_VARIABLE</type>
+                      <value>UpperDoubleStringToConvert</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[7]/userVariable"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>d0e39e93-02dd-4213-9c5d-34466aad4979</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>STRING</type>
+                      <value>D</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <textBlockFunctionProvider/>
+                        <type>STRING</type>
+                        <value>[fFdD]</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <textBlockFunctionProvider/>
+                        <type>USER_VARIABLE</type>
+                        <value>UpperDoubleStringToConvert</value>
+                      </rightChild>
+                      <textBlockFunctionProvider/>
+                      <type>FUNCTION</type>
+                      <value>REGEX</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>285e41eb-10d0-47bc-96d2-a77d81b53e1c</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>STRING</type>
+                      <value>42F</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>976f6bb3-dc92-47ba-99db-75485dcf158a</deviceValueKey>
+                        <name>UpperFloatStringToConvert</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <brickId>a7ec11bf-9110-4dc3-a7e9-4e878029dbed</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>USER_VARIABLE</type>
+                      <value>UpperFloatStringToConvert</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable reference="../../brick[10]/userVariable"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <brickId>39bbf7ff-db75-4d24-a521-125432665823</brickId>
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <additionalChildren/>
+                      <textBlockFunctionProvider/>
+                      <type>STRING</type>
+                      <value>F</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <additionalChildren/>
+                      <leftChild>
+                        <additionalChildren/>
+                        <textBlockFunctionProvider/>
+                        <type>STRING</type>
+                        <value>[fFdD]</value>
+                      </leftChild>
+                      <rightChild>
+                        <additionalChildren/>
+                        <textBlockFunctionProvider/>
+                        <type>USER_VARIABLE</type>
+                        <value>UpperFloatStringToConvert</value>
+                      </rightChild>
+                      <textBlockFunctionProvider/>
+                      <type>FUNCTION</type>
+                      <value>REGEX</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <brickId>26c4cec1-9d7f-496e-8703-56bac6fdf5c8</brickId>
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <scriptId>1bca451c-d5fd-468d-8398-d459ea12a258</scriptId>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+          <userDefinedBrickList/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[4]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[7]/userVariable"/>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[10]/userVariable"/>
+  </programVariableList>
+  <programListOfLists/>
+  <programMultiplayerVariableList/>
+</program>

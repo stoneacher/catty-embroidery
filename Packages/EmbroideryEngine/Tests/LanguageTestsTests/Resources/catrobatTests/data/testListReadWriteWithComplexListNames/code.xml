@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.64</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>SM-N950F</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>28</platformVersion>
+    <programLicense></programLicense>
+    <programName>testListReadWriteWithComplexListNames</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1480</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>NUMBER</type>
+                      <value>1.0</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>21cdc175-bd48-4c17-8b70-a589bc31a951</deviceListKey>
+                    <name>List with 😇 in name</name>
+                  </userList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>NUMBER</type>
+                      <value>2</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>fec34d1a-a683-4426-80e2-4a64636d3f5d</deviceListKey>
+                    <name>اسم المتغير العربي</name>
+                  </userList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>NUMBER</type>
+                      <value>3</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>388fc6eb-e33c-4bb7-af6f-a674e8df9968</deviceListKey>
+                    <name>\\&apos;&quot;&lt;&gt;&gt;%$$&amp;~||#__</name>
+                  </userList>
+                </brick>
+                <brick type="WriteListOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="WriteListOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick[2]/userList"/>
+                </brick>
+                <brick type="WriteListOnDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick[3]/userList"/>
+                </brick>
+                <brick type="DeleteItemOfUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_DELETE_ITEM">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="DeleteItemOfUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_DELETE_ITEM">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[2]/userList"/>
+                </brick>
+                <brick type="DeleteItemOfUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_DELETE_ITEM">
+                      <type>NUMBER</type>
+                      <value>1</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../brick[3]/userList"/>
+                </brick>
+                <brick type="SetVariableBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="VARIABLE">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <type>USER_LIST</type>
+                            <value>List with 😇 in name</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>STRING</type>
+                            <value></value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </leftChild>
+                        <rightChild>
+                          <leftChild>
+                            <type>USER_LIST</type>
+                            <value>اسم المتغير العربي</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>STRING</type>
+                            <value></value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <leftChild>
+                          <type>USER_LIST</type>
+                          <value>\\&apos;&quot;&lt;&gt;&gt;%$$&amp;~||#__</value>
+                        </leftChild>
+                        <rightChild>
+                          <type>STRING</type>
+                          <value></value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>EQUAL</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                  </formulaList>
+                  <userVariable type="UserVariable" serialization="custom">
+                    <userVariable>
+                      <default>
+                        <deviceValueKey>3f9b385e-1a03-4d73-8c24-eb8db13e0c82</deviceValueKey>
+                        <name>lists emptied</name>
+                      </default>
+                    </userVariable>
+                  </userVariable>
+                </brick>
+                <brick type="ReadListFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick[3]/userList"/>
+                </brick>
+                <brick type="ReadListFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick[2]/userList"/>
+                </brick>
+                <brick type="ReadListFromDeviceBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList/>
+                  <userList reference="../../brick/userList"/>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <leftChild>
+                        <leftChild>
+                          <leftChild>
+                            <leftChild>
+                              <type>USER_LIST</type>
+                              <value>List with 😇 in name</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>1</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>EQUAL</value>
+                          </leftChild>
+                          <rightChild>
+                            <leftChild>
+                              <type>USER_LIST</type>
+                              <value>اسم المتغير العربي</value>
+                            </leftChild>
+                            <rightChild>
+                              <type>NUMBER</type>
+                              <value>2</value>
+                            </rightChild>
+                            <type>OPERATOR</type>
+                            <value>EQUAL</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>LOGICAL_AND</value>
+                        </leftChild>
+                        <rightChild>
+                          <leftChild>
+                            <type>USER_LIST</type>
+                            <value>\\&apos;&quot;&lt;&gt;&gt;%$$&amp;~||#__</value>
+                          </leftChild>
+                          <rightChild>
+                            <type>NUMBER</type>
+                            <value>3</value>
+                          </rightChild>
+                          <type>OPERATOR</type>
+                          <value>EQUAL</value>
+                        </rightChild>
+                        <type>OPERATOR</type>
+                        <value>LOGICAL_AND</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>USER_VARIABLE</type>
+                        <value>lists emptied</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>LOGICAL_AND</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>FUNCTION</type>
+                      <value>TRUE</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList>
+    <userVariable reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[10]/userVariable"/>
+  </programVariableList>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick/userList"/>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[2]/userList"/>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script/brickList/brick[3]/userList"/>
+  </programListOfLists>
+</program>

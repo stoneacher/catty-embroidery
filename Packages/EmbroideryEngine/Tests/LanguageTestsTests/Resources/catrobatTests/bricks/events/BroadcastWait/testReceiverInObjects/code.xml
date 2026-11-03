@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<program>
+  <header>
+    <applicationBuildName></applicationBuildName>
+    <applicationBuildNumber>0</applicationBuildNumber>
+    <applicationBuildType>debug</applicationBuildType>
+    <applicationName>Pocket Code</applicationName>
+    <applicationVersion>0.9.67</applicationVersion>
+    <catrobatLanguageVersion>0.99995</catrobatLanguageVersion>
+    <dateTimeUpload></dateTimeUpload>
+    <description></description>
+    <deviceName>LG-K420</deviceName>
+    <isCastProject>false</isCastProject>
+    <landscapeMode>false</landscapeMode>
+    <mediaLicense></mediaLicense>
+    <platform>Android</platform>
+    <platformVersion>23</platformVersion>
+    <programLicense></programLicense>
+    <programName>testReceiverInObjects</programName>
+    <remixOf></remixOf>
+    <scenesEnabled>true</scenesEnabled>
+    <screenHeight>1188</screenHeight>
+    <screenMode>STRETCH</screenMode>
+    <screenWidth>720</screenWidth>
+    <tags></tags>
+    <url></url>
+    <userHandle></userHandle>
+  </header>
+  <settings/>
+  <scenes>
+    <scene>
+      <name>Scene 1</name>
+      <objectList>
+        <object type="Sprite" name="Background">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="StartScript">
+              <brickList>
+                <brick type="NoteBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="NOTE">
+                      <type>STRING</type>
+                      <value>A BroadcastAndWait brick waits for its receiver to be done even if they are in a different object.</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="WaitTillIdleBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+                <brick type="AssertEqualsBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="ASSERT_EQUALS_EXPECTED">
+                      <type>STRING</type>
+                      <value>abcd</value>
+                    </formula>
+                    <formula category="ASSERT_EQUALS_ACTUAL">
+                      <type>USER_LIST</type>
+                      <value>result</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="FinishStageBrick">
+                  <commentedOut>false</commentedOut>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+            <script type="StartScript">
+              <brickList>
+                <brick type="BroadcastWaitBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>trigger first object</broadcastMessage>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>d</value>
+                    </formula>
+                  </formulaList>
+                  <userList>
+                    <deviceListKey>5745ca21-c7d8-4225-8480-c9f59c676cc8</deviceListKey>
+                    <name>result</name>
+                  </userList>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="object_1">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>a</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../../../object/scriptList/script[2]/brickList/brick[2]/userList"/>
+                </brick>
+                <brick type="BroadcastBrick">
+                  <commentedOut>false</commentedOut>
+                  <broadcastMessage>trigger second object</broadcastMessage>
+                </brick>
+                <brick type="WaitUntilBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="IF_CONDITION">
+                      <leftChild>
+                        <leftChild>
+                          <type>USER_LIST</type>
+                          <value>result</value>
+                        </leftChild>
+                        <type>FUNCTION</type>
+                        <value>NUMBER_OF_ITEMS</value>
+                      </leftChild>
+                      <rightChild>
+                        <type>NUMBER</type>
+                        <value>2</value>
+                      </rightChild>
+                      <type>OPERATOR</type>
+                      <value>EQUAL</value>
+                    </formula>
+                  </formulaList>
+                </brick>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>c</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../../../object/scriptList/script[2]/brickList/brick[2]/userList"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>trigger first object</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+        <object type="Sprite" name="object_2">
+          <lookList/>
+          <soundList/>
+          <scriptList>
+            <script type="BroadcastScript">
+              <brickList>
+                <brick type="AddItemToUserListBrick">
+                  <commentedOut>false</commentedOut>
+                  <formulaList>
+                    <formula category="LIST_ADD_ITEM">
+                      <type>STRING</type>
+                      <value>b</value>
+                    </formula>
+                  </formulaList>
+                  <userList reference="../../../../../../object/scriptList/script[2]/brickList/brick[2]/userList"/>
+                </brick>
+              </brickList>
+              <commentedOut>false</commentedOut>
+              <receivedMessage>trigger second object</receivedMessage>
+            </script>
+          </scriptList>
+          <nfcTagList/>
+          <userVariables/>
+          <userLists/>
+        </object>
+      </objectList>
+    </scene>
+  </scenes>
+  <programVariableList/>
+  <programListOfLists>
+    <userList reference="../../scenes/scene/objectList/object/scriptList/script[2]/brickList/brick[2]/userList"/>
+  </programListOfLists>
+</program>
