@@ -79,45 +79,106 @@ package struct XMLTree: Sendable, Equatable {
     /// The element a `reference=` attribute points at, or the address itself when
     /// the element carries none.
     ///
-    /// XStream's relative paths are evaluated from the referencing element itself:
-    /// `..` is its parent, and `name[n]` is the n-th child called `name`, 1-based,
-    /// counting only children of that name (`name` alone is `name[1]`). A path
-    /// leading outside the tree, or to an element that is itself a reference,
-    /// throws `unresolvedReference` naming the path.
+    /// Mirrors XStream's `XPATH_RELATIVE_REFERENCES` (`Path`,
+    /// `ReferenceByXPathUnmarshaller`, `AbstractReferenceUnmarshaller`):
+    /// - the path is decoded with the name coder and evaluated from the
+    ///   referencing element itself: `..` is its parent, `.` is skipped;
+    /// - `name[n]` is the n-th child called `name`, counting only children of
+    ///   that name, written as a plain positive decimal; `name` alone is `name[1]`;
+    /// - the target must already be unmarshalled when the reference is read: an
+    ///   element completed earlier in document order, or an ancestor.
+    ///
+    /// Anything else throws `unresolvedReference` naming the path: a path leading
+    /// outside the tree, forward, or to an element that is itself a reference. An
+    /// address outside the tree throws it with an empty path.
     package func dereference(_ address: Address) throws(ImportBlocker) -> Address {
-        guard let path = self[address]?.attributes["reference"] else { return address }
+        guard let source = self[address] else { throw .unresolvedReference("") }
+        guard let path = source.attributes["reference"] else { return address }
         let unresolved = ImportBlocker.unresolvedReference(path)
         guard !path.isEmpty else { throw unresolved }
 
         var current = address
-        for segment in path.split(separator: "/", omittingEmptySubsequences: false) {
-            if segment == ".." {
+        for segment in XStreamName.decode(path).split(separator: "/", omittingEmptySubsequences: false) {
+            switch segment {
+            case "..":
                 guard let parent = current.parent else { throw unresolved }
                 current = parent
+            case ".":
                 continue
+            default:
+                guard let (name, ordinal) = Self.parse(segment: segment),
+                      let element = self[current]
+                else { throw unresolved }
+                let matches = element.children.indices.filter { element.children[$0].name == name }
+                guard ordinal <= matches.count else { throw unresolved }
+                current = current.child(matches[ordinal - 1])
             }
-            guard let (name, ordinal) = Self.parse(segment: segment),
-                  let element = self[current]
-            else { throw unresolved }
-            let matches = element.children.indices.filter { element.children[$0].name == name }
-            guard matches.indices.contains(ordinal - 1) else { throw unresolved }
-            current = current.child(matches[ordinal - 1])
         }
-        guard let target = self[current], target.attributes["reference"] == nil else { throw unresolved }
+        guard let target = self[current], target.attributes["reference"] == nil,
+              current.isAncestor(of: address) || current.precedes(address)
+        else { throw unresolved }
         return current
     }
 
-    /// `name` or `name[n]`; anything else is not a path segment. An ordinal below 1
-    /// parses, and is rejected by the caller's range check like one past the end.
+    /// `name` or `name[n]` with n a positive decimal without sign or leading zero,
+    /// as XStream writes it; anything else is not a path segment. Digits only and
+    /// no leading zero make n ≥ 1, so the caller's `n - 1` cannot overflow (an
+    /// unguarded `Int(_:)` accepted `-9223372036854775808` and trapped there); a
+    /// value past `Int.max` makes `Int(_:)` return nil.
     private static func parse(segment: Substring) -> (name: Substring, ordinal: Int)? {
         guard let open = segment.firstIndex(of: "[") else {
             return segment.isEmpty ? nil : (segment, 1)
         }
         let name = segment[..<open]
-        guard !name.isEmpty, segment.last == "]",
-              let ordinal = Int(segment[segment.index(after: open) ..< segment.index(before: segment.endIndex)])
+        guard !name.isEmpty, segment.last == "]" else { return nil }
+        let digits = segment[segment.index(after: open) ..< segment.index(before: segment.endIndex)]
+        guard digits.first != "0",
+              digits.allSatisfy({ ("0" ... "9").contains($0) }),
+              let ordinal = Int(digits)
         else { return nil }
         return (name, ordinal)
+    }
+}
+
+extension XMLTree.Address {
+    func isAncestor(of other: Self) -> Bool {
+        path.count < other.path.count && other.path.starts(with: path)
+    }
+
+    /// Strictly earlier in document order and not an ancestor: the element was
+    /// completed before `other` started.
+    func precedes(_ other: Self) -> Bool {
+        !isAncestor(of: other) && path.lexicographicallyPrecedes(other.path)
+    }
+}
+
+/// XStream's `XmlFriendlyNameCoder`, decoding direction: `__` is `_`, `_-` is `$`,
+/// and `_.` followed by four hex digits is that UTF-16 code unit. Any other `_`
+/// stands for itself.
+enum XStreamName {
+    static func decode(_ name: String) -> String {
+        guard name.contains("_") else { return name }
+        var result = ""
+        var rest = Substring(name)
+        while let first = rest.first {
+            if rest.hasPrefix("__") {
+                result.append("_")
+                rest = rest.dropFirst(2)
+            } else if rest.hasPrefix("_-") {
+                result.append("$")
+                rest = rest.dropFirst(2)
+            } else if rest.hasPrefix("_."), rest.count >= 6,
+                      let unit = UInt16(rest.dropFirst(2).prefix(4), radix: 16),
+                      rest.dropFirst(2).prefix(4).allSatisfy(\.isHexDigit),
+                      let scalar = Unicode.Scalar(unit) {
+                result.unicodeScalars.append(scalar)
+                rest = rest.dropFirst(6)
+            } else {
+                result.append(first)
+                rest = rest.dropFirst()
+            }
+        }
+        return result
     }
 }
 
@@ -134,7 +195,9 @@ private final class TreeBuilder: NSObject, XMLParserDelegate {
         qualifiedName _: String?,
         attributes: [String: String]
     ) {
-        stack.append(XMLTree.Element(name: elementName, attributes: attributes, children: [], text: ""))
+        stack.append(XMLTree.Element(
+            name: XStreamName.decode(elementName), attributes: attributes, children: [], text: ""
+        ))
     }
 
     func parser(_: XMLParser, foundCharacters string: String) {

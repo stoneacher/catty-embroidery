@@ -1,4 +1,4 @@
-@testable import CatrobatImport
+import CatrobatImport
 import Foundation
 import Testing
 
@@ -25,14 +25,34 @@ struct CorpusReferenceTests {
         }
     }
 
-    /// Guards the parameterised test above against running over an empty corpus,
-    /// and pins how many references it actually exercised.
-    @Test func theCorpusHas1120References() throws {
-        var count = 0
+    /// Pins every reference's source and target tag across the corpus (1120 in all).
+    /// It guards the parameterised test above against an empty corpus, and is the
+    /// resolver's identity oracle: one that lands on a sibling of the wrong kind
+    /// changes this table. The cross-kind pairs all belong to user-defined bricks
+    /// and clones, which are out of scope (ADR-001).
+    @Test func referenceKindsAcrossTheCorpus() throws {
+        var pairs: [String: Int] = [:]
         for entry in try LanguageTestCatalog.manifest().tests {
             let tree = try XMLTree(parsing: LanguageTestCatalog.codeXML(for: entry.path))
-            count += tree.addresses { $0.attributes["reference"] != nil }.count
+            for address in tree.addresses(where: { $0.attributes["reference"] != nil }) {
+                let source = try #require(tree[address]).name
+                let target = try #require(tree[tree.dereference(address)]).name
+                pairs["\(source) → \(target)", default: 0] += 1
+            }
         }
-        #expect(count == 1120)
+        #expect(pairs == [
+            "input → input": 20,
+            "look → look": 7,
+            "object → objectToClone": 4,
+            "objectToClone → objectToClone": 2,
+            "userData → userData": 6,
+            "userData → userList": 10,
+            "userDefinedBrickDataList → userDefinedBrickDataList": 14,
+            "userList → userData": 5,
+            "userList → userList": 336,
+            "userVariable → userData": 6,
+            "userVariable → userVariable": 710
+        ])
+        #expect(pairs.values.reduce(0, +) == 1120)
     }
 }

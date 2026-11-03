@@ -1,4 +1,4 @@
-@testable import CatrobatImport
+import CatrobatImport
 import Foundation
 import Testing
 
@@ -34,6 +34,32 @@ struct XMLTreeTests {
         let tree = try tree("<a>\n  <b>  7 </b>\n</a>")
         #expect(tree.root.children[0].text == "  7 ")
         #expect(tree.root.children[0].trimmedText == "7")
+        #expect(tree.root.text == "\n  \n")
+    }
+
+    /// Text on either side of a child element is concatenated. The importer only
+    /// reads leaf text, but no later slice may come to rely on this by accident.
+    @Test func mixedContentConcatenatesTheParentsText() throws {
+        let tree = try tree("<a>x<b>inner</b>y</a>")
+        #expect(tree.root.text == "xy")
+        #expect(tree.root.children[0].text == "inner")
+    }
+
+    /// Catroid writes `<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>`;
+    /// a byte-order mark in front of it must not make the file malformed.
+    @Test func acceptsTheDeclarationCatroidWritesWithAndWithoutABOM() throws {
+        let declaration = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n<program/>"
+        #expect(try tree(declaration).root.name == "program")
+        let withBOM = Data([0xEF, 0xBB, 0xBF]) + Data(declaration.utf8)
+        #expect(try XMLTree(parsing: withBOM).root.name == "program")
+    }
+
+    /// XStream's `XmlFriendlyNameCoder` writes `_` as `__`, `$` as `_-` and other
+    /// characters as `_.` plus four hex digits. Names are stored decoded, as
+    /// XStream compares them.
+    @Test func elementNamesAreDecodedFromXStreamsNameCoding() throws {
+        let tree = try tree("<a><foo__bar/><foo_-bar/><x_.0041y/></a>")
+        #expect(tree.root.children.map(\.name) == ["foo_bar", "foo$bar", "xAy"])
     }
 
     @Test(arguments: [
@@ -74,6 +100,7 @@ struct XMLTreeTests {
         <brick type="SetVariableBrick"><userVariable type="UserVariable"><name>second</name></userVariable></brick>
         <brick type="ChangeVariableBrick"><userVariable reference="../../brick[2]/userVariable"/></brick>
         <brick type="ChangeVariableBrick"><userVariable reference="../../brick/userVariable"/></brick>
+        <brick type="ChangeVariableBrick"><userVariable reference="../../brick[1]/userVariable"/></brick>
       </brickList></script></scriptList></object>
       <object name="B"><scriptList><script><brickList>
         <brick type="ChangeVariableBrick"><userVariable reference="../../../../../../object/scriptList/script/brickList/brick[2]/userVariable"/></brick>
@@ -107,9 +134,18 @@ struct XMLTreeTests {
         #expect(name(of: target, in: tree) == "first")
     }
 
-    @Test func parentChainsCrossObjects() throws {
+    /// `brick[1]` is `brick`. Kills 0-based indexing and all-sibling counting
+    /// together, which `brick[2]` alone does not: under both, `children[2]` is
+    /// the "second" brick again.
+    @Test func anExplicitFirstIndexIsTheUnindexedSegment() throws {
         let tree = try tree(script)
         let target = try tree.dereference(referencingVariables(in: tree)[2])
+        #expect(name(of: target, in: tree) == "first")
+    }
+
+    @Test func parentChainsCrossObjects() throws {
+        let tree = try tree(script)
+        let target = try tree.dereference(referencingVariables(in: tree)[3])
         #expect(name(of: target, in: tree) == "second")
     }
 
@@ -120,10 +156,10 @@ struct XMLTreeTests {
     }
 
     @Test(arguments: [
-        (3, "../../../../../../../../../../userVariable"), // climbs above the root
-        (4, "../../brick[9]/userVariable"), // index past the last sibling
-        (5, "../../brick[4]/userVariable"), // the target is itself a reference
-        (6, "../../brick[0]/userVariable") // XStream indices are 1-based
+        (4, "../../../../../../../../../../userVariable"), // climbs above the root
+        (5, "../../brick[9]/userVariable"), // index past the last sibling
+        (6, "../../brick[4]/userVariable"), // the target is itself a reference
+        (7, "../../brick[0]/userVariable") // XStream indices are 1-based
     ])
     func anUnresolvablePathThrowsNamingIt(index: Int, path: String) throws {
         let tree = try tree(script)
@@ -133,12 +169,62 @@ struct XMLTreeTests {
         }
     }
 
-    @Test(arguments: ["", "brick[x]", "brick[1", "../brick[-1]", "a//b"])
+    /// `<brick/>` precedes the reference, so each would resolve to it if the
+    /// segment grammar were lenient (before it did not, and the forward-reference
+    /// rule masked a lenient grammar; caught by mutation).
+    /// XStream writes a plain positive decimal, and only `[1]` is normalised away.
+    /// `Int.min` must not trap on `ordinal - 1`.
+    @Test(arguments: [
+        "", "brick[x]", "brick[1", "../../brick[-1]", "a//b", "../../brick[0]",
+        "../../brick[01]", "../../brick[+1]", "../../brick[ 1]", "../../brick[-9223372036854775808]"
+    ])
     func aSyntacticallyBrokenPathIsUnresolved(_ path: String) throws {
-        let tree = try tree("<a><b><c reference=\"\(path)\"/></b><brick/></a>")
+        let tree = try tree("<a><brick/><b><c reference=\"\(path)\"/></b></a>")
         let reference = try #require(tree.addresses { $0.name == "c" }.first)
         #expect(throws: ImportBlocker.unresolvedReference(path)) {
             try tree.dereference(reference)
+        }
+    }
+
+    /// XStream's `Path` skips `.` segments.
+    @Test func aDotSegmentIsSkipped() throws {
+        let tree = try tree("<root><item id=\"t\"/><ref reference=\".././item\"/></root>")
+        let reference = try #require(tree.addresses { $0.name == "ref" }.first)
+        #expect(try tree[tree.dereference(reference)]?.attributes["id"] == "t")
+    }
+
+    /// The reference string is decoded with the same name coder before its
+    /// segments are matched (XStream's `ReferenceByXPathUnmarshaller`).
+    @Test(arguments: [("../foo_bar", "underscore"), ("../foo$bar", "dollar"), ("../foo__bar", "underscore")])
+    func aReferenceMatchesDecodedNames(path: String, id: String) throws {
+        let tree = try tree("""
+        <root><foo__bar id="underscore"/><foo_-bar id="dollar"/><ref reference="\(path)"/></root>
+        """)
+        let reference = try #require(tree.addresses { $0.name == "ref" }.first)
+        #expect(try tree[tree.dereference(reference)]?.attributes["id"] == id)
+    }
+
+    /// XStream resolves a reference against the objects unmarshalled so far: an
+    /// element completed earlier in document order, or an ancestor still being
+    /// built. A target that starts after the reference is invalid.
+    @Test func aForwardReferenceIsUnresolved() throws {
+        let tree = try tree("<root><item reference=\"../item[2]\"/><item id=\"later\"/></root>")
+        let reference = try #require(tree.addresses { $0.name == "item" }.first)
+        #expect(throws: ImportBlocker.unresolvedReference("../item[2]")) {
+            try tree.dereference(reference)
+        }
+    }
+
+    @Test func aReferenceToAnAncestorResolves() throws {
+        let tree = try tree("<root><object id=\"self\"><objectToClone reference=\"..\"/></object></root>")
+        let reference = try #require(tree.addresses { $0.name == "objectToClone" }.first)
+        #expect(try tree[tree.dereference(reference)]?.attributes["id"] == "self")
+    }
+
+    @Test func anAddressOutsideTheTreeIsUnresolved() throws {
+        let tree = try tree("<a/>")
+        #expect(throws: ImportBlocker.unresolvedReference("")) {
+            try tree.dereference(XMLTree.Address(path: [3]))
         }
     }
 }
