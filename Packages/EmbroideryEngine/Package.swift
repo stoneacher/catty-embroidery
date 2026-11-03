@@ -72,6 +72,12 @@ let package = Package(
         // tests and mutants run under `swift test` instead of on a simulator. Main-actor
         // isolated explicitly, as the app's default isolation made it implicitly.
         .target(name: "Projects", dependencies: ["EditorCore", "ProgramModel", "EmbroideryEngine"]),
+        // The language-test runner's `code.xml` importer (brief D10, an ADR-042
+        // amendment): depends on `ProgramModel` only and is vended by **no** product,
+        // so the app links nothing new and `project.pbxproj` stays untouched. Eight
+        // targets, five products. Foundation's `XMLParser` only, with FoundationXML on
+        // Linux, so the target keeps US-317's door open.
+        .target(name: "CatrobatImport", dependencies: ["ProgramModel"]),
         .testTarget(
             name: "EmbroideryEngineTests",
             dependencies: ["EmbroideryEngine"],
@@ -116,8 +122,10 @@ let package = Package(
         // `code.xml` fixtures are Catroid's verbatim; .copy keeps them byte-identical,
         // since FixtureProvenanceTests checks each one against its SHA-256 in the
         // manifest, and keeps the `<category>/<test>/code.xml` tree intact.
+        .testTarget(name: "CatrobatImportTests", dependencies: ["CatrobatImport", "ProgramModel"]),
         .testTarget(
             name: "LanguageTestsTests",
+            dependencies: ["CatrobatImport", "ProgramModel"],
             resources: [.copy("Resources")]
         ),
         .testTarget(

@@ -45,7 +45,7 @@ jobs:
       #
       # ADR-023's division: EditorCoreTargetIsolationTests' textual pin is the
       # fast local convenience, this required status check is the enforcement.
-      - name: Pin EditorCore's and Projects' evaluated dependencies (ADR-033, US-329)
+      - name: Pin EditorCore's, Projects' and CatrobatImport's evaluated dependencies (ADR-033, US-329, D10)
         run: |
           swift package --package-path Packages/EmbroideryEngine dump-package > /tmp/package.json
           python3 - <<'CHECK'
@@ -101,6 +101,18 @@ jobs:
           vending = sorted(p["name"] for p in manifest["products"] if "Projects" in p["targets"])
           if vending != ["Samples"]:
               failures.append(f"Projects is vended by {vending}, expected ['Samples'] only (US-329)")
+
+          # Language-test runner, D10 (ADR-042 amendment): the code.xml importer depends on
+          # ProgramModel only and is vended by no product, so the app links nothing new.
+          importer = next(t for t in manifest["targets"] if t["name"] == "CatrobatImport")
+          deps, foreign = local_dependency_names(importer["dependencies"])
+          if foreign:
+              failures.append(f"CatrobatImport has non-local dependencies {sorted(foreign)} (D10)")
+          if deps != {"ProgramModel"}:
+              failures.append(f"CatrobatImport depends on {sorted(deps)}, expected ['ProgramModel'] (D10)")
+          vending = sorted(p["name"] for p in manifest["products"] if "CatrobatImport" in p["targets"])
+          if vending:
+              failures.append(f"CatrobatImport is vended by {vending}, expected no product (D10)")
 
           for failure in failures:
               print(f"::error::{failure}")
