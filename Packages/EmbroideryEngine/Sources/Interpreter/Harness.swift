@@ -38,12 +38,14 @@ package struct HarnessObject: Sendable {
     package var scripts: [[ScriptStep]]
 
     package init(_ object: Object, scripts: [[ScriptStep]]) {
+        var object = object
+        object.scripts = [] // the steps replace them; never silently kept beside them
         self.object = object
         self.scripts = scripts
     }
 }
 
-package struct AssertionFailure: Sendable, Equatable {
+package struct HarnessAssertionFailure: Sendable, Equatable {
     package var objectIndex: Int
     package var scriptIndex: Int
     package var stepIndex: Int
@@ -81,7 +83,7 @@ package struct HarnessRun: Sendable, Equatable {
 /// How a language test's run ended (brief D5, D6).
 package enum HarnessOutcome: Sendable, Equatable {
     case passed
-    case assertionFailed(AssertionFailure)
+    case assertionFailed(HarnessAssertionFailure)
     /// Every thread ended, or ExitStage ran, before any result.
     case endedWithoutResult
     /// The budget ran out first.
@@ -146,7 +148,7 @@ extension Interpreter {
             let actualValue = actual.interpretValue(scope: scope)
             let expectedValue = expected.interpretValue(scope: scope)
             guard actualValue.isSameValue(as: expectedValue) else {
-                latch(.result(.assertionFailed(AssertionFailure(
+                latch(.result(.assertionFailed(HarnessAssertionFailure(
                     objectIndex: thread.objectIndex, scriptIndex: thread.scriptIndex,
                     stepIndex: thread.instructionPointer, expected: expectedValue, actual: actualValue
                 ))))

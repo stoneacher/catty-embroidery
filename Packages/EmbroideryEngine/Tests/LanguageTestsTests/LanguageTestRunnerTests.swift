@@ -38,7 +38,8 @@ struct LanguageTestRunnerTests {
             let run = try LanguageTestRunner.run(imported.get())
             // Outside any known-issue block: a test that starts failing for another
             // reason (an importer refusal, the budget, another assert) is red here
-            // (Codex brief review, finding 2).
+            // (Codex brief review, finding 2). Such a change reports twice, here and
+            // as an unrecorded known issue below: two failures, one cause.
             #expect(run.outcome == .assertionFailed(failure), "\(entry.path): \(run.outcome)")
             // Inside, only this pinned failure is a known issue. With
             // `isIntermittent: false`, a test that starts passing records no issue,

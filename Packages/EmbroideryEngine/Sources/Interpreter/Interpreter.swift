@@ -120,7 +120,8 @@ public struct Interpreter: Sendable {
     }
 
     /// `true` once no runnable thread remains (vacuously true for a program with
-    /// no whenStarted scripts).
+    /// no whenStarted scripts), or once a language-test ending has stopped the run
+    /// (brief D5).
     public var isFinished: Bool {
         harness.stopped || threads.allSatisfy(\.finished)
     }

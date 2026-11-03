@@ -84,7 +84,7 @@ struct HarnessTests {
             Self.object([[Self.move]]),
             Self.object([[Self.move], [Self.move, failing]])
         ])
-        #expect(result.outcome == .assertionFailed(AssertionFailure(
+        #expect(result.outcome == .assertionFailed(HarnessAssertionFailure(
             objectIndex: 1, scriptIndex: 1, stepIndex: 1, expected: 3, actual: 2
         )))
     }
@@ -96,7 +96,8 @@ struct HarnessTests {
             return
         }
         #expect(failure.actual.isNaN)
-        #expect(failure == AssertionFailure(objectIndex: 0, scriptIndex: 0, stepIndex: 0, expected: 1, actual: .nan))
+        let expected = HarnessAssertionFailure(objectIndex: 0, scriptIndex: 0, stepIndex: 0, expected: 1, actual: .nan)
+        #expect(failure == expected)
     }
 
     /// The first result is latched and the tick it lands in finishes: every other
@@ -109,7 +110,7 @@ struct HarnessTests {
         let mover = [Self.move, Self.move, Self.move]
         let scripts = failingFirst ? [failing, mover] : [mover, failing]
         let result = run([Self.object(scripts)])
-        #expect(result.outcome == .assertionFailed(AssertionFailure(
+        #expect(result.outcome == .assertionFailed(HarnessAssertionFailure(
             objectIndex: 0, scriptIndex: failingFirst ? 0 : 1, stepIndex: 0, expected: 2, actual: 1
         )))
         #expect(result.ticks == 1)

@@ -8,22 +8,11 @@ enum LanguageTestRunner {
     static let clock = InterpreterClock(tickDelta: 1.0 / 60)
 
     /// The adapter from `CatrobatImport` to `Interpreter`: the importer's flat
-    /// object list in order, each object at Catroid's start pose (`ImportedObject`'s
-    /// constants), its variables, and its scripts as steps.
+    /// object list in order, each built by `ImportedObject.object(zIndex:)` (the one
+    /// place Catroid's start pose lives), with its scripts as steps.
     static func harness(for program: ImportedProgram) -> [HarnessObject] {
         program.objects.enumerated().map { index, object in
-            HarnessObject(
-                Object(
-                    name: object.name,
-                    startX: ImportedObject.startX,
-                    startY: ImportedObject.startY,
-                    startHeading: ImportedObject.startHeading,
-                    zIndex: index,
-                    variables: object.variables,
-                    scripts: []
-                ),
-                scripts: object.scripts.map { $0.steps.map(step) }
-            )
+            HarnessObject(object.object(zIndex: index), scripts: object.scripts.map { $0.steps.map(step) })
         }
     }
 

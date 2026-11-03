@@ -51,8 +51,8 @@ enum Instruction: Sendable {
     /// `ifEnd`: zero-tick, except that an If which ran no action in the tick it was
     /// read in takes that tick (ADR-049).
     case ifEnd
-    /// A language-test harness step (AssertEquals, FinishStage, ExitStage): an
-    /// action like a brick, never a `Brick` case (brief D3, D6).
+    /// A language-test harness step (AssertEquals, FinishStage, ExitStage,
+    /// WaitTillIdle): an action like a brick, never a `Brick` case (brief D3, D6).
     /// `nestedInBlock`: inside a loop or If. Catroid's WaitTillIdle checks only the
     /// top-level children of its script (`WaitTillIdleAction.java:53-56`, not
     /// recursive), so a nested one polls every tick and never releases (brief D8,

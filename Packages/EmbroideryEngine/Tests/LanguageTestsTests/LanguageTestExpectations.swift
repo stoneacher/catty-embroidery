@@ -4,86 +4,43 @@ import Interpreter
 
 /// The pinned class of every one of the 215 Catrobat language tests (brief D12).
 /// A test that changes class turns `LanguageTestRunnerTests` red until this table
-/// is updated on purpose. Generated from the importer and runner on 2026-11-03 and
-/// edited only deliberately; the unsupported sets are the importer's exact
-/// blocker labels.
+/// is updated on purpose. Generated: run
+/// `scripts/regenerate-language-test-expectations.sh`, then review the diff and
+/// name the owner of any new expected failure. Never edited by hand otherwise.
 enum LanguageTestExpectation: Sendable, Equatable {
     /// Imports, runs, and reaches FinishStage within the budget.
     case pass
     /// Imports and runs to exactly this assertion failure, for a reason an ADR or
     /// backlog item owns.
-    case expectedFailure(AssertionFailure, owner: String)
+    case expectedFailure(HarnessAssertionFailure, owner: String)
     /// Refused by the importer with exactly these blockers (`ImportBlocker.label`).
     case unsupported(Set<String>)
 }
 
 extension LanguageTestExpectation {
     static let all: [String: LanguageTestExpectation] = [
-        "brick/testDisabledBrickInLoopRegression": .pass,
-        "brick/testRepeatBrick": .pass,
-        "bricks/control/testForVariableFromToBrick": .pass,
-        "bricks/control/testIfElse": .pass,
-        "bricks/control/testRepeat": .pass,
-        "bricks/control/testRepeatUntil": .pass,
-        "bricks/control/testRepeatUntilBrick": .pass,
-        "bricks/control/testWaitUntilAllOtherScriptsHaveStopped": .pass,
-        "bricks/events/testEmptyEvent": .pass,
-        "bricks/motion/testChangeXby": .pass,
-        "formula/testAbsolutValueFunction": .pass,
-        "formula/testArctangent2FunctionNormalParameters": .pass,
-        "formula/testCeilingFunction": .pass,
-        "formula/testCosinusFunction": .pass,
-        "formula/testDecimalLogarithmFunction": .pass,
-        "formula/testExponentFunction": .pass,
-        "formula/testFloorFunction": .pass,
-        "formula/testMaximumOfFunction": .pass,
-        "formula/testMinimumOfFunction": .pass,
-        "formula/testModuloFunction": .pass,
-        "formula/testNaturalLogarithmFunction": .pass,
-        "formula/testPowerFunction": .pass,
-        "formula/testRoundFunction": .pass,
-        "formula/testSineFunction": .pass,
-        "formula/testSquareRootFunction": .pass,
-        "formula/testTangentFunction": .pass,
-        "motion/testChangeXPosition": .pass,
-        "motion/testChangeYPosition": .pass,
-        "motion/testMoveXStepsFunction": .pass,
-        "motion/testPointInDirectionDegrees": .pass,
-        "motion/testSetYPosition": .pass,
-        "motion/testTurnXDegrees": .pass,
-        // ADR-048: Catroid's decimal128 arithmetic makes 0.1 × 12 exactly 1.2.
-        "formula/testFloatingPointArithmetic": .expectedFailure(
-            AssertionFailure(objectIndex: 0, scriptIndex: 0, stepIndex: 0, expected: 1.2, actual: 1.2000000000000002),
-            owner: "ADR-048 (decimal128 divergence, accepted)"
-        ),
-        // ADR-046: Catroid's arctan2(0, 0) is a random angle, so it differs from itself.
-        "formula/testArctangent2FunctionZeroParameters": .expectedFailure(
-            AssertionFailure(objectIndex: 0, scriptIndex: 0, stepIndex: 1, expected: 1, actual: 0),
-            owner: "ADR-046 (arctan2(0, 0) is 0 here, random in Catroid)"
-        ),
-        // US-333: Darwin's correctly rounded acos(0.5) against fdlibm's, one ulp high.
-        "formula/testArccosineFunction": .expectedFailure(
-            AssertionFailure(objectIndex: 0, scriptIndex: 0, stepIndex: 1, expected: 60, actual: 59),
-            owner: "US-333 (inverse trigonometry: Darwin libm, not fdlibm)"
-        ),
-        "formula/testArcsinusFunction": .expectedFailure(
-            AssertionFailure(objectIndex: 0, scriptIndex: 0, stepIndex: 2, expected: 30, actual: 29.999999999),
-            owner: "US-333 (inverse trigonometry: Darwin libm, not fdlibm)"
-        ),
         "UserDefinedScript/testInputValuesInUserDefinedBricks": .unsupported(["brick(UserDefinedBrick)", "script(UserDefinedScript)"]),
         "UserDefinedScript/testUserBricksFunctionality": .unsupported(["brick(UserDefinedBrick)", "script(UserDefinedScript)"]),
         "UserDefinedScript/testUserDefinedBrick": .unsupported(["brick(BroadcastWaitBrick)", "brick(UserDefinedBrick)", "elementType(USER_LIST)", "script(BroadcastScript)", "script(UserDefinedScript)", "stringValue(assertOperand)"]),
+        "brick/testDisabledBrickInLoopRegression": .pass,
+        "brick/testRepeatBrick": .pass,
         "bricks/control/testFastUserDefinedBrick": .unsupported(["brick(BroadcastBrick)", "brick(BroadcastWaitBrick)", "brick(StopScriptBrick)", "script(BroadcastScript)", "script(UserDefinedScript)"]),
         "bricks/control/testForEachBrick": .unsupported(["brick(AddItemToUserListBrick)", "brick(ForItemInUserListBrick)"]),
         "bricks/control/testForEachInBrick": .unsupported(["brick(AddItemToUserListBrick)", "brick(ForItemInUserListBrick)"]),
         "bricks/control/testForLoopWithChangeVariableBrick": .unsupported(["stringValue(assertOperand)", "stringValue(variableValue)", "variableStorage(controlVariable)"]),
+        "bricks/control/testForVariableFromToBrick": .pass,
+        "bricks/control/testIfElse": .pass,
         "bricks/control/testIfThenBrick": .unsupported(["brick(AddItemToUserListBrick)", "brick(ClearUserListBrick)", "brick(UserDefinedBrick)", "function(FLATTEN)", "script(UserDefinedScript)", "stringValue(equality)"]),
         "bricks/control/testIfThenElseBrick": .unsupported(["brick(AddItemToUserListBrick)", "brick(AssertUserListsBrick)", "stringValue(equality)"]),
         "bricks/control/testLoopDelay": .unsupported(["brick(BroadcastBrick)", "brick(BroadcastWaitBrick)", "brick(StopScriptBrick)", "script(BroadcastScript)"]),
         "bricks/control/testLoopingList": .unsupported(["brick(AddItemToUserListBrick)", "brick(ForItemInUserListBrick)"]),
+        "bricks/control/testRepeat": .pass,
+        "bricks/control/testRepeatUntil": .pass,
+        "bricks/control/testRepeatUntilBrick": .pass,
         "bricks/control/testSoundBricksSlowDownFastLoops": .unsupported(["brick(BroadcastBrick)", "brick(BroadcastWaitBrick)", "brick(StopScriptBrick)", "script(BroadcastScript)"]),
         "bricks/control/testWait": .unsupported(["brick(ResetTimerBrick)", "sensor(TIMER)"]),
         "bricks/control/testWaitUntil": .unsupported(["brick(ResetTimerBrick)", "sensor(TIMER)"]),
+        "bricks/control/testWaitUntilAllOtherScriptsHaveStopped": .pass,
         "bricks/data/StoreCSVIntoUserList/testEmptyLists": .unsupported(["brick(StoreCSVIntoUserListBrick)", "function(NUMBER_OF_ITEMS)"]),
         "bricks/data/StoreCSVIntoUserList/testIncompleteRows": .unsupported(["brick(AddItemToUserListBrick)", "brick(StoreCSVIntoUserListBrick)", "elementType(USER_LIST)", "function(NUMBER_OF_ITEMS)"]),
         "bricks/data/StoreCSVIntoUserList/testMultiplications": .unsupported(["brick(StoreCSVIntoUserListBrick)", "function(LIST_ITEM)", "function(NUMBER_OF_ITEMS)", "stringValue(variableValue)"]),
@@ -107,6 +64,7 @@ extension LanguageTestExpectation {
         "bricks/events/BroadcastWait/testRightToLeftBroadcastMessage": .unsupported(["brick(BroadcastWaitBrick)", "script(BroadcastScript)"]),
         "bricks/events/BroadcastWait/testWaitForReceiver": .unsupported(["brick(AddItemToUserListBrick)", "brick(BroadcastWaitBrick)", "elementType(USER_LIST)", "script(BroadcastScript)", "stringValue(assertOperand)"]),
         "bricks/events/BroadcastWait/testWaitForSeveralReceivers": .unsupported(["brick(BroadcastWaitBrick)", "script(BroadcastScript)"]),
+        "bricks/events/testEmptyEvent": .pass,
         "bricks/looks/testBackgroundBrightness": .unsupported(["brick(SetBrightnessBrick)", "sensor(OBJECT_BRIGHTNESS)"]),
         "bricks/looks/testChangeSize": .unsupported(["brick(ChangeSizeByNBrick)", "brick(CloneBrick)", "function(COLOR_AT_XY)", "script(WhenClonedScript)", "sensor(OBJECT_SIZE)", "stringValue(assertOperand)"]),
         "bricks/looks/testDeleteWebLook": .unsupported(["brick(DeleteLookBrick)", "brick(LookRequestBrick)", "function(COLOR_AT_XY)", "stringValue(assertOperand)"]),
@@ -119,6 +77,7 @@ extension LanguageTestExpectation {
         "bricks/looks/testSetSize": .unsupported(["brick(SetSizeToBrick)", "sensor(OBJECT_SIZE)"]),
         "bricks/looks/testSetTransparency": .unsupported(["brick(BroadcastWaitBrick)", "brick(ResetTimerBrick)", "brick(SetTransparencyBrick)", "function(COLOR_EQUALS_COLOR)", "script(BroadcastScript)", "sensor(OBJECT_TRANSPARENCY)", "sensor(TIMER)"]),
         "bricks/motion/Vibration/testVibrationBrick": .unsupported(["brick(VibrationBrick)"]),
+        "bricks/motion/testChangeXby": .pass,
         "bricks/motion/testPlaceAtXY": .unsupported(["brick(AddItemToUserListBrick)", "brick(ParameterizedBrick)"]),
         "bricks/user/testReportBrick": .unsupported(["brick(UserDefinedBrick)", "script(UserDefinedScript)"]),
         "clone/CATROID-275-regression": .unsupported(["brick(CloneBrick)", "script(WhenClonedScript)"]),
@@ -173,26 +132,76 @@ extension LanguageTestExpectation {
         "direction/testPhysicalDirectionLeftRightRotation": .unsupported(["brick(SetPhysicsObjectTypeBrick)", "brick(SetRotationStyleBrick)", "brick(SetVelocityBrick)", "sensor(LOOK_DIRECTION)"]),
         "direction/testPhysicalDirectionNoRotation": .unsupported(["brick(SetPhysicsObjectTypeBrick)", "brick(SetRotationStyleBrick)", "brick(SetVelocityBrick)", "sensor(LOOK_DIRECTION)"]),
         "direction/testPhysicalDirectionWithRotation": .unsupported(["brick(SetRotationStyleBrick)", "brick(SetVelocityBrick)", "sensor(LOOK_DIRECTION)"]),
+        "formula/testAbsolutValueFunction": .pass,
+        "formula/testArccosineFunction": .expectedFailure(
+            HarnessAssertionFailure(
+                objectIndex: 0, scriptIndex: 0, stepIndex: 1,
+                expected: 60.0, actual: 59.0
+            ),
+            owner: "US-333 (inverse trigonometry: Darwin libm, not fdlibm)"
+        ),
+        "formula/testArcsinusFunction": .expectedFailure(
+            HarnessAssertionFailure(
+                objectIndex: 0, scriptIndex: 0, stepIndex: 2,
+                expected: 30.0, actual: 29.999999999
+            ),
+            owner: "US-333 (inverse trigonometry: Darwin libm, not fdlibm)"
+        ),
+        "formula/testArctangent2FunctionNormalParameters": .pass,
+        "formula/testArctangent2FunctionZeroParameters": .expectedFailure(
+            HarnessAssertionFailure(
+                objectIndex: 0, scriptIndex: 0, stepIndex: 1,
+                expected: 1.0, actual: 0.0
+            ),
+            owner: "ADR-046 (arctan2(0, 0) is 0 here, random in Catroid)"
+        ),
+        "formula/testCeilingFunction": .pass,
         "formula/testContainsFunction": .unsupported(["brick(AddItemToUserListBrick)", "brick(ClearUserListBrick)", "brick(DeleteItemOfUserListBrick)", "function(CONTAINS)"]),
         "formula/testCorrectStringConversion": .unsupported(["function(REGEX)", "stringValue(assertOperand)", "stringValue(variableValue)"]),
+        "formula/testCosinusFunction": .pass,
         "formula/testCurrentIndexOfTouch": .unsupported(["brick(BroadcastBrick)", "brick(TapAtBrick)", "function(INDEX_CURRENT_TOUCH)", "script(BroadcastScript)"]),
         "formula/testCurrentNumberOfTouches": .unsupported(["brick(BroadcastBrick)", "script(BroadcastScript)", "sensor(FINGER_TOUCHED)", "sensor(NUMBER_CURRENT_TOUCHES)"]),
+        "formula/testDecimalLogarithmFunction": .pass,
+        "formula/testExponentFunction": .pass,
         "formula/testFlattenFunction": .unsupported(["brick(AddItemToUserListBrick)", "brick(ClearUserListBrick)", "function(FLATTEN)", "stringValue(assertOperand)"]),
+        "formula/testFloatingPointArithmetic": .expectedFailure(
+            HarnessAssertionFailure(
+                objectIndex: 0, scriptIndex: 0, stepIndex: 0,
+                expected: 1.2, actual: 1.2000000000000002
+            ),
+            owner: "ADR-048 (decimal128 divergence, accepted)"
+        ),
+        "formula/testFloorFunction": .pass,
         "formula/testIfThenElseFunction": .unsupported(["function(IF_THEN_ELSE)", "stringValue(assertOperand)"]),
         "formula/testItemsIndexFunction": .unsupported(["brick(AddItemToUserListBrick)", "brick(ClearUserListBrick)", "brick(InsertItemIntoUserListBrick)", "brick(ReplaceItemInUserListBrick)", "function(INDEX_OF_ITEM)"]),
         "formula/testJoinFunction": .unsupported(["function(JOIN)", "function(JOIN3)", "stringValue(assertOperand)"]),
         "formula/testLengthFunction": .unsupported(["function(LENGTH)", "stringValue(variableValue)"]),
         "formula/testLetterFunction": .unsupported(["function(LETTER)", "stringValue(assertOperand)"]),
+        "formula/testMaximumOfFunction": .pass,
+        "formula/testMinimumOfFunction": .pass,
+        "formula/testModuloFunction": .pass,
+        "formula/testNaturalLogarithmFunction": .pass,
         "formula/testNumberOfItems": .unsupported(["brick(AddItemToUserListBrick)", "brick(ClearUserListBrick)", "brick(DeleteItemOfUserListBrick)", "brick(InsertItemIntoUserListBrick)", "brick(ReplaceItemInUserListBrick)", "function(NUMBER_OF_ITEMS)"]),
         "formula/testNumberOfItemsFunction": .unsupported(["brick(AddItemToUserListBrick)", "brick(ClearUserListBrick)", "brick(DeleteItemOfUserListBrick)", "function(NUMBER_OF_ITEMS)", "stringValue(variableValue)"]),
         "formula/testNumberOfLooks": .unsupported(["brick(CopyLookBrick)", "brick(DeleteLookBrick)", "brick(LookRequestBrick)", "sensor(OBJECT_NUMBER_OF_LOOKS)"]),
+        "formula/testPowerFunction": .pass,
         "formula/testRandomFunction": .unsupported(["function(RAND)"]),
         "formula/testRegularExpressionFunction": .unsupported(["function(REGEX)", "stringValue(assertOperand)"]),
+        "formula/testRoundFunction": .pass,
+        "formula/testSineFunction": .pass,
+        "formula/testSquareRootFunction": .pass,
+        "formula/testTangentFunction": .pass,
+        "motion/testChangeXPosition": .pass,
+        "motion/testChangeYPosition": .pass,
         "motion/testIfOnEdgeBounceOnceRegression": .unsupported(["brick(IfOnEdgeBounceBrick)", "sensor(OBJECT_ROTATION)"]),
         "motion/testIfOnEdgeBouncePhysicsMoveStepsRegression": .unsupported(["brick(IfOnEdgeBounceBrick)", "brick(SetPhysicsObjectTypeBrick)", "sensor(OBJECT_ROTATION)"]),
         "motion/testMoveStepsBrick": .unsupported(["sensor(OBJECT_BACKGROUND_NAME)"]),
+        "motion/testMoveXStepsFunction": .pass,
+        "motion/testPointInDirectionDegrees": .pass,
         "motion/testSetMassAndBounceOfObject": .unsupported(["brick(IfOnEdgeBounceBrick)", "brick(SetGravityBrick)", "brick(SetMassBrick)", "brick(SetPhysicsObjectTypeBrick)", "script(WhenBounceOffScript)", "script(WhenConditionScript)"]),
         "motion/testSetX": .unsupported(["function(COLOR_EQUALS_COLOR)"]),
+        "motion/testSetYPosition": .pass,
+        "motion/testTurnXDegrees": .pass,
         "physics/testCollisionWithGlideToBrick": .unsupported(["brick(GlideToBrick)", "brick(SetPhysicsObjectTypeBrick)"]),
         "physics/testGlideToSpeedRangeAndDuration": .unsupported(["brick(BroadcastBrick)", "brick(GlideToBrick)", "brick(ResetTimerBrick)", "brick(ShowTextBrick)", "script(BroadcastScript)", "sensor(TIMER)"]),
         "physics/testGlidingInPhysicalBouncingObject": .unsupported(["brick(GlideToBrick)", "brick(SetPhysicsObjectTypeBrick)", "sensor(OBJECT_X_VELOCITY)", "sensor(OBJECT_Y_VELOCITY)"]),

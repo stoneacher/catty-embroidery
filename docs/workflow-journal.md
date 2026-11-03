@@ -4345,3 +4345,13 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Filed as US-333 (port fdlibm, or accept), pinned meanwhile as expected failures owned by it.
   - This is the feature's justification in miniature: an implementation-independent suite found a formula-level difference that 1500+ hand-written engine tests had not, because those tests were written against Darwin's libm.
 - **The ratchet's premise was executed, not assumed** (ADR-032 invariant 4): a mutant that never records the known issue is red, so `withKnownIssue(isIntermittent: false)` does fail when an expected failure starts passing. One mutant is equivalent by design: the outside outcome check is redundant with the strict matcher, and it is kept for its message.
+
+## 2026-11-03 — Language-test runner PR 2: whole-PR review folded in
+
+- **`swift-code-reviewer` over `main...HEAD` (#87): no defect.** 3 Important and 4 suggestions, all valid, none rejected. As in PR 1, every finding sat across slices rather than in one:
+  - The 215-entry expectation table could not be regenerated. There is now an environment-gated generator test and `scripts/regenerate-language-test-expectations.sh`; the committed table is its output, and a rerun reproduces it byte for byte.
+  - D5 and D12 had drifted from the code, and got dated "as built" amendments.
+  - Stale comments, including the slice-6 green line that still stated the overturned libgdx premise.
+  - The object construction was duplicated: `ImportedObject.object(zIndex:)` is now the one place Catroid's start pose lives.
+  - `AssertionFailure` is renamed `HarnessAssertionFailure`, and `HarnessObject` clears scripts it is handed rather than ignoring them.
+- **A tool slip, caught by checking the result, not the exit code:** a `sed` rename used `\b`, which BSD `sed` doesn't support. It matched nothing, and the build passed on unchanged names. A grep afterwards showed the old name; `perl` with a word boundary did the rename. This is the same lesson as PR 1's unstaged file: a green exit is no evidence that a change happened.
