@@ -51,6 +51,9 @@ enum Instruction: Sendable {
     /// `ifEnd`: zero-tick, except that an If which ran no action in the tick it was
     /// read in takes that tick (ADR-049).
     case ifEnd
+    /// A language-test harness step (AssertEquals, FinishStage, ExitStage): an
+    /// action like a brick, never a `Brick` case (brief D3, D6).
+    case harness(ScriptStep)
 }
 
 /// Compiles a `Script` once into its linear instruction array with a single-pass
@@ -59,20 +62,33 @@ enum Instruction: Sendable {
 /// crash, consistent with the interpreter's never-halt contract (ADR-018).
 enum ScriptCompiler {
     static func compile(_ script: Script) -> [Instruction] {
+        compile(script.bricks.map(ScriptStep.brick))
+    }
+
+    /// Steps compile one instruction each. Validation runs on the bricks alone:
+    /// harness steps are leaves and cannot unbalance a script.
+    static func compile(_ steps: [ScriptStep]) -> [Instruction] {
+        let bricks = steps.compactMap { step -> Brick? in
+            if case let .brick(brick) = step { brick } else { nil }
+        }
         do {
-            try script.validate()
+            try Script(bricks: bricks).validate()
         } catch {
             return []
         }
 
         var instructions: [Instruction] = []
-        instructions.reserveCapacity(script.bricks.count)
+        instructions.reserveCapacity(steps.count)
         // Stack of open blocks, indices into `instructions`, for backpatching each
         // begin once its end position is known. `validate()` above guarantees every
         // pop finds the kind it expects.
         var open: [OpenBlock] = []
 
-        for brick in script.bricks {
+        for step in steps {
+            guard case let .brick(brick) = step else {
+                instructions.append(.harness(step))
+                continue
+            }
             switch brick {
             case let .repeatLoop(times):
                 open.append(.loop(begin: instructions.count))
@@ -120,7 +136,7 @@ private extension Instruction {
         case let .repeatBegin(times, _): .repeatBegin(times: times, endIndex: endIndex)
         case let .repeatUntilBegin(condition, _): .repeatUntilBegin(condition: condition, endIndex: endIndex)
         case let .forBegin(name, from, to, _): .forBegin(name: name, from: from, to: to, endIndex: endIndex)
-        case .brick, .foreverBegin, .loopEnd, .ifBegin, .jump, .ifEnd: self
+        case .brick, .foreverBegin, .loopEnd, .ifBegin, .jump, .ifEnd, .harness: self
         }
     }
 }

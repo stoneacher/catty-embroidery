@@ -21,8 +21,22 @@ public struct Interpreter: Sendable {
     /// `embroideryPatternManager`). Owns dedup / interpolation / color-change /
     /// layer assembly — the interpreter only calls it (ADR-012/013/015, US-206).
     var manager = EmbroideryPatternManager()
+    /// The language-test harness's ending, if one was reached (brief D5).
+    var harness = HarnessState()
 
     public init(program: Program, clock: InterpreterClock) {
+        // Flatten scenes → objects in creation order; ActorID is the global
+        // object index (ADR-018). One thread per whenStarted script, object order
+        // then script order.
+        let objects = program.scenes.flatMap(\.objects).map { object in
+            (object, object.scripts.filter { $0.header == .whenStarted }.map { $0.bricks.map(ScriptStep.brick) })
+        }
+        self.init(objects: objects, variables: program.variables, clock: clock)
+    }
+
+    /// The one construction path: each object with its scripts as step lists.
+    /// `program`'s own scripts are ignored here; the steps given replace them.
+    init(objects programObjects: [(Object, [[ScriptStep]])], variables: [Variable], clock: InterpreterClock) {
         self.clock = clock
 
         var objects: [ObjectRuntime] = []
@@ -31,36 +45,30 @@ public struct Interpreter: Sendable {
         // (name uniqueness is the editor's job, not the model's — Scope.swift); a
         // plain dictionary assignment would let a later duplicate shadow the first.
         var projectVariables: [String: Double] = [:]
-        for variable in program.variables where projectVariables[variable.name] == nil {
+        for variable in variables where projectVariables[variable.name] == nil {
             projectVariables[variable.name] = variable.value
         }
 
-        // Flatten scenes → objects in creation order; ActorID is the global
-        // object index (ADR-018). One thread per whenStarted script, object order
-        // then script order.
-        var objectIndex = 0
-        for scene in program.scenes {
-            for object in scene.objects {
-                var objectVariables: [String: Double] = [:]
-                for variable in object.variables where objectVariables[variable.name] == nil {
-                    objectVariables[variable.name] = variable.value
-                }
-                objects.append(ObjectRuntime(
-                    needle: VirtualNeedle(
-                        position: StagePoint(x: object.startX, y: object.startY),
-                        heading: object.startHeading
-                    ),
-                    variables: objectVariables,
-                    actorID: ActorID(objectIndex),
-                    layer: object.zIndex
+        for (objectIndex, (object, scripts)) in programObjects.enumerated() {
+            var objectVariables: [String: Double] = [:]
+            for variable in object.variables where objectVariables[variable.name] == nil {
+                objectVariables[variable.name] = variable.value
+            }
+            objects.append(ObjectRuntime(
+                needle: VirtualNeedle(
+                    position: StagePoint(x: object.startX, y: object.startY),
+                    heading: object.startHeading
+                ),
+                variables: objectVariables,
+                actorID: ActorID(objectIndex),
+                layer: object.zIndex
+            ))
+            for (scriptIndex, steps) in scripts.enumerated() {
+                threads.append(ScriptThread(
+                    objectIndex: objectIndex,
+                    scriptIndex: scriptIndex,
+                    instructions: ScriptCompiler.compile(steps)
                 ))
-                for script in object.scripts where script.header == .whenStarted {
-                    threads.append(ScriptThread(
-                        objectIndex: objectIndex,
-                        instructions: ScriptCompiler.compile(script)
-                    ))
-                }
-                objectIndex += 1
             }
         }
 
@@ -78,6 +86,11 @@ public struct Interpreter: Sendable {
         var events: [InterpreterEvent] = []
         for index in threads.indices where !threads[index].finished {
             stepThread(index, into: &events)
+        }
+        // A language test's ending finishes the tick it lands in, then the run
+        // stops (brief D5): every other thread has taken this tick's action.
+        if harness.ending != nil {
+            harness.stopped = true
         }
         return .ticked(events)
     }
@@ -103,7 +116,7 @@ public struct Interpreter: Sendable {
     /// `true` once no runnable thread remains (vacuously true for a program with
     /// no whenStarted scripts).
     public var isFinished: Bool {
-        threads.allSatisfy(\.finished)
+        harness.stopped || threads.allSatisfy(\.finished)
     }
 
     /// The embroidery stream assembled from every stitch produced so far

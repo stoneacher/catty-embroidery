@@ -100,6 +100,9 @@ extension Interpreter {
 
         case let .brick(brick):
             return performActionBrick(index, brick, acted: &tick.acted, into: &events)
+
+        case let .harness(step):
+            return performHarness(index, step, acted: &tick.acted)
         }
     }
 

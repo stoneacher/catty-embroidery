@@ -14,6 +14,13 @@ public extension Formula {
         return result
     }
 
+    /// The normalised value, NaN included, without throwing: Catroid's
+    /// `interpretObject` over a `Double`-only formula, which AssertEquals compares
+    /// (language-test runner brief, D2).
+    package func interpretValue(scope: some Scope) -> Double {
+        evaluate(scope: scope)
+    }
+
     /// `interpretDouble` narrowed with Java `Double.intValue()` semantics:
     /// truncate toward zero, saturate to the Int32 bounds. Java's `(int)` cast
     /// saturates where Swift's `Int32(_:)` traps — the same platform difference
