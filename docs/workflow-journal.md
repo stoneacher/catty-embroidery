@@ -4374,3 +4374,17 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - `swift-code-reviewer`: three slice passes and one whole-PR pass.
   - None was rejected.
   - Codex's two Mediums and one High were all WaitTillIdle scheduling layers. The Low was the third copy of a claim already corrected in D8, which shows again how a corrected claim survives in its other copies (ADR-032 invariant 3).
+
+## 2026-11-03 — Language-test runner closed: Done, PRs #86 and #87
+
+- **Sebastian merged #86 and #87.** The brief is marked Done with every acceptance criterion ticked against named tests. The last criterion, "no existing engine or app test changes, and `BrickKind`, `ProgramDocument` and the sample JSONs are byte-identical", was checked as a git diff over the feature's whole span (`d99d446..61566d7`), and all of it came back empty.
+- **The ADRs the brief planned were only written at close-out:** ADR-051 (language tests: import, harness, ratchet) and ADR-042's eight-target amendment. The brief listed both from day one ("New ADR: ADR-051"), but no slice was the natural place to write them, and every slice entry deferred to the brief. `/finish`'s DECISIONS step is what caught it. A planned ADR needs an owner slice, or it waits until close-out.
+- **Result, for the thesis:** 32 of 215 Catrobat language tests pass on this engine, with 4 pinned expected failures and 179 refused (each with exact, pinned reasons). The feasibility census made at planning (34 runnable, 30 predicted to pass) was right on imports (36, after 2 refused for strings and 4 added) and pessimistic on passes (32): the unpredicted US-333 cost 2, the predicted ones 2.
+- **Cleanup:** all reviewer worktrees and their branches removed after each merge. 20 stale agent branches from earlier sessions were deleted first, each checked for unique commits beforehand; Sebastian then cleared 42 merged local branches with `gbda`.
+
+## 2026-11-03 — Language-test runner close-out (#88) merged without its Codex round
+
+- **The Codex round on the docs-only close-out PR stopped partway: Codex hit its usage limit** after about 102k tokens (`codex exec` exit 1, "You've hit your usage limit", reset at 23:34). It produced no verdict file.
+- **Sebastian merged #88 without the round.** CI was green on `870c761`, and the PR description records the gap.
+- **What checked the close-out instead:** only the author's own checks. A git diff over the feature's span verified the no-change criterion, and the engine suite exit-coded 0. ADR-051's rules and counts were stated from the slice records and the pinned table, but no second reader checked them against the code.
+- **The first time an external quota, rather than a judgement, ended a review.** It raises a workflow question for the thesis: the cross-vendor rule has no fallback when the second vendor is unavailable. The options were waiting for the reset, an interim `swift-code-reviewer` fact-check (not cross-vendor), or merging docs-only with the gap recorded. Sebastian chose the last for a docs-only diff.

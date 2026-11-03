@@ -1,6 +1,6 @@
 # Language-test runner
 
-**Status**: In progress — PR 1 (slices 1–4) in review, 2026-11-03; planned 2026-11-03 | **Epic**: E3 (program model & interpreter) | **Branch**: `feature/language-test-runner` (PR 1, #86; PR 2 gets its own branch)
+**Status**: Done — 2026-11-03, PRs #86 and #87 | **Epic**: E3 (program model & interpreter) | **Branch**: `feature/language-test-runner` (PR 1, #86) and `feature/language-test-runner-harness` (PR 2, #87)
 
 **Goal**: the engine runs the Catrobat Language Tests, the implementation-independent `.catrobat` programs Catroid ships in `catroid/src/androidTest/assets/catrobatTests/`, headlessly inside `swift test`, and reports how many of the 215 pass. Every test is pinned to an expected class: pass, expected failure (with its ADR) or unsupported (with the features it needs). A test that changes class turns the suite red until the table is updated on purpose. A partial `code.xml` → `Program` importer, the S* `.catrobat` import's first half, comes with it.
 
@@ -96,15 +96,15 @@ Planned with `swift-architect` against a fresh Catroid clone (`develop` at `9035
 
 ## Acceptance criteria
 
-- [ ] All 215 fixtures are present, and their hashes match the manifest; the extraction script reproduces both from the pinned Catroid commit.
-- [ ] Every one of the 215 imports or fails with typed blockers, and none crashes. Every successful import passes `validate()`.
-- [ ] Every Catroid function, operator, sensor and element-type name that `Formula` supports maps to its case. A census over `UnaryFunction`/`BinaryFunction`/`FormulaConstant`/`Sensor.allCases` fails to compile, or fails, when one is missed.
-- [ ] Each D4 string context is pinned by a named test, including a refused assert string, a refused equality operand and the function-call fold to 0.
-- [ ] AssertEquals passes and fails exactly by `isSameValue` (NaN = NaN, −0 = +0, `1` vs `1.0`). After the first result the current tick finishes and no further tick runs, later results are ignored, and assert, finish and exit each cost one tick, observed from a second script.
-- [ ] A run that ends without a result, or exhausts 600 ticks, fails with its own reason, and every run reports its tick count.
-- [ ] WaitTillIdle is released exactly when every other thread has finished as observed at its position in the round-robin pass, in both orderings; two waiters never release each other; a stage with no objects never releases it. *(The last clause is unreachable; see D8's slice-6 amendment. The orderings are per object, and "two waiters" holds once both have started, as D8 now states; Codex PR 2 handover, round 2.)*
-- [ ] Every one of the 215 cases matches its pinned class, the summary counts are pinned, and an expected failure that starts passing, or fails for any reason other than its pinned outcome, turns the suite red.
-- [ ] No existing engine or app test changes, and `BrickKind`, `ProgramDocument` and the sample JSONs are byte-identical (`git diff --stat` on them is empty).
+- [x] All 215 fixtures are present, and their hashes match the manifest; the extraction script reproduces both from the pinned Catroid commit. *(`FixtureProvenanceTests`; re-extraction is byte-identical.)*
+- [x] Every one of the 215 imports or fails with typed blockers, and none crashes. Every successful import passes `validate()`. *(`CorpusProgramTests`: 36 import, 179 refused with pinned blockers, all 36 validate.)*
+- [x] Every Catroid function, operator, sensor and element-type name that `Formula` supports maps to its case. A census over `UnaryFunction`/`BinaryFunction`/`FormulaConstant`/`Sensor.allCases` fails to compile, or fails, when one is missed. *(`CatroidNames`' exhaustive switches, and `censusEveryVocabularyCaseHasOneCatroidName`.)*
+- [x] Each D4 string context is pinned by a named test, including a refused assert string, a refused equality operand and the function-call fold to 0. *(`FormulaLiteralImportTests`.)*
+- [x] AssertEquals passes and fails exactly by `isSameValue` (NaN = NaN, −0 = +0, `1` vs `1.0`). After the first result the current tick finishes and no further tick runs, later results are ignored, and assert, finish and exit each cost one tick, observed from a second script. *(`HarnessTests`. `1` vs `1.0` is one `Double` value; the importer gives a literal `1` and a computed `1.0` the same one, slice 3.)*
+- [x] A run that ends without a result, or exhausts 600 ticks, fails with its own reason, and every run reports its tick count. *(`HarnessTests`, with the tick-600/601 boundary pinned.)*
+- [x] WaitTillIdle is released exactly when every other thread has finished as observed at its position in the round-robin pass, in both orderings; two waiters never release each other; a stage with no objects never releases it. *(The last clause is unreachable; see D8's slice-6 amendment. The orderings are per object, and "two waiters" holds once both have started, as D8 now states; Codex PR 2 handover, round 2.)* *(`WaitTillIdleTests`; qualified as below.)*
+- [x] Every one of the 215 cases matches its pinned class, the summary counts are pinned, and an expected failure that starts passing, or fails for any reason other than its pinned outcome, turns the suite red. *(`LanguageTestRunnerTests`: 32 pass, 4 expected failures, 179 unsupported; the `withKnownIssue` premise executed by mutation.)*
+- [x] No existing engine or app test changes, and `BrickKind`, `ProgramDocument` and the sample JSONs are byte-identical (`git diff --stat` on them is empty). *(Verified at close-out over `d99d446..61566d7`: all three diffs are empty, and so is the app's.)*
 
 ## Slices and test-first outline
 
