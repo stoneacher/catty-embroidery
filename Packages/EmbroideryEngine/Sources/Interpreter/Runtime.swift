@@ -20,6 +20,10 @@ struct ObjectRuntime: Sendable {
 /// needle and variables it reads and writes live on the shared `ObjectRuntime`.
 struct ScriptThread: Sendable {
     let objectIndex: Int
+    /// The script's index among the scripts the object was given: its whenStarted
+    /// scripts on the `init(program:)` path, its step lists on the harness path.
+    /// Only a harness report reads it.
+    let scriptIndex: Int
     let instructions: [Instruction]
     var instructionPointer = 0
     /// Remaining iterations per open `repeatLoop`, keyed by the `repeatBegin`'s
@@ -33,6 +37,9 @@ struct ScriptThread: Sendable {
     /// has not started (its duration is resolved lazily on first arrival).
     var wait: WaitState?
     var finished = false
+    /// The tick the thread finished in (brief D8: an object removes its finished
+    /// scripts only after its whole pass, `ThreadScheduler.java:59-90`).
+    var finishedInTick: Int?
 }
 
 /// A running ForVariableFromTo (ADR-049): `to` and the step are fixed when the loop

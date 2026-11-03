@@ -30,6 +30,16 @@ package struct ImportedObject: Sendable, Equatable {
     package static let startY = 0.0
     package static let startHeading = 90.0
 
+    /// This object as a `Program` object without scripts: Catroid's start pose, its
+    /// variables, and `zIndex` for its place in the list. `program()` and the
+    /// language-test runner both build objects with it.
+    package func object(zIndex: Int) -> Object {
+        Object(
+            name: name, startX: Self.startX, startY: Self.startY, startHeading: Self.startHeading,
+            zIndex: zIndex, variables: variables
+        )
+    }
+
     package var name: String
     package var variables: [Variable]
     package var scripts: [ImportedScript]
@@ -60,21 +70,18 @@ package struct ImportedProgram: Sendable, Equatable {
     /// look (`content/Look.java:88`), in list order.
     package func program() throws(CatrobatImportError) -> Program {
         var harness = false
-        let objects = objects.enumerated().map { index, object in
-            Object(
-                name: object.name, startX: ImportedObject.startX, startY: ImportedObject.startY,
-                startHeading: ImportedObject.startHeading, zIndex: index,
-                variables: object.variables,
-                scripts: object.scripts.map { script in
-                    Script(header: .whenStarted, bricks: script.steps.compactMap { step in
-                        guard case let .brick(brick) = step else {
-                            harness = true
-                            return nil
-                        }
-                        return brick
-                    })
-                }
-            )
+        let objects = objects.enumerated().map { index, imported in
+            var object = imported.object(zIndex: index)
+            object.scripts = imported.scripts.map { script in
+                Script(header: .whenStarted, bricks: script.steps.compactMap { step in
+                    guard case let .brick(brick) = step else {
+                        harness = true
+                        return nil
+                    }
+                    return brick
+                })
+            }
+            return object
         }
         guard !harness else { throw CatrobatImportError(blockers: [.harnessStep]) }
         return Program(name: name, scenes: [Scene(name: sceneName, objects: objects)], variables: variables)

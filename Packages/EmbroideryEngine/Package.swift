@@ -127,7 +127,7 @@ let package = Package(
         .testTarget(name: "CatrobatImportTests", dependencies: ["CatrobatImport", "ProgramModel", "EditorCore"]),
         .testTarget(
             name: "LanguageTestsTests",
-            dependencies: ["CatrobatImport", "ProgramModel"],
+            dependencies: ["CatrobatImport", "ProgramModel", "Interpreter", "EmbroideryEngine"],
             resources: [.copy("Resources")]
         ),
         .testTarget(

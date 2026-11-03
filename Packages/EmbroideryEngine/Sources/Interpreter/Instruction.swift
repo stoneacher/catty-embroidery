@@ -51,6 +51,13 @@ enum Instruction: Sendable {
     /// `ifEnd`: zero-tick, except that an If which ran no action in the tick it was
     /// read in takes that tick (ADR-049).
     case ifEnd
+    /// A language-test harness step (AssertEquals, FinishStage, ExitStage,
+    /// WaitTillIdle): an action like a brick, never a `Brick` case (brief D3, D6).
+    /// `nestedInBlock`: inside a loop or If. Catroid's WaitTillIdle checks only the
+    /// top-level children of its script (`WaitTillIdleAction.java:53-56`, not
+    /// recursive), so a nested one polls every tick and never releases (brief D8,
+    /// slice 6 review).
+    case harness(HarnessStep, nestedInBlock: Bool)
 }
 
 /// Compiles a `Script` once into its linear instruction array with a single-pass
@@ -59,56 +66,77 @@ enum Instruction: Sendable {
 /// crash, consistent with the interpreter's never-halt contract (ADR-018).
 enum ScriptCompiler {
     static func compile(_ script: Script) -> [Instruction] {
+        compile(script.bricks.map(ScriptStep.brick))
+    }
+
+    /// Steps compile one instruction each. Validation runs on the bricks alone:
+    /// harness steps are leaves and cannot unbalance a script.
+    static func compile(_ steps: [ScriptStep]) -> [Instruction] {
+        let bricks = steps.compactMap { step -> Brick? in
+            if case let .brick(brick) = step { brick } else { nil }
+        }
         do {
-            try script.validate()
+            try Script(bricks: bricks).validate()
         } catch {
             return []
         }
 
         var instructions: [Instruction] = []
-        instructions.reserveCapacity(script.bricks.count)
+        instructions.reserveCapacity(steps.count)
         // Stack of open blocks, indices into `instructions`, for backpatching each
         // begin once its end position is known. `validate()` above guarantees every
         // pop finds the kind it expects.
         var open: [OpenBlock] = []
 
-        for brick in script.bricks {
-            switch brick {
-            case let .repeatLoop(times):
-                open.append(.loop(begin: instructions.count))
-                // endIndex is backpatched at the matching loopEnd.
-                instructions.append(.repeatBegin(times: times, endIndex: 0))
-            case .forever:
-                open.append(.loop(begin: instructions.count))
-                instructions.append(.foreverBegin)
-            case let .forVariableFromTo(name, from, to):
-                open.append(.loop(begin: instructions.count))
-                instructions.append(.forBegin(name: name, from: from, to: to, endIndex: 0))
-            case let .repeatUntil(condition):
-                open.append(.loop(begin: instructions.count))
-                instructions.append(.repeatUntilBegin(condition: condition, endIndex: 0))
-            case let .ifThen(condition), let .ifElse(condition):
-                open.append(.conditional(begin: instructions.count, elseJump: nil))
-                // Both targets are backpatched at the matching ifEnd.
-                instructions.append(.ifBegin(condition: condition, falseTarget: 0, endIndex: 0))
-            case .elseBranch:
-                guard lowerElse(into: &instructions, open: &open) else { return [] }
-            case .ifEnd:
-                guard lowerIfEnd(into: &instructions, open: &open) else { return [] }
-            case .loopEnd:
-                guard case let .loop(beginIndex) = open.popLast() else { return [] }
-                let endIndex = instructions.count
-                instructions.append(.loopEnd(beginIndex: beginIndex))
-                instructions[beginIndex] = instructions[beginIndex].closingLoop(at: endIndex)
-            // Listed, not defaulted: a new brick must be compiled deliberately.
-            case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
-                 .changeXBy, .changeYBy, .arc, .goThrough, .wait, .waitUntil, .setVariable, .changeVariableBy, .stitch,
-                 .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
-                 .stopRunningStitch, .writeEmbroideryToFile:
-                instructions.append(.brick(brick))
+        for step in steps {
+            switch step {
+            case let .harness(harness):
+                instructions.append(.harness(harness, nestedInBlock: !open.isEmpty))
+            case let .brick(brick):
+                guard lower(brick, into: &instructions, open: &open) else { return [] }
             }
         }
         return instructions
+    }
+
+    /// Lowers one brick, backpatching its block's head at the block's end. `false`
+    /// only on a structure `validate()` has already refused.
+    private static func lower(_ brick: Brick, into instructions: inout [Instruction], open: inout [OpenBlock]) -> Bool {
+        switch brick {
+        case let .repeatLoop(times):
+            open.append(.loop(begin: instructions.count))
+            // endIndex is backpatched at the matching loopEnd.
+            instructions.append(.repeatBegin(times: times, endIndex: 0))
+        case .forever:
+            open.append(.loop(begin: instructions.count))
+            instructions.append(.foreverBegin)
+        case let .forVariableFromTo(name, from, to):
+            open.append(.loop(begin: instructions.count))
+            instructions.append(.forBegin(name: name, from: from, to: to, endIndex: 0))
+        case let .repeatUntil(condition):
+            open.append(.loop(begin: instructions.count))
+            instructions.append(.repeatUntilBegin(condition: condition, endIndex: 0))
+        case let .ifThen(condition), let .ifElse(condition):
+            open.append(.conditional(begin: instructions.count, elseJump: nil))
+            // Both targets are backpatched at the matching ifEnd.
+            instructions.append(.ifBegin(condition: condition, falseTarget: 0, endIndex: 0))
+        case .elseBranch:
+            guard lowerElse(into: &instructions, open: &open) else { return false }
+        case .ifEnd:
+            guard lowerIfEnd(into: &instructions, open: &open) else { return false }
+        case .loopEnd:
+            guard case let .loop(beginIndex) = open.popLast() else { return false }
+            let endIndex = instructions.count
+            instructions.append(.loopEnd(beginIndex: beginIndex))
+            instructions[beginIndex] = instructions[beginIndex].closingLoop(at: endIndex)
+        // Listed, not defaulted: a new brick must be compiled deliberately.
+        case .moveNSteps, .turnLeft, .turnRight, .pointInDirection, .placeAt, .setX, .setY,
+             .changeXBy, .changeYBy, .arc, .goThrough, .wait, .waitUntil, .setVariable, .changeVariableBy, .stitch,
+             .setThreadColor, .runningStitch, .zigZagStitch, .tripleStitch, .sewUp,
+             .stopRunningStitch, .writeEmbroideryToFile:
+            instructions.append(.brick(brick))
+        }
+        return true
     }
 }
 
@@ -120,7 +148,7 @@ private extension Instruction {
         case let .repeatBegin(times, _): .repeatBegin(times: times, endIndex: endIndex)
         case let .repeatUntilBegin(condition, _): .repeatUntilBegin(condition: condition, endIndex: endIndex)
         case let .forBegin(name, from, to, _): .forBegin(name: name, from: from, to: to, endIndex: endIndex)
-        case .brick, .foreverBegin, .loopEnd, .ifBegin, .jump, .ifEnd: self
+        case .brick, .foreverBegin, .loopEnd, .ifBegin, .jump, .ifEnd, .harness: self
         }
     }
 }

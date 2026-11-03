@@ -4323,3 +4323,54 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Codex read Catroid's *deserialiser*, finding inputs the corpus never contains.
   - The reviewer read *our* code across files, finding silent losses, the trap and the API.
   - CI read the *commit*, finding what local runs on the working tree cannot see.
+
+## 2026-11-03 — Language-test runner slice 5 (harness in the interpreter): two reviews converge on one test
+
+- **PR 2 opened as draft #87**, on `feature/language-test-runner-harness` from `main` after #86's merge.
+- **Slice 5:** AssertEquals, FinishStage and ExitStage are interpreter steps, one action each. The first ending is latched, its tick finishes for every thread, then the run stops. `runHarness` reports the outcome, ticks and events inside the 600-tick budget. `init(program:)` and `init(harness:)` share one construction path; the public API, `InterpreterEvent` and every existing test and golden are unchanged.
+- **The latch rule was read from Catroid, not assumed.** `StageActivity.finishStage` and `finishTestWithResult` both act only while the stage isn't finishing, so an ExitStage and a result compete as equals. The brief had treated ExitStage only as "ends without a result".
+- **Reviews.** One Codex slice round (Low) and `swift-code-reviewer`, with no production defect between them. Both independently found the *same* coverage gap: exit against result across threads in one tick. The reviewer demonstrated it with a surviving mutant; Codex named the two unkillable replacements. When two vendors converge on a missing test rather than a bug, the test plan had been written from the code's structure (one script, sequential steps), while the rule lives *between* threads.
+- **Process note, from an edit that failed silently:** an edit script without asserts missed its anchor after SwiftFormat had inserted a blank line, and the build caught it. Every scripted edit now asserts its anchor count.
+- **Mutants:** 17 in the slice (one test gap closed, one equivalent over its domain: a failed assert advancing its thread, unobservable once the run stops at the tick's end), 4 after review. All killed except the recorded equivalent.
+
+## 2026-11-03 — Language-test runner slices 6 and 7: Codex overturned a reviewer's "holds", and the runner found a divergence
+
+- **Slice 6 (WaitTillIdle).** Codex's High showed that my implementation, my test and the reviewer's confirmation all rested on one wrong premise. We had reasoned from libgdx's `Actor.act`, which drops a finished action while acting. Catroid's `Look.act` overrides it with `ThreadScheduler.tick`, which acts all of an actor's scripts and only then removes the finished ones. So a same-object worker ending earlier in the tick is still listed when the waiter polls.
+  - The test `aWorkerVisitedEarlierReleasesInTheSameTick` had pinned the wrong answer as the specification. The reviewer re-derived the tick counts by hand and called it correct, because the derivation used the same premise.
+  - **Lesson:** a hand re-derivation checks arithmetic, not premises. Only reading the actual scheduler did.
+  - Both reviewers independently found that a nested waiter never releases in Catroid (its `contains` is not recursive); that is now mirrored.
+- **Slice 7 (the runner): 32 of 215 Catrobat language tests pass** on this engine, with 4 expected failures and 179 unsupported. All 215 are pinned.
+- **The runner's first real result is a divergence planning had not predicted.** `testArccosineFunction` and `testArcsinusFunction` fail because Darwin's correctly rounded `acos(0.5)`/`asin(0.5)` differ by one ulp from Java's fdlibm (probed under JDK 17), and the tests `floor` the degrees.
+  - ADR-046 pins four divergences, and this is not one of them.
+  - Filed as US-333 (port fdlibm, or accept), pinned meanwhile as expected failures owned by it.
+  - This is the feature's justification in miniature: an implementation-independent suite found a formula-level difference that 1500+ hand-written engine tests had not, because those tests were written against Darwin's libm.
+- **The ratchet's premise was executed, not assumed** (ADR-032 invariant 4): a mutant that never records the known issue is red, so `withKnownIssue(isIntermittent: false)` does fail when an expected failure starts passing. One mutant is equivalent by design: the outside outcome check is redundant with the strict matcher, and it is kept for its message.
+
+## 2026-11-03 — Language-test runner PR 2: whole-PR review folded in
+
+- **`swift-code-reviewer` over `main...HEAD` (#87): no defect.** 3 Important and 4 suggestions, all valid, none rejected. As in PR 1, every finding sat across slices rather than in one:
+  - The 215-entry expectation table could not be regenerated. There is now an environment-gated generator test and `scripts/regenerate-language-test-expectations.sh`; the committed table is its output, and a rerun reproduces it byte for byte.
+  - D5 and D12 had drifted from the code, and got dated "as built" amendments.
+  - Stale comments, including the slice-6 green line that still stated the overturned libgdx premise.
+  - The object construction was duplicated: `ImportedObject.object(zIndex:)` is now the one place Catroid's start pose lives.
+  - `AssertionFailure` is renamed `HarnessAssertionFailure`, and `HarnessObject` clears scripts it is handed rather than ignoring them.
+- **A tool slip, caught by checking the result, not the exit code:** a `sed` rename used `\b`, which BSD `sed` doesn't support. It matched nothing, and the build passed on unchanged names. A grep afterwards showed the old name; `perl` with a word boundary did the rename. This is the same lesson as PR 1's unstaged file: a green exit is no evidence that a change happened.
+
+## 2026-11-03 — Language-test runner PR 2: Codex handover round 1 (highest Medium, 2 findings, both valid)
+
+- **Medium: a third layer of Catroid's scheduling.** Slice 6's review had established per-object removal (`ThreadScheduler` drops finished scripts after an object's pass). Round 1 found the matching start rule: Start scripts are queued before the first frame, but each object moves them into its action list only in its own `tick`. So in tick 1, a waiter sees a later object's scripts as not yet started, and releases.
+  - That overturned two of my tests as specifications. `anotherObjectsScriptKeepsItWaiting` had polled in tick 1, and its intent now needs the poll after a first action. "Two waiters never release each other" holds only once both have started.
+  - The rule changed no corpus outcome: a regeneration left the table identical.
+- **Low:** the expectation generator would have written `actual: nan`, which isn't Swift. Special values are now written as `.nan`/`.infinity`, unit-tested.
+- **Codex also traced all 32 passes for a wrong-reason pass, and found none.** It confirmed US-333 from Android's sources (Bionic's FreeBSD/Sun-derived `acos`/`asin`).
+- **Lesson, for the thesis:** WaitTillIdle took three rounds to model because each layer of Catroid's scheduler (`SequenceAction` order, `ThreadScheduler` removal, `ThreadScheduler` start) is invisible from the one above. Each review read one layer further down. Mutants: 5, all killed.
+
+## 2026-11-03 — Language-test runner PR 2: Codex handover round 2 (Low, documentation only); loop ends
+
+- **Round 2 (verification):** both round-1 fixes confirmed correct and complete. Codex argued the boundary: "tick 1" is exact, because every supported script is a Start script queued before the first frame, and no supported brick enqueues a thread later. Its one finding was Low and documentation-only: three places still stated the unqualified "two waiters never release each other" (a code comment and two brief lines), now qualified.
+- **Stop condition 1:** comment and doc corrections only. The loop ran 2 rounds, highest severity Medium → Low.
+- **PR 2 review totals:**
+  - Codex: three slice rounds (1, 3, plus the brief-level points) and two handover rounds (2, 1).
+  - `swift-code-reviewer`: three slice passes and one whole-PR pass.
+  - None was rejected.
+  - Codex's two Mediums and one High were all WaitTillIdle scheduling layers. The Low was the third copy of a claim already corrected in D8, which shows again how a corrected claim survives in its other copies (ADR-032 invariant 3).
