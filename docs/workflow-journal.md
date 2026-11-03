@@ -4309,3 +4309,17 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **A `formulaList` child that isn't a `<formula>` becomes `Formula(0)`** and, inserted with `putIfAbsent`, wins over a later real entry of the same category. One without a category is a user-defined brick's input. We ignored both and imported the real entry. Mirroring an insertion-order quirk for unwritten input was not worth it, so both are refused.
   - **`interpretString` trims a numeric string's trailing zero** (`NumberFormats.trimTrailingCharacters`, a deliberately narrow pattern), so `WriteEmbroideryToFile("10.0")` names the file `10`. Mirrored exactly, with the pattern's non-matching cases (`1.500`, `1.05`, `01.0`) pinned as controls.
 - 6 mutants, all killed. Code changed, so round 2 is a verification round.
+
+## 2026-11-03 — Language-test runner PR 1: Codex handover round 2 clean; loop ends
+
+- **Round 2 (verification): no findings.** Codex confirmed both round-1 fixes correct and complete. The formula-entry refusal is deliberately conservative: it also rejects a stray entry *after* a real one, which Catroid would tolerate, and it doesn't touch the 36 pinned imports. The trimming port matches `NumberFormats` exactly. A full re-audit of importer, resolver, formulas, variable identity, ratchets, script, CI pin and brief found nothing.
+- **Stop condition 1** (a round with no code changes). The loop ran 2 rounds, highest severity Medium → none.
+- **PR 1 in review totals:**
+  - Codex: one brief round (8), four slice rounds (4, 4, 4, 4) and two handover rounds (2, 0).
+  - `swift-code-reviewer`: four slice passes (10, 5, 5, 8) and one whole-PR pass (8).
+  - CI found 2 more: the toolchain-dependent hex parse and the unstaged file.
+  - None was rejected.
+- **What the review layers found that the others didn't, in one line each:**
+  - Codex read Catroid's *deserialiser*, finding inputs the corpus never contains.
+  - The reviewer read *our* code across files, finding silent losses, the trap and the API.
+  - CI read the *commit*, finding what local runs on the working tree cannot see.
