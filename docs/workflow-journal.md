@@ -4216,3 +4216,24 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **#85's app job failed on `StageFieldRenderingTests`, with nothing changed but two status lines.** That makes it a run of `main` as merged. A re-run passed.
   - It's the third occurrence of US-330 in this feature, and the first with two of the suite's tests failing together.
   - The backlog entry now lists all three and notes that the suite renders through the new overscan raster path. Nothing points at that path rather than runner load, but the frequency is now recorded where the next backlog prioritisation will see it.
+
+## 2026-11-03 — Language-test runner: planning against a fresh Catroid clone, then a Codex brief review (one round, 8 findings, all valid)
+
+- **Fresh reference first:** the local `../Catroid` checkout dated from 2026-05-27. The ROADMAP's feasibility table had already called it "may be stale". Sebastian re-cloned it before planning (`develop` at `9035dc7cb`, 2026-10-26).
+- **Planning (`swift-architect`, ~640 s, 58 tool calls):** it statically classified all 215 `code.xml` files.
+  - 34 tests are runnable with the importer plus AssertEquals and FinishStage; 30 are predicted to pass. ExitStage, EmptyScript and WaitTillIdle add 4 more.
+  - **It refuted a premise of the 2026-10-19 version decision:** none of the 215 tests is at 1.14, and for our bricks the format does not differ between 0.99995 and 1.14. Sebastian therefore replaced "re-save old tests through Catroid" with an accepted version window (D1).
+  - **Verified by hand before the decisions were put to Sebastian:** the version census and Catroid's assert rule (`AssertAction.kt:45-50`).
+  - **Sebastian's decisions:** the window (D1); refuse string values (D4, costs 2 runnable tests); all three small additions; all 215 fixtures committed.
+- **Why a brief round:** no ADR pins the import mapping, the harness steps or the run outcome (ADR-041). One round with `codex exec -m gpt-5.6-sol`, read-only, `--add-dir ../Catroid`. Verdict: **CHANGES REQUIRED**. 8 findings (2 High, 5 Medium, 1 Low), all checked against Catroid and all valid; the brief was changed, no ADR.
+  - **High, D4:** `=`/`≠` compare *strings* when either side doesn't parse (`FormulaElementOperations.kt:67-75`). The planned "operator operand → NaN" rule would have made `"a" = "b"` true through NaN = NaN. Both the architect and I had read the generic operator path and generalised it to equality. Fix: equality operands are their own refused context.
+  - **High, D12:** a plain `withKnownIssue` accepts every issue, so an expected failure could start failing for another reason, such as an importer refusal, and stay green. This is a test that cannot fail, in ADR-032's sense, sitting inside the ratchet meant to prevent exactly that. Fix: pin the exact outcome outside the known-issue block and use a restrictive matcher.
+  - **Medium, D5:** "a failure stops the run" was wrong. Catroid latches the first result, but `stage.act` finishes the pass. Fix: the tick finishes, then the run stops.
+  - **Medium, D8:** WaitTillIdle reads live thread state, so whether it releases in this tick or the next depends on round-robin order. Both orderings get tested.
+  - **Medium, D7:** a declaration is either inline or a reference, and one runnable test's reference points into a commented-out brick. Fix: resolve over the whole tree before filtering.
+  - **Medium, D9:** the only EmptyScript corpus test is also commented out, so it could not prove the EmptyScript rule. Fix: a synthetic test.
+  - **Medium, D6:** 600 ticks is not a translation of a wall-clock timeout with adaptive substeps. It is restated as a policy, with a pinned tick-600/601 boundary and a half-budget headroom check.
+  - **Low:** a third ExitStage test exists, `testWaitUntil`, but it needs `TIMER`, so the counts are unchanged.
+  - **Attack items Codex cleared:** D1's format claims (no `isCommentedOut` anywhere); boolean roots stringify as `"1.0"`, not `"true"`; no project/object variable name collision in the corpus; heading 90.
+- **What this says about the delegation:** the architect's static census was right everywhere Codex checked. Both Highs sat in *rules the plan derived* from that census, the string contexts and the ratchet, not in the census itself. Same shape as the Variables brief round (2026-10-19): the brief round pays for itself on derived semantics, not on fact-finding.
+- **Disposition:** a brief review is one round (skill §0), so there is no verification round. Slice reviews will check the changes against code.
