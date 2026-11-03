@@ -4355,3 +4355,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The object construction was duplicated: `ImportedObject.object(zIndex:)` is now the one place Catroid's start pose lives.
   - `AssertionFailure` is renamed `HarnessAssertionFailure`, and `HarnessObject` clears scripts it is handed rather than ignoring them.
 - **A tool slip, caught by checking the result, not the exit code:** a `sed` rename used `\b`, which BSD `sed` doesn't support. It matched nothing, and the build passed on unchanged names. A grep afterwards showed the old name; `perl` with a word boundary did the rename. This is the same lesson as PR 1's unstaged file: a green exit is no evidence that a change happened.
+
+## 2026-11-03 — Language-test runner PR 2: Codex handover round 1 (highest Medium, 2 findings, both valid)
+
+- **Medium: a third layer of Catroid's scheduling.** Slice 6's review had established per-object removal (`ThreadScheduler` drops finished scripts after an object's pass). Round 1 found the matching start rule: Start scripts are queued before the first frame, but each object moves them into its action list only in its own `tick`. So in tick 1, a waiter sees a later object's scripts as not yet started, and releases.
+  - That overturned two of my tests as specifications. `anotherObjectsScriptKeepsItWaiting` had polled in tick 1, and its intent now needs the poll after a first action. "Two waiters never release each other" holds only once both have started.
+  - The rule changed no corpus outcome: a regeneration left the table identical.
+- **Low:** the expectation generator would have written `actual: nan`, which isn't Swift. Special values are now written as `.nan`/`.infinity`, unit-tested.
+- **Codex also traced all 32 passes for a wrong-reason pass, and found none.** It confirmed US-333 from Android's sources (Bionic's FreeBSD/Sun-derived `acos`/`asin`).
+- **Lesson, for the thesis:** WaitTillIdle took three rounds to model because each layer of Catroid's scheduler (`SequenceAction` order, `ThreadScheduler` removal, `ThreadScheduler` start) is invisible from the one above. Each review read one layer further down. Mutants: 5, all killed.

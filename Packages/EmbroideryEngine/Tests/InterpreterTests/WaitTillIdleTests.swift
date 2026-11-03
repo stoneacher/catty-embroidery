@@ -68,12 +68,40 @@ struct WaitTillIdleTests {
         #expect(result.ticks == 3)
     }
 
-    /// Every object's scripts count, not just the waiter's own.
+    /// Every object's scripts count, not just the waiter's own, once they have
+    /// started: the waiter polls from tick 2, after its first action.
     @Test func anotherObjectsScriptKeepsItWaiting() {
         let worker = Self.object([[Self.move, Self.move, Self.move]])
-        let result = run([Self.object([Self.waiter]), worker])
+        let result = run([Self.object([[Self.move] + Self.waiter]), worker])
         #expect(result.outcome == .passed)
         #expect(result.ticks == 5) // worker ends in tick 3, seen at tick 4, finish in 5
+    }
+
+    /// Catroid queues every Start script before the first frame, but an object moves
+    /// its queue into its action list only when its own `ThreadScheduler.tick` runs
+    /// (`StageListener.java:572-574`, `ThreadScheduler.java:59-70`). A poll in tick 1
+    /// therefore sees a later object's scripts as not yet started, and releases
+    /// (Codex PR 2 handover, round 1, finding 1).
+    @Test func inTheFirstTickALaterObjectHasNotStartedYet() {
+        let later = run([Self.object([Self.waiter]), Self.object([[Self.move, Self.move, Self.move]])])
+        #expect(later.outcome == .passed)
+        #expect(later.ticks == 2)
+        // Codex's reproducer: the release comes before the other object sets `x`.
+        let setX = ScriptStep.brick(.setVariable(name: "x", to: .number(1)))
+        let xIsOne = ScriptStep.assertEquals(actual: .variable("x"), expected: .number(1))
+        let check: [ScriptStep] = [.waitTillIdle, xIsOne, .finishStage]
+        var interpreter = Interpreter(
+            harness: [Self.object([check]), Self.object([[Self.move, setX]])],
+            clock: Self.clock,
+            variables: [Variable(name: "x")]
+        )
+        if case .assertionFailed = interpreter.runHarness(budget: 40).outcome {} else {
+            Issue.record("the assert must run before the later object sets x, as in Catroid")
+        }
+        // An earlier object has started (it was visited first), and the waiter's own
+        // object starts all of its scripts at once: both still keep it waiting.
+        #expect(run([Self.object([[Self.move, Self.move]]), Self.object([Self.waiter])]).ticks == 3)
+        #expect(run([Self.object([Self.waiter, [Self.move, Self.move]])]).ticks == 4)
     }
 
     /// An object with no scripts (Catroid's Background in the corpus test) is idle.
@@ -86,10 +114,14 @@ struct WaitTillIdleTests {
     }
 
     /// Neither waiter counts the other as idle, as neither of Catroid's actors
-    /// holds only its own WaitTillIdle.
+    /// holds only its own WaitTillIdle, once both have started: on one object, or
+    /// polling after tick 1. In tick 1 the earlier object's waiter sees the later
+    /// object as not yet started and releases, as in Catroid.
     @Test func twoWaitersNeverReleaseEachOther() {
         #expect(run([Self.object([Self.waiter, Self.waiter])]).outcome == .budgetExhausted)
-        #expect(run([Self.object([Self.waiter]), Self.object([Self.waiter])]).outcome == .budgetExhausted)
+        let afterAMove = [Self.move] + Self.waiter
+        #expect(run([Self.object([afterAMove]), Self.object([afterAMove])]).outcome == .budgetExhausted)
+        #expect(run([Self.object([Self.waiter]), Self.object([Self.waiter])]).outcome == .passed)
     }
 
     /// A poll is one action: alone it takes its tick even when idle at once, and

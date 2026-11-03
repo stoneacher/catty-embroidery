@@ -36,7 +36,7 @@ struct RegenerateExpectations {
                                 HarnessAssertionFailure(
                                     objectIndex: \(failure.objectIndex), scriptIndex: \(failure.scriptIndex), \
                     stepIndex: \(failure.stepIndex),
-                                    expected: \(failure.expected), actual: \(failure.actual)
+                                    expected: \(Self.literal(failure.expected)), actual: \(Self.literal(failure.actual))
                                 ),
                                 owner: \(Self.literal(owner))
                             ),
@@ -52,6 +52,14 @@ struct RegenerateExpectations {
         print(Self.begin)
         print(Self.header + lines.joined(separator: "\n") + "\n    ]\n}\n\n// swiftlint:enable line_length")
         print(Self.end)
+    }
+
+    /// A `Double` as Swift source: `nan` and `inf` are not Swift expressions (Codex
+    /// PR 2 handover, round 1, finding 2).
+    static func literal(_ value: Double) -> String {
+        if value.isNaN { return ".nan" }
+        if value.isInfinite { return value < 0 ? "-.infinity" : ".infinity" }
+        return "\(value)"
     }
 
     static func literal(_ text: String) -> String {

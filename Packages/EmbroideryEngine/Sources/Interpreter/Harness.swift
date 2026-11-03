@@ -172,6 +172,13 @@ extension Interpreter {
             let idle = threads.indices.allSatisfy { other in
                 guard other != index else { return true }
                 let candidate = threads[other]
+                // Tick 1: a later object's queued Start scripts enter its action list
+                // only when its own `ThreadScheduler.tick` runs, after this poll
+                // (`StageListener.java:572-574`, `ThreadScheduler.java:59-70`; Codex
+                // PR 2 handover, round 1).
+                if currentTick == 1, candidate.objectIndex > thread.objectIndex {
+                    return true
+                }
                 let stillListed = candidate.objectIndex == thread.objectIndex && candidate.finishedInTick == currentTick
                 return candidate.finished && !stillListed
             }
