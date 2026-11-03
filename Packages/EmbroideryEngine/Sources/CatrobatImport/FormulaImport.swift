@@ -19,7 +19,9 @@ package enum FormulaSlot: Sendable {
 /// read by the position it sits in, mirroring the three different string
 /// conversions Catroid applies there; where Catroid would keep a string as a
 /// string, the import is refused, because `Formula` values are `Double` only
-/// (ADR-048). Every blocker in the tree is collected, not just the first.
+/// (ADR-048). Every blocker is collected, not just the first, across every
+/// supported node; nothing below an unsupported function or element type is
+/// visited, since that node already names what the formula needs.
 package enum FormulaImport {
     /// ADR-037's cap, in produced `Formula` nodes on the longest path (a literal is 1).
     package static let maximumDepth = 128
@@ -32,8 +34,8 @@ package enum FormulaImport {
         blockers: inout [ImportBlocker]
     ) -> Formula? {
         // Checked before any recursion, so no input depth reaches the recursive
-        // path: at ~4 KB per level in a debug build, 128 levels of `convert` sit
-        // close to a 512 KB cooperative-pool stack (measured, slice 3).
+        // path. Before the per-type split, 128 levels of `convert` overflowed a
+        // 512 KB cooperative-pool stack in a debug build; now 240 pass (slice 3).
         guard nesting(of: element) <= maximumDepth else {
             blockers.append(.formulaTooDeep)
             return nil
@@ -47,7 +49,7 @@ package enum FormulaImport {
     // MARK: - Positions
 
     /// Where a node sits, which decides how a literal there is read.
-    private enum Position {
+    enum Position {
         case root(FormulaSlot)
         /// An arithmetic, ordering or logic operand: `tryInterpretDoubleValue`
         /// (`FormulaElementOperations.kt:79-88`), NaN on failure.
@@ -60,9 +62,9 @@ package enum FormulaImport {
     // MARK: - Nodes
 
     /// Children that Catroid writes but that are always empty in the supported subset.
-    private static let emptyByContract: Set = ["additionalChildren", "textBlockFunctionProvider"]
+    static let emptyByContract: Set = ["additionalChildren", "textBlockFunctionProvider"]
 
-    private static let knownChildren: Set = [
+    static let knownChildren: Set = [
         "leftChild", "rightChild", "additionalChildren", "type", "value", "textBlockFunctionProvider"
     ]
 
@@ -90,7 +92,7 @@ package enum FormulaImport {
         at position: Position,
         blockers: inout [ImportBlocker]
     ) -> Formula? {
-        guard let type = element.child("type")?.trimmedText else {
+        guard let type = element.child("type")?.text else {
             blockers.append(.formulaShape("no type"))
             return nil
         }
@@ -120,7 +122,7 @@ package enum FormulaImport {
     /// writers of a non-empty `additionalChildren`, and "needs IF_THEN_ELSE" is
     /// the useful answer.
     private static func isUnsupportedFunction(_ element: XMLTree.Element, blockers: inout [ImportBlocker]) -> Bool {
-        let name = element.child("value")?.trimmedText ?? ""
+        let name = element.child("value")?.text ?? ""
         guard !CatroidNames.isFunction(name) else { return false }
         blockers.append(.function(name))
         return true
@@ -148,7 +150,7 @@ package enum FormulaImport {
             }
             return .variable(name)
         case "SENSOR":
-            let name = element.child("value")?.trimmedText ?? ""
+            let name = element.child("value")?.text ?? ""
             guard let sensor = CatroidNames.sensors[name] else {
                 blockers.append(.sensor(name))
                 return nil
@@ -162,6 +164,13 @@ package enum FormulaImport {
 
     /// Children Catroid's serialiser writes, with `additionalChildren` and
     /// `textBlockFunctionProvider` empty (they always are for the supported subset).
+    /// `shapeIsKnown` without reporting: every child known, the contract ones empty.
+    static func shapeIsClean(_ element: XMLTree.Element) -> Bool {
+        element.children.allSatisfy { child in
+            knownChildren.contains(child.name) && (!emptyByContract.contains(child.name) || child.children.isEmpty)
+        }
+    }
+
     private static func shapeIsKnown(_ element: XMLTree.Element, blockers: inout [ImportBlocker]) -> Bool {
         var known = true
         for child in element.children {
@@ -179,7 +188,7 @@ package enum FormulaImport {
     /// Binary when there is a left child, unary otherwise, as Catroid decides
     /// (`FormulaElement.java:791-797`).
     private static func op(_ element: XMLTree.Element, blockers: inout [ImportBlocker]) -> Formula? {
-        let name = element.child("value")?.trimmedText ?? ""
+        let name = element.child("value")?.text ?? ""
         let binaryOperator = CatroidNames.binaryOperators[name]
         guard binaryOperator != nil || name == "LOGICAL_NOT" else {
             blockers.append(.operatorName(name))
@@ -217,15 +226,22 @@ package enum FormulaImport {
     }
 
     private static func function(_ element: XMLTree.Element, blockers: inout [ImportBlocker]) -> Formula? {
-        let name = element.child("value")?.trimmedText ?? ""
+        let name = element.child("value")?.text ?? ""
+        // Catroid evaluates both child positions before it dispatches
+        // (`FormulaElement.java:445-451`), so a child whose value is then ignored
+        // must still be one it can evaluate.
         if let constant = CatroidNames.constants[name] {
-            return .constant(constant)
+            let left = functionArgument(element.child("leftChild"), blockers: &blockers)
+            let right = functionArgument(element.child("rightChild"), blockers: &blockers)
+            return left.isBlocked || right.isBlocked ? nil : .constant(constant)
         }
         if let unary = CatroidNames.unaryFunctions[name] {
-            switch functionArgument(element.child("leftChild"), blockers: &blockers) {
-            case let .value(argument): return .unaryFunction(unary, argument)
-            case .null: return .number(0)
-            case .blocked: return nil
+            let argument = functionArgument(element.child("leftChild"), blockers: &blockers)
+            let ignored = functionArgument(element.child("rightChild"), blockers: &blockers)
+            switch (argument, ignored.isBlocked) {
+            case (.blocked, _), (_, true): return nil
+            case let (.value(argument), false): return .unaryFunction(unary, argument)
+            case (.null, false): return .number(0)
             }
         }
         if let binary = CatroidNames.binaryFunctions[name] {
@@ -249,6 +265,10 @@ package enum FormulaImport {
         /// Catroid passes null: the call returns 0.0 (`UnaryFunction.kt`, `BinaryFunction.kt`).
         case null
         case blocked
+
+        var isBlocked: Bool {
+            if case .blocked = self { true } else { false }
+        }
     }
 
     /// A function argument: missing, or a literal `tryParseDouble` rejects, is null;
@@ -271,52 +291,6 @@ package enum FormulaImport {
             return blockers.count > before ? .blocked : .null
         }
         return .value(formula)
-    }
-
-    // MARK: - Literals
-
-    /// The text of a NUMBER or STRING with a `<value>`, seen through any BRACKETs:
-    /// Catroid's BRACKET returns its child's value unchanged, string included.
-    private static func literalText(of element: XMLTree.Element) -> String? {
-        switch element.child("type")?.trimmedText {
-        case "NUMBER", "STRING":
-            element.child("value")?.text
-        case "BRACKET":
-            element.child("rightChild").flatMap(literalText(of:))
-        default:
-            nil
-        }
-    }
-
-    private static func literal(_ text: String, at position: Position, blockers: inout [ImportBlocker]) -> Formula? {
-        let refusal: StringContext?
-        let parsed: Double?
-        switch position {
-        case .root(.number), .operand:
-            refusal = nil
-            parsed = JavaDouble.parse(text)
-        case .root(.assertOperand):
-            refusal = .assertOperand
-            parsed = JavaDouble.parse(text)
-        case .equalityOperand:
-            refusal = .equality
-            parsed = JavaDouble.parse(text)
-        case .root(.variableValue):
-            refusal = .variableValue
-            parsed = JavaDouble.parseArgument(text)
-        }
-        guard let parsed else {
-            if let refusal {
-                blockers.append(.stringValue(refusal))
-                return nil
-            }
-            return .number(.nan)
-        }
-        guard parsed.isFinite || parsed.isNaN else {
-            blockers.append(.nonFiniteLiteral(text))
-            return nil
-        }
-        return .number(parsed)
     }
 }
 

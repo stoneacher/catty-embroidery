@@ -132,8 +132,13 @@ struct FormulaLiteralImportTests: FormulaImportTesting {
     @Test func assertOperandParsesOrIsRefused() throws {
         #expect(try formula(XML.string("NaN"), slot: .assertOperand) == .number(.nan))
         #expect(try formula(XML.string("1d"), slot: .assertOperand) == .number(1))
-        // Java accepts a signed NaN; here a parse failure would be a refusal, not NaN.
-        #expect(try formula(XML.string("-NaN"), slot: .assertOperand) == .number(.nan))
+        // NaN matches only through the string test: Kotlin's `Double ==` is IEEE, and a
+        // computed NaN prints as exactly "NaN". So `-NaN` or ` NaN `, which parse to
+        // NaN, would match nothing in Catroid and are refused (review, slice 3).
+        #expect(try formula(XML.node("BRACKET", nil, right: XML.string("NaN")), slot: .assertOperand) == .number(.nan))
+        #expect(try blockers(XML.string("-NaN"), slot: .assertOperand) == [.stringValue(.assertOperand)])
+        #expect(try blockers(XML.string(" NaN "), slot: .assertOperand) == [.stringValue(.assertOperand)])
+        #expect(try blockers(XML.string("+NaN"), slot: .assertOperand) == [.stringValue(.assertOperand)])
         #expect(try formula(XML.number("90"), slot: .assertOperand) == .number(90))
         #expect(try blockers(XML.string("abc"), slot: .assertOperand) == [.stringValue(.assertOperand)])
         // Only the root is the assert's own context; below it, the parent decides.
@@ -150,5 +155,36 @@ struct FormulaLiteralImportTests: FormulaImportTesting {
         #expect(try blockers(XML.string("abc"), slot: .variableValue) == [.stringValue(.variableValue)])
         #expect(try blockers(XML.string("1d"), slot: .variableValue) == [.stringValue(.variableValue)])
         #expect(try blockers(XML.number("1d"), slot: .variableValue) == [.stringValue(.variableValue)])
+    }
+
+    // MARK: - What a SetVariable stores (Codex slice 3, findings 1 and 2)
+
+    /// Catroid stores a root STRING as a string, even `"2"` (`isFirstLevelStringTree`,
+    /// `SetVariableAction.kt:53-59`), and a boolean root as a `Boolean` (`:49-51`,
+    /// `FormulaElement.isBoolean`, `:940-982`). Every read normalises both back
+    /// (`interpretRecursive`), so the imported value is right; but ChangeVariable
+    /// skips a non-`Double` (`ChangeVariableAction.kt:41`) and ForVariableFromTo exits
+    /// on one (`ForVariableFromToAction.java:60`). The kind is reported, and slice 4
+    /// refuses a variable stored as one and changed or looped over.
+    @Test(arguments: [
+        (XML.string("2"), VariableStorage.string),
+        (XML.node("STRING"), .double), // null, normalised to 0.0 before the check
+        (XML.number("2"), .double),
+        (XML.node("BRACKET", nil, right: XML.string("2")), .double), // not first-level
+        (XML.function("TRUE"), .boolean),
+        (XML.function("FALSE"), .boolean),
+        (XML.op("EQUAL", XML.number("1"), XML.number("1")), .boolean),
+        (XML.op("SMALLER_THAN", XML.number("1"), XML.number("2")), .boolean),
+        (XML.op("LOGICAL_AND", XML.number("1"), XML.number("1")), .boolean),
+        (XML.op("LOGICAL_NOT", nil, XML.number("0")), .boolean),
+        (XML.node("BRACKET", nil, right: XML.function("TRUE")), .double), // only the root type counts
+        (XML.op("PLUS", XML.number("1"), XML.number("1")), .double),
+        (XML.function("SIN", XML.number("1")), .double),
+        (XML.node("SENSOR", "OBJECT_X"), .double),
+        (XML.node("USER_VARIABLE", "a"), .copied(from: "a")) // Boolean iff `a` holds one
+    ])
+    func variableStorageFollowsTheRoot(xml: String, expected: VariableStorage) throws {
+        let element = try XMLTree(parsing: Data(xml.utf8)).root
+        #expect(FormulaImport.storage(ofVariableValue: element) == expected)
     }
 }

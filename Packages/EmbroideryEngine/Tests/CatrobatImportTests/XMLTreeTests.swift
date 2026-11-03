@@ -76,6 +76,22 @@ struct XMLTreeTests {
         }
     }
 
+    /// The tree is freed recursively (`Element` holds `[Element]`), which overflowed
+    /// a cooperative-pool stack at ~4000 levels (SIGBUS, review of slice 3). The parser
+    /// refuses anything deeper than `maximumDepth`; the corpus's deepest is 28. Async,
+    /// so it runs on that pool.
+    @Test func aDocumentDeeperThanTheCapIsMalformedAndNeverOverflows() async throws {
+        func nested(_ depth: Int) -> Data {
+            Data((String(repeating: "<a>", count: depth) + String(repeating: "</a>", count: depth)).utf8)
+        }
+        #expect(XMLTree.maximumDepth == 512)
+        #expect(try XMLTree(parsing: nested(512)).root.name == "a")
+        // The value is discarded: on a regression Swift Testing would describe the
+        // returned tree, recursing as deep as the tree is (found by mutation).
+        #expect(throws: ImportBlocker.malformed) { _ = try XMLTree(parsing: nested(513)) }
+        #expect(throws: ImportBlocker.malformed) { _ = try XMLTree(parsing: nested(10000)) }
+    }
+
     @Test func addressesFindElementsInDocumentOrder() throws {
         let tree = try tree("<a><x id=\"1\"/><b><x id=\"2\"/></b><x id=\"3\"/></a>")
         let found = tree.addresses { $0.name == "x" }

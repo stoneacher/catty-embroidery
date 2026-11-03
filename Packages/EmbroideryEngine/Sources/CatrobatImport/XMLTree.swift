@@ -41,6 +41,12 @@ package struct XMLTree: Sendable, Equatable {
 
     package let root: Element
 
+    /// The deepest element nesting the parser admits; deeper documents are
+    /// `malformed`. The tree is freed recursively (`Element` holds `[Element]`), and
+    /// at ~4000 levels that overflowed a 512 KB cooperative-pool stack. Catroid's
+    /// files nest at most 28 deep in the corpus.
+    package static let maximumDepth = 512
+
     package init(parsing data: Data) throws(ImportBlocker) {
         let builder = TreeBuilder()
         let parser = XMLParser(data: data)
@@ -167,10 +173,7 @@ enum XStreamName {
             } else if rest.hasPrefix("_-") {
                 result.append("$")
                 rest = rest.dropFirst(2)
-            } else if rest.hasPrefix("_."), rest.count >= 6,
-                      let unit = UInt16(rest.dropFirst(2).prefix(4), radix: 16),
-                      rest.dropFirst(2).prefix(4).allSatisfy(\.isHexDigit),
-                      let scalar = Unicode.Scalar(unit) {
+            } else if let scalar = hexEscape(rest) {
                 result.unicodeScalars.append(scalar)
                 rest = rest.dropFirst(6)
             } else {
@@ -179,6 +182,16 @@ enum XStreamName {
             }
         }
         return result
+    }
+
+    /// `_.` and four hex digits at the start of `text`, as the scalar they name.
+    private static func hexEscape(_ text: Substring) -> Unicode.Scalar? {
+        guard text.hasPrefix("_.") else { return nil }
+        let digits = text.dropFirst(2).prefix(4)
+        guard digits.count == 4, digits.allSatisfy(\.isHexDigit), let unit = UInt16(digits, radix: 16) else {
+            return nil
+        }
+        return Unicode.Scalar(unit)
     }
 }
 
@@ -189,12 +202,17 @@ private final class TreeBuilder: NSObject, XMLParserDelegate {
     private(set) var failed = false
 
     func parser(
-        _: XMLParser,
+        _ parser: XMLParser,
         didStartElement elementName: String,
         namespaceURI _: String?,
         qualifiedName _: String?,
         attributes: [String: String]
     ) {
+        guard stack.count < XMLTree.maximumDepth else {
+            failed = true
+            parser.abortParsing()
+            return
+        }
         stack.append(XMLTree.Element(
             name: XStreamName.decode(elementName), attributes: attributes, children: [], text: ""
         ))

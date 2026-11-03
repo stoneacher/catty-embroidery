@@ -74,6 +74,19 @@ struct FormulaImportTests: FormulaImportTesting {
         #expect(try formula(XML.function(name, XML.string("abc"))) == .constant(expected))
     }
 
+    /// Catroid evaluates both child positions before dispatching any function
+    /// (`FormulaElement.java:445-451`) and discards the values only afterwards, so a
+    /// child it cannot evaluate is refused even where its value is ignored: under a
+    /// constant, and in a unary function's right child (Codex slice 3, finding 4).
+    @Test func childrenWhoseValueIsIgnoredAreStillValidated() throws {
+        let broken = XML.op("PLUS", XML.number("1"), nil)
+        #expect(try blockers(XML.function("PI", broken)) == [.formulaShape("OPERATOR PLUS")])
+        #expect(try blockers(XML.function("TRUE", nil, XML.node("SENSOR", "TIMER"))) == [.sensor("TIMER")])
+        #expect(try blockers(XML.function("SIN", XML.number("1"), broken)) == [.formulaShape("OPERATOR PLUS")])
+        let join = XML.function("JOIN", XML.string("a"), XML.string("b"))
+        #expect(try blockers(XML.function("SIN", XML.number("1"), join)) == [.function("JOIN")])
+    }
+
     @Test(arguments: sensors)
     func sensorsMapByName(name: String, expected: Sensor) throws {
         #expect(try formula(XML.node("SENSOR", name)) == .sensor(expected))
@@ -104,6 +117,21 @@ struct FormulaImportTests: FormulaImportTesting {
         #expect(try blockers(XML.op("MOD", XML.number("1"), XML.number("2"))) == [.operatorName("MOD")])
     }
 
+    /// Catroid's lookups are exact (`Functions.getFunctionByValue`, XStream's enum
+    /// converter for `type`), so a name with surrounding whitespace is not that name.
+    @Test func namesAreMatchedExactly() throws {
+        #expect(try blockers(XML.function(" PI ")) == [.function(" PI ")])
+        #expect(try blockers(XML.node("SENSOR", "OBJECT_X ")) == [.sensor("OBJECT_X ")])
+        #expect(try blockers(XML.op(" PLUS", XML.number("1"), XML.number("2"))) == [.operatorName(" PLUS")])
+        #expect(try blockers("<formula><type> NUMBER</type><value>1</value></formula>") == [.elementType(" NUMBER")])
+    }
+
+    @Test func bothArgumentsOfABinaryFunctionAreSearched() throws {
+        let join = XML.function("JOIN", XML.string("a"), XML.string("b"))
+        let xml = XML.function("MAX", join, XML.node("SENSOR", "TIMER"))
+        #expect(try blockers(xml) == [.function("JOIN"), .sensor("TIMER")])
+    }
+
     @Test func everyBlockerInAFormulaIsCollected() throws {
         let xml = XML.op(
             "PLUS",
@@ -125,6 +153,29 @@ struct FormulaImportTests: FormulaImportTesting {
         #expect(try blockers(extra) == [.formulaShape("additionalChildren")])
         let unknown = "<formula><middleChild/><type>NUMBER</type><value>1</value></formula>"
         #expect(try blockers(unknown) == [.formulaShape("middleChild")])
+    }
+
+    /// The literal shortcut sees through brackets, but not past a shape it would
+    /// refuse: Catroid's BRACKET reads its last `additionalChildren` entry first
+    /// (`FormulaElement.java:403-407`), so `SIN(bracket)` below is `SIN(90)` there,
+    /// not `SIN(0)` (Codex slice 3, finding 3).
+    @Test func aLiteralBehindANonEmptyAdditionalChildrenIsRefusedInEveryPosition() throws {
+        let extra = "<additionalChildren><formulaElement><type>NUMBER</type><value>90</value></formulaElement>"
+            + "</additionalChildren>"
+        let bracket = "<formula>\(extra)<rightChild><type>NUMBER</type><value>0</value></rightChild>"
+            + "<type>BRACKET</type><value/></formula>"
+        let literal = "<formula>\(extra)<type>NUMBER</type><value>0</value></formula>"
+        // An unknown child is a shape the shortcut must not skip either.
+        let unknownArgument = "<formula><middleChild/><type>NUMBER</type><value>2</value></formula>"
+        let unknownBelowBracket = XML.node("BRACKET", nil, right: unknownArgument)
+        #expect(try blockers(unknownBelowBracket) == [.formulaShape("middleChild")])
+        #expect(try blockers(XML.function("SIN", unknownArgument)) == [.formulaShape("middleChild")])
+        for node in [bracket, literal] {
+            #expect(try blockers(XML.function("SIN", node)) == [.formulaShape("additionalChildren")])
+            #expect(try blockers(XML.op("PLUS", node, XML.number("1"))) == [.formulaShape("additionalChildren")])
+            #expect(try blockers(XML.op("EQUAL", node, XML.number("1"))) == [.formulaShape("additionalChildren")])
+            #expect(try blockers(node) == [.formulaShape("additionalChildren")])
+        }
     }
 
     /// Catroid serialises an empty `textBlockFunctionProvider` on some FUNCTION

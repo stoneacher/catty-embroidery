@@ -4250,3 +4250,25 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - Neither found what the other found, apart from the trap and the `[01]` leniency. Codex also could not run `swift test` in its read-only sandbox (SwiftPM cache writes), so its findings were reasoning only. The reviewer ran its reproductions.
 - **A mutant survived because of a fixture flaw, not a missing test.** After the fixes, the "lenient ordinal" mutant survived. The broken-path fixture put the target *after* the reference, so the new forward-reference rule refused every path whether or not the grammar was lenient. The test passed for the wrong reason. This is the same class as US-308's "already green" items: a new rule can silently subsume an old test's discriminating power, and only re-running mutations after a fix shows it.
 - **Totals:** 9 mutants before review (one wrongly ruled equivalent), 19 after. 10 review findings in all (2 Critical/High duplicates, 3 Medium, the rest Low or suggestions), none rejected.
+
+## 2026-11-03 — Language-test runner slice 3 (formula import): two reviews, CI, and the stack
+
+- **Built test-first against Catroid's three string conversions.** A literal is read differently depending on where it sits:
+  - brick roots, operator operands and `=` operands go through `Double.valueOf`;
+  - function arguments go through `tryParseDouble`, which rejects anything containing `fFdD`; a null argument makes the whole call 0;
+  - SetVariable values, assert operands and `=` operands keep a value as a string when it doesn't parse.
+- **Corpus first.** Before the tests were written, a survey of all 215 files checked every assumption: 4037 empty and 66 non-empty `additionalChildren`, 185 empty `textBlockFunctionProvider`s, and every STRING literal in the runnable set listed with its context.
+  - That survey moved slice-4 work forward: `testEmptyEvent`'s skipped script compares two strings, so formulas of skipped bricks must never be imported.
+  - It also corrected the brief: ChangeVariable is a number slot, not a string context.
+- **The tests found a crash before any reviewer did.** A small change to `convert` made the existing 128-depth test die with SIGBUS. At ~4 KB per level in a debug build, ADR-037's own cap did not fit a 512 KB cooperative-pool stack.
+  - Fix: an iterative pre-check before any recursion, and a per-type split of the recursive path. The headroom was measured at ~1.9×: 240 levels pass, 250 overflow.
+  - ADR-037 had measured `JSONEncoder` at ~230 levels on such a thread. This is the second recursive consumer of the same cap to find its stack budget by accident; any future recursive walk over formulas should measure it.
+- **CI found what neither reviewer could.** `"0X.8P1"` parsed on the local toolchain and failed on CI's Xcode 27.1, so Swift's `Double(String)` accepts different spellings on different toolchains.
+  - The digit guard had been kept for exactly this kind of reason ("so Java's grammar doesn't depend on Swift's"), yet the validated text was still handed to Swift raw. It is now canonicalised to lowercase.
+  - The mutant that removes the canonicalisation cannot be killed locally; only CI's toolchain kills it. That is worth knowing about the mutation discipline: a local mutation check is only as strong as the toolchains it runs on.
+- **Reviews:** one Codex slice round (4 findings, highest High) and `swift-code-reviewer` (5), all valid, none rejected.
+  - **Codex** found what the brief had wrong about Catroid. SetVariable *stores* a root STRING as a string and a logical root as a `Boolean`. Reads normalise both, so the values were right, but ChangeVariable and ForVariableFromTo test for `Double`. A per-formula refusal would have cost 9 runnable tests, so the importer reports the storage kind and slice 4 refuses only variables that are both stored that way and changed or looped over. The brief's D4 refinement had claimed the opposite.
+  - **The reviewer** found an equality subtlety I had argued past. The plan's "NaN = NaN" for AssertEquals holds only through the *string* test, because Kotlin's `Double ==` is IEEE, so `-NaN` passed falsely. It also found a crash in slice 2's code that its own review had missed: freeing a 4000-deep XML tree.
+  - Both found the same shortcut flaw from different sides: Codex through `additionalChildren`, the reviewer through unknown child tags.
+- **Two equivalent mutants were kept on purpose and recorded.** A constant's blocked children, and `Argument.blocked`, are both also caught by the top-level "nil iff blockers" guard. They keep `convert`'s local contract, a different case from slice 2's redundant guard, which duplicated a check in the same function.
+- **One test crashed instead of failing under a mutant.** `#expect(throws:)` describes the returned value on failure, and describing a 513-deep tree recurses as deep as the tree. Discarding the value made the regression report as a failure.

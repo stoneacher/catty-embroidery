@@ -7,7 +7,8 @@
 /// optional exponent, or a hexadecimal with a mandatory binary exponent; each
 /// number may end in one of `fFdD`, which changes nothing (the result is still a
 /// `double`). Digits are ASCII only. The value itself is computed by Swift's
-/// correctly rounded parser on the validated text, so it agrees with Java's.
+/// correctly rounded parser on the validated text, lowercased, so it agrees with
+/// Java's; the validation, not Swift's parser, decides what is accepted.
 enum JavaDouble {
     static func parse(_ text: String) -> Double? {
         var scalars = Substring(text).unicodeScalars[...]
@@ -37,7 +38,10 @@ enum JavaDouble {
         let valid = body.hasPrefix("0x") || body.hasPrefix("0X")
             ? isHexadecimal(body.dropFirst(2))
             : isDecimal(body)
-        guard valid, let magnitude = Double(String(body)) else { return nil }
+        // Swift is handed a canonical lowercase spelling, never the raw text: Java
+        // accepts `0X…P…` and `E`, and whether Swift's parser does varies by
+        // toolchain (`"0X.8P1"` parsed locally and failed on CI's Xcode 27.1).
+        guard valid, let magnitude = Double(body.lowercased()) else { return nil }
         return negative ? -magnitude : magnitude
     }
 
