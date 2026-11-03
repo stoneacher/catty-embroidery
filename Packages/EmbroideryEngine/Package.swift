@@ -122,7 +122,9 @@ let package = Package(
         // `code.xml` fixtures are Catroid's verbatim; .copy keeps them byte-identical,
         // since FixtureProvenanceTests checks each one against its SHA-256 in the
         // manifest, and keeps the `<category>/<test>/code.xml` tree intact.
-        .testTarget(name: "CatrobatImportTests", dependencies: ["CatrobatImport", "ProgramModel"]),
+        // EditorCore for the brick census only (`BrickKind`); the importer itself
+        // depends on ProgramModel alone (CI pin).
+        .testTarget(name: "CatrobatImportTests", dependencies: ["CatrobatImport", "ProgramModel", "EditorCore"]),
         .testTarget(
             name: "LanguageTestsTests",
             dependencies: ["CatrobatImport", "ProgramModel"],

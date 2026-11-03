@@ -46,6 +46,15 @@ struct CorpusFormulaTests {
         case let .nonFiniteLiteral(text): "nonFinite(\(text))"
         case let .formulaShape(shape): "shape(\(shape))"
         case .formulaTooDeep: "tooDeep"
+        case let .version(text): "version(\(text))"
+        case .multipleScenes: "multipleScenes"
+        case let .brick(name): "brick(\(name))"
+        case let .script(name): "script(\(name))"
+        case let .element(name): "element(\(name))"
+        case let .brickShape(name): "brickShape(\(name))"
+        case let .variableShadowing(name): "variableShadowing(\(name))"
+        case let .variableStorage(name): "variableStorage(\(name))"
+        case .harnessStep: "harnessStep"
         }
     }
 
