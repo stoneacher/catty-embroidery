@@ -53,7 +53,11 @@ enum Instruction: Sendable {
     case ifEnd
     /// A language-test harness step (AssertEquals, FinishStage, ExitStage): an
     /// action like a brick, never a `Brick` case (brief D3, D6).
-    case harness(HarnessStep)
+    /// `nestedInBlock`: inside a loop or If. Catroid's WaitTillIdle checks only the
+    /// top-level children of its script (`WaitTillIdleAction.java:53-56`, not
+    /// recursive), so a nested one polls every tick and never releases (brief D8,
+    /// slice 6 review).
+    case harness(HarnessStep, nestedInBlock: Bool)
 }
 
 /// Compiles a `Script` once into its linear instruction array with a single-pass
@@ -87,7 +91,7 @@ enum ScriptCompiler {
         for step in steps {
             switch step {
             case let .harness(harness):
-                instructions.append(.harness(harness))
+                instructions.append(.harness(harness, nestedInBlock: !open.isEmpty))
             case let .brick(brick):
                 guard lower(brick, into: &instructions, open: &open) else { return [] }
             }

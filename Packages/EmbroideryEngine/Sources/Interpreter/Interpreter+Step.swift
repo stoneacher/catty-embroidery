@@ -18,6 +18,7 @@ extension Interpreter {
         // thread is marked finished now (not a tick later), matching Catroid
         // `RepeatAction`'s same-tick close.
         threads[index].finished = true
+        threads[index].finishedInTick = currentTick
     }
 
     /// Processes the instruction under the pointer. Returns `true` to keep folding
@@ -101,8 +102,8 @@ extension Interpreter {
         case let .brick(brick):
             return performActionBrick(index, brick, acted: &tick.acted, into: &events)
 
-        case let .harness(step):
-            return performHarness(index, step, acted: &tick.acted)
+        case let .harness(step, nestedInBlock):
+            return performHarness(index, step, nestedInBlock: nestedInBlock, acted: &tick.acted)
         }
     }
 

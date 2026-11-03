@@ -37,6 +37,9 @@ struct ScriptThread: Sendable {
     /// has not started (its duration is resolved lazily on first arrival).
     var wait: WaitState?
     var finished = false
+    /// The tick the thread finished in (brief D8: an object removes its finished
+    /// scripts only after its whole pass, `ThreadScheduler.java:59-90`).
+    var finishedInTick: Int?
 }
 
 /// A running ForVariableFromTo (ADR-049): `to` and the step are fixed when the loop

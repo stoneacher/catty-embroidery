@@ -23,6 +23,9 @@ public struct Interpreter: Sendable {
     var manager = EmbroideryPatternManager()
     /// The language-test harness's ending, if one was reached (brief D5).
     var harness = HarnessState()
+    /// The ticks run so far; the current one while `step()` runs. A WaitTillIdle
+    /// reads which threads finished in it (brief D8).
+    var currentTick = 0
 
     public init(program: Program, clock: InterpreterClock) {
         // Flatten scenes → objects in creation order; ActorID is the global
@@ -86,6 +89,7 @@ public struct Interpreter: Sendable {
             return .finished
         }
         var events: [InterpreterEvent] = []
+        currentTick += 1
         for index in threads.indices where !threads[index].finished {
             stepThread(index, into: &events)
         }

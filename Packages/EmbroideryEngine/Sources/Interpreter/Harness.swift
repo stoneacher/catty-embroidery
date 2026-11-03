@@ -134,7 +134,7 @@ extension Interpreter {
     /// A harness step is one action (D6): deferred when the thread already acted
     /// this tick, like any brick. A failing assert latches its failure and keeps
     /// its thread where it is (`AssertEqualsAction.kt:38`: `act` returns false).
-    mutating func performHarness(_ index: Int, _ step: HarnessStep, acted: inout Bool) -> Bool {
+    mutating func performHarness(_ index: Int, _ step: HarnessStep, nestedInBlock: Bool, acted: inout Bool) -> Bool {
         if acted {
             return false
         }
@@ -158,12 +158,21 @@ extension Interpreter {
             latch(.exited)
         case .waitTillIdle:
             // Catroid: true iff every actor runs no script, or only the one holding
-            // this action (`WaitTillIdleAction.java:35-58`); here, iff this is the
-            // only thread not yet finished. Read live, at this point of the pass: a
-            // thread earlier in the pass has already finished or not this tick, as
-            // libgdx drops a finished sequence while acting actors in order. A second
+            // this action (`WaitTillIdleAction.java:35-58`). Read live, at this point
+            // of the pass: another object's script that has finished is gone, but one
+            // of this object's that finished in this tick is still in its action list,
+            // since `ThreadScheduler.tick` removes them only after the object's whole
+            // pass (`ThreadScheduler.java:59-90`; Codex slice 6, finding 1). A second
             // waiter is unfinished, so two waiters never release each other.
-            let idle = threads.indices.allSatisfy { $0 == index || threads[$0].finished }
+            // A waiter inside a loop or If is never one of its script's top-level
+            // children, so Catroid never finds it idle.
+            guard !nestedInBlock else { return false }
+            let idle = threads.indices.allSatisfy { other in
+                guard other != index else { return true }
+                let candidate = threads[other]
+                let stillListed = candidate.objectIndex == thread.objectIndex && candidate.finishedInTick == currentTick
+                return candidate.finished && !stillListed
+            }
             guard idle else { return false }
         }
         threads[index].instructionPointer += 1
