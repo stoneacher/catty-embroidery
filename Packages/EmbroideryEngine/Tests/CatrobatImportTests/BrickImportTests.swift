@@ -132,6 +132,36 @@ struct BrickImportTests: ProgramImportTesting {
         #expect(blockers(XML.run([set])) == [.unresolvedReference("../nowhere")])
     }
 
+    /// A `formulaList` child that is not a `<formula>` becomes `Formula(0)` in
+    /// Catroid and, inserted with `putIfAbsent`, wins over a later real entry of the
+    /// same category; one without a category is a user-defined brick's input
+    /// (`XStreamConcurrentFormulaHashMapConverter.java:74-89`). Neither is written
+    /// by Catroid's serialiser; both are refused (Codex handover round 1, finding 1).
+    @Test func anEntryThatIsNotACategorisedFormulaIsRefused() {
+        let garbage = XML.brick("MoveNStepsBrick", formulas: [("STEPS", Self.one)])
+            .replacingOccurrences(of: "<formulaList>", with: "<formulaList><garbage category=\"STEPS\"/>")
+        #expect(blockers(XML.run([garbage])) == [.brickShape("MoveNStepsBrick")])
+        let uncategorised = XML.brick("MoveNStepsBrick", formulas: [("STEPS", Self.one)])
+            .replacingOccurrences(of: "<formulaList>",
+                                  with: "<formulaList><formula><type>NUMBER</type><value>2</value></formula>")
+        #expect(blockers(XML.run([uncategorised])) == [.brickShape("MoveNStepsBrick")])
+    }
+
+    /// Catroid reads a text parameter with `interpretString`, which trims a numeric
+    /// string's trailing zero and dot (`Formula.java:183`, `NumberFormats.kt:30-35`):
+    /// one trailing `0`, then a trailing `.`, and only where its narrow pattern
+    /// matches (Codex handover round 1, finding 2).
+    @Test(arguments: [
+        ("10.0", "10"), ("1.50", "1.5"), ("-3.0", "-3"), ("0.0", "0"), ("1.500", "1.500"), ("1.05", "1.05"),
+        ("01.0", "01.0"), ("1.", "1."), ("10", "10"), ("design", "design"), ("#ff0000", "#ff0000")
+    ])
+    func textParametersTrimLikeInterpretString(text: String, expected: String) throws {
+        let write = XML.brick("WriteEmbroideryToFileBrick", formulas: [("WRITE_FILENAME", FormulaXML.string(text))])
+        #expect(try steps(XML.run([write])) == [.brick(.writeEmbroideryToFile(name: expected))])
+        let color = XML.brick("SetThreadColorBrick", formulas: [("THREAD_COLOR", FormulaXML.number(text))])
+        #expect(try steps(XML.run([color])) == [.brick(.setThreadColor(hex: expected))])
+    }
+
     @Test func missingPartsAreShapeErrors() {
         #expect(blockers(XML.run([XML.brick("MoveNStepsBrick")])) == [.brickShape("MoveNStepsBrick")])
         #expect(blockers(XML.run([XML.brick("SetVariableBrick", formulas: [("VARIABLE", Self.one)])]))

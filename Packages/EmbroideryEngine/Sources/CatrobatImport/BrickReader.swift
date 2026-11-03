@@ -24,14 +24,22 @@ struct BrickReader {
         }
     }
 
-    /// Catroid fails to load a category that is no `BrickField`
-    /// (`XStreamConcurrentFormulaHashMapConverter.java:75`); a category the brick
+    /// Every `formulaList` entry must be a `<formula>` with a category the brick
+    /// reads. Catroid fails to load a category that is no `BrickField`
+    /// (`XStreamConcurrentFormulaHashMapConverter.java:75`), and a category the brick
     /// never reads is refused with it (Codex slice 4, finding 4). An unsupported
     /// brick is already named, so nothing is added for it.
     mutating func refuseUnreadCategories() {
         guard !unknown else { return }
-        let categories = element.child("formulaList")?.children.compactMap { $0.attributes["category"] } ?? []
-        if categories.contains(where: { !read.contains($0) }) { refuse() }
+        // A child that is not a `<formula>` becomes `Formula(0)` and, inserted with
+        // `putIfAbsent`, wins over a later real entry; one without a category is a
+        // user-defined brick's input (`XStreamConcurrentFormulaHashMapConverter.java:74-89`).
+        let entries = element.child("formulaList")?.children ?? []
+        let unexpected = entries.contains { entry in
+            guard entry.name == "formula", let category = entry.attributes["category"] else { return true }
+            return !read.contains(category)
+        }
+        if unexpected { refuse() }
     }
 
     mutating func formula(_ category: String, slot: FormulaSlot = .number) -> Formula? {
@@ -53,7 +61,19 @@ struct BrickReader {
             blockers.append(.stringValue(.text))
             return nil
         }
-        return text
+        return Self.trimTrailingCharacters(text)
+    }
+
+    /// Catroid's `NumberFormats.trimTrailingCharacters`, which `interpretString`
+    /// applies (`Formula.java:183`, `utils/NumberFormats.kt:30-35`): where the text
+    /// matches `(-?[1-9]\d*|0)\.(0|\d*[1-9]0)`, one trailing `0` and then a
+    /// trailing `.` are removed, so `"10.0"` is `"10"` and `"1.50"` is `"1.5"`.
+    static func trimTrailingCharacters(_ text: String) -> String {
+        guard text.wholeMatch(of: /(-?[1-9][0-9]*|0)\.(0|[0-9]*[1-9]0)/) != nil else { return text }
+        var trimmed = Substring(text)
+        if trimmed.hasSuffix("0") { trimmed = trimmed.dropLast() }
+        if trimmed.hasSuffix(".") { trimmed = trimmed.dropLast() }
+        return String(trimmed)
     }
 
     /// The brick lacks a part it needs or has one it cannot map. Repeats collapse:

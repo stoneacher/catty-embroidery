@@ -4302,3 +4302,10 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The extraction script could overwrite all 215 fixtures before failing to find a commit. It now resolves provenance first, and requires the checkout's own top level, a hole I found while fixing that one.
   - Dead `trimmedText`; a builder that skipped misbuilt uses silently; stale brief and test comments.
 - **Mutants for the changes:** 4, all killed (label payloads, the `text` refusal, the start heading).
+
+## 2026-11-03 — Language-test runner PR 1: Codex handover round 1 (highest Medium, 2 findings, both valid)
+
+- **Both findings were in input Catroid's serialiser never writes but its deserialiser accepts.** Codex found them by reading the converter, not the corpus. It confirmed that neither affects the 36 pinned tests.
+  - **A `formulaList` child that isn't a `<formula>` becomes `Formula(0)`** and, inserted with `putIfAbsent`, wins over a later real entry of the same category. One without a category is a user-defined brick's input. We ignored both and imported the real entry. Mirroring an insertion-order quirk for unwritten input was not worth it, so both are refused.
+  - **`interpretString` trims a numeric string's trailing zero** (`NumberFormats.trimTrailingCharacters`, a deliberately narrow pattern), so `WriteEmbroideryToFile("10.0")` names the file `10`. Mirrored exactly, with the pattern's non-matching cases (`1.500`, `1.05`, `01.0`) pinned as controls.
+- 6 mutants, all killed. Code changed, so round 2 is a verification round.
