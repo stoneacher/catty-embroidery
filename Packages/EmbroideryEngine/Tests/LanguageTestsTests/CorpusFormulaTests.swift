@@ -54,6 +54,7 @@ struct CorpusFormulaTests {
         case let .brickShape(name): "brickShape(\(name))"
         case let .variableShadowing(name): "variableShadowing(\(name))"
         case let .variableStorage(name): "variableStorage(\(name))"
+        case let .undeclaredVariable(name): "undeclaredVariable(\(name))"
         case .harnessStep: "harnessStep"
         }
     }
