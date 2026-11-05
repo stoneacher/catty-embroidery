@@ -4410,3 +4410,20 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **Valid, fixed:** "every formula function" overstated a probe of the ten libm functions; the engine has 19 function cases. The wording is narrowed in ADR-046's amendment, its index line and the roadmap.
   - **Rejected as convention:** "undecided"/"owned by US-333 until decided" survive in ADR-051 and the brief, each followed by a dated `*[Decided …]*` annotation. That annotation is the repo's correction form for ADR and brief text (ADR-046's US-323 "*[Fixed …]*", which M5's drift check accepted as the fix for a stale claim), and Codex itself said the effective rule is clear.
 - **Stop condition 1:** the round's changes are wording only. One round, highest severity Low.
+
+## 2026-11-05 — Release readiness planned: swift-architect read the code before the roadmap's wording was trusted
+
+- **The feature:** M6's polish audit (haptic map, pseudo-loc and RTL, icon, App Store prep) plus US-331's format freeze and a `/release` checklist. Brick parity, M6's other half, was already delivered by the Brick backend and Variables features.
+- **`swift-architect` planned it before the brief** (CLAUDE.md, planning phase). Its useful findings were the ones the roadmap's one-line scope couldn't know:
+  - the app already plays haptics the map forbids (`.start`/`.stop` on every run, `StageView.swift:157`);
+  - "success on export" has no event of its own, because export is eager at run end (ADR-026) and a `ShareLink` reports nothing back, so run-complete *is* export success;
+  - reorder drops bypass `AppModel`;
+  - Catroid has no 1024 px icon, only a vector adaptive icon that converts mechanically;
+  - the privacy manifest needs exactly two required-reason categories (`UserDefaults`, file timestamps). The only boot-time API is DEBUG-only.
+- **Sebastian's decisions** (`AskUserQuestion`, four questions):
+  - the freeze fires when the census merges, with no `rand` first;
+  - he will get access to Catrobat's Apple developer team and upload under `org.catrobat.*` himself. That also unblocks the M4 TestFlight checkpoint, open since 2026-09-19;
+  - all three icon variants;
+  - not Kids Category, rated 4+.
+  - Two more questions went to process instead of to him: whether a stop or the stitch limit gets the success haptic goes to the brief's Codex round, and the uncommitted Xcode edits turned out to be his local signing plus a comment-stripped, key-reordered `Info.plist` with identical content.
+- **Split into two PRs although the whole feature is about 450 lines of non-test code:** the freeze is a format decision and merges on its own, reviewed as risky.
