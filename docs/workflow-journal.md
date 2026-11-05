@@ -4513,3 +4513,15 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   A grep shows exactly one `.sensoryFeedback(` in the app, and no view calls `editor.moveRows` directly.
 - **No red test, and that is recorded rather than faked** (ADR-032): deleting the modifier leaves every test green, and the simulator plays no haptics. The proof is review, the grep above, and a device check on Sebastian's iPhone at handover (each pulse once, none at run start, two iPad windows independent).
 - **The full app suite: 726 of 727 pass.** The one failure is `UTTypeDeclarationTests` reading `org.superrandom.embroiderydesigner`. That comes from Sebastian's uncommitted local signing edit to the pbxproj, not from this branch. CI builds the committed project. Noted because a local full-suite run on this machine will keep showing it until that edit is reverted or moved to an xcconfig.
+
+## 2026-11-05 — Release readiness slice 5: privacy manifest and export-compliance key
+
+- **Built:**
+  - `PrivacyInfo.xcprivacy`: no tracking, no data collected, `UserDefaults` CA92.1, file timestamp C617.1 and DDA9.1;
+  - `ITSAppUsesNonExemptEncryption = NO` in `Info.plist`;
+  - `ReleaseMetadataTests` (hosted);
+  - an ADR-011 amendment.
+- **Red as assertions, not as a compile failure:** the manifest wasn't in the bundle and the key read `nil`.
+- **The architect's open question is answered by a mutation.** A new `.xcprivacy` file in the synchronized folder *is* copied into the bundle with no pbxproj change. Moving it one level up, outside the folder, turned all three manifest tests red.
+- **Mutations: 4, all red**, each killed by its intended test: manifest outside the folder, key removed, tracking `true`, an extra boot-time category.
+- **Sebastian's working-tree `Info.plist` (Xcode's comment-stripped, key-reordered copy, identical in content) was saved to the session scratchpad before the committed file was restored for this slice.** His pbxproj signing edit stays untouched and unstaged.

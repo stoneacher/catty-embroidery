@@ -20,7 +20,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 008 | Program model | Flat brick lists with control blocks — loops, and Ifs with an optional else divider; a closer ends only its own family; a block moves as one balanced unit. | Active, amended (editor verbs: 045) |
 | 009 | Stage | SwiftUI `Canvas`, batched paths, baked settled raster. | Superseded by 043 |
 | 010 | App architecture | Universal, iPhone-first, size-class adaptive navigation. | Amended (039) |
-| 011 | Scope | Fully offline: no network, accounts or tracking; only the user's share sheet leaves the device. | Active |
+| 011 | Scope | Fully offline: no network, accounts or tracking; only the user's share sheet leaves the device. App Store form: privacy manifest (no tracking, no data; UserDefaults CA92.1, file timestamp C617.1/DDA9.1), no non-exempt encryption, 4+, not Kids Category. | Active, amended |
 | 012 | DST | **The DST arbiter.** Catroid wins where references diverge; known Catty bugs are not ported. | Active |
 | 013 | DST | Pending colour-change flags land on the final plain stitch; `color_change.dst` compared through a documented transposition. | Active |
 | 014 | Patterns | Pattern geometry is `Double`; 1e-9 tolerance; degenerate inputs and >1M-stitch updates are guarded no-ops. | Active |
@@ -124,6 +124,21 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 **Context**: The target audience is largely minors (13–18); GDPR-K/COPPA and App Store age-rating implications.
 **Decision**: No network access, no accounts, no analytics or tracking of any kind. All data stays on-device; the only data egress is the user-initiated share sheet (DST/image export).
 **Consequences**: Simplifies App Store review (age rating, no tracking declaration), removes consent UX entirely, and is a genuine selling point for schools.
+
+**Amendment (2026-11-05, Release readiness D6) — what the App Store reads from this decision.**
+- **Privacy manifest** (`PrivacyInfo.xcprivacy`, shipped in the app bundle):
+  - no tracking, no tracking domains, no collected data;
+  - required-reason APIs exactly as used by release code: `UserDefaults` CA92.1 (the last opened project) and file timestamp C617.1 and DDA9.1 (project files in the container, with their dates shown on the project list). 3B52.1 doesn't apply, because no file arrives through a document picker.
+
+  `CACurrentMediaTime` is DEBUG-only (`CaptureSession.swift`), so no boot-time reason is declared. `/release` item 3 re-greps this before every upload, because DEBUG code can leave its guard.
+- **`ITSAppUsesNonExemptEncryption = NO`** in `Info.plist`: the app does no networking and no encryption of its own.
+- **App Store Connect** (human, `/release` item 10):
+  - App Privacy "Data Not Collected";
+  - age rating 4+;
+  - **not in the Kids Category** (Sebastian, 2026-11-05). The audience is largely 13–18, and that category's parental-gate rules would reach the share sheet, ADR-011's one egress;
+  - Catrobat's privacy-policy URL.
+- **Bundle ID `org.catrobat.embroiderydesigner`**, uploaded under Catrobat's Apple developer team by Sebastian once he has access (D6).
+- **Enforced by:** `ReleaseMetadataTests` (hosted). The manifest is in the bundle and the encryption key exists; mutations that move the manifest out of the synchronized folder or drop the key turn it red. The test also compares the declared contents with this amendment.
 
 ## ADR-012 — DST semantics: Catroid is authoritative; known Catty divergences are not ported (2026-07-06)
 **Status**: Active — the DST arbiter. Interpolation extended by ADR-020, header overflow by ADR-025, flag placement by ADR-013, colour edges by ADR-015.

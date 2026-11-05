@@ -43,6 +43,10 @@
 -->
 <plist version="1.0">
 <dict>
+	<!-- Release readiness D6: the app does no encryption beyond the system's, and no networking at all
+	     (ADR-011), so export compliance needs no documentation. Pinned by ReleaseMetadataTests. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
