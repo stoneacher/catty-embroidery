@@ -151,16 +151,9 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(title.map { Text($0) } ?? Text(.stageTitle))
         .navigationBarTitleDisplayMode(.inline)
-        // Twice per run at most, and semantic rather than an impact weight, so it honours
-        // the system haptics setting for free. It matters here because the screen's
-        // content is a slow animation: a finish can be *felt* instead of watched for.
-        .sensoryFeedback(trigger: runState) { _, new in
-            switch new {
-            case .running: .start
-            case .finished: .stop
-            case .idle: nil
-            }
-        }
+        // No haptic here (Release readiness D3, ADR-052). This view used to play `.start` on
+        // every run and `.stop` on every finish, including a user stop; the haptic map allows
+        // neither. A finished run is now felt through the window root's success pulse.
     }
 
     /// The canvas keeps an identical frame in all three states, so nothing reflows when

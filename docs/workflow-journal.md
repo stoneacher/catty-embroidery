@@ -4502,3 +4502,14 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   3. **The second run's parser matched nothing,** using the swift-testing console format where xcodebuild prints `Test case '…' failed on`. The raw logs were kept this time, so the result came from re-parsing them rather than from a third 15-minute run.
 - **Lesson, the same as slice 1's in a third form:** a mutation result is only as good as the code that classifies it. Read one raw log before trusting any table built from logs.
 - **Lint:** `AppModel.swift` reached 409 lines (the CI lint is strict), so the run-end handler moved to `AppModel+Haptics.swift`. Every touched file now passes strict lint locally before commit.
+
+## 2026-11-05 — Release readiness slice 4: the haptic wiring, which no test can check
+
+- **Built:**
+  - one `.sensoryFeedback(trigger: model.haptic)` at `WindowRootView`;
+  - `StageView`'s old modifier removed (`.start` on every run and `.stop` on every finish, the audit finding the architect surfaced);
+  - `.onMove` routed through `AppModel.dropRows`.
+
+  A grep shows exactly one `.sensoryFeedback(` in the app, and no view calls `editor.moveRows` directly.
+- **No red test, and that is recorded rather than faked** (ADR-032): deleting the modifier leaves every test green, and the simulator plays no haptics. The proof is review, the grep above, and a device check on Sebastian's iPhone at handover (each pulse once, none at run start, two iPad windows independent).
+- **The full app suite: 726 of 727 pass.** The one failure is `UTTypeDeclarationTests` reading `org.superrandom.embroiderydesigner`. That comes from Sebastian's uncommitted local signing edit to the pbxproj, not from this branch. CI builds the committed project. Noted because a local full-suite run on this machine will keep showing it until that edit is reverted or moved to an xcconfig.
