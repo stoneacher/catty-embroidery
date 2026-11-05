@@ -138,14 +138,14 @@ extension LanguageTestExpectation {
                 objectIndex: 0, scriptIndex: 0, stepIndex: 1,
                 expected: 60.0, actual: 59.0
             ),
-            owner: "US-333 (inverse trigonometry: Darwin libm, not fdlibm)"
+            owner: "ADR-046 (c) (libm ulps: Darwin, not fdlibm; accepted, US-333)"
         ),
         "formula/testArcsinusFunction": .expectedFailure(
             HarnessAssertionFailure(
                 objectIndex: 0, scriptIndex: 0, stepIndex: 2,
                 expected: 30.0, actual: 29.999999999
             ),
-            owner: "US-333 (inverse trigonometry: Darwin libm, not fdlibm)"
+            owner: "ADR-046 (c) (libm ulps: Darwin, not fdlibm; accepted, US-333)"
         ),
         "formula/testArctangent2FunctionNormalParameters": .pass,
         "formula/testArctangent2FunctionZeroParameters": .expectedFailure(

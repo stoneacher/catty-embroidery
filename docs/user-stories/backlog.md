@@ -356,11 +356,19 @@ in the same spirit as US-211's and US-313's above.
   but a main-thread frame over 33.3 ms in every run (35–44 ms). *Hypothesis, not measured:* `Image(size:renderer:)` is
   lazy, so before the fix the bakes may never have rendered, and the 35–44 ms main-thread frames may
   be their first renders. US-332 tests that and owns the cost.
+- **US-333 — inverse trigonometry follows Darwin's libm, not Java's fdlibm** → decided by
+  Sebastian on 2026-11-05: **accept**, as ADR-046 (c) already did (amendment there). The entry
+  said "Not pinned by ADR-046", and that was wrong: (c) names `asin(0.5)` and `acos(0.5)` as its
+  2-ulp rows. What was new was a `floor` exactly at the boundary. The entry's own suspicion that
+  the other functions "may differ the same way" was understated: a probe found all ten differ
+  from fdlibm (on 0.3–41 % of inputs, at most 3 ulps), and Java's `Math` and `StrictMath`
+  disagree with each other on `sin`/`cos`. That turned "port fdlibm" from a fix into a partial
+  parity. Both tests stay pinned expected failures, owned by ADR-046.
 
 **Left in this file at M4 planning: US-316 only** — it has since left too (see its bullet above; the entry itself is in git history before PR #83).
-**Added since**: US-333 (2026-11-03), US-317 (2026-09-20), US-318 (2026-09-23), US-319 and US-321–US-326 (from M4 and
+**Added since**: US-317 (2026-09-20), US-318 (2026-09-23), US-319 and US-321–US-326 (from M4 and
 the brick-backend and variables features), US-328 (2026-10-25), US-330 (2026-10-26) and US-331 (2026-10-28, M5 drift check).
-US-316, US-320, US-322, US-327 and US-329 have left again (above). US-332 was added on 2026-10-29
+US-316, US-320, US-322, US-327 and US-329 have left again (above). US-333 was added on 2026-11-03 (the language-test runner's first finding) and left on 2026-11-05 (above). US-332 was added on 2026-10-29
 (the bake render US-322's fix made real).
 
 ---
@@ -384,15 +392,3 @@ raster's first draw, to see whether the long main-thread frames are the bake ren
 - bake incrementally — the new chunk drawn on top of the previous raster rather than the whole
   prefix — which turns the Θ(n²/chunk) schedule into Θ(n);
 - either way, test-first against `BakeSchedulingTests` and re-measure with `A0-run`.
-
-## US-333 — Inverse trigonometry follows Darwin's libm, not Java's fdlibm
-
-**Found**: 2026-11-03, by the language-test runner (PR 2, slice 7), the first divergence the Catrobat language tests found in this engine. `formula/testArccosineFunction` asserts `floor(arccos(0.5)) = 60` and `formula/testArcsinusFunction` asserts `floor(arcsin(0.5) × 10⁹) / 10⁹ = 30`. Both fail here, with 59 and 29.999999999.
-- **Cause, probed under JDK 17:** Java's `Math.acos(0.5)` and `StrictMath.acos(0.5)` (fdlibm) are `1.0471975511965979`, one ulp *above* π/3. Darwin's `acos(0.5)` is the correctly rounded `1.0471975511965976`. Our degree conversion is Java's own `x × 57.29577951308232`, so the ulp shows at a `floor`: 60.00000000000001 against 59.99999999999999. `asin(0.5)` is the same, `0.5235987755982989` against `…988`. Android's libm descends from fdlibm, which is why Catroid's test expects 60.
-- **Not pinned by ADR-046,** whose four divergences don't include it. The other functions (`sin`, `cos`, `tan`, `exp`, `ln`, `log`, `arctan`, `arctan2`) may differ the same way on inputs the corpus doesn't use. `sqrt` cannot, being correctly rounded in both.
-- **Options:**
-  - port fdlibm's `__ieee754_acos`/`asin` (and whichever others differ) into the engine, so formulas match Catroid bit for bit;
-  - or record the divergence in ADR-046 as accepted.
-
-  Porting changes formula values by an ulp in places. Check any DST golden that uses trigonometry before deciding.
-- **Until decided:** both tests are pinned expected failures in the runner, with their exact outcomes, so a fix turns them red as "now passing".
