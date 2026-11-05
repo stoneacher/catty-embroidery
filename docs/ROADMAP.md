@@ -133,6 +133,18 @@ Editor mutations are a pure `EditAction` set applied to the value-type program i
 
 **Prerequisite, dated and human-owned (2026-09-19)**: TestFlight needs a paid Apple Developer Program enrolment and an App Store Connect record, and **neither is in place**. Owner: Sebastian. It is scheduled as [its own line in the M4 README](user-stories/milestone-4/README.md#human-prerequisites) rather than as a bullet inside a story, following the rule the workflow journal wrote after US-303's Xcode hand-off cost a session boundary: *a story with a human prerequisite needs the prerequisite scheduled as its own dated item*. **It blocks the checkpoint, not the milestone** — no M4 story depends on it. Fallback recorded now rather than improvised later: an in-person session on a tethered device, which loses the remote testers and the install flow and keeps the usability findings.
 
+**Release checklist (2026-11-05, Release readiness, US-331).** Before every build that leaves the developer's devices, run [`/release`](../.claude/commands/release.md). Its first item is ADR-037's format freeze. The rest cover:
+- the version bump (human);
+- the privacy manifest and the encryption key, with a re-grep of the required-reason APIs;
+- the icon;
+- the pseudo-localization and RTL pass;
+- the pre-beta accessibility review;
+- the graph drift check;
+- the Release-configuration compile;
+- the upload and App Store Connect (human).
+
+The upload runs under Catrobat's Apple developer team, bundle ID `org.catrobat.embroiderydesigner`, by Sebastian once he has access. That is the route out of the prerequisite below.
+
 ### M5 — Project management (E6)
 Project list (create/rename/duplicate/delete — rename validates the 15-char DST name rule inline), JSON (Codable) on-disk format with versioning (autosave itself lands in M4), bundled sample designs.
 

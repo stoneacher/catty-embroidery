@@ -216,20 +216,6 @@ design call, so it gets a `swift-ui-design` look, and no test pins the symbol to
 - **Recurred on 2026-11-03** (Language-test runner, `f30c9f4`, an engine-only commit with nothing under `catrobat_embroidery_ios/`): all three of the suite's tests failed together after ~22.8 s each, the fifth occurrence and the second with all three. The engine tests and SwiftLint passed on the same commit.
 
 
-## US-331 — The format freeze is handed to a release checklist that does not exist
-
-**Found**: 2026-10-28, by M5's knowledge-graph drift check (a `semantically_similar_to` edge between project management D10 and brick backend D8).
-- **The commitment:** project management D10 says ADR-037's format freeze "becomes a release-checklist step, with a frozen-v1 vocabulary census test added at that step".
-- **The gap:** there is no release checklist: none in the roadmap, this backlog, any ADR or `.claude/commands/`. ADR-037's 2026-10-18 amendment (Sebastian's decision of 2026-10-17) records the three admission operations (content-derived stamp, `≤ current` decode, refuse content newer than its stamp) "so the freeze cannot happen without it", but nothing triggers it.
-- **Why it matters:** the freeze has to happen before the first build reaches anyone else. Missing it is silent: every test stays green, and the first vocabulary change after distribution ships under v1. An older build then reads that file as `.corrupt` instead of `.unsupportedVersion`.
-
-**What taking it would involve.**
-- A release checklist with a home. Either a section of the roadmap's TestFlight checkpoint, or a `/release` command beside `/finish`, so it runs at the moment rather than being remembered. Its first item is the freeze.
-- The freeze itself, per ADR-037: the frozen-v1 vocabulary census test (every `Brick`/`Formula` case known to v1, failing to compile or fail when the vocabulary grows without a version bump), then `requiredFormatVersion` and the two decode rules once v2 exists.
-- An ADR-037 amendment naming the trigger, so the rule and its trigger live in one place.
-
----
-
 ## Scheduled out of this file — the record, because the mechanism is the point
 
 Entries keep their ID when they are scheduled, so existing ADR and journal references keep
@@ -364,11 +350,19 @@ in the same spirit as US-211's and US-313's above.
   from fdlibm (on 0.3–41 % of inputs, at most 3 ulps), and Java's `Math` and `StrictMath`
   disagree with each other on `sin`/`cos`. That turned "port fdlibm" from a fix into a partial
   parity. Both tests stay pinned expected failures, owned by ADR-046.
+- **US-331 — the format freeze is handed to a release checklist that does not exist** → taken
+  on 2026-11-05 into [Release readiness](../features/release-readiness.md) (slices 1–2). The
+  entry's plan held in shape: a checklist with a home (`/release`, beside `/finish`), the freeze
+  as its first item, and an ADR-037 amendment naming the trigger. Two things changed. The
+  trigger became the feature's own merge, not the first distributed build, because Sebastian
+  chose the earlier, stricter moment. And the entry's "vocabulary census test" became a
+  **byte** census, because the brief's Codex round showed a key or case census misses same-key
+  changes an older reader would misparse.
 
 **Left in this file at M4 planning: US-316 only** — it has since left too (see its bullet above; the entry itself is in git history before PR #83).
 **Added since**: US-317 (2026-09-20), US-318 (2026-09-23), US-319 and US-321–US-326 (from M4 and
 the brick-backend and variables features), US-328 (2026-10-25), US-330 (2026-10-26) and US-331 (2026-10-28, M5 drift check).
-US-316, US-320, US-322, US-327 and US-329 have left again (above). US-333 was added on 2026-11-03 (the language-test runner's first finding) and left on 2026-11-05 (above). US-332 was added on 2026-10-29
+US-316, US-320, US-322, US-327 and US-329 have left again (above). US-333 was added on 2026-11-03 (the language-test runner's first finding) and left on 2026-11-05 (above), as did US-331. US-332 was added on 2026-10-29
 (the bake render US-322's fix made real).
 
 ---

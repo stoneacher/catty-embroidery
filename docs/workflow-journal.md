@@ -4461,3 +4461,12 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - The test's own builder and census walker: a dropped `Sensor.allCases` leg, a dropped right-arc brick, a walker ignoring arc directions.
   - A new `Brick` case fails to compile, but **in production switches first** (`Script+PairedControl`), before the census's own switch is reached. The census switch is a second wall the compiler never gets to.
 - **Process note:** the tenth mutation's anchor had been reformatted by the SwiftFormat hook. The asserting `sub()` refused it rather than "applying" nothing, which is the 2026-11-03 lesson paying off.
+
+## 2026-11-05 — Release readiness slice 2: `/release`, and its dry run caught a gate that never runs on `main`
+
+- **Built:** `.claude/commands/release.md`, an 11-item checklist plus a report, each item tagged machine, Claude-run or human. The format freeze comes first. A roadmap section under the TestFlight checkpoint points to it. US-331 leaves the backlog as a record bullet.
+- **The dry run was the slice's test** (ADR-032: process text is verified by executing it, not by a test). It found two defects in my own first draft:
+  - **Item 8 asked for a `release-build.yml` run on `main`, and none can exist:** the workflow triggers on pull requests and tag pushes only. The item now tags the archived commit, which also records what was uploaded. Pushing the tag is outward-facing, so the item has Claude confirm it with Sebastian first.
+  - **Item 1's "the fixture has exactly one commit" would misfire** if slice 1's reviews changed the fixture before the merge. It is now "no commit touches it after the freeze merge", which matches ADR-037's trigger.
+- **Re-grep result (item 3), recorded as the baseline:** in release code the only required-reason APIs are `UserDefaults` (`LastOpenedProject`, `ProjectLibrary+App`) and `contentModificationDate` (`ProjectStoring`). `CACurrentMediaTime` appears only in `CaptureSession.swift`, which sits inside `#if DEBUG` (lines 1–200).
+- **Lesson:** a checklist written from memory of how the CI works is itself a claim to verify. Running each command once found the error that reading it twice had not.
