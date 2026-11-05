@@ -89,21 +89,12 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
 **One PR** (ADR-041). The whole feature is about 450 lines of non-test code. The brief's Codex round rejected the planned two-PR split: ADR-041 splits only past about 1,500 lines, and nothing in the feature touches the format before the merge that freezes it.
 
 1. **Frozen-v1 census** (risky: yes, program format; reviewer plus one Codex slice round when green). It needs no production code.
-   - Tests in `EditorCoreTests/FrozenV1VocabularyTests.swift`, with `FrozenV1.json` as a `Bundle.module` fixture:
-     - `encodingTheMaximalV1ProgramMatchesFrozenBytes`
-     - `frozenBytesDecodeToTheMaximalV1Program`
-     - `maximalProgramCoversEveryCase` (the exhaustive tag switches and `allCases`)
-     - `structFieldLabelsEqualFrozenV1` (`Mirror`, secondary)
+   - The program is built in `FrozenV1Program.swift`, the tag enums are in `FrozenV1VocabularyTags.swift`, and the tests are in `FrozenV1VocabularyTests.swift`:
+     - bytes: `encodingTheMaximalV1ProgramMatchesFrozenBytes`, `frozenBytesDecodeToTheMaximalV1Program` (decode, then re-encode);
+     - vocabulary: `maximalProgramCoversEveryCase`, `everyFormulaSlotHoldsAComposite`;
+     - declarations: `structFieldsEqualFrozenV1`, `casePayloadsEqualFrozenV1`.
    - Then the ADR-037 amendment.
-   - Mutations:
-     - a dummy case in `Sensor`, in `UnaryFunction`, and in `Brick` (the last a compile failure);
-     - `var note: String?` on `Variable`;
-     - `arc`'s `radius` label renamed;
-     - a custom `encode(to:)` that writes a no-payload case as `null`;
-     - a leaf enum given a `String` raw value;
-     - a default-valued field omitted from encoding;
-     - a number written as a string;
-     - one `allCases` leg dropped from the builder.
+   - Mutations: the 15 listed in ADR-037's amendment, all red (journal).
 2. **`/release` command and roadmap section** (risky: no; docs). The items:
    - the freeze;
    - the version bump (human, in Xcode);

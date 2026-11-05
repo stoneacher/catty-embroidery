@@ -973,17 +973,28 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 **Amendment (2026-10-26, Project management, ADR-050) — one file per project.** The working program becomes many projects, `Documents/Projects/<UUID>.json`, each a v1 document unchanged. **Last writer wins per project:** revisions stay global, but each project keeps its own newest accepted revision and its own failure (`ProjectLibrary`, replacing `ProgramAutosave`). **Set-aside is retired for project files:** a refused file stays where it is, and the refusal installs a process-wide write block for that one ID until it is re-probed as openable or missing, or deleted, replacing the single process-wide block. A deleted project leaves an in-memory tombstone, so a late save returns `.deleted` rather than recreating the file. M4's `WorkingProgram.json` is migrated once to a fixed ID (ADR-050). The freeze above is still not triggered: no build has been distributed (brief D10).
 
 **Amendment (2026-11-05, Release readiness, US-331) — the freeze fires when the Release readiness feature merges; it supersedes the 2026-10-18 trigger.** The 2026-10-18 amendment tied the freeze to "the first distributed build", an event nothing in the repo observes. Missing it would be silent: every test stays green, and the first vocabulary change after distribution ships under v1 (US-331, found by M5's drift check).
-- **Trigger (Sebastian, 2026-11-05, Release readiness D2): v1 is frozen from the merge of the Release readiness feature**, ahead of the first TestFlight upload. The 2026-10-18 "grows additively until the first distributed build" rule stops applying at that merge. Only one trigger is ever active: the earlier, stricter one wins. `rand` (ADR-046) was deliberately not added first, so it will be a v2 brick.
-- **Enforcement is a test, not a reminder.** `FrozenV1VocabularyTests` (EditorCoreTests) builds one program that holds every case of the v1 vocabulary. It requires `ProgramDocument.encode` to reproduce the checked-in `FrozenV1.json` byte for byte, and those bytes to decode back to the program.
-  - **The oracle is the bytes, not the key set.** The brief's Codex round showed that a key census misses same-key changes an older reader would misparse. Each kind below was shown red by a mutation:
-    - `{}` becoming `null`;
-    - a raw-valued leaf enum;
-    - a renamed coding key;
-    - a default field omitted on decode;
-    - a number written as a string;
-    - a new optional field (red by the secondary `Mirror` check).
-  - Exhaustive tag switches over `Brick`, `Formula` and `ScriptHeader` and `allCases` for the leaf enums prove the program covers the vocabulary. A new `Brick` case fails to compile.
-  - `FrozenV1.json` is never regenerated. A change that needs new bytes is a v2: bump `currentFormatVersion`, build the three admission operations above, and freeze the v2 bytes beside v1's.
+- **Trigger (Sebastian, 2026-11-05, Release readiness D2): v1 is frozen from the merge of the Release readiness feature**, ahead of the first TestFlight upload. The 2026-10-18 trigger ("grows additively until the first distributed build") is void from that merge. `rand` (ADR-046) was deliberately not added first, so it will be a v2 brick.
+- **Enforcement is a test, not a reminder.** `FrozenV1VocabularyTests` (EditorCoreTests) builds one program that holds the whole v1 vocabulary: a nested formula in every formula slot, every JSON escape class in its strings, and default-valued fields beside non-default ones. It has three alarms:
+  - **The bytes** (the oracle, after the brief's Codex round showed a key census misses same-key changes). `ProgramDocument.encode` must reproduce the checked-in `FrozenV1.json` byte for byte. Those bytes must decode back to the program and re-encode to themselves, which catches a lossy decode that `==` hides.
+  - **The vocabulary.** Test-owned tag enums with exhaustive switches cover `Brick`, `Formula`, `ScriptHeader` and every leaf enum, and the program is built from the tags. A production `allCases` is never the oracle (Codex slice round).
+  - **The declarations.** `Mirror` checks struct fields and every enum case's payload, by label *and* type. An optional field or associated value left `nil`, or an `Int` widened to `Double`, encodes identically, so only the declaration shows it (`swift-code-reviewer`, slice 1).
+- **15 mutations, each red** (journal, 2026-11-05):
+  - `{}` becoming `null`;
+  - a raw-valued leaf enum;
+  - a renamed coding key;
+  - a field dropped on decode;
+  - a field omitted at its default value on encode;
+  - a number written as a string;
+  - slashes escaped again;
+  - names decomposed on decode;
+  - a new optional stored field;
+  - a new optional associated value;
+  - `zIndex` widened to `Double`;
+  - a new `Brick` case (a compile failure);
+  - three mutations of the test's own builder and census.
+- **`FrozenV1.json` is never regenerated for a format change.** A change that needs new bytes is a v2: bump `currentFormatVersion`, build the three admission operations above, and freeze the v2 bytes beside v1's.
+  - The one exception is a difference the test's own semantic comparison reports as **presentation only**: the same JSON values spelled differently by a newer Foundation. Only then may the fixture be replaced, in a journaled, reviewed commit.
+  - The bytes are pinned to the test host's encoder, and CI pins its Xcode. So a toolchain bump is where such a difference would surface.
 - **The release checklist (`/release`) checks the freeze as its first item:** the census is present and green. That catches the trigger being undone, not just forgotten.
 
 **Consequences**: The three admission operations are still not built, and won't be until the first v2 change needs them. What changes is that such a change now goes red before it can ship under v1. US-331 leaves the backlog.

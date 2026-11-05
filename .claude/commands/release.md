@@ -12,7 +12,7 @@ Work through the items in order. **Never tick an item you haven't verified this 
 ## 1. Format freeze (machine): first, always
 
 - `cd Packages/EmbroideryEngine && swift test --filter FrozenV1VocabularyTests` must pass. Quote the summary line.
-- No commit may touch `Packages/EmbroideryEngine/Tests/EditorCoreTests/Resources/FrozenV1.json` after the freeze, the merge of the Release readiness PR (ADR-037, 2026-11-05 amendment). Find that merge with `git log --merges --oneline --grep 'feature/release-readiness' main`, then check that `git log --oneline <that merge>..main -- <the fixture>` prints nothing. Any output means someone regenerated the frozen bytes, which un-freezes v1. Stop the release and raise it.
+- No commit may touch `Packages/EmbroideryEngine/Tests/EditorCoreTests/Resources/FrozenV1.json` after the freeze, the merge of the Release readiness PR (ADR-037, 2026-11-05 amendment). Find that merge with `git log --merges --oneline --grep 'feature/release-readiness' main`, then check that `git log --oneline <that merge>..main -- <the fixture>` prints nothing. Any output means the frozen bytes were replaced. That is lawful only as a presentation-only replacement (ADR-037, 2026-11-05 amendment): its commit must quote the test's "presentation only" message and have a journal entry. Anything else un-freezes v1, so stop the release and raise it.
 - If `Program.currentFormatVersion` is above 1, check that ADR-037's three admission operations exist and that each version has its own frozen fixture.
 
 ## 2. Version numbers (human, in Xcode)
