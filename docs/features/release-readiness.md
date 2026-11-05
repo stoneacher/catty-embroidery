@@ -114,6 +114,7 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
      - `refusedPaletteInsertPulsesNothing`
      - `dropThatMovesPulsesSelection`
      - `refusedOrNoOpDropPulsesNothing`
+     - `dropBetweenIdenticalRowsPulsesNothing`: added after a mutant that ticked on any applied move survived. Swapping identical rows is applied but changes nothing.
      - `nonDropEditsPulseNothing`: a sweep including insert → undo → redo, accessibility moves, delete, replace, parameter edit and rename.
      - `consecutiveInsertsEachPulse`
    - Success:

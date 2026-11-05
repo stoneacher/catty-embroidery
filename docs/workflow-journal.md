@@ -4486,3 +4486,19 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Mutations now 15, all red:** the original 10, the reviewer's two survivors, escaped slashes, default-omission on encode, and names decomposed on decode (caught only by the re-encode). A probe with a curated production `Sensor.allCases` stays **green**, correctly: the builder no longer depends on it, and the format didn't change.
 - **A mutation-runner defect, caught by its own output:** the reviewer's mutation A edits a *test* file, and my restore step only reset `Sources`. The next five mutants all "went red" on a compile error that the leftover edit caused. They looked like kills and proved nothing. The runner now restores an explicit file list, and those five were re-run. Lesson: a red mutant needs its red *reason* read, not just its colour.
 - **CI caught what the commit gate can't: SwiftLint** (`op` is under the identifier length rule). The pre-commit hook runs tests and an app compile, not lint. The rewrite would have added two more violations and a 651-line file, now split into the suite, the tags and the program, each under 400 lines. Lint now runs locally before each commit in this feature.
+
+## 2026-11-05 — Release readiness slice 3: the haptic map at the model, and a mutation run that lied twice
+
+- **Built:**
+  - `HapticKind` and `HapticPulse` (a kind plus a serial), and `AppModel.haptic` with `pulse(_:)` as its only writer.
+  - `RunViewModel.onRunTerminated(RunCompletion, EmbroideryStream)`, with the reason read from `run.state` after `apply`.
+  - `ExportViewModel.prepare` now returns the state it left (`@discardableResult`), so a failed attempt is visible as an attempt even from `.failed`.
+  - `AppModel.runTerminated` (prepare, then at most one pulse) and `dropRows`.
+  - The `SensoryFeedback` mapping in its own file, keeping `AppModel` SwiftUI-free.
+  - ADR-052.
+- **Red was a compile failure** (82 errors, all the missing haptic API), so the 10 brief mutations carry the proof. All 10 were red in the end, each killed by the test meant for it. Getting there took three runs:
+  1. **The first run's kill lists were fiction.** The parser took test names from any output line containing "fail", and three test names contain "fail" (`exportFailure…`, `failedExport…`). So every mutant appeared to kill them. Under that noise one mutant had genuinely **survived**: "pulse on any applied move".
+  2. **The survivor was real and is now killed.** `moveAction` already returns `nil` for a same-place drop, so the "and the program changed" guard looked redundant. But swapping two *identical* rows is applied and changes nothing. `dropBetweenIdenticalRowsPulsesNothing` pins that. Its first version was itself wrong: an identical swap leaves no undo entry, so the probe's `undo()` undid the previous insert. The premise is now probed on a separate editor.
+  3. **The second run's parser matched nothing,** using the swift-testing console format where xcodebuild prints `Test case '…' failed on`. The raw logs were kept this time, so the result came from re-parsing them rather than from a third 15-minute run.
+- **Lesson, the same as slice 1's in a third form:** a mutation result is only as good as the code that classifies it. Read one raw log before trusting any table built from logs.
+- **Lint:** `AppModel.swift` reached 409 lines (the CI lint is strict), so the run-end handler moved to `AppModel+Haptics.swift`. Every touched file now passes strict lint locally before commit.

@@ -47,7 +47,7 @@ struct ExportWiringTests {
     func aTerminatingRunReportsItsExportModel() async {
         let runner = RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing()))
         var reported: [EmbroideryStream] = []
-        runner.onRunTerminated = { reported.append($0) }
+        runner.onRunTerminated = { _, model in reported.append(model) }
 
         let sample = SampleLibrary[.squareCoil]
         runner.play(sample.program)
@@ -67,7 +67,7 @@ struct ExportWiringTests {
     func aSecondTerminalIsNotAnnounced() async {
         let runner = RunViewModel(driver: InterpreterDriver(pacing: ImmediateRunPacing()))
         var reported = 0
-        runner.onRunTerminated = { _ in reported += 1 }
+        runner.onRunTerminated = { _, _ in reported += 1 }
 
         runner.play(SampleLibrary[.squareCoil].program)
         await Self.settle(until: { runner.run.state == .finished(.programFinished) })

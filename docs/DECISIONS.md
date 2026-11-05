@@ -61,6 +61,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 049 | Interpreter | Control-brick execution: heads read on their own first act (deferred after an action); Catroid truthiness per brick; an action-free If takes the tick it was read in and only that one; RepeatUntil checks at entry and at the body's end; WaitUntil polls once per tick with truncating truthiness; ForVariableFromTo reads its bounds once, checks at each pass's end and keeps an unnamed counter off the store. | Active |
 | 050 | Persistence | One file per project (`Projects/<UUID>.json`); drafts written only by their first change; one name (`program.name` = `LA` = sanitised file name), generated names uniqued; `ProjectLibrary` guards every file per project; launch opens the scene's project, else the last opened, else a fresh draft; M4's file migrates once to a fixed ID; the code lives in the `Projects` package target (US-329). | Active, amended |
 | 051 | Language tests | Catroid's language tests run headlessly: `code.xml` versions 0.99995–1.14 import into `Program` plus harness steps that are never `Brick` cases; anything whose semantics can't be mirrored is refused with typed blockers (strings that stay strings, variables a name can't tell apart, unknown shapes); AssertEquals by `isSameValue`; the first ending is latched and its tick finishes; 600-tick budget; WaitTillIdle by Catroid's per-object scheduler; all 215 tests pinned. | Active |
+| 052 | App | Haptic map: selection on an accepted palette add or a program-changing reorder drop; success on a run that finished on its own with a shareable export; error on each failed export attempt; nothing else. An observable pulse on `AppModel`, played by one `.sensoryFeedback` at the window root. | Active |
 
 ## ADR-001 — App scope: embroidery-focused block app (2026-07-06)
 **Context**: On Android, "Embroidery Designer" is the full Pocket Code app (complete Catrobat language + interpreter + stage) shipped as a Gradle flavor. A full port exceeds bachelor-project scope; a blocks-free drawing tool would lose the "learn coding" essence of Catrobat.
@@ -1579,4 +1580,27 @@ The brief got one Codex round on these rules (journal, 2026-10-17).
 - **Ratchet**: all 215 are pinned in a generated table (`scripts/regenerate-language-test-expectations.sh`). Each is a pass, an expected failure with its exact assertion failure and an owning ADR or backlog item, or unsupported with its exact blockers.
 
 **Consequences**: 32 of 215 pass. 4 are expected failures: decimal128 (ADR-048), `arctan2(0, 0)` (ADR-046), and two from Darwin's correctly rounded `acos`/`asin` against Java's fdlibm (US-333, undecided) *[Decided 2026-11-05: accepted under ADR-046 (c), see its US-333 amendment; both are now owned by ADR-046.]*. 179 are unsupported, mostly for scope (ADR-001). Changing a test's class is a deliberate table change reviewed as a diff. Raising the count means supporting more of Catroid. Moving the suite to Catrobat's planned language-specification repository, and writing new language tests, are outside this ADR.
+
+## ADR-052 — Haptic map (2026-11-05)
+**Context**: The roadmap's M6 polish fixes the haptic map as "success on export/run-complete, selection tick on brick add/reorder-drop, error on export failure — nothing else". The app predated it: `StageView` played `.start` on every run and `.stop` on every finish, including a user stop. "Export success" has no event of its own. ADR-026 prepares the file eagerly when the run ends, and a `ShareLink` reports nothing back. The meanings below weren't pinned anywhere, so the Release readiness brief's Codex round settled them (journal, 2026-11-05).
+
+**Decision** (Release readiness D3):
+- **Exactly three pulses, and only these.**
+  - **Selection:**
+    - a palette add the editor accepts (buttons and VoiceOver activation share `addFromPalette`);
+    - a reorder drop (`AppModel.dropRows`, which `.onMove` now calls) that changes the program.
+
+    Accessibility moves, undo/redo, delete, replace, parameter edits and rename play nothing.
+  - **Success:** a run that ended `.programFinished` and whose export is `.ready` and offered by ADR-026's gate (`isExportable`, more than one record).
+    - Run-complete *is* export success, because the file is ready exactly then.
+    - A user stop is deliberately partial and the stitch limit is a protective truncation, so neither is a success. A one-stitch or invalidly named design isn't either.
+  - **Error:** **each failed preparation attempt**, at run end whatever ended the run, or on a rename that re-prepares.
+    - Per attempt, not on "entering `.failed`": a rename that fails again from an already-failed state plays again.
+    - Error replaces success at run end.
+    - A rename during a run doesn't prepare, because only a terminated run has an export to re-prepare (ADR-038's rename rule, in the ADR-045 change pipeline), so it plays nothing until the run ends.
+- **The run's end carries its reason:** `RunViewModel.onRunTerminated(RunCompletion, EmbroideryStream)`. `AppModel` prepares first, reads the state `prepare` returns, then pulses at most once, so a pulse always describes an attempt that has happened.
+- **Mechanism:** `AppModel.haptic: HapticPulse?` (a kind plus a serial, so consecutive same-kind pulses are distinct triggers), written only by `pulse(_:)`. One `.sensoryFeedback` at the window root plays it, so it honours the system haptics setting and never plays in another window (ADR-023: one model per window). `HapticKind` → `SensoryFeedback` lives in its own file, keeping `AppModel` free of SwiftUI.
+  - **Rejected:** an injected `UIFeedbackGenerator` protocol with a recording double. It is equally testable and needs a protocol, a live implementation and a double to copy a mechanism SwiftUI already provides.
+
+**Consequences**: `HapticMapTests` pins every event and non-event at the model. The view modifier itself is not testable (deleting it stays green), so it is verified by review and on a device, including two iPad windows (ADR-032). Any new haptic is an amendment here, not a local addition.
 
