@@ -46,7 +46,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 034 | Editor | `Brick` has no identity; addressing is index-based; the script list's row identity is derived by the editor (diff-followed IDs), never stored. | Active, amended |
 | 035 | Editor | Pair semantics for the editor verbs. | Superseded by 045 |
 | 036 | Editor | `UndoStack` in `EditorCore` is the truth and owns the program; bounded at 50; explicit coalescing sessions; an app-owned `UndoManager`, vended by a first-responder anchor, kept at the stack's exact depths (US-411). | Active, amended |
-| 037 | Persistence | Program document: version 1 only (growing additively until the first distributed build, then a pinned freeze rule), refuse rather than trap, non-finite rejected at input, depth cap 128; last-writer-wins by revision, per project since M5 (refused files blocked per ID, not set aside). | Active, amended |
+| 037 | Persistence | Program document: version 1 only, frozen since the Release readiness merge by a byte-pinned census (`FrozenV1.json`); any vocabulary change is a v2 with three pinned admission operations, refuse rather than trap, non-finite rejected at input, depth cap 128; last-writer-wins by revision, per project since M5 (refused files blocked per ID, not set aside). | Active, amended |
 | 038 | Editor | `EditorViewModel` is the only writer; a changing edit voids the run, except one that differs only in the name, which keeps it and re-prepares the export; the selection carries no program and is titled with its name. | Active, amended |
 | 039 | Editor UI | Three-column split on regular, push chain on compact; launch is a selection (since M5: the scene's project, the last opened, or a named draft); palette popover/sheet; parameters off-row. | Active, amended three times |
 | 040 | Editor UI | Parameters editable where M4 has a control (function and sensor formulas locked with their own reasons); a condition that is one comparison of two plain values gets the comparison editor (`ParameterTarget` addresses a side); 14-colour thread palette; `VariableName` rules; live-apply that keeps no rejected prefix. | Active, amended |
@@ -971,6 +971,22 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 **Consequences**: Encode/decode symmetry (this ADR's contract) holds across versions, because both sides compute the same `requiredFormatVersion`. US-324 (an unknown key beside a known one is dropped rather than refused) is independent of the freeze: it concerns hand-edited, corrupted or externally produced v1 files, never one a newer build wrote.
 
 **Amendment (2026-10-26, Project management, ADR-050) — one file per project.** The working program becomes many projects, `Documents/Projects/<UUID>.json`, each a v1 document unchanged. **Last writer wins per project:** revisions stay global, but each project keeps its own newest accepted revision and its own failure (`ProjectLibrary`, replacing `ProgramAutosave`). **Set-aside is retired for project files:** a refused file stays where it is, and the refusal installs a process-wide write block for that one ID until it is re-probed as openable or missing, or deleted, replacing the single process-wide block. A deleted project leaves an in-memory tombstone, so a late save returns `.deleted` rather than recreating the file. M4's `WorkingProgram.json` is migrated once to a fixed ID (ADR-050). The freeze above is still not triggered: no build has been distributed (brief D10).
+
+**Amendment (2026-11-05, Release readiness, US-331) — the freeze fires when the Release readiness feature merges; it supersedes the 2026-10-18 trigger.** The 2026-10-18 amendment tied the freeze to "the first distributed build", an event nothing in the repo observes. Missing it would be silent: every test stays green, and the first vocabulary change after distribution ships under v1 (US-331, found by M5's drift check).
+- **Trigger (Sebastian, 2026-11-05, Release readiness D2): v1 is frozen from the merge of the Release readiness feature**, ahead of the first TestFlight upload. The 2026-10-18 "grows additively until the first distributed build" rule stops applying at that merge. Only one trigger is ever active: the earlier, stricter one wins. `rand` (ADR-046) was deliberately not added first, so it will be a v2 brick.
+- **Enforcement is a test, not a reminder.** `FrozenV1VocabularyTests` (EditorCoreTests) builds one program that holds every case of the v1 vocabulary. It requires `ProgramDocument.encode` to reproduce the checked-in `FrozenV1.json` byte for byte, and those bytes to decode back to the program.
+  - **The oracle is the bytes, not the key set.** The brief's Codex round showed that a key census misses same-key changes an older reader would misparse. Each kind below was shown red by a mutation:
+    - `{}` becoming `null`;
+    - a raw-valued leaf enum;
+    - a renamed coding key;
+    - a default field omitted on decode;
+    - a number written as a string;
+    - a new optional field (red by the secondary `Mirror` check).
+  - Exhaustive tag switches over `Brick`, `Formula` and `ScriptHeader` and `allCases` for the leaf enums prove the program covers the vocabulary. A new `Brick` case fails to compile.
+  - `FrozenV1.json` is never regenerated. A change that needs new bytes is a v2: bump `currentFormatVersion`, build the three admission operations above, and freeze the v2 bytes beside v1's.
+- **The release checklist (`/release`) checks the freeze as its first item:** the census is present and green. That catches the trigger being undone, not just forgotten.
+
+**Consequences**: The three admission operations are still not built, and won't be until the first v2 change needs them. What changes is that such a change now goes red before it can ship under v1. US-331 leaves the backlog.
 
 ## ADR-038 — The working program: an applied edit voids the run, and the selection stops carrying the program (2026-09-27)
 **Status**: Active, amended 2026-09-29; one bullet overruled by ADR-039 (see marker). The change pipeline is restated in ADR-045.

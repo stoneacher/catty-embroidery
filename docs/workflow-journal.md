@@ -4444,3 +4444,20 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Medium: two PRs for about 450 lines contradicts ADR-041**, which splits only past about 1,500. The architect's reason, letting the freeze merge alone, doesn't need a split: nothing in the feature touches the format before the merge. Now one PR, and the ADR-037 amendment will say it supersedes the 2026-10-18 trigger rather than adding a second one.
 - **Confirmed, not changed:** the privacy reason codes (CA92.1, C617.1, DDA9.1; not 3B52.1), per-window isolation under ADR-023, and `.sensoryFeedback`'s trigger semantics for an optional `Equatable`. Codex also agreed, from the HIG, that a user stop and the stitch limit get no success. That answered the question deliberately routed to this round instead of to Sebastian.
 - **Delegation note:** the architect had read the code carefully (its facts all held), yet three of the four mediums are code facts it didn't connect to the semantics it proposed. Planning by one agent and checking by another vendor caught what neither framing alone did.
+
+## 2026-11-05 — Release readiness slice 1: the program format v1 is frozen by its bytes
+
+- **Built:** `FrozenV1VocabularyTests` with a checked-in `FrozenV1.json` (1,288 lines, 35,074 bytes, SHA-256 `1818102b…9e71`). It holds every `Brick` case, every `Formula` shape, every leaf-enum case, and numbers chosen to pin their written form (`-0`, `5e-324`, `1.7976931348623157e+308`, `1e-300`). Plus the ADR-037 amendment: the freeze fires on this feature's merge and supersedes the 2026-10-18 trigger.
+- **Red:** the two byte tests failed on the missing fixture. The fixture was then bootstrapped *from the test's own failure output*: on a mismatch the test writes what it saw to a temporary file and says never to copy it over the fixture. I reviewed that output before it became the fixture. That is the one sanctioned copy, and the README beside the fixture forbids any later one.
+- **The coverage and `Mirror` tests passed at once,** since they restate facts that were already true. Their discriminating power rests on mutations alone (ADR-032 invariant 2).
+- **Mutations: 10, all red.**
+  - Wire format, red on the bytes:
+    - a renamed `Variable` coding key;
+    - `ScriptHeader` encoding as `null`;
+    - `ArcDirection` given `String` raw values;
+    - `Object` dropping `zIndex` on decode;
+    - `Variable.value` written as a string.
+  - Stored fields, red on `Mirror` only (bytes unchanged, as predicted): a new optional `Variable.note`.
+  - The test's own builder and census walker: a dropped `Sensor.allCases` leg, a dropped right-arc brick, a walker ignoring arc directions.
+  - A new `Brick` case fails to compile, but **in production switches first** (`Script+PairedControl`), before the census's own switch is reached. The census switch is a second wall the compiler never gets to.
+- **Process note:** the tenth mutation's anchor had been reformatted by the SwiftFormat hook. The asserting `sub()` refused it rather than "applying" nothing, which is the 2026-11-03 lesson paying off.
