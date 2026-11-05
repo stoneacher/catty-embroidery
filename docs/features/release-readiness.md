@@ -27,14 +27,29 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
 ## Decisions (Sebastian, 2026-11-05, on swift-architect's plan)
 
 - **D1. The release checklist lives in `.claude/commands/release.md`,** beside `finish.md`, with a roadmap pointer under the TestFlight checkpoint. A roadmap-only section would be remembered rather than run, which is US-331's exact failure.
-- **D2. The freeze fires when the census test merges** (PR 1). It doesn't wait for the first upload, and `rand` is not added first.
-  - The census encodes one maximal v1 program and compares every JSON key, recursively, with a checked-in list. It also compares the property labels (`Mirror`) of `Program`, `Scene`, `Object`, `Script` and `Variable`, because a new optional field that encodes as absent would otherwise be invisible.
-  - `Brick`, `Formula` and `ScriptHeader` are bound by exhaustive switches, so a new case fails to compile.
-  - Counting cases is rejected: it misses renames and new leaf-enum cases.
-- **D3. The haptic map is an observable pulse on `AppModel`.** `haptic: HapticPulse?` holds a kind and a serial, and one `.sensoryFeedback` at the window root plays it. An injected `UIFeedbackGenerator` protocol is rejected: it adds a protocol, a live implementation and a test double to copy a mechanism the app already has.
-  - **selection:** a palette insert that the editor accepts, and a reorder drop through a new `AppModel.dropRows` that changes the program. Today `.onMove` calls `editor.moveRows` directly. Accessibility moves, undo/redo, delete, replace, parameter edits and rename produce nothing.
-  - **success:** a run that ends `.programFinished` with its export ready. Export is prepared eagerly at run end (ADR-026), and a `ShareLink` reports nothing back, so run-complete *is* export success; there is no later event to hang it on. A user stop and the stitch limit produce nothing (to be confirmed by the brief's Codex round).
-  - **error:** the export state *entering* `.failed`, at run end or on a rename re-prepare. Error replaces success at run end. Later keystrokes in an already-failed state don't pulse again.
+- **D2. The freeze fires when this feature merges.** It doesn't wait for the first upload, and `rand` is not added first.
+  - The ADR-037 amendment explicitly supersedes the 2026-10-18 "first distributed build" trigger with this stricter one, so the two are never active at once.
+  - **The census byte-pins a canonical maximal-v1 document** (changed by the brief's Codex round). One program holds every case:
+    - `ProgramDocument.encode(maximalV1)` must equal a checked-in `FrozenV1.json`;
+    - decoding those frozen bytes must equal `maximalV1`.
+
+    A key set alone would miss a same-key change an old reader misparses: `{}` becoming `null`, a raw-value or custom-Codable change, an omitted default field, a different number shape. A round trip only proves that the *new* writer and reader agree.
+  - Exhaustive case-tag switches (no `default:`) over `Brick`, `Formula` and `ScriptHeader`, plus `allCases` for the leaf enums, prove the document covers the whole vocabulary. A new case fails to compile, or it's missing from the frozen bytes.
+  - `Mirror` property labels of `Program`, `Scene`, `Object`, `Script` and `Variable` stay as a secondary alarm for a stored field the maximal encoding leaves out.
+  - Rejected: counting cases (it misses renames), and a key-only census (Codex round, High).
+- **D3. The haptic map is an observable pulse on `AppModel`.** `haptic: HapticPulse?` holds a kind and a serial, and one `.sensoryFeedback` at the window root plays it.
+  - Every window has its own `AppModel` (ADR-023), so a pulse can't play in another window.
+  - The serial makes two same-kind pulses in a row distinct triggers.
+  - An injected `UIFeedbackGenerator` protocol is rejected: it adds a protocol, a live implementation and a test double to copy a mechanism the app already has.
+  - **The terminal seam carries its reason** (Codex round). `RunViewModel.onRunTerminated` becomes `(RunCompletion, EmbroideryStream)`; today it carries only the stream. `AppModel`'s handler then:
+    1. prepares the export;
+    2. reads the resulting state and its eligibility;
+    3. emits at most one terminal pulse.
+  - **selection:** a palette insert the editor accepts (buttons and accessibility activation share the `addFromPalette` funnel), and a reorder drop through a new `AppModel.dropRows` that changes the program. Today `.onMove` calls `editor.moveRows` directly. Accessibility moves, undo/redo, delete, replace, parameter edits and rename produce nothing.
+  - **success:** a run that ends `.programFinished` with a `.ready` export that is **eligible under ADR-026** (`count > 1`; Codex round). Export is prepared eagerly at run end, and a `ShareLink` reports nothing back, so run-complete *is* export success.
+    - A naturally finished zero- or one-stitch program, or one with an invalid name, gets no pulse.
+    - A user stop and the stitch limit never get success: the first is deliberately partial, the second a protective truncation, and HIG success means a completed task (confirmed in the Codex round).
+  - **error:** **each failed preparation attempt** (Codex round), whatever ended the run, and on a rename re-prepare. Error replaces success. A rename that fails again from an already-failed state pulses again: one attempt, one pulse. A rename during a run doesn't prepare (`AppModel` defers it to termination), so it doesn't pulse until then.
   - **Audit finding:** `StageView.swift:157` plays `.start` on every run and `.stop` on every finish, which is outside the map. It is removed.
 - **D4. The pseudo-loc and RTL pass is a launch-argument procedure,** recorded in `/release` so it can be repeated. There is no second scheme and no snapshot framework.
   - `-NSSurroundLocalizedStrings YES`: an unbracketed string is unlocalized. A UI-hierarchy dump is grepped for it, excluding user content.
@@ -46,41 +61,48 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
   - The light variant is the gradient background with the white glyph. Dark and tinted are derived from the same layers.
   - Provenance (AGPL-3.0, files, commit) is recorded, and the conversion script is kept in `scripts/`.
   - Icon Composer is rejected: it needs pbxproj changes.
-- **D6. The privacy manifest declares no tracking and no collected data.** It lists exactly the required-reason APIs the release code uses: `UserDefaults` (CA92.1) and file timestamps (C617.1, DDA9.1).
+- **D6. The privacy manifest declares no tracking and no collected data.** It lists exactly the required-reason APIs the release code uses: `UserDefaults` (CA92.1, the app-private last-opened project) and file metadata (C617.1 for the app container, DDA9.1 because modification dates are displayed). 3B52.1 would be wrong: no file comes through a document picker. All of this was confirmed in the Codex round.
   - `ITSAppUsesNonExemptEncryption = NO`.
   - Age rating 4+, not Kids Category.
   - The bundle ID stays `org.catrobat.embroiderydesigner`. Sebastian is getting access to Catrobat's Apple developer team and will create the App Store Connect record and upload himself. That also unblocks the M4 TestFlight checkpoint.
 
 ## Acceptance criteria
 
-- [ ] Adding a `Brick`, `Formula`, `ScriptHeader` or leaf-enum case, renaming an associated-value label, or adding a stored field to the program structs turns `FrozenV1VocabularyTests` red (or fails to compile). Each is shown by a mutation.
-- [ ] ADR-037 carries the trigger as an amendment: the freeze fired on the census merge, with its date.
+- [ ] Any change to the v1 wire format turns `FrozenV1VocabularyTests` red or fails to compile, and each kind is shown by a mutation:
+  - a new `Brick`, `Formula`, `ScriptHeader` or leaf-enum case;
+  - a renamed label or coding key;
+  - `{}` becoming `null`;
+  - a custom leaf-enum representation;
+  - an omitted default field;
+  - a changed number shape;
+  - a new stored field.
+- [ ] ADR-037 carries the trigger as an amendment that supersedes the 2026-10-18 one: the freeze fired when this feature merged, with its date.
 - [ ] `/release` exists, and its first item is the freeze. A dry run reports every item's state. US-331 leaves the backlog as a record bullet.
 - [ ] Every event in D3 produces exactly its pulse, and every event outside D3 produces none. A test sweep covers the non-events.
-- [ ] No `.sensoryFeedback` remains outside the window root. That's a grep, plus a device check on Sebastian's iPhone that each haptic plays once and that none plays at run start.
+- [ ] No `.sensoryFeedback` remains outside the window root. That's a grep, plus a device check on Sebastian's iPhone: each haptic plays once, none plays at run start, and with two windows (iPad) a pulse plays only for its own window.
 - [ ] `PrivacyInfo.xcprivacy` ships in the app bundle, with the D6 contents, and `ITSAppUsesNonExemptEncryption` reads `false`, all checked by hosted tests.
 - [ ] The app icon appears on the home screen in light, dark and tinted modes (simulator screenshots).
 - [ ] The pseudo-loc and RTL pass has run on every listed screen, with screenshots. Every finding is fixed or tracked, and the stage is shown unmirrored under RTL.
 
 ## Slices and test-first outline
 
-**PR 1: the freeze (about 40 lines of non-test code, plus docs).**
+**One PR** (ADR-041). The whole feature is about 450 lines of non-test code. The brief's Codex round rejected the planned two-PR split: ADR-041 splits only past about 1,500 lines, and nothing in the feature touches the format before the merge that freezes it.
 
-1. **Frozen-v1 vocabulary census** (risky: yes, program format; reviewer plus one Codex slice round when green). It needs no production code.
-   - Tests in `EditorCoreTests/FrozenV1VocabularyTests.swift`:
-     - `encodedVocabularyEqualsFrozenV1`
-     - `structFieldLabelsEqualFrozenV1`
-     - `maximalProgramCoversEveryBrickCase`
-     - `maximalProgramRoundTrips`
-     - `keyCollectorDescendsIntoArraysAndNestedObjects`
+1. **Frozen-v1 census** (risky: yes, program format; reviewer plus one Codex slice round when green). It needs no production code.
+   - Tests in `EditorCoreTests/FrozenV1VocabularyTests.swift`, with `FrozenV1.json` as a `Bundle.module` fixture:
+     - `encodingTheMaximalV1ProgramMatchesFrozenBytes`
+     - `frozenBytesDecodeToTheMaximalV1Program`
+     - `maximalProgramCoversEveryCase` (the exhaustive tag switches and `allCases`)
+     - `structFieldLabelsEqualFrozenV1` (`Mirror`, secondary)
    - Then the ADR-037 amendment.
    - Mutations:
-     - a dummy case in `Sensor` and in `UnaryFunction`;
-     - a dummy case in `Brick` (a compile failure);
+     - a dummy case in `Sensor`, in `UnaryFunction`, and in `Brick` (the last a compile failure);
      - `var note: String?` on `Variable`;
      - `arc`'s `radius` label renamed;
-     - one literal entry deleted;
-     - a non-recursive collector;
+     - a custom `encode(to:)` that writes a no-payload case as `null`;
+     - a leaf enum given a `String` raw value;
+     - a default-valued field omitted from encoding;
+     - a number written as a string;
      - one `allCases` leg dropped from the builder.
 2. **`/release` command and roadmap section** (risky: no; docs). The items:
    - the freeze;
@@ -95,30 +117,38 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
    - App Store Connect: the label "Data Not Collected", the age questionnaire, the privacy-policy URL and export compliance (human).
 
    Also re-grep the required-reason APIs, since DEBUG-only timing code could leave its `#if DEBUG`. Verified by a dry run. US-331 is recorded out of the backlog.
-
-**PR 2: polish (about 400 lines of non-test code).**
-
-3. **Haptic pulse model** (risky: no). Tests in `HapticMapTests`, using the existing `ExportDoubles` failing writer:
-   - Tests:
+3. **Haptic pulse model and terminal seam** (risky: no; the app layer, no export bytes). Tests in `HapticMapTests`, using the existing `ExportDoubles` failing writer.
+   - Selection:
      - `paletteInsertPulsesSelectionOnce`
      - `refusedPaletteInsertPulsesNothing`
      - `dropThatMovesPulsesSelection`
      - `refusedOrNoOpDropPulsesNothing`
-     - `nonDropEditsPulseNothing`
-     - `programFinishedWithReadyExportPulsesSuccess`
-     - `stopAndStitchLimitPulseNothing`
-     - `exportFailureAtRunEndPulsesErrorNotSuccess`
-     - `renameIntoFailurePulsesErrorOnce`
+     - `nonDropEditsPulseNothing`: a sweep including insert → undo → redo, accessibility moves, delete, replace, parameter edit and rename.
      - `consecutiveInsertsEachPulse`
+   - Success:
+     - `programFinishedWithEligibleExportPulsesSuccess`
+     - `programFinishedWithIneligibleExportPulsesNothing`: zero or one stitch, or an invalid name.
+     - `stopOrStitchLimitWithGoodExportPulsesNothing`
+     - `noTerminalPulseWhileTheWriterRuns`: the writer double observes the pulse still absent.
+   - Error:
+     - `stopOrStitchLimitWithFailingExportPulsesError`
+     - `exportFailureAtRunEndPulsesErrorNotSuccess`
+     - `failedExportThenRerunFailingPulsesErrorAgain`
+     - `failedExportThenFailingRenamePulsesOncePerAttempt`
+     - `renameDuringRunPulsesNothingUntilTermination`
+   - Isolation and mapping:
+     - `twoWindowModelsPulseIndependently`
      - `hapticKindMapsToSensoryFeedback`
    - Mutations:
      - selection and success swapped;
      - a pulse on a refused insert;
-     - a pulse on `stoppedByUser`;
-     - success emitted after error;
-     - no transition guard;
+     - success on `stoppedByUser`;
+     - success without the eligibility check;
+     - success emitted after error, or before `prepare`;
+     - an "entering `.failed`" guard instead of per-attempt;
      - a frozen serial;
-     - a pulse on any `.applied` move.
+     - a pulse on any `.applied` move;
+     - a pulse on every `programChanged`.
 4. **View wiring** (risky: no). This adds the root `.sensoryFeedback`, removes `StageView`'s, and routes `.onMove` through `dropRows`. No test can fail on the modifier itself, so it is checked by review and on the device (ADR-032).
 5. **Privacy manifest and encryption key** (risky: no). Start from the committed `Info.plist`: the working tree's Xcode edit only stripped its comment and reordered keys.
    - Tests in `ReleaseMetadataTests`:
@@ -139,8 +169,8 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
 
 ## Verification at handover
 
-- Every slice is mutation-checked and recorded. Slice 1 gets `swift-code-reviewer` and a Codex round when green. Each PR gets the Codex handover loop (cap 5).
-- **This brief gets one Codex round before any test,** on the unpinned semantics: the meaning of each D3 event, the stop and stitch-limit question, error/success precedence, the transition rule, and D2's trigger.
+- Every slice is mutation-checked and recorded. Slice 1 gets `swift-code-reviewer` and a Codex round when green. The PR gets the Codex handover loop (cap 5).
+- **Brief review: done 2026-11-05** (1 High, 4 Medium, all adopted; journal). It covered the unpinned semantics: D3's events, stop and stitch limit, precedence, the error rule, and D2's trigger and oracle.
 - Screenshots: the icon in three modes, and every D4 screen. The haptics are checked on the device. No Ink/Stitch check is needed, because DST bytes don't change.
 - For the pre-beta accessibility review:
   - Do haptics duplicate VoiceOver announcements?

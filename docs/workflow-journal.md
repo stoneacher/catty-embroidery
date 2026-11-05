@@ -4427,3 +4427,20 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - not Kids Category, rated 4+.
   - Two more questions went to process instead of to him: whether a stop or the stitch limit gets the success haptic goes to the brief's Codex round, and the uncommitted Xcode edits turned out to be his local signing plus a comment-stripped, key-reordered `Info.plist` with identical content.
 - **Split into two PRs although the whole feature is about 450 lines of non-test code:** the freeze is a format decision and merges on its own, reviewed as risky.
+
+## 2026-11-05 — Release readiness: Codex brief round (1 High, 4 Medium, all adopted)
+
+- **High: the planned freeze census checked keys, and keys aren't the wire format.** `swift-architect`'s census compared recursive JSON keys plus `Mirror` labels. Codex listed same-key changes an old v1 reader would misparse:
+  - a no-payload case's `{}` becoming `null`;
+  - a raw-value or custom-Codable change;
+  - an omitted default-valued field;
+  - a number written differently.
+
+  It also noted that the planned round-trip test proves only that the *new* writer and reader agree. The census now byte-pins a canonical maximal-v1 document (encode == frozen bytes, frozen bytes decode == program), which is ADR-037's own sample-golden precedent; the case switches keep proving coverage. This is the same lesson as the M1 goldens, one layer up: a format is its bytes.
+- **Medium ×3, all in the haptic map, all from reading the code rather than the plan:**
+  - `onRunTerminated` carries no completion reason, so the "stop gets no success" rule had no seam. It becomes `(RunCompletion, EmbroideryStream)`.
+  - `.ready` is not "shareable": ADR-026's `count > 1` gate isn't consulted by `prepare`, so a one-stitch run would have pulsed success on an export the UI refuses.
+  - "Error on entering `.failed`" would suppress a *new* failed attempt from an already-failed state, because `name.didSet` keeps `.failed`. Error is now per attempt.
+- **Medium: two PRs for about 450 lines contradicts ADR-041**, which splits only past about 1,500. The architect's reason, letting the freeze merge alone, doesn't need a split: nothing in the feature touches the format before the merge. Now one PR, and the ADR-037 amendment will say it supersedes the 2026-10-18 trigger rather than adding a second one.
+- **Confirmed, not changed:** the privacy reason codes (CA92.1, C617.1, DDA9.1; not 3B52.1), per-window isolation under ADR-023, and `.sensoryFeedback`'s trigger semantics for an optional `Equatable`. Codex also agreed, from the HIG, that a user stop and the stitch limit get no success. That answered the question deliberately routed to this round instead of to Sebastian.
+- **Delegation note:** the architect had read the code carefully (its facts all held), yet three of the four mediums are code facts it didn't connect to the semantics it proposed. Planning by one agent and checking by another vendor caught what neither framing alone did.
