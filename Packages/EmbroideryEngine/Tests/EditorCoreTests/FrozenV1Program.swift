@@ -159,6 +159,10 @@ enum FrozenV1 {
     static let bricks: [Brick] = simpleBricks + compositeBricks + templateBricksAtFreeze
         + formulas.map { .setVariable(name: "v", to: $0) }
 
+    /// `Program()` as v1 writes it: an empty name, no scenes, no variables. Frozen in
+    /// `FrozenV1Root.json`, the root's defaults being out of the maximal program's reach.
+    static let rootDefaults = Program()
+
     /// Default-valued fields sit beside non-default ones, so a coding that omitted a field at
     /// its default would show in the bytes (Codex slice round, Low).
     static let program = Program(

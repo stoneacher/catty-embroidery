@@ -4644,3 +4644,15 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Low: a successful rename re-preparation had no test.** **Fixed:** `successfulRenameAfterAFinishedRunPulsesNothing`. It is green on the code and red on Codex's mutant (success on a ready rename), judged by the test's own result line.
 - **Codex confirmed:** the haptic implementation (ordering, precedence, eligibility, serials, per-window ownership, drop routing, a single root modifier), the release metadata, and the rest of the process text.
 - **Code changed, so a verification round follows** (ADR-041 stop condition: no code change, or severity falling twice).
+
+## 2026-11-07 — Release readiness PR #90: Codex handover round 2 (highest High, 3 findings, all valid)
+
+- **All three round-1 fixes verified:**
+  - the palette literals match every `BrickKind.template()` exactly;
+  - `--commit` is valid;
+  - the rename test asserts its premise and kills its mutant.
+- **High: the root `Program` was out of the maximal document's reach.** Its name, scenes and variables are all non-default there, and a `Program` can't nest. **Fixed:** a second frozen document, `FrozenV1Root.json` (`Program()`), with the same two checks as the main one: encode equals the bytes, and decode then re-encode. A `Program` that omits an empty `name` turns *only* the new test red, and the maximal tests stay green under it. That is exactly Codex's point, now executed.
+- **Medium: `/release` item 8 could still pick the pull request's release-build run for the same commit,** because the workflow runs on PRs and tags. **Fixed:** `--event push --branch <tag>`, printing the event, branch and SHA to check. The command form was smoke-tested against a real run.
+- **Medium, about the process rather than the code: I had ticked four unmet criteria after "carrying" them.** The journal's own words, "reworded rather than met", gave it away. ADR-032 invariant 1 forbids exactly that. **Fixed:** the original wording is kept, and the boxes now read **waived, carried to `/release`; Sebastian, 2026-11-07**. The verification section's planned "three icon screenshots, every D4 screen" got an "as done" note.
+  - **Lesson:** a waiver has to look like a waiver. A ticked box with a caveat in italics reads as "met" to anyone who greps for unticked boxes, which is exactly what `/finish` does.
+- **Severity history:** High → High (flat). Round 2 changed code, so round 3 follows (ADR-041: the loop ends on a round with no code change, two falling severities, or the cap of 5).

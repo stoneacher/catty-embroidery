@@ -95,7 +95,9 @@ Record the findings in the journal, and fix or track each one.
 - So tag the commit being archived, push the tag, and watch it:
   - `git tag release/v<version>-<build> <commit>`
   - `git push origin release/v<version>-<build>`
-  - Find **this tag's** run, not the newest one: GitHub may not have registered the new run yet, and `--limit 1` alone would return the previous release build (Codex handover round 1, Medium). Repeat until it prints an ID: `gh run list --workflow release-build.yml --commit $(git rev-list -n 1 release/v<version>-<build>) --json databaseId,headSha -q '.[0].databaseId'`. Then run `gh run watch <id> --exit-status`, and check that the run's `headSha` is the tagged commit.
+  - Find **this tag's** run, not the newest one. The workflow also runs on pull requests, so the same commit can already have a PR run, and `--limit 1` alone may return an older build (Codex handover rounds 1 and 2, Medium). Repeat until it prints a run:
+    `gh run list --workflow release-build.yml --event push --branch release/v<version>-<build> --json databaseId,event,headBranch,headSha -q '.[0] | "\(.databaseId) \(.event) \(.headBranch) \(.headSha)"'`
+  - Check the printed line: event `push`, branch the tag, SHA the tagged commit (`git rev-list -n 1 release/v<version>-<build>`). Then run `gh run watch <id> --exit-status`.
 
   The tag also records exactly what was uploaded. Creating and pushing the tag is outward-facing, so confirm it with Sebastian first.
 

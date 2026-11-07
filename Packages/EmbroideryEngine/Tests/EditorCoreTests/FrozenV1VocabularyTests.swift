@@ -57,6 +57,18 @@ struct FrozenV1VocabularyTests {
         #expect(try ProgramDocument.encode(decoded) == frozen)
     }
 
+    /// The root's own defaults. `Program` cannot nest, so the maximal document can't hold an
+    /// empty root name or empty `scenes`/`variables`: a coding that omitted those at their
+    /// defaults would pass the maximal document alone (Codex handover round 2, High).
+    @Test("a program at its root defaults encodes to its own frozen bytes, and back")
+    func rootDefaultsMatchFrozenBytes() throws {
+        let frozen = try Self.frozenBytes(named: "FrozenV1Root")
+        #expect(try ProgramDocument.encode(FrozenV1.rootDefaults) == frozen)
+        let decoded = try ProgramDocument.decode(frozen)
+        #expect(decoded == FrozenV1.rootDefaults)
+        #expect(try ProgramDocument.encode(decoded) == frozen)
+    }
+
     @Test("the maximal program holds every case of the v1 vocabulary")
     func maximalProgramCoversEveryCase() {
         let census = FrozenV1.Census(FrozenV1.program)
@@ -124,10 +136,10 @@ struct FrozenV1VocabularyTests {
 
     // MARK: Helpers
 
-    static func frozenBytes() throws -> Data {
+    static func frozenBytes(named name: String = "FrozenV1") throws -> Data {
         let url = try #require(
-            Bundle.module.url(forResource: "FrozenV1", withExtension: "json", subdirectory: "Resources"),
-            "FrozenV1.json is missing from the test bundle"
+            Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Resources"),
+            "\(name).json is missing from the test bundle"
         )
         return try Data(contentsOf: url)
     }

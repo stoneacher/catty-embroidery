@@ -85,16 +85,16 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
   - an omitted default field;
   - a changed number shape;
   - a new stored field.
-- [x] ADR-037 carries the trigger as an amendment that supersedes the 2026-10-18 one: the freeze fired when this feature merged, with its date.
+- **[waived, carried to `/release`; Sebastian, 2026-11-07]** ADR-037 carries the trigger as an amendment that supersedes the 2026-10-18 one: the freeze fired when this feature merged, with its date.
   *[Amendment written. The freeze date itself is recorded at merge, carried to `/release` item 1 (Sebastian, 2026-11-07).]*
 - [x] `/release` exists, and its first item is the freeze. A dry run reports every item's state. US-331 leaves the backlog as a record bullet.
 - [x] Every event in D3 produces exactly its pulse, and every event outside D3 produces none. A test sweep covers the non-events.
-- [x] No `.sensoryFeedback` remains outside the window root. That's a grep, plus a device check on Sebastian's iPhone: each haptic plays once, none plays at run start, and with two windows (iPad) a pulse plays only for its own window.
+- **[waived, carried to `/release`; Sebastian, 2026-11-07]** No `.sensoryFeedback` remains outside the window root. That's a grep, plus a device check on Sebastian's iPhone: each haptic plays once, none plays at run start, and with two windows (iPad) a pulse plays only for its own window.
   *[Grep done: one, at `WindowRootView`. Device check on Sebastian's iPhone 17 Pro, 2026-11-07, build `85fa6a6`: a palette add ticks once, including with the palette sheet covering the root; a finished run gives one success; run start and a user stop give nothing. A reorder drag ticks once per position change (UIKit's own list feedback) plus our tick on the drop; Sebastian keeps it ("feels tactile"). The two-window iPad check is carried to `/release` item 4 (no iPad at hand; the logic is pinned by `twoWindowModelsPulseIndependently`; Sebastian, 2026-11-07).]*
 - [x] `PrivacyInfo.xcprivacy` ships in the app bundle, with the D6 contents, and `ITSAppUsesNonExemptEncryption` reads `false`, all checked by hosted tests.
-- [x] The app icon appears on the home screen in light, dark and tinted modes (simulator screenshots), and its label reads "Embroidery" (`ReleaseMetadataTests`).
+- **[waived, carried to `/release`; Sebastian, 2026-11-07]** The app icon appears on the home screen in light, dark and tinted modes (simulator screenshots), and its label reads "Embroidery" (`ReleaseMetadataTests`).
   *[Label done: `displayNameIsEmbroidery`, and seen on the home screen. Icon seen in light mode only (Sebastian's screenshot); dark and tinted are in the built `Assets.car`; their screenshots are carried to `/release` item 4 (Sebastian, 2026-11-07).]*
-- [x] The pseudo-loc and RTL pass has run on every listed screen, with screenshots. Every finding is fixed or tracked, and the stage is shown unmirrored under RTL.
+- **[waived, carried to `/release`; Sebastian, 2026-11-07]** The pseudo-loc and RTL pass has run on every listed screen, with screenshots. Every finding is fixed or tracked, and the stage is shown unmirrored under RTL.
   *[Ran on the project list, script, palette and stage (journal 2026-11-07); the stage is unmirrored; US-319 tracked. The parameter editors and the iPad split are carried to `/release` item 5 (Sebastian, 2026-11-07).]*
 
 ## Slices and test-first outline
@@ -185,7 +185,7 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
 
 - Every slice is mutation-checked and recorded. Slice 1 gets `swift-code-reviewer` and a Codex round when green. The PR gets the Codex handover loop (cap 5).
 - **Brief review: done 2026-11-05** (1 High, 4 Medium, all adopted; journal). It covered the unpinned semantics: D3's events, stop and stitch limit, precedence, the error rule, and D2's trigger and oracle.
-- Screenshots: the icon in three modes, and every D4 screen. The haptics are checked on the device. No Ink/Stitch check is needed, because DST bytes don't change.
+- Screenshots: the icon in three modes, and every D4 screen. The haptics are checked on the device. No Ink/Stitch check is needed, because DST bytes don't change. *[As done: the icon in light mode and the D4 screens listed in the slice-7 journal entry. Dark and tinted, the parameter editors and the iPad split are waived to `/release`, as are the two-window haptics. The criteria above are marked waived, not met (Codex handover round 2, Medium).]*
 - For the pre-beta accessibility review:
   - Do haptics duplicate VoiceOver announcements?
   - Does the RTL stage read correctly with VoiceOver's directional pan actions?
