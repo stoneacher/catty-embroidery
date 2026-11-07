@@ -1456,6 +1456,377 @@
                   }
                 },
                 {
+                  "moveNSteps" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "turnLeft" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 15
+                      }
+                    }
+                  }
+                },
+                {
+                  "turnRight" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 15
+                      }
+                    }
+                  }
+                },
+                {
+                  "pointInDirection" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 90
+                      }
+                    }
+                  }
+                },
+                {
+                  "placeAt" : {
+                    "x" : {
+                      "number" : {
+                        "_0" : 100
+                      }
+                    },
+                    "y" : {
+                      "number" : {
+                        "_0" : 200
+                      }
+                    }
+                  }
+                },
+                {
+                  "setX" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 100
+                      }
+                    }
+                  }
+                },
+                {
+                  "setY" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 200
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeXBy" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeYBy" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "arc" : {
+                    "degrees" : {
+                      "number" : {
+                        "_0" : 360
+                      }
+                    },
+                    "direction" : {
+                      "left" : {
+
+                      }
+                    },
+                    "radius" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "goThrough" : {
+                    "throughX" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    },
+                    "throughY" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    },
+                    "x" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    },
+                    "y" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "repeatLoop" : {
+                    "times" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "forever" : {
+
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "repeatUntil" : {
+                    "condition" : {
+                      "binary" : {
+                        "_0" : {
+                          "smallerThan" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 1
+                          }
+                        },
+                        "_2" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "forVariableFromTo" : {
+                    "from" : {
+                      "number" : {
+                        "_0" : 1
+                      }
+                    },
+                    "name" : "",
+                    "to" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "wait" : {
+                    "seconds" : {
+                      "number" : {
+                        "_0" : 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "waitUntil" : {
+                    "condition" : {
+                      "binary" : {
+                        "_0" : {
+                          "smallerThan" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 1
+                          }
+                        },
+                        "_2" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "ifThen" : {
+                    "condition" : {
+                      "binary" : {
+                        "_0" : {
+                          "smallerThan" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 1
+                          }
+                        },
+                        "_2" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "ifEnd" : {
+
+                  }
+                },
+                {
+                  "ifElse" : {
+                    "condition" : {
+                      "binary" : {
+                        "_0" : {
+                          "smallerThan" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 1
+                          }
+                        },
+                        "_2" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "elseBranch" : {
+
+                  }
+                },
+                {
+                  "ifEnd" : {
+
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "",
+                    "to" : {
+                      "number" : {
+                        "_0" : 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeVariableBy" : {
+                    "name" : "",
+                    "value" : {
+                      "number" : {
+                        "_0" : 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "stitch" : {
+
+                  }
+                },
+                {
+                  "setThreadColor" : {
+                    "hex" : "#ff0000"
+                  }
+                },
+                {
+                  "runningStitch" : {
+                    "length" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "zigZagStitch" : {
+                    "length" : {
+                      "number" : {
+                        "_0" : 2
+                      }
+                    },
+                    "width" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "tripleStitch" : {
+                    "length" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "sewUp" : {
+
+                  }
+                },
+                {
+                  "stopRunningStitch" : {
+
+                  }
+                },
+                {
+                  "writeEmbroideryToFile" : {
+                    "name" : "embroidery.dst"
+                  }
+                },
+                {
                   "setVariable" : {
                     "name" : "v",
                     "to" : {

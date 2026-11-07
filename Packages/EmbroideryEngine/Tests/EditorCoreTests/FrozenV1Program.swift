@@ -111,7 +111,53 @@ enum FrozenV1 {
         .writeEmbroideryToFile(name: sentinel)
     ]
 
-    static let bricks: [Brick] = simpleBricks + compositeBricks + formulas.map { .setVariable(name: "v", to: $0) }
+    /// The palette's default payloads as they were when v1 froze (2026-11-07), copied as literals
+    /// from `BrickDefaults` and `BrickKind.template()` rather than read from them. A custom coding
+    /// that omitted a field only when it equals its default would otherwise pass: the
+    /// palette-created `"embroidery.dst"` and the empty variable name were in no other brick (Codex
+    /// handover round 1, High). Literals, so a later change of a palette default isn't mistaken for
+    /// a format change.
+    static let templateBricksAtFreeze: [Brick] = [
+        .moveNSteps(.number(10)),
+        .turnLeft(.number(15)),
+        .turnRight(.number(15)),
+        .pointInDirection(.number(90)),
+        .placeAt(x: .number(100), y: .number(200)),
+        .setX(.number(100)),
+        .setY(.number(200)),
+        .changeXBy(.number(10)),
+        .changeYBy(.number(10)),
+        .arc(direction: .left, radius: .number(10), degrees: .number(360)),
+        .goThrough(throughX: .number(0), throughY: .number(0), x: .number(0), y: .number(0)),
+        .repeatLoop(times: .number(10)),
+        .loopEnd,
+        .forever,
+        .loopEnd,
+        .repeatUntil(condition: .binary(.smallerThan, .number(1), .number(2))),
+        .loopEnd,
+        .forVariableFromTo(name: "", from: .number(1), to: .number(10)),
+        .loopEnd,
+        .wait(seconds: .number(1)),
+        .waitUntil(condition: .binary(.smallerThan, .number(1), .number(2))),
+        .ifThen(condition: .binary(.smallerThan, .number(1), .number(2))),
+        .ifEnd,
+        .ifElse(condition: .binary(.smallerThan, .number(1), .number(2))),
+        .elseBranch,
+        .ifEnd,
+        .setVariable(name: "", to: .number(1)),
+        .changeVariableBy(name: "", value: .number(1)),
+        .stitch,
+        .setThreadColor(hex: "#ff0000"),
+        .runningStitch(length: .number(10)),
+        .zigZagStitch(length: .number(2), width: .number(10)),
+        .tripleStitch(length: .number(10)),
+        .sewUp,
+        .stopRunningStitch,
+        .writeEmbroideryToFile(name: "embroidery.dst")
+    ]
+
+    static let bricks: [Brick] = simpleBricks + compositeBricks + templateBricksAtFreeze
+        + formulas.map { .setVariable(name: "v", to: $0) }
 
     /// Default-valued fields sit beside non-default ones, so a coding that omitted a field at
     /// its default would show in the bytes (Codex slice round, Low).

@@ -4633,3 +4633,14 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - No `swift-documenter` pass: the feature changes no public API of the engine package (slice 1 is test-only).
   - CI green on `85fa6a6`.
 - **The Codex handover loop starts now,** with the PR marked ready.
+
+## 2026-11-07 — Release readiness PR #90: Codex handover round 1 (highest High, 3 findings, all valid)
+
+- **High: the freeze never saw the palette's default payloads.** The frozen program used hand-picked values. The default `"embroidery.dst"`, the empty variable name, `#ff0000` and the default `1 < 2` condition appeared nowhere. A coding that omitted a field only when it equals its default would pass every freeze test, while an older reader would reject the result as corrupt.
+  - That was the brief's own "omitted default field" case. Slice 1's mutation used `Variable.value == 0`, which the fixture did contain. So the mutation proved the class only where the fixture already had the default.
+  - **Fixed:** `templateBricksAtFreeze`, every palette template's defaults at freeze, copied as literals so a later palette-default change isn't mistaken for a format change. The fixture was regenerated (the freeze fires at merge, so this is still allowed): SHA-256 `d67e2a85…`. The semantic comparison correctly called the change "a format change".
+  - No production mutant was built for the exact Codex case: it would need a custom `Codable` for the 32-case `Brick` enum. The evidence is structural: the default payloads are now in the bytes (`"embroidery.dst"` once, `""` names five times, `#ff0000` once), and a coding that omits them changes those bytes.
+- **Medium: `/release` item 8 could verify the wrong run.** `gh run list --limit 1` right after pushing a tag can return the previous release build. **Fixed:** the item looks up the run by the tagged commit (`--commit`), waits until it exists, and checks `headSha`.
+- **Low: a successful rename re-preparation had no test.** **Fixed:** `successfulRenameAfterAFinishedRunPulsesNothing`. It is green on the code and red on Codex's mutant (success on a ready rename), judged by the test's own result line.
+- **Codex confirmed:** the haptic implementation (ordering, precedence, eligibility, serials, per-window ownership, drop routing, a single root modifier), the release metadata, and the rest of the process text.
+- **Code changed, so a verification round follows** (ADR-041 stop condition: no code change, or severity falling twice).

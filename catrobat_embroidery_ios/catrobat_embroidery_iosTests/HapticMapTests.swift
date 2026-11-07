@@ -264,6 +264,25 @@ struct HapticMapTests {
         #expect(writer.written.last?.name.value.hasPrefix("Later") == true)
     }
 
+    /// A rename after a finished run re-prepares the export (ADR-038), and a successful
+    /// re-preparation is not a completed run: ADR-052 allows success only at `.programFinished`
+    /// (Codex handover round 1, Low).
+    @Test("a rename that re-prepares successfully after a finished run pulses nothing")
+    func successfulRenameAfterAFinishedRunPulsesNothing() async {
+        let writer = RecordingDSTFileWriter()
+        let model = await Self.runningWindow(writer: writer)
+        model.runner.apply(Self.terminal(.programFinished, Self.stitches(3)))
+        let afterRun = model.haptic
+        #expect(afterRun?.kind == .success, "the fixture's run must have finished with a success")
+        let writesBefore = writer.written.count
+
+        model.nameDraft = "Renamed"
+        model.commitName()
+
+        #expect(writer.written.count == writesBefore + 1, "the rename must really re-prepare")
+        #expect(model.haptic == afterRun)
+    }
+
     // MARK: Isolation and mapping
 
     @Test("two windows pulse independently")

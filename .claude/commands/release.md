@@ -95,7 +95,7 @@ Record the findings in the journal, and fix or track each one.
 - So tag the commit being archived, push the tag, and watch it:
   - `git tag release/v<version>-<build> <commit>`
   - `git push origin release/v<version>-<build>`
-  - `gh run list --workflow release-build.yml --limit 1`, then `gh run watch <id> --exit-status`
+  - Find **this tag's** run, not the newest one: GitHub may not have registered the new run yet, and `--limit 1` alone would return the previous release build (Codex handover round 1, Medium). Repeat until it prints an ID: `gh run list --workflow release-build.yml --commit $(git rev-list -n 1 release/v<version>-<build>) --json databaseId,headSha -q '.[0].databaseId'`. Then run `gh run watch <id> --exit-status`, and check that the run's `headSha` is the tagged commit.
 
   The tag also records exactly what was uploaded. Creating and pushing the tag is outward-facing, so confirm it with Sebastian first.
 
