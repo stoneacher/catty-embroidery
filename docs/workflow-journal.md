@@ -4525,3 +4525,34 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **The architect's open question is answered by a mutation.** A new `.xcprivacy` file in the synchronized folder *is* copied into the bundle with no pbxproj change. Moving it one level up, outside the folder, turned all three manifest tests red.
 - **Mutations: 4, all red**, each killed by its intended test: manifest outside the folder, key removed, tracking `true`, an extra boot-time category.
 - **Sebastian's working-tree `Info.plist` (Xcode's comment-stripped, key-reordered copy, identical in content) was saved to the session scratchpad before the committed file was restored for this slice.** His pbxproj signing edit stays untouched and unstaged.
+
+## 2026-11-07 — Release readiness slice 6: the icon took a detour through three renderers and ended in Icon Composer
+
+- **Planned (brief D5):** convert Catroid's `embroideryDesigner` vector adaptive icon to PNGs by script, and reject Icon Composer because it needs a pbxproj change.
+- **What happened instead:**
+  - The converter was built (VectorDrawable `pathData` is SVG path syntax, so translation is mechanical). Its first renderer, Quick Look (`qlmanage`), **fills transparent SVG areas with white**: `sips` still reported `hasAlpha: yes`, but the dark and tinted variants had an opaque white backdrop. A visual preview caught this; the metadata did not.
+  - The second renderer, AppKit's native SVG, **skips `<use>`** and **traps on an RGB bitmap without alpha**.
+  - A `--` inside an XML comment made the SVG invalid.
+  - The architect's plan said "white glyph". Catroid's cat is actually **black with white stitching**, so a dark or tinted variant cannot just be the glyph on a transparent background: on iOS's dark backdrop it disappears.
+- **Sebastian then stopped the PNG route** and built the icon himself in Icon Composer. Claude supplied SVG layers:
+  - Catroid's original split into body, stitching and the two eyes, all in one frame;
+  - a modern redraw (dropped);
+  - stitching variants (round dots, a single collar seam between two neck nodes Sebastian marked on the body path);
+  - the body with the eyes cut out by even-odd fill (no masks), pupils kept.
+
+  He chose the eyes-cut body, without stitching.
+- **No project change was needed after all:** `ASSETCATALOG_COMPILER_APPICON_NAME` was already `AppIcon`, so an `AppIcon.icon` in the synchronized folder replaced the deleted `AppIcon.appiconset` by itself. D5's reason for rejecting Icon Composer didn't hold.
+- **Checked, not assumed:** the built app's `Assets.car` carries the layered stack for iOS 26 *and* flat light, dark and tinted 1024 px images plus `AppIcon60x60@2x.png` for iOS 17–25, which the `.icon` alone doesn't reach.
+- **Lesson:** the design loop ran fastest when Claude produced layers and previews, and the human made the visual choices in the tool built for it. The automated PNG pipeline was effort spent before the visual direction was settled.
+
+## 2026-11-07 — The home screen showed "catrobat_embro…": a release defect found in a screenshot meant for the icon
+
+- **Sebastian's screenshot of the new icon also showed its label, "catrobat_embro…".** There was no `CFBundleDisplayName`, so iOS fell back to the target name. No test, brief item or `/release` step covered it. It would have reached TestFlight.
+- **Decision (Sebastian):** "Embroidery". Catroid's flavor name, "Embroidery Designer", is truncated at about 12 characters; the store listing keeps the full name. It is set in `Info.plist` and localized in `InfoPlist.xcstrings` with a translator comment.
+- **TDD:** `displayNameIsEmbroidery` was red (`nil`), then green. It checks both the `Info.plist` value and the localized catalog value; mutating either one alone to "Embroidered" turns it red.
+
+## 2026-11-07 — A test filter that matched nothing reported "TEST SUCCEEDED", twice
+
+- **What happened:** a mutation run used `-only-testing:…/ReleaseMetadataTests/displayNameIsEmbroidery`. For a Swift Testing function that filter matches **no test**, and xcodebuild still prints `** TEST SUCCEEDED **`. The mutant looked like a survivor. I then rewrote the test and documented a false cause ("`object(forInfoDictionaryKey:)` can't see the catalog"). The rerun used the same filter and "survived" again.
+- **Caught because no `Test case '…displayNameIsEmbroidery()'` line appeared.** With the suite-level filter (`…/ReleaseMetadataTests`) the same mutant is red. The false comment was corrected before commit.
+- **Rule from here:** a mutation result counts only if the log shows the target test's own result line. A green summary with zero matching tests is not a survivor. This is the third time this feature that the classifier rather than the code produced a wrong mutation result (slice 1's restore list, slice 3's parser).

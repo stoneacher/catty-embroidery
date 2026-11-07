@@ -50,6 +50,20 @@ struct ReleaseMetadataTests {
         #expect(Bundle.main.object(forInfoDictionaryKey: "ITSAppUsesNonExemptEncryption") as? Bool == false)
     }
 
+    /// The home-screen label (Sebastian, 2026-11-07). Without a display name iOS falls back to the
+    /// bundle name and shows "catrobat_embro…". Catroid's flavor is "Embroidery Designer", which
+    /// iOS cuts off at about 12 characters, so the label is the short form and the store listing
+    /// keeps the full name.
+    ///
+    /// Both values are checked, because they are separate files: the `Info.plist` key, and the
+    /// `InfoPlist.xcstrings` entry a translated home screen reads. A catalog value of
+    /// "Embroidered" beside an unchanged `Info.plist` turns this red.
+    @Test("the home-screen label is \"Embroidery\", in Info.plist and in its localized form")
+    func displayNameIsEmbroidery() {
+        #expect(Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String == "Embroidery")
+        #expect(Bundle.main.localizedInfoDictionary?["CFBundleDisplayName"] as? String == "Embroidery")
+    }
+
     // MARK: Helpers
 
     private static var manifestURL: URL? {

@@ -47,6 +47,11 @@
 	     (ADR-011), so export compliance needs no documentation. Pinned by ReleaseMetadataTests. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- The home-screen label (Sebastian, 2026-11-07): the short form of Catroid's flavor name
+	     "Embroidery Designer", which iOS would truncate. Localized in InfoPlist.xcstrings;
+	     pinned by ReleaseMetadataTests. -->
+	<key>CFBundleDisplayName</key>
+	<string>Embroidery</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

@@ -33,7 +33,9 @@ Work through the items in order. **Never tick an item you haven't verified this 
 
 ## 4. App icon (Claude-run)
 
-- Build and install on the simulator, then screenshot the home screen in light, dark and tinted appearance. The icon must show in all three.
+- The icon is `AppIcon.icon`, an Icon Composer file (Release readiness D5, as reversed on 2026-11-07).
+- Build and install on the simulator, then screenshot the home screen. Switch appearance with long-press › Edit › Customize: light, dark and tinted. The icon must show in all three, with the label "Embroidery".
+- **On the first release, and after any Xcode upgrade,** run once on an iOS 17 or 18 simulator as well. There the icon comes from the flat images Xcode generates from the `.icon`, not from the `.icon` itself.
 
 ## 5. Pseudo-localization and RTL pass (Claude-run)
 

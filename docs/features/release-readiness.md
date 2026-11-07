@@ -61,6 +61,15 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
   - The light variant is the gradient background with the white glyph. Dark and tinted are derived from the same layers.
   - Provenance (AGPL-3.0, files, commit) is recorded, and the conversion script is kept in `scripts/`.
   - Icon Composer is rejected: it needs pbxproj changes.
+  - *[Reversed 2026-11-07: the icon is Sebastian's Icon Composer file, `AppIcon.icon`.]*
+    - **Source:** one layer, Catroid's original cat body with the eye whites cut out and the pupils kept, no stitching (AGPL-3.0, Catroid commit `0cd3e131b`, `embroideryDesigner` `ic_launcher_foreground.xml`). Fill, shadow and translucency are set in Icon Composer.
+    - **No project change was needed after all.** The target's `ASSETCATALOG_COMPILER_APPICON_NAME` was already `AppIcon`, and the synchronized folder group made `AppIcon.icon` a member by itself. The `AppIcon.appiconset` was deleted.
+    - **Older systems are covered:** for iOS 17–25, Xcode generates flat light, dark and tinted 1024 px images and `AppIcon60x60@2x.png`/`AppIcon76x76@2x~ipad.png` from the `.icon` (checked in the built app's `Assets.car` and `CFBundleIcons`).
+    - The PNG route (a converter script and three PNGs) was built, then dropped unmerged. Exploration in the journal.
+- **D5b. The home-screen label is "Embroidery"** (Sebastian, 2026-11-07).
+  - Until now there was no `CFBundleDisplayName`, so iOS showed the target name, "catrobat_embro…".
+  - Catroid's flavor name, "Embroidery Designer", would be truncated at about 12 characters, so the label is the short form, and the store listing keeps the full name.
+  - It is set in `Info.plist` and localized in `InfoPlist.xcstrings` with a translator comment.
 - **D6. The privacy manifest declares no tracking and no collected data.** It lists exactly the required-reason APIs the release code uses: `UserDefaults` (CA92.1, the app-private last-opened project) and file metadata (C617.1 for the app container, DDA9.1 because modification dates are displayed). 3B52.1 would be wrong: no file comes through a document picker. All of this was confirmed in the Codex round.
   - `ITSAppUsesNonExemptEncryption = NO`.
   - Age rating 4+, not Kids Category.
@@ -81,7 +90,7 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
 - [ ] Every event in D3 produces exactly its pulse, and every event outside D3 produces none. A test sweep covers the non-events.
 - [ ] No `.sensoryFeedback` remains outside the window root. That's a grep, plus a device check on Sebastian's iPhone: each haptic plays once, none plays at run start, and with two windows (iPad) a pulse plays only for its own window.
 - [ ] `PrivacyInfo.xcprivacy` ships in the app bundle, with the D6 contents, and `ITSAppUsesNonExemptEncryption` reads `false`, all checked by hosted tests.
-- [ ] The app icon appears on the home screen in light, dark and tinted modes (simulator screenshots).
+- [ ] The app icon appears on the home screen in light, dark and tinted modes (simulator screenshots), and its label reads "Embroidery" (`ReleaseMetadataTests`).
 - [ ] The pseudo-loc and RTL pass has run on every listed screen, with screenshots. Every finding is fixed or tracked, and the stage is shown unmirrored under RTL.
 
 ## Slices and test-first outline
@@ -153,7 +162,10 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
      - the key removed;
      - tracking set to true;
      - an extra category.
-6. **App icon** (risky: no). Three PNGs and `Contents.json`, verified by build and screenshots.
+6. **App icon and display name** (risky: no). `AppIcon.icon` (D5, as reversed) and `CFBundleDisplayName` (D5b).
+   - Test: `displayNameIsEmbroidery` checks both the `Info.plist` value and the localized catalog value.
+   - Mutations: "Embroidered" in the catalog only, and in `Info.plist` only. Both are red.
+   - The icon itself is verified by build and screenshots.
 7. **Pseudo-loc and RTL audit, with fixes** (risky only if a fix touches the stage transform). A fix in code gets a red presentation test first.
    - The stage-independent-of-`layoutDirection` test is written only if the canvas reads that environment. Otherwise it could not fail, so it is skipped and the reason recorded.
    - Optional: a lint that every multi-argument catalog entry uses positional specifiers. It counts only after a mutation shows it red.
