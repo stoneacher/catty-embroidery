@@ -95,9 +95,11 @@ Record the findings in the journal, and fix or track each one.
 - So tag the commit being archived, push the tag, and watch it:
   - `git tag release/v<version>-<build> <commit>`
   - `git push origin release/v<version>-<build>`
-  - Find **this tag's** run, not the newest one. The workflow also runs on pull requests, so the same commit can already have a PR run, and `--limit 1` alone may return an older build (Codex handover rounds 1 and 2, Medium). Repeat until it prints a run:
-    `gh run list --workflow release-build.yml --event push --branch release/v<version>-<build> --json databaseId,event,headBranch,headSha -q '.[0] | "\(.databaseId) \(.event) \(.headBranch) \(.headSha)"'`
-  - Check the printed line: event `push`, branch the tag, SHA the tagged commit (`git rev-list -n 1 release/v<version>-<build>`). Then run `gh run watch <id> --exit-status`.
+  - Find **this tag's** run, not the newest one. The workflow also runs on pull requests, so the same commit can already have a PR run, and `--limit 1` alone may return an older build (Codex handover rounds 1–3).
+    - Query by commit and event, then match the tag in the output; nothing then depends on `--branch` accepting a tag name:
+      `sha=$(git rev-list -n 1 release/v<version>-<build>)`
+      `gh run list --workflow release-build.yml --event push --commit "$sha" --json databaseId,headBranch,headSha -q '.[] | select(.headBranch == "release/v<version>-<build>") | .databaseId'`
+    - Repeat until it prints an ID, then run `gh run watch <id> --exit-status`.
 
   The tag also records exactly what was uploaded. Creating and pushing the tag is outward-facing, so confirm it with Sebastian first.
 

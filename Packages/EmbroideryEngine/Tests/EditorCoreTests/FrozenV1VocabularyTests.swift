@@ -31,22 +31,7 @@ import Testing
 struct FrozenV1VocabularyTests {
     @Test("encoding the maximal v1 program gives exactly the frozen bytes")
     func encodingTheMaximalV1ProgramMatchesFrozenBytes() throws {
-        let frozen = try Self.frozenBytes()
-        let encoded = try ProgramDocument.encode(FrozenV1.program)
-        if encoded != frozen {
-            let seen = FileManager.default.temporaryDirectory
-                .appendingPathComponent("FrozenV1-seen-\(UUID().uuidString).json")
-            try? encoded.write(to: seen)
-            let presentationOnly = (try? JSONValue.sameValues(encoded, frozen)) ?? false
-            Issue.record("""
-            The v1 bytes changed (\(presentationOnly
-                ? "presentation only: same JSON values, spelled differently"
-                : "the JSON values differ: this is a format change")). \
-            What this build writes is at \(seen.path). \
-            Only a presentation-only difference may replace FrozenV1.json, in a journaled commit; \
-            a format change is a v2 (ADR-037).
-            """)
-        }
+        try Self.expectFrozen(ProgramDocument.encode(FrozenV1.program), fixture: "FrozenV1")
     }
 
     @Test("the frozen bytes decode to the maximal v1 program, and re-encode to themselves")
@@ -63,7 +48,7 @@ struct FrozenV1VocabularyTests {
     @Test("a program at its root defaults encodes to its own frozen bytes, and back")
     func rootDefaultsMatchFrozenBytes() throws {
         let frozen = try Self.frozenBytes(named: "FrozenV1Root")
-        #expect(try ProgramDocument.encode(FrozenV1.rootDefaults) == frozen)
+        try Self.expectFrozen(ProgramDocument.encode(FrozenV1.rootDefaults), fixture: "FrozenV1Root")
         let decoded = try ProgramDocument.decode(frozen)
         #expect(decoded == FrozenV1.rootDefaults)
         #expect(try ProgramDocument.encode(decoded) == frozen)
@@ -135,6 +120,27 @@ struct FrozenV1VocabularyTests {
     }
 
     // MARK: Helpers
+
+    /// Compares freshly encoded bytes with a frozen fixture. On a mismatch it writes what it saw
+    /// to a temporary file and says whether the difference is presentation only: the message a
+    /// replacement commit must quote (ADR-037, `/release` item 1). Shared by every frozen
+    /// fixture, so each one has that lawful way out (Codex handover round 3).
+    static func expectFrozen(_ encoded: Data, fixture name: String) throws {
+        let frozen = try frozenBytes(named: name)
+        guard encoded != frozen else { return }
+        let seen = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(name)-seen-\(UUID().uuidString).json")
+        try? encoded.write(to: seen)
+        let presentationOnly = (try? JSONValue.sameValues(encoded, frozen)) ?? false
+        Issue.record("""
+        The v1 bytes of \(name).json changed (\(presentationOnly
+            ? "presentation only: same JSON values, spelled differently"
+            : "the JSON values differ: this is a format change")). \
+        What this build writes is at \(seen.path). \
+        Only a presentation-only difference may replace \(name).json, in a journaled commit; \
+        a format change is a v2 (ADR-037).
+        """)
+    }
 
     static func frozenBytes(named name: String = "FrozenV1") throws -> Data {
         let url = try #require(
