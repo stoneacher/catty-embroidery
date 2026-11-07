@@ -16,7 +16,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 004 | Stack | Minimum iOS 17.0. | Superseded by 002 |
 | 005 | DST | Catroid is the DST source of truth; Catty fixtures are goldens. | Superseded by 012 |
 | 006 | App architecture | `@Observable` MVVM on `@MainActor`, no TCA; one `apply` funnel; injected side effects; whole-`Program` assertions. | Amended (036, 033) |
-| 007 | Stage | Centre origin, y-up, 500×500 pt stage, 1 pt = 0.2 mm; degrees with 0° = up. The stage does not bound engine input. | Active |
+| 007 | Stage | Centre origin, y-up, 500×500 pt stage, 1 pt = 0.2 mm; degrees with 0° = up. The stage does not bound engine input, and never mirrors under RTL. | Active, amended |
 | 008 | Program model | Flat brick lists with control blocks — loops, and Ifs with an optional else divider; a closer ends only its own family; a block moves as one balanced unit. | Active, amended (editor verbs: 045) |
 | 009 | Stage | SwiftUI `Canvas`, batched paths, baked settled raster. | Superseded by 043 |
 | 010 | App architecture | Universal, iPhone-first, size-class adaptive navigation. | Amended (039) |
@@ -100,6 +100,12 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 **Context**: DST units are 0.1 mm, and the engine's pixel→unit factor of 2.0 means 1 stage point = 0.2 mm — stage size determines the *physical* embroidered size, bounded by real hoops (~100×100 mm consumer machines). US-102/US-104 and the M2 virtual needle bake in a coordinate convention long before any UI exists.
 **Decision**: Center origin, y-up, fixed virtual stage of 500×500 points (≈ 100×100 mm hoop at 1 pt = 2 DST units = 0.2 mm). The engine applies **no y-flip** when converting to DST units (matching both references); flipping for screen display is purely a rendering concern in M3. Angle convention: degrees, 0° = up (Catroid convention; x via sin, y via cos).
 **Consequences**: Engine domain types carry this space explicitly; the M3 canvas, zoom math, and export size validation inherit a deliberate choice instead of an accident.
+
+**Amendment (2026-11-07, Release readiness slice 7) — the stage never mirrors under right-to-left layout.** The stage is a physical plane (+x to the machine's right, y up), so an RTL interface must not flip what will be embroidered.
+- **The pin covers:** the canvas, the gesture recognisers and the directional pan actions.
+- **The UI around the stage does mirror**: toolbars, script rows and indentation, labels and counters.
+- **Evidence:** Arc Flower (asymmetric: its stem bows to one side), run with `-AppleTextDirection YES -NSForceRightToLeftWritingDirection YES` and without, draws the same image (`/release` item 5, journal 2026-11-07).
+- **Why no test:** no code in the app or the engine reads `layoutDirection`, and SwiftUI doesn't flip `Canvas` drawing on its own. A test pinning it could only fail if someone added a flip. The `/release` RTL pass re-checks it by eye.
 
 ## ADR-008 — Script representation: flat brick list with paired control bricks (2026-07-06)
 **Context**: Catroid scripts are flat ordered brick lists where loops are begin/end brick pairs rendered by indentation; a nested-tree model would force custom nested drag-and-drop in SwiftUI (a multi-week build), whereas a flat list maps directly onto `List` + `.onMove` (free reorder, free VoiceOver reorder actions, free swipe-to-delete).

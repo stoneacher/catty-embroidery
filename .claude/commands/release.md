@@ -64,6 +64,14 @@ Screens:
 
 Every finding is fixed or tracked before upload.
 
+**Known limits of these flags** (first run, 2026-11-07). Don't file these as defects:
+- **(a) and (b) break format strings before substitution.** Rows with a plural variant render as `[# %#@value@ #]`. Doubled positional formats render as `1$@ × 2$@`, and a title as `@ Design Design`. Normal runs render all of them correctly. Plural resolution itself is covered by `AppStringsTests`.
+- **The app's own name** comes from `InfoPlist.strings`, which (a) doesn't bracket, so "Embroidery" shows unbracketed.
+- **(b) persists doubled defaults:** a new design created during the run is saved under a name like "Design Design". Use a throwaway simulator, or delete it afterwards.
+- **At AX5 the examples sit below the fold:** scroll the project list before tapping a sample.
+- **The parameter editors and the iPad split** were not reached on 2026-11-07. Cover them on the first release run.
+- **Known and tracked:** US-319 (the stage's name field squeezed out at AX4–AX5). It is below the AX1 bar, so not a release blocker.
+
 ## 6. Pre-beta manual accessibility review (human-led): first release only, then when a release adds a screen
 
 The review ADR-041's 2026-10-17 amendment parked until "before beta". It covers:

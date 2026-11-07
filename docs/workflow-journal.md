@@ -4556,3 +4556,26 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **What happened:** a mutation run used `-only-testing:…/ReleaseMetadataTests/displayNameIsEmbroidery`. For a Swift Testing function that filter matches **no test**, and xcodebuild still prints `** TEST SUCCEEDED **`. The mutant looked like a survivor. I then rewrote the test and documented a false cause ("`object(forInfoDictionaryKey:)` can't see the catalog"). The rerun used the same filter and "survived" again.
 - **Caught because no `Test case '…displayNameIsEmbroidery()'` line appeared.** With the suite-level filter (`…/ReleaseMetadataTests`) the same mutant is red. The false comment was corrected before commit.
 - **Rule from here:** a mutation result counts only if the log shows the target test's own result line. A green summary with zero matching tests is not a survivor. This is the third time this feature that the classifier rather than the code produced a wrong mutation result (slice 1's restore list, slice 3's parser).
+
+## 2026-11-07 — Release readiness slice 7: the pseudo-localization and RTL audit found no defect, and three tool artifacts
+
+- **Procedure as written in `/release` item 5**, on the iPhone 17 simulator, driven through the XcodeBuildMCP CLI:
+  - (c) RTL on the project list, the Square Coil script and the Arc Flower stage;
+  - (a) `-NSSurroundLocalizedStrings` on the empty script, the project list, the script, the palette and the finished stage, with a scan of each accessibility snapshot for unbracketed strings (about 230 strings);
+  - (b) `-NSDoubleLocalizedStrings` on the script and the stage;
+  - (d) RTL at AX5 on the project list, the script and the stage.
+- **Results:**
+  - **RTL is correct:** rows, indentation guides, toolbars, counters and section headers all mirror. The undo/redo arrows are a system bottom-bar group, so iOS orders and mirrors them.
+  - **The stage does not mirror:** Arc Flower is identical with and without the RTL flags, so ADR-007 gets its planned amendment.
+  - **(a):** no unlocalized string. The only unbracketed ones were the app's own name (`InfoPlist.strings`, which the flag doesn't touch) and user content (a design name).
+  - **(b) and AX5:** everything wraps, with no truncation. The one defect is the stage's name field squeezed out at AX5: that is **US-319, already in the backlog**, now reproduced on the iPhone 17 as well as the 17e. It is below the roadmap's AX1 bar.
+  - The ASCII name field keeps its text left-aligned in RTL. That is content-direction alignment, and correct for a Latin-only DST name.
+- **Three artifacts that would have been mis-filed as defects:**
+  - plural rows rendering as `[# %#@value@ #]` under (a);
+  - doubled positional formats (`Hoop 1$@ × 2$@`, `@ Design Design`) under (b);
+  - a doubled default name persisted into the test project.
+
+  All three are the flags rewriting a format string before substitution. Normal runs render correctly, and `AppStringsTests` covers plural resolution. They are now written into `/release` so the next run doesn't chase them.
+- **The bracket scan, read critically:** an empty scan result was at first indistinguishable from a parser that matched nothing. The scan now prints how many strings it checked. That is the same lesson as slice 3's mutation parser: a check that can't say "I looked at N things" can't be trusted when it says "nothing found".
+- **Gaps, stated:** the parameter editors (tapping a row selected it, but no editor opened under automation) and the iPad split view were not covered. They are carried into the first `/release` run.
+- **No code change in this slice,** so no mutation applies. It is docs only: the ADR-007 amendment, `/release` item 5's known limits, and the brief.

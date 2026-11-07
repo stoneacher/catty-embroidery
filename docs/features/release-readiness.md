@@ -170,6 +170,12 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
    - The stage-independent-of-`layoutDirection` test is written only if the canvas reads that environment. Otherwise it could not fail, so it is skipped and the reason recorded.
    - Optional: a lint that every multi-argument catalog entry uses positional specifiers. It counts only after a mutation shows it red.
    - Budget: 250 lines or less.
+   - *[Done 2026-11-07: no code fix needed.]*
+     - RTL mirrors correctly on the project list, the script and the stage, and the stage itself doesn't mirror (ADR-007 amendment).
+     - Pseudo-loc found no unlocalized string on five screens (about 230 strings).
+     - Double-length and AX5 hold, except US-319, which is already in the backlog and reproduced here on the iPhone 17.
+     - Gaps, carried into `/release` item 5: the parameter editors and the iPad split.
+     - The layout-direction test is skipped, because nothing reads `layoutDirection`. The positional-specifier lint isn't adopted: `AppStringsTests` already covers the literal parts.
 
 ## Verification at handover
 
