@@ -244,8 +244,10 @@ private extension ScriptListView {
                     // every loop body into rungs.
                     .listRowSeparator(.hidden)
             }
+            // Through the app, not straight to the editor, so a drop that moves a row ticks
+            // (ADR-052).
             .onMove { source, toOffset in
-                _ = model.editor.moveRows(fromOffsets: source, toOffset: toOffset)
+                model.dropRows(fromOffsets: source, toOffset: toOffset)
             }
             // No confirmation, even for a whole loop (ADR-035): Undo is one tap away.
             .onDelete { offsets in

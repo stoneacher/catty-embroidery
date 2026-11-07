@@ -1,4 +1,5 @@
 import EditorCore
+import Foundation
 
 /// The brick palette's half of the window state (US-409).
 ///
@@ -31,6 +32,18 @@ extension AppModel {
     func addFromPalette(_ kind: BrickKind) {
         guard let index = editor.insert(kind) else { return }
         palette.inserted(at: index)
+        pulse(.selection)
+    }
+
+    /// The list's reorder drop (`.onMove`), through the app rather than straight to the editor,
+    /// so the drop can tick (Release readiness D3). Only a drop that changes the program does:
+    /// one the editor refuses, or one that puts a row back where it was, is not a move.
+    func dropRows(fromOffsets source: IndexSet, toOffset: Int) {
+        let before = editor.program
+        guard case .applied = editor.moveRows(fromOffsets: source, toOffset: toOffset),
+              editor.program != before
+        else { return }
+        pulse(.selection)
     }
 
     /// `RootView` swapped its navigation container (ADR-023).

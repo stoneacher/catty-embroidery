@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  PrivacyInfo.xcprivacy — Embroidery Designer for iOS
+  Copyright (C) 2026 The Catrobat Team. Licensed under AGPL-3.0.
+
+  Release readiness D6, ADR-011 amendment. The app is fully offline, with no accounts, no
+  analytics and no tracking (ADR-011), so it declares no tracking, no tracking domains and no
+  collected data. Required-reason APIs, exactly those the release code uses:
+
+  - UserDefaults, CA92.1: the last opened project (Projects/LastOpenedProject.swift), read
+    and written by this app only.
+  - File timestamp, C617.1: modification dates of project files inside the app container
+    (Projects/ProjectStoring.swift); DDA9.1: those dates are shown to the user on the project
+    list's rows.
+
+  CACurrentMediaTime appears only in DEBUG capture code (CaptureSession.swift), so the release
+  build declares no system boot time API. `/release` item 3 re-greps this before each upload,
+  and ReleaseMetadataTests pins this file's contents.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+				<string>DDA9.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

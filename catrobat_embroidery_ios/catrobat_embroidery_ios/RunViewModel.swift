@@ -161,7 +161,9 @@ final class RunViewModel {
         consumer = nil
     }
 
-    /// Called once, when a run reaches a terminal state, with the export model it produced.
+    /// Called once, when a run reaches a terminal state, with why it ended and the export model
+    /// it produced. The reason rides along because the haptic map tells a finished run from a
+    /// stopped one (Release readiness D3).
     ///
     /// **A closure here rather than an `.onChange` in a view**, for the reason
     /// `AppModel.select(_:)` already records for the run reset and the fit: the view-side
@@ -171,7 +173,7 @@ final class RunViewModel {
     /// terminated, so the run is what says so.
     ///
     /// `@ObservationIgnored` because it is a wiring detail, not state anyone renders.
-    @ObservationIgnored var onRunTerminated: ((EmbroideryStream) -> Void)?
+    @ObservationIgnored var onRunTerminated: ((RunCompletion, EmbroideryStream) -> Void)?
 
     /// Called whenever a run is thrown away — by `play()` starting a new one, or by
     /// `reset()`.
@@ -206,8 +208,8 @@ final class RunViewModel {
         // measurement behind that wording. What the guard adds is independence from the
         // driver's shape: a second terminal, or a stale one from a discarded run reaching a
         // `.finished` state, is rejected here rather than announced.
-        if wasRunning, let model = run.exportModel {
-            onRunTerminated?(model)
+        if wasRunning, case let .finished(completion) = run.state, let model = run.exportModel {
+            onRunTerminated?(completion, model)
         }
     }
 }

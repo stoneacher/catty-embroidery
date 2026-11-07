@@ -4410,3 +4410,198 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - **Valid, fixed:** "every formula function" overstated a probe of the ten libm functions; the engine has 19 function cases. The wording is narrowed in ADR-046's amendment, its index line and the roadmap.
   - **Rejected as convention:** "undecided"/"owned by US-333 until decided" survive in ADR-051 and the brief, each followed by a dated `*[Decided …]*` annotation. That annotation is the repo's correction form for ADR and brief text (ADR-046's US-323 "*[Fixed …]*", which M5's drift check accepted as the fix for a stale claim), and Codex itself said the effective rule is clear.
 - **Stop condition 1:** the round's changes are wording only. One round, highest severity Low.
+
+## 2026-11-05 — Release readiness planned: swift-architect read the code before the roadmap's wording was trusted
+
+- **The feature:** M6's polish audit (haptic map, pseudo-loc and RTL, icon, App Store prep) plus US-331's format freeze and a `/release` checklist. Brick parity, M6's other half, was already delivered by the Brick backend and Variables features.
+- **`swift-architect` planned it before the brief** (CLAUDE.md, planning phase). Its useful findings were the ones the roadmap's one-line scope couldn't know:
+  - the app already plays haptics the map forbids (`.start`/`.stop` on every run, `StageView.swift:157`);
+  - "success on export" has no event of its own, because export is eager at run end (ADR-026) and a `ShareLink` reports nothing back, so run-complete *is* export success;
+  - reorder drops bypass `AppModel`;
+  - Catroid has no 1024 px icon, only a vector adaptive icon that converts mechanically;
+  - the privacy manifest needs exactly two required-reason categories (`UserDefaults`, file timestamps). The only boot-time API is DEBUG-only.
+- **Sebastian's decisions** (`AskUserQuestion`, four questions):
+  - the freeze fires when the census merges, with no `rand` first;
+  - he will get access to Catrobat's Apple developer team and upload under `org.catrobat.*` himself. That also unblocks the M4 TestFlight checkpoint, open since 2026-09-19;
+  - all three icon variants;
+  - not Kids Category, rated 4+.
+  - Two more questions went to process instead of to him: whether a stop or the stitch limit gets the success haptic goes to the brief's Codex round, and the uncommitted Xcode edits turned out to be his local signing plus a comment-stripped, key-reordered `Info.plist` with identical content.
+- **Split into two PRs although the whole feature is about 450 lines of non-test code:** the freeze is a format decision and merges on its own, reviewed as risky.
+
+## 2026-11-05 — Release readiness: Codex brief round (1 High, 4 Medium, all adopted)
+
+- **High: the planned freeze census checked keys, and keys aren't the wire format.** `swift-architect`'s census compared recursive JSON keys plus `Mirror` labels. Codex listed same-key changes an old v1 reader would misparse:
+  - a no-payload case's `{}` becoming `null`;
+  - a raw-value or custom-Codable change;
+  - an omitted default-valued field;
+  - a number written differently.
+
+  It also noted that the planned round-trip test proves only that the *new* writer and reader agree. The census now byte-pins a canonical maximal-v1 document (encode == frozen bytes, frozen bytes decode == program), which is ADR-037's own sample-golden precedent; the case switches keep proving coverage. This is the same lesson as the M1 goldens, one layer up: a format is its bytes.
+- **Medium ×3, all in the haptic map, all from reading the code rather than the plan:**
+  - `onRunTerminated` carries no completion reason, so the "stop gets no success" rule had no seam. It becomes `(RunCompletion, EmbroideryStream)`.
+  - `.ready` is not "shareable": ADR-026's `count > 1` gate isn't consulted by `prepare`, so a one-stitch run would have pulsed success on an export the UI refuses.
+  - "Error on entering `.failed`" would suppress a *new* failed attempt from an already-failed state, because `name.didSet` keeps `.failed`. Error is now per attempt.
+- **Medium: two PRs for about 450 lines contradicts ADR-041**, which splits only past about 1,500. The architect's reason, letting the freeze merge alone, doesn't need a split: nothing in the feature touches the format before the merge. Now one PR, and the ADR-037 amendment will say it supersedes the 2026-10-18 trigger rather than adding a second one.
+- **Confirmed, not changed:** the privacy reason codes (CA92.1, C617.1, DDA9.1; not 3B52.1), per-window isolation under ADR-023, and `.sensoryFeedback`'s trigger semantics for an optional `Equatable`. Codex also agreed, from the HIG, that a user stop and the stitch limit get no success. That answered the question deliberately routed to this round instead of to Sebastian.
+- **Delegation note:** the architect had read the code carefully (its facts all held), yet three of the four mediums are code facts it didn't connect to the semantics it proposed. Planning by one agent and checking by another vendor caught what neither framing alone did.
+
+## 2026-11-05 — Release readiness slice 1: the program format v1 is frozen by its bytes
+
+- **Built:** `FrozenV1VocabularyTests` with a checked-in `FrozenV1.json` (1,288 lines, 35,074 bytes, SHA-256 `1818102b…9e71`). It holds every `Brick` case, every `Formula` shape, every leaf-enum case, and numbers chosen to pin their written form (`-0`, `5e-324`, `1.7976931348623157e+308`, `1e-300`). Plus the ADR-037 amendment: the freeze fires on this feature's merge and supersedes the 2026-10-18 trigger.
+- **Red:** the two byte tests failed on the missing fixture. The fixture was then bootstrapped *from the test's own failure output*: on a mismatch the test writes what it saw to a temporary file and says never to copy it over the fixture. I reviewed that output before it became the fixture. That is the one sanctioned copy, and the README beside the fixture forbids any later one.
+- **The coverage and `Mirror` tests passed at once,** since they restate facts that were already true. Their discriminating power rests on mutations alone (ADR-032 invariant 2).
+- **Mutations: 10, all red.**
+  - Wire format, red on the bytes:
+    - a renamed `Variable` coding key;
+    - `ScriptHeader` encoding as `null`;
+    - `ArcDirection` given `String` raw values;
+    - `Object` dropping `zIndex` on decode;
+    - `Variable.value` written as a string.
+  - Stored fields, red on `Mirror` only (bytes unchanged, as predicted): a new optional `Variable.note`.
+  - The test's own builder and census walker: a dropped `Sensor.allCases` leg, a dropped right-arc brick, a walker ignoring arc directions.
+  - A new `Brick` case fails to compile, but **in production switches first** (`Script+PairedControl`), before the census's own switch is reached. The census switch is a second wall the compiler never gets to.
+- **Process note:** the tenth mutation's anchor had been reformatted by the SwiftFormat hook. The asserting `sub()` refused it rather than "applying" nothing, which is the 2026-11-03 lesson paying off.
+
+## 2026-11-05 — Release readiness slice 2: `/release`, and its dry run caught a gate that never runs on `main`
+
+- **Built:** `.claude/commands/release.md`, an 11-item checklist plus a report, each item tagged machine, Claude-run or human. The format freeze comes first. A roadmap section under the TestFlight checkpoint points to it. US-331 leaves the backlog as a record bullet.
+- **The dry run was the slice's test** (ADR-032: process text is verified by executing it, not by a test). It found two defects in my own first draft:
+  - **Item 8 asked for a `release-build.yml` run on `main`, and none can exist:** the workflow triggers on pull requests and tag pushes only. The item now tags the archived commit, which also records what was uploaded. Pushing the tag is outward-facing, so the item has Claude confirm it with Sebastian first.
+  - **Item 1's "the fixture has exactly one commit" would misfire** if slice 1's reviews changed the fixture before the merge. It is now "no commit touches it after the freeze merge", which matches ADR-037's trigger.
+- **Re-grep result (item 3), recorded as the baseline:** in release code the only required-reason APIs are `UserDefaults` (`LastOpenedProject`, `ProjectLibrary+App`) and `contentModificationDate` (`ProjectStoring`). `CACurrentMediaTime` appears only in `CaptureSession.swift`, which sits inside `#if DEBUG` (lines 1–200).
+- **Lesson:** a checklist written from memory of how the CI works is itself a claim to verify. Running each command once found the error that reading it twice had not.
+
+## 2026-11-05 — Release readiness slice 1 reviewed: two reviewers, two different blind spots in the freeze, and a lint slip the gate can't see
+
+- **Codex slice round: 2 High, 2 Medium, 1 Low. `swift-code-reviewer`: 3 Important, 3 suggestions.** Each found holes the other did not, and each proved its points differently.
+  - **Codex argued by construction.** The production `allCases` was both generator and oracle (High). One formula shape per slot couldn't see slot- or payload-dependent coding (High). There were no slash, quote, backslash, control or non-BMP strings, so dropping `.withoutEscapingSlashes` went unseen (Medium). Its wording point (Low) was that "a default field omitted" wasn't the mutation I had run.
+  - **The reviewer argued by executed mutation, in a worktree.**
+    - A new optional associated value on a `Brick` case survived every test: `nil` encodes as absent, the tag switch still compiles, and `Mirror` covered structs only.
+    - `zIndex: Int` → `Double` survived: `3.0` encodes as `3`.
+    - Bytes only would treat a Foundation spelling change as "a v2", with no lawful way out.
+    - `==` hides a lossy decode: `-0 == 0`, and canonical string equivalence.
+  - **Pattern:** Codex found what the *values* in the fixture didn't exercise; the reviewer found what *bytes* can't see at all (declarations that encode identically). Neither covered the other's class.
+- **Adopted:** test-owned tag enums that build the program; a composite in every formula slot; escape sentinels and default-valued fields; `Mirror` over enum payloads, with labels *and* types; decode → re-encode equals the bytes; and a semantic JSON comparison in the failure message, with a narrow, journaled exception for presentation-only differences (README, ADR-037, `/release` item 1).
+- **Rejected:** Codex's Medium on pinning decode acceptance (unknown keys, `null`, missing fields). A decoder accepting *more* can't hurt an older reader. One accepting *less* of anything in the fixture already goes red. And pinning "an unknown key is ignored" would freeze US-324's known defect into the format.
+- **Mutations now 15, all red:** the original 10, the reviewer's two survivors, escaped slashes, default-omission on encode, and names decomposed on decode (caught only by the re-encode). A probe with a curated production `Sensor.allCases` stays **green**, correctly: the builder no longer depends on it, and the format didn't change.
+- **A mutation-runner defect, caught by its own output:** the reviewer's mutation A edits a *test* file, and my restore step only reset `Sources`. The next five mutants all "went red" on a compile error that the leftover edit caused. They looked like kills and proved nothing. The runner now restores an explicit file list, and those five were re-run. Lesson: a red mutant needs its red *reason* read, not just its colour.
+- **CI caught what the commit gate can't: SwiftLint** (`op` is under the identifier length rule). The pre-commit hook runs tests and an app compile, not lint. The rewrite would have added two more violations and a 651-line file, now split into the suite, the tags and the program, each under 400 lines. Lint now runs locally before each commit in this feature.
+
+## 2026-11-05 — Release readiness slice 3: the haptic map at the model, and a mutation run that lied twice
+
+- **Built:**
+  - `HapticKind` and `HapticPulse` (a kind plus a serial), and `AppModel.haptic` with `pulse(_:)` as its only writer.
+  - `RunViewModel.onRunTerminated(RunCompletion, EmbroideryStream)`, with the reason read from `run.state` after `apply`.
+  - `ExportViewModel.prepare` now returns the state it left (`@discardableResult`), so a failed attempt is visible as an attempt even from `.failed`.
+  - `AppModel.runTerminated` (prepare, then at most one pulse) and `dropRows`.
+  - The `SensoryFeedback` mapping in its own file, keeping `AppModel` SwiftUI-free.
+  - ADR-052.
+- **Red was a compile failure** (82 errors, all the missing haptic API), so the 10 brief mutations carry the proof. All 10 were red in the end, each killed by the test meant for it. Getting there took three runs:
+  1. **The first run's kill lists were fiction.** The parser took test names from any output line containing "fail", and three test names contain "fail" (`exportFailure…`, `failedExport…`). So every mutant appeared to kill them. Under that noise one mutant had genuinely **survived**: "pulse on any applied move".
+  2. **The survivor was real and is now killed.** `moveAction` already returns `nil` for a same-place drop, so the "and the program changed" guard looked redundant. But swapping two *identical* rows is applied and changes nothing. `dropBetweenIdenticalRowsPulsesNothing` pins that. Its first version was itself wrong: an identical swap leaves no undo entry, so the probe's `undo()` undid the previous insert. The premise is now probed on a separate editor.
+  3. **The second run's parser matched nothing,** using the swift-testing console format where xcodebuild prints `Test case '…' failed on`. The raw logs were kept this time, so the result came from re-parsing them rather than from a third 15-minute run.
+- **Lesson, the same as slice 1's in a third form:** a mutation result is only as good as the code that classifies it. Read one raw log before trusting any table built from logs.
+- **Lint:** `AppModel.swift` reached 409 lines (the CI lint is strict), so the run-end handler moved to `AppModel+Haptics.swift`. Every touched file now passes strict lint locally before commit.
+
+## 2026-11-05 — Release readiness slice 4: the haptic wiring, which no test can check
+
+- **Built:**
+  - one `.sensoryFeedback(trigger: model.haptic)` at `WindowRootView`;
+  - `StageView`'s old modifier removed (`.start` on every run and `.stop` on every finish, the audit finding the architect surfaced);
+  - `.onMove` routed through `AppModel.dropRows`.
+
+  A grep shows exactly one `.sensoryFeedback(` in the app, and no view calls `editor.moveRows` directly.
+- **No red test, and that is recorded rather than faked** (ADR-032): deleting the modifier leaves every test green, and the simulator plays no haptics. The proof is review, the grep above, and a device check on Sebastian's iPhone at handover (each pulse once, none at run start, two iPad windows independent).
+- **The full app suite: 726 of 727 pass.** The one failure is `UTTypeDeclarationTests` reading `org.superrandom.embroiderydesigner`. That comes from Sebastian's uncommitted local signing edit to the pbxproj, not from this branch. CI builds the committed project. Noted because a local full-suite run on this machine will keep showing it until that edit is reverted or moved to an xcconfig.
+
+## 2026-11-05 — Release readiness slice 5: privacy manifest and export-compliance key
+
+- **Built:**
+  - `PrivacyInfo.xcprivacy`: no tracking, no data collected, `UserDefaults` CA92.1, file timestamp C617.1 and DDA9.1;
+  - `ITSAppUsesNonExemptEncryption = NO` in `Info.plist`;
+  - `ReleaseMetadataTests` (hosted);
+  - an ADR-011 amendment.
+- **Red as assertions, not as a compile failure:** the manifest wasn't in the bundle and the key read `nil`.
+- **The architect's open question is answered by a mutation.** A new `.xcprivacy` file in the synchronized folder *is* copied into the bundle with no pbxproj change. Moving it one level up, outside the folder, turned all three manifest tests red.
+- **Mutations: 4, all red**, each killed by its intended test: manifest outside the folder, key removed, tracking `true`, an extra boot-time category.
+- **Sebastian's working-tree `Info.plist` (Xcode's comment-stripped, key-reordered copy, identical in content) was saved to the session scratchpad before the committed file was restored for this slice.** His pbxproj signing edit stays untouched and unstaged.
+
+## 2026-11-07 — Release readiness slice 6: the icon took a detour through three renderers and ended in Icon Composer
+
+- **Planned (brief D5):** convert Catroid's `embroideryDesigner` vector adaptive icon to PNGs by script, and reject Icon Composer because it needs a pbxproj change.
+- **What happened instead:**
+  - The converter was built (VectorDrawable `pathData` is SVG path syntax, so translation is mechanical). Its first renderer, Quick Look (`qlmanage`), **fills transparent SVG areas with white**: `sips` still reported `hasAlpha: yes`, but the dark and tinted variants had an opaque white backdrop. A visual preview caught this; the metadata did not.
+  - The second renderer, AppKit's native SVG, **skips `<use>`** and **traps on an RGB bitmap without alpha**.
+  - A `--` inside an XML comment made the SVG invalid.
+  - The architect's plan said "white glyph". Catroid's cat is actually **black with white stitching**, so a dark or tinted variant cannot just be the glyph on a transparent background: on iOS's dark backdrop it disappears.
+- **Sebastian then stopped the PNG route** and built the icon himself in Icon Composer. Claude supplied SVG layers:
+  - Catroid's original split into body, stitching and the two eyes, all in one frame;
+  - a modern redraw (dropped);
+  - stitching variants (round dots, a single collar seam between two neck nodes Sebastian marked on the body path);
+  - the body with the eyes cut out by even-odd fill (no masks), pupils kept.
+
+  He chose the eyes-cut body, without stitching.
+- **No project change was needed after all:** `ASSETCATALOG_COMPILER_APPICON_NAME` was already `AppIcon`, so an `AppIcon.icon` in the synchronized folder replaced the deleted `AppIcon.appiconset` by itself. D5's reason for rejecting Icon Composer didn't hold.
+- **Checked, not assumed:** the built app's `Assets.car` carries the layered stack for iOS 26 *and* flat light, dark and tinted 1024 px images plus `AppIcon60x60@2x.png` for iOS 17–25, which the `.icon` alone doesn't reach.
+- **Lesson:** the design loop ran fastest when Claude produced layers and previews, and the human made the visual choices in the tool built for it. The automated PNG pipeline was effort spent before the visual direction was settled.
+
+## 2026-11-07 — The home screen showed "catrobat_embro…": a release defect found in a screenshot meant for the icon
+
+- **Sebastian's screenshot of the new icon also showed its label, "catrobat_embro…".** There was no `CFBundleDisplayName`, so iOS fell back to the target name. No test, brief item or `/release` step covered it. It would have reached TestFlight.
+- **Decision (Sebastian):** "Embroidery". Catroid's flavor name, "Embroidery Designer", is truncated at about 12 characters; the store listing keeps the full name. It is set in `Info.plist` and localized in `InfoPlist.xcstrings` with a translator comment.
+- **TDD:** `displayNameIsEmbroidery` was red (`nil`), then green. It checks both the `Info.plist` value and the localized catalog value; mutating either one alone to "Embroidered" turns it red.
+
+## 2026-11-07 — A test filter that matched nothing reported "TEST SUCCEEDED", twice
+
+- **What happened:** a mutation run used `-only-testing:…/ReleaseMetadataTests/displayNameIsEmbroidery`. For a Swift Testing function that filter matches **no test**, and xcodebuild still prints `** TEST SUCCEEDED **`. The mutant looked like a survivor. I then rewrote the test and documented a false cause ("`object(forInfoDictionaryKey:)` can't see the catalog"). The rerun used the same filter and "survived" again.
+- **Caught because no `Test case '…displayNameIsEmbroidery()'` line appeared.** With the suite-level filter (`…/ReleaseMetadataTests`) the same mutant is red. The false comment was corrected before commit.
+- **Rule from here:** a mutation result counts only if the log shows the target test's own result line. A green summary with zero matching tests is not a survivor. This is the third time this feature that the classifier rather than the code produced a wrong mutation result (slice 1's restore list, slice 3's parser).
+
+## 2026-11-07 — Release readiness slice 7: the pseudo-localization and RTL audit found no defect, and three tool artifacts
+
+- **Procedure as written in `/release` item 5**, on the iPhone 17 simulator, driven through the XcodeBuildMCP CLI:
+  - (c) RTL on the project list, the Square Coil script and the Arc Flower stage;
+  - (a) `-NSSurroundLocalizedStrings` on the empty script, the project list, the script, the palette and the finished stage, with a scan of each accessibility snapshot for unbracketed strings (about 230 strings);
+  - (b) `-NSDoubleLocalizedStrings` on the script and the stage;
+  - (d) RTL at AX5 on the project list, the script and the stage.
+- **Results:**
+  - **RTL is correct:** rows, indentation guides, toolbars, counters and section headers all mirror. The undo/redo arrows are a system bottom-bar group, so iOS orders and mirrors them.
+  - **The stage does not mirror:** Arc Flower is identical with and without the RTL flags, so ADR-007 gets its planned amendment.
+  - **(a):** no unlocalized string. The only unbracketed ones were the app's own name (`InfoPlist.strings`, which the flag doesn't touch) and user content (a design name).
+  - **(b) and AX5:** everything wraps, with no truncation. The one defect is the stage's name field squeezed out at AX5: that is **US-319, already in the backlog**, now reproduced on the iPhone 17 as well as the 17e. It is below the roadmap's AX1 bar.
+  - The ASCII name field keeps its text left-aligned in RTL. That is content-direction alignment, and correct for a Latin-only DST name.
+- **Three artifacts that would have been mis-filed as defects:**
+  - plural rows rendering as `[# %#@value@ #]` under (a);
+  - doubled positional formats (`Hoop 1$@ × 2$@`, `@ Design Design`) under (b);
+  - a doubled default name persisted into the test project.
+
+  All three are the flags rewriting a format string before substitution. Normal runs render correctly, and `AppStringsTests` covers plural resolution. They are now written into `/release` so the next run doesn't chase them.
+- **The bracket scan, read critically:** an empty scan result was at first indistinguishable from a parser that matched nothing. The scan now prints how many strings it checked. That is the same lesson as slice 3's mutation parser: a check that can't say "I looked at N things" can't be trusted when it says "nothing found".
+- **Gaps, stated:** the parameter editors (tapping a row selected it, but no editor opened under automation) and the iPad split view were not covered. They are carried into the first `/release` run.
+- **No code change in this slice,** so no mutation applies. It is docs only: the ADR-007 amendment, `/release` item 5's known limits, and the brief.
+
+## 2026-11-07 — Release readiness: whole-PR review found three tests that passed vacuously
+
+- **`swift-code-reviewer` over `main...HEAD` (9 commits):**
+  - 2 Important, 7 suggestions and a question, all valid; none rejected.
+  - Non-test size 835/82 lines, about 165 of them Swift, so one PR is right (ADR-041).
+  - It confirmed what holds: one `.sensoryFeedback`, `pulse` with three callers, no double pulse on run end or rename, ADR-023 per-window state, the privacy manifest matching the code.
+- **Important: three "pulses nothing" tests could not fail.** `runningWindow` waited for `.running` through a `settle` that gives up silently, and a terminal is ignored unless the run is `.running`. So if the fixture broke, "nothing pulsed" was true for the wrong reason.
+  - The reviewer proved it by mutation: a window that never starts a run left `programFinishedWithIneligibleExportPulsesNothing` (both arguments), `programFinishedWithInvalidNamePulsesNothing` and `failedExportThenRerunFailingPulsesErrorAgain` green.
+  - **Fixed:**
+    - the fixture asserts that the run started;
+    - the two "nothing" tests assert that their terminal landed;
+    - the rerun test asserts that the first run's error pulsed.
+  - The same fixture mutant now fails every run-dependent test (12 test cases), and the run-free selection tests stay green, as they should.
+  - Slice 3's own mutations had all mutated *production* code. A mutant of the *fixture* is the one class that finds a test whose premise was never established.
+- **A slip while fixing it:** the widened sweep's `.sewUp` needed `import ProgramModel`, and the first rerun didn't compile. A filtered grep showed only `** TEST FAILED **`, which looked like the mutant result. Counting the passing tests of the unmutated run (0) exposed it. The 2026-11-07 filter lesson applied a second time the same day: a test result needs the test's own line.
+- **Suggestions, all applied:**
+  - restored a doc comment slice 3 had deleted by accident (`discardIfPreparedNameIsStale`);
+  - a history comment in `StageView` turned into a reason;
+  - the non-event sweep widened (an accessibility move and a replace through `editor.apply`), with the brief reworded for parameter edits;
+  - the test helpers made `private`;
+  - `/release` item 3's grep widened to Apple's categories and both source roots;
+  - item 1 anchored on PR #90, not on a merge commit;
+  - a stale sentence dropped from the icon SVG.
+- **Question, carried into the device check:** does a reorder drop feel doubled together with UIKit's own lift haptic, and does a palette add pulse while the palette sheet covers the window root?
+- **Not yet at handover:** the device check (Sebastian's iPhone was unavailable); the dark and tinted icon screenshots (the simulator shut down mid-capture); and the freeze date, which is set at merge. The brief's open criteria say so individually.

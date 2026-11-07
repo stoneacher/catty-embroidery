@@ -16,11 +16,11 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 004 | Stack | Minimum iOS 17.0. | Superseded by 002 |
 | 005 | DST | Catroid is the DST source of truth; Catty fixtures are goldens. | Superseded by 012 |
 | 006 | App architecture | `@Observable` MVVM on `@MainActor`, no TCA; one `apply` funnel; injected side effects; whole-`Program` assertions. | Amended (036, 033) |
-| 007 | Stage | Centre origin, y-up, 500×500 pt stage, 1 pt = 0.2 mm; degrees with 0° = up. The stage does not bound engine input. | Active |
+| 007 | Stage | Centre origin, y-up, 500×500 pt stage, 1 pt = 0.2 mm; degrees with 0° = up. The stage does not bound engine input, and never mirrors under RTL. | Active, amended |
 | 008 | Program model | Flat brick lists with control blocks — loops, and Ifs with an optional else divider; a closer ends only its own family; a block moves as one balanced unit. | Active, amended (editor verbs: 045) |
 | 009 | Stage | SwiftUI `Canvas`, batched paths, baked settled raster. | Superseded by 043 |
 | 010 | App architecture | Universal, iPhone-first, size-class adaptive navigation. | Amended (039) |
-| 011 | Scope | Fully offline: no network, accounts or tracking; only the user's share sheet leaves the device. | Active |
+| 011 | Scope | Fully offline: no network, accounts or tracking; only the user's share sheet leaves the device. App Store form: privacy manifest (no tracking, no data; UserDefaults CA92.1, file timestamp C617.1/DDA9.1), no non-exempt encryption, 4+, not Kids Category. | Active, amended |
 | 012 | DST | **The DST arbiter.** Catroid wins where references diverge; known Catty bugs are not ported. | Active |
 | 013 | DST | Pending colour-change flags land on the final plain stitch; `color_change.dst` compared through a documented transposition. | Active |
 | 014 | Patterns | Pattern geometry is `Double`; 1e-9 tolerance; degenerate inputs and >1M-stitch updates are guarded no-ops. | Active |
@@ -46,7 +46,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 034 | Editor | `Brick` has no identity; addressing is index-based; the script list's row identity is derived by the editor (diff-followed IDs), never stored. | Active, amended |
 | 035 | Editor | Pair semantics for the editor verbs. | Superseded by 045 |
 | 036 | Editor | `UndoStack` in `EditorCore` is the truth and owns the program; bounded at 50; explicit coalescing sessions; an app-owned `UndoManager`, vended by a first-responder anchor, kept at the stack's exact depths (US-411). | Active, amended |
-| 037 | Persistence | Program document: version 1 only (growing additively until the first distributed build, then a pinned freeze rule), refuse rather than trap, non-finite rejected at input, depth cap 128; last-writer-wins by revision, per project since M5 (refused files blocked per ID, not set aside). | Active, amended |
+| 037 | Persistence | Program document: version 1 only, frozen since the Release readiness merge by a byte-pinned census (`FrozenV1.json`); any vocabulary change is a v2 with three pinned admission operations, refuse rather than trap, non-finite rejected at input, depth cap 128; last-writer-wins by revision, per project since M5 (refused files blocked per ID, not set aside). | Active, amended |
 | 038 | Editor | `EditorViewModel` is the only writer; a changing edit voids the run, except one that differs only in the name, which keeps it and re-prepares the export; the selection carries no program and is titled with its name. | Active, amended |
 | 039 | Editor UI | Three-column split on regular, push chain on compact; launch is a selection (since M5: the scene's project, the last opened, or a named draft); palette popover/sheet; parameters off-row. | Active, amended three times |
 | 040 | Editor UI | Parameters editable where M4 has a control (function and sensor formulas locked with their own reasons); a condition that is one comparison of two plain values gets the comparison editor (`ParameterTarget` addresses a side); 14-colour thread palette; `VariableName` rules; live-apply that keeps no rejected prefix. | Active, amended |
@@ -61,6 +61,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 049 | Interpreter | Control-brick execution: heads read on their own first act (deferred after an action); Catroid truthiness per brick; an action-free If takes the tick it was read in and only that one; RepeatUntil checks at entry and at the body's end; WaitUntil polls once per tick with truncating truthiness; ForVariableFromTo reads its bounds once, checks at each pass's end and keeps an unnamed counter off the store. | Active |
 | 050 | Persistence | One file per project (`Projects/<UUID>.json`); drafts written only by their first change; one name (`program.name` = `LA` = sanitised file name), generated names uniqued; `ProjectLibrary` guards every file per project; launch opens the scene's project, else the last opened, else a fresh draft; M4's file migrates once to a fixed ID; the code lives in the `Projects` package target (US-329). | Active, amended |
 | 051 | Language tests | Catroid's language tests run headlessly: `code.xml` versions 0.99995–1.14 import into `Program` plus harness steps that are never `Brick` cases; anything whose semantics can't be mirrored is refused with typed blockers (strings that stay strings, variables a name can't tell apart, unknown shapes); AssertEquals by `isSameValue`; the first ending is latched and its tick finishes; 600-tick budget; WaitTillIdle by Catroid's per-object scheduler; all 215 tests pinned. | Active |
+| 052 | App | Haptic map: selection on an accepted palette add or a program-changing reorder drop; success on a run that finished on its own with a shareable export; error on each failed export attempt; nothing else. An observable pulse on `AppModel`, played by one `.sensoryFeedback` at the window root. | Active |
 
 ## ADR-001 — App scope: embroidery-focused block app (2026-07-06)
 **Context**: On Android, "Embroidery Designer" is the full Pocket Code app (complete Catrobat language + interpreter + stage) shipped as a Gradle flavor. A full port exceeds bachelor-project scope; a blocks-free drawing tool would lose the "learn coding" essence of Catrobat.
@@ -100,6 +101,12 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 **Decision**: Center origin, y-up, fixed virtual stage of 500×500 points (≈ 100×100 mm hoop at 1 pt = 2 DST units = 0.2 mm). The engine applies **no y-flip** when converting to DST units (matching both references); flipping for screen display is purely a rendering concern in M3. Angle convention: degrees, 0° = up (Catroid convention; x via sin, y via cos).
 **Consequences**: Engine domain types carry this space explicitly; the M3 canvas, zoom math, and export size validation inherit a deliberate choice instead of an accident.
 
+**Amendment (2026-11-07, Release readiness slice 7) — the stage never mirrors under right-to-left layout.** The stage is a physical plane (+x to the machine's right, y up), so an RTL interface must not flip what will be embroidered.
+- **The pin covers:** the canvas, the gesture recognisers and the directional pan actions.
+- **The UI around the stage does mirror**: toolbars, script rows and indentation, labels and counters.
+- **Evidence:** Arc Flower (asymmetric: its stem bows to one side), run with `-AppleTextDirection YES -NSForceRightToLeftWritingDirection YES` and without, draws the same image (`/release` item 5, journal 2026-11-07).
+- **Why no test:** no code in the app or the engine reads `layoutDirection`, and SwiftUI doesn't flip `Canvas` drawing on its own. A test pinning it could only fail if someone added a flip. The `/release` RTL pass re-checks it by eye.
+
 ## ADR-008 — Script representation: flat brick list with paired control bricks (2026-07-06)
 **Context**: Catroid scripts are flat ordered brick lists where loops are begin/end brick pairs rendered by indentation; a nested-tree model would force custom nested drag-and-drop in SwiftUI (a multi-week build), whereas a flat list maps directly onto `List` + `.onMove` (free reorder, free VoiceOver reorder actions, free swipe-to-delete).
 **Decision**: Scripts are flat ordered brick lists with paired enter/exit control bricks, Catroid-compatible. Nesting is a rendering concern (indentation), not a model structure. Moving a control brick moves its matched pair and enclosed range as one unit — this invariant lives in the model with tests (M2), not in the view (M4).
@@ -123,6 +130,21 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 **Context**: The target audience is largely minors (13–18); GDPR-K/COPPA and App Store age-rating implications.
 **Decision**: No network access, no accounts, no analytics or tracking of any kind. All data stays on-device; the only data egress is the user-initiated share sheet (DST/image export).
 **Consequences**: Simplifies App Store review (age rating, no tracking declaration), removes consent UX entirely, and is a genuine selling point for schools.
+
+**Amendment (2026-11-05, Release readiness D6) — what the App Store reads from this decision.**
+- **Privacy manifest** (`PrivacyInfo.xcprivacy`, shipped in the app bundle):
+  - no tracking, no tracking domains, no collected data;
+  - required-reason APIs exactly as used by release code: `UserDefaults` CA92.1 (the last opened project) and file timestamp C617.1 and DDA9.1 (project files in the container, with their dates shown on the project list). 3B52.1 doesn't apply, because no file arrives through a document picker.
+
+  `CACurrentMediaTime` is DEBUG-only (`CaptureSession.swift`), so no boot-time reason is declared. `/release` item 3 re-greps this before every upload, because DEBUG code can leave its guard.
+- **`ITSAppUsesNonExemptEncryption = NO`** in `Info.plist`: the app does no networking and no encryption of its own.
+- **App Store Connect** (human, `/release` item 10):
+  - App Privacy "Data Not Collected";
+  - age rating 4+;
+  - **not in the Kids Category** (Sebastian, 2026-11-05). The audience is largely 13–18, and that category's parental-gate rules would reach the share sheet, ADR-011's one egress;
+  - Catrobat's privacy-policy URL.
+- **Bundle ID `org.catrobat.embroiderydesigner`**, uploaded under Catrobat's Apple developer team by Sebastian once he has access (D6).
+- **Enforced by:** `ReleaseMetadataTests` (hosted). The manifest is in the bundle and the encryption key exists; mutations that move the manifest out of the synchronized folder or drop the key turn it red. The test also compares the declared contents with this amendment.
 
 ## ADR-012 — DST semantics: Catroid is authoritative; known Catty divergences are not ported (2026-07-06)
 **Status**: Active — the DST arbiter. Interpolation extended by ADR-020, header overflow by ADR-025, flag placement by ADR-013, colour edges by ADR-015.
@@ -972,6 +994,33 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
 
 **Amendment (2026-10-26, Project management, ADR-050) — one file per project.** The working program becomes many projects, `Documents/Projects/<UUID>.json`, each a v1 document unchanged. **Last writer wins per project:** revisions stay global, but each project keeps its own newest accepted revision and its own failure (`ProjectLibrary`, replacing `ProgramAutosave`). **Set-aside is retired for project files:** a refused file stays where it is, and the refusal installs a process-wide write block for that one ID until it is re-probed as openable or missing, or deleted, replacing the single process-wide block. A deleted project leaves an in-memory tombstone, so a late save returns `.deleted` rather than recreating the file. M4's `WorkingProgram.json` is migrated once to a fixed ID (ADR-050). The freeze above is still not triggered: no build has been distributed (brief D10).
 
+**Amendment (2026-11-05, Release readiness, US-331) — the freeze fires when the Release readiness feature merges; it supersedes the 2026-10-18 trigger.** The 2026-10-18 amendment tied the freeze to "the first distributed build", an event nothing in the repo observes. Missing it would be silent: every test stays green, and the first vocabulary change after distribution ships under v1 (US-331, found by M5's drift check).
+- **Trigger (Sebastian, 2026-11-05, Release readiness D2): v1 is frozen from the merge of the Release readiness feature**, ahead of the first TestFlight upload. The 2026-10-18 trigger ("grows additively until the first distributed build") is void from that merge. `rand` (ADR-046) was deliberately not added first, so it will be a v2 brick.
+- **Enforcement is a test, not a reminder.** `FrozenV1VocabularyTests` (EditorCoreTests) builds one program that holds the whole v1 vocabulary: a nested formula in every formula slot, every JSON escape class in its strings, and default-valued fields beside non-default ones. It has three alarms:
+  - **The bytes** (the oracle, after the brief's Codex round showed a key census misses same-key changes). `ProgramDocument.encode` must reproduce the checked-in `FrozenV1.json` byte for byte. Those bytes must decode back to the program and re-encode to themselves, which catches a lossy decode that `==` hides.
+  - **The vocabulary.** Test-owned tag enums with exhaustive switches cover `Brick`, `Formula`, `ScriptHeader` and every leaf enum, and the program is built from the tags. A production `allCases` is never the oracle (Codex slice round).
+  - **The declarations.** `Mirror` checks struct fields and every enum case's payload, by label *and* type. An optional field or associated value left `nil`, or an `Int` widened to `Double`, encodes identically, so only the declaration shows it (`swift-code-reviewer`, slice 1).
+- **15 mutations, each red** (journal, 2026-11-05):
+  - `{}` becoming `null`;
+  - a raw-valued leaf enum;
+  - a renamed coding key;
+  - a field dropped on decode;
+  - a field omitted at its default value on encode;
+  - a number written as a string;
+  - slashes escaped again;
+  - names decomposed on decode;
+  - a new optional stored field;
+  - a new optional associated value;
+  - `zIndex` widened to `Double`;
+  - a new `Brick` case (a compile failure);
+  - three mutations of the test's own builder and census.
+- **`FrozenV1.json` is never regenerated for a format change.** A change that needs new bytes is a v2: bump `currentFormatVersion`, build the three admission operations above, and freeze the v2 bytes beside v1's.
+  - The one exception is a difference the test's own semantic comparison reports as **presentation only**: the same JSON values spelled differently by a newer Foundation. Only then may the fixture be replaced, in a journaled, reviewed commit.
+  - The bytes are pinned to the test host's encoder, and CI pins its Xcode. So a toolchain bump is where such a difference would surface.
+- **The release checklist (`/release`) checks the freeze as its first item:** the census is present and green. That catches the trigger being undone, not just forgotten.
+
+**Consequences**: The three admission operations are still not built, and won't be until the first v2 change needs them. What changes is that such a change now goes red before it can ship under v1. US-331 leaves the backlog.
+
 ## ADR-038 — The working program: an applied edit voids the run, and the selection stops carrying the program (2026-09-27)
 **Status**: Active, amended 2026-09-29; one bullet overruled by ADR-039 (see marker). The change pipeline is restated in ADR-045.
 **Context**: Until US-405, `AppModel.selection` wrapped a `SampleProgram`, so "the program on the stage" and "a bundled sample" were the same value. An edited program has no `SampleID`, and ADR-026's eager export preparation means a finished run leaves a `.dst` on disk that `ShareLink` will offer. The running interpreter is safe — `Interpreter(program:clock:)` takes the program by value and builds its own compiled threads and runtime stores — but the **prepared file** is not: without a rule, a user could edit a program and share a file describing the one they no longer have. ADR-027 closed "export after stop must still work"; this closes "export after edit must not silently work".
@@ -1552,4 +1601,27 @@ The brief got one Codex round on these rules (journal, 2026-10-17).
 - **Ratchet**: all 215 are pinned in a generated table (`scripts/regenerate-language-test-expectations.sh`). Each is a pass, an expected failure with its exact assertion failure and an owning ADR or backlog item, or unsupported with its exact blockers.
 
 **Consequences**: 32 of 215 pass. 4 are expected failures: decimal128 (ADR-048), `arctan2(0, 0)` (ADR-046), and two from Darwin's correctly rounded `acos`/`asin` against Java's fdlibm (US-333, undecided) *[Decided 2026-11-05: accepted under ADR-046 (c), see its US-333 amendment; both are now owned by ADR-046.]*. 179 are unsupported, mostly for scope (ADR-001). Changing a test's class is a deliberate table change reviewed as a diff. Raising the count means supporting more of Catroid. Moving the suite to Catrobat's planned language-specification repository, and writing new language tests, are outside this ADR.
+
+## ADR-052 — Haptic map (2026-11-05)
+**Context**: The roadmap's M6 polish fixes the haptic map as "success on export/run-complete, selection tick on brick add/reorder-drop, error on export failure — nothing else". The app predated it: `StageView` played `.start` on every run and `.stop` on every finish, including a user stop. "Export success" has no event of its own. ADR-026 prepares the file eagerly when the run ends, and a `ShareLink` reports nothing back. The meanings below weren't pinned anywhere, so the Release readiness brief's Codex round settled them (journal, 2026-11-05).
+
+**Decision** (Release readiness D3):
+- **Exactly three pulses, and only these.**
+  - **Selection:**
+    - a palette add the editor accepts (buttons and VoiceOver activation share `addFromPalette`);
+    - a reorder drop (`AppModel.dropRows`, which `.onMove` now calls) that changes the program.
+
+    Accessibility moves, undo/redo, delete, replace, parameter edits and rename play nothing.
+  - **Success:** a run that ended `.programFinished` and whose export is `.ready` and offered by ADR-026's gate (`isExportable`, more than one record).
+    - Run-complete *is* export success, because the file is ready exactly then.
+    - A user stop is deliberately partial and the stitch limit is a protective truncation, so neither is a success. A one-stitch or invalidly named design isn't either.
+  - **Error:** **each failed preparation attempt**, at run end whatever ended the run, or on a rename that re-prepares.
+    - Per attempt, not on "entering `.failed`": a rename that fails again from an already-failed state plays again.
+    - Error replaces success at run end.
+    - A rename during a run doesn't prepare, because only a terminated run has an export to re-prepare (ADR-038's rename rule, in the ADR-045 change pipeline), so it plays nothing until the run ends.
+- **The run's end carries its reason:** `RunViewModel.onRunTerminated(RunCompletion, EmbroideryStream)`. `AppModel` prepares first, reads the state `prepare` returns, then pulses at most once, so a pulse always describes an attempt that has happened.
+- **Mechanism:** `AppModel.haptic: HapticPulse?` (a kind plus a serial, so consecutive same-kind pulses are distinct triggers), written only by `pulse(_:)`. One `.sensoryFeedback` at the window root plays it, so it honours the system haptics setting and never plays in another window (ADR-023: one model per window). `HapticKind` → `SensoryFeedback` lives in its own file, keeping `AppModel` free of SwiftUI.
+  - **Rejected:** an injected `UIFeedbackGenerator` protocol with a recording double. It is equally testable and needs a protocol, a live implementation and a double to copy a mechanism SwiftUI already provides.
+
+**Consequences**: `HapticMapTests` pins every event and non-event at the model. The view modifier itself is not testable (deleting it stays green), so it is verified by review and on a device, including two iPad windows (ADR-032). Any new haptic is an amendment here, not a local addition.
 

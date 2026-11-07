@@ -95,6 +95,16 @@ final class AppModel {
     /// The list's pending delete and notice (slice 8; `ProjectListState`).
     var listState = ProjectListState()
 
+    /// The haptic this window last asked for (Release readiness D3, ADR-052). One
+    /// `.sensoryFeedback` at the window root plays it whenever it changes, and `pulse(_:)` is
+    /// the only writer. Per window, like every other piece of state here (ADR-023).
+    private(set) var haptic: HapticPulse?
+
+    /// Asks the window's root to play `kind` once.
+    func pulse(_ kind: HapticKind) {
+        haptic = HapticPulse(kind: kind, serial: (haptic?.serial ?? 0) + 1)
+    }
+
     /// Projects found at launch and not opened, told one at a time until read (Codex, slice 6).
     private(set) var launchRefusals: [ProgramRefusal] = []
 
@@ -125,8 +135,8 @@ final class AppModel {
         // it takes its item at construction time, so there is nothing to hand it unless the
         // file already exists. See `ExportViewModel` for why that is forced rather than
         // chosen.
-        runner.onRunTerminated = { [weak self] model in
-            self?.exporter.prepare(exportModel: model)
+        runner.onRunTerminated = { [weak self] completion, model in
+            self?.runTerminated(completion, exportModel: model)
         }
         // The other half of the lifecycle, and structural rather than conventional: the
         // prepared file goes whenever the run it describes goes, however that happens.
@@ -173,8 +183,9 @@ final class AppModel {
         if after.differsOnlyInName(from: before) {
             syncName()
             // Only a terminated run has one, so a rename mid-run waits for the run's end.
-            if let exportModel = runner.run.exportModel {
-                exporter.prepare(exportModel: exportModel)
+            if let exportModel = runner.run.exportModel,
+               case .failed = exporter.prepare(exportModel: exportModel) {
+                pulse(.error)
             }
         } else {
             runner.reset()

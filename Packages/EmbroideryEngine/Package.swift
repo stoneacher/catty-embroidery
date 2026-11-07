@@ -91,7 +91,10 @@ let package = Package(
         // depends on `ProgramModel` alone (`EditorCoreTargetIsolationTests`).
         .testTarget(
             name: "EditorCoreTests",
-            dependencies: ["EditorCore", "ProgramModel", "Samples", "Interpreter", "EmbroideryEngine"]
+            dependencies: ["EditorCore", "ProgramModel", "Samples", "Interpreter", "EmbroideryEngine"],
+            // .copy: `FrozenV1VocabularyTests` compares the program format's frozen v1 bytes
+            // byte by byte (US-331, ADR-037), so the fixture must reach the bundle unprocessed.
+            resources: [.copy("Resources")]
         ),
         .testTarget(
             name: "InterpreterTests",

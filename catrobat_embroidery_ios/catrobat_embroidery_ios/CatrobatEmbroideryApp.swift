@@ -86,6 +86,12 @@ struct WindowRootView: View {
             RootView(model: model)
         }
         .animation(StageMotion.bannerAnimation(reduceMotion: reduceMotion), value: model.saveFailure)
+        // The window's one haptic (ADR-052). At the root, so it survives the ADR-023 container
+        // swap and plays for this window's model only. `nil` plays nothing: a new pulse is the
+        // only change of the trigger that is ever non-nil.
+        .sensoryFeedback(trigger: model.haptic) { _, pulse in
+            pulse?.kind.feedback
+        }
         .alert(
             Text(AutosaveNotice.refusalTitle),
             isPresented: Binding(

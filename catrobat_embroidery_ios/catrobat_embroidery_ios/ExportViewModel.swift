@@ -73,13 +73,16 @@ final class ExportViewModel {
     /// gate reason rather than a failed share. It costs nothing extra: `DSTFile.init` builds
     /// the header anyway, and ADR-025 records that the header is the only part that can fail,
     /// so constructing the file *is* the complete pre-flight check.
-    func prepare(exportModel: EmbroideryStream) {
+    /// Returns the state the attempt left, so a caller can tell this attempt failed even when
+    /// the state was already `.failed` (Release readiness D3: one error pulse per attempt).
+    @discardableResult
+    func prepare(exportModel: EmbroideryStream) -> ExportState {
         guard let designName = try? validatedName.get() else {
             // Nothing to name the file after, and the share control is refusing anyway.
             // Deliberately not `.failed`: an unfinished name is not an error to report, it is
             // a field the user is still in the middle of.
             discard()
-            return
+            return state
         }
 
         let file: DSTFile
@@ -87,10 +90,10 @@ final class ExportViewModel {
             file = try DSTFile(stream: exportModel, name: designName.value)
         } catch let error as DSTSerializationError {
             state = .failed(.serialization(error))
-            return
+            return state
         } catch {
             state = .failed(.writeFailed)
-            return
+            return state
         }
 
         // Only now, once there is definitely something to write.
@@ -111,6 +114,7 @@ final class ExportViewModel {
         } catch {
             state = .failed(.writeFailed)
         }
+        return state
     }
 
     /// Drops a prepared file the moment the name stops matching it.

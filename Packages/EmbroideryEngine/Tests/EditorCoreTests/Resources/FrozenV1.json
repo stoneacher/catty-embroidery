@@ -1,0 +1,2468 @@
+{
+  "formatVersion" : 1,
+  "name" : "Frozen v1 — every case a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎",
+  "scenes" : [
+    {
+      "name" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎",
+      "objects" : [
+        {
+          "name" : "needle",
+          "scripts" : [
+            {
+              "bricks" : [
+                {
+                  "moveNSteps" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 10
+                      }
+                    }
+                  }
+                },
+                {
+                  "turnLeft" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 15
+                      }
+                    }
+                  }
+                },
+                {
+                  "turnRight" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : -15
+                      }
+                    }
+                  }
+                },
+                {
+                  "pointInDirection" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 90
+                      }
+                    }
+                  }
+                },
+                {
+                  "placeAt" : {
+                    "x" : {
+                      "number" : {
+                        "_0" : -100
+                      }
+                    },
+                    "y" : {
+                      "number" : {
+                        "_0" : 100.5
+                      }
+                    }
+                  }
+                },
+                {
+                  "setX" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "setY" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeXBy" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeYBy" : {
+                    "_0" : {
+                      "number" : {
+                        "_0" : 4
+                      }
+                    }
+                  }
+                },
+                {
+                  "arc" : {
+                    "degrees" : {
+                      "number" : {
+                        "_0" : 90
+                      }
+                    },
+                    "direction" : {
+                      "left" : {
+
+                      }
+                    },
+                    "radius" : {
+                      "number" : {
+                        "_0" : 30
+                      }
+                    }
+                  }
+                },
+                {
+                  "arc" : {
+                    "degrees" : {
+                      "number" : {
+                        "_0" : 180
+                      }
+                    },
+                    "direction" : {
+                      "right" : {
+
+                      }
+                    },
+                    "radius" : {
+                      "number" : {
+                        "_0" : 20
+                      }
+                    }
+                  }
+                },
+                {
+                  "goThrough" : {
+                    "throughX" : {
+                      "number" : {
+                        "_0" : 5
+                      }
+                    },
+                    "throughY" : {
+                      "number" : {
+                        "_0" : 6
+                      }
+                    },
+                    "x" : {
+                      "number" : {
+                        "_0" : 7
+                      }
+                    },
+                    "y" : {
+                      "number" : {
+                        "_0" : 8
+                      }
+                    }
+                  }
+                },
+                {
+                  "repeatLoop" : {
+                    "times" : {
+                      "number" : {
+                        "_0" : 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "forever" : {
+
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "repeatUntil" : {
+                    "condition" : {
+                      "binary" : {
+                        "_0" : {
+                          "greaterThan" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        },
+                        "_2" : {
+                          "number" : {
+                            "_0" : 5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "forVariableFromTo" : {
+                    "from" : {
+                      "number" : {
+                        "_0" : 1
+                      }
+                    },
+                    "name" : "i",
+                    "to" : {
+                      "number" : {
+                        "_0" : 4
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "wait" : {
+                    "seconds" : {
+                      "number" : {
+                        "_0" : 0.25
+                      }
+                    }
+                  }
+                },
+                {
+                  "waitUntil" : {
+                    "condition" : {
+                      "constant" : {
+                        "_0" : {
+                          "true" : {
+
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "ifThen" : {
+                    "condition" : {
+                      "constant" : {
+                        "_0" : {
+                          "true" : {
+
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "ifElse" : {
+                    "condition" : {
+                      "constant" : {
+                        "_0" : {
+                          "false" : {
+
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "elseBranch" : {
+
+                  }
+                },
+                {
+                  "ifEnd" : {
+
+                  }
+                },
+                {
+                  "ifEnd" : {
+
+                  }
+                },
+                {
+                  "changeVariableBy" : {
+                    "name" : "v",
+                    "value" : {
+                      "number" : {
+                        "_0" : -1
+                      }
+                    }
+                  }
+                },
+                {
+                  "stitch" : {
+
+                  }
+                },
+                {
+                  "setThreadColor" : {
+                    "hex" : "#1A2b3C"
+                  }
+                },
+                {
+                  "runningStitch" : {
+                    "length" : {
+                      "number" : {
+                        "_0" : 2
+                      }
+                    }
+                  }
+                },
+                {
+                  "zigZagStitch" : {
+                    "length" : {
+                      "number" : {
+                        "_0" : 2
+                      }
+                    },
+                    "width" : {
+                      "number" : {
+                        "_0" : 3
+                      }
+                    }
+                  }
+                },
+                {
+                  "tripleStitch" : {
+                    "length" : {
+                      "number" : {
+                        "_0" : 2.5
+                      }
+                    }
+                  }
+                },
+                {
+                  "sewUp" : {
+
+                  }
+                },
+                {
+                  "stopRunningStitch" : {
+
+                  }
+                },
+                {
+                  "writeEmbroideryToFile" : {
+                    "name" : "Blüte ⚘.dst"
+                  }
+                },
+                {
+                  "moveNSteps" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "turnLeft" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "turnRight" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "pointInDirection" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "placeAt" : {
+                    "x" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "y" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setX" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setY" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeXBy" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeYBy" : {
+                    "_0" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "arc" : {
+                    "degrees" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "direction" : {
+                      "left" : {
+
+                      }
+                    },
+                    "radius" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "goThrough" : {
+                    "throughX" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "throughY" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "x" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "y" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "repeatLoop" : {
+                    "times" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "repeatUntil" : {
+                    "condition" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "forVariableFromTo" : {
+                    "from" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "name" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "loopEnd" : {
+
+                  }
+                },
+                {
+                  "wait" : {
+                    "seconds" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "waitUntil" : {
+                    "condition" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "ifThen" : {
+                    "condition" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "ifEnd" : {
+
+                  }
+                },
+                {
+                  "ifElse" : {
+                    "condition" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "elseBranch" : {
+
+                  }
+                },
+                {
+                  "ifEnd" : {
+
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "changeVariableBy" : {
+                    "name" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎",
+                    "value" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "runningStitch" : {
+                    "length" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "zigZagStitch" : {
+                    "length" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "width" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "tripleStitch" : {
+                    "length" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "writeEmbroideryToFile" : {
+                    "name" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "number" : {
+                        "_0" : 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "number" : {
+                        "_0" : 0.1
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "number" : {
+                        "_0" : -0
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "number" : {
+                        "_0" : 5e-324
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "number" : {
+                        "_0" : 1.7976931348623157e+308
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "number" : {
+                        "_0" : -12
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "variable" : {
+                        "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryMinus" : {
+                        "_0" : {
+                          "variable" : {
+                            "_0" : "i"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "logicalNot" : {
+                        "_0" : {
+                          "constant" : {
+                            "_0" : {
+                              "false" : {
+
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "unaryFunction" : {
+                            "_0" : {
+                              "abs" : {
+
+                              }
+                            },
+                            "_1" : {
+                              "variable" : {
+                                "_0" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎"
+                              }
+                            }
+                          }
+                        },
+                        "_2" : {
+                          "unaryMinus" : {
+                            "_0" : {
+                              "number" : {
+                                "_0" : 1
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "plus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "minus" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "mult" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "divide" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "pow" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "equal" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "notEqual" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "smallerThan" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "smallerOrEqual" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "greaterThan" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "greaterOrEqual" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "logicalAnd" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binary" : {
+                        "_0" : {
+                          "logicalOr" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 2
+                          }
+                        },
+                        "_2" : {
+                          "variable" : {
+                            "_0" : "v"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "sin" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "cos" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "tan" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "arcsin" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "arccos" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "arctan" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "sqrt" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "abs" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "round" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "floor" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "ceil" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "ln" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "log" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "unaryFunction" : {
+                        "_0" : {
+                          "exp" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 0.5
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binaryFunction" : {
+                        "_0" : {
+                          "arctan2" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 7
+                          }
+                        },
+                        "_2" : {
+                          "sensor" : {
+                            "_0" : {
+                              "objectY" : {
+
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binaryFunction" : {
+                        "_0" : {
+                          "min" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 7
+                          }
+                        },
+                        "_2" : {
+                          "sensor" : {
+                            "_0" : {
+                              "objectY" : {
+
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binaryFunction" : {
+                        "_0" : {
+                          "max" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 7
+                          }
+                        },
+                        "_2" : {
+                          "sensor" : {
+                            "_0" : {
+                              "objectY" : {
+
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binaryFunction" : {
+                        "_0" : {
+                          "mod" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 7
+                          }
+                        },
+                        "_2" : {
+                          "sensor" : {
+                            "_0" : {
+                              "objectY" : {
+
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "binaryFunction" : {
+                        "_0" : {
+                          "power" : {
+
+                          }
+                        },
+                        "_1" : {
+                          "number" : {
+                            "_0" : 7
+                          }
+                        },
+                        "_2" : {
+                          "sensor" : {
+                            "_0" : {
+                              "objectY" : {
+
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "constant" : {
+                        "_0" : {
+                          "pi" : {
+
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "constant" : {
+                        "_0" : {
+                          "true" : {
+
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "constant" : {
+                        "_0" : {
+                          "false" : {
+
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "sensor" : {
+                        "_0" : {
+                          "objectX" : {
+
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "sensor" : {
+                        "_0" : {
+                          "objectY" : {
+
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "setVariable" : {
+                    "name" : "v",
+                    "to" : {
+                      "sensor" : {
+                        "_0" : {
+                          "motionDirection" : {
+
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
+              "header" : {
+                "whenStarted" : {
+
+                }
+              }
+            },
+            {
+              "bricks" : [
+
+              ],
+              "header" : {
+                "whenStarted" : {
+
+                }
+              }
+            }
+          ],
+          "startHeading" : 135,
+          "startX" : -12.5,
+          "startY" : 40,
+          "variables" : [
+            {
+              "name" : "local",
+              "value" : -2.25
+            },
+            {
+              "name" : "zero",
+              "value" : 0
+            }
+          ],
+          "zIndex" : 3
+        },
+        {
+          "name" : "",
+          "scripts" : [
+
+          ],
+          "startHeading" : 0,
+          "startX" : 0,
+          "startY" : 0,
+          "variables" : [
+
+          ],
+          "zIndex" : 0
+        }
+      ]
+    },
+    {
+      "name" : "",
+      "objects" : [
+
+      ]
+    }
+  ],
+  "variables" : [
+    {
+      "name" : "v",
+      "value" : 5
+    },
+    {
+      "name" : "i",
+      "value" : 1e-300
+    },
+    {
+      "name" : "a/b \"q\" \\ \t\n\u0001 🧵 Größe ✂︎",
+      "value" : 0
+    }
+  ]
+}
