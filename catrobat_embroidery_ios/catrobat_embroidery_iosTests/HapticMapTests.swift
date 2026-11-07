@@ -2,6 +2,7 @@
 import EditorCore
 import EmbroideryEngine
 import Foundation
+import ProgramModel
 import Projects
 import StagePreview
 import SwiftUI
@@ -113,6 +114,10 @@ struct HapticMapTests {
         _ = model.editor.redo()
         _ = model.editor.moveRows(fromOffsets: [0], toOffset: 2)
         _ = model.editor.deleteRows(atOffsets: [0])
+        // The accessibility move actions and the replace sheet reach the editor through
+        // `ScriptListView.perform`, i.e. `editor.apply`, never `dropRows`.
+        _ = model.editor.apply(.move(from: BrickAddress(brickIndex: 0, script: ScriptAddress()), to: 1))
+        _ = model.editor.apply(.replaceBrick(at: BrickAddress(brickIndex: 0, script: ScriptAddress()), with: .sewUp))
         model.nameDraft = "Renamed"
         model.commitName()
 
@@ -140,6 +145,8 @@ struct HapticMapTests {
 
         model.runner.apply(Self.terminal(.programFinished, Self.stitches(stitches)))
 
+        #expect(model.runner.run.state == .finished(.programFinished), "the terminal must have landed")
+
         #expect(model.haptic == before)
     }
 
@@ -150,6 +157,8 @@ struct HapticMapTests {
         let before = model.haptic
 
         model.runner.apply(Self.terminal(.programFinished, Self.stitches(3)))
+
+        #expect(model.runner.run.state == .finished(.programFinished), "the terminal must have landed")
 
         #expect(model.haptic == before)
     }
@@ -214,6 +223,7 @@ struct HapticMapTests {
         let model = await Self.runningWindow(writer: ThrowingDSTFileWriter())
         model.runner.apply(Self.terminal(.programFinished, Self.stitches(3)))
         let afterFirst = model.haptic
+        #expect(afterFirst?.kind == .error, "the first run's failure must have pulsed")
 
         model.play()
         await Self.settle { model.runner.run.state == .running }
@@ -303,6 +313,9 @@ struct HapticMapTests {
         let model = window(writer: writer)
         model.play()
         await settle { model.runner.run.state == .running }
+        // A terminal is ignored unless the run is `.running`, so without this a broken fixture
+        // would let every "pulses nothing" test pass vacuously (swift-code-reviewer, whole PR).
+        #expect(model.runner.run.state == .running, "the fixture's run never started")
         return model
     }
 
@@ -332,7 +345,7 @@ struct HapticMapTests {
 
 /// Pacing that never delivers a frame until its task is cancelled, so a run stays `.running`
 /// and the test decides how it ends.
-struct StalledRunPacing: RunPacing {
+private struct StalledRunPacing: RunPacing {
     func waitForNextFrame() async {
         try? await Task.sleep(for: .seconds(3600))
     }
@@ -340,7 +353,7 @@ struct StalledRunPacing: RunPacing {
 
 /// A writer that lets a test look at the window while the file is being written.
 @MainActor
-final class ObservingDSTFileWriter: DSTFileWriting {
+private final class ObservingDSTFileWriter: DSTFileWriting {
     var onWrite: () -> Void = {}
 
     func write(_: DSTFile, named name: DSTFileName) throws -> URL {

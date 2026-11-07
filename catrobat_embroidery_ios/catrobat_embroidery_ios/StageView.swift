@@ -151,9 +151,7 @@ struct StageView<Renderer: StagePreviewRenderer>: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(title.map { Text($0) } ?? Text(.stageTitle))
         .navigationBarTitleDisplayMode(.inline)
-        // No haptic here (Release readiness D3, ADR-052). This view used to play `.start` on
-        // every run and `.stop` on every finish, including a user stop; the haptic map allows
-        // neither. A finished run is now felt through the window root's success pulse.
+        // No haptic here: the window root plays the haptic map (ADR-052).
     }
 
     /// The canvas keeps an identical frame in all three states, so nothing reflows when

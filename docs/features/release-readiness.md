@@ -77,7 +77,7 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
 
 ## Acceptance criteria
 
-- [ ] Any change to the v1 wire format turns `FrozenV1VocabularyTests` red or fails to compile, and each kind is shown by a mutation:
+- [x] Any change to the v1 wire format turns `FrozenV1VocabularyTests` red or fails to compile, and each kind is shown by a mutation:
   - a new `Brick`, `Formula`, `ScriptHeader` or leaf-enum case;
   - a renamed label or coding key;
   - `{}` becoming `null`;
@@ -86,12 +86,16 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
   - a changed number shape;
   - a new stored field.
 - [ ] ADR-037 carries the trigger as an amendment that supersedes the 2026-10-18 one: the freeze fired when this feature merged, with its date.
-- [ ] `/release` exists, and its first item is the freeze. A dry run reports every item's state. US-331 leaves the backlog as a record bullet.
-- [ ] Every event in D3 produces exactly its pulse, and every event outside D3 produces none. A test sweep covers the non-events.
+  *[Open until merge: the amendment is written; the freeze fires and gets its date when this PR merges.]*
+- [x] `/release` exists, and its first item is the freeze. A dry run reports every item's state. US-331 leaves the backlog as a record bullet.
+- [x] Every event in D3 produces exactly its pulse, and every event outside D3 produces none. A test sweep covers the non-events.
 - [ ] No `.sensoryFeedback` remains outside the window root. That's a grep, plus a device check on Sebastian's iPhone: each haptic plays once, none plays at run start, and with two windows (iPad) a pulse plays only for its own window.
-- [ ] `PrivacyInfo.xcprivacy` ships in the app bundle, with the D6 contents, and `ITSAppUsesNonExemptEncryption` reads `false`, all checked by hosted tests.
+  *[The grep is done (one, at `WindowRootView`). The device check is open: Sebastian's iPhone was unavailable on 2026-11-07. Also compare whether a reorder drop feels doubled with UIKit's own lift haptic, and whether a palette add pulses while the palette sheet covers the root (whole-PR review, question 10).]*
+- [x] `PrivacyInfo.xcprivacy` ships in the app bundle, with the D6 contents, and `ITSAppUsesNonExemptEncryption` reads `false`, all checked by hosted tests.
 - [ ] The app icon appears on the home screen in light, dark and tinted modes (simulator screenshots), and its label reads "Embroidery" (`ReleaseMetadataTests`).
+  *[Label done: `displayNameIsEmbroidery`, and seen on the home screen. Icon seen in light mode only (Sebastian's screenshot); dark and tinted are in the built `Assets.car` but not yet screenshotted.]*
 - [ ] The pseudo-loc and RTL pass has run on every listed screen, with screenshots. Every finding is fixed or tracked, and the stage is shown unmirrored under RTL.
+  *[Ran on the project list, script, palette and stage (journal 2026-11-07); the stage is unmirrored; US-319 tracked. Not reached: the parameter editors and the iPad split, which are carried into `/release` item 5.]*
 
 ## Slices and test-first outline
 
@@ -124,7 +128,7 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
      - `dropThatMovesPulsesSelection`
      - `refusedOrNoOpDropPulsesNothing`
      - `dropBetweenIdenticalRowsPulsesNothing`: added after a mutant that ticked on any applied move survived. Swapping identical rows is applied but changes nothing.
-     - `nonDropEditsPulseNothing`: a sweep including insert → undo → redo, accessibility moves, delete, replace, parameter edit and rename.
+     - `nonDropEditsPulseNothing`: a sweep including insert → undo → redo, a list move outside `dropRows`, an accessibility move and a replace through `editor.apply`, delete and rename. *[Parameter edits are not exercised separately: `pulse` has three callers, none on that path (whole-PR review, 2026-11-07).]*
      - `consecutiveInsertsEachPulse`
    - Success:
      - `programFinishedWithEligibleExportPulsesSuccess`

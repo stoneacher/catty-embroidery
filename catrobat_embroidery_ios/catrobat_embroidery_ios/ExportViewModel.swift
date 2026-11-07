@@ -117,6 +117,10 @@ final class ExportViewModel {
         return state
     }
 
+    /// Drops a prepared file the moment the name stops matching it.
+    ///
+    /// Only from `.ready` — a `.failed` or `.idle` state has nothing to invalidate — so the
+    /// repeated keystrokes after the first are a single comparison each.
     private func discardIfPreparedNameIsStale() {
         guard case .ready = state, (try? validatedName.get()) != preparedName else { return }
         discard()

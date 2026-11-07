@@ -4579,3 +4579,29 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **The bracket scan, read critically:** an empty scan result was at first indistinguishable from a parser that matched nothing. The scan now prints how many strings it checked. That is the same lesson as slice 3's mutation parser: a check that can't say "I looked at N things" can't be trusted when it says "nothing found".
 - **Gaps, stated:** the parameter editors (tapping a row selected it, but no editor opened under automation) and the iPad split view were not covered. They are carried into the first `/release` run.
 - **No code change in this slice,** so no mutation applies. It is docs only: the ADR-007 amendment, `/release` item 5's known limits, and the brief.
+
+## 2026-11-07 — Release readiness: whole-PR review found three tests that passed vacuously
+
+- **`swift-code-reviewer` over `main...HEAD` (9 commits):**
+  - 2 Important, 7 suggestions and a question, all valid; none rejected.
+  - Non-test size 835/82 lines, about 165 of them Swift, so one PR is right (ADR-041).
+  - It confirmed what holds: one `.sensoryFeedback`, `pulse` with three callers, no double pulse on run end or rename, ADR-023 per-window state, the privacy manifest matching the code.
+- **Important: three "pulses nothing" tests could not fail.** `runningWindow` waited for `.running` through a `settle` that gives up silently, and a terminal is ignored unless the run is `.running`. So if the fixture broke, "nothing pulsed" was true for the wrong reason.
+  - The reviewer proved it by mutation: a window that never starts a run left `programFinishedWithIneligibleExportPulsesNothing` (both arguments), `programFinishedWithInvalidNamePulsesNothing` and `failedExportThenRerunFailingPulsesErrorAgain` green.
+  - **Fixed:**
+    - the fixture asserts that the run started;
+    - the two "nothing" tests assert that their terminal landed;
+    - the rerun test asserts that the first run's error pulsed.
+  - The same fixture mutant now fails every run-dependent test (12 test cases), and the run-free selection tests stay green, as they should.
+  - Slice 3's own mutations had all mutated *production* code. A mutant of the *fixture* is the one class that finds a test whose premise was never established.
+- **A slip while fixing it:** the widened sweep's `.sewUp` needed `import ProgramModel`, and the first rerun didn't compile. A filtered grep showed only `** TEST FAILED **`, which looked like the mutant result. Counting the passing tests of the unmutated run (0) exposed it. The 2026-11-07 filter lesson applied a second time the same day: a test result needs the test's own line.
+- **Suggestions, all applied:**
+  - restored a doc comment slice 3 had deleted by accident (`discardIfPreparedNameIsStale`);
+  - a history comment in `StageView` turned into a reason;
+  - the non-event sweep widened (an accessibility move and a replace through `editor.apply`), with the brief reworded for parameter edits;
+  - the test helpers made `private`;
+  - `/release` item 3's grep widened to Apple's categories and both source roots;
+  - item 1 anchored on PR #90, not on a merge commit;
+  - a stale sentence dropped from the icon SVG.
+- **Question, carried into the device check:** does a reorder drop feel doubled together with UIKit's own lift haptic, and does a palette add pulse while the palette sheet covers the window root?
+- **Not yet at handover:** the device check (Sebastian's iPhone was unavailable); the dark and tinted icon screenshots (the simulator shut down mid-capture); and the freeze date, which is set at merge. The brief's open criteria say so individually.
