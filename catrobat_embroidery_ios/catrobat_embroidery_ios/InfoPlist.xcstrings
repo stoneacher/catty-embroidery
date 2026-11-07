@@ -1,6 +1,18 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "The app's name under its icon on the home screen. Catroid's Android app is called \"Embroidery Designer\"; this is the short form, because iOS truncates home-screen labels at about 12 characters. Translate the word for embroidery (needlework done by machine), and keep the translation short enough to fit under an icon.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Embroidery"
+          }
+        }
+      }
+    },
     "CFBundleName" : {
       "comment" : "Bundle name",
       "extractionState" : "extracted_with_value",
