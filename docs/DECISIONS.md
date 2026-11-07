@@ -46,7 +46,7 @@ New ADRs: context → decision → consequences in roughly 20 lines, with review
 | 034 | Editor | `Brick` has no identity; addressing is index-based; the script list's row identity is derived by the editor (diff-followed IDs), never stored. | Active, amended |
 | 035 | Editor | Pair semantics for the editor verbs. | Superseded by 045 |
 | 036 | Editor | `UndoStack` in `EditorCore` is the truth and owns the program; bounded at 50; explicit coalescing sessions; an app-owned `UndoManager`, vended by a first-responder anchor, kept at the stack's exact depths (US-411). | Active, amended |
-| 037 | Persistence | Program document: version 1 only, frozen since the Release readiness merge by a byte-pinned census (`FrozenV1.json`); any vocabulary change is a v2 with three pinned admission operations, refuse rather than trap, non-finite rejected at input, depth cap 128; last-writer-wins by revision, per project since M5 (refused files blocked per ID, not set aside). | Active, amended |
+| 037 | Persistence | Program document: version 1 only, frozen since the Release readiness merge by a byte-pinned census (`FrozenV1.json`, plus `FrozenV1Root.json` for the root's defaults); any vocabulary change is a v2 with three pinned admission operations, refuse rather than trap, non-finite rejected at input, depth cap 128; last-writer-wins by revision, per project since M5 (refused files blocked per ID, not set aside). | Active, amended |
 | 038 | Editor | `EditorViewModel` is the only writer; a changing edit voids the run, except one that differs only in the name, which keeps it and re-prepares the export; the selection carries no program and is titled with its name. | Active, amended |
 | 039 | Editor UI | Three-column split on regular, push chain on compact; launch is a selection (since M5: the scene's project, the last opened, or a named draft); palette popover/sheet; parameters off-row. | Active, amended three times |
 | 040 | Editor UI | Parameters editable where M4 has a control (function and sensor formulas locked with their own reasons); a condition that is one comparison of two plain values gets the comparison editor (`ParameterTarget` addresses a side); 14-colour thread palette; `VariableName` rules; live-apply that keeps no rejected prefix. | Active, amended |
@@ -1014,7 +1014,8 @@ What remains, and it is a hypothesis rather than a result: the two designs diffe
   - `zIndex` widened to `Double`;
   - a new `Brick` case (a compile failure);
   - three mutations of the test's own builder and census.
-- **`FrozenV1.json` is never regenerated for a format change.** A change that needs new bytes is a v2: bump `currentFormatVersion`, build the three admission operations above, and freeze the v2 bytes beside v1's.
+- **The root's own defaults are frozen separately** in `FrozenV1Root.json` (`Program()`), because a `Program` can't nest inside the maximal document (Codex handover round 2).
+- **`FrozenV1.json` and `FrozenV1Root.json` are never regenerated for a format change.** A change that needs new bytes is a v2: bump `currentFormatVersion`, build the three admission operations above, and freeze the v2 bytes beside v1's.
   - The one exception is a difference the test's own semantic comparison reports as **presentation only**: the same JSON values spelled differently by a newer Foundation. Only then may the fixture be replaced, in a journaled, reviewed commit.
   - The bytes are pinned to the test host's encoder, and CI pins its Xcode. So a toolchain bump is where such a difference would surface.
 - **The release checklist (`/release`) checks the freeze as its first item:** the census is present and green. That catches the trigger being undone, not just forgotten.
