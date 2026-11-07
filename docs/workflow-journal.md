@@ -4682,3 +4682,9 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   4. which commit is checked at all.
 
   As with WaitTillIdle (2026-11-03), a freeze is only as strong as its outermost premise, and each review read one premise further out.
+
+## 2026-11-07 — Release readiness merged (#90); the v1 format is frozen
+
+- **Sebastian merged PR #90 as `1c951fe`.** Under ADR-037's 2026-11-05 amendment, that merge is the freeze: from here on, any change to the v1 wire format is a v2. The merge commit is now named in the amendment, and the brief's waived freeze-date criterion carries a dated note. Of the four checks carried to the first `/release` run, three remain: the two-window iPad haptics, the dark and tinted icon screenshots, and the parameter editors plus iPad split.
+- **Close-out:** the reviewer worktree and both `worktree-agent-*` branches were removed after checking they held no unique commits. US-330's seventh occurrence (`3728b13`, docs-only, rerun green) was added to its backlog entry; during handover it had stayed in the PR description only, to keep the branch head green.
+- **US-330 now recurs about once per feature** (twice in #90). It remains a backlog item, but the cost per occurrence (a rerun of about 8 minutes, plus triage) is now a pattern, not an incident.
