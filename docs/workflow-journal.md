@@ -4605,3 +4605,31 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
   - a stale sentence dropped from the icon SVG.
 - **Question, carried into the device check:** does a reorder drop feel doubled together with UIKit's own lift haptic, and does a palette add pulse while the palette sheet covers the window root?
 - **Not yet at handover:** the device check (Sebastian's iPhone was unavailable); the dark and tinted icon screenshots (the simulator shut down mid-capture); and the freeze date, which is set at merge. The brief's open criteria say so individually.
+
+## 2026-11-07 — Release readiness: the haptics, felt on the device
+
+- **Build `85fa6a6` on Sebastian's iPhone 17 Pro.** Over Wi-Fi the phone showed as paired but `unavailable` after a lock; `devicectl` returned error 4016 until a cable was plugged in. The earlier "it's locked" diagnosis was only half the story.
+- **Sebastian's check:**
+  1. A palette add ticks once, also while the palette sheet covers the window root.
+  2. A reorder drag ticks once per position change. That is UIKit's own list feedback, and our tick comes on the drop. The whole-PR review had asked whether this would feel doubled. Sebastian keeps both: "I like it though, feels tactile". No code change.
+  3. A finished run gives one success; run start gives nothing.
+  4. A user stop gives nothing.
+  5. Two iPad windows: not checked (no iPad at hand).
+- **What this adds to the tests:** the simulator plays no haptics and deleting the root modifier leaves every test green (ADR-032), so this check is the only evidence that the wiring plays at all. Item 5's logic is pinned by `twoWindowModelsPulseIndependently`, but its real-device behaviour is still open.
+
+## 2026-11-07 — Release readiness handed over: Done, with four checks carried to the first `/release`
+
+- **The brief is Done:** `**Status**: Done — 2026-11-07, PR #90`, with every criterion ticked. Four were reworded rather than met, by Sebastian's decision, because none can finish inside this PR:
+  - the freeze date (`/release` item 1, at merge);
+  - the two-window iPad haptics check (item 4);
+  - the dark and tinted icon screenshots (item 4);
+  - the parameter editors and the iPad split in the localization/RTL audit (item 5).
+
+  Each now names the `/release` item that owns it, and the release checklist was extended where it didn't yet list one.
+- **`/finish` items:**
+  - Decisions: ADR-052 is new; ADR-007, ADR-011 and ADR-037 are amended.
+  - Roadmap row updated.
+  - No Ink/Stitch check: no DST bytes, stitch geometry or export path changed.
+  - No `swift-documenter` pass: the feature changes no public API of the engine package (slice 1 is test-only).
+  - CI green on `85fa6a6`.
+- **The Codex handover loop starts now,** with the PR marked ready.

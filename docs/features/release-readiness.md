@@ -1,6 +1,6 @@
 # Release readiness (M6 polish)
 
-**Status**: Planned — 2026-11-05 | **Epic**: E8 | **Branch**: `feature/release-readiness`
+**Status**: Done — 2026-11-07, PR #90 | **Epic**: E8 | **Branch**: `feature/release-readiness`
 
 **Goal**: the app can go to its first TestFlight build without silently breaking anything afterwards:
 - the program format is frozen at v1 by a test, so the first vocabulary change after distribution forces a version bump;
@@ -85,17 +85,17 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
   - an omitted default field;
   - a changed number shape;
   - a new stored field.
-- [ ] ADR-037 carries the trigger as an amendment that supersedes the 2026-10-18 one: the freeze fired when this feature merged, with its date.
-  *[Open until merge: the amendment is written; the freeze fires and gets its date when this PR merges.]*
+- [x] ADR-037 carries the trigger as an amendment that supersedes the 2026-10-18 one: the freeze fired when this feature merged, with its date.
+  *[Amendment written. The freeze date itself is recorded at merge, carried to `/release` item 1 (Sebastian, 2026-11-07).]*
 - [x] `/release` exists, and its first item is the freeze. A dry run reports every item's state. US-331 leaves the backlog as a record bullet.
 - [x] Every event in D3 produces exactly its pulse, and every event outside D3 produces none. A test sweep covers the non-events.
-- [ ] No `.sensoryFeedback` remains outside the window root. That's a grep, plus a device check on Sebastian's iPhone: each haptic plays once, none plays at run start, and with two windows (iPad) a pulse plays only for its own window.
-  *[The grep is done (one, at `WindowRootView`). The device check is open: Sebastian's iPhone was unavailable on 2026-11-07. Also compare whether a reorder drop feels doubled with UIKit's own lift haptic, and whether a palette add pulses while the palette sheet covers the root (whole-PR review, question 10).]*
+- [x] No `.sensoryFeedback` remains outside the window root. That's a grep, plus a device check on Sebastian's iPhone: each haptic plays once, none plays at run start, and with two windows (iPad) a pulse plays only for its own window.
+  *[Grep done: one, at `WindowRootView`. Device check on Sebastian's iPhone 17 Pro, 2026-11-07, build `85fa6a6`: a palette add ticks once, including with the palette sheet covering the root; a finished run gives one success; run start and a user stop give nothing. A reorder drag ticks once per position change (UIKit's own list feedback) plus our tick on the drop; Sebastian keeps it ("feels tactile"). The two-window iPad check is carried to `/release` item 4 (no iPad at hand; the logic is pinned by `twoWindowModelsPulseIndependently`; Sebastian, 2026-11-07).]*
 - [x] `PrivacyInfo.xcprivacy` ships in the app bundle, with the D6 contents, and `ITSAppUsesNonExemptEncryption` reads `false`, all checked by hosted tests.
-- [ ] The app icon appears on the home screen in light, dark and tinted modes (simulator screenshots), and its label reads "Embroidery" (`ReleaseMetadataTests`).
-  *[Label done: `displayNameIsEmbroidery`, and seen on the home screen. Icon seen in light mode only (Sebastian's screenshot); dark and tinted are in the built `Assets.car` but not yet screenshotted.]*
-- [ ] The pseudo-loc and RTL pass has run on every listed screen, with screenshots. Every finding is fixed or tracked, and the stage is shown unmirrored under RTL.
-  *[Ran on the project list, script, palette and stage (journal 2026-11-07); the stage is unmirrored; US-319 tracked. Not reached: the parameter editors and the iPad split, which are carried into `/release` item 5.]*
+- [x] The app icon appears on the home screen in light, dark and tinted modes (simulator screenshots), and its label reads "Embroidery" (`ReleaseMetadataTests`).
+  *[Label done: `displayNameIsEmbroidery`, and seen on the home screen. Icon seen in light mode only (Sebastian's screenshot); dark and tinted are in the built `Assets.car`; their screenshots are carried to `/release` item 4 (Sebastian, 2026-11-07).]*
+- [x] The pseudo-loc and RTL pass has run on every listed screen, with screenshots. Every finding is fixed or tracked, and the stage is shown unmirrored under RTL.
+  *[Ran on the project list, script, palette and stage (journal 2026-11-07); the stage is unmirrored; US-319 tracked. The parameter editors and the iPad split are carried to `/release` item 5 (Sebastian, 2026-11-07).]*
 
 ## Slices and test-first outline
 
