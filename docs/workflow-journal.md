@@ -4663,3 +4663,22 @@ Codex returned **no correctness findings**, so the loop ended at round 1 on cond
 - **Medium: ADR-052 still claimed the device check covered two iPad windows.** That was plan wording, made stale by the waiver. It is the third copy of the same corrected claim, after the brief's ticks (round 2) and the brief's verification section. Fixed with an "as done" note. ADR-032 invariant 3 again: a corrected claim survives in its copies.
 - **Medium: the root fixture had no lawful way out.** Only the maximal-document test wrote what it saw and said whether a difference was presentation only, which is the message ADR-037's replacement path requires. **Fixed:** a shared `expectFrozen` helper. A spacing-only change to `FrozenV1Root.json` now fails with "presentation only".
 - **Severity history:** High → High → Medium. Round 3 changed test code, so round 4 runs. A round 4 below Medium would be the second consecutive fall and end the loop.
+
+## 2026-11-07 — Release readiness PR #90: Codex handover round 4 (High, process text only); the loop ends
+
+- **All three round-3 fixes verified:** ADR-052's note, the shared `expectFrozen` diagnostic (it still fails on any byte difference and names the right fixture), and item 8's commit-plus-tag query.
+- **High, in `/release`, not in code: the freeze check and the release build looked at different commits.** Item 1 checked `<freeze merge>..main`, but item 8 tags whatever commit is released. A branch that changed the encoder and the fixtures together would pass both the tests and item 1 while shipping an incompatible v1. **Fixed:**
+  - there is one named **release commit**;
+  - it must be on `origin/main` and contain the freeze merge (`git merge-base --is-ancestor`, both directions smoke-tested);
+  - the fixture-history check runs up to it, covering both fixtures;
+  - item 8 tags exactly that commit.
+- **Stop condition 1 (ADR-041):** round 4's triage changed process text only, so the loop ends here without a round 5.
+- **Severity history:** High → High → Medium → High. The last High was the first finding in the *checklist's own logic* rather than in what it checks.
+- **Loop totals:** 4 rounds, 11 findings, none rejected. The format freeze took 4 of them (a code-reachable default, the root's defaults, the diagnostic, the release-commit gap), the checklist 4, the docs' claims 2, the tests 1.
+- **Pattern for the thesis:** each round found the gap *one layer outside* the previous fix:
+  1. values in the program;
+  2. the program's root;
+  3. the replacement path;
+  4. which commit is checked at all.
+
+  As with WaitTillIdle (2026-11-03), a freeze is only as strong as its outermost premise, and each review read one premise further out.
