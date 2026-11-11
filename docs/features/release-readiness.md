@@ -86,7 +86,7 @@ M6's brick parity is already delivered by the Brick backend and Variables featur
   - a changed number shape;
   - a new stored field.
 - **[waived, carried to `/release`; Sebastian, 2026-11-07]** ADR-037 carries the trigger as an amendment that supersedes the 2026-10-18 one: the freeze fired when this feature merged, with its date.
-  *[Amendment written. The freeze date itself is recorded at merge, carried to `/release` item 1 (Sebastian, 2026-11-07).]*
+  *[Amendment written. The freeze date itself is recorded at merge, carried to `/release` item 1 (Sebastian, 2026-11-07).]* *[Recorded after the merge, 2026-11-07: v1 froze at merge commit `1c951fe` (ADR-037). Close-out PR.]*
 - [x] `/release` exists, and its first item is the freeze. A dry run reports every item's state. US-331 leaves the backlog as a record bullet.
 - [x] Every event in D3 produces exactly its pulse, and every event outside D3 produces none. A test sweep covers the non-events.
 - **[waived, carried to `/release`; Sebastian, 2026-11-07]** No `.sensoryFeedback` remains outside the window root. That's a grep, plus a device check on Sebastian's iPhone: each haptic plays once, none plays at run start, and with two windows (iPad) a pulse plays only for its own window.
